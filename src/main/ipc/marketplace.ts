@@ -1,11 +1,12 @@
-import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
-
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { MarketplaceService } from '@main/services/external/marketplace.service';
+import { LocaleService } from '@main/services/system/locale.service';
 import { ThemeService } from '@main/services/theme/theme.service';
 import { createIpcHandler as baseCreateIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { marketplaceInstallRequestSchema } from '@shared/schemas/marketplace.schema';
 import { InstallRequest, MarketplaceItem } from '@shared/types/marketplace';
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
 /**
  * Registers IPC handlers for Marketplace operations
@@ -13,6 +14,7 @@ import { InstallRequest, MarketplaceItem } from '@shared/types/marketplace';
 export function registerMarketplaceIpc(
     marketplaceService: MarketplaceService,
     themeService: ThemeService,
+    localeService: LocaleService,
     getMainWindow: () => BrowserWindow | null
 ) {
     appLogger.debug('MarketplaceIPC', 'Registering Marketplace IPC handlers');
@@ -36,25 +38,31 @@ export function registerMarketplaceIpc(
     // Tema veya eklenti yükle
     ipcMain.handle('marketplace:install', createIpcHandler('marketplace:install',
         async (_event: IpcMainInvokeEvent, request: InstallRequest) => {
-            if (!request || !request.downloadUrl) {
-                throw new Error('Invalid install request');
-            }
+            const validatedRequest = marketplaceInstallRequestSchema.parse(request);
 
             // Installation logic via service
             const result = await marketplaceService.installItem({
-                id: request.id,
-                name: request.id,
-                itemType: request.type,
-                downloadUrl: request.downloadUrl,
+                id: validatedRequest.id,
+                name: validatedRequest.id,
+                itemType: validatedRequest.type,
+                downloadUrl: validatedRequest.downloadUrl,
             } as MarketplaceItem);
 
-            if (result.success && request.type === 'theme') {
-                appLogger.info('MarketplaceIPC', 'Theme installed, triggering reload...');
-                await themeService.initialize();
-                
+            if (result.success) {
                 const mainWindow = getMainWindow();
-                if (mainWindow) {
-                    mainWindow.webContents.send('theme:runtime:updated');
+                if (validatedRequest.type === 'theme') {
+                    appLogger.info('MarketplaceIPC', 'Theme installed, triggering reload...');
+                    await themeService.initialize();
+                    if (mainWindow) {
+                        mainWindow.webContents.send('theme:runtime:updated');
+                    }
+                }
+                if (validatedRequest.type === 'language') {
+                    appLogger.info('MarketplaceIPC', 'Language pack installed, triggering reload...');
+                    await localeService.reload();
+                    if (mainWindow) {
+                        mainWindow.webContents.send('locale:runtime:updated');
+                    }
                 }
             }
             

@@ -71,7 +71,7 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
                 {/* Device Code Display */}
                 <div className="relative">
                     <div className="bg-muted/30 border border-border/50 rounded-xl p-6 text-center">
-                        <code className="text-3xl font-mono font-bold tracking-widest text-primary select-all">
+                        <code className="text-3xl font-mono font-bold text-primary select-all">
                             {userCode}
                         </code>
                     </div>

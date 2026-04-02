@@ -1,0 +1,31 @@
+:root {
+    --offline-banner-z-index: 50;
+    --offline-banner-bg: hsl(var(--warning) / 90%);
+    --offline-banner-text: hsl(var(--warning-foreground));
+    --offline-banner-font-size: 0.75rem;
+    --offline-banner-font-weight: 600;
+    --offline-banner-gap: 0.5rem;
+    --offline-banner-padding-x: 0.75rem;
+    --offline-banner-padding-y: 0.375rem;
+    --offline-banner-icon-size: 0.875rem;
+}
+
+.tengra-offline-banner {
+    position: sticky;
+    top: 0;
+    z-index: var(--offline-banner-z-index);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--offline-banner-gap);
+    background: var(--offline-banner-bg);
+    color: var(--offline-banner-text);
+    font-size: var(--offline-banner-font-size);
+    font-weight: var(--offline-banner-font-weight);
+    padding: var(--offline-banner-padding-y) var(--offline-banner-padding-x);
+}
+
+.tengra-offline-banner__icon {
+    width: var(--offline-banner-icon-size);
+    height: var(--offline-banner-icon-size);
+}

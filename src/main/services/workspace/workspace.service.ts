@@ -1164,7 +1164,13 @@ export class WorkspaceService extends BaseService {
     private resolveWorkspaceFilePath(rootPath: string, filePath: string): string {
         const normalizedFilePath = path.resolve(filePath);
         const normalizedRootPath = path.resolve(rootPath);
-        const relativePath = path.relative(normalizedRootPath, normalizedFilePath);
+        
+        // On Windows, handle case insensitivity and drive letter formatting differences
+        const isWin = process.platform === 'win32';
+        const comparisonFilePath = isWin ? normalizedFilePath.toLowerCase() : normalizedFilePath;
+        const comparisonRootPath = isWin ? normalizedRootPath.toLowerCase() : normalizedRootPath;
+        
+        const relativePath = path.relative(comparisonRootPath, comparisonFilePath);
 
         if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
             throw new ValidationError('Workspace file path must be inside the workspace root');
@@ -1409,11 +1415,25 @@ export class WorkspaceService extends BaseService {
     private shouldIgnore(name: string): boolean {
         const lowerName = name.toLowerCase();
         const ignoredNames = [
-            'node_modules', '.git', '.svn', '.hg', 'dist', 'build', 'out', '.Tengra',
+            'node_modules', '.git', '.svn', '.hg', 'dist', 'build', 'out', '.tengra',
             '.vscode', '.idea', 'coverage', '.nyc_output', 'target', 'bin', 'obj',
             '.next', '.nuxt', '.cache', '__pycache__', '.pytest_cache', '.output',
-            '.yarn', 'composer.lock',
-            'cargo.lock', 'go.sum', '.ds_store', 'thumbs.db', '.parcel-cache', '.turbo'
+            '.yarn', 'composer.lock', 'cargo.lock', 'go.sum', '.ds_store', 'thumbs.db',
+            '.parcel-cache', '.turbo', 'venv', '.venv', 'env', '.env', 'eggs', '.tox',
+            'vendor', '.gradle', 'deriveddata', 'pods', '.symlinks', 'testresults',
+            '.vs', 'cmakecache.txt', 'cmakefiles', '.vue', '.svelte-kit', '.astro',
+            '.mypy_cache', '.hypothesis', 'htmlcov', 'tmp', 'var', 'ipch', 'debug',
+            'release', 'x64', 'x86', 'library', 'temp', 'logs', 'captures', '_build',
+            'deps', '.dart_tool', '.pub-cache', 'packages', '.expo', '.metadata',
+            '.bundle', '.ruby-lsp', 'binaries', 'intermediate', 'saved',
+            '.externalnativebuild', '.cxx', '.terraform', '.vagrant', '.kitchen',
+            '.serverless', '.aws-sam', '.direnv', '.elixir_ls', 'desktop.ini',
+            'artifacts', '.system_generated', 'logs', 'bower_components',
+            'jspm_packages', '.npm', '.eslintcache', '.stylelintcache',
+            '.awscache', '.cache-loader', 'build-artifacts', 'cache-loader',
+            'minified', 'compiled', 'output', 'reports', 'test-results', 
+            '.tox', '.nox', '.pants.d', '.scons_cache', '.bundle', '.pnpm-store',
+            '.vercel', '.netlify', '.docker', '.firebase', '.github', '.gitlab'
         ];
         if (ignoredNames.includes(lowerName)) { return true; }
 

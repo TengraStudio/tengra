@@ -31,9 +31,9 @@ export const StatCard = memo(({
         "p-4 bg-muted/30 border-border/40 flex flex-col gap-1 transition-all",
         highlight && "border-primary/30 bg-primary/5"
     )}>
-        <p className="text-xxs font-bold uppercase tracking-widest text-muted-foreground/60">{label}</p>
+        <p className="text-xxs font-bold text-muted-foreground/60">{label}</p>
         <div className="flex items-end gap-2">
-            <span className="text-2xl font-black">{value}</span>
+            <span className="text-2xl font-bold">{value}</span>
             <Icon className={cn("w-4 h-4 mb-1", color)} />
         </div>
     </Card>
@@ -87,7 +87,7 @@ export const PendingMemoryCard = memo(({
             <div className="flex flex-col gap-3 pl-3">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <Badge className={cn("border-none text-xxs uppercase font-bold", config.color)}>
+                        <Badge className={cn("border-none text-xxs  font-bold", config.color)}>
                             <config.icon className="w-3 h-3 mr-1" />
                             {t(config.labelKey)}
                         </Badge>
@@ -156,7 +156,7 @@ export const ConfirmedMemoryCard = memo(({
                         <button type="button" aria-label={t('memory.select')} onClick={onToggleSelect}>
                             {isSelected ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4 text-muted-foreground/30" />}
                         </button>
-                        <Badge className={cn("border-none text-xxs uppercase font-bold", config.color)}>
+                        <Badge className={cn("border-none text-xxs  font-bold", config.color)}>
                             <config.icon className="w-3 h-3 mr-1" />
                             {t(config.labelKey)}
                         </Badge>

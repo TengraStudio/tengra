@@ -39,7 +39,9 @@ const sharedProps = {
     isOllamaRunning: false,
     authStatus: { codex: false, claude: false, antigravity: false, copilot: false },
     updateGeneral: vi.fn().mockResolvedValue(undefined),
+    updateEditor: vi.fn().mockResolvedValue(undefined),
     updateSpeech: vi.fn().mockResolvedValue(undefined),
+    updateRemoteAccounts: vi.fn().mockResolvedValue(undefined),
     handleSave: vi.fn().mockResolvedValue(undefined),
     startOllama: vi.fn().mockResolvedValue(undefined),
     checkOllama: vi.fn().mockResolvedValue(undefined),
@@ -93,7 +95,7 @@ const sharedProps = {
     loadSettings: vi.fn().mockResolvedValue(undefined),
     setIsLoading: vi.fn(),
     onReset: vi.fn(),
-} satisfies SettingsSharedProps;
+} as SettingsSharedProps;
 
 describe('SettingsTabContent', () => {
     it('renders only the active tab content', async () => {

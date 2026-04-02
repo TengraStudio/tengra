@@ -668,6 +668,18 @@ export class DatabaseService extends BaseService {
                     'DROP INDEX IF EXISTS idx_semantic_fragments_workspace_source'
                 ],
                 checksum: 'mig-v3-workspace-intelligence-indexes'
+            },
+            {
+                version: 4,
+                name: 'add-workspace-logo-column',
+                up: [
+                    'ALTER TABLE workspaces ADD COLUMN logo TEXT'
+                ],
+                down: [
+                    // SQLite/PGlite doesn't support DROP COLUMN easily in older versions, 
+                    // but we can leave it for now or use a rename pattern if critical.
+                ],
+                checksum: 'mig-v4-add-workspace-logo'
             }
         ];
     }

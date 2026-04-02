@@ -58,7 +58,7 @@ export function TerminalSplitControls({
                     className="tw-w-260 p-2 bg-popover border border-border rounded-lg space-y-2"
                 >
                     <div className="flex items-center justify-between gap-2">
-                        <div className="tw-text-10 uppercase tracking-wide text-muted-foreground">
+                        <div className="tw-text-10 text-muted-foreground">
                             {t('terminal.splitPresetsLabel')}
                         </div>
                         <button

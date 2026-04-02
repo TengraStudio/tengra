@@ -42,6 +42,7 @@ export interface ToolResult {
     isImage?: boolean | undefined
     success?: boolean | undefined
     error?: string | undefined
+    errorType?: 'permission' | 'timeout' | 'unknown' | string | undefined
 }
 
 export interface TextContent {

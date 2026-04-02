@@ -1,19 +1,21 @@
 export type SettingsCategory =
     | 'accounts'
     | 'general'
+    | 'workspace'
+    | 'editor'
     | 'appearance'
+    | 'system'
     | 'models'
+    | 'quotas'
     | 'statistics'
-    | 'gallery'
     | 'personas'
     | 'speech'
     | 'developer'
     | 'advanced'
     | 'about'
-    | 'mcp-servers'
     | 'images'
     | 'usage-limits'
-    | 'voice';
+    | 'social-media';
 
 export type DetailedStats = Awaited<ReturnType<Window['electron']['db']['getDetailedStats']>>
 export type AuthStatusState = { codex: boolean; claude: boolean; antigravity: boolean; copilot?: boolean }

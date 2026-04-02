@@ -9,6 +9,8 @@ import {
     updateLoadingOperationProgress,
 } from '@/store/loading-analytics.store';
 
+import './loading-state.css';
+
 export interface LoadingStateProps {
     /**
      * Optional message to display below the spinner

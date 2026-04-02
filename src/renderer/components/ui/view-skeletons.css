@@ -1,0 +1,173 @@
+/* View Skeletons Component CSS */
+:root {
+    /* Chat view */
+    --view-skeleton-chat-padding: 1rem;
+    --view-skeleton-chat-gap: 1rem;
+    
+    /* Workspace view */
+    --view-skeleton-workspace-padding: 1rem;
+    --view-skeleton-workspace-gap: 1rem;
+    
+    /* Settings view */
+    --view-skeleton-settings-padding: 1rem;
+    --view-skeleton-settings-gap: 1rem;
+    
+    /* Generic view */
+    --view-skeleton-generic-padding: 1rem;
+    --view-skeleton-generic-gap: 1rem;
+    
+    /* Input skeleton border */
+    --view-skeleton-input-border-color: hsl(var(--border) / 50%);
+    --view-skeleton-input-border-radius: 0.75rem;
+    --view-skeleton-input-padding: 0.75rem;
+}
+
+/* Chat view skeleton */
+.tengra-view-skeleton--chat {
+    height: 100%;
+    width: 100%;
+    padding: var(--view-skeleton-chat-padding);
+    display: flex;
+    flex-direction: column;
+    gap: var(--view-skeleton-chat-gap);
+}
+
+@media (width >= 768px) {
+    .tengra-view-skeleton--chat {
+        padding: 1.5rem;
+    }
+}
+
+.tengra-view-skeleton__header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.tengra-view-skeleton__messages {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    overflow: hidden;
+}
+
+.tengra-view-skeleton__message {
+    max-width: 100%;
+}
+
+.tengra-view-skeleton__input {
+    border: 1px solid var(--view-skeleton-input-border-color);
+    border-radius: var(--view-skeleton-input-border-radius);
+    padding: var(--view-skeleton-input-padding);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.tengra-view-skeleton__input-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Workspace view skeleton */
+.tengra-view-skeleton--workspace {
+    height: 100%;
+    width: 100%;
+    padding: var(--view-skeleton-workspace-padding);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--view-skeleton-workspace-gap);
+}
+
+@media (width >= 768px) {
+    .tengra-view-skeleton--workspace {
+        padding: 1.5rem;
+    }
+}
+
+@media (width >= 1024px) {
+    .tengra-view-skeleton--workspace {
+        grid-template-columns: 1fr 2fr;
+    }
+}
+
+.tengra-view-skeleton__sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.tengra-view-skeleton__main {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.tengra-view-skeleton__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+}
+
+@media (width >= 640px) {
+    .tengra-view-skeleton__grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (width >= 1280px) {
+    .tengra-view-skeleton__grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Settings view skeleton */
+.tengra-view-skeleton--settings {
+    height: 100%;
+    width: 100%;
+    padding: var(--view-skeleton-settings-padding);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--view-skeleton-settings-gap);
+}
+
+@media (width >= 768px) {
+    .tengra-view-skeleton--settings {
+        padding: 1.5rem;
+    }
+}
+
+@media (width >= 1024px) {
+    .tengra-view-skeleton--settings {
+        grid-template-columns: 1fr 2fr;
+    }
+}
+
+.tengra-view-skeleton__nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.tengra-view-skeleton__content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Generic view skeleton */
+.tengra-view-skeleton--generic {
+    height: 100%;
+    width: 100%;
+    padding: var(--view-skeleton-generic-padding);
+    display: flex;
+    flex-direction: column;
+    gap: var(--view-skeleton-generic-gap);
+}
+
+@media (width >= 768px) {
+    .tengra-view-skeleton--generic {
+        padding: 1.5rem;
+    }
+}

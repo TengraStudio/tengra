@@ -1,4 +1,6 @@
-import { AlertTriangle, CheckCircle2, CircleDot, Download, Image, RotateCcw, Settings2 } from 'lucide-react';
+import { Badge } from '@renderer/components/ui/badge';
+import { Button } from '@renderer/components/ui/button';
+import { AlertTriangle, CheckCircle2, Download, RotateCcw, Settings2 } from 'lucide-react';
 import React, { useState } from 'react';
 
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
@@ -45,114 +47,110 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
         }
     };
 
-    const getStatusIcon = (): JSX.Element => {
-        switch (sdCppStatus) {
-            case 'ready':
-                return <CheckCircle2 className="text-success w-5 h-5 flex-shrink-0" />;
-            case 'installing':
-                return <Download className="text-primary w-5 h-5 animate-pulse flex-shrink-0" />;
-            case 'failed':
-                return <AlertTriangle className="text-destructive w-5 h-5 flex-shrink-0" />;
-            default:
-                return <CircleDot className="text-muted-foreground w-5 h-5 flex-shrink-0" />;
-        }
-    };
-
-    const getStatusText = (): string => {
-        return t(`settings.images.status.${sdCppStatus}`);
-    };
-
     const progressPercentage = downloadProgress ? Math.round((downloadProgress.downloaded / downloadProgress.total) * 100) : 0;
 
     return (
-        <div className="space-y-4 pt-4 border-t border-border/30">
-            <h4 className="text-xxs font-bold text-muted-foreground uppercase tracking-widest px-1 flex items-center gap-2">
-                <Settings2 className="w-3.5 h-3.5" />
-                {t('settings.images.runtimeManagement')}
-            </h4>
+        <div className="space-y-6 pt-6 border-t border-border/20 group/runtime">
+            <div className="flex items-center gap-3 px-1">
+                <div className={cn(
+                    "h-2 w-2 rounded-full animate-pulse",
+                    sdCppStatus === 'ready' ? "bg-success" : "bg-warning"
+                )} />
+                <h4 className="text-xxs font-bold text-muted-foreground">
+                    {t('settings.images.runtimeManagement')}
+                </h4>
+            </div>
 
-            <div className="p-5 rounded-2xl bg-muted/40 border border-border/30 space-y-5">
-                <div className="flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
-                    <div className="flex items-center gap-3">
+            <div className="p-8 rounded-3xl bg-muted/20 border border-border/20 space-y-8 shadow-sm group-hover/runtime:border-border/40 transition-all duration-500 overflow-hidden relative">
+                <div className="flex items-center justify-between gap-6 relative z-10">
+                    <div className="flex items-center gap-5">
                         <div className={cn(
-                            "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-inner",
-                            sdCppStatus === 'ready' ? "bg-success/10 text-success" : "bg-muted/30 text-muted-foreground"
+                            "w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-700 shadow-inner border",
+                            sdCppStatus === 'ready' 
+                                ? "bg-success/10 border-success/20 text-success scale-110 shadow-success/10" 
+                                : "bg-muted/30 border-border/10 text-muted-foreground"
                         )}>
-                            {sdCppStatus === 'ready' ? <CheckCircle2 className="w-6 h-6" /> : <Image className="w-6 h-6" />}
+                            {sdCppStatus === 'ready' ? <CheckCircle2 className="w-8 h-8" /> : <Settings2 className="w-8 h-8" />}
                         </div>
                         <div>
-                            <h4 className="text-sm font-bold flex items-center gap-2">
-                                {t('settings.images.runtimeName')}
+                            <div className="flex items-center gap-3">
+                                <h4 className="text-lg font-bold text-foreground">
+                                    {t('settings.images.runtimeName')}
+                                </h4>
                                 {sdCppStatus === 'ready' && (
-                                    <span className="bg-success/10 text-success px-1.5 py-0.5 rounded text-xxxs font-black uppercase tracking-tighter">
+                                    <Badge className="bg-success/10 text-success hover:bg-success/20 border-success/20 text-[9px] font-bold px-2 py-0.5 rounded-lg">
                                         {t('settings.images.runtimeVersion')}
-                                    </span>
+                                    </Badge>
                                 )}
-                            </h4>
-                            <div className="flex items-center gap-2 mt-1">
-                                <div className={cn("w-2 h-2 rounded-full",
-                                    sdCppStatus === 'ready' ? "bg-success shadow-sm" :
-                                        sdCppStatus === 'installing' ? "bg-primary animate-pulse" : "bg-muted-foreground/30")
-                                } />
-                                <span className="text-xxs font-bold text-muted-foreground/80 uppercase tracking-widest">
-                                    {getStatusText()}
+                            </div>
+                            <div className="flex items-center gap-3 mt-1.5 px-0.5">
+                                <span className={cn(
+                                    "text-[10px] font-bold   px-2.5 py-0.5 rounded-md border",
+                                    sdCppStatus === 'ready' ? "bg-success/5 border-success/10 text-success" :
+                                        sdCppStatus === 'installing' ? "bg-primary/5 border-primary/10 text-primary animate-pulse" : "bg-muted/10 border-border/10 text-muted-foreground/60"
+                                )}>
+                                    {t(`settings.images.status.${sdCppStatus}`)}
                                 </span>
                             </div>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        {getStatusIcon()}
-                        <button
-                            onClick={handleReinstallClick}
-                            disabled={isReinstalling || sdCppStatus === 'installing'}
-                            className={cn(
-                                "px-4 py-2.5 rounded-xl transition-all duration-300 group flex items-center gap-2 text-xxxs font-black uppercase tracking-tight shadow-sm w-full sm:w-auto justify-center",
-                                (isReinstalling || sdCppStatus === 'installing')
-                                    ? "bg-muted/40 text-muted-foreground/50 border border-border/30 cursor-not-allowed"
-                                    : "bg-muted/40 text-foreground hover:bg-primary hover:text-primary-foreground border border-border/40 hover:border-primary shadow-lg"
-                            )}
-                        >
-                            <RotateCcw className={cn("w-3.5 h-3.5", (isReinstalling || sdCppStatus === 'installing') && "animate-spin")} />
-                            {t('settings.images.reinstall')}
-                        </button>
-                    </div>
+                    <Button
+                        onClick={handleReinstallClick}
+                        disabled={isReinstalling || sdCppStatus === 'installing'}
+                        className={cn(
+                            "h-12 px-6 rounded-2xl text-[10px] font-bold   transition-all duration-500 flex items-center gap-3 shadow-lg active:scale-95 disabled:scale-100",
+                            (isReinstalling || sdCppStatus === 'installing')
+                                ? "bg-muted/40 text-muted-foreground/50 border border-border/20 cursor-not-allowed"
+                                : "bg-foreground text-background hover:bg-primary hover:text-primary-foreground shadow-black/10"
+                        )}
+                    >
+                        <RotateCcw className={cn("w-4 h-4", (isReinstalling || sdCppStatus === 'installing') && "animate-spin")} />
+                        {t('settings.images.reinstall')}
+                    </Button>
                 </div>
 
                 {/* Progress Monitor */}
                 {(sdCppStatus === 'installing' || isReinstalling) && downloadProgress && (
-                    <div className="space-y-3 animate-in slide-in-from-top-2 duration-500 bg-background/50 p-4 rounded-xl border border-border/30">
-                        <div className="flex justify-between items-end gap-4">
-                            <div className="space-y-1 min-w-0 flex-1">
-                                <p className="text-xxxs font-black text-primary uppercase tracking-widest leading-none">
-                                    {t('settings.images.downloading')}
-                                </p>
-                                <p className="text-xxs text-muted-foreground/80 truncate font-medium underline underline-offset-4 decoration-white/10">
+                    <div className="space-y-4 animate-in slide-in-from-top-4 duration-700 bg-background/40 p-6 rounded-2xl border border-border/20 shadow-inner relative z-10">
+                        <div className="flex justify-between items-end gap-6">
+                            <div className="space-y-2 min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                    <Download className="w-3.5 h-3.5 text-primary animate-bounce" />
+                                    <p className="text-[10px] font-bold text-primary leading-none">
+                                        {t('settings.images.downloading')}
+                                    </p>
+                                </div>
+                                <p className="text-xs text-muted-foreground/80 truncate font-bold opacity-40">
                                     {downloadProgress.filename}
                                 </p>
                             </div>
-                            <span className="text-xl font-black text-foreground/90 tabular-nums italic">
+                            <div className="text-3xl font-bold text-foreground tabular-nums">
                                 {progressPercentage}%
-                            </span>
+                            </div>
                         </div>
-                        <div className="h-1.5 w-full bg-muted/40 rounded-full overflow-hidden p-px">
+                        <div className="h-3 w-full bg-muted/40 rounded-full overflow-hidden p-0.5 border border-border/10 shadow-inner">
                             <div
-                                className="h-full bg-primary transition-all duration-700 ease-out relative rounded-full"
+                                className="h-full bg-primary transition-all duration-1000 ease-out relative rounded-full shadow-lg shadow-primary/20"
                                 style={{ width: `${progressPercentage}%` }}
                             >
-                                <div className="absolute inset-0 bg-muted/70 animate-pulse" />
-                                <div className="absolute top-0 right-0 h-full w-4 bg-gradient-to-r from-transparent to-foreground/30 blur-sm" />
+                                <div className="absolute inset-0 bg-white/20 animate-pulse" />
+                                <div className="absolute top-0 right-0 h-full w-8 bg-gradient-to-r from-transparent to-white/30 blur-sm" />
                             </div>
                         </div>
                     </div>
                 )}
 
                 {/* Help/Support Text */}
-                <div className="rounded-xl bg-warning/5 border border-warning/20 p-3.5 flex gap-3">
-                    <AlertTriangle className="w-4 h-4 text-warning/70 flex-shrink-0 mt-0.5" />
-                    <p className="text-xxxs leading-relaxed text-muted-foreground/80 font-medium italic">
+                <div className="rounded-2xl bg-warning/5 border border-warning/10 p-5 flex gap-4 relative z-10 group/help cursor-help hover:bg-warning/10 transition-colors duration-500">
+                    <div className="p-2 rounded-xl bg-warning/10 text-warning h-fit group-hover/help:scale-110 transition-transform">
+                        <AlertTriangle className="w-4 h-4" />
+                    </div>
+                    <p className="text-[10px] leading-relaxed text-muted-foreground/60 font-bold pt-1 text-justify">
                         {t('settings.images.reinstallHelp')}
                     </p>
                 </div>
+
+                <div className="absolute -right-16 -bottom-16 w-64 h-64 bg-primary/5 rounded-full blur-[80px] opacity-50" />
             </div>
 
             <ConfirmationModal

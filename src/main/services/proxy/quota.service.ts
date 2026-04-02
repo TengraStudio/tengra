@@ -344,7 +344,7 @@ export class QuotaService {
             unique.push(account);
         }
 
-        return unique.length > 1 ? [unique.find(a => a.provider === 'github') ?? unique[0]] : unique;
+        return unique;
     }
 
     // --- Legacy ---

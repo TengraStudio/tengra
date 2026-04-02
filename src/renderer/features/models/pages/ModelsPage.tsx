@@ -197,7 +197,7 @@ export function ModelsPage({ language = 'en' }: ModelsPageProps): React.ReactEle
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-2xl font-black tracking-tight">{t('modelsPage.title')}</h1>
+                            <h1 className="text-2xl font-bold">{t('modelsPage.title')}</h1>
                             <p className="text-sm text-muted-foreground mt-1">{t('modelsPage.subtitle')}</p>
                         </div> 
                     </div>

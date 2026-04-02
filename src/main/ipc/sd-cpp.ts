@@ -2,16 +2,15 @@
  * IPC handlers for SD-CPP (Stable Diffusion C++) service
  */
 import { LocalImageService } from '@main/services/llm/local-image.service';
+import { EventBusService } from '@main/services/system/event-bus.service';
 import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { ipcMain } from 'electron';
-
 /**
  * Registers SD-CPP related IPC handlers.
  * 
  * @param localImageService - The LocalImageService instance to use.
  */
 import { BrowserWindow } from 'electron';
-import { EventBusService } from '@main/services/system/event-bus.service';
 
 /**
  * Registers SD-CPP related IPC handlers.

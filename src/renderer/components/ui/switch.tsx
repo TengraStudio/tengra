@@ -1,48 +1,24 @@
-import * as React from 'react';
+"use client";
 
-import { cn } from '@/lib/utils';
+import * as SwitchPrimitive from "@radix-ui/react-switch";
+import { cn } from "@renderer/lib/utils";
+import * as React from "react";
 
-interface SwitchProps {
-    checked: boolean;
-    onCheckedChange: (checked: boolean) => void;
-    disabled?: boolean;
-    id?: string;
-    className?: string;
-}
+const Switch = React.forwardRef<
+  React.ElementRef<typeof SwitchPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof SwitchPrimitive.Root>
+>(({ className, ...props }, ref) => (
+  <SwitchPrimitive.Root
+    className={cn(
+      "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border border-border/30 transition-colors focus-visible:outline-none focus-visible:border-primary/45 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-primary/40 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input/80",
+      className
+    )}
+    {...props}
+    ref={ref}
+  >
+    <SwitchPrimitive.Thumb className="pointer-events-none block h-5 w-5 rounded-full bg-background transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0" />
+  </SwitchPrimitive.Root>
+));
+Switch.displayName = SwitchPrimitive.Root.displayName;
 
-/**
- * A toggle switch component with smooth animations
- */
-export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
-    ({ checked, onCheckedChange, disabled, id, className }, ref) => {
-        return (
-            <button
-                ref={ref}
-                id={id}
-                type="button"
-                role="switch"
-                aria-checked={checked}
-                disabled={disabled}
-                onClick={() => onCheckedChange(!checked)}
-                onContextMenu={event => event.preventDefault()}
-                style={{ WebkitTapHighlightColor: 'transparent' }}
-                className={cn(
-                    'relative inline-flex h-5 w-9 shrink-0 cursor-pointer select-none touch-manipulation items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-                    'disabled:cursor-not-allowed disabled:opacity-50',
-                    checked ? 'bg-primary' : 'bg-muted',
-                    className
-                )}
-            >
-                <span
-                    className={cn(
-                        'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg ring-0 transition-transform duration-200 ease-in-out',
-                        checked ? 'translate-x-4' : 'translate-x-0'
-                    )}
-                />
-            </button>
-        );
-    }
-);
-
-Switch.displayName = 'Switch';
+export { Switch };

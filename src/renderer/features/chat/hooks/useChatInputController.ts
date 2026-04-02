@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useState } from 'react';
+import type { WorkspaceAgentPermissionPolicy } from '@shared/types/workspace-agent-session';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { z } from 'zod';
 
 import { useAuth } from '@/context/AuthContext';
@@ -122,6 +123,26 @@ export function useChatInputController() {
     const [isDragging, setIsDragging] = useState(false);
     const [isEnhancing, setIsEnhancing] = useState(false);
     const [lastError, setLastError] = useState<ChatInputErrorState>(null);
+    const [permissionPolicy, setPermissionPolicy] = useState<WorkspaceAgentPermissionPolicy>({
+        commandPolicy: 'ask-every-time',
+        pathPolicy: 'workspace-root-only',
+        allowedCommands: [],
+        disallowedCommands: [],
+        allowedPaths: [],
+    });
+
+    useEffect(() => {
+        if (!appSettings) {
+            return;
+        }
+        setPermissionPolicy({
+            commandPolicy: appSettings.general.agentCommandPolicy ?? 'ask-every-time',
+            pathPolicy: appSettings.general.agentPathPolicy ?? 'workspace-root-only',
+            allowedCommands: appSettings.general.agentAllowedCommands ?? [],
+            disallowedCommands: appSettings.general.agentDisallowedCommands ?? [],
+            allowedPaths: appSettings.general.agentAllowedPaths ?? [],
+        });
+    }, [appSettings]);
 
     const isImageOnlyModel = useMemo(() => {
         const normalizedModel = selectedModel.trim().toLowerCase();
@@ -321,6 +342,7 @@ export function useChatInputController() {
         language, t, isDragging, setIsDragging, isEnhancing, handleEnhancePrompt, onDrop,
         lastError, clearLastError,
         systemMode, setSystemMode,
+        permissionPolicy, setPermissionPolicy,
         chatInputMaxLength: CHAT_INPUT_MAX_LENGTH,
         isImageOnlyModel,
         imageRequestCount,

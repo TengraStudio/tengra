@@ -6,6 +6,8 @@ import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { Chat } from '@/types';
 
+import './sidebar-chat-item.css';
+
 interface SidebarChatItemProps {
     chat: Chat;
     isActive: boolean;
@@ -40,7 +42,7 @@ export const SidebarChatItem = React.memo(
         const { t } = useTranslation();
 
         return (
-            <div className="group relative">
+            <div className="group tengra-sidebar-chat-item">
                 <SidebarItem
                     icon={MessageSquare}
                     label={chat.title || t('sidebar.newChat')}
@@ -52,7 +54,7 @@ export const SidebarChatItem = React.memo(
                 />
 
                 {!isEditing && !isCollapsed && (
-                    <div className="opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all flex items-center gap-1 absolute right-2 top-1/2 -translate-y-1/2 bg-card border border-border/50 shadow-sm rounded-md px-1 py-0.5">
+                    <div className="tengra-sidebar-chat-item__actions pointer-events-none group-hover:pointer-events-auto">
                         <button
                             onClick={e => {
                                 e.stopPropagation();

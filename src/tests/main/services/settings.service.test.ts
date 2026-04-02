@@ -5,8 +5,7 @@ import * as fs from 'fs';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { en } from '../../../renderer/i18n/en';
-import { tr } from '../../../renderer/i18n/tr';
+import { en } from '../../../renderer/i18n/locales';
 
 // Mock electron
 vi.mock('electron', () => ({
@@ -261,7 +260,6 @@ describe('SettingsService - Persistence', () => {
         expect(emptyMetrics.uiState).toBe('empty');
         expect(emptyMetrics.performanceBudget.saveSettingsMs).toBe(600);
         expect(en.serviceHealth.settings.empty).toBe(emptyMetrics.messageKey);
-        expect(tr.serviceHealth.settings.empty).toBeTruthy();
 
         await service.initialize();
         const readyMetrics = service.getHealthMetrics();

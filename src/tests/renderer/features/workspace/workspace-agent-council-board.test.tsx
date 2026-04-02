@@ -29,6 +29,7 @@ function createSession(): WorkspaceAgentSessionSummary {
             commandPolicy: 'allowlist',
             pathPolicy: 'workspace-root-only',
             allowedCommands: ['npm'],
+            disallowedCommands: [],
             allowedPaths: ['c:/workspace'],
         },
         contextTelemetry: {

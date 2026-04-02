@@ -3,8 +3,7 @@ import { ChatMessage } from '@main/types/llm.types';
 import { ApiError, AuthenticationError, ValidationError } from '@shared/utils/error.util';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { en } from '../../../../renderer/i18n/en';
-import { tr } from '../../../../renderer/i18n/tr';
+import { en } from '../../../../renderer/i18n/locales';
 
 const mockImagePersistence = {
     saveImage: vi.fn().mockResolvedValue('/tmp/image.png')
@@ -225,7 +224,6 @@ describe('LLMService', () => {
             expect(emptyMetrics.uiState).toBe('empty');
             expect(emptyMetrics.performanceBudget.chatCompletionMs).toBe(30000);
             expect(en.serviceHealth.llm.empty).toBe(emptyMetrics.messageKey);
-            expect(tr.serviceHealth.llm.empty).toBeTruthy();
 
             service.setOpenAIApiKey('sk-test');
             mockHttpService.fetch.mockResolvedValue({
@@ -238,7 +236,6 @@ describe('LLMService', () => {
             const failureMetrics = service.getHealthMetrics();
             expect(failureMetrics.uiState).toBe('failure');
             expect(en.serviceHealth.llm.failure).toBe(failureMetrics.messageKey);
-            expect(tr.serviceHealth.llm.failure).toBeTruthy();
         });
     });
 });

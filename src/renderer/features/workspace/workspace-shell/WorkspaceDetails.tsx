@@ -177,19 +177,6 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
         [wm]
     );
 
-    const handleLogoUpload = React.useCallback(() => {
-        void window.electron.workspace.uploadLogo(workspace.path)
-            .then(uploadedLogoPath => {
-                if (!uploadedLogoPath) {
-                    return;
-                }
-                return handleUpdateWorkspace({ logo: uploadedLogoPath });
-            })
-            .catch(error => {
-                appLogger.error('WorkspaceDetails', 'Failed to upload workspace logo', error as Error);
-            });
-    }, [handleUpdateWorkspace, workspace.path]);
-
     React.useEffect(() => {
         let cancelled = false;
         void runWorkspaceStartupPreflight(workspace)
@@ -278,7 +265,7 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                         workspace={workspace}
                         handleUpdateWorkspace={handleUpdateWorkspace}
                         onAddMount={() => ps.setShowMountModal(true)}
-                        onUploadLogo={handleLogoUpload}
+                        onUploadLogo={() => ps.setShowLogoModal(true)}
                         t={t}
                         language={language}
                         setDashboardTab={wm.setDashboardTab}
@@ -327,9 +314,11 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
             <WorkspaceDialogs
                 ps={ps}
                 wm={wm}
+                workspace={workspace}
                 submitEntryModal={submitEntryModal}
                 entryBusy={entryBusy}
                 language={language}
+                handleUpdateWorkspace={handleUpdateWorkspace}
             />
             {taskRunner.tasks.length > 0 && (
                 <div className="border-t border-border/30 bg-background/70 px-3 py-2">

@@ -155,7 +155,7 @@ const BlockHeader: React.FC<{
                 <div className="w-2.5 h-2.5 rounded-full bg-warning/50" />
                 <div className="w-2.5 h-2.5 rounded-full bg-success/50" />
             </div>
-            <span className="text-xxs text-muted-foreground uppercase font-black tracking-widest opacity-60 group-hover/code:opacity-100 transition-opacity flex items-center gap-1.5">
+            <span className="text-xxs text-muted-foreground font-bold opacity-60 group-hover/code:opacity-100 transition-opacity flex items-center gap-1.5">
                 {language || t('chat.codeBlock.plaintext')}
             </span>
         </div>
@@ -205,7 +205,7 @@ const FloatingActions: React.FC<{
                     animate={{ opacity: 1, x: 0 }}
                     onClick={isExecuting ? undefined : handleExecute}
                     className={cn(
-                        'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xxs font-bold uppercase tracking-wider backdrop-blur-xl border transition-all shadow-lg',
+                        'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xxs font-bold   backdrop-blur-xl border transition-all shadow-lg',
                         isExecuting
                             ? 'bg-warning/20 border-warning/30 text-warning-light'
                             : 'bg-success/20 border-success/30 text-success-light hover:bg-success/30 active:scale-95'
@@ -247,7 +247,7 @@ const ActionButton: React.FC<{
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay }}
         className={cn(
-            'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xxs font-bold uppercase tracking-wider backdrop-blur-xl border active:scale-95 transition-all shadow-lg',
+            'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xxs font-bold   backdrop-blur-xl border active:scale-95 transition-all shadow-lg',
             primary
                 ? 'bg-primary/20 border-primary/30 text-primary-foreground hover:bg-primary/30'
                 : 'bg-muted/30 border-border/50 text-foreground/70 hover:bg-muted/40'
@@ -277,7 +277,7 @@ const ExecutionOverlay: React.FC<{
                 )}
             >
                 <div className="flex items-center justify-between mb-1 opacity-40">
-                    <span className="text-xxxs uppercase font-bold tracking-widest">
+                    <span className="text-xxxs font-bold">
                         {t('chat.codeBlock.output')}
                     </span>
                     <button onClick={onClose} className="hover:text-foreground transition-colors">

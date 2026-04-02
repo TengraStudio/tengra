@@ -185,7 +185,7 @@ export const VariantsView = memo(
                     <div className="bg-primary/10 p-1.5 rounded-lg">
                         <Sparkles className="w-4 h-4 text-primary" />
                     </div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    <span className="text-xs font-bold text-muted-foreground">
                         {t('chat.modelComparison')}
                     </span>
                 </div>

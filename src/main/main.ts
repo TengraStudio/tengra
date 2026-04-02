@@ -176,9 +176,21 @@ app.whenReady().then(async () => {
     }
     const runtimeStartupDecisions = getRuntimeStartupDecisions(runtimeBootstrapResult);
 
-    // Initialize DB & Proxy
     if (runtimeStartupDecisions.database.shouldStart) {
-        void services.databaseService.initialize().catch(e => appLogger.error('Main', `DB Init Failed: ${e}`));
+        void (async () => {
+            try {
+                await services.databaseService.initialize();
+                const workspaces = await services.databaseService.workspaces.getWorkspaces();
+                for (const workspace of workspaces) {
+                    if (workspace.path) {
+                        allowedFileRoots.add(path.resolve(workspace.path));
+                    }
+                }
+                appLogger.info('Main', `Populated allowedFileRoots with ${workspaces.length} workspace paths`);
+            } catch (error) {
+                appLogger.error('Main', 'Failed to populate allowedFileRoots from workspaces', error as Error);
+            }
+        })();
     } else {
         appLogger.warn(
             'Main',

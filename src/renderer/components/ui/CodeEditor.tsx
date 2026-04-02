@@ -256,7 +256,7 @@ function applyMonacoTheme(monaco: Monaco, isLight: boolean): string {
         base: isLight ? 'vs' : 'vs-dark',
         inherit: true,
         rules: [
-            { token: 'comment', foreground: tokenComment.replace('#', ''), fontStyle: 'italic' },
+            { token: 'comment', foreground: tokenComment.replace('#', '') },
             { token: 'keyword', foreground: tokenKeyword.replace('#', '') },
             { token: 'string', foreground: tokenString.replace('#', '') },
             { token: 'number', foreground: tokenNumber.replace('#', '') },
@@ -304,12 +304,50 @@ function buildWorkspaceEditorOverrides(
         ...(typeof settings?.formatOnPaste === 'boolean'
             ? { formatOnPaste: settings.formatOnPaste }
             : {}),
+        ...(typeof settings?.formatOnType === 'boolean'
+            ? { formatOnType: settings.formatOnType }
+            : {}),
         ...(typeof settings?.tabSize === 'number' ? { tabSize: settings.tabSize } : {}),
         ...(typeof settings?.lineNumbers === 'string'
             ? { lineNumbers: settings.lineNumbers }
             : {}),
         ...(typeof settings?.folding === 'boolean' ? { folding: settings.folding } : {}),
         ...(typeof settings?.wordWrap === 'string' ? { wordWrap: settings.wordWrap } : {}),
+        ...(typeof settings?.minimap === 'boolean'
+            ? {
+                minimap: {
+                    enabled: settings.minimap,
+                    side: 'right',
+                    showSlider: 'always',
+                    renderCharacters: settings.minimapRenderCharacters ?? false,
+                },
+            }
+            : {}),
+        ...(typeof settings?.codeLens === 'boolean' ? { codeLens: settings.codeLens } : {}),
+        ...(typeof settings?.inlayHints === 'boolean'
+            ? { inlayHints: { enabled: settings.inlayHints ? 'on' : 'off' } }
+            : {}),
+        ...(typeof settings?.renderWhitespace === 'string'
+            ? { renderWhitespace: settings.renderWhitespace }
+            : {}),
+        ...(typeof settings?.cursorSmoothCaretAnimation === 'string'
+            ? { cursorSmoothCaretAnimation: settings.cursorSmoothCaretAnimation }
+            : {}),
+        ...(typeof settings?.wordBasedSuggestions === 'string'
+            ? { wordBasedSuggestions: settings.wordBasedSuggestions }
+            : {}),
+        ...(typeof settings?.stickyScroll === 'boolean'
+            ? { stickyScroll: { enabled: settings.stickyScroll } }
+            : {}),
+        ...(typeof settings?.bracketPairColorization === 'boolean'
+            ? { bracketPairColorization: { enabled: settings.bracketPairColorization } }
+            : {}),
+        ...(typeof settings?.guidesIndentation === 'boolean'
+            ? { guides: { indentation: settings.guidesIndentation } }
+            : {}),
+        ...(typeof settings?.mouseWheelZoom === 'boolean'
+            ? { mouseWheelZoom: settings.mouseWheelZoom }
+            : {}),
         ...additionalOptions,
     };
 }
@@ -978,11 +1016,15 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
     const editorOptions = useMemo(
         (): editor.IStandaloneEditorConstructionOptions => {
-            const workspaceOverrides = buildWorkspaceEditorOverrides(workspaceEditorSettings);
+            const effectiveEditorSettings = {
+                ...(settings?.editor ?? {}),
+                ...(workspaceEditorSettings ?? {}),
+            };
+            const workspaceOverrides = buildWorkspaceEditorOverrides(effectiveEditorSettings);
             const codeLensEnabled =
-                (workspaceEditorSettings?.codeLens ?? enableCodeLens) && !performanceMode;
+                (effectiveEditorSettings.codeLens ?? enableCodeLens) && !performanceMode;
             const inlayHintsEnabled =
-                (workspaceEditorSettings?.inlayHints ?? enableInlayHints) && !performanceMode;
+                (effectiveEditorSettings.inlayHints ?? enableInlayHints) && !performanceMode;
 
             return {
                 minimap: {
@@ -991,17 +1033,18 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                     showSlider: 'always',
                     renderCharacters: false,
                 },
-                fontSize: fontSize ?? 14,
-                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                fontSize: fontSize ?? effectiveEditorSettings.fontSize ?? 14,
+                fontFamily: "var(--font-sans)",
                 fontLigatures: true,
                 scrollBeyondLastLine: false,
                 readOnly,
                 automaticLayout: true,
-                padding: { top: 16, bottom: 16 },
+                padding: { top: 12, bottom: 12 },
                 smoothScrolling: true,
                 cursorBlinking: 'smooth',
                 cursorSmoothCaretAnimation: 'on',
                 formatOnPaste: true,
+                formatOnType: true,
                 tabSize: 4,
                 glyphMargin: codeLensEnabled,
                 lineNumbers: 'on',
@@ -1025,8 +1068,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             performanceMode,
             enableInlayHints,
             resolvedInlineSuggestionConfig.enabled,
+            settings?.editor,
             workspaceEditorSettings,
-        ]
+            ]
     );
 
     if (loading || !monacoComponents) {

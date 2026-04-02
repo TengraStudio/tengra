@@ -171,7 +171,7 @@ export const TerminalSession = memo(
             const term = new Terminal({
                 cursorBlink: true,
                 fontSize: 13,
-                fontFamily: "'JetBrains Mono', 'Cascadia Code', Consolas, monospace",
+                fontFamily: 'var(--font-sans)',
                 theme: getTerminalTheme(),
                 allowProposedApi: true,
                 scrollback: TERMINAL_SCROLLBACK_LINES,

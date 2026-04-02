@@ -40,6 +40,7 @@ export const DEFAULT_PERMISSION_POLICY: WorkspaceAgentPermissionPolicy = {
     commandPolicy: 'ask-every-time',
     pathPolicy: 'workspace-root-only',
     allowedCommands: [],
+    disallowedCommands: [],
     allowedPaths: [],
 };
 
@@ -147,6 +148,7 @@ export function toPermissionPolicy(
         commandPolicy,
         pathPolicy,
         allowedCommands: readStringArray(rawPolicy.allowedCommands),
+        disallowedCommands: readStringArray(rawPolicy.disallowedCommands),
         allowedPaths: readStringArray(rawPolicy.allowedPaths),
     };
 }

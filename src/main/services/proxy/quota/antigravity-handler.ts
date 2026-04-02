@@ -71,7 +71,7 @@ export class AntigravityHandler {
 
             if (q.resetTime) {
                 try {
-                    reset = new Date(q.resetTime).toLocaleString('tr-TR', {
+                    reset = new Date(q.resetTime).toLocaleString('en-US', {
                         month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                     });
                 } catch { /* ignore */ }

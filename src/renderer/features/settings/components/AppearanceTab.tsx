@@ -1,319 +1,582 @@
-import { ThemeManifest } from '@shared/types/theme';
-import { Code, FolderOpen, Palette, Shield, X } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import { Badge } from '@renderer/components/ui/badge';
+import { Input } from '@renderer/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@renderer/components/ui/select';
+import { Switch } from '@renderer/components/ui/switch';
+import {
+    clamp,
+    DEFAULT_TERMINAL_APPEARANCE,
+    resolveTerminalAppearance,
+    TERMINAL_APPEARANCE_STORAGE_KEY,
+    TERMINAL_CURSOR_STYLES,
+    TERMINAL_THEME_PRESETS,
+} from '@renderer/features/terminal/constants/terminal-panel-constants';
+import { useTerminalAppearance } from '@renderer/features/terminal/hooks/useTerminalAppearance';
+import type { ThemeManifest } from '@shared/types/theme';
+import {
+    Accessibility,
+    BaggageClaim,
+    Monitor,
+    MousePointer2,
+    Palette,
+    RefreshCw,
+    Terminal,
+    Type,
+} from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
 
-import { Switch } from '@/components/ui/switch';
-import { confirmDialog } from '@/features/terminal/utils/dialog';
+import { getTerminalTheme } from '@/lib/terminal-theme';
+import { resolveAppFontPreset } from '@/lib/typography-settings';
 import { cn } from '@/lib/utils';
-import { AppSettings } from '@/types/settings';
-import { appLogger } from '@/utils/renderer-logger';
+import { useA11ySettings } from '@/utils/accessibility';
 import { themeIpc } from '@/utils/theme-ipc.util';
 
-import { TerminalAppearanceSection } from './TerminalAppearanceSection';
+import type { SettingsSharedProps } from '../types';
 
-interface AppearanceTabProps {
-    settings: AppSettings | null;
-    updateGeneral: (patch: Partial<AppSettings['general']>) => void;
-    t: (key: string) => string;
+type AppearanceTabProps = Pick<
+    SettingsSharedProps,
+    'settings' | 'updateGeneral' | 't'
+>;
+
+interface TerminalPreviewProps {
+    cursorStyle: 'bar' | 'block' | 'underline';
+    fontFamily: string;
+    fontSize: number;
+    lineHeight: number;
+    theme: ReturnType<typeof getTerminalTheme>;
 }
 
-interface ThemeSectionProps {
-    currentTheme: string;
-    onThemeChange: (id: string) => void;
-    themes: ThemeManifest[];
-    onOpenThemesFolder: () => void;
-    onDeleteTheme: (id: string, name: string) => void;
-    t: (key: string) => string;
-}
-
-export function ThemeSection({
-    currentTheme,
-    onThemeChange,
-    themes,
-    onOpenThemesFolder,
-    onDeleteTheme,
-    t,
-}: ThemeSectionProps) {
+function TerminalPreview({
+    cursorStyle,
+    fontFamily,
+    fontSize,
+    lineHeight,
+    theme,
+}: TerminalPreviewProps): JSX.Element {
     return (
-        <div className="premium-glass p-8 space-y-8">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-2xl bg-primary/10 text-primary border border-primary/20 shadow-lg shadow-primary/10">
-                        <Palette className="w-6 h-6" />
-                    </div>
-                    <div>
-                        <div className="text-base font-black text-foreground uppercase tracking-tight">
-                            {t('settings.theme')}
-                        </div>
-                        <div className="text-xs font-medium text-muted-foreground/70">
-                            {t('appearance.themeDesc')}
-                        </div>
-                    </div>
+        <div className="relative h-full overflow-hidden rounded-[2rem] border border-border/40 bg-[#0c0c0c] p-1">
+            <div className="h-full rounded-[1.75rem] border border-white/5 p-8">
+                <div className="mb-8 flex items-center gap-2 opacity-40">
+                    <div className="h-2.5 w-2.5 rounded-full bg-destructive/60" />
+                    <div className="h-2.5 w-2.5 rounded-full bg-warning/60" />
+                    <div className="h-2.5 w-2.5 rounded-full bg-success/60" />
                 </div>
-                <button
-                    onClick={onOpenThemesFolder}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-muted/10 hover:bg-muted/20 border border-border/40 hover:border-primary/30 transition-all font-bold uppercase tracking-widest text-xxxs"
-                    title={t('appearance.openThemesFolder')}
+
+                <div
+                    className="space-y-4"
+                    style={{
+                        color: theme.foreground,
+                        fontFamily,
+                        fontSize: `${fontSize}px`,
+                        lineHeight,
+                    }}
                 >
-                    <FolderOpen className="w-4 h-4" />
-                    <span className="text-xs font-medium">{t('appearance.themesFolder')}</span>
-                </button>
-            </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {themes.map((theme: ThemeManifest) => {
-                    const isActive = currentTheme === theme.id;
-                    const isBuiltIn = theme.id === 'black' || theme.id === 'white';
-                    const displayName = isBuiltIn ? t(`appearance.themes.${theme.id}`) : theme.displayName;
-
-                    return (
-                        <div key={theme.id} className="group relative">
-                            <button
-                                onClick={() => onThemeChange(theme.id)}
-                                className={cn(
-                                    'w-full flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all duration-500',
-                                    isActive
-                                        ? 'border-primary/50 bg-primary/10 shadow-xl shadow-primary/5 ring-1 ring-primary/20 scale-102'
-                                        : 'border-border/40 bg-muted/5 hover:border-primary/30 hover:bg-muted/10'
-                                )}
-                            >
-                                <div
-                                    data-theme={theme.id}
-                                    className="h-16 w-16 rounded-2xl border-2 flex items-end p-2.5 transition-all duration-500 group-hover:scale-110 shadow-2xl"
-                                    style={{
-                                        background: 'hsl(var(--background))',
-                                        borderColor: isActive
-                                            ? 'hsl(var(--primary))'
-                                            : 'hsl(var(--border) / 0.5)',
-                                    }}
-                                >
-                                    <span
-                                        className="h-2.5 w-8 rounded-full shadow-sm"
-                                        style={{ background: 'hsl(var(--primary))' }}
-                                    />
-                                </div>
-                                <div className="text-center">
-                                    <div
-                                        className={cn(
-                                            'text-xxxs font-black uppercase tracking-widest transition-colors',
-                                            isActive ? 'text-primary' : 'text-muted-foreground'
-                                        )}
-                                    >
-                                        {displayName}
-                                    </div>
-                                    {theme.author && (
-                                        <div className="text-xxxs text-muted-foreground/50 font-bold uppercase tracking-tighter mt-1">
-                                            by {theme.author}
-                                        </div>
-                                    )}
-                                </div>
-                                {isActive && (
-                                    <div className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-primary border-2 border-background shadow-lg animate-in zoom-in duration-300" />
-                                )}
-                            </button>
-                            {!isActive && !isBuiltIn && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onDeleteTheme(theme.id, displayName);
-                                    }}
-                                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-destructive/10 text-destructive opacity-0 group-hover:opacity-100 transition-all hover:bg-destructive hover:text-destructive-foreground active:scale-95"
-                                    title={t('appearance.deleteTheme') || 'Delete Theme'}
-                                >
-                                    <X className="w-3.5 h-3.5" />
-                                </button>
+                    <div className="flex items-center gap-3">
+                        <span className="shrink-0 text-primary">➜</span>
+                        <span className="shrink-0 text-success/80">~</span>
+                        <span className="truncate opacity-90">tengra workspace status</span>
+                    </div>
+                    <div className="flex items-center gap-3 pl-6">
+                        <div className="h-4 w-1.5 rounded-full bg-success/20" />
+                        <span style={{ color: theme.green }} className="text-[0.85em] font-medium">
+                            Workspace ready
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-3 pl-6">
+                        <div className="h-4 w-1.5 rounded-full bg-warning/20" />
+                        <span style={{ color: theme.yellow }} className="text-[0.85em] font-medium">
+                            2 background jobs paused
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-3 pl-6">
+                        <div className="h-4 w-1.5 rounded-full bg-blue-500/20" />
+                        <span style={{ color: theme.blue }} className="text-[0.85em] font-medium">
+                            Copilot inline suggestions enabled
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2 pt-4">
+                        <span className="text-primary">➜</span>
+                        <div
+                            className={cn(
+                                'animate-pulse bg-primary transition-all',
+                                cursorStyle === 'block' && 'h-5 w-2.5',
+                                cursorStyle === 'underline' && 'mt-4 h-0.5 w-3',
+                                cursorStyle === 'bar' && 'h-5 w-0.5'
                             )}
-                        </div>
-                    );
-                })}
+                        />
+                    </div>
+                </div>
             </div>
         </div>
     );
 }
 
-interface ToggleSwitchProps {
-    checked: boolean;
-    onChange: (checked: boolean) => void;
-    title: string;
-    description: string;
-}
-
-const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ checked, onChange, title, description }) => (
-    <div className="flex items-center justify-between p-5 rounded-2xl border border-border/40 bg-muted/5 hover:bg-muted/10 transition-colors group">
-        <div>
-            <div className="text-sm font-black text-foreground uppercase tracking-tight">
-                {title}
-            </div>
-            <div className="text-xs font-medium text-muted-foreground/70">{description}</div>
-        </div>
-        <Switch checked={checked} onCheckedChange={onChange} />
-    </div>
-);
-
-interface AccessibilitySectionProps {
-    highContrast: boolean;
-    reduceMotion: boolean;
-    onHighContrastChange: (checked: boolean) => void;
-    onReduceMotionChange: (checked: boolean) => void;
-    t: (key: string) => string;
-}
-
-function AccessibilitySection({
-    highContrast,
-    reduceMotion,
-    onHighContrastChange,
-    onReduceMotionChange,
-    t,
-}: AccessibilitySectionProps) {
+function AppearanceRow({
+    title,
+    description,
+    control,
+    icon,
+}: {
+    title: string
+    description: string
+    control: React.ReactNode
+    icon: React.ReactNode
+}): JSX.Element {
     return (
-        <div className="premium-glass p-8 space-y-8">
-            <div className="flex items-center gap-4">
-                <div className="p-3 rounded-2xl bg-warning/10 text-warning border border-warning/20 shadow-lg shadow-warning/10">
-                    <Palette className="w-6 h-6 rotate-180" />
+        <div className="flex flex-col gap-4 rounded-2xl border border-border/15 p-4 transition-colors hover:bg-muted/10 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0 space-y-1">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    {icon}
+                    {title}
                 </div>
-                <div>
-                    <div className="text-base font-black text-foreground uppercase tracking-tight">
-                        {t('appearance.accessibility.title')}
-                    </div>
-                    <div className="text-xs font-medium text-muted-foreground/70">
-                        {t('appearance.accessibility.description')}
-                    </div>
+                <div className="max-w-[32rem] text-xs leading-relaxed text-muted-foreground/70">
+                    {description}
                 </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <ToggleSwitch
-                    checked={highContrast}
-                    onChange={onHighContrastChange}
-                    title={t('appearance.highContrast')}
-                    description={t('appearance.highContrastDesc')}
-                />
-                <ToggleSwitch
-                    checked={reduceMotion}
-                    onChange={onReduceMotionChange}
-                    title={t('appearance.reduceMotion')}
-                    description={t('appearance.reduceMotionDesc')}
-                />
-            </div>
+            <div className="w-full sm:w-auto">{control}</div>
         </div>
     );
 }
 
-const normalizeTheme = (rawTheme: string): string => {
-    if (rawTheme === 'dark' || rawTheme === 'system') {
-        return 'black';
-    }
-    if (rawTheme === 'light') {
-        return 'white';
-    }
-    return rawTheme;
-};
-
-export const AppearanceTab: React.FC<AppearanceTabProps> = ({ settings, updateGeneral, t }) => {
-    const currentTheme = normalizeTheme(settings?.general.theme ?? 'black');
+export const AppearanceTab: React.FC<AppearanceTabProps> = ({
+    settings,
+    updateGeneral,
+    t,
+}) => {
     const [themes, setThemes] = useState<ThemeManifest[]>([]);
+    const { settings: a11ySettings, updateSettings } = useA11ySettings();
+    const { terminalAppearance, setTerminalAppearance } = useTerminalAppearance({
+        storageKey: TERMINAL_APPEARANCE_STORAGE_KEY,
+        defaultAppearance: DEFAULT_TERMINAL_APPEARANCE,
+    });
 
-    // Load themes from runtime directory
     useEffect(() => {
-        const loadThemes = async () => {
+        let cancelled = false;
+
+        void (async () => {
             try {
                 const loadedThemes = await themeIpc.getAllThemes();
-                setThemes(loadedThemes);
-            } catch (error) {
-                appLogger.error('AppearanceTab', 'Failed to load themes', error as Error);
-            }
-        };
-        void loadThemes();
-
-        // Listen for theme updates
-        if (window.electron?.ipcRenderer) {
-            const removeListener = window.electron.ipcRenderer.on('theme:runtime:updated', () => {
-                void loadThemes();
-            });
-            return () => {
-                if (typeof removeListener === 'function') {
-                    removeListener();
+                if (!cancelled) {
+                    setThemes(loadedThemes);
                 }
-            };
-        }
-        return undefined;
+            } catch {
+                if (!cancelled) {
+                    setThemes([]);
+                }
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
-    const handleThemeChange = (themeId: string): void => {
-        updateGeneral({ theme: themeId });
-        document.documentElement.setAttribute('data-theme', themeId);
-    };
+    const themeOptions = useMemo(() => {
+        const availableThemes: Array<Pick<ThemeManifest, 'id' | 'displayName' | 'type'>> =
+            themes.length > 0
+                ? themes
+                : [
+                    { id: 'graphite', displayName: 'Graphite', type: 'dark' },
+                    { id: 'snow', displayName: 'Snow', type: 'light' },
+                ];
 
-    const handleHighContrastChange = (checked: boolean): void => {
-        updateGeneral({ highContrast: checked });
-        document.documentElement.classList.toggle('high-contrast', checked);
-    };
+        return availableThemes.map(theme => ({
+            value: theme.id,
+            label: theme.displayName,
+            type: theme.type,
+        }));
+    }, [themes]);
 
-    const handleReduceMotionChange = (checked: boolean): void => {
-        updateGeneral({ reduceMotion: checked });
-        document.documentElement.classList.toggle('reduce-motion', checked);
-    };
+    const typographyScaleOptions = [
+        { value: 'compact', label: t('settings.typographyScaleCompact') },
+        { value: 'balanced', label: t('settings.typographyScaleBalanced') },
+        { value: 'comfortable', label: t('settings.typographyScaleComfortable') },
+    ];
 
-    const handleOpenThemesFolder = (): void => {
-        void themeIpc.openThemesDirectory();
-    };
+    const terminalThemeOptions = TERMINAL_THEME_PRESETS.map(preset => ({
+        value: preset.id,
+        label: preset.name,
+    }));
 
-    const handleDeleteTheme = async (themeId: string, displayName: string): Promise<void> => {
-        const confirmMsg = t('appearance.confirmDeleteTheme') !== 'appearance.confirmDeleteTheme' 
-            ? t('appearance.confirmDeleteTheme') 
-            : `Are you sure you want to delete '${displayName}'?`;
-             
-        if (confirmDialog(confirmMsg)) {
-            await themeIpc.uninstallTheme(themeId);
-        }
-    };
+    const terminalCursorOptions = TERMINAL_CURSOR_STYLES.map(cursorStyle => ({
+        value: cursorStyle.id,
+        label: cursorStyle.name,
+    }));
+
+    const resolvedAppFont = resolveAppFontPreset();
+    const resolvedTerminalAppearance = useMemo(
+        () => resolveTerminalAppearance(getTerminalTheme(), terminalAppearance),
+        [terminalAppearance]
+    );
 
     return (
-        <div className="space-y-10 pb-20">
-            {/* 1. Global Application Theme */}
-            <section className="space-y-4">
-                <div className="flex items-center gap-3 px-1">
-                    <Palette className="w-5 h-5 text-primary" />
-                    <h2 className="text-sm font-black uppercase tracking-widest text-foreground/70">
-                        {t('settings.tabs.appearance')} - {t('settings.categories.general') || 'Uygulama Teması'}
-                    </h2>
+        <div className="space-y-8 pb-16 lg:space-y-10">
+            <div className="px-1">
+                <div className="mb-3 flex items-center gap-4">
+                    <div className="rounded-2xl bg-primary/10 p-3.5 text-primary">
+                        <Palette className="h-7 w-7" />
+                    </div>
+                    <div>
+                        <h3 className="text-2xl font-semibold leading-none text-foreground">
+                            {t('settings.appearanceTitle')}
+                        </h3>
+                    </div>
                 </div>
-                <ThemeSection
-                    currentTheme={currentTheme}
-                    onThemeChange={handleThemeChange}
-                    themes={themes}
-                    onOpenThemesFolder={handleOpenThemesFolder}
-                    onDeleteTheme={(themeId, displayName) => { void handleDeleteTheme(themeId, displayName); }}
-                    t={t}
-                />
-            </section>
+                <p className="max-w-2xl px-1 text-sm leading-relaxed text-muted-foreground/70">
+                    {t('settings.appearanceDescription')}
+                </p>
+            </div>
 
-            {/* 2. Terminal Specific Appearance */}
-            <section className="space-y-4">
-                <div className="flex items-center gap-3 px-1">
-                    <Code className="w-5 h-5 text-primary" />
-                    <h2 className="text-sm font-black uppercase tracking-widest text-foreground/70">
-                        Terminal Görünümü
-                    </h2>
-                </div>
-                <TerminalAppearanceSection t={t} />
-            </section>
+            <div className="grid grid-cols-1 gap-6 2xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+                <div className="space-y-6 rounded-3xl border border-border/20 bg-card p-5 sm:p-6 lg:p-8">
+                    <div className="flex items-center gap-3 px-1">
+                        <Monitor className="h-4 w-4 text-primary" />
+                        <h4 className="text-sm font-semibold text-foreground">{t('settings.appearanceTitle')}</h4>
+                    </div>
 
-            {/* 3. Accessibility */}
-            <section className="space-y-4">
-                <div className="flex items-center gap-3 px-1">
-                    <Shield className="w-5 h-5 text-primary" />
-                    <h2 className="text-sm font-black uppercase tracking-widest text-foreground/70">
-                        {t('appearance.accessibility.title')}
-                    </h2>
+                    <div className="space-y-6">
+                        <div className="space-y-2">
+                            <div className="px-1 text-xs font-medium text-muted-foreground">Theme</div>
+                            <Select
+                                value={settings?.general.theme ?? 'graphite'}
+                                onValueChange={value => {
+                                    void updateGeneral({ theme: value });
+                                }}
+                            >
+                                <SelectTrigger className="h-12 rounded-2xl border-border/40 bg-muted/20 px-6 text-sm focus:ring-primary/20">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-2xl border-border/40 bg-background/95">
+                                    {themeOptions.map(opt => (
+                                        <SelectItem key={opt.value} value={opt.value} className="text-sm">
+                                            <div className="flex items-center gap-3">
+                                                <span>{opt.label}</span>
+                                                <Badge variant="outline" className="h-5 border-border/20 px-2 text-[10px] opacity-60">
+                                                    {opt.type}
+                                                </Badge>
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
+                            <div className="space-y-2">
+                                <div className="px-1 text-xs font-medium text-muted-foreground">Font size</div>
+                                <Input
+                                    type="number"
+                                    min={12}
+                                    max={18}
+                                    value={settings?.general.fontSize ?? 14}
+                                    onChange={event => {
+                                        const parsed = Number.parseInt(event.target.value, 10);
+                                        const nextValue = Number.isNaN(parsed) ? 14 : clamp(parsed, 12, 18);
+                                        void updateGeneral({ fontSize: nextValue });
+                                    }}
+                                    className="h-12 rounded-2xl border-border/40 bg-muted/20 px-6 text-sm focus-visible:ring-primary/20"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <div className="px-1 text-xs font-medium text-muted-foreground">Density</div>
+                                <Select
+                                    value={settings?.general.typographyScale ?? 'balanced'}
+                                    onValueChange={value => {
+                                        void updateGeneral({
+                                            typographyScale: value as 'compact' | 'balanced' | 'comfortable',
+                                        });
+                                    }}
+                                >
+                                    <SelectTrigger className="h-12 rounded-2xl border-border/40 bg-muted/20 px-6 text-sm focus:ring-primary/20">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-border/40 bg-background/95">
+                                        {typographyScaleOptions.map(opt => (
+                                            <SelectItem key={opt.value} value={opt.value} className="text-sm">
+                                                {opt.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <AccessibilitySection
-                    highContrast={Boolean(settings?.general.highContrast)}
-                    reduceMotion={Boolean(settings?.general.reduceMotion)}
-                    onHighContrastChange={handleHighContrastChange}
-                    onReduceMotionChange={handleReduceMotionChange}
-                    t={t}
-                />
-            </section>
+
+                <div className="flex flex-col justify-between rounded-3xl border border-border/20 bg-card p-5 sm:p-6 lg:p-8">
+                    <div className="mb-6 flex items-center gap-3 px-1">
+                        <Type className="h-4 w-4 text-primary" />
+                        <h4 className="text-sm font-semibold text-foreground">Preview</h4>
+                    </div>
+
+                    <div className="flex-1 space-y-6">
+                        <div className="rounded-[2rem] border border-border/15 bg-muted/10 p-6 sm:p-8">
+                            <h2
+                                className="mb-4 text-3xl font-semibold leading-tight text-foreground sm:text-4xl"
+                                style={{ fontFamily: resolvedAppFont.display }}
+                            >
+                                {t('settings.previewHeading')}
+                            </h2>
+                            <p
+                                className="text-sm leading-8 text-muted-foreground/80"
+                                style={{ fontFamily: resolvedAppFont.sans }}
+                            >
+                                {t('settings.previewBody')}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 flex flex-col gap-3 border-t border-border/10 px-1 pt-6 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                            <div className="text-xs font-medium text-primary">
+                                {themeOptions.find(option => option.value === (settings?.general.theme ?? 'graphite'))?.label}
+                            </div>
+                            <div className="h-1 w-1 rounded-full bg-border/40" />
+                            <div className="text-xs text-muted-foreground/60">{resolvedAppFont.label}</div>
+                        </div>
+                        <Badge variant="outline" className="h-6 border-border/40 bg-muted/20 px-3 text-[10px] text-muted-foreground/60">
+                            {settings?.general.fontSize}px
+                        </Badge>
+                    </div>
+                </div>
+            </div>
+
+            <div className="space-y-8 rounded-3xl border border-border/20 bg-card p-5 sm:p-6 lg:p-8">
+                <div className="flex items-center gap-4">
+                    <div className="rounded-2xl bg-primary/10 p-3 text-primary">
+                        <Terminal className="h-6 w-6" />
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-semibold text-foreground">
+                            {t('settings.terminalAppearanceTitle')}
+                        </h3>
+                        <p className="mt-1 text-sm text-muted-foreground/70">
+                            {t('settings.appearanceDescription')}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] xl:gap-10">
+                    <div className="space-y-8">
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <div className="px-1 text-xs font-medium text-muted-foreground">Terminal theme</div>
+                                <Select
+                                    value={terminalAppearance.themePresetId}
+                                    onValueChange={value => {
+                                        setTerminalAppearance(previousValue => ({
+                                            ...previousValue,
+                                            fontPresetId: DEFAULT_TERMINAL_APPEARANCE.fontPresetId,
+                                            themePresetId: value,
+                                        }));
+                                    }}
+                                >
+                                    <SelectTrigger className="h-12 rounded-2xl border-border/40 bg-muted/20 px-6 text-sm focus:ring-primary/20">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-border/40 bg-background/95">
+                                        {terminalThemeOptions.map(opt => (
+                                            <SelectItem key={opt.value} value={opt.value} className="text-sm">
+                                                {opt.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="px-1 text-xs font-medium text-muted-foreground">Cursor style</div>
+                                <Select
+                                    value={terminalAppearance.cursorStyle}
+                                    onValueChange={value => {
+                                        setTerminalAppearance(previousValue => ({
+                                            ...previousValue,
+                                            fontPresetId: DEFAULT_TERMINAL_APPEARANCE.fontPresetId,
+                                            cursorStyle: value as 'block' | 'underline' | 'bar',
+                                        }));
+                                    }}
+                                >
+                                    <SelectTrigger className="h-12 rounded-2xl border-border/40 bg-muted/20 px-6 text-sm focus:ring-primary/20">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-border/40 bg-background/95">
+                                        {terminalCursorOptions.map(opt => (
+                                            <SelectItem key={opt.value} value={opt.value} className="text-sm">
+                                                {opt.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <div className="px-1 text-xs font-medium text-muted-foreground">Terminal size</div>
+                                    <Input
+                                        type="number"
+                                        min={8}
+                                        max={32}
+                                        value={terminalAppearance.fontSize}
+                                        onChange={event => {
+                                            const parsed = Number(event.target.value);
+                                            setTerminalAppearance(previousValue => ({
+                                                ...previousValue,
+                                                fontPresetId: DEFAULT_TERMINAL_APPEARANCE.fontPresetId,
+                                                fontSize: clamp(Number.isFinite(parsed) ? parsed : 13, 8, 32),
+                                            }));
+                                        }}
+                                        className="h-12 rounded-2xl border-border/40 bg-muted/20 px-5 text-sm focus-visible:ring-primary/20"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="px-1 text-xs font-medium text-muted-foreground">Line height</div>
+                                    <Input
+                                        type="number"
+                                        min={1}
+                                        max={2}
+                                        step={0.1}
+                                        value={terminalAppearance.lineHeight}
+                                        onChange={event => {
+                                            const parsed = Number(event.target.value);
+                                            setTerminalAppearance(previousValue => ({
+                                                ...previousValue,
+                                                fontPresetId: DEFAULT_TERMINAL_APPEARANCE.fontPresetId,
+                                                lineHeight: clamp(Number.isFinite(parsed) ? parsed : 1.2, 1, 2),
+                                            }));
+                                        }}
+                                        className="h-12 rounded-2xl border-border/40 bg-muted/20 px-5 text-sm focus-visible:ring-primary/20"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4 border-t border-border/10 pt-4">
+                            <AppearanceRow
+                                title={t('terminal.fontLigatures')}
+                                description={t('settings.previewBody')}
+                                control={(
+                                    <Switch
+                                        checked={terminalAppearance.ligatures}
+                                        onCheckedChange={checked => {
+                                            setTerminalAppearance(previousValue => ({
+                                                ...previousValue,
+                                                fontPresetId: DEFAULT_TERMINAL_APPEARANCE.fontPresetId,
+                                                ligatures: checked,
+                                            }));
+                                        }}
+                                    />
+                                )}
+                                icon={<BaggageClaim className="h-3.5 w-3.5 text-primary opacity-60" />}
+                            />
+                            <AppearanceRow
+                                title={t('terminal.cursorBlink')}
+                                description={t('settings.terminalAppearanceTitle')}
+                                control={(
+                                    <Switch
+                                        checked={terminalAppearance.cursorBlink}
+                                        onCheckedChange={checked => {
+                                            setTerminalAppearance(previousValue => ({
+                                                ...previousValue,
+                                                fontPresetId: DEFAULT_TERMINAL_APPEARANCE.fontPresetId,
+                                                cursorBlink: checked,
+                                            }));
+                                        }}
+                                    />
+                                )}
+                                icon={<RefreshCw className="h-3.5 w-3.5 text-primary opacity-60" />}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="min-w-0">
+                        <TerminalPreview
+                            cursorStyle={terminalAppearance.cursorStyle}
+                            fontFamily={resolvedTerminalAppearance.fontFamily}
+                            fontSize={resolvedTerminalAppearance.fontSize}
+                            lineHeight={resolvedTerminalAppearance.lineHeight}
+                            theme={resolvedTerminalAppearance.theme}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div className="space-y-8 rounded-3xl border border-border/20 bg-card p-5 sm:p-6 lg:p-8">
+                <div className="flex items-center gap-4 px-1">
+                    <div className="rounded-2xl bg-primary/10 p-3.5 text-primary">
+                        <Accessibility className="h-6 w-6" />
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-semibold text-foreground">
+                            {t('settings.accessibility.title')}
+                        </h3>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:gap-x-10 xl:gap-y-8">
+                    <div className="space-y-8">
+                        <AppearanceRow
+                            title={t('settings.accessibility.highContrast')}
+                            description={t('settings.accessibility.highContrastDesc')}
+                            control={(
+                                <Switch
+                                    checked={a11ySettings.highContrast}
+                                    onCheckedChange={checked => {
+                                        updateSettings({ highContrast: checked });
+                                    }}
+                                />
+                            )}
+                            icon={<BaggageClaim className="h-3.5 w-3.5 text-primary opacity-60" />}
+                        />
+                        <AppearanceRow
+                            title={t('settings.accessibility.reducedMotion')}
+                            description={t('settings.accessibility.reducedMotionDesc')}
+                            control={(
+                                <Switch
+                                    checked={a11ySettings.reducedMotion}
+                                    onCheckedChange={checked => {
+                                        updateSettings({ reducedMotion: checked });
+                                    }}
+                                />
+                            )}
+                            icon={<RefreshCw className="h-3.5 w-3.5 text-primary opacity-60" />}
+                        />
+                    </div>
+
+                    <div className="space-y-8">
+                        <AppearanceRow
+                            title={t('settings.accessibility.enhancedFocus')}
+                            description={t('settings.accessibility.enhancedFocusDesc')}
+                            control={(
+                                <Switch
+                                    checked={a11ySettings.enhancedFocusIndicators}
+                                    onCheckedChange={checked => {
+                                        updateSettings({ enhancedFocusIndicators: checked });
+                                    }}
+                                />
+                            )}
+                            icon={<MousePointer2 className="h-3.5 w-3.5 text-primary opacity-60" />}
+                        />
+                        <AppearanceRow
+                            title={t('settings.accessibility.screenReader')}
+                            description={t('settings.accessibility.screenReaderDesc')}
+                            control={(
+                                <Switch
+                                    checked={a11ySettings.screenReaderAnnouncements}
+                                    onCheckedChange={checked => {
+                                        updateSettings({ screenReaderAnnouncements: checked });
+                                    }}
+                                />
+                            )}
+                            icon={<RefreshCw className="h-3.5 w-3.5 text-primary opacity-60" />}
+                        />
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
-

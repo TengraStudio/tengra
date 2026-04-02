@@ -44,7 +44,7 @@ function TelemetryCard({
     return (
         <div className="rounded-2xl border border-border/50 bg-muted/30 p-3">
             <div className="flex items-center justify-between gap-3">
-                <div className="text-xs font-semibold uppercase tracking-wide text-info">
+                <div className="text-xs font-semibold text-info">
                     {telemetry.provider} · {telemetry.model}
                 </div>
                 <div className="text-xxs text-muted-foreground">
@@ -77,7 +77,7 @@ function PlanCard({
                     <div className="text-sm font-semibold text-foreground">
                         {index + 1}. {step.text}
                     </div>
-                    <div className="rounded-full border border-border/60 bg-muted/30 px-2 py-1 text-xxs uppercase tracking-wide text-muted-foreground">
+                    <div className="rounded-full border border-border/60 bg-muted/30 px-2 py-1 text-xxs text-muted-foreground">
                         {step.status}
                     </div>
                 </div>
@@ -90,7 +90,7 @@ function TimelineCard({ event }: { event: AgentEventRecord }): JSX.Element {
     return (
         <div className="rounded-2xl border border-border/50 bg-muted/30 p-3">
             <div className="flex items-center justify-between gap-3">
-                <div className="text-xs font-semibold uppercase tracking-wide text-info">
+                <div className="text-xs font-semibold text-info">
                     {event.type}
                 </div>
                 <div className="text-xxs text-muted-foreground">

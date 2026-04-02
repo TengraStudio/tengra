@@ -4,6 +4,8 @@ import React from 'react';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
+import './scroll-to-bottom-button.css';
+
 interface ScrollToBottomButtonProps {
     onClick: () => void
     visible: boolean
@@ -41,21 +43,13 @@ export const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = React.m
     return (
         <button
             onClick={onClick}
-            className={cn(
-                'fixed z-40 p-3 rounded-full shadow-lg',
-                'bg-primary text-primary-foreground',
-                'transition-all duration-300 ease-out',
-                'hover:scale-110 hover:shadow-xl',
-                'animate-bounce-subtle ripple',
-                'focus-ring',
-                className
-            )}
+            className={cn('tengra-scroll-to-bottom', className)}
             aria-label={label}
         >
-            <div className="relative">
-                <ChevronDown className="w-5 h-5" />
+            <div className="tengra-scroll-to-bottom__content">
+                <ChevronDown className="tengra-scroll-to-bottom__icon" />
                 {newMessageCount && newMessageCount > 0 && (
-                    <span className="absolute -top-3 -right-3 min-w-5 h-5 px-1.5 flex items-center justify-center text-xs font-bold bg-destructive text-foreground rounded-full animate-bounce-in">
+                    <span className="tengra-scroll-to-bottom__badge">
                         {newMessageCount > 99 ? '99+' : newMessageCount}
                     </span>
                 )}

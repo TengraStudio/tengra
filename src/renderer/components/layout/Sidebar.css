@@ -30,13 +30,13 @@
 }
 
 .sidebar-brand-name {
-    @apply text-xl font-black tracking-tighter text-foreground uppercase;
+    @apply text-xl font-bold  text-foreground ;
 }
 
 /* === Section Headers === */
 .sidebar-section-header {
     @apply flex items-center justify-between;
-    @apply text-xxxs font-semibold uppercase tracking-wider;
+    @apply text-xxxs font-semibold  ;
     @apply text-muted-foreground/60 hover:text-muted-foreground;
     @apply hover:bg-accent/50 active:bg-accent/70;
     @apply transition-colors duration-150;
@@ -222,7 +222,7 @@
 }
 
 .sidebar-divider__label {
-    @apply text-xxxs font-bold uppercase tracking-widest;
+    @apply text-xxxs font-bold  ;
     @apply text-muted-foreground/40;
 }
 
@@ -444,7 +444,7 @@
 }
 
 .workspace-section-title {
-    @apply text-xxxs font-bold text-muted-foreground/40 uppercase tracking-widest;
+    @apply text-xxxs font-bold text-muted-foreground/40  ;
     @apply px-2 mb-1;
 }
 

@@ -1,3 +1,5 @@
+import path from 'path';
+
 import { appLogger } from '@main/logging/logger';
 import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import { Chat as DbChat, DatabaseService, Folder as DbFolder, Prompt as DbPrompt, SearchChatsOptions as DbSearchOptions } from '@main/services/data/database.service';
@@ -109,7 +111,8 @@ export function registerDbIpc(
     getMainWindow: () => BrowserWindow | null,
     databaseService: DatabaseService,
     embeddingService: EmbeddingService,
-    auditLogService?: AuditLogService
+    auditLogService?: AuditLogService,
+    allowedFileRoots?: Set<string>
 ) {
     const validateSender: SenderValidator = (event) => {
         const win = getMainWindow();
@@ -123,7 +126,7 @@ export function registerDbIpc(
 
     registerBatchHandlers(databaseService, validateSender);
     registerChatHandlers(databaseService, validateSender, auditLogService);
-    registerWorkspaceHandlers(databaseService, validateSender);
+    registerWorkspaceHandlers(databaseService, validateSender, allowedFileRoots);
     registerFolderHandlers(databaseService, validateSender);
     registerUsageHandlers(databaseService, validateSender);
     registerPromptHandlers(databaseService, validateSender);
@@ -300,8 +303,32 @@ function registerChatHandlers(databaseService: DatabaseService, validateSender: 
 /**
  * Registers IPC handlers for workspace-related operations.
  */
-function registerWorkspaceHandlers(databaseService: DatabaseService, validateSender: (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => void) {
+function registerWorkspaceHandlers(
+    databaseService: DatabaseService,
+    validateSender: (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => void,
+    allowedFileRoots?: Set<string>
+) {
     const normalizePathKey = (value: string): string => value.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+    const addWorkspaceAllowedRoots = (workspace: Workspace): void => {
+        if (!allowedFileRoots) {
+            return;
+        }
+
+        if (typeof workspace.path === 'string' && workspace.path.trim().length > 0) {
+            allowedFileRoots.add(path.resolve(workspace.path));
+        }
+
+        if (!Array.isArray(workspace.mounts)) {
+            return;
+        }
+
+        for (const mount of workspace.mounts) {
+            if (mount.type !== 'local' || typeof mount.rootPath !== 'string' || mount.rootPath.trim().length === 0) {
+                continue;
+            }
+            allowedFileRoots.add(path.resolve(mount.rootPath));
+        }
+    };
 
     const extractMountDescriptors = (workspace: Workspace): Array<{ key: string; type: 'local' | 'ssh' }> => {
         if (Array.isArray(workspace.mounts) && workspace.mounts.length > 0) {
@@ -356,6 +383,7 @@ function registerWorkspaceHandlers(databaseService: DatabaseService, validateSen
             workspace.mounts ? JSON.stringify(workspace.mounts) : undefined,
             workspace.councilConfig ? JSON.stringify(workspace.councilConfig) : undefined
         ));
+        addWorkspaceAllowedRoots(createdWorkspace);
         event.sender.send(DB_CHANNELS.WORKSPACE_UPDATED_EVENT, { id: createdWorkspace.id });
         return createdWorkspace;
     }, {
@@ -365,7 +393,11 @@ function registerWorkspaceHandlers(databaseService: DatabaseService, validateSen
 
     ipcMain.handle('db:getWorkspaces', createValidatedIpcHandler('db:getWorkspaces', async (event) => {
         validateSender(event);
-        return await databaseService.getWorkspaces();
+        const workspaces = await databaseService.getWorkspaces();
+        for (const workspace of workspaces) {
+            addWorkspaceAllowedRoots(workspace);
+        }
+        return workspaces;
     }, {
         defaultValue: [],
         argsSchema: z.tuple([]),
@@ -374,7 +406,11 @@ function registerWorkspaceHandlers(databaseService: DatabaseService, validateSen
 
     ipcMain.handle('db:getWorkspaceById', createValidatedIpcHandler('db:getWorkspaceById', async (event, id: string) => {
         validateSender(event);
-        return await databaseService.getWorkspace(id);
+        const workspace = await databaseService.getWorkspace(id);
+        if (workspace) {
+            addWorkspaceAllowedRoots(workspace);
+        }
+        return workspace;
     }, {
         defaultValue: null,
         argsSchema: z.tuple([IdSchema]),
@@ -384,6 +420,9 @@ function registerWorkspaceHandlers(databaseService: DatabaseService, validateSen
     ipcMain.handle('db:updateWorkspace', createValidatedIpcHandler('db:updateWorkspace', async (event, id: string, updates: Partial<Workspace>) => {
         validateSender(event);
         const updatedWorkspace = await withRateLimit('db', () => databaseService.workspaces.updateWorkspace(id, updates as JsonObject));
+        if (updatedWorkspace) {
+            addWorkspaceAllowedRoots(updatedWorkspace);
+        }
         event.sender.send(DB_CHANNELS.WORKSPACE_UPDATED_EVENT, { id });
         return updatedWorkspace;
     }, {

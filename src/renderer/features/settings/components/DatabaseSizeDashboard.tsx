@@ -42,11 +42,11 @@ const StatCard: React.FC<StatCardProps> = ({ icon, label, value, ratio, color })
             <div className={`p-1.5 rounded-lg bg-muted/10 border border-border/40 group-hover:border-${color}/20 transition-colors`}>
                 {icon}
             </div>
-            <span className="tw-text-10 font-black uppercase tracking-widest text-muted-foreground">
+            <span className="tw-text-10 font-bold text-muted-foreground">
                 {label}
             </span>
         </div>
-        <div className="text-xl font-black text-foreground leading-none tracking-tighter tabular-nums">
+        <div className="text-xl font-bold text-foreground leading-none tabular-nums">
             {value}
         </div>
         {ratio !== undefined && (
@@ -105,7 +105,7 @@ export const DatabaseSizeDashboard: React.FC = () => {
     return (
         <div className="space-y-4">
             <div>
-                <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+                <h3 className="text-xs font-bold text-muted-foreground">
                     {t('settings.databaseSizeDashboard.title')}
                 </h3>
                 <p className="tw-text-10 text-muted-foreground/60 mt-1">

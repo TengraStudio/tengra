@@ -1,0 +1,174 @@
+/* SelectDropdown Component CSS */
+:root {
+    /* Trigger button */
+    --select-dropdown-trigger-bg: hsl(var(--muted) / 20%);
+    --select-dropdown-trigger-border-color: hsl(var(--border) / 50%);
+    --select-dropdown-trigger-border-radius: 0.75rem;
+    --select-dropdown-trigger-padding-x: 1rem;
+    --select-dropdown-trigger-padding-y: 0.625rem;
+    --select-dropdown-trigger-font-size: 0.875rem;
+    --select-dropdown-trigger-font-weight: 500;
+    --select-dropdown-trigger-color: hsl(var(--primary) / 90%);
+    --select-dropdown-trigger-shadow: 0 1px 2px 0 rgb(0 0 0 / 5%);
+    
+    /* Trigger hover/active */
+    --select-dropdown-trigger-hover-bg: hsl(var(--muted) / 30%);
+    --select-dropdown-trigger-hover-border-color: hsl(var(--border));
+    --select-dropdown-trigger-focus-ring-color: hsl(var(--primary) / 50%);
+    --select-dropdown-trigger-open-bg: hsl(var(--primary) / 5%);
+    --select-dropdown-trigger-open-border-color: hsl(var(--primary) / 40%);
+    
+    /* Chevron */
+    --select-dropdown-chevron-size: 1rem;
+    --select-dropdown-chevron-color: hsl(var(--muted-foreground));
+    --select-dropdown-chevron-hover-color: hsl(var(--primary) / 70%);
+    
+    /* Menu */
+    --select-dropdown-menu-bg: hsl(var(--background) / 95%);
+    --select-dropdown-menu-backdrop-blur: 16px;
+    --select-dropdown-menu-border-color: hsl(var(--border) / 40%);
+    --select-dropdown-menu-border-radius: 0.75rem;
+    --select-dropdown-menu-shadow: 0 25px 50px -12px rgb(0 0 0 / 25%);
+    --select-dropdown-menu-max-height: 18rem;
+    --select-dropdown-menu-padding-y: 0.25rem;
+    
+    /* Option */
+    --select-dropdown-option-padding-x: 1rem;
+    --select-dropdown-option-padding-y: 0.5rem;
+    --select-dropdown-option-font-size: 0.875rem;
+    --select-dropdown-option-font-weight: 500;
+    --select-dropdown-option-color: hsl(var(--muted-foreground));
+    --select-dropdown-option-hover-bg: hsl(var(--muted) / 60%);
+    --select-dropdown-option-hover-color: hsl(var(--foreground));
+    
+    /* Selected option */
+    --select-dropdown-option-selected-bg: hsl(var(--primary) / 15%);
+    --select-dropdown-option-selected-color: hsl(var(--primary));
+    
+    /* Check icon */
+    --select-dropdown-check-size: 0.875rem;
+    
+    /* Animation */
+    --select-dropdown-animation-duration: 150ms;
+}
+
+/* Container */
+.tengra-select-dropdown {
+    position: relative;
+    width: 100%;
+}
+
+/* Trigger button */
+.tengra-select-dropdown__trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--select-dropdown-trigger-bg);
+    border: 1px solid var(--select-dropdown-trigger-border-color);
+    border-radius: var(--select-dropdown-trigger-border-radius);
+    padding: var(--select-dropdown-trigger-padding-y) var(--select-dropdown-trigger-padding-x);
+    font-size: var(--select-dropdown-trigger-font-size);
+    font-weight: var(--select-dropdown-trigger-font-weight);
+    color: var(--select-dropdown-trigger-color);
+    box-shadow: var(--select-dropdown-trigger-shadow);
+    cursor: pointer;
+    transition: all var(--select-dropdown-animation-duration) ease;
+}
+
+.tengra-select-dropdown__trigger:hover {
+    background: var(--select-dropdown-trigger-hover-bg);
+    border-color: var(--select-dropdown-trigger-hover-border-color);
+}
+
+.tengra-select-dropdown__trigger:focus {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--select-dropdown-trigger-focus-ring-color);
+}
+
+.tengra-select-dropdown__trigger--open {
+    background: var(--select-dropdown-trigger-open-bg);
+    border-color: var(--select-dropdown-trigger-open-border-color);
+}
+
+/* Trigger label */
+.tengra-select-dropdown__label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Chevron */
+.tengra-select-dropdown__chevron {
+    width: var(--select-dropdown-chevron-size);
+    height: var(--select-dropdown-chevron-size);
+    color: var(--select-dropdown-chevron-color);
+    margin-left: 0.5rem;
+    flex-shrink: 0;
+    transition: transform var(--select-dropdown-animation-duration) ease,
+                color var(--select-dropdown-animation-duration) ease;
+}
+
+.tengra-select-dropdown__trigger:hover .tengra-select-dropdown__chevron {
+    color: var(--select-dropdown-chevron-hover-color);
+}
+
+.tengra-select-dropdown__trigger--open .tengra-select-dropdown__chevron {
+    transform: rotate(180deg);
+}
+
+/* Menu */
+.tengra-select-dropdown__menu {
+    background: var(--select-dropdown-menu-bg);
+    backdrop-filter: blur(var(--select-dropdown-menu-backdrop-blur));
+    border: 1px solid var(--select-dropdown-menu-border-color);
+    border-radius: var(--select-dropdown-menu-border-radius);
+    box-shadow: var(--select-dropdown-menu-shadow);
+    overflow: hidden;
+}
+
+.tengra-select-dropdown__menu-inner {
+    max-height: var(--select-dropdown-menu-max-height);
+    overflow-y: auto;
+    padding: var(--select-dropdown-menu-padding-y) 0;
+}
+
+/* Option */
+.tengra-select-dropdown__option {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--select-dropdown-option-padding-y) var(--select-dropdown-option-padding-x);
+    font-size: var(--select-dropdown-option-font-size);
+    font-weight: var(--select-dropdown-option-font-weight);
+    color: var(--select-dropdown-option-color);
+    background: transparent;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    transition: all var(--select-dropdown-animation-duration) ease;
+}
+
+.tengra-select-dropdown__option:hover {
+    background: var(--select-dropdown-option-hover-bg);
+    color: var(--select-dropdown-option-hover-color);
+}
+
+.tengra-select-dropdown__option--selected {
+    background: var(--select-dropdown-option-selected-bg);
+    color: var(--select-dropdown-option-selected-color);
+}
+
+/* Option label */
+.tengra-select-dropdown__option-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Check icon */
+.tengra-select-dropdown__check {
+    width: var(--select-dropdown-check-size);
+    height: var(--select-dropdown-check-size);
+}

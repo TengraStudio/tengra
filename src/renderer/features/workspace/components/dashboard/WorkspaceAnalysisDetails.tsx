@@ -16,7 +16,7 @@ export function WorkspaceTechStack({ frameworks, t }: WorkspaceTechStackProps) {
                         {fw}
                     </span>
                 ))}
-                {frameworks.length === 0 && <span className="text-xs text-muted-foreground italic">{t('workspaceDashboard.noFrameworks')}</span>}
+                {frameworks.length === 0 && <span className="text-xs text-muted-foreground">{t('workspaceDashboard.noFrameworks')}</span>}
             </div>
         </div>
     );
@@ -65,7 +65,7 @@ export function WorkspaceLanguageDistribution({ languages, t }: WorkspaceLanguag
                                 : 0;
                         return (
                             <div key={lang} className="space-y-1">
-                                <div className="flex justify-between text-xxs uppercase font-bold tracking-tight">
+                                <div className="flex justify-between text-xxs font-bold">
                                     <span className="text-foreground/80">{lang}</span>
                                     <span className="text-muted-foreground">{formatLanguagePercentage(count as number, totalLanguageWeight)}</span>
                                 </div>

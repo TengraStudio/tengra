@@ -85,7 +85,7 @@ const TerminalHeader: React.FC<TerminalHeaderProps> = ({
                         e.stopPropagation();
                         onToggleMarkdown();
                     }}
-                    className="text-xs bg-background/50 text-muted-foreground hover:bg-background/80 px-2 py-0.5 rounded border border-border transition-colors uppercase tracking-wider font-bold mr-2"
+                    className="text-xs bg-background/50 text-muted-foreground hover:bg-background/80 px-2 py-0.5 rounded border border-border transition-colors font-bold mr-2"
                     title={t('toolDisplay.markdownView')}
                 >
                     {showMarkdown ? t('toolDisplay.text') : t('toolDisplay.markdown')}
@@ -94,7 +94,7 @@ const TerminalHeader: React.FC<TerminalHeaderProps> = ({
             {isExecuting && (
                 <button
                     onClick={handleKill}
-                    className="text-sm bg-destructive/10 text-destructive hover:bg-destructive/20 px-2 py-0.5 rounded border border-destructive/20 transition-colors uppercase tracking-wider font-bold"
+                    className="text-sm bg-destructive/10 text-destructive hover:bg-destructive/20 px-2 py-0.5 rounded border border-destructive/20 transition-colors font-bold"
                     title={t('tools.forceStop')}
                 >
                     {t('tools.stop')}
@@ -138,7 +138,7 @@ const OutputContent: React.FC<OutputContentProps> = ({
     return (
         <>
             {stdout && (
-                <div className="text-muted-foreground whitespace-pre-wrap leading-6 tracking-wide">
+                <div className="text-muted-foreground whitespace-pre-wrap leading-6">
                     {stdout}
                 </div>
             )}
@@ -155,7 +155,7 @@ const OutputContent: React.FC<OutputContentProps> = ({
                 </div>
             )}
             {!hasOutput && !isExecuting && (
-                <div className="text-muted-foreground italic text-xs mt-1 opacity-50">
+                <div className="text-muted-foreground text-xs mt-1 opacity-50">
                     {t('tools.noOutput')}
                 </div>
             )}
@@ -197,7 +197,7 @@ const TerminalButton: React.FC<TerminalButtonProps> = ({
             <div className="flex items-center gap-2 min-w-0">
                 <span
                     className={cn(
-                        'text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded border',
+                        'text-xs font-bold   px-2 py-0.5 rounded border',
                         STATUS_CLASSES[statusType]
                     )}
                 >
@@ -256,7 +256,7 @@ const TerminalBody: React.FC<TerminalBodyProps> = ({
         </div>
         <div className="pl-0 mt-2">
             {isExecuting && (
-                <div className="flex items-center gap-2 text-muted-foreground italic mb-2">
+                <div className="flex items-center gap-2 text-muted-foreground mb-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-muted animate-pulse" />
                     {t('tools.executingCommand')}
                 </div>

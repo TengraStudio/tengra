@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerThemeIpc } from '@main/ipc/theme';
 import { themeStore } from '@main/utils/theme-store.util';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock electron
 const mockIpcMainHandlers = new Map<string, (...args: any[]) => Promise<any>>();

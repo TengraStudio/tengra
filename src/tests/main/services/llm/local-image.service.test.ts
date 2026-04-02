@@ -8,8 +8,7 @@ import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { en } from '../../../../renderer/i18n/en';
-import { tr } from '../../../../renderer/i18n/tr';
+import { en } from '../../../../renderer/i18n/locales';
 
 vi.mock('axios');
 vi.mock('fs', async (importOriginal) => {
@@ -187,7 +186,6 @@ describe('LocalImageService Integration', () => {
             });
             expect(metrics.performanceBudget.statusCheckMs).toBe(300);
             expect(en.serviceHealth.localImage.empty).toBe(metrics.messageKey);
-            expect(tr.serviceHealth.localImage.empty).toBeTruthy();
         });
 
         it('should report ready and failure ui states from status checks', async () => {

@@ -1,17 +1,54 @@
 export { Button } from '@renderer/components/ui/button';
 export { Card } from '@renderer/components/ui/card';
+export {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogOverlay,
+    DialogPortal,
+    DialogTitle,
+    DialogTrigger,
+} from '@renderer/components/ui/dialog';
+export {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuPortal,
+    DropdownMenuRadioButtonGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuSeparator,
+    DropdownMenuShortcut,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuTrigger,
+} from '@renderer/components/ui/dropdown-menu';
 export { Input, inputVariants } from '@renderer/components/ui/input';
 export { Label } from '@renderer/components/ui/label';
 export { LoadingState } from '@renderer/components/ui/LoadingState';
 export { Modal } from '@renderer/components/ui/modal';
+export { Popover, PopoverContent, PopoverTrigger } from '@renderer/components/ui/popover';
 export {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
+    SelectLabel,
+    SelectScrollDownButton,
+    SelectScrollUpButton,
+    SelectSeparator,
     SelectTrigger,
     SelectValue,
 } from '@renderer/components/ui/select';
 export { Skeleton, SkeletonCard, SkeletonText } from '@renderer/components/ui/skeleton';
+export { Slider } from '@renderer/components/ui/slider';
+export { Switch } from '@renderer/components/ui/switch';
 export { Textarea } from '@renderer/components/ui/textarea';
 export { Tooltip } from '@renderer/components/ui/tooltip';
 

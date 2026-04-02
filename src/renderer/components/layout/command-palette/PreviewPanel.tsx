@@ -4,6 +4,8 @@ import React from 'react';
 
 import { useTranslation } from '@/i18n';
 
+import './preview-panel.css';
+
 interface PreviewPanelProps {
     selectedItem?: CommandItem | undefined;
 }
@@ -12,27 +14,27 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ selectedItem }) => {
     const { t } = useTranslation();
 
     return (
-        <div className="w-72 bg-muted/5 p-6 flex flex-col gap-4 overflow-y-auto hidden md:flex">
+        <div className="tengra-preview-panel">
             {selectedItem?.preview ? (
                 <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-4 shadow-inner">
+                    <div className="tengra-preview-panel__icon-wrap shadow-inner">
                         {selectedItem.icon}
                     </div>
-                    <h3 className="text-lg font-bold text-foreground mb-2 line-clamp-2">
+                    <h3 className="tengra-preview-panel__title line-clamp-2">
                         {selectedItem.preview.title}
                     </h3>
-                    <p className="text-xs text-muted-foreground/70 leading-relaxed mb-6">
+                    <p className="tengra-preview-panel__content">
                         {selectedItem.preview.content}
                     </p>
 
                     {selectedItem.preview.metadata && (
-                        <div className="space-y-3">
+                        <div className="tengra-preview-panel__meta">
                             {Object.entries(selectedItem.preview.metadata).map(([key, value]) => (
-                                <div key={key} className="flex flex-col gap-1">
-                                    <span className="text-xxs font-bold text-muted-foreground/30 uppercase tracking-widest">
+                                <div key={key} className="tengra-preview-panel__meta-item">
+                                    <span className="tengra-preview-panel__meta-key">
                                         {key}
                                     </span>
-                                    <span className="text-xs text-foreground font-medium">
+                                    <span className="tengra-preview-panel__meta-value">
                                         {value}
                                     </span>
                                 </div>
@@ -41,9 +43,9 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ selectedItem }) => {
                     )}
                 </div>
             ) : (
-                <div className="h-full flex flex-col items-center justify-center text-center opacity-20">
+                <div className="tengra-preview-panel__empty">
                     <Command className="w-12 h-12 mb-4" />
-                    <p className="text-xs font-medium uppercase tracking-widest">
+                    <p className="text-xs font-medium">
                         {t('commandPalette.previewEmpty')}
                     </p>
                 </div>

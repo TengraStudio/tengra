@@ -1,64 +1,46 @@
-import { cva, type VariantProps } from 'class-variance-authority';
-import * as React from 'react';
-
-import { cn } from '@/lib/utils';
+import { cn } from "@renderer/lib/utils";
+import { cva, type VariantProps } from "class-variance-authority";
+import * as React from "react";
 
 const inputVariants = cva(
-    'flex w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-    {
-        variants: {
-            variant: {
-                default: 'border-input',
-                error: 'border-destructive focus-visible:ring-destructive',
-                success: 'border-success focus-visible:ring-success',
-            },
-            size: {
-                sm: 'h-8 px-2 text-xs',
-                default: 'h-10 px-3',
-                lg: 'h-12 px-4 text-base',
-            },
-        },
-        defaultVariants: {
-            variant: 'default',
-            size: 'default',
-        },
-    }
+  "flex w-full rounded-md border bg-background px-3 py-2 text-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground/70 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+  {
+    variants: {
+      variant: {
+        default: "border-border/35 focus-visible:border-primary/35 focus-visible:bg-muted/5",
+        error: "border-destructive/40 text-destructive placeholder:text-destructive/50 focus-visible:border-destructive/50",
+        success: "border-success/40 text-success placeholder:text-success/50 focus-visible:border-success/50",
+      },
+      inputSize: {
+        default: "h-10",
+        sm: "h-8 px-2 text-xs",
+        lg: "h-12 px-4 text-base",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      inputSize: "default",
+    },
+  }
 );
 
-export interface InputProps
-    extends
-        Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
-        VariantProps<typeof inputVariants> {}
+export type InputProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> &
+  VariantProps<typeof inputVariants> & {
+    size?: VariantProps<typeof inputVariants>["inputSize"];
+  };
 
-/**
- * Standardized Input component with consistent variants.
- *
- * @example
- * ```tsx
- * <Input placeholder="Enter text..." />
- * <Input variant="error" size="sm" />
- * <Input variant="success" size="lg" />
- * ```
- */
-const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
-    ({ className, variant, size, type = 'text', ...props }, ref) => {
-        return (
-            <input
-                type={type}
-                className={cn(inputVariants({ variant, size, className }))}
-                ref={ref}
-                aria-invalid={variant === 'error' ? 'true' : undefined}
-                aria-describedby={
-                    props['aria-describedby'] ??
-                    (variant === 'error' ? `${props.id ?? 'input'}-error` : undefined)
-                }
-                {...props}
-            />
-        );
-    }
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, variant, size, type, ...props }, ref) => {
+    return (
+      <input
+        type={type}
+        className={cn(inputVariants({ variant, inputSize: size, className }))}
+        ref={ref}
+        {...props}
+      />
+    );
+  }
 );
-InputBase.displayName = 'Input';
-const Input = React.memo(InputBase);
-Input.displayName = 'Input';
+Input.displayName = "Input";
 
 export { Input, inputVariants };

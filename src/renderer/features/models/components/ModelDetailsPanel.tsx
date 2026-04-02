@@ -132,7 +132,7 @@ const HFFileCard: React.FC<{
 
             {isDownloading && progress.total > 0 && (
                 <div className="space-y-1">
-                    <div className="flex justify-between text-xxs font-black uppercase tracking-widest text-primary">
+                    <div className="flex justify-between text-xxs font-bold text-primary">
                         <span>{t('modelExplorer.downloading')}</span>
                         <span>{Math.round((progress.received / progress.total) * 100)}%</span>
                     </div>
@@ -161,18 +161,18 @@ const HFFileCard: React.FC<{
                 <button
                     onClick={onDownload}
                     disabled={isDownloaded || showActiveTask}
-                    className="py-2 rounded-lg bg-foreground text-background text-xxs font-black uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="py-2 rounded-lg bg-foreground text-background text-xxs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <span className="inline-flex items-center gap-2"><Download className="w-3 h-3" /> {t('modelExplorer.downloadPackage')}</span>
                 </button>
                 {showActiveTask && (isPaused ? (
-                    <button onClick={onResume} className="py-2 rounded-lg border border-border/40 text-xxs font-bold uppercase tracking-wider">{t('common.resume')}</button>
+                    <button onClick={onResume} className="py-2 rounded-lg border border-border/40 text-xxs font-bold">{t('common.resume')}</button>
                 ) : (
-                    <button onClick={onPause} disabled={isStarting || isInstalling} className="py-2 rounded-lg border border-border/40 text-xxs font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed">{t('common.pause')}</button>
+                    <button onClick={onPause} disabled={isStarting || isInstalling} className="py-2 rounded-lg border border-border/40 text-xxs font-bold disabled:opacity-50 disabled:cursor-not-allowed">{t('common.pause')}</button>
                 ))}
             </div>
             {showActiveTask && (
-                <button onClick={onCancel} className="w-full py-2 rounded-lg border border-destructive/40 text-destructive text-xxs font-bold uppercase tracking-wider">
+                <button onClick={onCancel} className="w-full py-2 rounded-lg border border-destructive/40 text-destructive text-xxs font-bold">
                     {t('common.cancel')}
                 </button>
             )}
@@ -352,21 +352,21 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
             className="w-1/2 max-w-5xl min-w-96 border-l border-border/50 bg-card/60 backdrop-blur-2xl flex flex-col relative z-40"
         >
             <div className="p-6 border-b border-border/50 flex items-center justify-between bg-muted/30">
-                <h2 className="font-black truncate pr-4 text-lg">{isHF ? hfModel?.name : ollamaModel?.name}</h2>
+                <h2 className="font-bold truncate pr-4 text-lg">{isHF ? hfModel?.name : ollamaModel?.name}</h2>
                 <button onClick={() => setSelectedModel(null)} className="p-2 hover:bg-muted/40 rounded-xl transition-all active:scale-90">
                     <X className="w-5 h-5" />
                 </button>
             </div>
 
             <div className="p-6 border-b border-border/50 space-y-3 bg-muted/30">
-                <div className="text-xxs uppercase tracking-widest text-muted-foreground">{isHF ? t('modelExplorer.sourceHuggingFace') : t('modelExplorer.ollamaLibrary')}</div>
+                <div className="text-xxs text-muted-foreground">{isHF ? t('modelExplorer.sourceHuggingFace') : t('modelExplorer.ollamaLibrary')}</div>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                     {selectedModel.description || t('modelExplorer.defaultDescription')}
                 </p>
                 <div className="grid grid-cols-2 gap-3 text-xs">
                     <div className="rounded-lg border border-border/30 p-3">
                         <div className="text-muted-foreground">{t('modelExplorer.provider')}</div>
-                        <div className="font-bold uppercase">{selectedModel.provider}</div>
+                        <div className="font-bold">{selectedModel.provider}</div>
                     </div>
                     <div className="rounded-lg border border-border/30 p-3">
                         <div className="text-muted-foreground">{t('modelExplorer.updated')}</div>
@@ -390,13 +390,13 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                     <>
                         {'longDescriptionMarkdown' in selectedModel && selectedModel.longDescriptionMarkdown && (
                             <div className="rounded-xl border border-border/40 bg-muted/10 p-4">
-                                <h3 className="text-xxs font-black uppercase tracking-widest text-muted-foreground mb-2">{t('common.details')}</h3>
+                                <h3 className="text-xxs font-bold text-muted-foreground mb-2">{t('common.details')}</h3>
                                 <div className="text-sm whitespace-pre-wrap leading-relaxed">{selectedModel.longDescriptionMarkdown}</div>
                             </div>
                         )}
 
                         <div className="space-y-3">
-                            <h3 className="text-xxs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                            <h3 className="text-xxs font-bold text-muted-foreground flex items-center gap-2">
                                 <Server className="w-4 h-4" /> {t('modelExplorer.pullVersion')}
                             </h3>
 
@@ -408,7 +408,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                                 <>
                                     {hfShardGroups.length > 0 && (
                                         <div className="space-y-2 rounded-xl border border-border/40 bg-muted/10 p-3">
-                                            <div className="text-xxs font-black uppercase tracking-widest text-muted-foreground">{t('modelExplorer.shardedModelSets')}</div>
+                                            <div className="text-xxs font-bold text-muted-foreground">{t('modelExplorer.shardedModelSets')}</div>
                                             {hfShardGroups.map((group) => {
                                                 const downloadedCount = group.files.filter((f) => downloadedFilePaths[f.path]).length;
                                                 const progressPct = Math.round((downloadedCount / group.totalParts) * 100);
@@ -424,7 +424,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                                                         <button
                                                             onClick={() => void downloadFullShardSet(group.files)}
                                                             disabled={downloadedCount >= group.totalParts}
-                                                            className={cn('w-full py-2 rounded-lg text-xxs font-black uppercase tracking-wider', downloadedCount >= group.totalParts ? 'bg-success/15 text-success border border-success/30' : 'bg-foreground text-background')}
+                                                            className={cn('w-full py-2 rounded-lg text-xxs font-bold  ', downloadedCount >= group.totalParts ? 'bg-success/15 text-success border border-success/30' : 'bg-foreground text-background')}
                                                         >
                                                             {downloadedCount >= group.totalParts ? t('modelExplorer.fullSetDownloaded') : t('modelExplorer.downloadMissingParts')}
                                                         </button>
@@ -468,13 +468,13 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                     <>
                         {sanitizedOllamaDescriptionHtml && (
                             <div className="rounded-xl border border-border/40 bg-muted/10 p-4">
-                                <h3 className="text-xxs font-black uppercase tracking-widest text-muted-foreground mb-2">{t('common.details')}</h3>
+                                <h3 className="text-xxs font-bold text-muted-foreground mb-2">{t('common.details')}</h3>
                                 <div className="prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: sanitizedOllamaDescriptionHtml }} />
                             </div>
                         )}
 
                         <div className="space-y-3">
-                            <h3 className="text-xxs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                            <h3 className="text-xxs font-bold text-muted-foreground flex items-center gap-2">
                                 <Server className="w-4 h-4" /> {t('modelExplorer.availableVersions')}
                             </h3>
 

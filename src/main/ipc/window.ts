@@ -98,6 +98,11 @@ interface DetachedTerminalWindowOptions {
     cwd?: string;
 }
 
+interface TerminalSpawnCommand {
+    command: string;
+    args: string[];
+}
+
 /**
  * Registers all window-related IPC handlers including window controls, shell operations, and cookies.
  * @param getMainWindow - Factory function that returns the main BrowserWindow instance
@@ -205,6 +210,34 @@ async function persistZoomFactor(
             zoomFactor,
         },
     });
+}
+
+function escapeForDoubleQuotedAppleScript(input: string): string {
+    return input.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+function createTerminalSpawnCommand(command: string): TerminalSpawnCommand {
+    if (process.platform === 'win32') {
+        return { command: 'cmd', args: ['/k', command] };
+    }
+
+    if (process.platform === 'darwin') {
+        const escapedCommand = escapeForDoubleQuotedAppleScript(command);
+        return {
+            command: 'osascript',
+            args: [
+                '-e',
+                `tell application "Terminal" to do script "${escapedCommand}"`,
+                '-e',
+                'tell application "Terminal" to activate'
+            ]
+        };
+    }
+
+    return {
+        command: 'x-terminal-emulator',
+        args: ['-e', 'sh', '-lc', command]
+    };
 }
 
 function registerWindowControlHandlers(
@@ -575,56 +608,48 @@ function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowe
 
     ipcMain.handle('shell:openTerminal', createValidatedIpcHandler('shell:openTerminal', async (event, command: string) => {
         validateSender(event);
-        if (process.platform === 'win32') {
-            // AUD-SEC-037: Hardened shell command validation
-            // Strict allowlist of safe characters only
-            const MAX_COMMAND_LENGTH = 1024;
-
-            if (command.length > MAX_COMMAND_LENGTH) {
-                appLogger.warn('WindowIPC', 'Command exceeds maximum length');
-                return false;
-            }
-            const commandPolicy = validateCommand(command);
-            if (!commandPolicy.allowed) {
-                appLogger.warn('WindowIPC', `Command blocked by validator: ${commandPolicy.reason}`);
-                return false;
-            }
-
-            // Only allow alphanumeric, spaces, dashes, underscores, forward/back slashes, colons, and dots
-            // This is a very restrictive allowlist
-            const allowedPattern = /^[a-zA-Z0-9\s\-_./\\:]+$/;
-            if (!allowedPattern.test(command)) {
-                appLogger.warn('WindowIPC', `Command contains forbidden characters: ${command}`);
-                return false;
-            }
-
-            // Block dangerous patterns even if they pass the allowlist
-            const dangerousPatterns = [
-                /\b(rm|del|format|fdisk|mkfs|dd|shutdown|reboot|halt|poweroff)\b/i,
-                /\b(reg|registry|regedit|regsvr32)\b/i,
-                /\b(net|netsh|ipconfig|route|arp)\b/i,
-                /\b(taskkill|tasklist|wmic|powershell|pwsh|cmd|command)\b/i,
-                /\b(curl|wget|nc|netcat|telnet|ftp|tftp)\b/i,
-                /\b(python|perl|ruby|node|npm|npx|yarn|pnpm)\b/i,
-                /\b(git\s+push|git\s+reset|git\s+clean|git\s+checkout)\b/i,
-            ];
-
-            for (const pattern of dangerousPatterns) {
-                if (pattern.test(command)) {
-                    appLogger.warn('WindowIPC', `Command contains dangerous pattern: ${command}`);
-                    return false;
-                }
-            }
-
-            spawn('cmd', ['/k', command], { shell: false });
-        } else {
-            // Basic fallback for Linux/Mac
-            appLogger.warn(
-                'WindowIPC',
-                `Open terminal not fully supported on non-windows yet: ${command}`
-            );
+        // AUD-SEC-037: Hardened shell command validation
+        const MAX_COMMAND_LENGTH = 1024;
+        if (command.length > MAX_COMMAND_LENGTH) {
+            appLogger.warn('WindowIPC', 'Command exceeds maximum length');
+            return false;
         }
-        return true;
+
+        const commandPolicy = validateCommand(command);
+        if (!commandPolicy.allowed) {
+            appLogger.warn('WindowIPC', `Command blocked by validator: ${commandPolicy.reason}`);
+            return false;
+        }
+
+        const allowedPattern = /^[a-zA-Z0-9\s\-_./\\:]+$/;
+        if (!allowedPattern.test(command)) {
+            appLogger.warn('WindowIPC', `Command contains forbidden characters: ${command}`);
+            return false;
+        }
+
+        const dangerousPatterns = [
+            /\b(rm|del|format|fdisk|mkfs|dd|shutdown|reboot|halt|poweroff)\b/i,
+            /\b(reg|registry|regedit|regsvr32)\b/i,
+            /\b(net|netsh|ipconfig|route|arp)\b/i,
+            /\b(taskkill|tasklist|wmic|powershell|pwsh|cmd|command)\b/i,
+            /\b(curl|wget|nc|netcat|telnet|ftp|tftp)\b/i,
+            /\b(python|perl|ruby|node|npm|npx|yarn|pnpm)\b/i,
+            /\b(git\s+push|git\s+reset|git\s+clean|git\s+checkout)\b/i,
+        ];
+
+        for (const pattern of dangerousPatterns) {
+            if (pattern.test(command)) {
+                appLogger.warn('WindowIPC', `Command contains dangerous pattern: ${command}`);
+                return false;
+            }
+        }
+
+        const spawnCommand = createTerminalSpawnCommand(command);
+        return await new Promise<boolean>((resolve) => {
+            const child = spawn(spawnCommand.command, spawnCommand.args, { shell: false });
+            child.once('error', () => resolve(false));
+            child.once('spawn', () => resolve(true));
+        });
     }, {
         argsSchema: z.tuple([commandSchema]),
         wrapResponse: true,

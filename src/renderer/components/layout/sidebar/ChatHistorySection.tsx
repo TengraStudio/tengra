@@ -81,7 +81,7 @@ export const ChatHistorySectionComponent: React.FC<ChatHistorySectionProps> = ({
             <div className="px-4 py-2">
                 <div className="flex items-center gap-2 mb-2 px-1">
                     <History className="w-3.5 h-3.5 text-muted-foreground/60" />
-                    <span className="text-xxs font-bold text-muted-foreground/60 uppercase tracking-wider">
+                    <span className="text-xxs font-bold text-muted-foreground/60">
                         {t('sidebar.history')}
                     </span>
                     {chats.length > 0 && (
@@ -217,7 +217,7 @@ const ChatListContent: React.FC<{
                 <>
                     {pinnedChats.length > 0 && (
                         <div className="mb-4 space-y-1">
-                            <div className="px-2 text-xxs font-bold text-muted-foreground/30 uppercase tracking-widest flex items-center gap-2">
+                            <div className="px-2 text-xxs font-bold text-muted-foreground/30 flex items-center gap-2">
                                 <Pin className="w-3 h-3" />
                                 <span>{t('sidebar.pinned')}</span>
                             </div>
@@ -266,7 +266,7 @@ const ChatListContent: React.FC<{
                         ([category, categoryChats]) =>
                             categoryChats.length > 0 && (
                                 <div key={category} className="space-y-1 mt-2">
-                                    <div className="px-2 text-xxs font-bold text-muted-foreground/30 uppercase tracking-widest flex items-center justify-between">
+                                    <div className="px-2 text-xxs font-bold text-muted-foreground/30 flex items-center justify-between">
                                         <span>{category}</span>
                                         <span className="text-muted-foreground/20">
                                             {categoryChats.length}

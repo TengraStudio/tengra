@@ -1,6 +1,7 @@
 import App from '@renderer/App';
 import { AppProviders } from '@renderer/context/AppProviders';
 import { installRendererLogger } from '@renderer/logging';
+import { translateErrorMessage } from '@renderer/utils/error-handler.util';
 import { performanceMonitor } from '@renderer/utils/performance';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -43,5 +44,5 @@ if (rootElement) {
         document.documentElement.classList.add('app-ready');
     });
 } else {
-    throw new Error('Root element not found');
+    throw new Error(translateErrorMessage('Root element not found'));
 }

@@ -3,6 +3,9 @@ import React, { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
+
+import './modal.css';
 
 interface ModalProps {
     isOpen: boolean
@@ -132,18 +135,6 @@ const ModalBase: React.FC<ModalProps> = ({
         }
     };
 
-    const sizeClasses = {
-        sm: 'sm:max-w-sm',
-        md: 'sm:max-w-md',
-        lg: 'sm:max-w-lg',
-        xl: 'sm:max-w-xl',
-        '2xl': 'sm:max-w-2xl',
-        '3xl': 'sm:max-w-3xl',
-        '4xl': 'sm:max-w-4xl',
-        '5xl': 'sm:max-w-5xl',
-        full: 'sm:max-w-screen-lg'
-    };
-
     const normalizeDimension = (
         value: 'auto' | number | string | undefined,
         axis: 'width' | 'height'
@@ -163,14 +154,12 @@ const ModalBase: React.FC<ModalProps> = ({
 
     const computedWidth = normalizeDimension(width, 'width');
     const computedHeight = normalizeDimension(height, 'height');
-    const useCustomWidth = width !== undefined;
-    const sizeClassName = useCustomWidth ? 'sm:max-w-none' : sizeClasses[size];
 
     if (!isOpen) { return null; }
 
     const modalContent = (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-md animate-in fade-in duration-300"
+            className="tengra-modal-overlay animate-in fade-in duration-300"
             onClick={handleBackdropClick}
             role="dialog"
             aria-modal="true"
@@ -185,29 +174,29 @@ const ModalBase: React.FC<ModalProps> = ({
                     width: computedWidth,
                     height: computedHeight,
                 }}
-                className={`bg-popover border border-border w-full rounded-2xl shadow-2xl p-8 animate-spring-in mx-4 flex flex-col max-h-screen ${sizeClassName} ${className}`}
+                className={cn("tengra-modal", `tengra-modal--${size}`, className)}
             >
-                <div className="flex flex-col space-y-1.5 text-center sm:text-left mb-6 shrink-0">
+                <div className="tengra-modal__header">
                     {!preventClose && (
                         <button
                             type="button"
                             onClick={onClose}
-                            className="self-end mb-2 inline-flex items-center justify-center rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                            className="tengra-modal__close"
                             aria-label={t('aria.closeModal')}
                         >
-                            <X className="w-4 h-4" aria-hidden="true" />
+                            <X aria-hidden="true" />
                         </button>
                     )}
-                    {title && <h3 id={titleId} className="font-black leading-none tracking-tight text-2xl text-foreground uppercase">{title}</h3>}
+                    {title && <h3 id={titleId} className="tengra-modal__title">{title}</h3>}
                 </div>
-                <p id={descriptionId} className="sr-only">
+                <p id={descriptionId} className="tengra-modal__sr-description">
                     {t('modal.contentForTitle', { title: title ?? '' })}
                 </p>
-                <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 pr-2">
+                <div className="tengra-modal__content">
                     {children}
                 </div>
                 {footer && (
-                    <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 mt-8 shrink-0">
+                    <div className="tengra-modal__footer">
                         {footer}
                     </div>
                 )}

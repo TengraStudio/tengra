@@ -56,8 +56,8 @@ export class WorkspaceRepository extends BaseRepository {
         const insertResult = await this.adapter
             .prepare(
                 `
-            INSERT INTO ${WORKSPACE_COMPAT_SCHEMA_VALUES.TABLE}(id, title, description, path, mounts, chat_ids, council_config, status, metadata, created_at, updated_at) 
-            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO ${WORKSPACE_COMPAT_SCHEMA_VALUES.TABLE}(id, title, description, path, mounts, chat_ids, council_config, status, logo, metadata, created_at, updated_at) 
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `
             )
             .run(
@@ -69,6 +69,7 @@ export class WorkspaceRepository extends BaseRepository {
                 chatIds,
                 councilConfig,
                 status,
+                null,
                 metadata,
                 now,
                 now
@@ -86,6 +87,7 @@ export class WorkspaceRepository extends BaseRepository {
             chat_ids: chatIds,
             council_config: councilConfig,
             status,
+            logo: null,
             metadata,
             created_at: now,
             updated_at: now,

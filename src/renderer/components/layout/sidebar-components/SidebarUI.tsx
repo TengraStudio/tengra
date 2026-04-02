@@ -29,7 +29,7 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
                 onClick={() => onChangeView('chat')}
             >
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
-                    <span className="text-foreground font-black text-xs">O</span>
+                    <span className="text-foreground font-bold text-xs">O</span>
                 </div>
                 <SidebarAppName />
             </div>
@@ -53,7 +53,7 @@ export const SidebarNewChatButton: React.FC<SidebarNewChatButtonProps> = ({
         <Button
             onClick={handleNewChat}
             className={cn(
-                'w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all duration-300 font-bold uppercase tracking-wider h-10 group overflow-hidden relative',
+                'w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all duration-300 font-bold   h-10 group overflow-hidden relative',
                 isCollapsed ? 'p-0 rounded-xl' : 'rounded-xl px-4'
             )}
             title={t('sidebar.newChat')}
@@ -89,7 +89,7 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({ isCollapsed, onSea
     }
     return (
         <div className="p-4 border-t border-border/20 bg-muted/5">
-            <div className="flex items-center justify-between text-xxs text-muted-foreground/40 font-bold uppercase tracking-widest px-1">
+            <div className="flex items-center justify-between text-xxs text-muted-foreground/40 font-bold px-1">
                 <span>{t('app.versionShort', { version: '1.2.0' })}</span>
                 <div className="flex items-center gap-2">
                     <Search
@@ -106,7 +106,7 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({ isCollapsed, onSea
 const SidebarAppName = () => {
     const { t } = useTranslation();
     return (
-        <span className="text-sm font-black tracking-widest text-foreground uppercase animate-in fade-in slide-in-from-left-2">
+        <span className="text-sm font-bold text-foreground animate-in fade-in slide-in-from-left-2">
             {t('app.name')}
         </span>
     );

@@ -1,3 +1,4 @@
+import { Button } from '@renderer/components/ui/button';
 import { Server } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
@@ -70,10 +71,11 @@ export const SavedProfileSelector: React.FC<SavedProfileSelectorProps> = ({ onSe
             </label>
             <div className="grid grid-cols-1 gap-1 max-h-32 overflow-y-auto pr-1 custom-scrollbar">
                 {profiles.map(profile => (
-                    <button
+                    <Button
                         key={profile.id}
+                        variant="ghost"
                         onClick={() => onSelect(profile)}
-                        className="flex flex-col items-start px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/60 text-left transition-all border border-transparent hover:border-border/60 group"
+                        className="flex flex-col items-start px-3 py-2 h-auto hover:bg-muted/60 text-left transition-all border border-transparent hover:border-border/60 group"
                     >
                         <span className="text-xs font-medium text-foreground group-hover:text-success transition-colors">
                             {profile.name}
@@ -81,7 +83,7 @@ export const SavedProfileSelector: React.FC<SavedProfileSelectorProps> = ({ onSe
                         <span className="tw-text-10 text-muted-foreground truncate w-full">
                             {profile.username}@{profile.host}:{profile.port}
                         </span>
-                    </button>
+                    </Button>
                 ))}
             </div>
         </div>

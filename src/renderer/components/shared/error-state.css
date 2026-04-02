@@ -1,0 +1,107 @@
+/* ErrorState Component CSS */
+:root {
+    /* Container */
+    --error-state-padding: 1.5rem;
+    --error-state-gap: 0.75rem;
+    
+    /* Icon container */
+    --error-state-icon-padding: 0.75rem;
+    --error-state-icon-border-radius: 0.75rem;
+    --error-state-icon-bg: hsl(var(--destructive) / 10%);
+    --error-state-icon-color: hsl(var(--destructive));
+    --error-state-icon-size: 1.5rem;
+    
+    /* Title */
+    --error-state-title-font-size: 0.875rem;
+    --error-state-title-font-weight: 600;
+    --error-state-title-color: hsl(var(--foreground));
+    
+    /* Message */
+    --error-state-message-font-size: 0.75rem;
+    --error-state-message-color: hsl(var(--muted-foreground));
+    --error-state-message-max-width: 24rem;
+    
+    /* Retry button */
+    --error-state-retry-margin-top: 0.25rem;
+    --error-state-retry-padding-x: 0.75rem;
+    --error-state-retry-padding-y: 0.375rem;
+    --error-state-retry-font-size: 0.75rem;
+    --error-state-retry-font-weight: 500;
+    --error-state-retry-bg: hsl(var(--destructive) / 10%);
+    --error-state-retry-color: hsl(var(--destructive));
+    --error-state-retry-hover-bg: hsl(var(--destructive) / 20%);
+    --error-state-retry-border-radius: 0.5rem;
+    --error-state-retry-gap: 0.375rem;
+    --error-state-retry-icon-size: 0.75rem;
+}
+
+/* Container */
+.tengra-error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--error-state-gap);
+    padding: var(--error-state-padding);
+    text-align: center;
+}
+
+/* Icon container */
+.tengra-error-state__icon {
+    padding: var(--error-state-icon-padding);
+    border-radius: var(--error-state-icon-border-radius);
+    background: var(--error-state-icon-bg);
+    color: var(--error-state-icon-color);
+}
+
+.tengra-error-state__icon-svg {
+    width: var(--error-state-icon-size);
+    height: var(--error-state-icon-size);
+}
+
+/* Content */
+.tengra-error-state__content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+/* Title */
+.tengra-error-state__title {
+    font-size: var(--error-state-title-font-size);
+    font-weight: var(--error-state-title-font-weight);
+    color: var(--error-state-title-color);
+}
+
+/* Message */
+.tengra-error-state__message {
+    font-size: var(--error-state-message-font-size);
+    color: var(--error-state-message-color);
+    max-width: var(--error-state-message-max-width);
+}
+
+/* Retry button */
+.tengra-error-state__retry {
+    margin-top: var(--error-state-retry-margin-top);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--error-state-retry-gap);
+    padding: var(--error-state-retry-padding-y) var(--error-state-retry-padding-x);
+    font-size: var(--error-state-retry-font-size);
+    font-weight: var(--error-state-retry-font-weight);
+    background: var(--error-state-retry-bg);
+    color: var(--error-state-retry-color);
+    border: none;
+    border-radius: var(--error-state-retry-border-radius);
+    cursor: pointer;
+    transition: background-color 150ms ease;
+}
+
+.tengra-error-state__retry:hover {
+    background: var(--error-state-retry-hover-bg);
+}
+
+.tengra-error-state__retry-icon {
+    width: var(--error-state-retry-icon-size);
+    height: var(--error-state-retry-icon-size);
+}

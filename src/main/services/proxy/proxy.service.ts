@@ -1198,7 +1198,7 @@ export class ProxyService extends BaseService {
     let resetStr = '-';
     if (model.quotaInfo.resetTime) {
       try {
-        resetStr = new Date(model.quotaInfo.resetTime).toLocaleString('tr-TR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        resetStr = new Date(model.quotaInfo.resetTime).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
       } catch (e) {
         this.logDebug('Failed to format reset time:', e as Error);
       }

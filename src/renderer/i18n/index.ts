@@ -1,30 +1,19 @@
-import { en } from '@renderer/i18n/en';
-import { tr } from '@renderer/i18n/tr';
+import { enLocalePack } from '@renderer/i18n/locales';
 import { JsonValue } from '@shared/types/common';
-import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo } from 'react';
+import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { useSettings } from '@/context/SettingsContext';
+import { localeRegistry } from '@/i18n/locale-registry.service';
+import { readCachedSettings } from '@/store/settings.store';
 
-export type Language = 'tr' | 'en';
+export type BuiltInLanguage = 'en';
+export type Language = string;
 export type TranslationKeys = JsonValue;
 
-const translations: Partial<Record<Language, TranslationKeys>> = {
-    tr,
-    en
+const translations: Partial<Record<BuiltInLanguage, TranslationKeys>> = {
+    en: enLocalePack.translations
 };
-
-const TRANSLATION_MEMORY_STORAGE_KEY = 'tengra.i18n.translation-memory.v1';
-const MAX_TRANSLATION_MEMORY_ENTRIES = 1000;
-
-interface TranslationMemoryEntry {
-    key: string;
-    language: Language;
-    fallbackValue: string;
-    timestamp: number;
-}
-
-const translationMemory = new Map<string, TranslationMemoryEntry>();
-let translationMemoryLoaded = false;
+const DEFAULT_LANGUAGE = 'en';
 
 const getTranslationNode = (root: JsonValue, path: string): JsonValue | null => {
     const parts = path.split('.');
@@ -41,68 +30,41 @@ const getTranslationNode = (root: JsonValue, path: string): JsonValue | null => 
     return current;
 };
 
-const loadTranslationMemory = (): void => {
-    if (translationMemoryLoaded) {
-        return;
+
+const interpolateTranslation = (
+    text: string,
+    options?: Record<string, string | number>
+): string => {
+    if (!options) {
+        return text;
     }
-    translationMemoryLoaded = true;
 
-    try {
-        const serialized = window.localStorage.getItem(TRANSLATION_MEMORY_STORAGE_KEY);
-        if (!serialized) {
-            return;
-        }
-
-        const parsed = JSON.parse(serialized) as TranslationMemoryEntry[];
-        if (!Array.isArray(parsed)) {
-            return;
-        }
-
-        parsed.forEach(entry => {
-            if (!entry || typeof entry.key !== 'string' || typeof entry.fallbackValue !== 'string') {
-                return;
-            }
-            translationMemory.set(`${entry.language}:${entry.key}`, entry);
-        });
-    } catch {
-        // Ignore malformed localStorage payloads.
-    }
+    return Object.keys(options).reduce((accumulator, key) => {
+        return accumulator.replace(new RegExp(`{{${key}}}`, 'g'), String(options[key]));
+    }, text);
 };
 
-const persistTranslationMemory = (): void => {
-    try {
-        const items = Array.from(translationMemory.values())
-            .sort((left, right) => right.timestamp - left.timestamp)
-            .slice(0, MAX_TRANSLATION_MEMORY_ENTRIES);
-        window.localStorage.setItem(TRANSLATION_MEMORY_STORAGE_KEY, JSON.stringify(items));
-    } catch {
-        // Ignore persistence failures (storage quota/private mode).
-    }
-};
+const selectTranslationText = (
+    locale: string,
+    translationRoot: JsonValue,
+    path: string,
+    options?: Record<string, string | number>
+): string => {
+    let translationValue = getTranslationNode(translationRoot, path);
 
-const rememberTranslationFallback = (
-    language: Language,
-    key: string,
-    fallbackValue: string
-): void => {
-    const entry: TranslationMemoryEntry = {
-        key,
-        language,
-        fallbackValue,
-        timestamp: Date.now()
-    };
-    translationMemory.set(`${language}:${key}`, entry);
-
-    // Keep memory bounded in runtime too.
-    if (translationMemory.size > MAX_TRANSLATION_MEMORY_ENTRIES) {
-        const sorted = Array.from(translationMemory.entries())
-            .sort((left, right) => right[1].timestamp - left[1].timestamp)
-            .slice(0, MAX_TRANSLATION_MEMORY_ENTRIES);
-        translationMemory.clear();
-        sorted.forEach(([memoryKey, memoryEntry]) => translationMemory.set(memoryKey, memoryEntry));
+    if (options && typeof options.count === 'number') {
+        const pluralKey = `${path}_${new Intl.PluralRules(locale).select(options.count)}`;
+        const pluralValue = getTranslationNode(translationRoot, pluralKey);
+        if (typeof pluralValue === 'string') {
+            translationValue = pluralValue;
+        }
     }
 
-    persistTranslationMemory();
+    if (typeof translationValue !== 'string') {
+        return path;
+    }
+
+    return interpolateTranslation(translationValue, options);
 };
 
 interface LanguageContextType {
@@ -122,18 +84,25 @@ const LanguageContext = createContext<LanguageContextType | null>(null);
  */
 export function LanguageProvider({ children }: { children: ReactNode }) {
     const { settings, updateSettings } = useSettings();
+    const [localeRegistryVersion, setLocaleRegistryVersion] = useState(0);
+
+    const resolveLanguage = useCallback((candidate: string | null | undefined): Language => {
+        return localeRegistry.resolveLocale(candidate);
+    }, []);
 
     // Detect system language on first run if not set
     const getInitialLanguage = useCallback((): Language => {
         if (settings?.general.language) {
-            return settings.general.language as Language;
+            return resolveLanguage(settings.general.language);
         }
 
-        const browserLang = navigator.language.split('-')[0] as Language;
-        const supportedLanguages: Language[] = ['en', 'tr'];
+        const cachedSettings = readCachedSettings();
+        if (cachedSettings?.general.language) {
+            return resolveLanguage(cachedSettings.general.language);
+        }
 
-        return supportedLanguages.includes(browserLang) ? browserLang : 'en';
-    }, [settings]);
+        return resolveLanguage(navigator.language);
+    }, [resolveLanguage, settings]);
 
     const language = useMemo(() => getInitialLanguage(), [getInitialLanguage]);
 
@@ -141,14 +110,15 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         if (!settings) {
             return;
         }
-        if (settings.general.language === lang) {
+        const resolvedLanguage = resolveLanguage(lang);
+        if (settings.general.language === resolvedLanguage) {
             return;
         }
-        const updated = { ...settings, general: { ...settings.general, language: lang } };
+        const updated = { ...settings, general: { ...settings.general, language: resolvedLanguage } };
         await updateSettings(updated, true);
-    }, [settings, updateSettings]);
+    }, [resolveLanguage, settings, updateSettings]);
 
-    const isRTL = false;
+    const isRTL = localeRegistry.isLocaleRtl(language);
 
     // Sync HTML attributes
     useEffect(() => {
@@ -157,50 +127,43 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }, [language, isRTL]);
 
     useEffect(() => {
-        loadTranslationMemory();
+        if (!settings?.general.language) {
+            return;
+        }
+
+        const resolvedLanguage = resolveLanguage(settings.general.language);
+        if (resolvedLanguage === settings.general.language) {
+            return;
+        }
+
+        const updatedSettings = {
+            ...settings,
+            general: {
+                ...settings.general,
+                language: resolvedLanguage,
+            },
+        };
+        void updateSettings(updatedSettings, true);
+    }, [resolveLanguage, settings, updateSettings]);
+
+    useEffect(() => {
+        void localeRegistry.loadLocales();
+
+        return localeRegistry.subscribe(() => {
+            setLocaleRegistryVersion(previousValue => previousValue + 1);
+        });
     }, []);
 
     const t = useMemo(() => {
-        const activeTranslations = (translations[language] ?? translations.en) as JsonValue;
-        const fallbackTranslations = translations.en as JsonValue;
+        void localeRegistryVersion;
+        const activeTranslations = (localeRegistry.getTranslations(language)
+            ?? translations[language as BuiltInLanguage]
+            ?? translations.en) as JsonValue;
 
         return (path: string, options?: Record<string, string | number>): string => {
-            const currentValue = getTranslationNode(activeTranslations, path);
-            const fallbackValue = getTranslationNode(fallbackTranslations, path);
-            const selectedValue = currentValue ?? fallbackValue;
-
-            if (currentValue === null && typeof fallbackValue === 'string' && language !== 'en') {
-                rememberTranslationFallback(language, path, fallbackValue);
-            }
-
-            if (typeof selectedValue === 'string') {
-                let text = selectedValue;
-
-                // Handle Pluralization (if count is provided)
-                if (options && typeof options.count === 'number') {
-                    const pluralRules = new Intl.PluralRules(language);
-                    const rule = pluralRules.select(options.count);
-                    const pluralKey = `${path}_${rule}`;
-                    const pluralCurrent = getTranslationNode(activeTranslations, pluralKey);
-                    const pluralFallback = getTranslationNode(fallbackTranslations, pluralKey);
-                    if (typeof pluralCurrent === 'string') {
-                        text = pluralCurrent;
-                    } else if (typeof pluralFallback === 'string') {
-                        text = pluralFallback;
-                    }
-                }
-
-                if (options) {
-                    return Object.keys(options).reduce((acc, key) => {
-                        return acc.replace(new RegExp(`{{${key}}}`, 'g'), String(options[key]));
-                    }, text);
-                }
-                return text;
-            }
-
-            return path;
+            return selectTranslationText(language, activeTranslations, path, options);
         };
-    }, [language]);
+    }, [language, localeRegistryVersion]);
 
     const formatDate = useCallback((date: Date | number, options?: Intl.DateTimeFormatOptions) => {
         return new Intl.DateTimeFormat(language, options).format(date);
@@ -250,29 +213,18 @@ export function useTranslation(lang?: Language) {
 
     // If explicit language is provided, return its translations (standalone)
     if (lang) {
-        const activeTranslations = (translations[lang] ?? translations.en) as JsonValue;
-        const fallbackTranslations = translations.en as JsonValue;
+        const resolvedLanguage = localeRegistry.resolveLocale(lang);
+        const activeTranslations = (localeRegistry.getTranslations(resolvedLanguage)
+            ?? translations[resolvedLanguage as BuiltInLanguage]
+            ?? translations.en) as JsonValue;
         const get = (path: string, options?: Record<string, string | number>): string => {
-            const current = getTranslationNode(activeTranslations, path);
-            const fallback = getTranslationNode(fallbackTranslations, path);
-            const selected = current ?? fallback;
-
-            if (typeof selected === 'string') {
-                if (options) {
-                    return Object.keys(options).reduce((acc, key) => {
-                        return acc.replace(new RegExp(`{{${key}}}`, 'g'), String(options[key]));
-                    }, selected);
-                }
-                return selected;
-            }
-
-            return path;
+            return selectTranslationText(resolvedLanguage, activeTranslations, path, options);
         };
         return {
             t: get,
             translations: activeTranslations,
-            formatDate: (date: Date | number, options?: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(lang, options).format(date),
-            formatNumber: (value: number, options?: Intl.NumberFormatOptions) => new Intl.NumberFormat(lang, options).format(value)
+            formatDate: (date: Date | number, options?: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(resolvedLanguage, options).format(date),
+            formatNumber: (value: number, options?: Intl.NumberFormatOptions) => new Intl.NumberFormat(resolvedLanguage, options).format(value)
         };
     }
 
@@ -290,10 +242,9 @@ export function useTranslation(lang?: Language) {
     }
 
     // Bare-bones fallback if caller is outside LanguageProvider
-    const fallbackLang = 'en';
     return {
         t: (path: string) => path,
-        language: fallbackLang as Language,
+        language: DEFAULT_LANGUAGE as Language,
         setLanguage: async () => { },
         isRTL: false,
         formatDate: (date: Date | number) => String(date),

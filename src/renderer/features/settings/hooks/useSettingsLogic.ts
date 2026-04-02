@@ -40,7 +40,7 @@ async function withRetry<T>(operation: () => Promise<T>, attempts = SETTINGS_RET
 }
 
 export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => void) {
-    const { settings, updateSettings, isLoading: isSettingsLoading } = useSettings();
+    const { settings, updateSettings, reloadSettings, isLoading: isSettingsLoading } = useSettings();
 
     // Wrapper for backward compatibility
     const setSettings = useCallback(async (newSettings: AppSettings | null) => {
@@ -192,6 +192,86 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
         }
     }, [settings, updateSettings]);
 
+    const updateRemoteAccounts = useCallback(async (patch: Partial<NonNullable<AppSettings['remoteAccounts']>>) => {
+        if (!settings) { return; }
+        const startedAt = Date.now();
+        const updated = { ...settings, remoteAccounts: { ...(settings.remoteAccounts ?? {}), ...patch } } as AppSettings;
+        if (!validateSettingsPayload(updated)) {
+            setSettingsUiState('failure');
+            setLastErrorCode(settingsPageErrorCodes.validation);
+            recordSettingsPageHealthEvent({
+                channel: 'settings.update',
+                status: 'validation-failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: settingsPageErrorCodes.validation,
+            });
+            return;
+        }
+
+        try {
+            await withRetry(() => updateSettings(updated, true), SETTINGS_RETRY_ATTEMPTS);
+            setSettingsUiState('ready');
+            setLastErrorCode(null);
+            recordSettingsPageHealthEvent({
+                channel: 'settings.update',
+                status: 'success',
+                durationMs: Date.now() - startedAt,
+            });
+        } catch {
+            setSettingsUiState('failure');
+            setLastErrorCode(settingsPageErrorCodes.saveFailed);
+            recordSettingsPageHealthEvent({
+                channel: 'settings.update',
+                status: 'failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: settingsPageErrorCodes.saveFailed,
+            });
+        }
+    }, [settings, updateSettings]);
+
+    const updateEditor = useCallback(async (patch: Partial<NonNullable<AppSettings['editor']>>) => {
+        if (!settings) { return; }
+        const startedAt = Date.now();
+        const updated = {
+            ...settings,
+            editor: {
+                ...(settings.editor ?? {}),
+                ...patch,
+            },
+        } as AppSettings;
+        if (!validateSettingsPayload(updated)) {
+            setSettingsUiState('failure');
+            setLastErrorCode(settingsPageErrorCodes.validation);
+            recordSettingsPageHealthEvent({
+                channel: 'settings.update',
+                status: 'validation-failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: settingsPageErrorCodes.validation,
+            });
+            return;
+        }
+
+        try {
+            await withRetry(() => updateSettings(updated, true), SETTINGS_RETRY_ATTEMPTS);
+            setSettingsUiState('ready');
+            setLastErrorCode(null);
+            recordSettingsPageHealthEvent({
+                channel: 'settings.update',
+                status: 'success',
+                durationMs: Date.now() - startedAt,
+            });
+        } catch {
+            setSettingsUiState('failure');
+            setLastErrorCode(settingsPageErrorCodes.saveFailed);
+            recordSettingsPageHealthEvent({
+                channel: 'settings.update',
+                status: 'failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: settingsPageErrorCodes.saveFailed,
+            });
+        }
+    }, [settings, updateSettings]);
+
     // Benchmark (Kept local as it is simple)
     const [benchmarkResult, setBenchmarkResult] = useState<{ tokensPerSec: number; latency: number } | null>(null);
     const [isBenchmarking, setIsBenchmarking] = useState(false);
@@ -246,8 +326,11 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
 
         // Update handlers
         updateGeneral,
+        updateEditor,
         updateSpeech,
+        updateRemoteAccounts,
         handleSave,
+        reloadSettings,
 
         // Stats
         ...stats,
@@ -263,8 +346,7 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
         isDirty: false
     }), [
         settings, setSettings, isSettingsLoading, isSaving, exposedStatusMessage, auth,
-        linkedAccounts, updateGeneral, updateSpeech, handleSave, settingsUiState, lastErrorCode,
+        linkedAccounts, updateGeneral, updateEditor, updateSpeech, updateRemoteAccounts, handleSave, reloadSettings, settingsUiState, lastErrorCode,
         stats, benchmarkResult, isBenchmarking, handleRunBenchmark, personas
     ]);
 }
-

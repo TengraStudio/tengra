@@ -1,0 +1,214 @@
+/* CodeEditor Component CSS */
+:root {
+    /* Container */
+    --code-editor-bg: hsl(var(--background));
+    --code-editor-border-radius: 0;
+    
+    /* Loading state */
+    --code-editor-loading-bg: hsl(var(--muted) / 50%);
+    --code-editor-loading-color: hsl(var(--muted-foreground));
+    --code-editor-loading-gap: 0.5rem;
+    
+    /* Spinner */
+    --code-editor-spinner-size: 1.5rem;
+    
+    /* Error state */
+    --code-editor-error-bg: hsl(var(--destructive) / 10%);
+    --code-editor-error-color: hsl(var(--destructive));
+    --code-editor-error-padding: 1rem;
+    --code-editor-error-border-radius: 0.5rem;
+    --code-editor-error-icon-size: 1.25rem;
+    
+    /* Inline suggestion */
+    --code-editor-suggestion-color: hsl(var(--muted-foreground) / 60%);
+    --code-editor-suggestion-font-style: italic;
+    
+    /* Dirty indicator */
+    --code-editor-dirty-bg: hsl(var(--primary) / 10%);
+    --code-editor-dirty-border-color: hsl(var(--primary) / 30%);
+    
+    /* Diagnostic markers */
+    --code-editor-diagnostic-error-bg: hsl(var(--destructive) / 20%);
+    --code-editor-diagnostic-warning-bg: hsl(var(--warning) / 20%);
+    --code-editor-diagnostic-info-bg: hsl(var(--info) / 20%);
+    --code-editor-diagnostic-hint-bg: hsl(var(--success) / 20%);
+    
+    /* Minimap */
+    --code-editor-minimap-bg: hsl(var(--muted) / 30%);
+    --code-editor-minimap-slider-bg: hsl(var(--foreground) / 10%);
+    
+    /* Scrollbar */
+    --code-editor-scrollbar-bg: transparent;
+    --code-editor-scrollbar-thumb-bg: hsl(var(--foreground) / 20%);
+    --code-editor-scrollbar-thumb-hover-bg: hsl(var(--foreground) / 30%);
+    
+    /* Line numbers */
+    --code-editor-line-number-color: hsl(var(--muted-foreground) / 50%);
+    --code-editor-line-number-active-color: hsl(var(--foreground));
+    
+    /* Current line */
+    --code-editor-current-line-bg: hsl(var(--muted) / 30%);
+    --code-editor-current-line-border-color: hsl(var(--border) / 50%);
+    
+    /* Selection */
+    --code-editor-selection-bg: hsl(var(--primary) / 20%);
+    --code-editor-selection-inactive-bg: hsl(var(--muted) / 30%);
+    
+    /* Find/replace widget */
+    --code-editor-find-widget-bg: hsl(var(--popover));
+    --code-editor-find-widget-border-color: hsl(var(--border));
+    --code-editor-find-widget-shadow: 0 4px 6px -1px rgb(0 0 0 / 10%);
+    
+    /* Hover widget */
+    --code-editor-hover-bg: hsl(var(--popover));
+    --code-editor-hover-border-color: hsl(var(--border));
+    --code-editor-hover-color: hsl(var(--popover-foreground));
+    
+    /* Autocomplete */
+    --code-editor-autocomplete-bg: hsl(var(--popover));
+    --code-editor-autocomplete-border-color: hsl(var(--border));
+    --code-editor-autocomplete-item-hover-bg: hsl(var(--accent));
+    --code-editor-autocomplete-item-selected-bg: hsl(var(--primary) / 20%);
+    
+    /* Breadcrumbs */
+    --code-editor-breadcrumb-bg: hsl(var(--muted) / 50%);
+    --code-editor-breadcrumb-color: hsl(var(--muted-foreground));
+    --code-editor-breadcrumb-active-color: hsl(var(--foreground));
+    
+    /* Gutter */
+    --code-editor-gutter-bg: transparent;
+    --code-editor-gutter-border-color: hsl(var(--border) / 30%);
+    
+    /* Folding */
+    --code-editor-fold-icon-color: hsl(var(--muted-foreground) / 50%);
+    --code-editor-fold-icon-hover-color: hsl(var(--foreground));
+}
+
+/* Container */
+.tengra-code-editor {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: var(--code-editor-bg);
+    border-radius: var(--code-editor-border-radius);
+    overflow: hidden;
+}
+
+/* Loading state */
+.tengra-code-editor__loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--code-editor-loading-bg);
+    color: var(--code-editor-loading-color);
+    gap: var(--code-editor-loading-gap);
+}
+
+.tengra-code-editor__spinner {
+    width: var(--code-editor-spinner-size);
+    height: var(--code-editor-spinner-size);
+    animation: code-editor-spin 1s linear infinite;
+}
+
+.tengra-code-editor__loading-text {
+    font-size: 0.875rem;
+}
+
+/* Error state */
+.tengra-code-editor__error {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: var(--code-editor-error-padding);
+    background: var(--code-editor-error-bg);
+    color: var(--code-editor-error-color);
+    border-radius: var(--code-editor-error-border-radius);
+    margin: 0.5rem;
+}
+
+.tengra-code-editor__error-icon {
+    width: var(--code-editor-error-icon-size);
+    height: var(--code-editor-error-icon-size);
+}
+
+/* Animation */
+@keyframes code-editor-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Monaco editor overrides (scoped) */
+/* stylelint-disable custom-property-pattern */
+.tengra-code-editor .monaco-editor {
+    --vscode-editor-background: var(--code-editor-bg);
+    --vscode-editorLineNumber-foreground: var(--code-editor-line-number-color);
+    --vscode-editorLineNumber-activeForeground: var(--code-editor-line-number-active-color);
+    --vscode-editor-lineHighlightBackground: var(--code-editor-current-line-bg);
+    --vscode-editor-lineHighlightBorder: var(--code-editor-current-line-border-color);
+    --vscode-editor-selectionBackground: var(--code-editor-selection-bg);
+    --vscode-editor-inactiveSelectionBackground: var(--code-editor-selection-inactive-bg);
+}
+/* stylelint-enable custom-property-pattern */
+
+.tengra-code-editor .monaco-scrollable-element > .scrollbar > .slider {
+    background: var(--code-editor-scrollbar-thumb-bg);
+}
+
+.tengra-code-editor .monaco-scrollable-element > .scrollbar > .slider:hover {
+    background: var(--code-editor-scrollbar-thumb-hover-bg);
+}
+
+.tengra-code-editor .monaco-editor .minimap {
+    background: var(--code-editor-minimap-bg);
+}
+
+.tengra-code-editor .monaco-editor .minimap-slider {
+    background: var(--code-editor-minimap-slider-bg);
+}
+
+.tengra-code-editor .monaco-editor .monaco-hover {
+    background: var(--code-editor-hover-bg);
+    border-color: var(--code-editor-hover-border-color);
+    color: var(--code-editor-hover-color);
+}
+
+.tengra-code-editor .monaco-editor .suggest-widget {
+    background: var(--code-editor-autocomplete-bg);
+    border-color: var(--code-editor-autocomplete-border-color);
+}
+
+.tengra-code-editor .monaco-editor .suggest-widget .monaco-list-row:hover {
+    background: var(--code-editor-autocomplete-item-hover-bg);
+}
+
+.tengra-code-editor .monaco-editor .suggest-widget .monaco-list-row.focused {
+    background: var(--code-editor-autocomplete-item-selected-bg);
+}
+
+.tengra-code-editor .monaco-editor .find-widget {
+    background: var(--code-editor-find-widget-bg);
+    border-color: var(--code-editor-find-widget-border-color);
+    box-shadow: var(--code-editor-find-widget-shadow);
+}
+
+.tengra-code-editor .monaco-editor .monaco-editor-background {
+    background: var(--code-editor-bg);
+}
+
+.tengra-code-editor .monaco-editor .margin {
+    background: var(--code-editor-gutter-bg);
+}
+
+.tengra-code-editor .monaco-editor .codicon-folding-collapsed,
+.tengra-code-editor .monaco-editor .codicon-folding-expanded {
+    color: var(--code-editor-fold-icon-color);
+}
+
+.tengra-code-editor .monaco-editor .codicon-folding-collapsed:hover,
+.tengra-code-editor .monaco-editor .codicon-folding-expanded:hover {
+    color: var(--code-editor-fold-icon-hover-color);
+}

@@ -4,6 +4,7 @@ import React from 'react';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import type { Workspace } from '@/types';
+import { toSafeFileUrl } from '@/utils/safe-file-url.util';
 
 interface WorkspaceDashboardHeaderProps {
     workspace: Workspace;
@@ -43,14 +44,22 @@ export const WorkspaceDashboardHeader: React.FC<WorkspaceDashboardHeaderProps> =
     analyzeWorkspace
 }) => {
     const { t } = useTranslation();
+    const baseLogoUrl = toSafeFileUrl(workspace.logo);
+    // Use a unique cache-buster URL that changes every time updatedAt changes
+    const workspaceLogoUrl = baseLogoUrl ? `${baseLogoUrl}?v=${workspace.updatedAt}` : null;
 
     return (
         <div className="flex flex-col md:flex-row gap-8 items-start bg-card/40 p-6 rounded-3xl border border-border backdrop-blur-sm">
             {/* Logo Area */}
             <div className="relative group shrink-0">
                 <div className="w-32 h-32 rounded-2xl bg-muted/40 border-2 border-dashed border-border flex items-center justify-center overflow-hidden transition-all group-hover:border-primary/50 shadow-inner">
-                    {workspace.logo ? (
-                        <img src={`safe-file://${workspace.logo}`} alt={t('workspaces.logoAlt')} className="w-full h-full object-cover" />
+                    {workspaceLogoUrl ? (
+                        <img 
+                            key={workspace.updatedAt}
+                            src={workspaceLogoUrl} 
+                            alt={t('workspaces.logoAlt')} 
+                            className="w-full h-full object-cover animate-in fade-in duration-500" 
+                        />
                     ) : (
                         <Sparkles className="w-10 h-10 text-muted-foreground/20" />
                     )}
@@ -60,7 +69,7 @@ export const WorkspaceDashboardHeader: React.FC<WorkspaceDashboardHeaderProps> =
                         className="absolute inset-0 bg-primary/60 tw-backdrop-blur-2 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2 text-primary-foreground"
                     >
                         <Camera className="w-6 h-6" />
-                        <span className="text-xxs font-bold uppercase tracking-tighter">{t('workspaces.changeLogo')}</span>
+                        <span className="text-xxs font-bold">{t('workspaces.changeLogo')}</span>
                     </button>
                 </div>
             </div>
@@ -79,7 +88,7 @@ export const WorkspaceDashboardHeader: React.FC<WorkspaceDashboardHeaderProps> =
                                     if (e.key === 'Escape') { setIsEditingName(false); }
                                 }}
                                 onBlur={() => { void handleSaveName(); }}
-                                className="text-3xl font-black bg-transparent border border-primary/50 rounded-lg px-2 py-1 outline-none w-full tracking-tight text-foreground"
+                                className="text-3xl font-bold bg-transparent border border-primary/50 rounded-lg px-2 py-1 outline-none w-full text-foreground"
                             />
                             <button onClick={() => { void handleSaveName(); }} className="p-2 bg-primary text-primary-foreground rounded-lg">
                                 <Check className="w-4 h-4" />
@@ -88,7 +97,7 @@ export const WorkspaceDashboardHeader: React.FC<WorkspaceDashboardHeaderProps> =
                     ) : (
                         <h1
                             onClick={() => { setIsEditingName(true); }}
-                            className="text-4xl font-black tracking-tighter text-foreground cursor-pointer hover:text-primary transition-colors flex items-center gap-3"
+                            className="text-4xl font-bold text-foreground cursor-pointer hover:text-primary transition-colors flex items-center gap-3"
                         >
                             {workspace.title}
                             <Pencil className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
@@ -122,7 +131,7 @@ export const WorkspaceDashboardHeader: React.FC<WorkspaceDashboardHeaderProps> =
                 <div className="flex items-center gap-4 pt-2">
                     <div className="flex items-center gap-1.5 px-2.5 py-1 bg-success/10 border border-success/20 rounded-md">
                         <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                        <span className="text-xxs font-bold text-success uppercase tracking-wider">{type}</span>
+                        <span className="text-xxs font-bold text-success">{type}</span>
                     </div>
                     <div className="text-xxs font-medium text-muted-foreground font-mono bg-accent/50 px-2 py-1 rounded border border-border">
                         {workspaceRoot}

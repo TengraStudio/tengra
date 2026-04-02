@@ -14,10 +14,10 @@ const SimpleStatLabel: React.FC<{
     value: string;
     subtext?: string;
 }> = ({ label, value, subtext }) => (
-    <div className="rounded-2xl border border-border/50 bg-card px-5 py-4">
+    <div className="rounded-2xl border border-border/30 bg-background px-5 py-4">
         <div className="space-y-2">
-            <div className="text-xxxs font-black uppercase tracking-widest text-muted-foreground/65">{label}</div>
-            <div className="text-3xl font-black leading-none tracking-tight text-foreground tabular-nums">{value}</div>
+            <div className="text-xxxs font-medium text-muted-foreground/65">{label}</div>
+            <div className="text-3xl font-bold leading-none text-foreground tabular-nums">{value}</div>
             {subtext ? (
                 <div className="text-xxxs font-medium text-muted-foreground/70">
                     {subtext}

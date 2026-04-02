@@ -10,6 +10,8 @@ import { JsonObject, JsonValue } from '@/types/common';
 
 import { TerminalView } from './TerminalView';
 
+import '@renderer/features/chat/components/ToolDisplay.css';
+
 interface CommandExecutionResult {
     stdout?: string;
     stderr?: string;
@@ -39,12 +41,12 @@ interface ExpandedToolContentProps {
 const ExpandedToolContent: React.FC<ExpandedToolContentProps> = ({ toolName, args, result, t }) => (
     <div className="mt-2 ml-2 border-l-2 border-border/50 pl-3 py-1 space-y-3 animate-in slide-in-from-top-1 duration-200">
         <div className="space-y-1">
-            <div className="text-sm uppercase tracking-wider text-muted-foreground font-bold opacity-50">{t('tools.input')}</div>
+            <div className="text-sm text-muted-foreground font-bold opacity-50">{t('tools.input')}</div>
             <ToolArguments name={toolName} args={args} t={t} />
         </div>
         {result && (
             <div className="space-y-1">
-                <div className="text-sm uppercase tracking-wider text-muted-foreground font-semibold opacity-70">{t('tools.output')}</div>
+                <div className="text-sm text-muted-foreground font-semibold opacity-70">{t('tools.output')}</div>
                 <ToolOutput name={toolName} result={result.result} t={t} />
             </div>
         )}

@@ -11,6 +11,8 @@ import {
     TooltipSide,
 } from './tooltip-utils';
 
+import './tooltip.css';
+
 export interface TooltipProps {
     children: React.ReactElement;
     content: string | React.ReactNode;
@@ -197,7 +199,7 @@ export function Tooltip({
                     <div
                         ref={tooltipRef}
                         className={cn(
-                            'absolute z-50 px-3 py-2 text-xs text-foreground bg-popover/95 backdrop-blur-xl border border-border/60 rounded-lg shadow-2xl pointer-events-none',
+                            'tengra-tooltip',
                             maxWidthClassName,
                             className
                         )}
@@ -209,19 +211,19 @@ export function Tooltip({
                         role="tooltip"
                         aria-live="polite"
                     >
-                        <div className="space-y-1">
-                            {title && <div className="font-semibold text-foreground">{title}</div>}
+                        <div className="tengra-tooltip__content">
+                            {title && <div className="tengra-tooltip__title">{title}</div>}
                             {typeof content === 'string' ? (
-                                <div className="text-muted-foreground">{content}</div>
+                                <div className="tengra-tooltip__text">{content}</div>
                             ) : (
                                 content
                             )}
                             {description && (
-                                <div className="text-xxxs text-muted-foreground/90">{description}</div>
+                                <div className="tengra-tooltip__description">{description}</div>
                             )}
                             {shortcut && (
-                                <div className="pt-1">
-                                    <kbd className="px-1.5 py-0.5 rounded border border-border/60 bg-background/70 text-xxxs font-mono tracking-wide">
+                                <div className="tengra-tooltip__shortcut">
+                                    <kbd className="tengra-tooltip__kbd">
                                         {shortcut}
                                     </kbd>
                                 </div>
@@ -229,15 +231,11 @@ export function Tooltip({
                         </div>
                         <div
                             className={cn(
-                                'absolute w-2 h-2 bg-popover/95 border-border/60 rotate-45',
-                                resolvedSide === 'top' &&
-                                    '-bottom-1 left-1/2 -translate-x-1/2 border-r border-b',
-                                resolvedSide === 'bottom' &&
-                                    '-top-1 left-1/2 -translate-x-1/2 border-l border-t',
-                                resolvedSide === 'left' &&
-                                    '-right-1 top-1/2 -translate-y-1/2 border-r border-t',
-                                resolvedSide === 'right' &&
-                                    '-left-1 top-1/2 -translate-y-1/2 border-l border-b'
+                                'tengra-tooltip__arrow',
+                                resolvedSide === 'top' && 'tengra-tooltip__arrow--top',
+                                resolvedSide === 'bottom' && 'tengra-tooltip__arrow--bottom',
+                                resolvedSide === 'left' && 'tengra-tooltip__arrow--left',
+                                resolvedSide === 'right' && 'tengra-tooltip__arrow--right'
                             )}
                         />
                     </div>,

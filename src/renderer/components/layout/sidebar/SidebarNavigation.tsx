@@ -6,6 +6,8 @@ import { preloadViewResources } from '@/views/view-manager/view-loaders';
 
 import { SidebarItem } from './SidebarItem';
 
+import './sidebar-navigation.css';
+
 interface SidebarNavigationProps {
     currentView: AppView
     onChangeView: (view: AppView) => void
@@ -61,7 +63,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
     };
 
     return (
-        <nav className="px-3 space-y-1" aria-label={t('aria.sidebarNavigation')}>
+        <nav className="tengra-sidebar-navigation" aria-label={t('aria.sidebarNavigation')}>
             {navItems.map((item, index) => (
                 <SidebarItem
                     key={item.view}

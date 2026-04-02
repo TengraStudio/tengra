@@ -34,7 +34,7 @@ declare global {
     }
 }
 
-export function useVoiceInput(onFinalResult: (text: string) => void, language: string = 'tr-TR'): VoiceInputReturn {
+export function useVoiceInput(onFinalResult: (text: string) => void, language: string = 'en-US'): VoiceInputReturn {
     const [isListening, setIsListening] = useState(false);
     const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
     const [isSupported] = useState(() => {

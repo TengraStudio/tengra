@@ -4,6 +4,8 @@ import React, { useEffect,useRef, useState } from 'react';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
+import './floating-action-button.css';
+
 interface FabAction {
     icon: React.ReactNode
     label: string
@@ -73,13 +75,6 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
         return () => document.removeEventListener('keydown', handleEscape);
     }, [isOpen]);
 
-    const positionClasses = {
-        'bottom-right': 'bottom-6 right-6',
-        'bottom-left': 'bottom-6 left-6',
-        'top-right': 'top-6 right-6',
-        'top-left': 'top-6 left-6'
-    };
-
     // Calculate radial positions for actions
     const getActionPosition = (index: number, total: number) => {
         const angleStep = Math.PI / (total + 1);
@@ -96,8 +91,8 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
         <div
             ref={containerRef}
             className={cn(
-                'fixed z-50',
-                positionClasses[position],
+                'tengra-fab',
+                `tengra-fab--${position}`,
                 className
             )}
         >
@@ -112,17 +107,15 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                             setIsOpen(false);
                         }}
                         className={cn(
-                            'absolute w-12 h-12 rounded-full shadow-lg flex items-center justify-center',
-                            'transition-all duration-300 ease-out',
-                            'hover:scale-110 ripple',
-                            action.color ?? 'bg-primary text-primary-foreground',
-                            isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                            'tengra-fab__action',
+                            isOpen && 'tengra-fab__action--visible'
                         )}
                         style={{
                             transform: isOpen
                                 ? `translate(${x}px, ${y}px) scale(1)`
                                 : 'translate(0, 0) scale(0)',
-                            transitionDelay: isOpen ? `${index * 50}ms` : '0ms'
+                            transitionDelay: isOpen ? `${index * 50}ms` : '0ms',
+                            background: action.color ?? undefined
                         }}
                         title={action.label}
                         aria-label={action.label}
@@ -139,13 +132,11 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                     <span
                         key={`label-${action.label}`}
                         className={cn(
-                            'absolute px-2 py-1 text-xs font-medium rounded bg-popover/95 text-popover-foreground border border-border/40 shadow-sm',
-                            'whitespace-nowrap pointer-events-none',
-                            'transition-all duration-300'
+                            'tengra-fab__label',
+                            isOpen && 'tengra-fab__label--visible'
                         )}
                         style={{
-                            transform: `translate(${x - 40}px, ${y + 50}px)`,
-                            opacity: Number(isOpen)
+                            transform: `translate(${x - 40}px, ${y + 50}px)`
                         }}
                     >
                         {action.label}
@@ -157,11 +148,8 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={cn(
-                    'w-14 h-14 rounded-full shadow-lg flex items-center justify-center',
-                    'bg-primary text-primary-foreground',
-                    'transition-all duration-300 ease-out',
-                    'hover:scale-105 hover:shadow-xl ripple',
-                    isOpen && 'rotate-45 bg-destructive'
+                    'tengra-fab__main',
+                    isOpen && 'tengra-fab__main--open'
                 )}
                 aria-label={isOpen ? t('fab.closeMenu') : t('fab.openMenu')}
                 aria-expanded={isOpen}

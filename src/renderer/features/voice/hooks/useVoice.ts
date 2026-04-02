@@ -90,9 +90,16 @@ export function useVoice() {
     const synthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
 
     // Get session state from store
+    // Get session state from store
     const session = useSyncExternalStore(
         voiceStore.subscribe,
         voiceStore.getSnapshot
+    );
+
+    // Get settings from store
+    const settings = useSyncExternalStore(
+        voiceStore.subscribe,
+        voiceStore.getSettings
     );
 
     // Local state
@@ -116,13 +123,10 @@ export function useVoice() {
         utterance.volume = options.volume ?? settings.speechVolume;
 
         if (options.voice) {
-            const selectedVoice = voices.find((v) => v.id === options.voice);
-            if (selectedVoice) {
-                const synthVoices = window.speechSynthesis.getVoices();
-                const voice = synthVoices.find((v) => v.voiceURI === selectedVoice.id);
-                if (voice) {
-                    utterance.voice = voice;
-                }
+            const synthVoices = window.speechSynthesis.getVoices();
+            const voice = synthVoices.find((v) => v.voiceURI === options.voice);
+            if (voice) {
+                utterance.voice = voice;
             }
         }
 
@@ -141,7 +145,7 @@ export function useVoice() {
 
         synthesisRef.current = utterance;
         window.speechSynthesis.speak(utterance);
-    }, [voices]);
+    }, []);
 
     /** Execute a voice command */
     const executeCommand = useCallback(async (command: VoiceCommand) => {
@@ -183,6 +187,33 @@ export function useVoice() {
         }
     }, [executeCommand]);
 
+    // Initialize speech synthesis voices
+    useEffect(() => {
+        if (!isSpeechSynthesisAvailable()) {return;}
+
+        const loadVoices = () => {
+            const availableVoices = window.speechSynthesis.getVoices();
+            if (availableVoices.length === 0) {return;}
+
+            setVoices(
+                availableVoices.map((voice) => ({
+                    id: voice.voiceURI,
+                    name: voice.name,
+                    lang: voice.lang,
+                    localService: voice.localService,
+                    default: voice.default,
+                }))
+            );
+        };
+
+        loadVoices();
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+
+        return () => {
+            window.speechSynthesis.onvoiceschanged = null;
+        };
+    }, []);
+
     // Initialize speech recognition
     useEffect(() => {
         const SpeechRecognitionClass = getSpeechRecognition();
@@ -195,7 +226,7 @@ export function useVoice() {
         const recognition = new SpeechRecognitionClass();
         recognition.continuous = true;
         recognition.interimResults = true;
-        recognition.lang = voiceStore.getSettings().recognitionLanguage;
+        recognition.lang = settings.recognitionLanguage;
         recognition.maxAlternatives = 1;
 
         recognition.onstart = () => {
@@ -227,31 +258,12 @@ export function useVoice() {
 
         recognitionRef.current = recognition;
 
-        // Load available voices
-        if (isSpeechSynthesisAvailable()) {
-            const loadVoices = () => {
-                const availableVoices = window.speechSynthesis.getVoices();
-                setVoices(
-                    availableVoices.map((voice) => ({
-                        id: voice.voiceURI,
-                        name: voice.name,
-                        lang: voice.lang,
-                        localService: voice.localService,
-                        default: voice.default,
-                    }))
-                );
-            };
-
-            loadVoices();
-            window.speechSynthesis.onvoiceschanged = loadVoices;
-        }
-
         return () => {
             if (recognitionRef.current) {
                 recognitionRef.current.abort();
             }
         };
-    }, [handleTranscript]);
+    }, [handleTranscript, settings.recognitionLanguage]);
 
     /** Start listening */
     const startListening = useCallback(() => {
@@ -341,7 +353,7 @@ export function useVoice() {
         session,
         voices,
         isSupported,
-        settings: voiceStore.getSettings(),
+        settings,
         startListening,
         stopListening,
         toggleListening,

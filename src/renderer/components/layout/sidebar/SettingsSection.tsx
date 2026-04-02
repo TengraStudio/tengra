@@ -62,6 +62,39 @@ export const SettingsSectionComponent: React.FC<SettingsSectionProps> = ({
     const { t } = useTranslation(language as Language);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+    const getLabelForId = (id: SettingsCategory): string => {
+        switch (id) {
+            case 'workspace':
+                return t('settings.tabs.workspace');
+            case 'editor':
+                return t('settings.tabs.editor');
+            case 'appearance':
+                return t('settings.tabs.appearance');
+            case 'system':
+                return t('settings.tabs.system');
+            case 'accounts':
+                return t('settings.tabs.accounts');
+            case 'models':
+                return t('settings.tabs.models');
+            case 'personas':
+                return t('settings.tabs.personas');
+            case 'speech':
+                return t('settings.tabs.speech');
+            case 'statistics':
+                return t('settings.tabs.statistics');
+            case 'advanced':
+                return t('settings.tabs.advanced');
+            case 'developer':
+                return t('settings.tabs.developer');
+            case 'about':
+                return t('settings.tabs.about');
+            case 'images':
+                return t('settings.tabs.images');
+            default:
+                return t('settings.tabs.general');
+        }
+    };
+
     if (isCollapsed) {
         return (
             <CollapsedSettings onOpenSettings={onOpenSettings} currentView={currentView} t={t} />
@@ -103,15 +136,18 @@ export const SettingsSectionComponent: React.FC<SettingsSectionProps> = ({
                             {(
                                 [
                                     'general',
+                                    'workspace',
+                                    'editor',
                                     'accounts',
                                     'models',
                                     'usage-limits',
                                     'appearance',
+                                    'system',
                                     'speech',
                                     'advanced',
                                     'developer',
                                     'statistics',
-                                    'gallery',
+                                    'images',
                                     'about',
                                 ] as SettingsCategory[]
                             ).map(id => (
@@ -119,7 +155,7 @@ export const SettingsSectionComponent: React.FC<SettingsSectionProps> = ({
                                     key={id}
                                     id={id}
                                     icon={getIconForId(id)}
-                                    label={t(`settings.${id}`)}
+                                    label={getLabelForId(id)}
                                     isActive={currentView === 'settings' && settingsCategory === id}
                                     onClick={() => {
                                         onOpenSettings(id);
@@ -156,6 +192,8 @@ const getIconForId = (id: SettingsCategory) => {
             return Database;
         case 'appearance':
             return Image;
+        case 'images':
+            return Image;
         case 'speech':
             return Mic;
         case 'statistics':
@@ -168,6 +206,12 @@ const getIconForId = (id: SettingsCategory) => {
             return Cpu;
         case 'accounts':
             return UserCircle;
+        case 'workspace':
+            return Database;
+        case 'editor':
+            return Terminal;
+        case 'system':
+            return Activity;
         case 'usage-limits':
             return TrendingUp;
         default:

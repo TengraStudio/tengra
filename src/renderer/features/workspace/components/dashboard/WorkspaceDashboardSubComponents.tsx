@@ -67,7 +67,7 @@ export function SearchResults({ results, workspaceRoot, searchQuery, onSelect, t
                             {res.file.replace(workspaceRoot, '')}:{res.line}
                         </span>
                         {res.type && (
-                            <span className="px-1.5 py-0.5 bg-primary/10 rounded-full text-xxs uppercase tracking-wider">
+                            <span className="px-1.5 py-0.5 bg-primary/10 rounded-full text-xxs">
                                 {res.type}
                             </span>
                         )}

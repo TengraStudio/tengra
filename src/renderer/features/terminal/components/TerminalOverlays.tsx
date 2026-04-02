@@ -79,7 +79,7 @@ export function TerminalOverlays({
                     </div>
                     {aiSelectedIssue && (
                         <div className="mb-3 p-2 rounded bg-destructive/10 border border-destructive/30">
-                            <div className="text-xxxs uppercase tracking-wide text-destructive font-semibold mb-1">
+                            <div className="text-xxxs text-destructive font-semibold mb-1">
                                 {aiSelectedIssue.severity}
                             </div>
                             <div className="text-xs text-foreground/90 line-clamp-3">
@@ -99,7 +99,7 @@ export function TerminalOverlays({
                             {aiResult.type === 'explain-error' && (
                                 <>
                                     <div>
-                                        <div className="text-xxxs uppercase tracking-wide text-muted-foreground mb-1">
+                                        <div className="text-xxxs text-muted-foreground mb-1">
                                             {t('terminal.aiSummary')}
                                         </div>
                                         <div className="text-xs text-foreground">
@@ -107,7 +107,7 @@ export function TerminalOverlays({
                                         </div>
                                     </div>
                                     <div>
-                                        <div className="text-xxxs uppercase tracking-wide text-muted-foreground mb-1">
+                                        <div className="text-xxxs text-muted-foreground mb-1">
                                             {t('terminal.aiCause')}
                                         </div>
                                         <div className="text-xs text-foreground">
@@ -115,7 +115,7 @@ export function TerminalOverlays({
                                         </div>
                                     </div>
                                     <div>
-                                        <div className="text-xxxs uppercase tracking-wide text-muted-foreground mb-1">
+                                        <div className="text-xxxs text-muted-foreground mb-1">
                                             {t('terminal.aiSolution')}
                                         </div>
                                         <div className="text-xs text-foreground">
@@ -124,7 +124,7 @@ export function TerminalOverlays({
                                     </div>
                                     {Array.isArray(aiResult.data.steps) && aiResult.data.steps.length > 0 && (
                                         <div>
-                                            <div className="text-xxxs uppercase tracking-wide text-muted-foreground mb-1">
+                                            <div className="text-xxxs text-muted-foreground mb-1">
                                                 {t('terminal.aiSteps')}
                                             </div>
                                             <ol className="list-decimal list-inside text-xs text-foreground space-y-1">
@@ -140,7 +140,7 @@ export function TerminalOverlays({
                                 <>
                                     {aiResult.data.suggestedCommand && (
                                         <div>
-                                            <div className="text-xxxs uppercase tracking-wide text-muted-foreground mb-1">
+                                            <div className="text-xxxs text-muted-foreground mb-1">
                                                 {t('terminal.aiSuggestedCommand')}
                                             </div>
                                             <div className="flex items-center gap-2">

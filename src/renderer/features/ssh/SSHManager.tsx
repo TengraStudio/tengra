@@ -521,10 +521,13 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
 
     return (
         <div className="modal-overlay">
-            <div className="modal-content ssh-manager bg-popover border border-border shadow-2xl rounded-2xl overflow-hidden" style={{ width: '800px', height: '600px', display: 'flex', flexDirection: 'column' }}>
-                <div className="modal-header"><h2>{t('ssh.title')}</h2><button className="close-btn" onClick={onClose}>×</button></div>
-                <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-                    <div className="relative">
+            <div className="modal-content ssh-manager flex h-[min(88vh,42rem)] w-[min(100%,72rem)] flex-col overflow-hidden rounded-2xl border border-border/30 bg-popover shadow-lg">
+                <div className="modal-header flex items-center justify-between border-b border-border/20 px-4 py-4 sm:px-5">
+                    <h2 className="text-lg font-semibold">{t('ssh.title')}</h2>
+                    <button className="close-btn rounded-lg px-2 py-1 text-muted-foreground hover:bg-muted/30 hover:text-foreground" onClick={onClose}>×</button>
+                </div>
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
+                    <div className="relative border-b border-border/20 lg:w-[18rem] lg:border-b-0 lg:border-r lg:border-border/20">
                         <SSHConnectionList
                             connections={connections}
                             selectedId={selectedConnectionId}
@@ -549,7 +552,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                             </div>
                         ) : null}
                     </div>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <div className="flex min-h-0 flex-1 flex-col">
                         <SSHTabs activeTab={activeTab} onTabChange={setActiveTab} t={t} />
                         <div className="flex-1 overflow-hidden">{renderMainContent()}</div>
                     </div>

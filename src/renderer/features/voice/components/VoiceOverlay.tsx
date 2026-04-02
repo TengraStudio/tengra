@@ -61,12 +61,9 @@ export const VoiceOverlay: React.FC = () => {
 
                 {/* Transcript / Command History */}
                 {(session.lastTranscript || session.lastCommand) && (
-                    <div className="
-                        max-w-md bg-background/90 border border-border/50 rounded-2xl p-4 shadow-xl
-                        animate-in slide-in-from-bottom-4 fade-in duration-300
-                    ">
+                    <div className="max-w-md bg-background/90 border border-border/50 rounded-2xl p-4 shadow-xl animate-in slide-in-from-bottom-4 fade-in duration-300">
                         {session.lastTranscript && (
-                            <p className="text-sm text-foreground/80 italic line-clamp-2">
+                            <p className="text-sm text-foreground/80 line-clamp-2">
                                 "{session.lastTranscript}"
                             </p>
                         )}

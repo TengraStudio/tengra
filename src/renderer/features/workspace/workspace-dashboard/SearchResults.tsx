@@ -132,7 +132,7 @@ const FileGroup = React.memo(({
                             <span className="mt-px w-8 shrink-0 text-right font-mono text-xxs tabular-nums text-muted-foreground/50">
                                 {isFileResult(result) ? '' : result.line}
                             </span>
-                            <span className="mt-px shrink-0 rounded bg-muted/50 px-1.5 py-0.5 text-xxxs font-semibold tracking-wide text-muted-foreground/80">
+                            <span className="mt-px shrink-0 rounded bg-muted/50 px-1.5 py-0.5 text-xxxs font-semibold text-muted-foreground/80">
                                 {getSearchResultBadge(result)}
                             </span>
                             <span className="min-w-0 flex-1 truncate font-mono text-xs leading-5 text-foreground/85">

@@ -1,22 +1,20 @@
-import { en } from '@renderer/i18n/en';
-import { tr } from '@renderer/i18n/tr';
 import { Download, Globe } from 'lucide-react';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import type { Language } from '@/i18n';
 import { useTranslation } from '@/i18n';
+import { localeRegistry } from '@/i18n/locale-registry.service';
+import { enLocalePack } from '@/i18n/locales';
 import { cn } from '@/lib/utils';
 
 type TranslationObject = Record<string, RendererDataValue>;
 
 const ALL_TRANSLATIONS: Record<Language, TranslationObject> = {
-    en: en as TypeAssertionValue as TranslationObject,
-    tr: tr as TypeAssertionValue as TranslationObject,
+    en: enLocalePack.translations as TypeAssertionValue as TranslationObject,
 };
 
 const LANGUAGE_LABELS: Record<Language, string> = {
     en: 'English',
-    tr: 'Türkçe',
 };
 
 /** Flatten a nested object into dot-separated keys. */
@@ -59,38 +57,80 @@ function downloadBlob(content: string, filename: string, mime: string): void {
  */
 export const TranslationExport: React.FC = () => {
     const { t } = useTranslation();
+    const [availableLocalesVersion, setAvailableLocalesVersion] = useState(0);
+
+    useEffect(() => {
+        void localeRegistry.loadLocales();
+        return localeRegistry.subscribe(() => {
+            setAvailableLocalesVersion(previousValue => previousValue + 1);
+        });
+    }, []);
+
+    const runtimeTranslations = useMemo(() => {
+        void availableLocalesVersion;
+        const entries = localeRegistry.getAvailableLocales()
+            .filter(locale => locale.locale !== 'en')
+            .map(locale => {
+                const translations = localeRegistry.getTranslations(locale.locale);
+                if (!translations || typeof translations !== 'object' || Array.isArray(translations)) {
+                    return null;
+                }
+
+                return {
+                    locale: locale.locale,
+                    label: locale.nativeName || locale.displayName,
+                    translations: translations as TypeAssertionValue as TranslationObject,
+                };
+            })
+            .filter((entry): entry is { locale: string; label: string; translations: TranslationObject } => entry !== null);
+
+        return entries;
+    }, [availableLocalesVersion]);
 
     const referenceKeys = useMemo(() => flattenKeys(ALL_TRANSLATIONS.en), []);
 
     const coverageData: CoverageInfo[] = useMemo(() => {
-        return (Object.keys(ALL_TRANSLATIONS) as Language[]).map((lang) => {
-            const langKeys = new Set(flattenKeys(ALL_TRANSLATIONS[lang]));
+        const locales = [
+            { lang: 'en', label: LANGUAGE_LABELS.en, translations: ALL_TRANSLATIONS.en },
+            ...runtimeTranslations.map(locale => ({
+                lang: locale.locale,
+                label: locale.label,
+                translations: locale.translations,
+            })),
+        ];
+
+        return locales.map((locale) => {
+            const langKeys = new Set(flattenKeys(locale.translations));
             const translated = referenceKeys.filter((k) => langKeys.has(k)).length;
             return {
-                lang,
-                label: LANGUAGE_LABELS[lang],
+                lang: locale.lang,
+                label: locale.label,
                 total: referenceKeys.length,
                 translated,
                 percent: referenceKeys.length > 0 ? Math.round((translated / referenceKeys.length) * 100) : 0,
             };
         });
-    }, [referenceKeys]);
+    }, [referenceKeys, runtimeTranslations]);
 
     const handleExportJSON = (): void => {
         const payload: Record<string, TranslationObject> = {};
-        for (const lang of Object.keys(ALL_TRANSLATIONS) as Language[]) {
-            payload[lang] = ALL_TRANSLATIONS[lang];
+        payload.en = ALL_TRANSLATIONS.en;
+        for (const locale of runtimeTranslations) {
+            payload[locale.locale] = locale.translations;
         }
         downloadBlob(JSON.stringify(payload, null, 2), 'translations.json', 'application/json');
     };
 
     const handleExportCSV = (): void => {
-        const langs = Object.keys(ALL_TRANSLATIONS) as Language[];
+        const langs = ['en', ...runtimeTranslations.map(locale => locale.locale)] as Language[];
         const header = ['key', ...langs].join(',');
 
         const rows = referenceKeys.map((key) => {
             const values = langs.map((lang) => {
-                const flat = flattenKeys(ALL_TRANSLATIONS[lang]);
+                const translations = lang === 'en'
+                    ? ALL_TRANSLATIONS.en
+                    : runtimeTranslations.find(locale => locale.locale === lang)?.translations;
+                const flat = translations ? flattenKeys(translations) : [];
                 const found = flat.includes(key);
                 return found ? `"✓"` : `""`;
             });

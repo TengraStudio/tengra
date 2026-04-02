@@ -7,6 +7,8 @@ import React, { Suspense } from 'react';
 
 import { AnimatePresence } from '@/lib/framer-motion-compat';
 
+import './app-modals.css';
+
 // Lazy load heavy components
 const SSHManager = React.lazy(() => import('@renderer/features/ssh/SSHManager').then(m => ({ default: m.SSHManager })));
 const AudioChatOverlay = React.lazy(() => import('@renderer/features/chat/components/AudioChatOverlay').then(m => ({ default: m.AudioChatOverlay })));
@@ -47,9 +49,9 @@ export function AppModals({
                     setCurrentView('settings');
                     setSettingsCategory('accounts');
                 })();
-            }} className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">{t('auth.goToAccounts')}</button>}
+            }} className="tengra-app-modals__auth-footer-button">{t('auth.goToAccounts')}</button>}
         >
-            <div className="space-y-4"><p className="text-sm text-muted-foreground">{t('auth.connectionFailed')}</p></div>
+            <div className="tengra-app-modals__auth-body"><p className="tengra-app-modals__auth-body-text">{t('auth.connectionFailed')}</p></div>
         </Modal>
         <AnimatePresence>
             {showShortcuts && <KeyboardShortcutsModal isOpen={showShortcuts} onClose={() => { setShowShortcuts(false); }} language={language} />}

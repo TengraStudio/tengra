@@ -1,0 +1,215 @@
+/**
+ * LoadingState Component CSS
+ * Component-specific CSS custom properties for the LoadingState component.
+ */
+
+:root {
+  /* Base loading state variables */
+  --loading-state-bg: hsl(var(--background) / 80%);
+  --loading-state-fg: hsl(var(--muted-foreground));
+  --loading-state-backdrop-blur: blur(4px);
+  --loading-state-z-index: 50;
+  --loading-state-min-height: 13rem;
+
+  /* Spinner variables */
+  --loading-spinner-color: hsl(var(--primary));
+  --loading-spinner-size-sm: 1rem;
+  --loading-spinner-size-md: 2rem;
+  --loading-spinner-size-lg: 3rem;
+  --loading-spinner-animation: spin 1s linear infinite;
+
+  /* Message variables */
+  --loading-message-font-size-sm: 0.75rem;
+  --loading-message-font-size-md: 0.875rem;
+  --loading-message-font-size-lg: 1rem;
+  --loading-message-font-weight: 500;
+
+  /* Stage label variables */
+  --loading-stage-font-size: 0.75rem;
+  --loading-stage-fg: hsl(var(--muted-foreground));
+
+  /* Progress bar variables */
+  --loading-progress-width: 14rem;
+  --loading-progress-width-compact: 11rem;
+  --loading-progress-height: 0.375rem;
+  --loading-progress-bg: hsl(var(--muted) / 50%);
+  --loading-progress-fill-bg: hsl(var(--primary));
+  --loading-progress-border-radius: 9999px;
+  --loading-progress-transition: all 0.3s ease-out;
+
+  /* Estimate label variables */
+  --loading-estimate-font-size: 0.75rem;
+  --loading-estimate-fg: hsl(var(--muted-foreground) / 80%);
+
+  /* Cancel button variables */
+  --loading-cancel-padding-x: 0.625rem;
+  --loading-cancel-padding-y: 0.25rem;
+  --loading-cancel-font-size: 0.75rem;
+  --loading-cancel-border: hsl(var(--border) / 60%);
+  --loading-cancel-fg: hsl(var(--foreground));
+  --loading-cancel-hover-bg: hsl(var(--accent) / 40%);
+  --loading-cancel-border-radius: 0.25rem;
+  --loading-cancel-margin-top: 0.25rem;
+
+  /* Compact variant */
+  --loading-compact-padding-x: 0.75rem;
+  --loading-compact-padding-y: 0.5rem;
+  --loading-compact-bg: hsl(var(--card) / 70%);
+  --loading-compact-border: hsl(var(--border) / 50%);
+  --loading-compact-border-radius: 0.5rem;
+
+  /* Gap */
+  --loading-state-gap: 0.75rem;
+}
+
+/* Base loading state container */
+.tengra-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--loading-state-gap);
+  color: var(--loading-state-fg);
+  min-height: var(--loading-state-min-height);
+}
+
+/* Fullscreen variant */
+.tengra-loading-state--fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: var(--loading-state-z-index);
+  background-color: var(--loading-state-bg);
+  backdrop-filter: var(--loading-state-backdrop-blur);
+  min-height: auto;
+}
+
+.tengra-loading-state--fullscreen .tengra-loading-state__content {
+  min-width: 16rem;
+}
+
+/* Compact variant */
+.tengra-loading-state--compact {
+  min-height: 0;
+  padding: var(--loading-compact-padding-y) var(--loading-compact-padding-x);
+  border-radius: var(--loading-compact-border-radius);
+  border: 1px solid var(--loading-compact-border);
+  background-color: var(--loading-compact-bg);
+}
+
+/* Content wrapper */
+.tengra-loading-state__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--loading-state-gap);
+}
+
+/* Spinner */
+.tengra-loading-state__spinner {
+  color: var(--loading-spinner-color);
+  animation: var(--loading-spinner-animation);
+}
+
+.tengra-loading-state--sm .tengra-loading-state__spinner {
+  width: var(--loading-spinner-size-sm);
+  height: var(--loading-spinner-size-sm);
+}
+
+.tengra-loading-state--md .tengra-loading-state__spinner {
+  width: var(--loading-spinner-size-md);
+  height: var(--loading-spinner-size-md);
+}
+
+.tengra-loading-state--lg .tengra-loading-state__spinner {
+  width: var(--loading-spinner-size-lg);
+  height: var(--loading-spinner-size-lg);
+}
+
+/* Message */
+.tengra-loading-state__message {
+  font-weight: var(--loading-message-font-weight);
+}
+
+.tengra-loading-state--sm .tengra-loading-state__message {
+  font-size: var(--loading-message-font-size-sm);
+}
+
+.tengra-loading-state--md .tengra-loading-state__message {
+  font-size: var(--loading-message-font-size-md);
+}
+
+.tengra-loading-state--lg .tengra-loading-state__message {
+  font-size: var(--loading-message-font-size-lg);
+}
+
+/* Stage */
+.tengra-loading-state__stage {
+  font-size: var(--loading-stage-font-size);
+  color: var(--loading-stage-fg);
+}
+
+/* Progress bar */
+.tengra-loading-state__progress-track {
+  width: var(--loading-progress-width);
+  height: var(--loading-progress-height);
+  background-color: var(--loading-progress-bg);
+  border-radius: var(--loading-progress-border-radius);
+  overflow: hidden;
+}
+
+.tengra-loading-state--compact .tengra-loading-state__progress-track {
+  width: var(--loading-progress-width-compact);
+}
+
+.tengra-loading-state__progress-fill {
+  height: 100%;
+  background-color: var(--loading-progress-fill-bg);
+  transition: var(--loading-progress-transition);
+}
+
+/* Estimate label */
+.tengra-loading-state__estimate {
+  font-size: var(--loading-estimate-font-size);
+  color: var(--loading-estimate-fg);
+}
+
+/* Cancel button */
+.tengra-loading-state__cancel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: var(--loading-cancel-padding-y) var(--loading-cancel-padding-x);
+  margin-top: var(--loading-cancel-margin-top);
+  font-size: var(--loading-cancel-font-size);
+  color: var(--loading-cancel-fg);
+  border: 1px solid var(--loading-cancel-border);
+  border-radius: var(--loading-cancel-border-radius);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.tengra-loading-state__cancel:hover {
+  background-color: var(--loading-cancel-hover-bg);
+}
+
+.tengra-loading-state__cancel svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+/* Inline variant - just the spinner */
+.tengra-loading-state--inline {
+  display: inline-flex;
+  min-height: auto;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}

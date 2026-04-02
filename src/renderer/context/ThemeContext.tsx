@@ -11,13 +11,14 @@ interface ThemeContextType {
 export const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 import { useSettings } from '@/context/SettingsContext';
+import { readCachedSettings } from '@/store/settings.store';
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { settings, updateSettings } = useSettings();
 
     // Initialize from localStorage as immediate fallback before settings load
     const [localTheme, setLocalTheme] = useState<Theme>(() => {
-        return localStorage.getItem('Tengra-theme') ?? 'black';
+        return readCachedSettings()?.general.theme ?? localStorage.getItem('Tengra-theme') ?? 'graphite';
     });
 
     // Prefer settings if available, otherwise local state

@@ -1,18 +1,19 @@
-import { Loader2 } from 'lucide-react';
-import React, { memo, useEffect, useMemo, useState } from 'react';
+import { Badge } from '@renderer/components/ui/badge';
+import { 
+    Activity, 
+    BarChart3, 
+    Calendar, 
+    Clock,
+    Loader2, 
+    TrendingUp} from 'lucide-react';
+import React, { memo } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { AppSettings } from '@/types';
-import { CodexUsage, CopilotQuota, QuotaResponse } from '@/types/quota';
-import { appLogger } from '@/utils/renderer-logger';
 
-import { AccountWrapper, DetailedStats } from '../types';
+import { DetailedStats } from '../types';
 
-import { AntigravityCard } from './statistics/AntigravityCard';
-import { ClaudeCard } from './statistics/ClaudeCard';
-import { CodexCard } from './statistics/CodexCard';
-import { CopilotCard } from './statistics/CopilotCard';
 import { OverviewCards } from './statistics/OverviewCards';
 import { TokenUsageChart } from './statistics/TokenUsageChart';
 
@@ -27,181 +28,144 @@ interface PeriodSelectorProps {
 }
 
 interface StatisticsTabProps {
-    statsLoading: boolean
-    statsData: DetailedStats | null
-    quotaData: AccountWrapper<QuotaResponse> | null
-    copilotQuota: AccountWrapper<CopilotQuota> | null
-    codexUsage: AccountWrapper<{ usage: CodexUsage }> | null
-    claudeQuota: AccountWrapper<import('@shared/types/quota').ClaudeQuota> | null
-    statsPeriod: StatisticsPeriod
-    setStatsPeriod: (p: StatisticsPeriod) => void
-    settings: AppSettings | null
-    authStatus: { codex: boolean; claude: boolean; antigravity: boolean }
-    setReloadTrigger?: (v: number | ((prev: number) => number)) => void
-}
-
-interface TokenUsageCardProps {
     statsLoading: boolean;
-    tokenTimeline?: DetailedStats['tokenTimeline'];
-    statsPeriod: StatisticsPeriod;
-    t: (key: string) => string;
-}
-
-const SurfaceCard: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
-    <section className={cn(
-        'rounded-2xl border border-border/50 bg-card p-6',
-        className
-    )}>
-        {children}
-    </section>
-);
-
-const PeriodSelector: React.FC<PeriodSelectorProps> = memo(({ period, onChange, t }) => (
-    <div className="flex flex-wrap gap-2">
-        {PERIODS.map((value) => (
-            <button
-                key={value}
-                onClick={() => onChange(value)}
-                className={cn(
-                    'rounded-full border px-3 py-1.5 text-xxxs font-black uppercase tracking-widest transition-all',
-                    period === value
-                        ? 'border-primary/40 bg-primary/10 text-primary'
-                        : 'border-border/50 bg-transparent text-muted-foreground/60 hover:text-foreground'
-                )}
-            >
-                {t(`statistics.${value}`)}
-            </button>
-        ))}
-    </div>
-));
-PeriodSelector.displayName = 'PeriodSelector';
-
-
-const StatisticsHeader: React.FC<{
-    t: (key: string) => string;
+    statsData: DetailedStats | null;
     statsPeriod: StatisticsPeriod;
     setStatsPeriod: (p: StatisticsPeriod) => void;
-}> = ({ t, statsPeriod, setStatsPeriod }) => (
-    <div className="flex flex-col gap-6 border-b border-border/40 pb-8 lg:flex-row lg:items-end lg:justify-between">
-        <div className="space-y-2">
-            <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                <div className="text-xxxs font-black uppercase tracking-widest text-primary">{t('statistics.title')}</div>
-            </div>
-            <div className="text-2xl font-black tracking-tight text-foreground">{t('statistics.subtitle')}</div>
-            <div className="text-sm text-muted-foreground/70 font-medium">{t('statistics.visualizeTokenConsumption')}</div>
+    settings: AppSettings | null;
+}
+
+const PeriodSelector: React.FC<PeriodSelectorProps> = memo(
+    ({ period, onChange, t }) => (
+        <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-border/20 bg-muted/10 p-1.5">
+            {PERIODS.map(value => {
+                const isActive = period === value;
+                return (
+                    <button
+                        key={value}
+                        onClick={() => onChange(value)}
+                        className={cn(
+                            'relative h-9 overflow-hidden rounded-xl px-4 text-[10px] font-medium transition-colors',
+                            isActive 
+                                ? 'bg-background text-primary'
+                                : 'text-muted-foreground/60 hover:bg-muted/20 hover:text-foreground'
+                        )}
+                    >
+                        {isActive && (
+                            <div className="absolute inset-0 bg-primary/10 animate-in fade-in zoom-in duration-500" />
+                        )}
+                        <span className="relative z-10">{t(`statistics.${value}`)}</span>
+                        {isActive && (
+                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-primary rounded-full" />
+                        )}
+                    </button>
+                );
+            })}
         </div>
-        <div className="flex items-center gap-4">
-            <div className="text-xxxs font-bold uppercase tracking-widest text-muted-foreground/40">{t('common.period') || 'Period'}</div>
-            <PeriodSelector period={statsPeriod} onChange={setStatsPeriod} t={t} />
-        </div>
-    </div>
+    )
 );
+PeriodSelector.displayName = 'PeriodSelector';
 
-const TokenUsageCard: React.FC<TokenUsageCardProps> = memo(({ statsLoading, tokenTimeline, statsPeriod, t }) => (
-    <div className="space-y-6">
-        <div className="text-xxxs font-black uppercase tracking-widest text-muted-foreground/60">
-            {t('statistics.tokenUsageOverTime')}
-        </div>
-        <div className="min-h-80">
-            {statsLoading ? (
-                <div className="flex h-80 items-center justify-center">
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+export const StatisticsTab: React.FC<StatisticsTabProps> = memo(
+    ({ statsLoading, statsData, statsPeriod, setStatsPeriod, settings }) => {
+        const { t } = useTranslation(settings?.general.language ?? 'en');
+
+        if (statsLoading && !statsData) {
+            return (
+                <div className="flex flex-col h-96 items-center justify-center space-y-6">
+                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                    <div className="text-[10px] font-medium text-muted-foreground/50 animate-pulse">
+                        {t('statistics.synchronizingMetrics')}
+                    </div>
                 </div>
-            ) : (
-                <TokenUsageChart tokenTimeline={tokenTimeline ?? []} t={t} period={statsPeriod} />
-            )}
-        </div>
-    </div>
-));
-TokenUsageCard.displayName = 'TokenUsageCard';
+            );
+        }
 
-export const StatisticsTab: React.FC<StatisticsTabProps> = memo(({
-    statsLoading,
-    statsData,
-    quotaData,
-    copilotQuota,
-    codexUsage,
-    claudeQuota,
-    statsPeriod,
-    setStatsPeriod,
-    settings
-}) => {
-    const { t } = useTranslation(settings?.general.language ?? 'en');
-    const [activeAntigravityAccount, setActiveAntigravityAccount] = useState<{ id?: string; email?: string } | null>(null);
-
-    useEffect(() => {
-        const loadActiveAntigravityAccount = async () => {
-            try {
-                const account = await window.electron.getActiveLinkedAccount('antigravity')
-                    .catch(() => window.electron.getActiveLinkedAccount('google'));
-                setActiveAntigravityAccount(account ? { id: account.id, email: account.email } : null);
-            } catch (error) {
-                appLogger.error('StatisticsTab', 'Failed to load active Antigravity account', error as Error);
-            }
-        };
-
-        void loadActiveAntigravityAccount();
-    }, []);
-
-    const locale = useMemo(() =>
-        settings?.general.language === 'tr' ? 'tr-TR' : 'en-US',
-        [settings?.general.language]
-    );
-
-    if (statsLoading && !statsData) {
         return (
-            <div className="flex h-64 items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 ease-out pb-16">
+            <div className="flex flex-col gap-6 px-1 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                         <div className="mb-3 flex items-center gap-4">
+                            <div className="rounded-2xl bg-primary/10 p-3.5 text-primary">
+                                <BarChart3 className="w-7 h-7" />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-semibold text-foreground leading-none">
+                                    {t('statistics.title')}
+                                </h3>
+                                <div className="flex items-center gap-2 mt-2">
+                                     <div className="h-1 w-8 bg-primary rounded-full" />
+                                    <p className="text-[10px] font-medium text-muted-foreground opacity-60">
+                                        {t('statistics.telemetryAnalytics')}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <p className="max-w-lg text-sm leading-relaxed text-muted-foreground/70">
+                            {t('statistics.visualizeTokenConsumption')}
+                        </p>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                         <div className="flex items-center gap-2 px-1">
+                            <Calendar className="w-3 h-3 text-primary/60" />
+                            <span className="text-[9px] font-medium text-muted-foreground/60">{t('statistics.temporalFilter')}</span>
+                        </div>
+                        <PeriodSelector
+                            period={statsPeriod}
+                            onChange={setStatsPeriod}
+                            t={t}
+                        />
+                    </div>
+                </div>
+
+                <div className="overflow-hidden rounded-3xl border border-border/30 bg-card p-6 sm:p-8">
+                    <div className="relative z-10 flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-3">
+                            <Activity className="w-4 h-4 text-primary" />
+                            <h4 className="text-[10px] font-medium text-muted-foreground/60">{t('statistics.consumptionMatrix')}</h4>
+                        </div>
+                        <Badge variant="outline" className="h-5 border-primary/20 px-2 text-[9px] font-medium text-primary">{t('statistics.liveFeed')}</Badge>
+                    </div>
+
+                    <div className="relative z-10 mt-6">
+                         <OverviewCards t={t} statsData={statsData} />
+                    </div>
+                </div>
+
+                <div className="overflow-hidden rounded-3xl border border-border/30 bg-card p-6 sm:p-8">
+                     <div className="relative z-10 flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-3">
+                            <TrendingUp className="w-4 h-4 text-primary" />
+                            <h4 className="text-[10px] font-medium text-muted-foreground/60">{t('statistics.propagationCurve')}</h4>
+                        </div>
+                         <div className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground/60">
+                            <Clock className="w-3 h-3" />
+                            <span>{t('statistics.realtimeTracking')}</span>
+                        </div>
+                    </div>
+
+                    <div className="relative z-10 mt-6 min-h-80">
+                        {statsLoading ? (
+                            <div className="flex h-80 items-center justify-center">
+                                <Loader2 className="h-6 w-6 animate-spin text-primary/40" />
+                            </div>
+                        ) : (
+                            <div className="group/graph relative">
+                                <div className="relative rounded-3xl border border-border/20 bg-muted/5 p-4 sm:p-6">
+                                    <TokenUsageChart
+                                        tokenTimeline={statsData?.tokenTimeline ?? []}
+                                        t={t}
+                                        period={statsPeriod}
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
         );
     }
-
-    return (
-        <div className="space-y-8 pb-10 w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <SurfaceCard className="p-8 space-y-10">
-                <StatisticsHeader
-                    t={t}
-                    statsPeriod={statsPeriod}
-                    setStatsPeriod={setStatsPeriod}
-                />
-
-                <div className="space-y-4">
-                    <div className="text-xxxs font-black uppercase tracking-widest text-muted-foreground/60">{t('statistics.usageOverview')}</div>
-                    <OverviewCards t={t} statsData={statsData} />
-                </div>
-
-                <div className="pt-4">
-                    <TokenUsageCard
-                        statsLoading={statsLoading}
-                        tokenTimeline={statsData?.tokenTimeline}
-                        statsPeriod={statsPeriod}
-                        t={t}
-                    />
-                </div>
-            </SurfaceCard>
-
-            <div className="space-y-6">
-                <div className="flex flex-col gap-2 px-1">
-                    <div className="text-xxxs font-black uppercase tracking-widest text-primary/70">{t('statistics.connectedAppsUsage')}</div>
-                    <div className="text-sm text-muted-foreground/60 font-medium">{t('statistics.usageStatistics')}</div>
-                </div>
-                
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                    <AntigravityCard
-                        t={t}
-                        quotaData={quotaData}
-                        locale={locale}
-                        activeAccountId={activeAntigravityAccount?.id ?? null}
-                        activeAccountEmail={activeAntigravityAccount?.email ?? null}
-                    />
-                    <ClaudeCard claudeQuota={claudeQuota} locale={locale} />
-                    <CopilotCard copilotQuota={copilotQuota} />
-                    <CodexCard codexUsage={codexUsage} locale={locale} />
-                </div>
-            </div>
-        </div>
-    );
-});
+);
 
 StatisticsTab.displayName = 'StatisticsTab';

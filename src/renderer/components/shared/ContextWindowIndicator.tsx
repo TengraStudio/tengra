@@ -1,6 +1,8 @@
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
+import './context-window-indicator.css';
+
 /** Props for the ContextWindowIndicator component */
 interface ContextWindowIndicatorProps {
     /** Number of tokens currently used */
@@ -25,19 +27,19 @@ const ContextWindowIndicator: React.FC<ContextWindowIndicatorProps> = ({
     const percentage = maxTokens > 0 ? Math.min((usedTokens / maxTokens) * 100, 100) : 0;
     const roundedPercentage = Math.round(percentage);
 
-    const barColor =
+    const colorClass =
         percentage > 80
-            ? 'bg-destructive'
+            ? 'tengra-context-indicator__fill--danger'
             : percentage > 50
-              ? 'bg-warning'
-              : 'bg-success';
+              ? 'tengra-context-indicator__fill--warning'
+              : 'tengra-context-indicator__fill--success';
 
     const formatNumber = (n: number): string => n.toLocaleString();
 
     return (
-        <div className="flex flex-col gap-1.5 rounded-md border border-border bg-card p-3">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span className="font-medium">{modelName}</span>
+        <div className="tengra-context-indicator">
+            <div className="tengra-context-indicator__header">
+                <span className="tengra-context-indicator__model">{modelName}</span>
                 <span>
                     {t('contextWindow.usage', {
                         used: formatNumber(usedTokens),
@@ -46,9 +48,9 @@ const ContextWindowIndicator: React.FC<ContextWindowIndicatorProps> = ({
                     })}
                 </span>
             </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div className="tengra-context-indicator__bar">
                 <div
-                    className={cn('h-full rounded-full transition-all duration-300', barColor)}
+                    className={cn('tengra-context-indicator__fill', colorClass)}
                     style={{ width: `${roundedPercentage}%` }}
                 />
             </div>

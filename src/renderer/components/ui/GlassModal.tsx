@@ -5,6 +5,8 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
+import './glass-modal.css';
+
 interface GlassModalProps {
     isOpen: boolean
     onClose: () => void
@@ -16,16 +18,6 @@ interface GlassModalProps {
     closeOnBackdrop?: boolean
     closeOnEscape?: boolean
 }
-
-type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
-
-const SIZE_CLASSES: Record<ModalSize, string> = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
-    full: 'max-w-screen-lg max-h-screen'
-};
 
 function useEscapeKey(isOpen: boolean, closeOnEscape: boolean, onClose: () => void): void {
     useEffect(() => {
@@ -113,17 +105,14 @@ export const GlassModal: React.FC<GlassModalProps> = ({
 
     return createPortal(
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="tengra-glass-modal"
             role="dialog"
             aria-modal="true"
             aria-labelledby={title ? 'modal-title' : undefined}
         >
             {/* Backdrop with glassmorphism */}
             <div
-                className={cn(
-                    'absolute inset-0 glass-dark',
-                    'animate-in fade-in-0 duration-200'
-                )}
+                className="tengra-glass-modal__overlay"
                 onClick={closeOnBackdrop ? onClose : undefined}
                 aria-hidden="true"
             />
@@ -132,10 +121,8 @@ export const GlassModal: React.FC<GlassModalProps> = ({
             <div
                 ref={modalRef}
                 className={cn(
-                    'relative w-full glass rounded-2xl shadow-2xl',
-                    'animate-in fade-in-0 zoom-in-95 duration-300',
-                    'border border-border/40',
-                    SIZE_CLASSES[size],
+                    'tengra-glass-modal__content',
+                    `tengra-glass-modal__content--${size}`,
                     className
                 )}
             >
@@ -143,7 +130,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
                 <ModalHeader title={title} showClose={showClose} onClose={onClose} />
 
                 {/* Body */}
-                <div className="p-4 overflow-y-auto max-h-screen">
+                <div className="tengra-glass-modal__body">
                     {children}
                 </div>
             </div>
@@ -166,11 +153,11 @@ const ModalHeader: React.FC<ModalHeaderProps> = ({ title, showClose, onClose }) 
     if (!showHeader) { return null; }
 
     return (
-        <div className="flex items-center justify-between p-4 border-b border-border/40">
-            {title && <h2 id="modal-title" className="text-lg font-semibold gradient-text">{title}</h2>}
+        <div className="tengra-glass-modal__header">
+            {title && <h2 id="modal-title" className="tengra-glass-modal__title">{title}</h2>}
             {showClose && (
-                <button onClick={onClose} className="p-2 rounded-lg hover:bg-muted/60 transition-colors ripple" aria-label={t('modal.close')}>
-                    <X className="w-5 h-5" />
+                <button onClick={onClose} className="tengra-glass-modal__close" aria-label={t('modal.close')}>
+                    <X className="tengra-glass-modal__close-icon" />
                 </button>
             )}
         </div>

@@ -40,12 +40,12 @@ interface ExplorerActionsProps {
 const ExplorerHeader: React.FC<ExplorerHeaderProps> = ({ query, totalHf, onSearchChange, onClose, t }) => (
     <div className="space-y-6">
         <div className="flex flex-col gap-2">
-            <h1 className="text-3xl font-black tracking-tight">{t('modelExplorer.title')}</h1>
+            <h1 className="text-3xl font-bold">{t('modelExplorer.title')}</h1>
             <div className="flex items-center gap-2">
                 <p className="text-sm text-muted-foreground">{t('modelExplorer.subtitle')}</p>
                 <div className="px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 flex items-center gap-1.5">
                     <Box className="w-3 h-3 text-primary" />
-                    <span className="text-xxs font-bold text-primary tracking-wide uppercase">
+                    <span className="text-xxs font-bold text-primary">
                         {totalHf > 0 ? `${totalHf.toLocaleString()} ` : ''}{t('modelExplorer.ggufCompatible')}
                     </span>
                 </div>
@@ -86,7 +86,7 @@ const ExplorerActions: React.FC<ExplorerActionsProps> = ({ activeSource, setActi
 
         <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-xl border border-border/30">
-                <span className="text-xxs font-black uppercase tracking-widest text-muted-foreground/50 whitespace-nowrap">{t('modelExplorer.sort')}</span>
+                <span className="text-xxs font-bold text-muted-foreground/50 whitespace-nowrap">{t('modelExplorer.sort')}</span>
                 <SelectDropdown
                     value={sortBy}
                     options={[
@@ -101,7 +101,7 @@ const ExplorerActions: React.FC<ExplorerActionsProps> = ({ activeSource, setActi
 
             <div className="flex items-center bg-muted/20 rounded-xl p-1 border border-border/50">
                 <button disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))} className="p-2 rounded-lg hover:bg-muted transition-all disabled:opacity-30"><ChevronLeft className="w-4 h-4" /></button>
-                <span className="px-4 text-xxs font-black uppercase tracking-widest text-muted-foreground border-x border-border/30">{t('modelExplorer.page')} {page + 1}</span>
+                <span className="px-4 text-xxs font-bold text-muted-foreground border-x border-border/30">{t('modelExplorer.page')} {page + 1}</span>
                 <button onClick={() => setPage(p => p + 1)} className="p-2 rounded-lg hover:bg-muted transition-all"><ChevronRight className="w-4 h-4" /></button>
             </div>
         </div>

@@ -49,6 +49,7 @@ export function useWorkspaceState(workspaceId: string) {
     );
 
     const [showMountModal, setShowMountModal] = useState(false);
+    const [showLogoModal, setShowLogoModal] = useState(false);
     const [entryModal, setEntryModal] = useState<{
         type: 'createFile' | 'createFolder' | 'rename' | 'delete';
         entry: WorkspaceEntry;
@@ -165,6 +166,8 @@ export function useWorkspaceState(workspaceId: string) {
         setTerminalLayoutState,
         showMountModal,
         setShowMountModal,
+        showLogoModal,
+        setShowLogoModal,
         entryModal,
         setEntryModal,
         entryName,

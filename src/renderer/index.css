@@ -502,10 +502,9 @@
 
     html {
         font-family: var(--font-family);
-        letter-spacing: -0.015em;
-        /* Responsive Scaling: Min 16px, Preferred 1.05vw, Max 20px (User setting overrides) */
-        font-size: var(--font-size-base, clamp(16px, 1.05vw, 20px));
-        line-height: 1.6;
+        letter-spacing: var(--tracking-normal, -0.01em);
+        font-size: var(--font-size-root, 15px);
+        line-height: var(--line-height-body, 1.68);
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         height: 100%;
@@ -513,7 +512,10 @@
 
     body {
         @apply bg-background text-foreground;
-        font-feature-settings: 'cv11', 'ss01', 'ss03';
+        font-feature-settings: 'ss01', 'ss03';
+        font-size: var(--font-size-base, 1rem);
+        line-height: var(--line-height-body, 1.68);
+        letter-spacing: var(--tracking-normal, -0.01em);
         overflow-x: hidden;
         height: 100%;
         min-height: 100vh;
@@ -563,8 +565,69 @@
     code,
     pre,
     .font-mono {
-        font-family: 'JetBrains Mono', monospace;
-        font-variant-ligatures: none;
+        font-family: var(--font-mono);
+        font-variant-ligatures: normal;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-family: var(--font-display);
+        letter-spacing: var(--heading-tracking, -0.035em);
+        line-height: var(--leading-snug, 1.35);
+    }
+
+    h1 {
+        font-size: var(--text-4xl);
+        font-weight: var(--font-bold);
+    }
+
+    h2 {
+        font-size: var(--text-3xl);
+        font-weight: var(--font-bold);
+    }
+
+    h3 {
+        font-size: var(--text-2xl);
+        font-weight: var(--font-semibold);
+    }
+
+    h4 {
+        font-size: var(--text-xl);
+        font-weight: var(--font-semibold);
+    }
+
+    h5 {
+        font-size: var(--text-lg);
+        font-weight: var(--font-semibold);
+    }
+
+    h6 {
+        font-size: var(--text-base);
+        font-weight: var(--font-semibold);
+        line-height: var(--leading-normal, 1.55);
+    }
+
+    p,
+    li {
+        font-size: var(--text-base);
+        line-height: var(--line-height-body, 1.68);
+    }
+
+    small,
+    .text-caption {
+        font-size: var(--text-xs);
+        line-height: var(--leading-normal, 1.55);
+        letter-spacing: 0;
+    }
+
+    code,
+    pre {
+        font-size: var(--text-sm);
+        line-height: var(--leading-normal, 1.55);
     }
 }
 
@@ -583,7 +646,7 @@
 
     /* Section Title */
     .section-title {
-        @apply text-xs font-bold text-muted-foreground uppercase tracking-widest mb-6;
+        @apply text-xxs font-semibold text-muted-foreground mb-6;
     }
 
     /* Button variants */
@@ -603,7 +666,8 @@
     /* --- ENHANCED MARKDOWN STYLING --- */
     .markdown-body {
         @apply text-foreground/90 leading-relaxed break-words;
-        font-size: 0.95em;
+        font-size: var(--text-base);
+        line-height: var(--line-height-body);
     }
 
     .markdown-body p {
@@ -611,15 +675,15 @@
     }
 
     .markdown-body h1 {
-        @apply text-2xl font-black mt-8 mb-4 tracking-tight border-b border-border/30 pb-2;
+        @apply text-2xl font-bold mt-8 mb-4 border-b border-border/30 pb-2;
     }
 
     .markdown-body h2 {
-        @apply text-xl font-bold mt-7 mb-4 tracking-tight;
+        @apply text-xl font-bold mt-7 mb-4;
     }
 
     .markdown-body h3 {
-        @apply text-lg font-bold mt-6 mb-3 tracking-tight;
+        @apply text-lg font-bold mt-6 mb-3 ;
     }
 
     .markdown-body h4 {
@@ -656,13 +720,14 @@
     }
 
     .markdown-body blockquote {
-        @apply border-l-4 border-primary/40 pl-4 py-1 my-4 italic bg-muted/20 rounded-r-lg text-muted-foreground;
+        @apply border-l-4 border-primary/40 pl-4 py-1 my-4 bg-muted/20 rounded-r-lg text-muted-foreground;
     }
 
     /* Inline Code */
     .markdown-body code:not(pre code) {
-        @apply bg-muted/80 text-primary px-1.5 py-0.5 rounded font-mono text-sm font-medium border border-border/20 whitespace-nowrap;
-        font-size: 0.85em;
+        @apply bg-muted/80 text-primary px-1.5 py-0.5 rounded font-mono font-medium border border-border/20 whitespace-nowrap;
+        font-size: var(--text-xs);
+        line-height: var(--leading-normal);
         box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.1);
     }
 
@@ -676,7 +741,7 @@
     }
 
     .markdown-body th {
-        @apply bg-muted/40 p-3 text-left font-bold text-muted-foreground uppercase tracking-wider text-xxxs border-b border-border/30;
+        @apply bg-muted/40 p-3 text-left font-semibold text-muted-foreground text-xxxs border-b border-border/30;
     }
 
     .markdown-body td {

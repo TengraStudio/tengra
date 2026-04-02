@@ -17,8 +17,8 @@ interface VirtualizedWorkspaceGridProps {
     showWorkspaceMenu: string | null
     setShowWorkspaceMenu: (id: string | null) => void
     workspaceStateMachine: {
-        startEdit: (workspace: Workspace, event?: React.MouseEvent) => void
-        startDelete: (workspace: Workspace, event?: React.MouseEvent) => void
+        startEdit: (workspace: Workspace) => void
+        startDelete: (workspace: Workspace) => void
         startArchive: (workspace: Workspace) => void
         toggleSelection: (id: string) => void
         state: {
@@ -103,13 +103,13 @@ export const VirtualizedWorkspaceGrid: React.FC<VirtualizedWorkspaceGridProps> =
             onSelect={(workspace) => onSelectWorkspace?.(workspace)}
             activeMenuId={showWorkspaceMenu}
             setActiveMenuId={setShowWorkspaceMenu}
-            onEdit={(workspace, event) => {
+            onEdit={(workspace) => {
                 setShowWorkspaceMenu(null);
-                sm.startEdit(workspace, event);
+                sm.startEdit(workspace);
             }}
-            onDelete={(workspace, event) => {
+            onDelete={(workspace) => {
                 setShowWorkspaceMenu(null);
-                sm.startDelete(workspace, event);
+                sm.startDelete(workspace);
             }}
             onArchive={(workspace) => sm.startArchive(workspace)}
             t={t}

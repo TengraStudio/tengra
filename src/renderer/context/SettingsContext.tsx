@@ -1,5 +1,9 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo } from 'react';
 
+import {
+    resolveAppFontPreset,
+    resolveTypographyScale,
+} from '@/lib/typography-settings';
 import { loadSettings, updateSettings as updateSettingsInStore, useSettingsStore } from '@/store/settings.store';
 import { AppSettings } from '@/types';
 
@@ -34,6 +38,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         if (settings.general.theme) {
             document.documentElement.setAttribute('data-theme', settings.general.theme);
         }
+        const fontPreset = resolveAppFontPreset();
+        const typographyScale = resolveTypographyScale(settings.general.typographyScale);
+        document.documentElement.style.setProperty('--font-sans', fontPreset.sans);
+        document.documentElement.style.setProperty('--font-display', fontPreset.display);
+        document.documentElement.style.setProperty('--font-mono', fontPreset.sans);
+        document.documentElement.style.setProperty('--font-family', fontPreset.sans);
+        document.documentElement.style.setProperty('--font-size-base', `${settings.general.fontSize}px`);
+        document.documentElement.style.setProperty('--line-height-body', typographyScale.lineHeight);
+        document.documentElement.style.setProperty('--heading-tracking', typographyScale.headingTracking);
+        document.documentElement.setAttribute('data-typography-scale', typographyScale.id);
     }, [settings]);
 
     const value = useMemo(() => ({

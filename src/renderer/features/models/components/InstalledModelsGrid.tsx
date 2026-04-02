@@ -316,7 +316,7 @@ const InstalledModelCard = memo(({
             {/* Header with provider badge and quota */}
             <div className="flex items-center justify-between mb-3">
                 <div className={cn(
-                    "flex items-center gap-1.5 px-2 py-1 rounded-md text-xxs font-bold uppercase tracking-wider",
+                    "flex items-center gap-1.5 px-2 py-1 rounded-md text-xxs font-bold  ",
                     providerConfig.bgColor,
                     providerConfig.color
                 )}>

@@ -1,7 +1,10 @@
+import { Input } from '@renderer/components/ui/input';
+import { Label } from '@renderer/components/ui/label';
+import { Textarea } from '@renderer/components/ui/textarea';
+import { cn } from '@renderer/lib/utils';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
-import { cn } from '@/lib/utils';
 
 interface SshFormData {
     host: string;
@@ -29,46 +32,52 @@ export const WizardSSHConnectStep: React.FC<WizardSSHConnectStepProps> = ({
             <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
                     <div className="col-span-2">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">
+                        <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
                             {t('common.host')}
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                             autoFocus
                             value={sshForm.host}
-                            onChange={e => setSshForm(p => ({ ...p, host: e.target.value }))}
-                            className="w-full bg-muted/10 border border-border/50 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-foreground"
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                setSshForm(p => ({ ...p, host: e.target.value }))
+                            }
+                            className="h-12"
                             placeholder={t('workspaceWizard.placeholder.example')}
                         />
                     </div>
                     <div>
-                        <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">
+                        <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
                             {t('common.port')}
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                             value={sshForm.port}
-                            onChange={e => setSshForm(p => ({ ...p, port: e.target.value }))}
-                            className="w-full bg-muted/10 border border-border/50 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-foreground"
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                setSshForm(p => ({ ...p, port: e.target.value }))
+                            }
+                            className="h-12"
                             placeholder={t('ssh.placeholders.port')}
                         />
                     </div>
                 </div>
 
                 <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">
+                    <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
                         {t('common.username')}
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                         value={sshForm.username}
-                        onChange={e => setSshForm(p => ({ ...p, username: e.target.value }))}
-                        className="w-full bg-muted/10 border border-border/50 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-foreground"
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setSshForm(p => ({ ...p, username: e.target.value }))
+                        }
+                        className="h-12"
                         placeholder={t('ssh.placeholders.username')}
                     />
                 </div>
 
                 <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">
+                    <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
                         {t('common.authType')}
-                    </label>
+                    </Label>
                     <div className="flex bg-muted/10 rounded-lg p-1 border border-border/50">
                         <button
                             onClick={() => setSshForm(p => ({ ...p, authType: 'password' }))}
@@ -97,43 +106,46 @@ export const WizardSSHConnectStep: React.FC<WizardSSHConnectStepProps> = ({
 
                 {sshForm.authType === 'password' ? (
                     <div>
-                        <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">
+                        <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
                             {t('common.password')}
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                             type="password"
                             value={sshForm.password}
-                            onChange={e => setSshForm(p => ({ ...p, password: e.target.value }))}
-                            className="w-full bg-muted/10 border border-border/50 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-foreground"
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                setSshForm(p => ({ ...p, password: e.target.value }))
+                            }
+                            className="h-12"
                             placeholder={t('common.password')}
                         />
                     </div>
                 ) : (
                     <div className="space-y-4">
                         <div>
-                            <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">
+                            <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
                                 {t('common.privateKey')}
-                            </label>
-                            <textarea
+                            </Label>
+                            <Textarea
                                 value={sshForm.privateKey}
-                                onChange={e =>
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                                     setSshForm(p => ({ ...p, privateKey: e.target.value }))
                                 }
-                                className="w-full h-24 bg-muted/10 border border-border/50 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-foreground font-mono text-xs resize-none"
+                                className="h-24 font-mono text-xs resize-none"
                                 placeholder={t('ssh.placeholders.privateKey')}
                             />
                         </div>
                         <div>
-                            <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">
-                                {t('common.passphrase')} {t('workspaceWizard.optional')}
-                            </label>
-                            <input
+                            <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+                                {t('common.passphrase')}{' '}
+                                <span className="opacity-60">{t('workspaceWizard.optional')}</span>
+                            </Label>
+                            <Input
                                 type="password"
                                 value={sshForm.passphrase}
-                                onChange={e =>
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                     setSshForm(p => ({ ...p, passphrase: e.target.value }))
                                 }
-                                className="w-full bg-muted/10 border border-border/50 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-foreground"
+                                className="h-12"
                                 placeholder={t('common.passphrase')}
                             />
                         </div>
@@ -143,3 +155,4 @@ export const WizardSSHConnectStep: React.FC<WizardSSHConnectStepProps> = ({
         </div>
     );
 };
+

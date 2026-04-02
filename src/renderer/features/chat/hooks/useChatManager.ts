@@ -5,8 +5,12 @@ import { useFolderManager } from '@renderer/features/chat/hooks/useFolderManager
 import { usePromptManager } from '@renderer/features/chat/hooks/usePromptManager';
 import { useSpeechRecognition } from '@renderer/features/chat/hooks/useSpeechRecognition';
 import { useSessionState } from '@renderer/hooks/useSessionState';
+import { WORKSPACE_AGENT_METADATA_KEY } from '@shared/constants/defaults';
 import type { SessionConversationGenerationStatus } from '@shared/types/session-conversation';
-import { WORKSPACE_AGENT_CHAT_TYPE } from '@shared/types/workspace-agent-session';
+import {
+    WORKSPACE_AGENT_CHAT_TYPE,
+    type WorkspaceAgentPermissionPolicy,
+} from '@shared/types/workspace-agent-session';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 
 import { generateId } from '@/lib/utils';
@@ -23,18 +27,18 @@ const MAX_CHATS_IN_MEMORY = 50;
 interface SelectedModelInfo { provider: string; model: string }
 
 interface UseChatManagerOptions {
-    selectedModel: string
-    selectedProvider: string
-    selectedModels?: SelectedModelInfo[]
-    language: string
-    selectedPersona?: { id: string, name: string, description: string, prompt: string } | null | undefined
-    appSettings?: AppSettings | undefined
-    autoReadEnabled: boolean
-    handleSpeak: (id: string, text: string) => void
-    formatChatError: (err: CatchError) => string
-    t: (key: string) => string
-    activeWorkspacePath?: string | undefined
-    workspaceId?: string | undefined
+    selectedModel: string;
+    selectedProvider: string;
+    selectedModels?: SelectedModelInfo[];
+    language: string;
+    selectedPersona?: { id: string; name: string; description: string; prompt: string } | null | undefined;
+    appSettings?: AppSettings | undefined;
+    autoReadEnabled: boolean;
+    handleSpeak: (id: string, text: string) => void;
+    formatChatError: (err: CatchError) => string;
+    t: (key: string) => string;
+    activeWorkspacePath?: string | undefined;
+    workspaceId?: string | undefined;
 }
 
 /**
@@ -67,6 +71,60 @@ function isWorkspaceAgentChat(chat: Chat): boolean {
         chat.metadata?.chatType === WORKSPACE_AGENT_CHAT_TYPE ||
         chat.metadata?.workspaceAgentSession !== undefined
     );
+}
+
+function readChatPermissionPolicy(chat: Chat): WorkspaceAgentPermissionPolicy | null {
+    const metadataEntry = chat.metadata?.[WORKSPACE_AGENT_METADATA_KEY];
+    if (!metadataEntry || Array.isArray(metadataEntry) || typeof metadataEntry !== 'object') {
+        return null;
+    }
+
+    // SAFETY: metadata structure for permissions is deep
+    const candidate = (metadataEntry as Record<string, unknown>)?.permissionPolicy as Record<string, unknown> | undefined;
+    if (!candidate || typeof candidate !== 'object') {
+        return null;
+    }
+
+    const commandPolicy =
+        candidate.commandPolicy === 'blocked' ||
+        candidate.commandPolicy === 'ask-every-time' ||
+        candidate.commandPolicy === 'allowlist' ||
+        candidate.commandPolicy === 'full-access'
+            ? candidate.commandPolicy
+            : null;
+    const pathPolicy =
+        candidate.pathPolicy === 'workspace-root-only' ||
+        candidate.pathPolicy === 'allowlist' ||
+        candidate.pathPolicy === 'restricted-off-dangerous'
+            ? candidate.pathPolicy
+            : null;
+
+    if (!commandPolicy || !pathPolicy) {
+        return null;
+    }
+
+    return {
+        commandPolicy,
+        pathPolicy,
+        allowedCommands: Array.isArray(candidate.allowedCommands)
+            ? (candidate.allowedCommands as unknown[]).filter(
+                (value: unknown): value is string =>
+                    typeof value === 'string' && value.trim().length > 0
+            )
+            : [],
+        disallowedCommands: Array.isArray(candidate.disallowedCommands)
+            ? (candidate.disallowedCommands as unknown[]).filter(
+                (value: unknown): value is string =>
+                    typeof value === 'string' && value.trim().length > 0
+            )
+            : [],
+        allowedPaths: Array.isArray(candidate.allowedPaths)
+            ? (candidate.allowedPaths as unknown[]).filter(
+                (value: unknown): value is string =>
+                    typeof value === 'string' && value.trim().length > 0
+            )
+            : [],
+    };
 }
 
 function isImageOnlyModel(modelId: string): boolean {
@@ -171,28 +229,132 @@ function useLazyMessageLoader(currentChatId: string | null, chats: Chat[], setCh
 }
 
 export function useChatManager(options: UseChatManagerOptions) {
-    const { selectedModel, selectedProvider, language, selectedPersona, appSettings, autoReadEnabled, handleSpeak, formatChatError, t } = options;
+    const { 
+        selectedModel, 
+        selectedProvider, 
+        language, 
+        selectedPersona, 
+        appSettings, 
+        autoReadEnabled, 
+        handleSpeak, 
+        formatChatError, 
+        t,
+        activeWorkspacePath,
+        workspaceId
+    } = options;
 
     const [chats, setChats] = useState<Chat[]>([]);
     const [currentChatId, setCurrentChatId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [input, setInput] = useState('');
     const [contextTokens] = useState(0);
+
     const [systemMode, setSystemMode] = useState<'thinking' | 'agent' | 'fast'>('agent');
     const [imageRequestCount, setImageRequestCount] = useState(1);
-
+    const [permissionPolicy, setPermissionPolicy] = useState<WorkspaceAgentPermissionPolicy>({
+        commandPolicy: 'ask-every-time',
+        pathPolicy: 'workspace-root-only',
+        allowedCommands: [],
+        disallowedCommands: [],
+        allowedPaths: []
+    });
     const prevChatIdRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (!appSettings) {
+            return;
+        }
+        
+        const newPolicy = {
+            commandPolicy: appSettings.general.agentCommandPolicy ?? 'ask-every-time',
+            pathPolicy: appSettings.general.agentPathPolicy ?? 'workspace-root-only',
+            allowedCommands: appSettings.general.agentAllowedCommands ?? [],
+            disallowedCommands: appSettings.general.agentDisallowedCommands ?? [],
+            allowedPaths: appSettings.general.agentAllowedPaths ?? []
+        };
+        
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setPermissionPolicy(prev => {
+            if (JSON.stringify(prev) === JSON.stringify(newPolicy)) {
+                return prev;
+            }
+            return newPolicy;
+        });
+    }, [appSettings]);
 
     const { prompts, createPrompt, deletePrompt, updatePrompt } = usePromptManager();
     const { streamingStates, lastChatError, clearChatError, generateResponse, stopGeneration } = useChatGenerator({
         chats, setChats, appSettings, selectedModel, selectedProvider, selectedModels: options.selectedModels,
-        language, selectedPersona, activeWorkspacePath: options.activeWorkspacePath, workspaceId: options.workspaceId,
+        language, selectedPersona, activeWorkspacePath, workspaceId,
         t, handleSpeak, autoReadEnabled, formatChatError, systemMode
     });
     const { folders, loadFolders, createFolder, updateFolder, deleteFolder: baseDeleteFolder } = useFolderManager();
     const { isListening, startListening, stopListening } = useSpeechRecognition(language, (text) => { setInput(prev => (prev.trim() ? `${prev} ${text} ` : text)); });
     const { createNewChat, deleteChat, clearMessages, deleteFolder, moveChatToFolder, addMessage, updateChat, togglePin, toggleFavorite, bulkDeleteChats } = useChatCRUD({ currentChatId, setCurrentChatId, setChats, setInput, baseDeleteFolder });
     const { attachments, setAttachments, processFile, removeAttachment } = useAttachments();
+
+    useEffect(() => {
+        if (!currentChatId) {
+            return;
+        }
+        const chat = chats.find(c => c.id === currentChatId);
+        if (!chat) {
+            return;
+        }
+
+        const existingPolicy = readChatPermissionPolicy(chat);
+        if (JSON.stringify(existingPolicy) !== JSON.stringify(permissionPolicy)) {
+            const existingMetadataEntry =
+                chat.metadata?.[WORKSPACE_AGENT_METADATA_KEY] &&
+                !Array.isArray(chat.metadata[WORKSPACE_AGENT_METADATA_KEY]) &&
+                typeof chat.metadata[WORKSPACE_AGENT_METADATA_KEY] === 'object'
+                    // SAFETY: metadata structure for workspace agent is dynamic
+                    ? chat.metadata[WORKSPACE_AGENT_METADATA_KEY] as Record<string, unknown>
+                    : {};
+
+            void updateChat(currentChatId, {
+                metadata: {
+                    ...(chat.metadata || {}),
+                    [WORKSPACE_AGENT_METADATA_KEY]: {
+                        ...existingMetadataEntry,
+                        permissionPolicy,
+                    }
+                }
+            });
+        }
+    }, [permissionPolicy, currentChatId, chats, updateChat]);
+
+    useEffect(() => {
+        if (!currentChatId || prevChatIdRef.current === currentChatId) {
+            if (!currentChatId) {
+                prevChatIdRef.current = null;
+            }
+            return;
+        }
+        prevChatIdRef.current = currentChatId;
+
+        const chat = chats.find(c => c.id === currentChatId);
+        const policy = chat ? readChatPermissionPolicy(chat) : null;
+        if (policy) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setPermissionPolicy(prev => {
+                if (JSON.stringify(prev) === JSON.stringify(policy)) {
+                    return prev;
+                }
+                return policy;
+            });
+            return;
+        }
+        if (appSettings) {
+            setPermissionPolicy({
+                commandPolicy: appSettings.general.agentCommandPolicy ?? 'ask-every-time',
+                pathPolicy: appSettings.general.agentPathPolicy ?? 'workspace-root-only',
+                allowedCommands: appSettings.general.agentAllowedCommands ?? [],
+                disallowedCommands: appSettings.general.agentDisallowedCommands ?? [],
+                allowedPaths: appSettings.general.agentAllowedPaths ?? []
+            });
+        }
+    }, [currentChatId, chats, appSettings]);
 
     useChatInitialization(loadFolders, setChats);
     useLazyMessageLoader(currentChatId, chats, setChats);
@@ -348,9 +510,11 @@ export function useChatManager(options: UseChatManagerOptions) {
         streamingReasoning, streamingSpeed, chatError, clearChatError, contextTokens, handleSend, stopGeneration, createNewChat, deleteChat, clearMessages,
         folders, createFolder, updateFolder, deleteFolder, moveChatToFolder, addMessage, prompts, createPrompt, deletePrompt, updatePrompt,
         isListening, startListening, stopListening, updateChat, togglePin, toggleFavorite, attachments, setAttachments, processFile, removeAttachment,
-        t, handleSpeak, systemMode, setSystemMode, imageRequestCount, setImageRequestCount, regenerateMessage, bulkDeleteChats
+        t, handleSpeak, systemMode, setSystemMode, imageRequestCount, setImageRequestCount, regenerateMessage, bulkDeleteChats,
+        permissionPolicy, setPermissionPolicy
     }), [chats, currentChatId, messages, displayMessages, searchTerm, input, isLoading, streamingReasoning, streamingSpeed, chatError, clearChatError, contextTokens,
         handleSend, stopGeneration, createNewChat, deleteChat, clearMessages, folders, createFolder, updateFolder, deleteFolder, moveChatToFolder,
         addMessage, prompts, createPrompt, deletePrompt, updatePrompt, isListening, startListening, stopListening, updateChat, togglePin, toggleFavorite,
-        attachments, setAttachments, processFile, removeAttachment, t, handleSpeak, systemMode, imageRequestCount, regenerateMessage, bulkDeleteChats]);
+        attachments, setAttachments, processFile, removeAttachment, t, handleSpeak, systemMode, imageRequestCount, regenerateMessage, bulkDeleteChats,
+        permissionPolicy, setPermissionPolicy]);
 }

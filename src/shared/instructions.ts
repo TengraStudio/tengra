@@ -5,7 +5,7 @@
  * Used by both main process (session-conversation.ts) and renderer (for display purposes).
  */
 
-export type SupportedLanguage = 'tr' | 'en';
+export type SupportedLanguage = 'en';
 
 export interface PersonalityConfig {
     traits: string[];        // e.g., ["friendly", "sarcastic", "formal"]
@@ -15,7 +15,7 @@ export interface PersonalityConfig {
 }
 
 export interface InstructionContext {
-    language: SupportedLanguage;
+    language: string;
     provider?: string;
     model?: string;
     personality?: PersonalityConfig;
@@ -24,15 +24,6 @@ export interface InstructionContext {
 
 // Language-specific writing rules
 const LANGUAGE_RULES: Record<SupportedLanguage, string> = {
-    tr: `
-## DİL KURALLARI (TÜRKÇE)
-- Kullanıcıyla **Türkçe** iletişim kur.
-- Türk dil bilgisi kurallarına uy (büyük/küçük harf, noktalama, ünlü uyumu).
-- Doğal ve akıcı bir Türkçe kullan, çeviri gibi durma.
-- Teknik terimleri Türkçe karşılıklarıyla kullan (mümkünse).
-- Kullanıcı sana nasıl hitap ederse öyle cevap ver (sen/siz).
-- Kullanıcı küfür isterse veya rahat bir dil kullanıyorsa, aynı tarzda cevap verebilirsin.
-`,
     en: `
 ## LANGUAGE RULES (ENGLISH)
 - Communicate with the user in **English**.
@@ -110,11 +101,12 @@ const PROVIDER_INSTRUCTIONS: Record<string, string> = {
  */
 export function buildSystemPrompt(context: InstructionContext): string {
     const { language, provider, personality, userName } = context;
+    const resolvedLanguage: SupportedLanguage = 'en';
 
     let prompt = BASE_INSTRUCTIONS;
 
     // Add language-specific rules
-    prompt += LANGUAGE_RULES[language] || LANGUAGE_RULES.en;
+    prompt += LANGUAGE_RULES[resolvedLanguage];
 
     // Add provider-specific instructions
     if (provider && PROVIDER_INSTRUCTIONS[provider.toLowerCase()]) {
@@ -132,9 +124,8 @@ export function buildSystemPrompt(context: InstructionContext): string {
     }
 
     // Critical language reminder at the end
-    const langReminder = language === 'tr'
-        ? '\n**KRİTİK:** Türkçe cevap ver. Kullanıcının tarzına uy.'
-        : '\n**CRITICAL:** Respond in English. Match the user\'s style.';
+    void language;
+    const langReminder = '\n**CRITICAL:** Respond in English. Match the user\'s style.';
 
     return prompt + langReminder;
 }
@@ -192,7 +183,7 @@ export function getDefaultPersonality(): PersonalityConfig {
  */
 export function getLocalModelPrompt(modelName: string): string {
     return `
-Ben yerel çalışan bir yapay zeka modeliyim.
+I am a locally running AI model.
 Model: **${modelName}**
 `;
 }

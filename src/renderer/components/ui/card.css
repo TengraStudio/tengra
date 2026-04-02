@@ -1,0 +1,45 @@
+/**
+ * Card Component CSS
+ * Component-specific CSS custom properties and styles for the Card component.
+ */
+
+:root {
+    --card-bg: hsl(var(--card));
+    --card-fg: hsl(var(--card-foreground));
+    --card-border: hsl(var(--border));
+    --card-border-radius: 0.75rem;
+    --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 10%);
+    --card-padding: 1.5rem;
+    --card-header-padding: 1.5rem;
+    --card-content-padding: 1.5rem;
+    --card-title-font-size: 1rem;
+    --card-title-font-weight: 600;
+    --card-title-line-height: 1;
+}
+
+.tengra-card {
+    background-color: var(--card-bg);
+    color: var(--card-fg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--card-border-radius);
+    box-shadow: var(--card-shadow);
+}
+
+.tengra-card-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding: var(--card-header-padding);
+}
+
+.tengra-card-title {
+    font-size: var(--card-title-font-size);
+    font-weight: var(--card-title-font-weight);
+    line-height: var(--card-title-line-height);
+    letter-spacing: -0.025em;
+}
+
+.tengra-card-content {
+    padding: var(--card-content-padding);
+    padding-top: 0;
+}

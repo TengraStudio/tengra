@@ -185,7 +185,7 @@ function useTerminalSession(
         const term = new XTerm({
             cursorBlink: true,
             fontSize: 13,
-            fontFamily: "'JetBrains Mono', 'Cascadia Code', Consolas, monospace",
+            fontFamily: 'var(--font-sans)',
             theme: initialTheme,
             allowProposedApi: true,
             scrollback: 10000,

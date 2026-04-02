@@ -5,6 +5,8 @@ import { useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 
+import './workspace-details-form.css';
+
 /** Category configuration for workspace type selection */
 export interface WorkspaceCategoryConfig {
     id: string;
@@ -42,13 +44,14 @@ export const WorkspaceDetailsForm: React.FC<WorkspaceDetailsFormProps> = ({
     const { t } = useTranslation();
 
     return (
-        <div className={cn('space-y-5', className)}>
+        <div className={cn('tengra-ws-form', className)}>
             <motion.div
+                className="tengra-ws-form__field"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
             >
-                <label className="text-xs font-bold uppercase text-muted-foreground mb-2 block tracking-wider ml-1">
+                <label className="tengra-ws-form__label">
                     {t('workspaceWizard.workspaceName')}
                 </label>
                 <div className="relative group">
@@ -56,21 +59,22 @@ export const WorkspaceDetailsForm: React.FC<WorkspaceDetailsFormProps> = ({
                         autoFocus
                         value={formData.name}
                         onChange={e => onFormChange(p => ({ ...p, name: e.target.value }))}
-                        className="w-full bg-background border border-border/60 rounded-xl px-5 py-4 focus:outline-none focus:border-primary/60 focus:bg-background transition-all text-lg font-semibold placeholder:text-muted-foreground/40"
+                        className="tengra-ws-form__name-input"
                         placeholder={t('workspaceWizard.namePlaceholder')}
                     />
                 </div>
             </motion.div>
 
             <motion.div
+                className="tengra-ws-form__field"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: 0.1 }}
             >
-                <label className="text-xs font-bold uppercase text-muted-foreground mb-3 block tracking-wider ml-1">
+                <label className="tengra-ws-form__label">
                     {t('workspaces.categoryLabel')}
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                <div className="tengra-ws-form__category-grid">
                     {categories.map((cat, idx) => (
                         <motion.button
                             key={cat.id}
@@ -79,10 +83,8 @@ export const WorkspaceDetailsForm: React.FC<WorkspaceDetailsFormProps> = ({
                             transition={{ duration: 0.2, delay: 0.15 + idx * 0.05 }}
                             onClick={() => onFormChange(p => ({ ...p, category: cat.id }))}
                             className={cn(
-                                'flex flex-col items-center justify-center p-4 rounded-2xl border transition-all gap-3 group relative overflow-hidden h-32',
-                                formData.category === cat.id
-                                    ? 'bg-primary/10 border-primary/70 shadow-xl'
-                                    : 'bg-background border-border/50 hover:bg-muted/30 hover:border-border'
+                                'tengra-ws-form__cat-btn',
+                                formData.category === cat.id && 'tengra-ws-form__cat-btn--selected'
                             )}
                         >
                             <AnimatePresence>
@@ -90,32 +92,34 @@ export const WorkspaceDetailsForm: React.FC<WorkspaceDetailsFormProps> = ({
                                     <motion.div
                                         initial={{ scale: 0, rotate: -45 }}
                                         animate={{ scale: 1, rotate: 0 }}
-                                        className="absolute top-4 right-4 z-10"
+                                        className="tengra-ws-form__check"
                                     >
-                                        <div className="bg-primary p-1.5 rounded-full shadow-lg shadow-primary/20">
-                                            <Check className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={3} />
+                                        <div className="tengra-ws-form__check-inner">
+                                            <Check className="tengra-ws-form__check-icon" />
                                         </div>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
 
                             <div className={cn(
-                                'p-3 rounded-xl group-hover:scale-105 transition-all duration-300 shadow-sm',
+                                'tengra-ws-form__cat-icon-wrap',
                                 cat.bg, cat.color,
-                                formData.category === cat.id ? 'scale-105 shadow-md ring-2 ring-primary/20' : 'opacity-80'
+                                formData.category === cat.id
+                                    ? 'tengra-ws-form__cat-icon-wrap--selected'
+                                    : 'tengra-ws-form__cat-icon-wrap--inactive'
                             )}>
-                                <cat.icon className="w-6 h-6" />
+                                <cat.icon className="tengra-ws-form__cat-icon" />
                             </div>
 
                             <span className={cn(
-                                'text-xxxs font-semibold tracking-wide text-center',
-                                formData.category === cat.id ? 'text-primary' : 'text-muted-foreground'
+                                'tengra-ws-form__cat-label',
+                                formData.category === cat.id && 'tengra-ws-form__cat-label--selected'
                             )}>
                                 {t(cat.nameKey)}
                             </span>
 
                             {formData.category === cat.id && (
-                                <motion.div className="absolute inset-0 border border-primary/70 rounded-2xl" />
+                                <motion.div className="tengra-ws-form__cat-selected-border" />
                             )}
                         </motion.button>
                     ))}
@@ -123,18 +127,19 @@ export const WorkspaceDetailsForm: React.FC<WorkspaceDetailsFormProps> = ({
             </motion.div>
 
             <motion.div
+                className="tengra-ws-form__field"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: 0.2 }}
             >
-                <label className="text-xs font-bold uppercase text-muted-foreground mb-2 block tracking-wider ml-1">
+                <label className="tengra-ws-form__label">
                     {t('workspaceWizard.selectFolder')}
                 </label>
-                <div className="relative group flex items-center">
+                <div className="tengra-ws-form__path-wrap">
                     <input
                         value={formData.customPath}
                         onChange={e => onFormChange(p => ({ ...p, customPath: e.target.value }))}
-                        className="w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/60 transition-all text-foreground placeholder:text-muted-foreground/40 pr-12"
+                        className="tengra-ws-form__path-input"
                         placeholder={t('workspaceWizard.selectRootDesc')}
                     />
                     <button
@@ -146,26 +151,27 @@ export const WorkspaceDetailsForm: React.FC<WorkspaceDetailsFormProps> = ({
                                 }
                             });
                         }}
-                        className="absolute right-2 p-2 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-primary transition-colors flex items-center justify-center"
+                        className="tengra-ws-form__folder-btn"
                         title={t('workspaceWizard.selectFolder')}
                     >
-                        <FolderOpen className="w-5 h-5" />
+                        <FolderOpen className="tengra-ws-form__folder-icon" />
                     </button>
                 </div>
             </motion.div>
 
             <motion.div
+                className="tengra-ws-form__field"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: 0.25 }}
             >
-                <label className="text-xs font-bold uppercase text-muted-foreground mb-2 block tracking-wider ml-1">
+                <label className="tengra-ws-form__label">
                     {t('workspaceWizard.description')}
                 </label>
                 <textarea
                     value={formData.description}
                     onChange={e => onFormChange(p => ({ ...p, description: e.target.value }))}
-                    className="w-full h-28 bg-background border border-border/60 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/60 transition-all resize-none text-foreground placeholder:text-muted-foreground/40"
+                    className="tengra-ws-form__desc-textarea"
                     placeholder={t('workspaceWizard.descPlaceholder')}
                 />
             </motion.div>
@@ -176,9 +182,9 @@ export const WorkspaceDetailsForm: React.FC<WorkspaceDetailsFormProps> = ({
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 text-destructive text-sm font-medium flex items-center gap-3 overflow-hidden"
+                        className="tengra-ws-form__error"
                     >
-                        <div className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                        <div className="tengra-ws-form__error-dot" />
                         {error}
                     </motion.div>
                 )}

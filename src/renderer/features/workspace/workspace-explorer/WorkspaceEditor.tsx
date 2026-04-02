@@ -1,6 +1,13 @@
 import type { FileSearchResult } from '@shared/types/common';
 import { X } from 'lucide-react';
-import React from 'react';
+import * as React from 'react';
+import {
+    useCallback,
+    useEffect,
+    useReducer,
+    useRef,
+    useState,
+} from 'react';
 
 import { CodeEditor } from '@/components/ui/CodeEditor';
 import { useTranslation } from '@/i18n';
@@ -103,7 +110,7 @@ const WORKSPACE_TOOLS_INITIAL: WorkspaceToolsState = {
 
 /** Warns the user before closing the window when there are unsaved changes. */
 function useUnsavedChangesGuard(hasUnsavedChanges: boolean): void {
-    React.useEffect(() => {
+    useEffect(() => {
         if (!hasUnsavedChanges) {
             return undefined;
         }
@@ -184,7 +191,7 @@ function useViewStatePersistence(
     Record<string, EditorViewState>,
     (filePath: string, patch: Partial<EditorViewState>) => void
 ] {
-    const [viewStateMap, setViewStateMap] = React.useState<Record<string, EditorViewState>>(() => {
+    const [viewStateMap, setViewStateMap] = useState<Record<string, EditorViewState>>(() => {
         try {
             return sanitizeViewStateMap(localStorage.getItem(storageKey));
         } catch {
@@ -192,7 +199,7 @@ function useViewStatePersistence(
         }
     });
 
-    const persistViewState = React.useCallback(
+    const persistViewState = useCallback(
         (filePath: string, patch: Partial<EditorViewState>) => {
             const normalizedPath = filePath.trim();
             if (!normalizedPath) {
@@ -240,9 +247,9 @@ function useEditorAutoSave(args: {
     saveActiveTab?: (options?: { silent?: boolean }) => Promise<void>;
 }): void {
     const { activeTab, autoSaveEnabled, saveActiveTab } = args;
-    const autoSaveRequestIdRef = React.useRef(0);
+    const autoSaveRequestIdRef = useRef(0);
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (!autoSaveEnabled || activeTab?.type !== 'code') {
             return undefined;
         }
@@ -285,7 +292,7 @@ function useRefactorActions(deps: WorkspaceActionDeps) {
     const { activeTab, workspacePath, updateTabContent, dispatch, tools, setStatusMessage } = deps;
     const { t } = useTranslation();
 
-    const previewSemanticRefactor = React.useCallback(() => {
+    const previewSemanticRefactor = useCallback(() => {
         if (!activeTab) {
             return;
         }
@@ -293,7 +300,7 @@ function useRefactorActions(deps: WorkspaceActionDeps) {
         setStatusMessage(t('workspaceDashboard.editor.semanticPreviewReady'));
     }, [activeTab, dispatch, setStatusMessage, t]);
 
-    const applySemanticRefactor = React.useCallback(() => {
+    const applySemanticRefactor = useCallback(() => {
         if (!activeTab) {
             return;
         }
@@ -301,7 +308,7 @@ function useRefactorActions(deps: WorkspaceActionDeps) {
         setStatusMessage(t('workspaceDashboard.editor.semanticApplied'));
     }, [activeTab, setStatusMessage, t, updateTabContent]);
 
-    const previewRename = React.useCallback(async () => {
+    const previewRename = useCallback(async () => {
         if (!workspacePath || !tools.renameFrom || !tools.renameTo) {
             return;
         }
@@ -343,9 +350,9 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
 }) => {
     const { t } = useTranslation();
     const hasUnsavedChanges = Boolean(activeTab && activeTab.content !== activeTab.savedContent);
-    const [statusMessage, setStatusMessage] = React.useState('');
-    const [tools, dispatch] = React.useReducer(workspaceToolsReducer, WORKSPACE_TOOLS_INITIAL);
-    const [workspaceResults, setWorkspaceResults] = React.useState<{
+    const [statusMessage, setStatusMessage] = useState('');
+    const [tools, dispatch] = useReducer(workspaceToolsReducer, WORKSPACE_TOOLS_INITIAL);
+    const [workspaceResults, setWorkspaceResults] = useState<{
         symbol: string;
         results: FileSearchResult[];
     } | null>(null);
@@ -354,8 +361,8 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
         `workspace.editor.viewstate:${workspaceKey}`
     );
     const activeViewState = activeTab ? viewStateMap[activeTab.path] : undefined;
-    const pendingScrollStateRef = React.useRef<{ path: string; scrollTop: number } | null>(null);
-    const scrollPersistTimeoutRef = React.useRef<number | null>(null);
+    const pendingScrollStateRef = useRef<{ path: string; scrollTop: number } | null>(null);
+    const scrollPersistTimeoutRef = useRef<number | null>(null);
     useUnsavedChangesGuard(hasUnsavedChanges);
     useEditorAutoSave({ activeTab, autoSaveEnabled, saveActiveTab });
 
@@ -368,7 +375,7 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
 
     const performanceMode = !tools.performanceOverride && (activeTab?.content.length ?? 0) > 20000;
 
-    const flushPendingScrollState = React.useCallback(() => {
+    const flushPendingScrollState = useCallback(() => {
         if (scrollPersistTimeoutRef.current !== null) {
             window.clearTimeout(scrollPersistTimeoutRef.current);
             scrollPersistTimeoutRef.current = null;
@@ -383,21 +390,21 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
         persistViewState(pendingState.path, { scrollTop: pendingState.scrollTop });
     }, [persistViewState]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         return () => {
             flushPendingScrollState();
         };
     }, [flushPendingScrollState]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         flushPendingScrollState();
     }, [activeTab?.path, flushPendingScrollState]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         setWorkspaceResults(null);
     }, [activeTab?.path]);
 
-    const handleEditorChange = React.useCallback((val?: string) => {
+    const handleEditorChange = useCallback((val?: string) => {
         if (!activeTab) {
             return;
         }
@@ -408,7 +415,7 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
         }
     }, [activeTab, macros, updateTabContent]);
 
-    const handleCursorPositionChange = React.useCallback(
+    const handleCursorPositionChange = useCallback(
         (position: { lineNumber: number; column: number }) => {
             if (!activeTab) {
                 return;
@@ -418,7 +425,7 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
         [activeTab, persistViewState]
     );
 
-    const handleScrollPositionChange = React.useCallback(
+    const handleScrollPositionChange = useCallback(
         (scrollTop: number) => {
             if (!activeTab) {
                 return;
@@ -438,7 +445,7 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
         [activeTab, flushPendingScrollState]
     );
 
-    const handleWorkspaceResultSelect = React.useCallback(
+    const handleWorkspaceResultSelect = useCallback(
         (path: string, line?: number) => {
             setWorkspaceResults(null);
             onOpenFile?.(path, line);

@@ -28,7 +28,7 @@ export const MemoryVisualization: React.FC = () => {
                         <Maximize2 className="w-5 h-5" />
                     </div>
                     <div>
-                        <h1 className="text-lg font-bold tracking-tight">{t('memory.visualization.title')}</h1>
+                        <h1 className="text-lg font-bold">{t('memory.visualization.title')}</h1>
                         <p className="text-xs text-muted-foreground">{t('memory.visualization.subtitle')}</p>
                     </div>
                 </div>
@@ -60,7 +60,7 @@ export const MemoryVisualization: React.FC = () => {
             </div>
 
             {/* Footer / Legend */}
-            <div className="px-6 py-3 border-t border-border/30 bg-muted/20 flex items-center justify-between text-xs text-muted-foreground uppercase font-bold tracking-widest">
+            <div className="px-6 py-3 border-t border-border/30 bg-muted/20 flex items-center justify-between text-xs text-muted-foreground font-bold">
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-primary" />

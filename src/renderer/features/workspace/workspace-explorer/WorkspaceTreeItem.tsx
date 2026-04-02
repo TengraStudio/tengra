@@ -269,7 +269,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
                 ) : (
                     <FileIcon fileName={node.name} className="w-3.5 h-3.5" />
                 )}
-                <span className="flex-1 min-w-0 truncate text-xs font-normal tracking-tight">
+                <span className="flex-1 min-w-0 truncate text-xs font-normal">
                     {node.name}
                 </span>
                 {node.gitStatus && (
@@ -302,7 +302,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
                         />
                     ))}
                     {children.length === 0 && loaded && (
-                        <div className="text-xxs text-muted-foreground/40 pl-8 py-0.5 italic">
+                        <div className="text-xxs text-muted-foreground/40 pl-8 py-0.5">
                             {t('workspace.emptyFolder')}
                         </div>
                     )}

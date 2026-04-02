@@ -1,3 +1,13 @@
+import { Input } from '@renderer/components/ui/input';
+import { Label } from '@renderer/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@renderer/components/ui/select';
+import { Textarea } from '@renderer/components/ui/textarea';
 import { Info } from 'lucide-react';
 import React from 'react';
 
@@ -5,10 +15,14 @@ import { Workspace } from '@/types';
 
 import { SettingsSectionProps } from './types';
 
-export const GeneralSection: React.FC<SettingsSectionProps> = ({ formData, setFormData, t }) => (
+export const GeneralSection: React.FC<SettingsSectionProps> = ({
+    formData,
+    setFormData,
+    t,
+}) => (
     <section className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div>
-            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-1 flex items-center gap-2">
+            <h3 className="text-sm font-bold text-foreground mb-1 flex items-center gap-2">
                 <Info className="w-4 h-4 text-primary" />
                 {t('workspaces.basicInfo')}
             </h3>
@@ -17,35 +31,47 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({ formData, setFo
 
         <div className="space-y-4">
             <div className="grid gap-2">
-                <label className="text-sm font-medium text-muted-foreground">{t('workspaces.workspaceTitle')}</label>
-                <input
+                <Label className="text-muted-foreground">{t('workspaces.workspaceTitle')}</Label>
+                <Input
                     type="text"
                     value={formData.title}
-                    onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                    className="w-full bg-muted/20 border border-border/50 rounded-lg px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setFormData(prev => ({ ...prev, title: e.target.value }))
+                    }
                 />
             </div>
             <div className="grid gap-2">
-                <label className="text-sm font-medium text-muted-foreground">{t('workspaces.description')}</label>
-                <textarea
+                <Label className="text-muted-foreground">{t('workspaces.description')}</Label>
+                <Textarea
                     value={formData.description}
-                    onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                        setFormData(prev => ({ ...prev, description: e.target.value }))
+                    }
                     rows={4}
-                    className="w-full bg-muted/20 border border-border/50 rounded-lg px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none"
+                    className="resize-none"
                 />
             </div>
             <div className="grid gap-2">
-                <label className="text-sm font-medium text-muted-foreground">{t('workspaces.status')}</label>
-                <select
+                <Label className="text-muted-foreground">{t('workspaces.status')}</Label>
+                <Select
                     value={formData.status}
-                    onChange={e => setFormData(prev => ({ ...prev, status: e.target.value as Workspace['status'] }))}
-                    className="w-full bg-muted/20 border border-border/50 rounded-lg px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-sans"
+                    onValueChange={(val: string) =>
+                        setFormData(prev => ({ ...prev, status: val as Workspace['status'] }))
+                    }
                 >
-                    <option value="active">{t('workspaces.statusActive')}</option>
-                    <option value="archived">{t('workspaces.statusArchived')}</option>
-                    <option value="draft">{t('workspaces.statusDraft')}</option>
-                </select>
+                    <SelectTrigger>
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="active">{t('workspaces.statusActive')}</SelectItem>
+                        <SelectItem value="archived">{t('workspaces.statusArchived')}</SelectItem>
+                        <SelectItem value="draft">{t('workspaces.statusDraft')}</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
         </div>
     </section>
 );
+
+
+

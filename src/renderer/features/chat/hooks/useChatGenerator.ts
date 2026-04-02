@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { chatStream } from '@/lib/chat-stream';
 import { getSystemPrompt } from '@/lib/identity';
 import { generateId } from '@/lib/utils';
-import { AppSettings, Chat, ChatError, Message, ToolDefinition, ToolResult } from '@/types';
+import { AppSettings, Chat, ChatError, Message, MessageContentPart, ToolDefinition, ToolResult } from '@/types';
 import { CatchError } from '@/types/common';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -85,7 +85,7 @@ const getMessageTextContent = (message: Message): string => {
     if (typeof message.content === 'string') {
         return message.content;
     }
-    return message.content
+    return (message.content as MessageContentPart[])
         .filter(part => part.type === 'text')
         .map(part => part.text)
         .join('\n')
@@ -154,8 +154,9 @@ const readToolResultImages = (toolResult: ToolResult): string[] => {
     if (!toolResult.result || Array.isArray(toolResult.result) || typeof toolResult.result !== 'object') {
         return [];
     }
+    const resultObj = toolResult.result as Record<string, unknown>;
     for (const key of DIRECT_IMAGE_RESULT_KEYS) {
-        const value = toolResult.result[key];
+        const value = resultObj[key];
         if (!Array.isArray(value)) {
             continue;
         }
@@ -168,7 +169,7 @@ const getMessageStringContent = (content: Message['content']): string => {
     if (typeof content === 'string') {
         return content;
     }
-    return content
+    return (content as MessageContentPart[])
         .filter(part => part.type === 'text')
         .map(part => part.text)
         .join('\n')
@@ -206,7 +207,8 @@ const isExecutableToolCall = (toolCall: NonNullable<Message['toolCalls']>[number
 const executeToolCall = async (
     toolCall: NonNullable<Message['toolCalls']>[number],
     activeWorkspacePath: string | undefined,
-    t: (key: string) => string
+    t: (key: string) => string,
+    chatId?: string
 ): Promise<{
     toolMessage: Message;
     generatedImages: string[];
@@ -229,8 +231,9 @@ const executeToolCall = async (
 
     const toolExecResult = await window.electron.executeTools(
         toolCall.function.name,
-        normalizedArgs,
-        toolCall.id
+        normalizedArgs as Record<string, unknown>,
+        toolCall.id,
+        chatId
     );
     const generatedImages = toolCall.function.name === 'generate_image'
         ? readToolResultImages(toolExecResult)
@@ -269,6 +272,7 @@ const prepareMessages = (options: PrepareMessagesOptions): { allMessages: Messag
         activeWorkspacePath,
         systemMode,
     } = options;
+
     const dbRefChat = chats.find(c => c.id === chatId);
     const contextMessages = (dbRefChat?.messages ?? []).slice(-15);
 
@@ -282,7 +286,7 @@ const prepareMessages = (options: PrepareMessagesOptions): { allMessages: Messag
     const systemPrompt =
         modelConfig.systemPrompt ??
         getSystemPrompt(
-            language as 'tr' | 'en',
+            language,
             selectedPersona?.prompt,
             selectedProvider,
             selectedModel
@@ -407,7 +411,8 @@ const completeDirectImageMessage = async (options: {
     const toolResult = await window.electron.executeTools(
         'generate_image',
         { prompt, count: requestedCount },
-        generateId()
+        generateId(),
+        chatId
     );
 
     if (!toolResult || typeof toolResult !== 'object') {
@@ -534,7 +539,7 @@ export const useChatGenerator = (
             setChats(prev =>
                 prev.map(c => (c.id === chatId ? { ...c, messages: [...c.messages, tempMsg] } : c))
             );
-            await window.electron.db.addMessage({ ...tempMsg, chatId, timestamp: Date.now() });
+            await window.electron.db.addMessage({ ...tempMsg as Message, chatId, timestamp: Date.now() });
 
             if (shouldUseDirectImageFlow) {
                 await completeDirectImageMessage({
@@ -589,10 +594,6 @@ export const useChatGenerator = (
             void window.electron.db.updateMessage(assistantId, { content: finalErrorText });
         } finally {
             setStreamingStates(prev => {
-                const stateForChat = prev[chatId];
-                if (stateForChat?.error) {
-                    setLastChatError(stateForChat.error);
-                }
                 const s = { ...prev };
                 delete s[chatId];
                 return s;
@@ -716,7 +717,7 @@ const executeToolTurnLoop = async (params: {
             const generatedImages: string[] = [];
             for (const tc of executableToolCalls) {
                 try {
-                    const executedTool = await executeToolCall(tc, activeWorkspacePath, t);
+                    const executedTool = await executeToolCall(tc, activeWorkspacePath, t, chatId);
                     generatedImages.push(...executedTool.generatedImages);
                     toolResults.push(executedTool.toolMessage);
                     accumulatedToolMessages.push(executedTool.toolMessage);

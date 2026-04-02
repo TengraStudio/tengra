@@ -1,5 +1,6 @@
 import { Loader2 } from 'lucide-react';
-import React, { lazy, Suspense } from 'react';
+import * as React from 'react';
+import { lazy, Suspense } from 'react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/i18n';

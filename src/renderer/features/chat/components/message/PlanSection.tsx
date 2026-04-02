@@ -40,7 +40,7 @@ export const PlanSection = memo(
                     <div className="p-1.5 rounded-lg bg-primary/20">
                         <ListTodo className="w-4 h-4 text-primary" />
                     </div>
-                    <span className="text-xs font-black text-primary uppercase tracking-widest">
+                    <span className="text-xs font-bold text-primary">
                         {t('chat.plan')}
                     </span>
                 </div>
@@ -66,7 +66,7 @@ export const PlanSection = memo(
                     <div className="mt-4 pt-4 border-t border-primary/10 flex justify-end">
                         <button
                             onClick={onApprovePlan}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold uppercase tracking_wider hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold tracking_wider hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20"
                         >
                             <Check className="w-3.5 h-3.5" />
                             {t('messageBubble.approvePlan')}

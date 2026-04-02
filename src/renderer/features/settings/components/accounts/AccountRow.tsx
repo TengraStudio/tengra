@@ -1,8 +1,8 @@
+import { Button } from '@renderer/components/ui/button';
 import { LinkedAccountInfo } from '@renderer/electron.d';
+import { cn } from '@renderer/lib/utils';
 import { Check, Key, Trash2, User } from 'lucide-react';
 import React from 'react';
-
-import { cn } from '@/lib/utils';
 
 interface AccountRowProps {
     account: LinkedAccountInfo
@@ -21,98 +21,83 @@ export const AccountRow: React.FC<AccountRowProps> = ({
     return (
         <div
             className={cn(
-                "px-4 py-3 flex items-center gap-3 transition-colors",
-                !isLast && "border-b border-border/50",
-                account.isActive && "bg-primary/5"
+                'flex flex-col gap-3 px-4 py-4 transition-colors sm:flex-row sm:items-center sm:gap-4',
+                !isLast && 'border-b border-border/30',
+                account.isActive && 'bg-primary/5'
             )}
         >
-            {/* Avatar */}
-            <div className={cn(
-                "h-9 w-9 rounded-full flex items-center justify-center overflow-hidden shrink-0 transition-all",
-                account.isActive ? "ring-2 ring-primary ring-offset-2 ring-offset-background scale-105" : "bg-muted/80"
-            )}>
-                {account.avatarUrl ? (
-                    <img src={account.avatarUrl} alt="" className="h-full w-full object-cover" />
-                ) : (
-                    <User className="h-4 w-4 text-muted-foreground/70" />
-                )}
-            </div>
-
-            {/* Account Info */}
-            <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-foreground truncate">
-                    {account.displayName ?? account.email ?? t('accounts.account')}
+            <div className="flex items-center gap-3 sm:flex-1 sm:min-w-0">
+                <div className={cn(
+                    'flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/20 bg-muted/50 transition-colors',
+                    account.isActive && 'border-primary/30 bg-primary/10'
+                )}>
+                    {account.avatarUrl ? (
+                        <img src={account.avatarUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                        <User className="h-4 w-4 text-muted-foreground/70" />
+                    )}
                 </div>
-                {/* Always show email for clear account identification */}
-                <div className="text-xs text-muted-foreground truncate">
-                    {account.email ?? t('accounts.noEmail')}
+                <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium text-foreground">
+                        {account.displayName ?? account.email ?? t('accounts.account')}
+                    </div>
+                    <div className="truncate text-xs text-muted-foreground">
+                        {account.email ?? t('accounts.noEmail')}
+                    </div>
                 </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                 {account.isActive ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-success/10 text-success text-xs font-bold">
+                    <span className="inline-flex items-center gap-1 rounded-md border border-success/20 bg-success/10 px-2.5 py-1 text-xs font-medium text-success">
                         <Check className="h-3 w-3" />
                         {t('accounts.active')}
                     </span>
                 ) : (
-                    <button
-                        type="button"
+                    <Button
+                        variant="outline"
+                        size="sm"
                         onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             void onSetActive(providerId, account.id);
                         }}
                         disabled={isBusy}
-                        className={cn(
-                            "px-2.5 py-1 rounded-md text-xs font-medium border transition-colors",
-                            isBusy
-                                ? "cursor-not-allowed bg-muted/30 text-muted-foreground/70 border-border"
-                                : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted border-border"
-                        )}
+                        className="h-8 border-border/30 bg-background px-3 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground"
                     >
                         {t('accounts.setActive')}
-                    </button>
+                    </Button>
                 )}
                 {providerId === 'claude' && (
-                    <button
-                        type="button"
+                    <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             onShowManualSession(account.id, account.email);
                         }}
                         disabled={isBusy}
-                        className={cn(
-                            "p-1.5 rounded-md transition-colors",
-                            isBusy
-                                ? "cursor-not-allowed text-muted-foreground/50"
-                                : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-                        )}
+                        className="h-8 w-8 rounded-lg text-muted-foreground transition-colors hover:text-primary hover:bg-primary/10"
                         title={t('auth.sessionKeyLabel')}
                     >
                         <Key className="h-3.5 w-3.5" />
-                    </button>
+                    </Button>
                 )}
-                <button
-                    type="button"
+                <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         void onUnlink(account.id);
                     }}
                     disabled={isBusy}
-                    className={cn(
-                        "p-1.5 rounded-md transition-colors",
-                        isBusy
-                            ? "cursor-not-allowed text-muted-foreground/50"
-                            : "text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                    )}
+                    className="h-8 w-8 rounded-lg text-muted-foreground transition-colors hover:text-destructive hover:bg-destructive/10"
                     title={t('accounts.removeAccount')}
                 >
                     <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                </Button>
             </div>
         </div>
     );

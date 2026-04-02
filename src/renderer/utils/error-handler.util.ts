@@ -1,26 +1,21 @@
-import { en } from '@renderer/i18n/en';
-import { tr } from '@renderer/i18n/tr';
+import { enLocalePack } from '@renderer/i18n/locales';
 import { JsonValue } from '@shared/types/common';
 import { getErrorMessage, getErrorRecoveryStrategy } from '@shared/utils/error.util';
 
+import { localeRegistry } from '@/i18n/locale-registry.service';
 import { appLogger } from '@/utils/renderer-logger';
 
 interface CustomWindow extends Window {
     showToast?: (options: { type: string; message: string }) => void
 }
 
-type SupportedLanguage = 'tr' | 'en';
+const BASE_TRANSLATIONS: JsonValue = enLocalePack.translations;
 
-const TRANSLATIONS: Record<SupportedLanguage, JsonValue> = {
-    tr,
-    en
-};
+function getTranslationNode(root: JsonValue | null, path: string): string | null {
+    if (root === null) {
+        return null;
+    }
 
-function isSupportedLanguage(value: string): value is SupportedLanguage {
-    return value === 'tr' || value === 'en';
-}
-
-function getTranslationNode(root: JsonValue, path: string): string | null {
     const parts = path.split('.');
     let current: JsonValue = root;
 
@@ -35,14 +30,73 @@ function getTranslationNode(root: JsonValue, path: string): string | null {
     return typeof current === 'string' ? current : null;
 }
 
-function resolveTranslatedMessage(path: string): string {
+function interpolateMessage(
+    message: string,
+    options?: Record<string, string | number>
+): string {
+    if (!options) {
+        return message;
+    }
+
+    return Object.keys(options).reduce((accumulator, key) => {
+        return accumulator.replace(new RegExp(`{{${key}}}`, 'g'), String(options[key]));
+    }, message);
+}
+
+function resolveTranslatedMessage(path: string, options?: Record<string, string | number>): string {
     const langCandidate = typeof document === 'undefined'
         ? 'en'
-        : document.documentElement.lang.split('-')[0].toLowerCase();
-    const language: SupportedLanguage = isSupportedLanguage(langCandidate) ? langCandidate : 'en';
-    const activeValue = getTranslationNode(TRANSLATIONS[language], path);
-    const fallbackValue = getTranslationNode(TRANSLATIONS.en, path);
-    return activeValue ?? fallbackValue ?? path;
+        : localeRegistry.resolveLocale(document.documentElement.lang);
+    const activeTranslations = localeRegistry.getTranslations(langCandidate)
+        ?? (langCandidate === 'en' ? BASE_TRANSLATIONS : null);
+    const activeValue = getTranslationNode(activeTranslations, path);
+    if (activeValue === null) {
+        return path;
+    }
+    return interpolateMessage(activeValue, options);
+}
+
+const EXACT_ERROR_KEY_MAP: Record<string, string> = {
+    CHAT_ID_CREATION_FAILED: 'errors.chat.idCreationFailed',
+    SETTINGS_INVALID_RESPONSE: 'errors.settings.invalidResponse',
+    SETTINGS_INVALID_SAVE_RESPONSE: 'errors.settings.invalidSaveResponse',
+    'Failed to convert file to data URL': 'errors.attachments.dataUrlConversionFailed',
+    'Unknown file read error': 'errors.attachments.fileReadFailed',
+    'Speech recognition not supported': 'errors.voice.recognitionNotSupported',
+    'Runtime status request failed': 'errors.runtime.statusRequestFailed',
+    'Managed runtime repair failed': 'errors.runtime.repairFailed',
+    'Retry operation failed': 'errors.ssh.retryFailed',
+    'Settings operation failed': 'errors.settings.operationFailed',
+    'IPC bridge is not available': 'errors.ipc.bridgeUnavailable',
+};
+
+export function translateErrorMessage(message: string): string {
+    const normalizedMessage = message.trim();
+    if (normalizedMessage === '') {
+        return resolveTranslatedMessage('errors.unexpected');
+    }
+
+    if (normalizedMessage.startsWith('errors.') || normalizedMessage.startsWith('common.')) {
+        return resolveTranslatedMessage(normalizedMessage);
+    }
+
+    if (normalizedMessage.startsWith('error.')) {
+        return resolveTranslatedMessage(normalizedMessage.replace(/^error\./, 'errors.'));
+    }
+
+    const timeoutMatch = /^(.*?) timed out after (\d+)ms$/i.exec(normalizedMessage);
+    if (timeoutMatch) {
+        const label = timeoutMatch[1]?.trim() || 'Operation';
+        const timeoutMs = Number.parseInt(timeoutMatch[2] ?? '0', 10);
+        return resolveTranslatedMessage('errors.auth.operationTimeout', { label, timeoutMs });
+    }
+
+    const mappedPath = EXACT_ERROR_KEY_MAP[normalizedMessage];
+    if (mappedPath) {
+        return resolveTranslatedMessage(mappedPath);
+    }
+
+    return normalizedMessage;
 }
 
 /**
@@ -77,6 +131,11 @@ export interface ErrorDisplayOptions {
  * Maps technical error messages to user-friendly messages
  */
 function mapToUserFriendlyMessage(message: string): string {
+    const translatedMessage = translateErrorMessage(message);
+    if (translatedMessage !== message) {
+        return translatedMessage;
+    }
+
     if (message.includes('429') || message.includes('rate limit') || message.includes('quota')) {
         return resolveTranslatedMessage('errors.rateLimit.exceeded');
     }

@@ -1,10 +1,26 @@
+import { Button } from '@renderer/components/ui/button';
+import { Input } from '@renderer/components/ui/input';
+import { Label } from '@renderer/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@renderer/components/ui/select';
+import { useTranslation } from '@renderer/i18n';
+import { cn } from '@renderer/lib/utils';
+import { appLogger } from '@renderer/utils/renderer-logger';
 import { McpPermissionProfile } from '@shared/types/settings';
-import { CheckCircle2, Edit2, Power, Server, Shield, Trash2 } from 'lucide-react';
+import {
+    CheckCircle2,
+    Edit2,
+    Power,
+    Server,
+    Shield,
+    Trash2,
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-
-import { useTranslation } from '@/i18n';
-import { cn } from '@/lib/utils';
-import { appLogger } from '@/utils/renderer-logger';
 
 interface MCPServer {
     id?: string;
@@ -31,7 +47,13 @@ interface ServerItemProps {
     onEdit: (server: MCPServer) => void;
 }
 
-function ServerItem({ server, t, onToggle, onDelete, onEdit }: ServerItemProps) {
+function ServerItem({
+    server,
+    t,
+    onToggle,
+    onDelete,
+    onEdit,
+}: ServerItemProps) {
     const isInternal = server.category === 'Internal';
 
     return (
@@ -61,7 +83,7 @@ function ServerItem({ server, t, onToggle, onDelete, onEdit }: ServerItemProps) 
                         {server.category ? (
                             <span
                                 className={cn(
-                                    'rounded border px-1.5 py-0.5 text-xxs uppercase',
+                                    'rounded border px-1.5 py-0.5 text-xxs ',
                                     isInternal
                                         ? 'border-primary/30 bg-primary/10 text-primary'
                                         : 'bg-muted text-muted-foreground'
@@ -71,15 +93,21 @@ function ServerItem({ server, t, onToggle, onDelete, onEdit }: ServerItemProps) 
                             </span>
                         ) : null}
                         {server.version ? (
-                            <span className="text-xxs text-muted-foreground">v{server.version}</span>
+                            <span className="text-xxs text-muted-foreground">
+                                v{server.version}
+                            </span>
                         ) : null}
                     </div>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                        {server.description ?? `${server.command ?? ''} ${(server.args ?? []).join(' ')}`.trim()}
+                        {server.description ??
+                            `${server.command ?? ''} ${(server.args ?? []).join(' ')}`.trim()}
                     </p>
                     {server.publisher ? (
                         <p className="mt-1 text-xxs text-muted-foreground/60">
-                            {t('mcp.byAuthor', { author: server.publisher, version: server.version ?? '1.0.0' })}
+                            {t('mcp.byAuthor', {
+                                author: server.publisher,
+                                version: server.version ?? '1.0.0',
+                            })}
                         </p>
                     ) : null}
                     {server.permissionProfile ? (
@@ -92,61 +120,74 @@ function ServerItem({ server, t, onToggle, onDelete, onEdit }: ServerItemProps) 
                     ) : null}
                     {server.tools && server.tools.length > 0 ? (
                         <p className="mt-1 text-xxs text-muted-foreground/60">
-                            {server.tools.length} {server.tools.length === 1 ? t('mcp.tool') : t('mcp.tools')}
+                            {server.tools.length}{' '}
+                            {server.tools.length === 1 ? t('mcp.tool') : t('mcp.tools')}
                         </p>
                     ) : null}
                 </div>
             </div>
 
             <div className="flex items-center gap-3">
-                <button
-                    onClick={() => onToggle(server.id ?? server.name, server.enabled ?? false, isInternal)}
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                        onToggle(server.id ?? server.name, server.enabled ?? false, isInternal)
+                    }
                     disabled={isInternal}
                     className={cn(
-                        'flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all',
+                        'flex items-center gap-2 rounded-full h-8 px-3 transition-all',
                         isInternal
                             ? 'cursor-default border-primary/30 bg-primary/5 text-primary'
                             : server.enabled
-                                ? 'border-success/30 bg-success/10 text-success hover:bg-success/20'
-                                : 'border-border/50 bg-muted/50 text-muted-foreground hover:bg-muted'
+                              ? 'border-success/30 bg-success/10 text-success hover:bg-success/20'
+                              : 'border-border/50 bg-muted/50 text-muted-foreground hover:bg-muted'
                     )}
                     title={isInternal ? t('settings.mcp.servers.internalAlwaysEnabled') : ''}
                 >
                     <Power className={cn('h-3.5 w-3.5', server.enabled && 'fill-current')} />
-                    {server.enabled ? t('settings.mcp.status.enabled') : t('settings.mcp.status.disabled')}
-                </button>
+                    {server.enabled
+                        ? t('settings.mcp.status.enabled')
+                        : t('settings.mcp.status.disabled')}
+                </Button>
 
-                <div className="flex items-center gap-2 rounded-full border border-border/50 bg-background px-3 py-1">
+                <div className="flex items-center gap-2 rounded-full border border-border/50 bg-background px-3 py-1 h-8">
                     {server.enabled ? (
                         <CheckCircle2 className="h-3.5 w-3.5 text-success" />
                     ) : (
                         <div className="h-2 w-2 rounded-full bg-muted" />
                     )}
                     <span className="text-xs capitalize">
-                        {server.enabled ? t('settings.mcp.status.active') : t('settings.mcp.status.inactive')}
+                        {server.enabled
+                            ? t('settings.mcp.status.active')
+                            : t('settings.mcp.status.inactive')}
                     </span>
                 </div>
 
                 {!isInternal ? (
                     <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                        <button
+                        <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => onEdit(server)}
-                            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            className="rounded-lg h-8 w-8 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                             title={t('common.edit')}
                         >
                             <Edit2 className="h-4 w-4" />
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => onDelete(server.id ?? server.name, isInternal)}
-                            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                            className="rounded-lg h-8 w-8 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                             title={t('common.delete')}
                         >
                             <Trash2 className="h-4 w-4" />
-                        </button>
+                        </Button>
                     </div>
                 ) : null}
             </div>
-        </div >
+        </div>
     );
 }
 
@@ -165,27 +206,28 @@ export function MCPServersTab(): JSX.Element {
             setServers(
                 Array.isArray(nextServers)
                     ? nextServers.map((server, index) => {
-                        const candidate = server as Partial<MCPServer>;
-                        return {
-                            id: candidate.id ?? candidate.name ?? `mcp-server-${index}`,
-                            name: candidate.name ?? `mcp-server-${index}`,
-                            description: candidate.description,
-                            command: candidate.command,
-                            args: candidate.args ?? [],
-                            enabled:
-                                typeof candidate.enabled === 'boolean'
-                                    ? candidate.enabled
-                                    : candidate.status === 'enabled' || candidate.status === 'active',
-                            category: candidate.category,
-                            version: candidate.version,
-                            isOfficial: candidate.isOfficial,
-                            publisher: candidate.publisher,
-                            tools: candidate.tools,
-                            status: candidate.status,
-                            type: candidate.type,
-                            permissionProfile: candidate.permissionProfile as McpPermissionProfile,
-                        };
-                    })
+                          const candidate = server as Partial<MCPServer>;
+                          return {
+                              id: candidate.id ?? candidate.name ?? `mcp-server-${index}`,
+                              name: candidate.name ?? `mcp-server-${index}`,
+                              description: candidate.description,
+                              command: candidate.command,
+                              args: candidate.args ?? [],
+                              enabled:
+                                  typeof candidate.enabled === 'boolean'
+                                      ? candidate.enabled
+                                      : candidate.status === 'enabled' ||
+                                        candidate.status === 'active',
+                              category: candidate.category,
+                              version: candidate.version,
+                              isOfficial: candidate.isOfficial,
+                              publisher: candidate.publisher,
+                              tools: candidate.tools,
+                              status: candidate.status,
+                              type: candidate.type,
+                              permissionProfile: candidate.permissionProfile as McpPermissionProfile,
+                          };
+                      })
                     : []
             );
         } catch (error) {
@@ -199,41 +241,48 @@ export function MCPServersTab(): JSX.Element {
         void loadServers();
     }, [loadServers]);
 
-    const enabledCount = useMemo(
-        () => servers.filter(server => server.enabled).length,
-        [servers]
+    const enabledCount = useMemo(() => servers.filter(server => server.enabled).length, [servers]);
+
+    const handleToggle = useCallback(
+        async (
+            serverId: string,
+            currentEnabled: boolean,
+            isInternal: boolean
+        ): Promise<void> => {
+            if (isInternal) {
+                return;
+            }
+            try {
+                await window.electron.mcp.toggle(serverId, !currentEnabled);
+                await loadServers();
+            } catch (error) {
+                appLogger.error('MCPServersTab', 'Failed to toggle MCP server', error as Error);
+            }
+        },
+        [loadServers]
     );
 
-    const handleToggle = useCallback(async (serverId: string, currentEnabled: boolean, isInternal: boolean): Promise<void> => {
-        if (isInternal) {
-            return;
-        }
-        try {
-            await window.electron.mcp.toggle(serverId, !currentEnabled);
-            await loadServers();
-        } catch (error) {
-            appLogger.error('MCPServersTab', 'Failed to toggle MCP server', error as Error);
-        }
-    }, [loadServers]);
-
-    const handleDelete = useCallback(async (serverId: string, isInternal: boolean): Promise<void> => {
-        if (isInternal) {
-            return;
-        }
-        try {
-            const settings = await window.electron.getSettings();
-            const nextServers = (settings.mcpUserServers ?? []).filter((server: MCPServer) =>
-                server.id !== serverId && server.name !== serverId
-            );
-            await window.electron.saveSettings({
-                ...settings,
-                mcpUserServers: nextServers,
-            });
-            await loadServers();
-        } catch (error) {
-            appLogger.error('MCPServersTab', 'Failed to delete MCP server', error as Error);
-        }
-    }, [loadServers]);
+    const handleDelete = useCallback(
+        async (serverId: string, isInternal: boolean): Promise<void> => {
+            if (isInternal) {
+                return;
+            }
+            try {
+                const settings = await window.electron.getSettings();
+                const nextServers = (settings.mcpUserServers ?? []).filter(
+                    (server: MCPServer) => server.id !== serverId && server.name !== serverId
+                );
+                await window.electron.saveSettings({
+                    ...settings,
+                    mcpUserServers: nextServers,
+                });
+                await loadServers();
+            } catch (error) {
+                appLogger.error('MCPServersTab', 'Failed to delete MCP server', error as Error);
+            }
+        },
+        [loadServers]
+    );
 
     const handleEdit = useCallback((server: MCPServer): void => {
         setEditingServer(server);
@@ -256,11 +305,11 @@ export function MCPServersTab(): JSX.Element {
             const nextServers = (settings.mcpUserServers ?? []).map((server: MCPServer) =>
                 server.id === editingServer.id || server.name === editingServer.name
                     ? {
-                        ...server,
-                        command: trimmedCommand,
-                        args: [],
-                        permissionProfile: draftProfile
-                    }
+                          ...server,
+                          command: trimmedCommand,
+                          args: [],
+                          permissionProfile: draftProfile,
+                      }
                     : server
             );
             await window.electron.saveSettings({
@@ -282,7 +331,9 @@ export function MCPServersTab(): JSX.Element {
                         <Server className="h-5 w-5" />
                         {t('settings.mcp.servers.title')}
                     </h2>
-                    <p className="text-sm text-muted-foreground">{t('settings.mcp.servers.subtitle')}</p>
+                    <p className="text-sm text-muted-foreground">
+                        {t('settings.mcp.servers.subtitle')}
+                    </p>
                 </div>
                 <div className="text-xs text-muted-foreground">
                     {enabledCount} / {servers.length} {t('settings.mcp.servers.enabled')}
@@ -300,8 +351,12 @@ export function MCPServersTab(): JSX.Element {
                             key={server.id}
                             server={server}
                             t={t}
-                            onToggle={(serverId, enabled, isInternal) => { void handleToggle(serverId, enabled, isInternal); }}
-                            onDelete={(serverId, isInternal) => { void handleDelete(serverId, isInternal); }}
+                            onToggle={(serverId, enabled, isInternal) => {
+                                void handleToggle(serverId, enabled, isInternal);
+                            }}
+                            onDelete={(serverId, isInternal) => {
+                                void handleDelete(serverId, isInternal);
+                            }}
                             onEdit={handleEdit}
                         />
                     ))}
@@ -320,45 +375,75 @@ export function MCPServersTab(): JSX.Element {
                 <div className="rounded-xl border border-border/40 bg-card/80 p-4">
                     <div className="mb-3 flex items-center justify-between">
                         <h3 className="text-sm font-semibold">{editingServer.name}</h3>
-                        <button
+                        <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => setEditingServer(null)}
-                            className="rounded-md bg-muted/40 px-3 py-1.5 text-sm hover:bg-muted/60"
+                            className="rounded-md bg-muted/40 px-3 py-1.5 text-xs hover:bg-muted/60 transition-colors h-8"
                         >
                             {t('common.cancel')}
-                        </button>
+                        </Button>
                     </div>
-                    <label className="block space-y-1">
-                        <span className="text-xs text-muted-foreground">{t('mcp.command')}</span>
-                        <input
-                            value={draftCommand}
-                            onChange={event => setDraftCommand(event.target.value)}
-                            className="w-full rounded-md border border-border/30 bg-muted/30 px-3 py-2 text-sm"
-                        />
-                    </label>
-                    <label className="mt-3 block space-y-1">
-                        <span className="text-xs text-muted-foreground">{t('settings.mcp.permissions.profile')}</span>
-                        <select
-                            value={draftProfile}
-                            onChange={event => setDraftProfile(event.target.value as McpPermissionProfile)}
-                            className="w-full rounded-md border border-border/30 bg-muted/30 px-3 py-2 text-sm"
-                        >
-                            <option value="read-only">{t('settings.mcp.profiles.read-only')}</option>
-                            <option value="workspace-only">{t('settings.mcp.profiles.workspace-only')}</option>
-                            <option value="network-enabled">{t('settings.mcp.profiles.network-enabled')}</option>
-                            <option value="destructive">{t('settings.mcp.profiles.destructive')}</option>
-                            <option value="full-access">{t('settings.mcp.profiles.full-access')}</option>
-                        </select>
-                    </label>
-                    <div className="mt-3 flex justify-end">
-                        <button
-                            onClick={() => { void handleSaveEdit(); }}
-                            className="rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
+                    <div className="space-y-4">
+                        <div className="grid gap-1.5">
+                            <Label className="text-xs text-muted-foreground">
+                                {t('mcp.command')}
+                            </Label>
+                            <Input
+                                value={draftCommand}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                    setDraftCommand(e.target.value)
+                                }
+                                className="h-9"
+                            />
+                        </div>
+                        <div className="grid gap-1.5">
+                            <Label className="text-xs text-muted-foreground">
+                                {t('settings.mcp.permissions.profile')}
+                            </Label>
+                            <Select
+                                value={draftProfile}
+                                onValueChange={(val: McpPermissionProfile) =>
+                                    setDraftProfile(val)
+                                }
+                            >
+                                <SelectTrigger className="h-9">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="read-only">
+                                        {t('settings.mcp.profiles.read-only')}
+                                    </SelectItem>
+                                    <SelectItem value="workspace-only">
+                                        {t('settings.mcp.profiles.workspace-only')}
+                                    </SelectItem>
+                                    <SelectItem value="network-enabled">
+                                        {t('settings.mcp.profiles.network-enabled')}
+                                    </SelectItem>
+                                    <SelectItem value="destructive">
+                                        {t('settings.mcp.profiles.destructive')}
+                                    </SelectItem>
+                                    <SelectItem value="full-access">
+                                        {t('settings.mcp.profiles.full-access')}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="mt-4 flex justify-end">
+                        <Button
+                            size="sm"
+                            onClick={() => {
+                                void handleSaveEdit();
+                            }}
+                            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors h-8"
                         >
                             {t('common.save')}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             ) : null}
         </div>
     );
 }
+

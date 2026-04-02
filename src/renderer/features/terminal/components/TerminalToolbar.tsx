@@ -197,7 +197,7 @@ export function TerminalToolbar({
                             <>
                                 {selectableBackends.length > 0 && (
                                     <div className="px-2 pt-1 pb-1">
-                                        <div className="text-xxxs uppercase tracking-wide text-muted-foreground">
+                                        <div className="text-xxxs text-muted-foreground">
                                             {t('terminal.defaultBackend')}: {defaultBackendName}
                                         </div>
                                         <div className="mt-1 space-y-0.5">
@@ -221,7 +221,7 @@ export function TerminalToolbar({
                                 {integratedBackend && (
                                     <>
                                         <div className="h-px bg-border/70 my-1" />
-                                        <div className="px-2 py-1 text-xxxs uppercase tracking-wide text-muted-foreground">
+                                        <div className="px-2 py-1 text-xxxs text-muted-foreground">
                                             {t('terminal.integratedSessions')}
                                         </div>
                                         {availableShells.map(s => (
@@ -249,7 +249,7 @@ export function TerminalToolbar({
                                 {launchableExternalBackends.length > 0 && (
                                     <>
                                         <div className="h-px bg-border/70 my-1" />
-                                        <div className="px-2 py-1 text-xxxs uppercase tracking-wide text-muted-foreground">
+                                        <div className="px-2 py-1 text-xxxs text-muted-foreground">
                                             {t('terminal.externalTerminals')}
                                         </div>
                                         {launchableExternalBackends.map(backend => (
@@ -279,7 +279,7 @@ export function TerminalToolbar({
                                     </>
                                 )}
                                 <div className="h-px bg-border/70 my-1" />
-                                <div className="px-2 py-1 text-xxxs uppercase tracking-wide text-muted-foreground">
+                                <div className="px-2 py-1 text-xxxs text-muted-foreground">
                                     {t('terminal.select_connection')}
                                 </div>
                                 {isLoadingRemoteConnections && (

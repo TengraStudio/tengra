@@ -2,6 +2,8 @@ import React, { useRef, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 
+import './animated-card.css';
+
 interface AnimatedCardProps {
     children: React.ReactNode
     className?: string
@@ -54,10 +56,10 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
     };
 
     const effectClasses = {
-        lift: 'hover-lift',
-        glow: 'hover-glow',
-        scale: 'hover-scale',
-        '3d': 'card-3d',
+        lift: 'tengra-animated-card--lift',
+        glow: 'tengra-animated-card--glow',
+        scale: 'tengra-animated-card--scale',
+        '3d': 'tengra-animated-card--3d',
         none: ''
     };
 
@@ -72,10 +74,9 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
                 (cardRef as React.MutableRefObject<HTMLElement | null>).current = node;
             }}
             className={cn(
-                'p-4 rounded-xl border border-border bg-card',
-                'transition-all duration-200',
+                'tengra-animated-card',
                 effectClasses[hoverEffect],
-                onClick && 'cursor-pointer',
+                onClick && 'tengra-animated-card--clickable',
                 className
             )}
             onClick={onClick}
@@ -100,8 +101,8 @@ export const GradientBorderCard: React.FC<{
     className?: string
 }> = ({ children, className }) => {
     return (
-        <div className={cn('gradient-border p-0.5', className)}>
-            <div className="bg-card rounded-lg p-4 h-full">
+        <div className={cn('tengra-gradient-border-card', className)}>
+            <div className="tengra-gradient-border-card__inner">
                 {children}
             </div>
         </div>

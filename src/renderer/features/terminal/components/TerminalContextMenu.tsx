@@ -150,7 +150,7 @@ export function TerminalContextMenu({
             )}
             {pasteHistory.length > 0 && (
                 <div className="border-t border-border/50 mt-1 pt-1">
-                    <div className="px-3 py-1 text-xxxs uppercase tracking-wide text-muted-foreground">
+                    <div className="px-3 py-1 text-xxxs text-muted-foreground">
                         {labels.pasteHistory}
                     </div>
                     {pasteHistory.slice(0, 3).map((entry, index) => (

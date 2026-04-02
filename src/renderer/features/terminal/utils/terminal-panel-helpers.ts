@@ -10,7 +10,7 @@ export function buildFormattedClipboardHtml(selectedText: string): string {
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
-    return `<pre style="font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace; font-size: 13px; background: #1e1e1e; color: #d4d4d4; padding: 8px; border-radius: 4px; overflow-x: auto;">${escaped}</pre>`;
+    return `<pre style="font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 13px; background: #1e1e1e; color: #d4d4d4; padding: 8px; border-radius: 4px; overflow-x: auto;">${escaped}</pre>`;
 }
 
 export function summarizePasteText(text: string, hasAnsi: boolean): string {

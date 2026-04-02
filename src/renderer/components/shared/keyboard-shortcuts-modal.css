@@ -1,0 +1,397 @@
+/* KeyboardShortcutsModal Component CSS */
+:root {
+  /* Overlay */
+  --shortcuts-modal-overlay-bg: hsl(var(--background) / 80%);
+  --shortcuts-modal-overlay-blur: 4px;
+
+  /* Modal */
+  --shortcuts-modal-bg: hsl(var(--card));
+  --shortcuts-modal-border: hsl(var(--border) / 50%);
+  --shortcuts-modal-shadow: 0 25px 50px -12px rgb(0 0 0 / 25%);
+  --shortcuts-modal-radius: 1rem;
+
+  /* Header */
+  --shortcuts-modal-header-bg: hsl(var(--muted) / 20%);
+  --shortcuts-modal-header-height: 3.5rem;
+  --shortcuts-modal-header-border: hsl(var(--border) / 50%);
+  --shortcuts-modal-title-color: hsl(var(--foreground));
+  --shortcuts-modal-icon-color: hsl(var(--primary));
+
+  /* Close button */
+  --shortcuts-modal-close-text: hsl(var(--muted-foreground) / 60%);
+  --shortcuts-modal-close-text-hover: hsl(var(--foreground));
+  --shortcuts-modal-close-bg-hover: hsl(var(--muted) / 30%);
+  --shortcuts-modal-close-radius: 0.5rem;
+
+  /* Toolbar */
+  --shortcuts-modal-toolbar-border: hsl(var(--border) / 50%);
+  --shortcuts-modal-toolbar-padding: 0.75rem 1.5rem;
+
+  /* Search */
+  --shortcuts-modal-search-bg: hsl(var(--muted) / 30%);
+  --shortcuts-modal-search-border: hsl(var(--border) / 50%);
+  --shortcuts-modal-search-border-focus: hsl(var(--primary) / 50%);
+  --shortcuts-modal-search-text: hsl(var(--foreground));
+  --shortcuts-modal-search-placeholder: hsl(var(--muted-foreground));
+  --shortcuts-modal-search-icon-color: hsl(var(--muted-foreground));
+  --shortcuts-modal-search-radius: 0.5rem;
+
+  /* Toolbar buttons */
+  --shortcuts-modal-toolbar-btn-bg: hsl(var(--muted) / 20%);
+  --shortcuts-modal-toolbar-btn-bg-hover: hsl(var(--muted) / 40%);
+  --shortcuts-modal-toolbar-btn-border: hsl(var(--border) / 50%);
+  --shortcuts-modal-toolbar-btn-text: hsl(var(--foreground));
+  --shortcuts-modal-toolbar-btn-radius: 0.5rem;
+
+  /* Content */
+  --shortcuts-modal-content-padding: 1.5rem;
+  --shortcuts-modal-content-gap: 1.5rem;
+
+  /* Category */
+  --shortcuts-modal-category-title-color: hsl(var(--muted-foreground) / 40%);
+  --shortcuts-modal-category-bg: hsl(var(--muted) / 20%);
+  --shortcuts-modal-category-border: hsl(var(--border) / 50%);
+  --shortcuts-modal-category-radius: 0.75rem;
+
+  /* Item */
+  --shortcuts-modal-item-border: hsl(var(--border) / 50%);
+  --shortcuts-modal-item-label-color: hsl(var(--muted-foreground) / 70%);
+
+  /* Kbd */
+  --shortcuts-modal-kbd-bg: hsl(var(--muted) / 50%);
+  --shortcuts-modal-kbd-border: hsl(var(--border) / 50%);
+  --shortcuts-modal-kbd-text: hsl(var(--muted-foreground) / 80%);
+  --shortcuts-modal-kbd-shadow: 0 1px 2px 0 rgb(0 0 0 / 5%);
+  --shortcuts-modal-kbd-radius: 0.25rem;
+
+  /* Edit button */
+  --shortcuts-modal-edit-btn-bg: hsl(var(--muted) / 30%);
+  --shortcuts-modal-edit-btn-border: hsl(var(--border) / 50%);
+  --shortcuts-modal-edit-btn-text: hsl(var(--muted-foreground));
+  --shortcuts-modal-edit-btn-text-hover: hsl(var(--foreground));
+  --shortcuts-modal-edit-btn-recording-bg: hsl(var(--primary) / 15%);
+  --shortcuts-modal-edit-btn-recording-border: hsl(var(--primary) / 40%);
+  --shortcuts-modal-edit-btn-recording-text: hsl(var(--primary));
+
+  /* Reset button */
+  --shortcuts-modal-reset-btn-bg: hsl(var(--muted) / 20%);
+  --shortcuts-modal-reset-btn-border: hsl(var(--border) / 50%);
+  --shortcuts-modal-reset-btn-text: hsl(var(--muted-foreground));
+  --shortcuts-modal-reset-btn-text-hover: hsl(var(--foreground));
+
+  /* Footer */
+  --shortcuts-modal-footer-bg: hsl(var(--muted) / 20%);
+  --shortcuts-modal-footer-border: hsl(var(--border) / 50%);
+  --shortcuts-modal-footer-text: hsl(var(--muted-foreground) / 40%);
+
+  /* Animation */
+  --shortcuts-modal-animation-duration: 200ms;
+}
+
+/* Overlay */
+.tengra-shortcuts-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  background: var(--shortcuts-modal-overlay-bg);
+  backdrop-filter: blur(var(--shortcuts-modal-overlay-blur));
+  animation: shortcuts-modal-fade-in var(--shortcuts-modal-animation-duration) ease-out;
+}
+
+@keyframes shortcuts-modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Modal */
+.tengra-shortcuts-modal__dialog {
+  width: 100%;
+  max-width: 1024px;
+  max-height: calc(100vh - 1.5rem);
+  background: var(--shortcuts-modal-bg);
+  border: 1px solid var(--shortcuts-modal-border);
+  border-radius: var(--shortcuts-modal-radius);
+  box-shadow: var(--shortcuts-modal-shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: shortcuts-modal-zoom-in var(--shortcuts-modal-animation-duration) ease-out;
+}
+
+@keyframes shortcuts-modal-zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Header */
+.tengra-shortcuts-modal__header {
+  min-height: var(--shortcuts-modal-header-height);
+  border-bottom: 1px solid var(--shortcuts-modal-header-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  background: var(--shortcuts-modal-header-bg);
+}
+
+.tengra-shortcuts-modal__header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tengra-shortcuts-modal__icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--shortcuts-modal-icon-color);
+}
+
+.tengra-shortcuts-modal__title {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--shortcuts-modal-title-color);
+}
+
+.tengra-shortcuts-modal__close-btn {
+  padding: 0.5rem;
+  border-radius: var(--shortcuts-modal-close-radius);
+  color: var(--shortcuts-modal-close-text);
+  transition: background 150ms, color 150ms;
+}
+
+.tengra-shortcuts-modal__close-btn:hover {
+  background: var(--shortcuts-modal-close-bg-hover);
+  color: var(--shortcuts-modal-close-text-hover);
+}
+
+.tengra-shortcuts-modal__close-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Toolbar */
+.tengra-shortcuts-modal__toolbar {
+  padding: var(--shortcuts-modal-toolbar-padding);
+  border-bottom: 1px solid var(--shortcuts-modal-toolbar-border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Search */
+.tengra-shortcuts-modal__search {
+  position: relative;
+  flex: 1;
+  min-width: 14rem;
+}
+
+.tengra-shortcuts-modal__search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1rem;
+  height: 1rem;
+  color: var(--shortcuts-modal-search-icon-color);
+}
+
+.tengra-shortcuts-modal__search-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+  border-radius: var(--shortcuts-modal-search-radius);
+  background: var(--shortcuts-modal-search-bg);
+  border: 1px solid var(--shortcuts-modal-search-border);
+  font-size: 0.875rem;
+  color: var(--shortcuts-modal-search-text);
+  outline: none;
+  transition: border-color 150ms;
+}
+
+.tengra-shortcuts-modal__search-input::placeholder {
+  color: var(--shortcuts-modal-search-placeholder);
+}
+
+.tengra-shortcuts-modal__search-input:focus {
+  border-color: var(--shortcuts-modal-search-border-focus);
+}
+
+/* Toolbar buttons */
+.tengra-shortcuts-modal__toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--shortcuts-modal-toolbar-btn-radius);
+  border: 1px solid var(--shortcuts-modal-toolbar-btn-border);
+  background: var(--shortcuts-modal-toolbar-btn-bg);
+  font-size: 0.75rem;
+  color: var(--shortcuts-modal-toolbar-btn-text);
+  transition: background 150ms;
+}
+
+.tengra-shortcuts-modal__toolbar-btn:hover {
+  background: var(--shortcuts-modal-toolbar-btn-bg-hover);
+}
+
+.tengra-shortcuts-modal__toolbar-btn-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+/* Content */
+.tengra-shortcuts-modal__content {
+  padding: var(--shortcuts-modal-content-padding);
+  display: flex;
+  flex-direction: column;
+  gap: var(--shortcuts-modal-content-gap);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* Category */
+.tengra-shortcuts-modal__category {
+  /* Wrapper */
+}
+
+.tengra-shortcuts-modal__category-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--shortcuts-modal-category-title-color);
+  margin-bottom: 0.75rem;
+  padding-left: 0.25rem;
+}
+
+.tengra-shortcuts-modal__category-list {
+  background: var(--shortcuts-modal-category-bg);
+  border-radius: var(--shortcuts-modal-category-radius);
+  padding: 0 1rem;
+  border: 1px solid var(--shortcuts-modal-category-border);
+}
+
+/* Item */
+.tengra-shortcuts-modal__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--shortcuts-modal-item-border);
+  gap: 0.75rem;
+}
+
+.tengra-shortcuts-modal__item:last-child {
+  border-bottom: none;
+}
+
+.tengra-shortcuts-modal__item-label {
+  font-size: 0.875rem;
+  color: var(--shortcuts-modal-item-label-color);
+}
+
+.tengra-shortcuts-modal__item-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+/* Kbd */
+.tengra-shortcuts-modal__kbd {
+  padding: 0.25rem 0.5rem;
+  background: var(--shortcuts-modal-kbd-bg);
+  border: 1px solid var(--shortcuts-modal-kbd-border);
+  border-radius: var(--shortcuts-modal-kbd-radius);
+  font-size: 0.625rem;
+  font-family: monospace;
+  color: var(--shortcuts-modal-kbd-text);
+  min-width: 1.5rem;
+  text-align: center;
+  box-shadow: var(--shortcuts-modal-kbd-shadow);
+}
+
+/* Edit button */
+.tengra-shortcuts-modal__edit-btn {
+  margin-left: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.625rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--shortcuts-modal-edit-btn-border);
+  background: var(--shortcuts-modal-edit-btn-bg);
+  color: var(--shortcuts-modal-edit-btn-text);
+  transition: color 150ms;
+}
+
+.tengra-shortcuts-modal__edit-btn:hover {
+  color: var(--shortcuts-modal-edit-btn-text-hover);
+}
+
+.tengra-shortcuts-modal__edit-btn--recording {
+  background: var(--shortcuts-modal-edit-btn-recording-bg);
+  border-color: var(--shortcuts-modal-edit-btn-recording-border);
+  color: var(--shortcuts-modal-edit-btn-recording-text);
+}
+
+/* Reset button */
+.tengra-shortcuts-modal__reset-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.625rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--shortcuts-modal-reset-btn-border);
+  background: var(--shortcuts-modal-reset-btn-bg);
+  color: var(--shortcuts-modal-reset-btn-text);
+  transition: color 150ms;
+}
+
+.tengra-shortcuts-modal__reset-btn:hover {
+  color: var(--shortcuts-modal-reset-btn-text-hover);
+}
+
+/* Footer */
+.tengra-shortcuts-modal__footer {
+  padding: 1rem;
+  background: var(--shortcuts-modal-footer-bg);
+  border-top: 1px solid var(--shortcuts-modal-footer-border);
+  text-align: center;
+}
+
+.tengra-shortcuts-modal__footer-text {
+  font-size: 0.625rem;
+  color: var(--shortcuts-modal-footer-text);
+}
+
+@media (width <= 767px) {
+  .tengra-shortcuts-modal__header {
+    padding: 0.75rem 1rem;
+  }
+
+  .tengra-shortcuts-modal__toolbar {
+    padding: 0.75rem 1rem;
+  }
+
+  .tengra-shortcuts-modal__search {
+    min-width: 0;
+  }
+
+  .tengra-shortcuts-modal__content {
+    padding: 1rem;
+  }
+
+  .tengra-shortcuts-modal__item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tengra-shortcuts-modal__item-controls {
+    flex-wrap: wrap;
+  }
+}

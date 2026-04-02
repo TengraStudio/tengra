@@ -6,13 +6,13 @@ import { SidebarNavigation } from '@renderer/components/layout/sidebar/SidebarNa
 import { Modal } from '@renderer/components/ui/modal';
 import React, { lazy, Suspense, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useChatLibrary, useChatShell } from '@/context/ChatContext';
-import { useWorkspaceSelection } from '@/context/WorkspaceContext';
-import { SettingsCategory } from '@/features/settings/types';
+import { useChatLibrary, useChatShell } from '@/context/ChatContext'; 
 import { AppView } from '@/hooks/useAppState';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { Chat } from '@/types';
+
+import './sidebar/sidebar.css';
 
 const PromptManagerModal = lazy(() =>
     import('@/features/prompts/components/PromptManagerModal').then(module => ({ default: module.PromptManagerModal }))
@@ -23,7 +23,6 @@ interface SidebarProps {
     toggleSidebar: () => void
     currentView: AppView
     onChangeView: (view: AppView) => void
-    onOpenSettings: (category?: SettingsCategory) => void
     onSearch: (query: string) => void
 }
 
@@ -235,16 +234,13 @@ const SidebarChatSection: React.FC<Pick<SidebarProps, 'currentView' | 'onChangeV
  * Main application sidebar with navigation, chat list, and footer controls.
  */
 export const Sidebar = React.memo(({
-    onOpenSettings,
     isCollapsed,
     toggleSidebar,
     currentView,
     onChangeView,
     onSearch
-}: SidebarProps) => {
-    const { selectedWorkspace } = useWorkspaceSelection();
+}: SidebarProps) => { 
     const { t } = useTranslation();
-    const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
     return (
         <>
@@ -252,8 +248,8 @@ export const Sidebar = React.memo(({
                 data-testid="sidebar"
                 aria-label={t('aria.applicationSidebar')}
                 className={cn(
-                    "flex flex-col h-full transition-all duration-300 ease-in-out bg-background",
-                    isCollapsed ? "w-20" : "w-full"
+                    "tengra-sidebar",
+                    isCollapsed ? "tengra-sidebar--collapsed" : "tengra-sidebar--expanded"
                 )}>
                 <SidebarHeaderConnector
                     isCollapsed={isCollapsed}
@@ -266,7 +262,7 @@ export const Sidebar = React.memo(({
                     isCollapsed={isCollapsed}
                 />
 
-                <div className="mx-3 my-2 h-px bg-border/30" />
+                <div className="tengra-sidebar__divider" />
 
                 <SidebarChatSection
                     isCollapsed={isCollapsed}
@@ -276,13 +272,8 @@ export const Sidebar = React.memo(({
                 />
 
                 <SidebarFooter
-                    isCollapsed={isCollapsed}
-                    selectedWorkspace={selectedWorkspace}
-                    currentView={currentView}
-                    showSettingsMenu={showSettingsMenu}
-                    toggleSettingsMenu={() => setShowSettingsMenu(prev => !prev)}
+                    isCollapsed={isCollapsed} 
                     toggleSidebar={toggleSidebar}
-                    onOpenSettings={onOpenSettings}
                     t={t}
                 />
             </aside>

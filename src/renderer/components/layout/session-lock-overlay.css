@@ -1,0 +1,105 @@
+:root {
+    --session-lock-overlay-z: 50;
+    --session-lock-overlay-bg: hsl(var(--background) / 95%);
+    --session-lock-card-bg: hsl(var(--card));
+    --session-lock-card-border: hsl(var(--border));
+    --session-lock-card-radius: 0.75rem;
+    --session-lock-card-shadow: 0 25px 50px -12px hsl(var(--foreground) / 35%);
+    --session-lock-card-max-width: 28rem;
+    --session-lock-icon-wrap-bg: hsl(var(--primary) / 10%);
+    --session-lock-icon-wrap-text: hsl(var(--primary));
+    --session-lock-icon-wrap-size: 2.5rem;
+    --session-lock-title-size: 1rem;
+    --session-lock-title-weight: 600;
+    --session-lock-muted-text: hsl(var(--muted-foreground));
+    --session-lock-primary-btn-bg: hsl(var(--primary));
+    --session-lock-primary-btn-text: hsl(var(--primary-foreground));
+    --session-lock-secondary-btn-border: hsl(var(--border));
+}
+
+.tengra-session-lock {
+    position: fixed;
+    inset: 0;
+    z-index: var(--session-lock-overlay-z);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: var(--session-lock-overlay-bg);
+    backdrop-filter: blur(4px);
+}
+
+.tengra-session-lock__card {
+    width: 100%;
+    max-width: var(--session-lock-card-max-width);
+    border-radius: var(--session-lock-card-radius);
+    border: 1px solid var(--session-lock-card-border);
+    background: var(--session-lock-card-bg);
+    box-shadow: var(--session-lock-card-shadow);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.tengra-session-lock__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.tengra-session-lock__icon-wrap {
+    width: var(--session-lock-icon-wrap-size);
+    height: var(--session-lock-icon-wrap-size);
+    border-radius: 9999px;
+    background: var(--session-lock-icon-wrap-bg);
+    color: var(--session-lock-icon-wrap-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tengra-session-lock__title {
+    margin: 0;
+    font-size: var(--session-lock-title-size);
+    font-weight: var(--session-lock-title-weight);
+}
+
+.tengra-session-lock__subtext,
+.tengra-session-lock__description {
+    color: var(--session-lock-muted-text);
+}
+
+.tengra-session-lock__actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.tengra-session-lock__btn {
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    border: 1px solid transparent;
+    cursor: pointer;
+}
+
+.tengra-session-lock__btn--primary {
+    background: var(--session-lock-primary-btn-bg);
+    color: var(--session-lock-primary-btn-text);
+    font-weight: 500;
+}
+
+.tengra-session-lock__btn--primary:hover {
+    opacity: 0.9;
+}
+
+.tengra-session-lock__btn--secondary {
+    border-color: var(--session-lock-secondary-btn-border);
+    color: var(--session-lock-muted-text);
+    background: transparent;
+}
+
+.tengra-session-lock__btn--secondary:hover {
+    background: hsl(var(--muted) / 40%);
+    color: hsl(var(--foreground));
+}

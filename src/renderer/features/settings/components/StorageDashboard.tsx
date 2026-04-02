@@ -31,9 +31,9 @@ const StatItem: React.FC<StatItemProps> = ({ icon, label, value, ratio }) => (
             <div className="p-2 rounded-xl bg-muted/10 border border-border/40 group-hover:bg-primary/10 group-hover:border-primary/20 transition-colors">
                 {icon}
             </div>
-            <span className="tw-text-10 font-black uppercase tracking-widest text-muted-foreground">{label}</span>
+            <span className="tw-text-10 font-bold text-muted-foreground">{label}</span>
         </div>
-        <div className="text-2xl font-black text-foreground leading-none tracking-tighter tabular-nums">{value}</div>
+        <div className="text-2xl font-bold text-foreground leading-none tabular-nums">{value}</div>
         {ratio !== undefined && (
             <div className="mt-3 h-1.5 rounded-full bg-muted/20 overflow-hidden">
                 <div
@@ -95,7 +95,7 @@ export const StorageDashboard: React.FC = () => {
     return (
         <div className="space-y-4">
             <div>
-                <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+                <h3 className="text-xs font-bold text-muted-foreground">
                     {t('settings.storageDashboard.title')}
                 </h3>
                 <p className="tw-text-10 text-muted-foreground/60 mt-1">

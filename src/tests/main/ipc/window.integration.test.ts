@@ -9,6 +9,11 @@ const { spawnMock } = vi.hoisted(() => ({
         stderr: {
             on: vi.fn(),
         },
+        once: vi.fn((event: string, cb: (...args: TestValue[]) => void) => {
+            if (event === 'spawn') {
+                setTimeout(() => cb(), 0);
+            }
+        }),
         on: vi.fn((event: string, cb: (...args: TestValue[]) => void) => {
             if (event === 'close') {
                 setTimeout(() => cb(0), 0);

@@ -1,7 +1,7 @@
 import { CircleDot, Package, Power, Shield, Trash2 } from 'lucide-react';
 
 interface McpAction { name: string; description: string; }
-interface McpPlugin { id: string; name: string; description: string; isEnabled: boolean; isAlive: boolean; source: 'core' | 'user' | 'remote'; actions: McpAction[]; }
+export interface McpPlugin { id: string; name: string; description: string; isEnabled: boolean; isAlive: boolean; source: 'core' | 'user' | 'remote'; actions: McpAction[]; }
 interface McpCardProps { plugin: McpPlugin; t: (key: string, options?: Record<string, string | number>) => string; onToggle: (p: McpPlugin) => void; onUninstall: (p: McpPlugin) => void; }
 
 export const McpCard = ({ plugin, t, onToggle, onUninstall }: McpCardProps): JSX.Element => {
@@ -42,11 +42,11 @@ function CardHeader({ plugin, description, onToggle, onUninstall }: Omit<McpCard
 
 function StatusBadge({ isEnabled }: { isEnabled: boolean }) {
     return isEnabled ? (
-        <span className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-full bg-success/10 text-success text-xs font-bold uppercase tracking-tight">
+        <span className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-full bg-success/10 text-success text-xs font-bold">
             <div className="w-1 h-1 rounded-full bg-success animate-pulse" /> Active
         </span>
     ) : (
-        <span className="px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground/40 text-xs font-bold uppercase tracking-tight">
+        <span className="px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground/40 text-xs font-bold">
             Standby
         </span>
     );
@@ -77,7 +77,7 @@ function CardActions({ actions, t }: { actions: McpAction[], t: (key: string, op
         <div className="pt-4 border-t border-border/10 space-y-3">
             <div className="flex items-center gap-2 opacity-30">
                 <CircleDot className="w-3 h-3 text-primary" />
-                <span className="text-xs font-bold uppercase tracking-wider">{t('marketplace.mcp.stats.tools')}</span>
+                <span className="text-xs font-bold">{t('marketplace.mcp.stats.tools')}</span>
             </div>
             <div className="flex flex-col gap-2 max-h-44 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-border/20">
                 {actions.map((action, idx) => (

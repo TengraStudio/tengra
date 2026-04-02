@@ -134,12 +134,7 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
                 return;
             }
 
-            // Allow only "show shortcuts" while typing.
             if (isInputElement(target)) {
-                if (matchesShortcut(e, bindings.showShortcuts, isMac)) {
-                    e.preventDefault();
-                    onShowShortcuts();
-                }
                 return;
             }
 

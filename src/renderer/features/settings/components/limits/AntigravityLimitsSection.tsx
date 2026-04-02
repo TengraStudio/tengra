@@ -1,3 +1,5 @@
+import { Input } from '@renderer/components/ui/input';
+import { Switch } from '@renderer/components/ui/switch';
 import { Percent } from 'lucide-react';
 import React from 'react';
 
@@ -5,64 +7,107 @@ import { useTranslation } from '@/i18n';
 import type { ModelInfo } from '@/types';
 
 interface AntigravityLimitsSectionProps {
-    antigravityModels: ModelInfo[]
-    antigravityLimits: Record<string, { enabled: boolean; percentage: number }> | undefined
-    updateAntigravityLimit: (modelId: string, enabled: boolean, percentage: number) => void
+    antigravityModels: ModelInfo[];
+    antigravityLimits: Record<string, { enabled: boolean; percentage: number }> | undefined;
+    updateAntigravityLimit: (modelId: string, enabled: boolean, percentage: number) => void;
 }
 
 export const AntigravityLimitsSection: React.FC<AntigravityLimitsSectionProps> = ({
     antigravityModels,
     antigravityLimits,
-    updateAntigravityLimit
+    updateAntigravityLimit,
 }) => {
     const { t } = useTranslation();
     return (
-        <div className="bg-card p-6 rounded-xl border border-border">
-            <div className="flex items-center gap-2 mb-4">
-                <Percent className="w-4 h-4 text-primary" />
-                <h3 className="text-sm font-bold uppercase text-muted-foreground">{t('settings.usageLimits.antigravity.title')}</h3>
-            </div>
-            <div className="text-xs text-muted-foreground mb-4">
-                {t('settings.usageLimits.antigravity.description')}
+        <div className="rounded-2xl bg-card border border-border/50 p-6 shadow-sm overflow-hidden">
+            <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                    <Percent className="w-5 h-5" />
+                </div>
+                <div>
+                    <h3 className="text-sm font-bold text-foreground">
+                        {t('settings.usageLimits.antigravity.title')}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                        {t('settings.usageLimits.antigravity.description')}
+                    </p>
+                </div>
             </div>
 
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-                {antigravityModels.map((model) => {
+            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                {antigravityModels.map(model => {
                     const modelId = model.id ?? '';
-                    const modelLimit = antigravityLimits?.[modelId] ?? { enabled: false, percentage: 50 };
+                    const modelLimit = antigravityLimits?.[modelId] ?? {
+                        enabled: false,
+                        percentage: 50,
+                    };
+
                     return (
-                        <div key={modelId} className="p-3 bg-muted/10 rounded-lg border border-border/50">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-medium">{model.name ?? modelId}</span>
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
+                        <div
+                            key={modelId}
+                            className="rounded-xl bg-muted/20 border border-border/40 p-4 transition-all hover:bg-muted/30"
+                        >
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-bold text-foreground truncate">
+                                        {model.name ?? modelId}
+                                    </div>
+                                    <div className="text-xxs text-muted-foreground mt-0.5 font-medium opacity-60">
+                                        ID: {modelId}
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3 px-2 py-1 rounded-full bg-background/50 border border-border/50">
+                                    <span className="text-[10px] font-bold text-muted-foreground/80">
+                                        {t('settings.usageLimits.enable')}
+                                    </span>
+                                    <Switch
                                         checked={modelLimit.enabled}
-                                        onChange={(e) => modelId && updateAntigravityLimit(modelId, e.target.checked, modelLimit.percentage)}
-                                        className="w-4 h-4 rounded border-border"
+                                        onCheckedChange={checked =>
+                                            modelId &&
+                                            updateAntigravityLimit(modelId, checked, modelLimit.percentage)
+                                        }
+                                        className="scale-90"
                                     />
-                                    <span className="text-xs text-muted-foreground">{t('settings.usageLimits.enable')}</span>
-                                </label>
+                                </div>
                             </div>
+
                             {modelLimit.enabled && (
-                                <div className="mt-2">
-                                    <label className="text-xs text-muted-foreground block mb-1">
+                                <div className="mt-4 pt-4 border-t border-border/40 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <label className="text-xxs font-bold text-muted-foreground/70 ml-1">
                                         {t('settings.usageLimits.maxPercentQuota')}
                                     </label>
-                                    <input
-                                        type="number"
-                                        min={0}
-                                        max={100}
-                                        value={modelLimit.percentage}
-                                        onChange={(e) => modelId && updateAntigravityLimit(modelId, true, Number.parseInt(e.target.value, 10) || 0)}
-                                        className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 font-mono text-sm"
-                                        placeholder={t('settings.usageLimits.maxPercentPlaceholder')}
-                                    />
+                                    <div className="relative group">
+                                        <Input
+                                            type="number"
+                                            min={0}
+                                            max={100}
+                                            value={modelLimit.percentage}
+                                            onChange={e =>
+                                                modelId &&
+                                                updateAntigravityLimit(
+                                                    modelId,
+                                                    true,
+                                                    Number.parseInt(e.target.value, 10) || 0
+                                                )
+                                            }
+                                            className="bg-background/50 border-border/50 h-10 font-mono text-sm pr-10 focus:ring-primary/20"
+                                            placeholder={t('settings.usageLimits.maxPercentPlaceholder')}
+                                        />
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/40 font-bold text-xs">
+                                            %
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </div>
                     );
                 })}
+
+                {antigravityModels.length === 0 && (
+                    <div className="py-12 text-center opacity-30 text-sm">
+                        {t('settings.usageLimits.noAntigravityModels') || 'No Antigravity models found'}
+                    </div>
+                )}
             </div>
         </div>
     );

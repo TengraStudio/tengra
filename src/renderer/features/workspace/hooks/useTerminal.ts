@@ -41,7 +41,7 @@ interface TerminalConfig {
 
 const DEFAULT_TERMINAL_CONFIG: TerminalConfig = {
     theme: getTerminalTheme(),
-    fontFamily: '"JetBrains Mono", "Cascadia Code", "Fira Code", "SF Mono", Monaco, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace',
+    fontFamily: 'var(--font-sans)',
     fontSize: 13,
     lineHeight: 1.4,
     letterSpacing: 0.2,

@@ -1,4 +1,4 @@
-import React from 'react';
+import { useCallback, useReducer } from 'react';
 
 import { useTranslation } from '@/i18n';
 
@@ -50,17 +50,17 @@ export function useEditorMacros({
     setStatusMessage,
 }: UseEditorMacrosParams): UseEditorMacrosResult {
     const { t } = useTranslation();
-    const [state, dispatch] = React.useReducer(macroReducer, MACRO_INITIAL_STATE);
+    const [state, dispatch] = useReducer(macroReducer, MACRO_INITIAL_STATE);
 
-    const setRecording = React.useCallback((recording: boolean) => {
+    const setRecording = useCallback((recording: boolean) => {
         dispatch({ type: 'SET_RECORDING', recording });
     }, []);
 
-    const appendStep = React.useCallback((content: string) => {
+    const appendStep = useCallback((content: string) => {
         dispatch({ type: 'APPEND_STEP', content });
     }, []);
 
-    const replayMacro = React.useCallback(() => {
+    const replayMacro = useCallback(() => {
         if (state.steps.length === 0) {
             return;
         }
@@ -72,12 +72,12 @@ export function useEditorMacros({
         setStatusMessage(t('workspaceDashboard.editor.macroReplayed'));
     }, [state.steps, setStatusMessage, t, updateTabContent]);
 
-    const exportMacro = React.useCallback(async () => {
+    const exportMacro = useCallback(async () => {
         await window.electron.clipboard.writeText(JSON.stringify(state.steps));
         setStatusMessage(t('workspaceDashboard.editor.macroExported'));
     }, [state.steps, setStatusMessage, t]);
 
-    const importMacro = React.useCallback(async () => {
+    const importMacro = useCallback(async () => {
         const clip = await window.electron.clipboard.readText();
         if (!clip.success || !clip.text) {
             return;

@@ -1,4 +1,5 @@
 import { WorkspaceMount } from '@/types';
+import { normalizeDirectorySelectionResult } from '@/utils/directory-selection.util';
 import { appLogger } from '@/utils/renderer-logger';
 
 interface SSHForm {
@@ -161,7 +162,7 @@ export const useImportLocalHandler = (options: ImportLocalOptions): () => Promis
         setIsLoading(true);
         setError(null);
         try {
-            const result = await window.electron.selectDirectory();
+            const result = normalizeDirectorySelectionResult(await window.electron.selectDirectory());
             if (result.success && result.path) {
                 const normalizedPath = result.path.replace(/[/\\]+$/, '');
                 const dirName = normalizedPath.split(/[/\\]/).pop() || t('workspaceWizard.defaultWorkspaceName');

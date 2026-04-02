@@ -2,6 +2,8 @@ import React from 'react';
 
 import { cn } from '@/lib/utils';
 
+import './animated-progress-bar.css';
+
 interface AnimatedProgressBarProps {
     value: number;
     max?: number;
@@ -12,13 +14,6 @@ interface AnimatedProgressBarProps {
     animated?: boolean;
     striped?: boolean;
 }
-
-const getStripedClass = (striped: boolean, animated: boolean): string => {
-    if (!striped) {
-        return '';
-    }
-    return animated ? 'progress-animated' : 'bg-stripes';
-};
 
 /**
  * AnimatedProgressBar Component
@@ -44,43 +39,29 @@ export const AnimatedProgressBar: React.FC<AnimatedProgressBarProps> = React.mem
     }) => {
         const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
 
-        const sizeClasses: Record<typeof size, string> = {
-            sm: 'h-1',
-            md: 'h-2',
-            lg: 'h-3',
-        };
-
-        const variantClasses: Record<typeof variant, string> = {
-            default: 'bg-primary',
-            success: 'bg-success',
-            warning: 'bg-warning',
-            error: 'bg-destructive',
-            gradient: 'bg-gradient-to-r from-accent via-primary to-info',
-        };
-
         return (
-            <div className={cn('w-full', className)}>
+            <div className={cn(
+                'tengra-progress-bar',
+                `tengra-progress-bar--${size}`,
+                `tengra-progress-bar--${variant}`,
+                striped && 'tengra-progress-bar--striped',
+                animated && 'tengra-progress-bar--animated',
+                className
+            )}>
                 <div
-                    className={cn(
-                        'w-full bg-muted rounded-full overflow-hidden',
-                        sizeClasses[size]
-                    )}
+                    className="tengra-progress-bar__track"
                     role="progressbar"
                     aria-valuenow={value}
                     aria-valuemin={0}
                     aria-valuemax={max}
                 >
                     <div
-                        className={cn(
-                            'h-full rounded-full transition-all duration-500 ease-out',
-                            variantClasses[variant],
-                            getStripedClass(striped, animated)
-                        )}
+                        className="tengra-progress-bar__fill"
                         style={{ width: `${percentage}%` }}
                     />
                 </div>
                 {showLabel && (
-                    <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                    <div className="tengra-progress-bar__labels">
                         <span>{value}</span>
                         <span>{percentage.toFixed(0)}%</span>
                     </div>

@@ -1,4 +1,16 @@
-﻿import { VoiceCommand } from '@shared/types/voice';
+import { Button } from '@renderer/components/ui/button';
+import { Input } from '@renderer/components/ui/input';
+import { Label } from '@renderer/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@renderer/components/ui/select';
+import { Slider } from '@renderer/components/ui/slider';
+import { Switch } from '@renderer/components/ui/switch';
+import { VoiceCommand } from '@shared/types/voice';
 import {
     Command,
     Eye,
@@ -10,7 +22,6 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
-import { SelectDropdown } from '@/components/ui/SelectDropdown';
 import { useVoice } from '@/features/voice/hooks/useVoice';
 
 import { SettingsSharedProps } from '../types';
@@ -40,8 +51,8 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
         void loadCommands();
     }, [getCommands]);
 
-    const handleToggleEnabled = () => {
-        void updateSettings({ enabled: !settings.enabled });
+    const handleToggleEnabled = (enabled: boolean) => {
+        void updateSettings({ enabled });
     };
 
     const handleAddCustomCommand = () => {
@@ -79,24 +90,18 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
             <div className="bg-card p-6 rounded-2xl border border-border">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-xl ${settings.enabled ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                        <div className={`p-2 rounded-xl transition-colors ${settings.enabled ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
                             <Mic className="w-5 h-5" />
                         </div>
                         <div>
-                            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">{t('voice.interfaceTitle')}</h3>
+                            <h3 className="text-sm font-bold text-foreground">{t('voice.interfaceTitle')}</h3>
                             <p className="text-xs text-muted-foreground">{t('voice.interfaceSubtitle')}</p>
                         </div>
                     </div>
-                    <button
-                        onClick={() => handleToggleEnabled()}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${settings.enabled ? 'bg-primary' : 'bg-muted'
-                            }`}
-                    >
-                        <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-primary-foreground transition-transform ${settings.enabled ? 'translate-x-6' : 'translate-x-1'
-                                }`}
-                        />
-                    </button>
+                    <Switch
+                        checked={settings.enabled}
+                        onCheckedChange={handleToggleEnabled}
+                    />
                 </div>
             </div>
 
@@ -106,78 +111,83 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
                     <div className="bg-card p-6 rounded-2xl border border-border">
                         <div className="flex items-center gap-3 mb-6">
                             <Volume2 className="w-5 h-5 text-primary" />
-                            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">{t('voice.speechSettings')}</h3>
+                            <h3 className="text-sm font-bold text-foreground">{t('voice.speechSettings')}</h3>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-6">
                                 <div>
-                                    <label className="text-xxs font-black uppercase tracking-widest text-muted-foreground mb-2 block">
+                                    <Label className="text-xxs font-bold text-muted-foreground mb-2 block">
                                         {t('voice.voiceSelection')}
-                                    </label>
-                                    <SelectDropdown
+                                    </Label>
+                                    <Select
                                         value={settings.synthesisVoice || ''}
-                                        options={[
-                                            { value: '', label: t('voice.systemDefault') },
-                                            ...voices.map((v) => ({ value: v.id, label: `${v.name} (${v.lang})` })),
-                                        ]}
-                                        onChange={(val) => { void updateSettings({ synthesisVoice: val }); }}
-                                    />
+                                        onValueChange={(val) => { void updateSettings({ synthesisVoice: val }); }}
+                                    >
+                                        <SelectTrigger className="w-full bg-background/50">
+                                            <SelectValue placeholder={t('voice.systemDefault')} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="system-default">{t('voice.systemDefault')}</SelectItem>
+                                            {voices.map((v) => (
+                                                <SelectItem key={v.id} value={v.id}>
+                                                    {v.name} ({v.lang})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
                                 <div>
-                                    <div className="flex justify-between mb-2">
-                                        <label className="text-xxs font-black uppercase tracking-widest text-muted-foreground">
+                                    <div className="flex justify-between mb-3">
+                                        <Label className="text-xxs font-bold text-muted-foreground">
                                             {t('voice.speed')}
-                                        </label>
+                                        </Label>
                                         <span className="text-xs font-mono text-primary font-bold">{settings.speechRate}x</span>
                                     </div>
-                                    <input
-                                        type="range"
-                                        min="0.5"
-                                        max="2"
-                                        step="0.1"
-                                        value={settings.speechRate}
-                                        onChange={(e) => { void updateSettings({ speechRate: parseFloat(e.target.value) }); }}
-                                        className="w-full accent-primary"
+                                    <Slider
+                                        min={0.5}
+                                        max={2}
+                                        step={0.1}
+                                        value={[settings.speechRate]}
+                                        onValueChange={([val]) => { void updateSettings({ speechRate: val }); }}
+                                        className="w-full"
                                     />
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                                 <div>
-                                    <div className="flex justify-between mb-2">
-                                        <label className="text-xxs font-black uppercase tracking-widest text-muted-foreground">
+                                    <div className="flex justify-between mb-3">
+                                        <Label className="text-xxs font-bold text-muted-foreground">
                                             {t('voice.pitch')}
-                                        </label>
+                                        </Label>
                                         <span className="text-xs font-mono text-primary font-bold">{settings.speechPitch}</span>
                                     </div>
-                                    <input
-                                        type="range"
-                                        min="0.5"
-                                        max="2"
-                                        step="0.1"
-                                        value={settings.speechPitch}
-                                        onChange={(e) => { void updateSettings({ speechPitch: parseFloat(e.target.value) }); }}
-                                        className="w-full accent-primary"
+                                    <Slider
+                                        min={0.5}
+                                        max={2}
+                                        step={0.1}
+                                        value={[settings.speechPitch]}
+                                        onValueChange={([val]) => { void updateSettings({ speechPitch: val }); }}
+                                        className="w-full"
                                     />
                                 </div>
 
                                 <div>
-                                    <div className="flex justify-between mb-2">
-                                        <label className="text-xxs font-black uppercase tracking-widest text-muted-foreground">
+                                    <div className="flex justify-between mb-3">
+                                        <Label className="text-xxs font-bold text-muted-foreground">
                                             {t('voice.volume')}
-                                        </label>
+                                        </Label>
                                         <span className="text-xs font-mono text-primary font-bold">{Math.round(settings.speechVolume * 100)}%</span>
                                     </div>
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="1"
-                                        step="0.1"
-                                        value={settings.speechVolume}
-                                        onChange={(e) => { void updateSettings({ speechVolume: parseFloat(e.target.value) }); }}
-                                        className="w-full accent-primary"
+                                    <Slider
+                                        min={0}
+                                        max={1}
+                                        step={0.1}
+                                        value={[settings.speechVolume]}
+                                        onValueChange={([val]) => { void updateSettings({ speechVolume: val }); }}
+                                        className="w-full"
                                     />
                                 </div>
                             </div>
@@ -189,36 +199,32 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
                         <div className="bg-card p-6 rounded-2xl border border-border">
                             <div className="flex items-center gap-3 mb-6">
                                 <Zap className="w-5 h-5 text-primary" />
-                                <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">{t('voice.behavior')}</h3>
+                                <h3 className="text-sm font-bold text-foreground">{t('voice.behavior')}</h3>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <Mic className="w-4 h-4 text-muted-foreground" />
                                         <span className="text-xs">{t('voice.continuousListening')}</span>
                                     </div>
-                                    <button
-                                        onClick={() => { void updateSettings({ continuousListening: !settings.continuousListening }); }}
-                                        className={`w-10 h-5 rounded-full transition-colors relative ${settings.continuousListening ? 'bg-primary' : 'bg-muted'}`}
-                                    >
-                                        <span className={`absolute top-1 h-3 w-3 rounded-full bg-primary-foreground transition-transform ${settings.continuousListening ? 'left-6' : 'left-1'}`} />
-                                    </button>
+                                    <Switch
+                                        checked={settings.continuousListening}
+                                        onCheckedChange={(checked) => { void updateSettings({ continuousListening: checked }); }}
+                                    />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-xxs font-black uppercase tracking-widest text-muted-foreground block text-right italic">
+                                    <Label className="text-xxs font-bold text-muted-foreground block text-right">
                                         {t('voice.wakeWord')}
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            value={settings.wakeWord}
-                                            onChange={(e) => { void updateSettings({ wakeWord: e.target.value }); }}
-                                            className="w-full bg-background/50 border border-border/30 rounded-xl px-4 py-2 text-xs focus:border-primary/50 outline-none transition-all"
-                                            placeholder={t('placeholder.wakeWordExample')}
-                                        />
-                                    </div>
+                                    </Label>
+                                    <Input
+                                        type="text"
+                                        value={settings.wakeWord}
+                                        onChange={(e) => { void updateSettings({ wakeWord: e.target.value }); }}
+                                        className="w-full bg-background/50 h-10 px-4"
+                                        placeholder={t('placeholder.wakeWordExample')}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -226,28 +232,24 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
                         <div className="bg-card p-6 rounded-2xl border border-border">
                             <div className="flex items-center gap-3 mb-6">
                                 <Eye className="w-5 h-5 text-primary" />
-                                <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">{t('voice.settings.feedback')}</h3>
+                                <h3 className="text-sm font-bold text-foreground">{t('voice.settings.feedback')}</h3>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs">{t('voice.audioFeedback')}</span>
-                                    <button
-                                        onClick={() => { void updateSettings({ audioFeedback: !settings.audioFeedback }); }}
-                                        className={`w-10 h-5 rounded-full transition-colors relative ${settings.audioFeedback ? 'bg-primary' : 'bg-muted'}`}
-                                    >
-                                        <span className={`absolute top-1 h-3 w-3 rounded-full bg-primary-foreground transition-transform ${settings.audioFeedback ? 'left-6' : 'left-1'}`} />
-                                    </button>
+                                    <Switch
+                                        checked={settings.audioFeedback}
+                                        onCheckedChange={(checked) => { void updateSettings({ audioFeedback: checked }); }}
+                                    />
                                 </div>
 
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs">{t('voice.visualFeedback')}</span>
-                                    <button
-                                        onClick={() => { void updateSettings({ visualFeedback: !settings.visualFeedback }); }}
-                                        className={`w-10 h-5 rounded-full transition-colors relative ${settings.visualFeedback ? 'bg-primary' : 'bg-muted'}`}
-                                    >
-                                        <span className={`absolute top-1 h-3 w-3 rounded-full bg-primary-foreground transition-transform ${settings.visualFeedback ? 'left-6' : 'left-1'}`} />
-                                    </button>
+                                    <Switch
+                                        checked={settings.visualFeedback}
+                                        onCheckedChange={(checked) => { void updateSettings({ visualFeedback: checked }); }}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -258,33 +260,34 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-3">
                                 <Command className="w-5 h-5 text-primary" />
-                                <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">{t('voice.commands.title')}</h3>
+                                <h3 className="text-sm font-bold text-foreground">{t('voice.commands.title')}</h3>
                             </div>
                         </div>
 
                         <div className="space-y-4">
                             <div className="flex gap-2">
-                                <input
+                                <Input
                                     type="text"
                                     value={newCommandText}
                                     onChange={(e) => setNewCommandText(e.target.value)}
                                     placeholder={t('voice.addNewCommand')}
-                                    className="flex-1 bg-background/50 border border-border/30 rounded-xl px-4 py-2 text-xs focus:border-primary/50 outline-none transition-all"
+                                    className="flex-1 bg-background/50 h-10 px-4"
                                 />
-                                <button
+                                <Button
+                                    size="icon"
                                     onClick={() => handleAddCustomCommand()}
-                                    className="p-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary-hover transition-all"
+                                    className="h-10 w-10 shrink-0"
                                 >
                                     <Plus className="w-4 h-4" />
-                                </button>
+                                </Button>
                             </div>
 
                             <div className="max-h-60 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                                 {commands.map((cmd) => (
                                     <div key={cmd.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30 group hover:border-primary/20 transition-all">
                                         <div className="flex flex-col gap-1">
-                                            <div className="flex gap-1 items-center">
-                                                <span className="tw-text-10 px-1.5 py-0.5 rounded-md bg-primary/10 text-primary font-mono">
+                                            <div className="flex gap-1 items-center flex-wrap">
+                                                <span className="tw-text-10 px-1.5 py-0.5 rounded-md bg-primary/10 text-primary font-mono font-bold">
                                                     {cmd.phrase}
                                                 </span>
                                                 {cmd.aliases.map((alias, i) => (
@@ -296,12 +299,14 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
                                             <span className="text-xxs text-muted-foreground">{cmd.description}</span>
                                         </div>
                                         {cmd.category === 'custom' && (
-                                            <button
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
                                                 onClick={() => handleDeleteCommand(cmd.id)}
-                                                className="p-1.5 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
                                             >
                                                 <Trash2 className="w-4 h-4" />
-                                            </button>
+                                            </Button>
                                         )}
                                     </div>
                                 ))}

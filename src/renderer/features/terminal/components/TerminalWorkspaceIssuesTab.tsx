@@ -94,14 +94,14 @@ export function TerminalWorkspaceIssuesTab({
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                            <span className={`text-xxxs font-black uppercase tracking-wider ${isError ? 'text-destructive/80' : 'text-warning/80'}`}>
+                            <span className={`text-xxxs font-bold   ${isError ? 'text-destructive/80' : 'text-warning/80'}`}>
                                 {isError ? t('terminal.workspaceIssuesError') : t('terminal.workspaceIssuesWarning')}
                             </span>
                             <span className="text-xxxs text-muted-foreground font-mono truncate opacity-60 group-hover:opacity-100 transition-opacity">
                                 {filePath}:{line}
                             </span>
                             {'source' in issue && (
-                                <span className="px-1.5 py-0.5 bg-muted/30 rounded text-xxxs uppercase font-bold text-muted-foreground/60 border border-border/30 ml-auto flex items-center gap-1">
+                                <span className="px-1.5 py-0.5 bg-muted/30 rounded text-xxxs font-bold text-muted-foreground/60 border border-border/30 ml-auto flex items-center gap-1">
                                     {(issue as WorkspaceIssue).source}
                                 </span>
                             )}
@@ -135,7 +135,7 @@ export function TerminalWorkspaceIssuesTab({
                     <div className="space-y-4">
                         {analysis.lspDiagnostics.length > 0 && (
                             <section className="space-y-2">
-                                <div className="text-xxxs font-black uppercase tracking-widest text-primary/80 flex items-center gap-2">
+                                <div className="text-xxxs font-bold text-primary/80 flex items-center gap-2">
                                     <FileCode className="w-3 h-3" />
                                     {t('terminal.workspaceIssuesLanguageServer')} ({analysis.lspDiagnostics.length})
                                 </div>
@@ -144,7 +144,7 @@ export function TerminalWorkspaceIssuesTab({
                         )}
                         {analysis.issues.length > 0 && (
                             <section className="space-y-2">
-                                <div className="text-xxxs font-black uppercase tracking-widest text-destructive/80 flex items-center gap-2">
+                                <div className="text-xxxs font-bold text-destructive/80 flex items-center gap-2">
                                     <Terminal className="w-3 h-3" />
                                     {t('terminal.workspaceIssuesTerminal')} ({analysis.issues.length})
                                 </div>
@@ -153,7 +153,7 @@ export function TerminalWorkspaceIssuesTab({
                         )}
                         {analysis.annotations.length > 0 && (
                             <section className="space-y-2">
-                                <div className="text-xxxs font-black uppercase tracking-widest text-warning/80 flex items-center gap-2">
+                                <div className="text-xxxs font-bold text-warning/80 flex items-center gap-2">
                                     <FileCode className="w-3 h-3" />
                                     {t('terminal.workspaceIssuesAnnotations')} ({analysis.annotations.length})
                                 </div>

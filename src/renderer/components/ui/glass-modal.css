@@ -1,0 +1,166 @@
+/* GlassModal Component CSS */
+:root {
+    /* Overlay */
+    --glass-modal-overlay-bg: hsl(var(--background) / 60%);
+    --glass-modal-overlay-blur: 8px;
+    
+    /* Modal container */
+    --glass-modal-bg: hsl(var(--background) / 80%);
+    --glass-modal-backdrop-blur: 16px;
+    --glass-modal-border-color: hsl(var(--border) / 40%);
+    --glass-modal-border-radius: 1rem;
+    --glass-modal-shadow: 0 25px 50px -12px hsl(var(--foreground) / 25%);
+    
+    /* Header */
+    --glass-modal-header-padding: 1rem;
+    --glass-modal-header-border-color: hsl(var(--border) / 40%);
+    --glass-modal-title-color: hsl(var(--foreground));
+    --glass-modal-title-font-size: 1.125rem;
+    --glass-modal-title-font-weight: 600;
+    
+    /* Close button */
+    --glass-modal-close-padding: 0.5rem;
+    --glass-modal-close-color: hsl(var(--muted-foreground));
+    --glass-modal-close-hover-bg: hsl(var(--muted) / 60%);
+    --glass-modal-close-size: 1.25rem;
+    --glass-modal-close-border-radius: 0.5rem;
+    
+    /* Body */
+    --glass-modal-body-padding: 1rem;
+    --glass-modal-body-max-height: 100vh;
+    
+    /* Sizes */
+    --glass-modal-size-sm: 24rem;
+    --glass-modal-size-md: 28rem;
+    --glass-modal-size-lg: 32rem;
+    --glass-modal-size-xl: 36rem;
+    --glass-modal-size-full: 64rem;
+    
+    /* Animation */
+    --glass-modal-animation-duration: 200ms;
+    --glass-modal-zoom-animation-duration: 300ms;
+}
+
+/* Wrapper */
+.tengra-glass-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+/* Overlay */
+.tengra-glass-modal__overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--glass-modal-overlay-bg);
+    backdrop-filter: blur(var(--glass-modal-overlay-blur));
+    animation: glass-modal-fade-in var(--glass-modal-animation-duration) ease-out;
+}
+
+/* Content container */
+.tengra-glass-modal__content {
+    position: relative;
+    width: 100%;
+    background: var(--glass-modal-bg);
+    backdrop-filter: blur(var(--glass-modal-backdrop-blur));
+    border: 1px solid var(--glass-modal-border-color);
+    border-radius: var(--glass-modal-border-radius);
+    box-shadow: var(--glass-modal-shadow);
+    animation: glass-modal-zoom-in var(--glass-modal-zoom-animation-duration) ease-out;
+}
+
+/* Size variants */
+.tengra-glass-modal__content--sm {
+    max-width: var(--glass-modal-size-sm);
+}
+
+.tengra-glass-modal__content--md {
+    max-width: var(--glass-modal-size-md);
+}
+
+.tengra-glass-modal__content--lg {
+    max-width: var(--glass-modal-size-lg);
+}
+
+.tengra-glass-modal__content--xl {
+    max-width: var(--glass-modal-size-xl);
+}
+
+.tengra-glass-modal__content--full {
+    max-width: var(--glass-modal-size-full);
+    max-height: 100vh;
+}
+
+/* Header */
+.tengra-glass-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--glass-modal-header-padding);
+    border-bottom: 1px solid var(--glass-modal-header-border-color);
+}
+
+/* Title */
+.tengra-glass-modal__title {
+    color: var(--glass-modal-title-color);
+    font-size: var(--glass-modal-title-font-size);
+    font-weight: var(--glass-modal-title-font-weight);
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Close button */
+.tengra-glass-modal__close {
+    padding: var(--glass-modal-close-padding);
+    color: var(--glass-modal-close-color);
+    background: transparent;
+    border: none;
+    border-radius: var(--glass-modal-close-border-radius);
+    cursor: pointer;
+    transition: background-color 150ms ease, color 150ms ease;
+}
+
+.tengra-glass-modal__close:hover {
+    background: var(--glass-modal-close-hover-bg);
+    color: hsl(var(--foreground));
+}
+
+.tengra-glass-modal__close-icon {
+    width: var(--glass-modal-close-size);
+    height: var(--glass-modal-close-size);
+}
+
+/* Body */
+.tengra-glass-modal__body {
+    padding: var(--glass-modal-body-padding);
+    overflow-y: auto;
+    max-height: var(--glass-modal-body-max-height);
+}
+
+/* Animations */
+@keyframes glass-modal-fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes glass-modal-zoom-in {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}

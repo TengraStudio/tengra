@@ -606,6 +606,7 @@ export interface ElectronAPI {
     // MCP
     mcp: ElectronApiIntegrationsDomain['mcp'];
     marketplace: ElectronApiIntegrationsDomain['marketplace'];
+    locale: ElectronApiIntegrationsDomain['locale'];
     proxyEmbed: ElectronApiIntegrationsDomain['proxyEmbed'];
     captureScreenshot: () => Promise<{ success: boolean; image?: string; error?: string }>;
 

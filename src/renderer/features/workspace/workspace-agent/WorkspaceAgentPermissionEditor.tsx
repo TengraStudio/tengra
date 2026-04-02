@@ -45,7 +45,7 @@ function AllowlistSection({
 }): JSX.Element {
     return (
         <div className="rounded-2xl border border-border/40 bg-background/40 p-4">
-            <div className="flex items-center gap-2 tw-text-10 font-black uppercase tw-tracking-20 text-muted-foreground/30">
+            <div className="flex items-center gap-2 tw-text-10 font-bold tw-tracking-20 text-muted-foreground/30">
                 {icon}
                 <span>{label}</span>
             </div>
@@ -56,7 +56,7 @@ function AllowlistSection({
                     placeholder={t('common.selectEllipsis')}
                     className="h-9 rounded-xl border border-border/40 bg-background/50 text-xs focus:ring-0 focus:border-border/60 transition-all"
                 />
-                <Button variant="secondary" onClick={onAddEntry} className="h-9 rounded-xl px-4 bg-primary/10 hover:bg-primary/20 text-primary tw-text-10 font-bold uppercase tracking-widest border border-primary/20 transition-all shrink-0">
+                <Button variant="secondary" onClick={onAddEntry} className="h-9 rounded-xl px-4 bg-primary/10 hover:bg-primary/20 text-primary tw-text-10 font-bold border border-primary/20 transition-all shrink-0">
                     <Plus className="mr-1.5 h-3.5 w-3.5" />
                     {addLabel}
                 </Button>
@@ -81,7 +81,7 @@ function AllowlistSection({
                         </Badge>
                     ))
                 ) : (
-                    <div className="tw-text-10 text-muted-foreground/30 flex items-center gap-2 px-1 py-1 italic font-medium">
+                    <div className="tw-text-10 text-muted-foreground/30 flex items-center gap-2 px-1 py-1 font-medium">
                         {noEntriesLabel}
                     </div>
                 )}

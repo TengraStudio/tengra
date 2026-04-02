@@ -17,6 +17,8 @@ import {
 } from '@/store/notification-center.store';
 import { Toast } from '@/types';
 
+import './toasts-container.css';
+
 interface ToastsContainerProps {
     toasts: Toast[];
     removeToast: (id: string) => void;
@@ -51,8 +53,8 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
         <>
             <div
                 className={cn(
-                    'fixed z-50 flex flex-col items-end gap-2 pointer-events-none',
-                    breakpoint === 'mobile' ? 'bottom-3 left-3 right-3' : 'bottom-6 right-6'
+                    'tengra-toasts',
+                    breakpoint === 'mobile' ? 'tengra-toasts--mobile' : 'tengra-toasts--desktop'
                 )}
             >
 
@@ -70,19 +72,19 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                         <div
                             key={toast.id}
                             className={cn(
-                                'px-4 py-3 rounded-lg shadow-2xl border backdrop-blur-md animate-in slide-in-from-right-full duration-300 pointer-events-auto flex flex-col gap-2',
-                                breakpoint === 'mobile' ? 'w-full' : 'min-w-72 max-w-md',
+                                'tengra-toast-card animate-in slide-in-from-right-full duration-300',
+                                breakpoint === 'mobile' ? 'tengra-toast-card--mobile' : 'tengra-toast-card--desktop',
                                 toast.type === 'success'
-                                    ? 'bg-success/20 border-success/30 text-success'
+                                    ? 'tengra-toast-card--success'
                                     : toast.type === 'error'
-                                        ? 'bg-destructive/20 border-destructive/30 text-destructive'
+                                        ? 'tengra-toast-card--error'
                                         : toast.type === 'warning'
-                                            ? 'bg-warning/20 border-warning/40 text-warning'
-                                            : 'bg-muted/80 border-border/40 text-foreground'
+                                            ? 'tengra-toast-card--warning'
+                                            : 'tengra-toast-card--info'
                             )}
                         >
                             <div className="flex items-center gap-3">
-                                <span className="text-xxxs font-bold tracking-wide opacity-80">
+                                <span className="text-xxxs font-bold opacity-80">
                                     {icon}
                                 </span>
                                 <div className="text-sm font-medium">{toast.message}</div>
@@ -189,7 +191,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                     </div>
 
                     <div className="px-4 py-3 border-b border-border/60">
-                        <div className="text-xxxs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                        <div className="text-xxxs font-semibold text-muted-foreground mb-2">
                             {t('notifications.center.preferences')}
                         </div>
                         <div className="grid grid-cols-2 gap-2">
@@ -222,7 +224,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
 
                     {snapshot.scheduled.length > 0 && (
                         <div className="px-4 py-2 border-b border-border/60">
-                            <div className="text-xxxs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                            <div className="text-xxxs font-semibold text-muted-foreground mb-1">
                                 {t('notifications.center.scheduled')}
                             </div>
                             <div className="space-y-1.5 max-h-24 overflow-auto">
@@ -257,7 +259,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                                 )}
                             >
                                 <div className="flex items-center justify-between gap-2 mb-1">
-                                    <div className="text-xxxs uppercase tracking-wide text-muted-foreground">
+                                    <div className="text-xxxs text-muted-foreground">
                                         {item.type}
                                     </div>
                                     <div className="text-xxxs text-muted-foreground">

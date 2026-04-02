@@ -17,9 +17,7 @@ export const Z_INDEX = {
     /** Select dropdowns */
     SELECT_DROPDOWN: 10000,
     /** Floating elements in workspace */
-    WORKSPACE_FLOAT: 99999,
-    /** Onboarding overlay */
-    ONBOARDING: 10000,
+    WORKSPACE_FLOAT: 99999, 
 } as const;
 
 /** Animation durations (in milliseconds) */

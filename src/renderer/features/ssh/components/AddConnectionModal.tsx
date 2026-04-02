@@ -1,7 +1,16 @@
-
+import { Checkbox } from '@renderer/components/ui/checkbox';
+import { Input } from '@renderer/components/ui/input';
+import { Label } from '@renderer/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@renderer/components/ui/select';
+import { Textarea } from '@renderer/components/ui/textarea';
+import { localizeIpcValidationMessage } from '@renderer/features/ssh/utils/ipc-validation-message';
 import React, { useEffect, useState } from 'react';
-
-import { localizeIpcValidationMessage } from '@/features/ssh/utils/ipc-validation-message';
 
 export interface SSHProfileTestUIResult {
     success: boolean;
@@ -11,9 +20,9 @@ export interface SSHProfileTestUIResult {
 }
 
 interface AddConnectionModalProps {
-    isOpen: boolean
-    onClose: () => void
-    t: (key: string, params?: Record<string, string | number>) => string
+    isOpen: boolean;
+    onClose: () => void;
+    t: (key: string, params?: Record<string, string | number>) => string;
     newConnection: {
         host: string;
         port: number;
@@ -22,13 +31,13 @@ interface AddConnectionModalProps {
         privateKey?: string;
         name?: string;
         jumpHost?: string;
-    }
-    setNewConnection: (val: AddConnectionModalProps['newConnection']) => void
-    shouldSaveProfile: boolean
-    setShouldSaveProfile: (val: boolean) => void
-    isConnecting: boolean
-    onConnect: () => void
-    onTestProfile: () => Promise<SSHProfileTestUIResult>
+    };
+    setNewConnection: (val: AddConnectionModalProps['newConnection']) => void;
+    shouldSaveProfile: boolean;
+    setShouldSaveProfile: (val: boolean) => void;
+    isConnecting: boolean;
+    onConnect: () => void;
+    onTestProfile: () => Promise<SSHProfileTestUIResult>;
 }
 
 const JUMP_HOST_CHAIN_STORAGE_KEY = 'ssh.jump-host-chains.v1';
@@ -60,7 +69,7 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
     setShouldSaveProfile,
     isConnecting,
     onConnect,
-    onTestProfile
+    onTestProfile,
 }) => {
     const [isTesting, setIsTesting] = useState(false);
     const [testMessage, setTestMessage] = useState('');
@@ -103,133 +112,182 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
         }
     };
 
-    if (!isOpen) { return null; }
+    if (!isOpen) {
+        return null;
+    }
 
     return (
         <div className="modal-overlay" style={{ zIndex: 1000 }}>
-            <div className="modal-content" style={{ width: '400px' }}>
-                <h3>{t('ssh.newConnectionTitle')}</h3>
-                <div className="form-group">
-                    <label>{t('ssh.host')}</label>
-                    <input
-                        value={newConnection.host}
-                        onChange={e => setNewConnection({ ...newConnection, host: e.target.value })}
-                        placeholder={t('ssh.placeholders.host')}
-                    />
+            <div className="modal-content flex max-h-[88vh] w-[min(100%,32rem)] flex-col overflow-hidden rounded-2xl border border-border/30 bg-popover">
+                <div className="border-b border-border/20 px-4 py-4 sm:px-5">
+                    <h3 className="text-lg font-semibold">{t('ssh.newConnectionTitle')}</h3>
                 </div>
-                <div className="form-group">
-                    <label>{t('ssh.port')}</label>
-                    <input
-                        type="number"
-                        value={newConnection.port}
-                        onChange={e => setNewConnection({ ...newConnection, port: parseInt(e.target.value) || 22 })}
-                        placeholder={t('ssh.placeholders.port')}
-                    />
-                </div>
-                <div className="form-group">
-                    <label>{t('ssh.username')}</label>
-                    <input
-                        value={newConnection.username}
-                        onChange={e => setNewConnection({ ...newConnection, username: e.target.value })}
-                        placeholder={t('ssh.placeholders.username')}
-                    />
-                </div>
-                <div className="form-group">
-                    <label>{t('ssh.password')}</label>
-                    <input
-                        type="password"
-                        value={newConnection.password ?? ''}
-                        onChange={e => setNewConnection({ ...newConnection, password: e.target.value })}
-                        placeholder={t('ssh.placeholders.passwordOptional')}
-                    />
-                </div>
-                <div className="form-group">
-                    <label>{t('ssh.privateKey')}</label>
-                    <textarea
-                        value={newConnection.privateKey ?? ''}
-                        onChange={e => setNewConnection({ ...newConnection, privateKey: e.target.value })}
-                        placeholder={t('ssh.placeholders.privateKey')}
-                        style={{ height: '80px', fontSize: '0.8em' }}
-                    />
-                </div>
-                <div className="form-group">
-                    <label>{t('ssh.jumpHostChain')}</label>
-                    <input
-                        value={newConnection.jumpHost ?? ''}
-                        onChange={event => setNewConnection({ ...newConnection, jumpHost: event.target.value })}
-                        placeholder={t('ssh.placeholders.jumpHostChain')}
-                    />
-                    <div className="text-xs text-muted-foreground mt-1">{t('ssh.jumpHostChainHint')}</div>
-                </div>
-                {savedChains.length > 0 && (
-                    <div className="form-group">
-                        <label>{t('ssh.savedJumpHostChains')}</label>
-                        <select
-                            value=""
-                            onChange={event => {
-                                const selected = event.target.value;
-                                if (!selected) {
-                                    return;
-                                }
-                                setNewConnection({ ...newConnection, jumpHost: selected });
-                            }}
-                        >
-                            <option value="">{t('ssh.selectSavedJumpHostChain')}</option>
-                            {savedChains.map(chain => (
-                                <option key={chain} value={chain}>{chain}</option>
-                            ))}
-                        </select>
-                    </div>
-                )}
-                <div className="form-group" style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <input
-                        type="checkbox"
-                        checked={rememberChain}
-                        onChange={event => setRememberChain(event.target.checked)}
-                        id="saveJumpHostChain"
-                        style={{ width: 'auto', marginRight: '8px' }}
-                    />
-                    <label htmlFor="saveJumpHostChain" style={{ marginBottom: 0 }}>
-                        {t('ssh.saveJumpHostChain')}
-                    </label>
-                </div>
-                <div className="form-group" style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <input
-                        type="checkbox"
-                        checked={shouldSaveProfile}
-                        onChange={e => setShouldSaveProfile(e.target.checked)}
-                        id="saveProfile"
-                        style={{ width: 'auto', marginRight: '8px' }}
-                    />
-                    <label htmlFor="saveProfile" style={{ marginBottom: 0 }}>{t('ssh.saveProfile')}</label>
-                </div>
-                {shouldSaveProfile && (
-                    <div className="form-group">
-                        <label>{t('ssh.profileName')}</label>
-                        <input
-                            value={newConnection.name ?? ''}
-                            onChange={e => setNewConnection({ ...newConnection, name: e.target.value })}
-                            placeholder={t('ssh.placeholders.profileName')}
+                <div className="space-y-4 overflow-y-auto px-4 py-4 sm:px-5">
+                    <div className="space-y-1">
+                        <Label>{t('ssh.host')}</Label>
+                        <Input
+                            value={newConnection.host}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                setNewConnection({ ...newConnection, host: e.target.value })
+                            }
+                            placeholder={t('ssh.placeholders.host')}
                         />
                     </div>
-                )}
-                <div className="modal-actions">
+                    <div className="space-y-1">
+                        <Label>{t('ssh.port')}</Label>
+                        <Input
+                            type="number"
+                            value={newConnection.port}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                setNewConnection({
+                                    ...newConnection,
+                                    port: parseInt(e.target.value) || 22,
+                                })
+                            }
+                            placeholder={t('ssh.placeholders.port')}
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <Label>{t('ssh.username')}</Label>
+                        <Input
+                            value={newConnection.username}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                setNewConnection({ ...newConnection, username: e.target.value })
+                            }
+                            placeholder={t('ssh.placeholders.username')}
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <Label>{t('ssh.password')}</Label>
+                        <Input
+                            type="password"
+                            value={newConnection.password ?? ''}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                setNewConnection({ ...newConnection, password: e.target.value })
+                            }
+                            placeholder={t('ssh.placeholders.passwordOptional')}
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <Label>{t('ssh.privateKey')}</Label>
+                        <Textarea
+                            value={newConnection.privateKey ?? ''}
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                                setNewConnection({ ...newConnection, privateKey: e.target.value })
+                            }
+                            placeholder={t('ssh.placeholders.privateKey')}
+                            className="min-h-24 text-[0.8em] font-mono"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <Label>{t('ssh.jumpHostChain')}</Label>
+                        <Input
+                            value={newConnection.jumpHost ?? ''}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                setNewConnection({ ...newConnection, jumpHost: e.target.value })
+                            }
+                            placeholder={t('ssh.placeholders.jumpHostChain')}
+                        />
+                        <div className="text-xs text-muted-foreground mt-1">
+                            {t('ssh.jumpHostChainHint')}
+                        </div>
+                    </div>
+                    {savedChains.length > 0 && (
+                        <div className="space-y-1">
+                            <Label>{t('ssh.savedJumpHostChains')}</Label>
+                            <Select
+                                value=""
+                                onValueChange={(val: string) => {
+                                    if (!val) {return;}
+                                    setNewConnection({ ...newConnection, jumpHost: val });
+                                }}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue
+                                        placeholder={t('ssh.selectSavedJumpHostChain')}
+                                    />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="">
+                                        {t('ssh.selectSavedJumpHostChain')}
+                                    </SelectItem>
+                                    {savedChains.map(chain => (
+                                        <SelectItem key={chain} value={chain}>
+                                            {chain}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+                    <div className="flex items-center space-x-2 py-1">
+                        <Checkbox
+                            id="saveJumpHostChain"
+                            checked={rememberChain}
+                            onCheckedChange={(checked: boolean) => setRememberChain(checked)}
+                        />
+                        <Label
+                            htmlFor="saveJumpHostChain"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                            {t('ssh.saveJumpHostChain')}
+                        </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 py-1">
+                        <Checkbox
+                            id="saveProfile"
+                            checked={shouldSaveProfile}
+                            onCheckedChange={(checked: boolean) => setShouldSaveProfile(checked)}
+                        />
+                        <Label
+                            htmlFor="saveProfile"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                            {t('ssh.saveProfile')}
+                        </Label>
+                    </div>
+                    {shouldSaveProfile && (
+                        <div className="space-y-1 transition-all animate-in fade-in slide-in-from-top-1">
+                            <Label>{t('ssh.profileName')}</Label>
+                            <Input
+                                value={newConnection.name ?? ''}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                    setNewConnection({ ...newConnection, name: e.target.value })
+                                }
+                                placeholder={t('ssh.placeholders.profileName')}
+                            />
+                        </div>
+                    )}
+                </div>
+                <div className="modal-actions flex flex-col gap-2 border-t border-border/20 px-4 py-4 sm:flex-row sm:justify-end sm:px-5">
                     <button className="secondary-btn" onClick={onClose} disabled={isConnecting}>
                         {t('common.cancel')}
                     </button>
                     <button
                         className="secondary-btn"
-                        onClick={() => { void handleTestProfile(); }}
+                        onClick={() => {
+                            void handleTestProfile();
+                        }}
                         disabled={isConnecting || isTesting || !newConnection.host}
                     >
                         {isTesting ? t('ssh.testingProfile') : t('ssh.testProfile')}
                     </button>
-                    <button className="primary-btn" onClick={handleConnectClick} disabled={isConnecting || !newConnection.host}>
+                    <button
+                        className="primary-btn"
+                        onClick={handleConnectClick}
+                        disabled={isConnecting || !newConnection.host}
+                    >
                         {isConnecting ? t('ssh.connecting') : t('ssh.connect')}
                     </button>
                 </div>
                 {testMessage !== '' && (
-                    <div className={`text-xs mt-2 ${testState === 'failure' ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    <div
+                        className={`mx-4 mb-4 rounded border border-border/30 bg-muted/20 p-2 text-xs sm:mx-5 ${
+                            testState === 'failure'
+                                ? 'text-destructive border-destructive/20'
+                                : 'text-muted-foreground'
+                        }`}
+                    >
                         {testMessage}
                     </div>
                 )}
@@ -237,3 +295,4 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
         </div>
     );
 };
+

@@ -1,9 +1,12 @@
+import { Input } from '@renderer/components/ui/input';
+import { Label } from '@renderer/components/ui/label';
+import { Textarea } from '@renderer/components/ui/textarea';
+import { cn } from '@renderer/lib/utils';
 import { Check } from 'lucide-react';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
-import { cn } from '@/lib/utils';
 
 interface CATEGORY {
     id: string;
@@ -20,13 +23,15 @@ interface WizardDetailsStepProps {
         category: string;
         customPath: string;
     };
-    setFormData: React.Dispatch<React.SetStateAction<{
-        name: string;
-        description: string;
-        category: string;
-        goal: string;
-        customPath: string;
-    }>>;
+    setFormData: React.Dispatch<
+        React.SetStateAction<{
+            name: string;
+            description: string;
+            category: string;
+            goal: string;
+            customPath: string;
+        }>
+    >;
     categories: CATEGORY[];
     error: string | null;
 }
@@ -35,7 +40,7 @@ export const WizardDetailsStep: React.FC<WizardDetailsStepProps> = ({
     formData,
     setFormData,
     categories,
-    error
+    error,
 }) => {
     const { t } = useTranslation();
 
@@ -47,15 +52,17 @@ export const WizardDetailsStep: React.FC<WizardDetailsStepProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
                 >
-                    <label className="text-xs font-bold uppercase text-muted-foreground mb-2 block tracking-wider ml-1">
+                    <Label className="text-xs font-bold text-muted-foreground mb-2 block ml-1">
                         {t('workspaceWizard.workspaceName')}
-                    </label>
+                    </Label>
                     <div className="relative group">
-                        <input
+                        <Input
                             autoFocus
                             value={formData.name}
-                            onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
-                            className="w-full bg-background border border-border/60 rounded-xl px-5 py-4 focus:outline-none focus:border-primary/60 focus:bg-background transition-all text-lg font-semibold placeholder:text-muted-foreground/40"
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                setFormData(p => ({ ...p, name: e.target.value }))
+                            }
+                            className="w-full px-5 py-4 text-lg font-semibold h-auto"
                             placeholder={t('workspaceWizard.namePlaceholder')}
                         />
                     </div>
@@ -66,9 +73,9 @@ export const WizardDetailsStep: React.FC<WizardDetailsStepProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: 0.1 }}
                 >
-                    <label className="text-xs font-bold uppercase text-muted-foreground mb-3 block tracking-wider ml-1">
+                    <Label className="text-xs font-bold text-muted-foreground mb-3 block ml-1">
                         {t('workspaces.categoryLabel')}
-                    </label>
+                    </Label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                         {categories.map((cat, idx) => (
                             <motion.button
@@ -92,34 +99,43 @@ export const WizardDetailsStep: React.FC<WizardDetailsStepProps> = ({
                                             className="absolute top-4 right-4 z-10"
                                         >
                                             <div className="bg-primary p-1.5 rounded-full shadow-lg shadow-primary/20">
-                                                <Check className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={3} />
+                                                <Check
+                                                    className="w-3.5 h-3.5 text-primary-foreground"
+                                                    strokeWidth={3}
+                                                />
                                             </div>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
 
-                                <div className={cn(
-                                    'p-3 rounded-xl group-hover:scale-105 transition-all duration-300 shadow-sm',
-                                    cat.bg,
-                                    cat.color,
-                                    formData.category === cat.id ? 'scale-105 shadow-md ring-2 ring-primary/20' : 'opacity-80'
-                                )}>
+                                <div
+                                    className={cn(
+                                        'p-3 rounded-xl group-hover:scale-105 transition-all duration-300 shadow-sm',
+                                        cat.bg,
+                                        cat.color,
+                                        formData.category === cat.id
+                                            ? 'scale-105 shadow-md ring-2 ring-primary/20'
+                                            : 'opacity-80'
+                                    )}
+                                >
                                     <cat.icon className="w-6 h-6" />
                                 </div>
 
                                 <div className="flex flex-col items-center gap-1">
-                                    <span className={cn(
-                                        'tw-text-11 font-semibold tracking-wide text-center',
-                                        formData.category === cat.id ? 'text-primary' : 'text-muted-foreground'
-                                    )}>
+                                    <span
+                                        className={cn(
+                                            'tw-text-11 font-semibold  text-center',
+                                            formData.category === cat.id
+                                                ? 'text-primary'
+                                                : 'text-muted-foreground'
+                                        )}
+                                    >
                                         {t(cat.nameKey)}
                                     </span>
                                 </div>
 
                                 {formData.category === cat.id && (
-                                    <motion.div
-                                        className="absolute inset-0 border border-primary/70 rounded-2xl"
-                                    />
+                                    <motion.div className="absolute inset-0 border border-primary/70 rounded-2xl" />
                                 )}
                             </motion.button>
                         ))}
@@ -131,13 +147,15 @@ export const WizardDetailsStep: React.FC<WizardDetailsStepProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: 0.2 }}
                 >
-                    <label className="text-xs font-bold uppercase text-muted-foreground mb-2 block tracking-wider ml-1">
+                    <Label className="text-xs font-bold text-muted-foreground mb-2 block ml-1">
                         {t('workspaceWizard.selectFolder')}
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                         value={formData.customPath}
-                        onChange={e => setFormData(p => ({ ...p, customPath: e.target.value }))}
-                        className="w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/60 transition-all text-foreground placeholder:text-muted-foreground/40"
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setFormData(p => ({ ...p, customPath: e.target.value }))
+                        }
+                        className="w-full px-4 py-3"
                         placeholder={t('workspaceWizard.selectRootDesc')}
                     />
                 </motion.div>
@@ -147,13 +165,15 @@ export const WizardDetailsStep: React.FC<WizardDetailsStepProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: 0.25 }}
                 >
-                    <label className="text-xs font-bold uppercase text-muted-foreground mb-2 block tracking-wider ml-1">
+                    <Label className="text-xs font-bold text-muted-foreground mb-2 block ml-1">
                         {t('workspaceWizard.description')}
-                    </label>
-                    <textarea
+                    </Label>
+                    <Textarea
                         value={formData.description}
-                        onChange={e => setFormData(p => ({ ...p, description: e.target.value }))}
-                        className="w-full h-28 bg-background border border-border/60 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/60 transition-all resize-none text-foreground placeholder:text-muted-foreground/40"
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                            setFormData(p => ({ ...p, description: e.target.value }))
+                        }
+                        className="w-full h-28 px-4 py-3 resize-none"
                         placeholder={t('workspaceWizard.descPlaceholder')}
                     />
                 </motion.div>
@@ -175,3 +195,4 @@ export const WizardDetailsStep: React.FC<WizardDetailsStepProps> = ({
         </div>
     );
 };
+

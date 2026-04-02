@@ -46,7 +46,7 @@ const getSettingsErrorCode = (error: Error): string => {
 // Define a stricter schema for AppSettings to prevent injection or invalid state
 const AppSettingsSchema = z.object({
     general: z.object({
-        language: z.enum(['tr', 'en', 'de', 'fr', 'es', 'ja', 'zh', 'ar']).optional(),
+        language: z.string().min(2).max(32).regex(/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/).optional(),
         telemetryEnabled: z.boolean().optional()
     }).passthrough().optional(),
     openai: settingsCredentialSchema.optional(),

@@ -121,7 +121,7 @@ export const WorkspaceEnvironmentTab: React.FC<WorkspaceEnvironmentTabProps> = (
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-2">
-                    <h2 className="text-2xl font-black tracking-tight text-foreground flex items-center gap-3">
+                    <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
                         <Settings className="w-8 h-8 text-primary" />
                         {t('workspaceDashboard.environment')}
                     </h2>
@@ -154,7 +154,7 @@ export const WorkspaceEnvironmentTab: React.FC<WorkspaceEnvironmentTabProps> = (
             {/* Variables Table */}
             <div className="flex-1 min-h-0 bg-card/40 backdrop-blur-sm rounded-3xl border border-border/50 overflow-hidden flex flex-col">
                 <div className="p-6 border-b border-border/50 bg-muted/20">
-                    <div className="grid grid-cols-12 gap-4 text-xxs font-bold uppercase tracking-widest text-muted-foreground/60">
+                    <div className="grid grid-cols-12 gap-4 text-xxs font-bold text-muted-foreground/60">
                         <div className="col-span-4">{t('workspaceDashboard.envKey')}</div>
                         <div className="col-span-6">{t('workspaceDashboard.envValue')}</div>
                         <div className="col-span-2 text-right">{t('workspaceDashboard.envActions')}</div>

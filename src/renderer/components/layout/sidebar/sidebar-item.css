@@ -1,0 +1,59 @@
+:root {
+    --sidebar-item-active-indicator: hsl(var(--primary));
+    --sidebar-item-active-bg: hsl(var(--primary) / 10%);
+    --sidebar-item-active-text: hsl(var(--primary));
+    --sidebar-item-inactive-text: hsl(var(--muted-foreground));
+    --sidebar-item-inactive-hover-text: hsl(var(--foreground));
+    --sidebar-item-inactive-hover-bg: hsl(var(--muted) / 30%);
+}
+
+.tengra-sidebar-item {
+    position: relative;
+}
+
+.tengra-sidebar-item__active-indicator {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0.25rem;
+    height: 1rem;
+    border-radius: 0 9999px 9999px 0;
+    background: var(--sidebar-item-active-indicator);
+    z-index: 10;
+}
+
+.tengra-sidebar-item__button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid transparent;
+    background: transparent;
+    font-size: 0.875rem;
+    transition: color 0.2s ease, background-color 0.2s ease;
+    cursor: pointer;
+}
+
+.tengra-sidebar-item__button--collapsed {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.tengra-sidebar-item__button--active {
+    background: var(--sidebar-item-active-bg);
+    color: var(--sidebar-item-active-text);
+    font-weight: 500;
+}
+
+.tengra-sidebar-item__button--inactive {
+    color: var(--sidebar-item-inactive-text);
+}
+
+.tengra-sidebar-item__button--inactive:hover {
+    color: var(--sidebar-item-inactive-hover-text);
+    background: var(--sidebar-item-inactive-hover-bg);
+}

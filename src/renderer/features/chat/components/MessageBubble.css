@@ -31,8 +31,8 @@
 .katex {
     @apply !bg-transparent;
 
-    font-size: 1.15em;
-    line-height: 1.2;
+    font-size: var(--text-lg);
+    line-height: var(--leading-tight);
 }
 
 .katex-display > .katex {
@@ -49,3 +49,4 @@
 .markdown-body .katex-display {
     background: transparent !important;
 }
+

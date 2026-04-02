@@ -137,6 +137,7 @@ export interface DbWorkspace {
     chat_ids: string[]
     council_config?: JsonObject
     status: string
+    logo?: string
     metadata?: JsonObject
     created_at: number
     updated_at: number
@@ -149,6 +150,7 @@ export interface DbCreateWorkspaceRequest {
     path: string
     mounts?: JsonValue[]
     council_config?: JsonObject
+    logo?: string
     metadata?: JsonObject
 }
 
@@ -160,6 +162,7 @@ export interface DbUpdateWorkspaceRequest {
     chat_ids?: string[]
     council_config?: JsonObject
     status?: string
+    logo?: string
     metadata?: JsonObject
 }
 

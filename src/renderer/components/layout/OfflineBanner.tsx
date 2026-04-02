@@ -2,6 +2,8 @@ import { useTranslation } from '@renderer/i18n';
 import { WifiOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import './offline-banner.css';
+
 /**
  * Persistent banner displayed when the app loses network connectivity.
  * Listens to browser online/offline events and reflects current status.
@@ -29,10 +31,10 @@ export function OfflineBanner(): JSX.Element | null {
 
     return (
         <div
-            className="sticky top-0 z-50 flex items-center justify-center gap-2 bg-warning/90 px-3 py-1.5 text-xs font-semibold text-warning-foreground"
+            className="tengra-offline-banner"
             role="alert"
         >
-            <WifiOff className="h-3.5 w-3.5" />
+            <WifiOff className="tengra-offline-banner__icon" />
             <span>{t('common.offlineBanner')}</span>
         </div>
     );

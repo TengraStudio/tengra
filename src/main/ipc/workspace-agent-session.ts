@@ -60,6 +60,7 @@ const DEFAULT_PERMISSION_POLICY: WorkspaceAgentPermissionPolicy = {
     commandPolicy: 'ask-every-time',
     pathPolicy: 'workspace-root-only',
     allowedCommands: [],
+    disallowedCommands: [],
     allowedPaths: [],
 };
 

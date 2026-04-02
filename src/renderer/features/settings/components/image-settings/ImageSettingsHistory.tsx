@@ -1,4 +1,8 @@
-import { History } from 'lucide-react';
+import { Badge } from '@renderer/components/ui/badge';
+import { Button } from '@renderer/components/ui/button';
+import { Input } from '@renderer/components/ui/input';
+import { cn } from '@renderer/lib/utils';
+import { Check, Download, History, RefreshCw,Search, Sparkles, Zap } from 'lucide-react';
 import React from 'react';
 
 import { ImageComparisonResult, ImageHistoryEntry } from '../../types';
@@ -45,117 +49,203 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
     t,
 }) => {
     return (
-        <div className="rounded-xl border border-border/40 bg-muted/30 p-4">
-            <h5 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                <History className="h-3.5 w-3.5" />
-                {t('settings.images.historyTitle')}
-            </h5>
-            <div className="mb-2 grid grid-cols-1 gap-2 md:grid-cols-2">
-                <input
+        <div className="bg-card rounded-3xl border border-border/40 p-8 space-y-8 shadow-sm group/history hover:border-border/60 transition-all duration-500 overflow-hidden relative">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1 relative z-10">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-2xl bg-primary/10 text-primary shadow-lg shadow-primary/5 group-hover/history:scale-110 transition-transform duration-500">
+                        <History className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-foreground group-hover/history:text-primary transition-colors">
+                            {t('settings.images.historyTitle')}
+                        </h3>
+                        <p className="text-[10px] text-muted-foreground mt-1 font-bold opacity-60">
+                            {historyEntries.length} {t('settings.images.historyEntries')}
+                        </p>
+                    </div>
+                </div>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { void handleExportHistory(); }}
+                    className="h-10 px-6 rounded-xl border-border/40 bg-muted/20 text-[10px] font-bold text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all active:scale-95 flex items-center gap-3 shadow-sm"
+                >
+                    <Download className="w-3.5 h-3.5" />
+                    {t('settings.images.exportHistory')}
+                </Button>
+            </div>
+
+            <div className="relative group max-w-md w-full relative z-10">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 transition-colors group-focus-within:text-primary" />
+                <Input
                     value={historySearchQuery}
                     onChange={event => setHistorySearchQuery(event.target.value)}
                     placeholder={t('settings.images.searchHistory')}
-                    className="rounded-md border border-border/40 bg-background/40 px-2 py-1.5 text-xs"
+                    className="h-12 pl-12 pr-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 text-xs font-bold placeholder:text-muted-foreground/30 shadow-inner group-hover:bg-muted/30 transition-all"
                 />
-                <button
-                    onClick={() => { void handleExportHistory(); }}
-                    className="rounded-lg border border-border/50 px-2.5 py-1 tw-text-10 font-bold uppercase tracking-wider text-muted-foreground"
-                >
-                    {t('settings.images.exportHistory')}
-                </button>
             </div>
+
             {historyEntries.length === 0 ? (
-                <p className="text-xs text-muted-foreground">{t('settings.images.noHistory')}</p>
+                <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/5 border-2 border-dashed border-border/20 rounded-2xl opacity-40 group-hover/history:border-primary/20 transition-all duration-500 relative z-10">
+                    <History className="w-8 h-8 mb-4 text-muted-foreground" />
+                    <p className="text-[10px] font-bold text-muted-foreground px-6">
+                        {t('settings.images.noHistory')}
+                    </p>
+                </div>
             ) : (
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 gap-4 relative z-10 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                     {historyEntries.slice(0, 8).map(entry => (
-                        <div key={entry.id} className="rounded-lg border border-border/40 bg-background/40 p-2 text-xs">
-                            <div className="mb-1 flex items-center justify-between gap-2">
-                                <span className="truncate font-semibold text-foreground/90">{entry.prompt}</span>
-                                <button
+                        <div key={entry.id} className="group/item flex flex-col gap-4 bg-background/50 border border-border/20 rounded-2xl p-5 transition-all hover:bg-muted/10 hover:border-border/40 shadow-sm">
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="space-y-1.5 min-w-0 flex-1">
+                                    <div className="text-xs font-bold text-foreground truncate group-hover/item:text-primary transition-colors">
+                                        {entry.prompt}
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <Badge variant="outline" className="h-5 text-[8px] px-2 font-bold border-border/40 text-muted-foreground/60 rounded-md">
+                                            {entry.provider}
+                                        </Badge>
+                                        <Badge variant="outline" className="h-5 text-[8px] px-2 font-bold border-border/40 text-muted-foreground/60 rounded-md bg-muted/20">
+                                            {entry.width}x{entry.height}
+                                        </Badge>
+                                        <span className="text-[9px] font-bold text-muted-foreground/30">
+                                            {new Date(entry.createdAt).toLocaleString(t('common.locale'))}
+                                        </span>
+                                    </div>
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
                                     onClick={() => { void handleRegenerate(entry.id); }}
-                                    className="rounded border border-border/50 px-2 py-0.5 tw-text-10 text-muted-foreground hover:text-foreground"
+                                    className="h-8 px-4 rounded-lg text-[9px] font-bold bg-primary/5 text-primary border-primary/20 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all active:scale-95 shadow-sm shrink-0"
                                 >
+                                    <RefreshCw className="w-3 h-3 mr-2" />
                                     {t('settings.images.regenerate')}
-                                </button>
+                                </Button>
                             </div>
-                            <div className="flex flex-wrap items-center gap-2 tw-text-10 text-muted-foreground/80">
-                                <span>{entry.provider}</span>
-                                <span>{entry.width}x{entry.height}</span>
-                                <span>{new Date(entry.createdAt).toLocaleString(t('common.locale'))}</span>
+                            <div className="flex items-center gap-3 pt-2 border-t border-border/10">
+                                <div className="flex items-center gap-2 group/check cursor-pointer" onClick={() => toggleCompareSelection(entry.id)}>
+                                    <div className={cn(
+                                        "h-5 w-5 rounded-md border transition-all flex items-center justify-center",
+                                        selectedCompareIds.includes(entry.id) 
+                                            ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20" 
+                                            : "border-border/40 bg-muted/20 text-transparent group-hover/check:border-primary/40"
+                                    )}>
+                                        <Check className="w-3.5 h-3.5" />
+                                    </div>
+                                    <span className={cn(
+                                        "text-[9px] font-bold   transition-colors",
+                                        selectedCompareIds.includes(entry.id) ? "text-primary" : "text-muted-foreground"
+                                    )}>
+                                        {t('common.select')}
+                                    </span>
+                                </div>
                             </div>
-                            <label className="mt-1 flex items-center gap-2 tw-text-10 text-muted-foreground">
-                                <input
-                                    type="checkbox"
-                                    checked={selectedCompareIds.includes(entry.id)}
-                                    onChange={() => toggleCompareSelection(entry.id)}
-                                />
-                                {t('common.select')}
-                            </label>
                         </div>
                     ))}
                 </div>
             )}
 
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-                <button
+            <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-border/20 relative z-10">
+                <Button
                     onClick={() => { void handleRunComparison(); }}
-                    className="rounded-lg border border-primary/35 px-2.5 py-1 tw-text-10 font-bold uppercase tracking-wider text-primary"
+                    disabled={selectedCompareIds.length < 2}
+                    className="h-12 px-8 rounded-2xl bg-foreground text-background hover:bg-primary hover:text-primary-foreground text-[10px] font-bold transition-all active:scale-95 disabled:opacity-40 disabled:scale-100 shadow-xl shadow-black/10 flex items-center gap-3"
                 >
+                    <Zap className="w-4 h-4" />
                     {t('settings.images.compareRun')}
-                </button>
-                <button
-                    onClick={() => setSelectedCompareIds([])}
-                    className="rounded-lg border border-border/50 px-2.5 py-1 tw-text-10 font-bold uppercase tracking-wider text-muted-foreground"
-                >
-                    {t('settings.images.compareClear')}
-                </button>
-                <button
-                    onClick={() => { void handleExportComparison(); }}
-                    className="rounded-lg border border-border/50 px-2.5 py-1 tw-text-10 font-bold uppercase tracking-wider text-muted-foreground"
-                >
-                    {t('settings.images.compareExport')}
-                </button>
-                <button
-                    onClick={() => { void handleShareComparison(); }}
-                    className="rounded-lg border border-border/50 px-2.5 py-1 tw-text-10 font-bold uppercase tracking-wider text-muted-foreground"
-                >
-                    {t('settings.images.compareShare')}
-                </button>
+                </Button>
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedCompareIds([])}
+                        className="h-10 px-6 rounded-xl border-border/40 text-[9px] font-bold text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all active:scale-95 shadow-sm"
+                    >
+                        {t('settings.images.compareClear')}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { void handleExportComparison(); }}
+                        className="h-10 px-6 rounded-xl border-border/40 text-[9px] font-bold text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all active:scale-95 shadow-sm"
+                    >
+                        {t('settings.images.compareExport')}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { void handleShareComparison(); }}
+                        className="h-10 px-6 rounded-xl border-border/40 text-[9px] font-bold text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all active:scale-95 shadow-sm"
+                    >
+                        {t('settings.images.compareShare')}
+                    </Button>
+                </div>
             </div>
 
-            <div className="mt-3 rounded-lg border border-border/40 bg-background/40 p-2 tw-text-11 text-muted-foreground">
-                <div className="mb-1 font-semibold text-foreground/90">{t('settings.images.analyticsTitle')}</div>
-                <div>{t('settings.images.analyticsTotal')}: {imageAnalytics.totalGenerated}</div>
-                <div>{t('settings.images.analyticsAverageSteps')}: {imageAnalytics.averageSteps}</div>
-                {typeof imageAnalytics.averageDurationMs === 'number' && (
-                    <div>{t('settings.images.analyticsAverageDuration')}: {imageAnalytics.averageDurationMs}</div>
-                )}
+            <div className="bg-muted/20 border border-border/20 rounded-2xl p-6 space-y-4 relative z-10 group/analytics hover:bg-muted/30 transition-all duration-500">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-primary/10 text-primary group-hover/analytics:rotate-12 transition-transform">
+                        <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div className="text-[10px] font-bold text-foreground">{t('settings.images.analyticsTitle')}</div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div className="space-y-1">
+                        <div className="text-[9px] font-bold text-muted-foreground/40">{t('settings.images.analyticsTotal')}</div>
+                        <div className="text-2xl font-bold text-foreground tabular-nums group-hover/analytics:text-primary transition-colors">{imageAnalytics.totalGenerated}</div>
+                    </div>
+                    <div className="space-y-1">
+                        <div className="text-[9px] font-bold text-muted-foreground/40">{t('settings.images.analyticsAverageSteps')}</div>
+                        <div className="text-2xl font-bold text-foreground tabular-nums group-hover/analytics:text-primary transition-colors">{imageAnalytics.averageSteps}</div>
+                    </div>
+                    {typeof imageAnalytics.averageDurationMs === 'number' && (
+                         <div className="space-y-1">
+                            <div className="text-[9px] font-bold text-muted-foreground/40">{t('settings.images.analyticsAverageDuration')}</div>
+                            <div className="text-2xl font-bold text-foreground tabular-nums group-hover/analytics:text-primary transition-colors">
+                                {Math.round(imageAnalytics.averageDurationMs / 1000)}<span className="text-xs ml-1">s</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {comparisonResult && (
-                <div className="mt-3 rounded-lg border border-border/40 bg-background/40 p-2 tw-text-11 text-muted-foreground">
-                    <div className="mb-1 font-semibold text-foreground/90">{t('settings.images.compareTitle')}</div>
-                    <div>{comparisonResult.ids.length}</div>
-                    <div>{Math.round(comparisonResult.summary.averageFileSizeBytes / 1024)} {t('common.kb')}</div>
-                    {typeof comparisonResult.summary.averageBytesPerPixel === 'number' && (
-                        <div>{t('settings.images.compareQuality')}: {comparisonResult.summary.averageBytesPerPixel}</div>
-                    )}
+                <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 space-y-6 relative z-10 animate-in zoom-in-95 duration-700">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+                                <Zap className="w-4 h-4" />
+                            </div>
+                            <div>
+                                <div className="text-[10px] font-bold text-foreground">{t('settings.images.compareTitle')}</div>
+                                <div className="text-[9px] font-bold text-primary">{comparisonResult.ids.length} Models Analyzed</div>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-xl font-bold text-foreground">
+                                {Math.round(comparisonResult.summary.averageFileSizeBytes / 1024)} <span className="text-xs font-bold text-muted-foreground/40">kb</span>
+                            </div>
+                            <div className="text-[9px] font-bold text-muted-foreground/40 mt-1">Average Size</div>
+                        </div>
+                    </div>
+
                     {Array.isArray(comparisonResult.entries) && comparisonResult.entries.length > 0 && (
-                        <div className="mt-2 grid grid-cols-1 gap-2 xl:grid-cols-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {comparisonResult.entries.map(entry => (
-                                <div key={entry.id} className="rounded border border-border/40 bg-background/50 p-2">
-                                    <div className="truncate tw-text-10 font-semibold text-foreground/90">{entry.prompt}</div>
-                                    <div className="tw-text-10">
-                                        {t('settings.images.compareEntryMeta', {
-                                            width: entry.width,
-                                            height: entry.height,
-                                            steps: entry.steps,
-                                            cfg: entry.cfgScale,
-                                        })}
+                                <div key={entry.id} className="bg-background/80 border border-primary/10 rounded-xl p-4 space-y-3 shadow-inner hover:border-primary/40 transition-all duration-500">
+                                    <div className="text-[10px] font-bold text-foreground truncate border-b border-primary/5 pb-2">
+                                        {entry.prompt}
                                     </div>
-                                    <div className="tw-text-10">
-                                        {Math.round(entry.fileSizeBytes / 1024)} {t('common.kb')} · {entry.bytesPerPixel}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <div className="text-[8px] font-bold text-muted-foreground/40">Resolution</div>
+                                            <div className="text-[10px] font-bold">{entry.width}x{entry.height}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-[8px] font-bold text-muted-foreground/40">Efficiency</div>
+                                            <div className="text-[10px] font-bold">{entry.bytesPerPixel} <span className="text-[8px] opacity-40">bpp</span></div>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -165,12 +255,17 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
             )}
 
             {comparisonShareCode && (
-                <textarea
-                    value={comparisonShareCode}
-                    readOnly
-                    className="mt-3 tw-min-h-64 w-full rounded-md border border-border/40 bg-background/40 px-2 py-1.5 font-mono tw-text-10"
-                />
+                <div className="space-y-3 relative z-10 animate-in slide-in-from-bottom-4 duration-700">
+                     <div className="text-[10px] font-bold text-muted-foreground/40 px-1 px-1">Comparison Logic Hash</div>
+                     <textarea
+                        value={comparisonShareCode}
+                        readOnly
+                        className="tw-min-h-32 w-full rounded-2xl border border-border/40 bg-muted/40 p-6 font-mono text-[9px] text-muted-foreground leading-relaxed shadow-inner focus:ring-1 focus:ring-primary/20 outline-none transition-all custom-scrollbar"
+                    />
+                </div>
             )}
+
+            <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-primary/5 rounded-full blur-[100px] opacity-30 pointer-events-none" />
         </div>
     );
 };

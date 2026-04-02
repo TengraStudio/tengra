@@ -4,22 +4,28 @@ import React from 'react';
 import { useWorkspaceManager } from '@/features/workspace/hooks/useWorkspaceManager';
 import { useWorkspaceState } from '@/features/workspace/hooks/useWorkspaceState';
 import { Language } from '@/i18n';
+import { Workspace } from '@/types';
+import { LogoGeneratorModal } from '../workspace-dashboard/LogoGeneratorModal';
 
 interface WorkspaceDialogsProps {
     ps: ReturnType<typeof useWorkspaceState>;
     wm: ReturnType<typeof useWorkspaceManager>;
+    workspace: Workspace;
     submitEntryModal: () => Promise<void>;
     entryBusy: boolean;
     language: Language;
+    handleUpdateWorkspace: (updates: Partial<Workspace>) => Promise<void>;
 }
 
 /** Aggregates all workspace modal dialogs (mount, entry, logo generator). */
 export const WorkspaceDialogs: React.FC<WorkspaceDialogsProps> = ({
     ps,
     wm,
+    workspace,
     submitEntryModal,
     entryBusy,
     language,
+    handleUpdateWorkspace,
 }) => (
     <>
         <WorkspaceMountModals
@@ -44,5 +50,21 @@ export const WorkspaceDialogs: React.FC<WorkspaceDialogsProps> = ({
             selectedCount={ps.selectedEntries.length}
             language={language}
         />
+
+        {ps.showLogoModal && (
+            <LogoGeneratorModal
+                isOpen={ps.showLogoModal}
+                onClose={() => ps.setShowLogoModal(false)}
+                workspace={workspace}
+                onApply={logoPath => {
+                    void handleUpdateWorkspace({
+                        logo: logoPath,
+                        updatedAt: Date.now(),
+                    });
+                    ps.setShowLogoModal(false);
+                }}
+                language={language}
+            />
+        )}
     </>
 );

@@ -441,7 +441,7 @@ function ActivityFeedCard({
                 <div className="mt-3 space-y-2">
                     {runtime.messages.slice(-4).map(message => (
                         <div key={message.id} className="rounded-2xl border border-border/50 bg-muted/30 p-3">
-                            <div className="text-xxs uppercase tracking-wide text-muted-foreground">
+                            <div className="text-xxs text-muted-foreground">
                                 {message.fromAgentId}
                             </div>
                             <div className="mt-1 text-sm text-foreground">{message.content}</div>
@@ -458,7 +458,7 @@ function ActivityFeedCard({
                     {runtime.decisions.slice(-4).map(decision => (
                         <div key={`${decision.draftId}-${decision.decidedAt}`} className="rounded-2xl border border-border/50 bg-muted/30 p-3">
                             <div className="flex items-center justify-between gap-3">
-                                <div className="text-xxs uppercase tracking-wide text-muted-foreground">
+                                <div className="text-xxs text-muted-foreground">
                                     {decision.draftId}
                                 </div>
                                 <Badge variant="outline" className="border-border/60 bg-muted/40 text-xxs">
@@ -472,7 +472,7 @@ function ActivityFeedCard({
                     ))}
                     {timeline.slice(-3).map(event => (
                         <div key={event.id} className="rounded-2xl border border-border/50 bg-muted/30 p-3">
-                            <div className="text-xxs uppercase tracking-wide text-muted-foreground">
+                            <div className="text-xxs text-muted-foreground">
                                 {event.type}
                             </div>
                             <div className="mt-1 text-sm text-foreground">
@@ -633,7 +633,7 @@ export const WorkspaceAgentCouncilBoard: React.FC<WorkspaceAgentCouncilBoardProp
                                                     <div className="text-sm text-foreground">
                                                         {index + 1}. {step.text}
                                                     </div>
-                                                    <div className="text-xxs uppercase tracking-wide text-muted-foreground">
+                                                    <div className="text-xxs text-muted-foreground">
                                                         {step.status}
                                                     </div>
                                                 </div>

@@ -196,7 +196,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                     <button
                         onClick={() => setMountForm(prev => ({ ...prev, authType: 'password' }))}
                         className={cn(
-                            "flex-1 py-1.5 tw-text-10 uppercase tracking-wider font-bold rounded border transition-all",
+                            "flex-1 py-1.5 tw-text-10   font-bold rounded border transition-all",
                             mountForm.authType === 'password'
                                 ? "bg-success/10 border-success/50 text-success"
                                 : "bg-muted/40 border-border/40 text-muted-foreground hover:bg-muted/60"
@@ -207,7 +207,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                     <button
                         onClick={() => setMountForm(prev => ({ ...prev, authType: 'key' }))}
                         className={cn(
-                            "flex-1 py-1.5 tw-text-10 uppercase tracking-wider font-bold rounded border transition-all",
+                            "flex-1 py-1.5 tw-text-10   font-bold rounded border transition-all",
                             mountForm.authType === 'key'
                                 ? "bg-primary/10 border-primary/50 text-primary"
                                 : "bg-muted/40 border-border/40 text-muted-foreground hover:bg-muted/60"

@@ -1,69 +1,89 @@
-import * as path from 'path';
-
-import { appLogger } from '@main/logging/logger';
 import { protocol } from 'electron';
+import path from 'path';
+import { appLogger } from '@main/logging/logger';
 
 /**
- * Pre-register protocols before app is ready.
- * MUST be called before app.whenReady()
+ * Pre-register protocols before app is ready
  */
-export function preRegisterProtocols() {
-    // Guard for when running in Node.js context during build (vite-plugin-electron)
-    if (typeof protocol.registerSchemesAsPrivileged === 'function') {
-        protocol.registerSchemesAsPrivileged([
-            { scheme: 'safe-file', privileges: { secure: true, standard: true, supportFetchAPI: true, corsEnabled: true } }
-        ]);
-    }
-}
+export const preRegisterProtocols = (): void => {
+    protocol.registerSchemesAsPrivileged([
+        {
+            scheme: 'safe-file',
+            privileges: {
+                standard: true,
+                secure: true,
+                supportFetchAPI: true,
+                bypassCSP: true,
+                stream: true,
+            },
+        },
+    ]);
+};
 
 /**
- * Register the actual protocol handlers after app is ready.
+ * Register custom protocols for the application
  */
-export function registerProtocols(allowedFileRoots: Set<string>) {
-    const isWindows = process.platform === 'win32';
-    const normalizeForComparison = (candidatePath: string): string => {
-        const resolvedPath = path.resolve(candidatePath);
-        return isWindows ? resolvedPath.toLowerCase() : resolvedPath;
-    };
-    const isPathWithinRoot = (targetPath: string, rootPath: string): boolean => {
-        const normalizedTargetPath = normalizeForComparison(targetPath);
-        const normalizedRootPath = normalizeForComparison(rootPath);
-        const relativePath = path.relative(normalizedRootPath, normalizedTargetPath);
-        return relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath));
+export const registerProtocols = (allowedFileRoots: Set<string>): void => {
+    /**
+     * Check if a path is within the allowed root directories
+     */
+    const isPathWithinRoot = (child: string, parent: string): boolean => {
+        const relative = path.relative(parent, child);
+        return !relative.startsWith('..') && !path.isAbsolute(relative);
     };
 
+    /**
+     * Check if a path is allowed based on the allowed roots
+     */
     const isPathAllowed = (absolutePath: string): boolean => {
         const normalizedPath = path.resolve(absolutePath);
         return Array.from(allowedFileRoots).some(root => isPathWithinRoot(normalizedPath, root));
     };
 
-    protocol.registerFileProtocol('safe-file', (request, callback) => {
+    /**
+     * safe-file:// protocol handler
+     * Allows accessing files within specific allowed directories (like workspace folders)
+     */
+    const handleSafeFile = (request: Electron.ProtocolRequest, callback: (response: Electron.ProtocolResponse) => void) => {
         let url = request.url.replace('safe-file://', '');
 
-        // Handle Windows drive letters (e.g., /C:/Users -> C:/Users)
+        // Remove query params and fragments
+        url = url.split(/[?#]/)[0] ?? url;
+
+        // Remove leading slashes
+        while (url.startsWith('/')) {
+            url = url.slice(1);
+        }
+
+        let decoded: string;
+        try {
+            decoded = decodeURIComponent(url);
+        } catch (e) {
+            decoded = url;
+        }
+
+        // On Windows, if we have /C:/..., remove the leading slash again after decoding
         if (process.platform === 'win32') {
-            if (/^\/[a-zA-Z]:/.test(url)) {
-                url = url.slice(1);
-            } else if (/^[a-zA-Z]\//.test(url)) {
-                url = url.substring(0, 1) + ':' + url.substring(1);
+            if (decoded.startsWith('/')) {
+                decoded = decoded.slice(1);
             }
         }
 
-        const decoded = decodeURIComponent(url);
-        const absolutePath = path.resolve(decoded);
-
-        // Security check: Must be in allowed roots
+        const absolutePath = path.normalize(decoded);
         const allowed = isPathAllowed(absolutePath);
 
         if (!allowed) {
-            appLogger.error('Security', `Denied attempt to access file outside allowed roots via protocol: ${absolutePath} `);
-            return callback({ error: -6 }); // NET_ERROR(FILE_NOT_FOUND)
+            appLogger.warn('Security', `Blocked file access via safe-file: ${absolutePath}. Allowed roots: ${Array.from(allowedFileRoots).join(', ')}`);
+            callback({ error: -10 /* ACCESS_DENIED */ });
+            return;
         }
 
-        try {
-            return callback(absolutePath);
-        } catch (error) {
-            appLogger.error('Main', `SAFE-FILE protocol error: ${error}`);
-        }
-    });
-}
+        appLogger.debug('Security', `Allowing file access via safe-file: ${absolutePath}`);
+        callback({ path: absolutePath });
+    };
+
+    // Register safe-file protocol
+    protocol.registerFileProtocol('safe-file', handleSafeFile);
+
+    appLogger.info('Protocols', 'Custom protocols registered');
+};

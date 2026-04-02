@@ -81,7 +81,7 @@ const MountHeader: React.FC<MountHeaderProps> = ({
             </span>
             <MountIcon mountType={mount.type} />
             <div className="flex-1 min-w-0 flex items-center gap-2">
-                <div className="text-xs font-bold uppercase tracking-wider truncate text-muted-foreground/70">
+                <div className="text-xs font-bold truncate text-muted-foreground/70">
                     {mount.name}
                 </div>
                 {mount.type === 'ssh' && (
@@ -302,7 +302,7 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
                         ))
                     )}
                     {rootNodes.length === 0 && !loading && (
-                        <div className="text-xxs text-muted-foreground/40 pl-4 py-2 italic flex items-center gap-2">
+                        <div className="text-xxs text-muted-foreground/40 pl-4 py-2 flex items-center gap-2">
                             {t('workspace.emptyFolder')}
                         </div>
                     )}

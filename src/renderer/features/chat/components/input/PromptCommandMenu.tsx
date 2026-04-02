@@ -20,16 +20,16 @@ export const PromptCommandMenu = memo(({ show, prompts, selectedIndex, onSelect,
     <AnimatePresence>
         {show && (
             <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className="absolute bottom-full left-0 mb-2 w-64 bg-popover border border-border/50 rounded-lg shadow-xl overflow-hidden z-50"
+                initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                className="absolute bottom-full left-0 z-50 mb-3 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border/25 bg-popover shadow-xl"
                 role="listbox"
                 aria-label={t('input.promptSuggestions')}
                 id="chat-prompt-command-listbox"
             >
                 <div
-                    className="text-xxs uppercase font-bold text-muted-foreground px-3 py-1.5 bg-muted/30"
+                    className="border-b border-border/10 bg-muted/5 px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground/70"
                     role="heading"
                     aria-level={3}
                 >
@@ -40,17 +40,17 @@ export const PromptCommandMenu = memo(({ show, prompts, selectedIndex, onSelect,
                         key={prompt.id}
                         onClick={() => onSelect(prompt)}
                         className={cn(
-                            'w-full text-left px-3 py-2 text-xs transition-colors block',
+                            'block w-full px-3 py-2 text-left text-xs transition-colors',
                             i === selectedIndex
-                                ? 'bg-primary/20 text-primary'
-                                : 'hover:bg-accent/50 text-foreground'
+                                ? 'bg-primary/10 text-primary'
+                                : 'text-foreground hover:bg-accent/40'
                         )}
                         aria-label={t('input.usePrompt', { title: prompt.title })}
                         aria-selected={i === selectedIndex}
                         role="option"
                     >
-                        <div className="font-medium">{prompt.title}</div>
-                        <div className="text-xxs text-muted-foreground truncate">
+                        <div className="font-semibold">{prompt.title}</div>
+                        <div className="text-[10px] text-muted-foreground/80 truncate mt-0.5">
                             {prompt.content}
                         </div>
                     </button>

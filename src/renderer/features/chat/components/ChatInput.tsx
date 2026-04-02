@@ -1,27 +1,23 @@
-import {
-    AudioLines,
-    File as FileIcon,
-    FileCode,
-    FileText,
-    Image as ImageIcon,
-    Mic,
-    MicOff,
-    Paperclip,
-    Send,
-    Sparkles,
-    Square,
-    Video,
-    X,
-} from 'lucide-react';
+import { X } from 'lucide-react';
 import React, { memo, useEffect, useRef } from 'react';
 
-import { ModelSelector } from '@/components/shared/ModelSelector';
+import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/i18n';
-import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
-import { Attachment } from '@/types';
 
 import { useChatInputController } from '../hooks/useChatInputController';
+
+import { AttachmentList } from './input/AttachmentList';
+import {
+    AttachButton,
+    ComposerStateBadges,
+    EnhanceButton,
+    ImageCountPanel,
+    ModelSelectorWrapper,
+    SendButton,
+    VoiceButton
+} from './input/ChatInputActions';
+import { PromptCommandMenu } from './input/PromptCommandMenu';
 
 interface ChatInputProps {
     fileInputRef?: React.RefObject<HTMLInputElement>;
@@ -30,8 +26,17 @@ interface ChatInputProps {
     setShowFileMenu?: (show: boolean) => void;
 }
 
+/**
+ * ChatInput - Redesigned minimal chat input component
+ * Following NASA Power of Ten rules for simplicity.
+ */
 export const ChatInput: React.FC<ChatInputProps> = memo(
-    ({ fileInputRef: externalFileInputRef, textareaRef: externalTextareaRef }) => {
+    ({ 
+        fileInputRef: externalFileInputRef, 
+        textareaRef: externalTextareaRef,
+        showFileMenu: _showFileMenu,
+        setShowFileMenu: _setShowFileMenu
+    }) => {
         const ctrl = useChatInputController();
         const { t } = useTranslation();
 
@@ -40,59 +45,39 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
         const fileInputRef = externalFileInputRef ?? localFileInputRef;
         const textareaRef = externalTextareaRef ?? localTextareaRef;
 
+        // Auto-resize textarea effect
         useEffect(() => {
             const area = textareaRef.current;
             if (!area) {
                 return;
             }
 
-            // Calculate max height based on viewport (30vh with a minimum of 100px and max of 200px)
-            const calculateMaxHeight = () => {
-                const viewportHeight = window.innerHeight;
-                const calculatedMax = Math.min(200, Math.max(100, viewportHeight * 0.3));
-                return calculatedMax;
-            };
-
-            // Auto-resize textarea
             const resize = () => {
-                const maxHeight = calculateMaxHeight();
+                const viewportHeight = window.innerHeight;
+                const maxHeight = Math.min(200, Math.max(100, viewportHeight * 0.3));
                 area.style.height = 'auto';
                 area.style.height = `${Math.min(area.scrollHeight, maxHeight)}px`;
             };
 
             resize();
-
-            // ResizeObserver for more robust resizing
-            const resizeObserver = new ResizeObserver(() => {
-                resize();
-            });
-
+            const resizeObserver = new ResizeObserver(resize);
             resizeObserver.observe(area);
+            window.addEventListener('resize', resize);
 
-            // Handle viewport resize
-            const handleViewportResize = () => {
-                resize();
-            };
-            window.addEventListener('resize', handleViewportResize);
-
-            // Cleanup
             return () => {
                 resizeObserver.disconnect();
-                window.removeEventListener('resize', handleViewportResize);
+                window.removeEventListener('resize', resize);
             };
         }, [ctrl.input, textareaRef]);
 
         const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
             const newValue = e.target.value;
             ctrl.setInput(newValue);
-
+            
             const lastWord = newValue.split(' ').pop() ?? '';
-            const isSlash = lastWord.startsWith('/');
-            if (isSlash) {
-                if (!ctrl.showCommandMenu) {
-                    ctrl.setShowCommandMenu(true);
-                    ctrl.setSelectedIndex(0);
-                }
+            if (lastWord.startsWith('/')) {
+                ctrl.setShowCommandMenu(true);
+                ctrl.setSelectedIndex(0);
                 ctrl.setCommandQuery(lastWord.slice(1));
             } else if (ctrl.showCommandMenu) {
                 ctrl.setShowCommandMenu(false);
@@ -127,42 +112,15 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
             <div
                 role="group"
                 aria-label={t('aria.chatInput')}
-                className={cn(
-                    'p-4 border-t border-border/50 bg-background/50 backdrop-blur-sm relative z-30',
-                    ctrl.isDragging && 'ring-2 ring-primary/50 border-primary/50'
-                )}
-                onDragOver={e => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    ctrl.setIsDragging(true);
-                }}
-                onDragLeave={e => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    ctrl.setIsDragging(false);
-                }}
+                className={cn('relative z-30 px-3 pb-4 pt-1 sm:px-6 sm:pb-6', ctrl.isDragging && 'bg-primary/5')}
+                onDragOver={e => { e.preventDefault(); e.stopPropagation(); ctrl.setIsDragging(true); }}
+                onDragLeave={e => { e.preventDefault(); e.stopPropagation(); ctrl.setIsDragging(false); }}
                 onDrop={ctrl.onDrop}
             >
-                <AttachmentList
-                    attachments={ctrl.attachments}
-                    onRemove={ctrl.removeAttachment}
-                    t={ctrl.t}
-                />
                 {ctrl.lastError && (
-                    <div
-                        role="status"
-                        aria-live="polite"
-                        className="mb-2 px-3 py-2 rounded-md border border-destructive/30 bg-destructive/10 text-destructive text-xs flex items-center justify-between gap-2"
-                    >
+                    <div role="status" aria-live="polite" className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive animate-in fade-in slide-in-from-top-1">
                         <span>{ctrl.t(ctrl.lastError.messageKey)}</span>
-                        <button
-                            type="button"
-                            onClick={ctrl.clearLastError}
-                            className="p-1 rounded hover:bg-destructive/20 transition-colors"
-                            aria-label={ctrl.t('common.close')}
-                        >
-                            <X size={12} aria-hidden="true" />
-                        </button>
+                        <button type="button" onClick={ctrl.clearLastError} className="p-1 rounded-md hover:bg-destructive/10 transition-colors" aria-label={ctrl.t('common.close')}><X size={12} aria-hidden="true" /></button>
                     </div>
                 )}
 
@@ -173,364 +131,57 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                     onSelect={prompt => {
                         const words = ctrl.input.split(' ');
                         words.pop();
-                        const newText =
-                            words.join(' ') + (words.length > 0 ? ' ' : '') + prompt.content;
-                        ctrl.setInput(newText);
+                        ctrl.setInput(words.join(' ') + (words.length > 0 ? ' ' : '') + prompt.content);
                         ctrl.setShowCommandMenu(false);
                     }}
                     t={ctrl.t}
                 />
 
-                {ctrl.isImageOnlyModel && (
-                    <div className="mb-3 flex items-center gap-3 rounded-xl border border-border/50 bg-muted/20 px-3 py-2.5">
-                        <div className="flex min-w-0 flex-col">
-                            <span className="text-xxs font-semibold uppercase tracking-widest text-muted-foreground/70">
-                                {ctrl.t('input.imageCountLabel')}
-                            </span>
-                            <span className="text-xs text-muted-foreground/80">
-                                {ctrl.t('input.imageCountHint')}
-                            </span>
-                        </div>
-                        <input
-                            type="number"
-                            min={1}
-                            max={5}
-                            value={ctrl.imageRequestCount}
-                            onChange={event => {
-                                const nextValue = Number.parseInt(event.target.value, 10);
-                                if (!Number.isFinite(nextValue)) {
-                                    ctrl.setImageRequestCount(1);
-                                    return;
-                                }
-                                ctrl.setImageRequestCount(Math.max(1, Math.min(5, nextValue)));
-                            }}
-                            className="ml-auto h-10 w-20 rounded-lg border border-border/60 bg-background/80 px-3 text-sm font-semibold text-foreground outline-none transition-colors focus:border-primary/60"
-                            aria-label={ctrl.t('input.imageCountLabel')}
+                <div className={cn(
+                    'group flex flex-col relative overflow-hidden rounded-[24px] border border-border/40 bg-background/95 transition-all duration-300 shadow-sm',
+                    'focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/5 focus-within:shadow-md',
+                    ctrl.isDragging && 'border-primary/45 bg-primary/5'
+                )}>
+                    <div className="px-4 pt-4">
+                        {ctrl.isImageOnlyModel && <ImageCountPanel ctrl={ctrl} />}
+                        <Textarea
+                            data-testid="chat-textarea"
+                            ref={textareaRef}
+                            value={ctrl.input}
+                            onChange={handleInputChange}
+                            onKeyDown={handleKeyDown}
+                            placeholder={ctrl.t('input.placeholder.default')}
+                            className="min-h-[44px] max-h-60 resize-none overflow-y-auto border-0 bg-transparent px-0 py-1 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50"
+                            rows={1}
+                            aria-label={ctrl.t('input.placeholder.default')}
+                            role="combobox"
+                            aria-expanded={ctrl.showCommandMenu && ctrl.filteredPrompts.length > 0}
                         />
                     </div>
-                )}
 
-                <div className="relative flex items-end gap-2 bg-muted/30 border border-border/50 rounded-xl p-2 shadow-sm focus-within:ring-1 focus-within:ring-primary/50 focus-within:border-primary/50 transition-all">
-                    <div className="flex items-center justify-center gap-1.5 px-1 py-0.5">
-                        <div className="relative">
-                            <button
-                                type="button"
-                                onClick={() => fileInputRef.current?.click()}
-                                className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors"
-                                title={ctrl.t('input.attachFile')}
-                                aria-label={ctrl.t('input.attachFile')}
-                            >
-                                <Paperclip size={20} aria-hidden="true" />
-                            </button>
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleFileChange}
-                                className="hidden"
-                                multiple={false}
-                            />
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={ctrl.isListening ? ctrl.stopListening : ctrl.startListening}
-                            className={cn(
-                                'p-2 rounded-lg transition-all',
-                                ctrl.isListening
-                                    ? 'bg-destructive/20 text-destructive animate-pulse'
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                            )}
-                            title={
-                                ctrl.isListening
-                                    ? ctrl.t('input.stopListening')
-                                    : ctrl.t('input.startListening')
-                            }
-                            aria-label={
-                                ctrl.isListening
-                                    ? ctrl.t('input.stopListening')
-                                    : ctrl.t('input.startListening')
-                            }
-                            aria-pressed={ctrl.isListening}
-                        >
-                            {ctrl.isListening ? (
-                                <MicOff size={20} aria-hidden="true" />
-                            ) : (
-                                <Mic size={20} aria-hidden="true" />
-                            )}
-                        </button>
-
-                        <div className="h-8 w-px bg-border/50 mx-1" />
-
-                        <div className="h-8 w-px bg-border/50 mx-1" />
-                        <ModelSelectorWrapper ctrl={ctrl} />
+                    <div className="px-4">
+                        <AttachmentList attachments={ctrl.attachments} onRemove={ctrl.removeAttachment} t={ctrl.t} />
                     </div>
 
-                    <textarea
-                        data-testid="chat-textarea"
-                        ref={textareaRef}
-                        value={ctrl.input}
-                        onChange={handleInputChange}
-                        onKeyDown={handleKeyDown}
-                        placeholder={ctrl.t('input.placeholder.default')}
-                        className="flex-1 bg-transparent border-none focus:border-none focus:ring-offset-0 ring-offset-0 ring-0 focus:ring-0 text-sm text-foreground placeholder:text-muted-foreground/50 resize-none py-2.5 max-h-72 overflow-y-auto"
-                        rows={1}
-                        aria-label={ctrl.t('input.placeholder.default')}
-                        aria-describedby="chat-input-hint"
-                        role="combobox"
-                        aria-expanded={ctrl.showCommandMenu && ctrl.filteredPrompts.length > 0}
-                        aria-controls="chat-prompt-command-listbox"
-                        aria-autocomplete="list"
-                        aria-haspopup="listbox"
-                    />
-
-                    <EnhanceButton ctrl={ctrl} />
-                    <SendButton ctrl={ctrl} />
+                    <div className="flex items-center justify-between px-2 pb-2 pt-1 transition-all">
+                        <div className="flex items-center gap-1.5 pl-1.5">
+                            <ModelSelectorWrapper ctrl={ctrl} />
+                            <div className="flex items-center gap-0.5">
+                                <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" multiple={false} />
+                                <AttachButton onClick={() => fileInputRef.current?.click()} ctrl={ctrl} />
+                                <VoiceButton ctrl={ctrl} />
+                            </div>
+                            <ComposerStateBadges ctrl={ctrl} />
+                        </div>
+                        <div className="flex items-center gap-1.5 pr-1.5">
+                            <EnhanceButton ctrl={ctrl} />
+                            <SendButton ctrl={ctrl} />
+                        </div>
+                    </div>
                 </div>
-                <p id="chat-input-hint" className="sr-only">
-                    {ctrl.t('input.promptSuggestions')}
-                </p>
             </div>
-        );
-    },
-    (prevProps, nextProps) => {
-        return (
-            prevProps.fileInputRef === nextProps.fileInputRef &&
-            prevProps.textareaRef === nextProps.textareaRef
         );
     }
 );
 
 ChatInput.displayName = 'ChatInput';
-
-const AttachmentList: React.FC<{
-    attachments: Attachment[];
-    onRemove: (i: number) => void;
-    t: (key: string, options?: Record<string, string | number>) => string;
-}> = ({ attachments, onRemove, t }) => {
-    const getFileIcon = (type: string) => {
-        if (type === 'image') {
-            return <ImageIcon size={14} />;
-        }
-        if (type === 'video') {
-            return <Video size={14} />;
-        }
-        if (type === 'audio') {
-            return <AudioLines size={14} />;
-        }
-        if (type.includes('text') || type.includes('json') || type.includes('md')) {
-            return <FileText size={14} />;
-        }
-        if (type.includes('code') || type.includes('javascript') || type.includes('python')) {
-            return <FileCode size={14} />;
-        }
-        return <FileIcon size={14} />;
-    };
-
-    return (
-        <AnimatePresence>
-            {attachments.length > 0 && (
-                <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="flex flex-wrap gap-2 mb-3 px-2"
-                >
-                    {attachments.map((att, i) => (
-                        <div
-                            key={i}
-                            className="group relative flex items-center gap-2 bg-muted/50 border border-border/50 rounded-lg px-3 py-2 text-xs text-muted-foreground pr-8"
-                        >
-                            {(att.type === 'image' || att.type === 'video') && typeof att.preview === 'string' ? (
-                                <img
-                                    src={att.preview}
-                                    alt={t('input.attachmentPreview')}
-                                    className="w-8 h-8 rounded-md object-cover border border-border/50"
-                                />
-                            ) : (
-                                <span
-                                    className={cn(
-                                        'p-1.5 rounded-md',
-                                        att.type === 'image' || att.type === 'video'
-                                            ? 'bg-primary/20 text-primary'
-                                            : 'bg-accent/20 text-accent-foreground'
-                                    )}
-                                >
-                                    {getFileIcon(att.type)}
-                                </span>
-                            )}
-                            <span className="truncate max-w-36">{att.name}</span>
-                            <span className="text-muted-foreground text-xxs">
-                                ({(att.size / 1024).toFixed(1)} {t('common.kb')})
-                            </span>
-                            <button
-                                onClick={() => onRemove(i)}
-                                className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-destructive opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity focus-visible:opacity-100"
-                                aria-label={t('input.removeAttachment', { name: att.name })}
-                            >
-                                <X size={12} aria-hidden="true" />
-                            </button>
-                        </div>
-                    ))}
-                </motion.div>
-            )}
-        </AnimatePresence>
-    );
-};
-
-const PromptCommandMenu: React.FC<{
-    show: boolean;
-    prompts: Array<{ id: string; title: string; content: string }>;
-    selectedIndex: number;
-    onSelect: (prompt: { id: string; title: string; content: string }) => void;
-    t: (key: string, options?: Record<string, string | number>) => string;
-}> = ({ show, prompts, selectedIndex, onSelect, t }) => (
-    <AnimatePresence>
-        {show && (
-            <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className="absolute bottom-full left-0 mb-2 w-64 bg-popover border border-border/50 rounded-lg shadow-xl overflow-hidden z-50"
-                role="listbox"
-                aria-label={t('input.promptSuggestions')}
-                id="chat-prompt-command-listbox"
-            >
-                <div
-                    className="text-xxs uppercase font-bold text-muted-foreground px-3 py-1.5 bg-muted/30"
-                    role="heading"
-                    aria-level={3}
-                >
-                    {t('input.prompts')}
-                </div>
-                {prompts.map((prompt, i) => (
-                    <button
-                        key={prompt.id}
-                        onClick={() => onSelect(prompt)}
-                        className={cn(
-                            'w-full text-left px-3 py-2 text-xs transition-colors block',
-                            i === selectedIndex
-                                ? 'bg-primary/20 text-primary'
-                                : 'hover:bg-accent/50 text-foreground'
-                        )}
-                        aria-label={t('input.usePrompt', { title: prompt.title })}
-                        aria-selected={i === selectedIndex}
-                        role="option"
-                    >
-                        <div className="font-medium">{prompt.title}</div>
-                        <div className="text-xxs text-muted-foreground truncate">
-                            {prompt.content}
-                        </div>
-                    </button>
-                ))}
-            </motion.div>
-        )}
-    </AnimatePresence>
-);
-
-type ControllerType = ReturnType<typeof useChatInputController>;
-
-const ModelSelectorWrapper: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => (
-    <div data-testid="model-selector">
-        {/** Map chat global system mode to selector mode tabs */}
-        <ModelSelector
-            selectedProvider={ctrl.selectedProvider}
-            selectedModel={ctrl.selectedModel}
-            selectedModels={ctrl.selectedModels}
-            onSelect={ctrl.handleSelectModel}
-            onRemoveModel={ctrl.removeSelectedModel}
-            settings={ctrl.appSettings ?? undefined}
-            groupedModels={ctrl.groupedModels ?? undefined}
-            quotas={ctrl.quotas}
-            codexUsage={ctrl.codexUsage}
-            claudeQuota={ctrl.claudeQuota}
-            onOpenChange={ctrl.setIsModelMenuOpen}
-            contextTokens={ctrl.contextTokens}
-            language={ctrl.language}
-            toggleFavorite={ctrl.toggleFavorite}
-            isFavorite={ctrl.isFavorite}
-            chatMode={
-                ctrl.systemMode === 'thinking'
-                    ? 'thinking'
-                    : ctrl.systemMode === 'agent'
-                        ? 'agent'
-                        : 'instant'
-            }
-            onChatModeChange={mode => {
-                ctrl.setSystemMode(mode === 'instant' ? 'fast' : mode);
-            }}
-            thinkingLevel={ctrl.getModelReasoningLevel?.(ctrl.selectedModel)}
-            onThinkingLevelChange={(modelId, level) =>
-                ctrl.setModelReasoningLevel?.(modelId, level)
-            }
-        />
-    </div>
-);
-
-const EnhanceButton: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
-    const isEnhancable = ctrl.input.trim() !== '' && !ctrl.isLoading;
-    const isEnhancing = ctrl.isEnhancing;
-    const btnClass = cn(
-        'p-2 rounded-lg transition-all duration-200 flex items-center justify-center mb-0.5',
-        isEnhancing
-            ? 'bg-warning/20 text-warning-foreground animate-pulse'
-            : isEnhancable
-                ? 'bg-warning/10 text-warning hover:bg-warning/20 hover:text-warning-light'
-                : 'bg-muted/30 text-muted-foreground/50 cursor-not-allowed'
-    );
-    return (
-        <button
-            type="button"
-            onClick={() => {
-                void ctrl.handleEnhancePrompt();
-            }}
-            disabled={!isEnhancable || isEnhancing}
-            className={btnClass}
-            title={ctrl.t('input.enhancePrompt')}
-            aria-label={ctrl.t('input.enhancePrompt')}
-        >
-            <Sparkles size={18} className={cn(isEnhancing && 'animate-spin')} aria-hidden="true" />
-        </button>
-    );
-};
-
-const SendButton: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
-    const hasContent = ctrl.input.trim() !== '' || ctrl.attachments.length > 0;
-    const isLoading = ctrl.isLoading;
-    const btnClass = cn(
-        'p-2 rounded-lg transition-all duration-200 flex items-center justify-center mb-0.5',
-        isLoading
-            ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
-            : hasContent
-                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity'
-                : 'bg-muted/30 text-muted-foreground/50 cursor-not-allowed'
-    );
-    return (
-        <button
-            type="button"
-            onClick={
-                isLoading
-                    ? ctrl.stopGeneration
-                    : () => {
-                        void ctrl.sendMessageWithTelemetry();
-                    }
-            }
-            disabled={!isLoading && !hasContent}
-            className={btnClass}
-            aria-label={isLoading ? ctrl.t('common.stop') : ctrl.t('common.send')}
-            aria-busy={isLoading}
-            aria-live="polite"
-        >
-            <SendIcon isLoading={isLoading} hasContent={hasContent} />
-        </button>
-    );
-};
-
-const SendIcon: React.FC<{ isLoading: boolean; hasContent: boolean }> = ({
-    isLoading,
-    hasContent,
-}) => {
-    const Icon = isLoading ? Square : Send;
-    const colorFill = isLoading ? 'currentColor' : 'none';
-    const iClass = cn(isLoading && 'animate-pulse', !isLoading && hasContent && 'ml-0.5');
-    return <Icon size={18} fill={colorFill} className={iClass} aria-hidden="true" />;
-};

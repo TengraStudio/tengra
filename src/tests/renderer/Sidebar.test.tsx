@@ -51,7 +51,6 @@ describe('Sidebar', () => {
                 toggleSidebar={vi.fn()}
                 currentView={'chat'}
                 onChangeView={vi.fn()}
-                onOpenSettings={vi.fn()}
                 onSearch={vi.fn()}
             />
         );

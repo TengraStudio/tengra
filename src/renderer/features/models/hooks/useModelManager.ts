@@ -254,18 +254,22 @@ export function useModelManager(
         };
 
         const persistedProvider = normalizeSelectionProvider(appSettings?.general.lastProvider);
-        const persistedPairExists = availableModels.some(m =>
-            m.id?.toLowerCase() === defaultModel?.toLowerCase() && getSelectableProviderId(m) === persistedProvider
+        const matchingDefaultModels = availableModels.filter(m => m.id?.toLowerCase() === defaultModel?.toLowerCase());
+        const resolvedPersistedProvider = persistedProvider !== ''
+            ? persistedProvider
+            : (matchingDefaultModels[0] ? getSelectableProviderId(matchingDefaultModels[0]) : '');
+        const persistedPairExists = matchingDefaultModels.some(m =>
+            getSelectableProviderId(m) === resolvedPersistedProvider
         );
-        const syncedSelection = defaultModel && persistedProvider
-            ? [{ provider: persistedProvider, model: defaultModel }]
+        const syncedSelection = defaultModel && resolvedPersistedProvider
+            ? [{ provider: resolvedPersistedProvider, model: defaultModel }]
             : [];
         const isSelectionSynced =
             selectedModel === defaultModel &&
-            selectedProvider === persistedProvider &&
+            selectedProvider === resolvedPersistedProvider &&
             areSelectionsEqual(selectedModels, syncedSelection);
 
-        if (defaultModel && persistedProvider && !persistedPairExists) {
+        if (defaultModel && matchingDefaultModels.length === 0) {
             const fallback = resolveFallback();
             if (!fallback) {
                 return;
@@ -304,13 +308,13 @@ export function useModelManager(
             return;
         }
 
-        if (defaultModel && persistedProvider && persistedPairExists) {
-            if (appSettings?.general.lastProvider !== persistedProvider) {
+        if (defaultModel && resolvedPersistedProvider && persistedPairExists) {
+            if (appSettings?.general.lastProvider !== resolvedPersistedProvider) {
                 setAppSettings({
                     ...appSettings,
                     general: {
                         ...appSettings.general,
-                        lastProvider: persistedProvider
+                        lastProvider: resolvedPersistedProvider
                     }
                 });
             }
@@ -319,7 +323,7 @@ export function useModelManager(
             }
 
             setSelectedModel(defaultModel);
-            setSelectedProvider(persistedProvider);
+            setSelectedProvider(resolvedPersistedProvider);
             setSelectedModels(syncedSelection);
             return;
         }

@@ -34,7 +34,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 <img src={logo} alt={t('welcome.logoAlt')} />
             </div>
             <div className="space-y-3 shadow-sm">
-                <h1 className="text-4xl font-black tracking-tight text-foreground mb-2">{t('welcome.title')}</h1>
+                <h1 className="text-4xl font-bold text-foreground mb-2">{t('welcome.title')}</h1>
                 <p className="text-muted-foreground text-base max-w-md mx-auto">{t('welcome.tagline')}</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl mt-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">

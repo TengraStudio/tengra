@@ -4,6 +4,8 @@ import React from 'react';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
+import './breadcrumb.css';
+
 export interface BreadcrumbItem {
     label: string
     onClick?: () => void
@@ -29,23 +31,23 @@ export function Breadcrumb({
 
     return (
         <nav 
-            className={cn("flex items-center gap-2 text-sm", className)}
+            className={cn("tengra-breadcrumb", className)}
             aria-label={t('aria.breadcrumb')}
         >
-            <ol className="flex items-center gap-2">
+            <ol className="tengra-breadcrumb__list">
                 {showHome && (
                     <>
                         <li>
                             <button
                                 onClick={() => items[0]?.onClick?.()}
-                                className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                                className="tengra-breadcrumb__home"
                                 aria-label={t('aria.home')}
                             >
                                 <Home className="w-4 h-4" />
                             </button>
                         </li>
                         {items.length > 0 && (
-                            <li className="flex items-center" aria-hidden="true">
+                            <li className="tengra-breadcrumb__item" aria-hidden="true">
                                 {separator}
                             </li>
                         )}
@@ -54,29 +56,29 @@ export function Breadcrumb({
                 {items.map((item, index) => {
                     const isLast = index === items.length - 1;
                     return (
-                        <li key={index} className="flex items-center gap-2">
+                        <li key={index} className="tengra-breadcrumb__item">
                             {item.onClick && !isLast ? (
                                 <button
                                     onClick={item.onClick}
-                                    className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                                    className="tengra-breadcrumb__link"
                                 >
-                                    {item.icon && <span className="flex-shrink-0">{item.icon}</span>}
+                                    {item.icon && <span className="tengra-breadcrumb__icon">{item.icon}</span>}
                                     <span className="truncate max-w-48">{item.label}</span>
                                 </button>
                             ) : (
                                 <span 
                                     className={cn(
-                                        "flex items-center gap-1.5 truncate max-w-48",
-                                        isLast ? "text-foreground font-medium" : "text-muted-foreground"
+                                        "tengra-breadcrumb__text",
+                                        isLast && "tengra-breadcrumb__text--active"
                                     )}
                                     aria-current={isLast ? 'page' : undefined}
                                 >
-                                    {item.icon && <span className="flex-shrink-0">{item.icon}</span>}
+                                    {item.icon && <span className="tengra-breadcrumb__icon">{item.icon}</span>}
                                     {item.label}
                                 </span>
                             )}
                             {!isLast && (
-                                <span className="flex items-center" aria-hidden="true">
+                                <span className="tengra-breadcrumb__separator" aria-hidden="true">
                                     {separator}
                                 </span>
                             )}

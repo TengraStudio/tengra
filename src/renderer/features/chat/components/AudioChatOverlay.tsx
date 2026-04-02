@@ -223,7 +223,7 @@ export function AudioChatOverlay({
                             key={state}
                             initial={{ opacity: 0, scale: 0.9, y: 10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            className="text-4xl font-black tracking-tight uppercase font-sans"
+                            className="text-4xl font-bold font-sans"
                         >
                             {config.title}
                         </motion.h2>

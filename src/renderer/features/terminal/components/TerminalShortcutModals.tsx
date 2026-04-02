@@ -37,7 +37,7 @@ export function TerminalShortcutModals({
                 onChange={onImport}
             />
             <div className="pt-1 border-t border-border/50 space-y-1">
-                <div className="tw-text-10 uppercase tracking-wide text-muted-foreground">
+                <div className="tw-text-10 text-muted-foreground">
                     {t('terminal.shortcutPresetLabel')}
                 </div>
                 <div className="grid grid-cols-3 gap-1">

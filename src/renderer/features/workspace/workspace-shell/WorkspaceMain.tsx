@@ -1,5 +1,12 @@
 import { EditorTabs } from '@renderer/features/workspace/workspace-explorer/EditorTabs';
-import React from 'react';
+import {
+    FC,
+    lazy,
+    Suspense,
+    useEffect,
+    useRef,
+    useState,
+} from 'react';
 
 import { LazyWorkspaceEditor, LoadingSpinner } from '@/components/lazy';
 import { Language } from '@/i18n';
@@ -7,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { EditorTab, Workspace, WorkspaceDashboardTab } from '@/types';
 import { performanceMonitor } from '@/utils/performance';
 
-const WorkspaceDashboard = React.lazy(() =>
+const WorkspaceDashboard = lazy(() =>
     import('@renderer/features/workspace/workspace-dashboard/WorkspaceDashboard').then(m => ({
         default: m.WorkspaceDashboard,
     }))
@@ -41,7 +48,7 @@ interface WorkspaceMainProps {
     onOpenFile?: (path: string, line?: number) => void;
 }
 
-export const WorkspaceMain: React.FC<WorkspaceMainProps> = ({
+export const WorkspaceMain: FC<WorkspaceMainProps> = ({
     dashboardTab,
     openTabs,
     activeTabId,
@@ -68,18 +75,18 @@ export const WorkspaceMain: React.FC<WorkspaceMainProps> = ({
     selectedEntry,
     onOpenFile,
 }) => {
-    const touchStartRef = React.useRef<{ x: number; y: number } | null>(null);
-    const [hasActivatedEditor, setHasActivatedEditor] = React.useState(
+    const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+    const [hasActivatedEditor, setHasActivatedEditor] = useState(
         dashboardTab === 'editor'
     );
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (dashboardTab === 'editor') {
             setHasActivatedEditor(true);
         }
     }, [dashboardTab]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (!performanceMonitor.hasMark('workspace:shell:ready')) {
             performanceMonitor.mark('workspace:shell:ready');
         }
@@ -160,7 +167,7 @@ export const WorkspaceMain: React.FC<WorkspaceMainProps> = ({
                 )}
 
                 {dashboardTab !== 'editor' && (
-                    <React.Suspense
+                    <Suspense
                         fallback={
                             <div className="absolute inset-0 z-10 bg-background">
                                 <div className="flex h-full items-center justify-center">
@@ -187,7 +194,7 @@ export const WorkspaceMain: React.FC<WorkspaceMainProps> = ({
                                 onOpenFile={onOpenFile}
                             />
                         </div>
-                    </React.Suspense>
+                    </Suspense>
                 )}
             </div>
         </div>

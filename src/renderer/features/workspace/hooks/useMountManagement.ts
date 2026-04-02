@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 
 import { recordWorkspacesPageHealthEvent } from '@/store/workspaces-page-health.store';
 import { MountForm, WorkspaceMount } from '@/types';
+import { normalizeDirectorySelectionResult } from '@/utils/directory-selection.util';
 import { appLogger } from '@/utils/renderer-logger';
 
 import {
@@ -264,7 +265,7 @@ export function useMountManagement({
     }, [t]);
 
     const pickLocalFolder = useCallback(async () => {
-        const result = await window.electron.selectDirectory();
+        const result = normalizeDirectorySelectionResult(await window.electron.selectDirectory());
         if (result.success && result.path) {
             setMountForm(prev => ({ ...prev, rootPath: result.path || '' }));
         }

@@ -53,10 +53,20 @@ export interface TaskProcess {
 export class ProcessService extends EventEmitter {
     private processes: Map<string, TaskProcess> = new Map();
     private shell: string;
+    private shellArgsPrefix: string[];
 
     constructor() {
         super();
-        this.shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
+        if (os.platform() === 'win32') {
+            this.shell = 'powershell.exe';
+            this.shellArgsPrefix = ['-Command'];
+            return;
+        }
+
+        this.shell = (process.env.SHELL && process.env.SHELL.trim().length > 0)
+            ? process.env.SHELL
+            : 'bash';
+        this.shellArgsPrefix = ['-c'];
     }
 
     // --- Task Runner (2.2.21) ---
@@ -81,7 +91,7 @@ export class ProcessService extends EventEmitter {
 
         const commandLine = `${quoteShellArg(resolvedCommand)} ${safeArgs.join(' ')}`;
 
-        const ptyProcess = pty.spawn(this.shell, ['-Command', commandLine], {
+        const ptyProcess = pty.spawn(this.shell, [...this.shellArgsPrefix, commandLine], {
             name: 'xterm-color',
             cols: 80,
             rows: 30,

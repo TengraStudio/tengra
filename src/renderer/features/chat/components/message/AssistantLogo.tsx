@@ -23,7 +23,7 @@ const MessageIcon = ({ short, color, title }: MessageIconProps) => (
         )}
         title={title}
     >
-        <span className={cn('font-black text-xxs', `text-${color}-400`)}>{short}</span>
+        <span className={cn('font-bold text-xxs', `text-${color}-400`)}>{short}</span>
     </div>
 );
 

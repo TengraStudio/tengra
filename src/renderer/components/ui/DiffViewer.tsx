@@ -4,8 +4,11 @@ import React, { useEffect, useState } from 'react';
 
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 import { ensureMonacoInitialized } from '@/utils/monaco-loader.util';
 import { appLogger } from '@/utils/renderer-logger';
+
+import './diff-viewer.css';
 
 interface DiffViewerProps {
     original: string;
@@ -44,7 +47,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
     }, []);
 
     return (
-        <div className={`relative w-full h-full overflow-hidden ${className}`}>
+        <div className={cn('tengra-diff-viewer', className)}>
             {isMonacoReady ? (
                 <DiffEditor
                     height="100%"
@@ -53,8 +56,8 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
                     modified={modified}
                     theme={isLight ? 'light' : 'vs-dark'}
                     loading={
-                        <div className="flex items-center justify-center h-full text-muted-foreground">
-                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                        <div className="tengra-diff-viewer__loading">
+                            <Loader2 className="tengra-diff-viewer__spinner" />
                             {t('diffViewer.loading')}
                         </div>
                     }
@@ -63,14 +66,14 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
                         renderSideBySide: true,
                         minimap: { enabled: false },
                         scrollBeyondLastLine: false,
-                        fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                        fontFamily: "var(--font-sans)",
                         fontSize: 13,
                         originalEditable: false, // Specifically make original read-only
                     }}
                 />
             ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                <div className="tengra-diff-viewer__loading">
+                    <Loader2 className="tengra-diff-viewer__spinner" />
                     {t('diffViewer.loading')}
                 </div>
             )}

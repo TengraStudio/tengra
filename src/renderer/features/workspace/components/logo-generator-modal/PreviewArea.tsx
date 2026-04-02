@@ -1,6 +1,8 @@
 import { Check, ImageIcon, Loader2, Sparkles } from 'lucide-react';
 import React, { useCallback } from 'react';
 
+import { toSafeFileUrl } from '@/utils/safe-file-url.util';
+
 interface PreviewAreaProps {
     isGenerating: boolean;
     generatedLogo: string | null;
@@ -20,6 +22,8 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
     translateKey,
     prompt,
 }) => {
+    const generatedLogoUrl = toSafeFileUrl(generatedLogo);
+
     const handleGenerateClick = useCallback(() => {
         void onGenerate();
     }, [onGenerate]);
@@ -39,29 +43,29 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
                     <div className="text-center space-y-3 p-8">
                         <Sparkles className="w-12 h-12 mx-auto animate-bounce text-primary" />
                         <div className="space-y-1">
-                            <p className="text-xs font-bold text-foreground uppercase tracking-widest">
+                            <p className="text-xs font-bold text-foreground">
                                 {translateKey('workspaces.generating')}
                             </p>
-                            <p className="text-xxs text-muted-foreground italic">
+                            <p className="text-xxs text-muted-foreground">
                                 {translateKey('workspaces.logoGeneratingSubtitle')}
                             </p>
                         </div>
                     </div>
-                ) : generatedLogo ? (
+                ) : generatedLogoUrl ? (
                     <img
-                        src={`safe-file://${generatedLogo}`}
+                        src={generatedLogoUrl}
                         alt={translateKey('workspaces.generatedAlt')}
                         className="w-full h-full object-cover animate-in zoom-in-95 duration-500"
                     />
                 ) : (
                     <div className="text-center p-8 opacity-40">
                         <ImageIcon className="w-16 h-16 mx-auto mb-4 text-primary/40" />
-                        <p className="text-xs uppercase font-bold tracking-widest mb-4">
+                        <p className="text-xs font-bold mb-4">
                             {translateKey('workspaces.preview')}
                         </p>
                         <button
                             onClick={handleManualUploadClick}
-                            className="px-4 py-2 bg-muted/20 hover:bg-muted/30 border border-border/50 rounded-lg text-xxs font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
+                            className="px-4 py-2 bg-muted/20 hover:bg-muted/30 border border-border/50 rounded-lg text-xxs font-bold transition-all hover:scale-105 active:scale-95"
                         >
                             {translateKey('workspaces.uploadOriginal')}
                         </button>
@@ -73,13 +77,13 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
                 <button
                     onClick={handleGenerateClick}
                     disabled={isGenerating || !prompt}
-                    className="flex-1 py-4 bg-primary text-primary-foreground rounded-xl font-black text-sm hover:bg-primary/90 transition-all disabled:opacity-50 tw-active-scale-98 flex items-center justify-center gap-2 shadow-xl shadow-primary/20 uppercase tracking-widest"
+                    className="flex-1 py-4 bg-primary text-primary-foreground rounded-xl font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 tw-active-scale-98 flex items-center justify-center gap-2 shadow-xl shadow-primary/20"
                 >
                     <Sparkles className="w-4 h-4" />
                     {translateKey('workspaces.generate')}
                 </button>
 
-                {generatedLogo ? (
+                {generatedLogoUrl ? (
                     <button
                         onClick={handleApplyClick}
                         disabled={isGenerating}

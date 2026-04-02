@@ -1,4 +1,6 @@
-import { buildSystemPrompt, SupportedLanguage } from '@shared/instructions';
+import { buildSystemPrompt } from '@shared/instructions';
+
+import type { Language } from '@/i18n';
 
 export interface BrandConfig {
     name: string
@@ -14,9 +16,9 @@ export const TENGRA_BRAND: BrandConfig = {
     description: 'A high-performance, intelligent OS Assistant with deep local system integration.'
 };
 
-export function getSystemPrompt(language: 'tr' | 'en' = 'tr', _personaPrompt?: string, provider?: string, model?: string) {
+export function getSystemPrompt(language: Language = 'en', _personaPrompt?: string, provider?: string, model?: string) {
     return buildSystemPrompt({
-        language: language as SupportedLanguage,
+        language,
         provider,
         model
     });

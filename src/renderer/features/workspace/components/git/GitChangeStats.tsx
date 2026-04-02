@@ -32,7 +32,7 @@ export const GitChangeStats: React.FC<ChangeStatsProps> = ({ diffStats, gitData,
 
         {gitData.changedFiles.length > 0 && (
             <div className="flex flex-col gap-4">
-                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{t('workspaceDashboard.changedFiles')}</h4>
+                <h4 className="text-xs font-bold text-muted-foreground">{t('workspaceDashboard.changedFiles')}</h4>
 
                 {gitData.stagedFiles.length > 0 && (
                     <div className="space-y-2">

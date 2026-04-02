@@ -2,13 +2,13 @@ import { randomUUID } from 'crypto';
 
 import { appLogger } from '@main/logging/logger';
 import { McpDispatcher } from '@main/mcp/dispatcher';
+import { FileManagementService } from '@main/services/data/file.service';
+import { FileSystemService } from '@main/services/data/filesystem.service';
 import { WebService } from '@main/services/external/web.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
 import { MemoryService } from '@main/services/llm/memory.service';
-import { FileManagementService } from '@main/services/data/file.service';
-import { FileSystemService } from '@main/services/data/filesystem.service';
 import { SecurityService } from '@main/services/security/security.service';
 import { CommandService } from '@main/services/system/command.service';
 import { EventBusService } from '@main/services/system/event-bus.service';

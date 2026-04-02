@@ -21,7 +21,7 @@ export const WorkspaceSection: React.FC<WorkspaceSectionProps> = ({
     <section className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="flex items-center justify-between">
             <div>
-                <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-1 flex items-center gap-2">
+                <h3 className="text-sm font-bold text-foreground mb-1 flex items-center gap-2">
                     <FolderTree className="w-4 h-4 text-primary" />
                     {t('workspaces.mounts')}
                 </h3>
@@ -75,7 +75,7 @@ export const WorkspaceSection: React.FC<WorkspaceSectionProps> = ({
         </div>
 
         <div className="pt-6 border-t border-destructive/20">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-destructive">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-destructive">
                 <Trash2 className="h-4 w-4" />
                 {t('workspace.dangerZone')}
             </h3>

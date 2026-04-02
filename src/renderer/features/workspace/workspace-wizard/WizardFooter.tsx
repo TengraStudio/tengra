@@ -1,7 +1,7 @@
+import { Button } from '@renderer/components/ui/button';
+import { cn } from '@renderer/lib/utils';
 import { ArrowRight, Check, ChevronLeft, Loader2 } from 'lucide-react';
 import React from 'react';
-
-import { cn } from '@/lib/utils';
 
 interface WizardFooterProps {
     step: 'selection' | 'details' | 'ssh-connection' | 'ssh-browser' | 'creating';
@@ -58,39 +58,35 @@ export const WizardFooter: React.FC<WizardFooterProps> = ({
         return nextLabel;
     };
 
-    const getButtonColor = () => {
-        if (step === 'ssh-connection') {
-            return "bg-primary text-foreground shadow-primary/30";
-        }
-        return "bg-primary text-primary-foreground shadow-primary/30 hover:shadow-primary/50";
-    };
-
     return (
         <div className="flex justify-between items-center pt-6 border-t border-border/30 mt-6 bg-card/50 backdrop-blur-sm -mx-8 px-8 pb-2">
-            <button
+            <Button
+                variant="ghost"
                 onClick={onBack}
                 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-all group px-4 py-2 rounded-xl hover:bg-muted/30 border border-transparent hover:border-border/40"
             >
                 <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-200" />
                 <span>{backLabel}</span>
-            </button>
+            </Button>
 
             <div className="flex gap-4">
                 {step !== 'selection' && (
-                    <button
+                    <Button
                         onClick={onNext}
                         disabled={isNextDisabled}
                         className={cn(
-                            'px-8 py-3 rounded-xl font-bold text-sm tracking-tight transition-all disabled:opacity-40 disabled:grayscale flex items-center gap-3 shadow-lg relative overflow-hidden group/btn hover:brightness-105 tw-active-scale-98',
-                            getButtonColor()
+                            'h-auto py-3 px-8 rounded-xl font-bold text-sm  transition-all flex items-center gap-3 shadow-lg relative overflow-hidden group/btn hover:brightness-105 active:scale-95',
+                            step === 'ssh-connection' 
+                                ? 'bg-primary text-primary-foreground shadow-primary/30' 
+                                : 'bg-primary text-primary-foreground shadow-primary/30 hover:shadow-primary/50'
                         )}
                     >
-                        <div className="absolute inset-0 bg-muted/60 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+                        <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300 pointer-events-none" />
                         <span className="relative z-10">{getButtonLabel()}</span>
                         <div className="relative z-10 p-1.5 bg-background/40 rounded-xl group-hover/btn:translate-x-1 transition-all duration-300">
                             {getButtonContent()}
                         </div>
-                    </button>
+                    </Button>
                 )}
             </div>
         </div>

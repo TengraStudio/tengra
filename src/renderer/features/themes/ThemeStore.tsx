@@ -105,27 +105,27 @@ const ThemePreviewModal: React.FC<{
     onClose: () => void;
     t: (key: string) => string;
 }> = ({ theme, onApply, onClose, t }) => (
-    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-        <div onClick={(e) => e.stopPropagation()} className="bg-card rounded-xl max-w-lg w-full overflow-hidden shadow-2xl">
-            <div className="h-40" style={{ background: theme.preview }} />
-            <div className="p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm" onClick={onClose}>
+        <div onClick={(e) => e.stopPropagation()} className="flex max-h-[min(88vh,44rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-border/30 bg-card shadow-lg">
+            <div className="h-32 sm:h-40" style={{ background: theme.preview }} />
+            <div className="overflow-y-auto p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-xl font-bold">{theme.name}</h2>
+                    <h2 className="text-xl font-semibold">{theme.name}</h2>
                     <div className="flex items-center gap-1 text-warning"><Star className="w-4 h-4 fill-current" /><span>{theme.rating}</span></div>
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">{t('themeStore.by')} {theme.author}</p>
                 <p className="text-sm mb-4">{theme.description}</p>
-                <div className="flex gap-2 mb-4">
+                <div className="mb-4 flex flex-wrap gap-2">
                     {Object.entries(theme.colors).map(([name, color]) => (
                         <div key={name} className="flex flex-col items-center">
-                            <div className="w-8 h-8 rounded-lg border border-border/30 shadow-sm" style={{ background: color }} />
+                            <div className="h-8 w-8 rounded-lg border border-border/30" style={{ background: color }} />
                             <span className="text-xxs text-muted-foreground mt-1 capitalize">{name}</span>
                         </div>
                     ))}
                 </div>
-                <div className="flex gap-2">
-                    <button onClick={() => onApply(theme.id)} className="flex-1 py-2 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:bg-primary/90">{t('themeStore.apply')}</button>
-                    <button onClick={onClose} className="px-4 py-2 bg-muted text-muted-foreground rounded-lg font-medium text-sm hover:bg-muted/80">{t('common.cancel')}</button>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                    <button onClick={() => onApply(theme.id)} className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">{t('themeStore.apply')}</button>
+                    <button onClick={onClose} className="rounded-lg bg-muted px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/80">{t('common.cancel')}</button>
                 </div>
             </div>
         </div>

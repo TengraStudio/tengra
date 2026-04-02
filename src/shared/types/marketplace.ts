@@ -6,7 +6,9 @@ export interface MarketplaceItem {
   version: string;
   downloadUrl: string;
   previewUrl?: string;
-  itemType: 'theme' | 'mcp' | 'persona' | 'model' | 'prompt';
+  itemType: 'theme' | 'mcp' | 'persona' | 'model' | 'prompt' | 'language';
+  installed?: boolean;
+  installedVersion?: string;
 }
 
 export interface MarketplaceTheme extends MarketplaceItem {
@@ -31,6 +33,14 @@ export interface MarketplacePrompt extends MarketplaceItem {
   category: string;
 }
 
+export interface MarketplaceLanguage extends MarketplaceItem {
+  locale: string;
+  nativeName: string;
+  rtl?: boolean;
+  coverage?: number;
+  schemaVersion?: string;
+}
+
 export interface MarketplaceRegistry {
   version: string;
   lastUpdated: string;
@@ -39,10 +49,11 @@ export interface MarketplaceRegistry {
   personas?: MarketplacePersona[];
   models?: MarketplaceModel[];
   prompts?: MarketplacePrompt[];
+  languages?: MarketplaceLanguage[];
 }
 
 export interface InstallRequest {
-  type: 'theme' | 'mcp' | 'persona' | 'model' | 'prompt';
+  type: 'theme' | 'mcp' | 'persona' | 'model' | 'prompt' | 'language';
   id: string;
   downloadUrl: string;
 }

@@ -2,6 +2,8 @@ import React from 'react';
 
 import { cn } from '@/lib/utils';
 
+import './typing-indicator.css';
+
 interface TypingIndicatorProps {
     className?: string
     size?: 'sm' | 'md' | 'lg'
@@ -24,27 +26,15 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = React.memo(({
     size = 'md',
     label
 }) => {
-    const dotSizes = {
-        sm: 'w-1.5 h-1.5',
-        md: 'w-2 h-2',
-        lg: 'w-2.5 h-2.5'
-    };
-
-    const gapSizes = {
-        sm: 'gap-1',
-        md: 'gap-1.5',
-        lg: 'gap-2'
-    };
-
     return (
-        <div className={cn('flex items-center', gapSizes[size], className)}>
-            <div className="typing-indicator flex items-center gap-1">
-                <span className={cn('rounded-full bg-primary/60', dotSizes[size])} />
-                <span className={cn('rounded-full bg-primary/60', dotSizes[size])} />
-                <span className={cn('rounded-full bg-primary/60', dotSizes[size])} />
+        <div className={cn('tengra-typing-indicator', `tengra-typing-indicator--${size}`, className)}>
+            <div className="tengra-typing-indicator__dots">
+                <span className="tengra-typing-indicator__dot" />
+                <span className="tengra-typing-indicator__dot" />
+                <span className="tengra-typing-indicator__dot" />
             </div>
             {label && (
-                <span className="text-xs text-muted-foreground ml-2">{label}</span>
+                <span className="tengra-typing-indicator__label">{label}</span>
             )}
         </div>
     );

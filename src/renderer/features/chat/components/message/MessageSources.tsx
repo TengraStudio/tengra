@@ -26,7 +26,7 @@ export const MessageSources = memo(
         }
         return (
             <div className="flex flex-wrap gap-2 mt-3 animate-fade-in">
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-primary/5 border border-primary/10 text-xxs text-primary font-bold uppercase tracking-wider mb-1">
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-primary/5 border border-primary/10 text-xxs text-primary font-bold mb-1">
                     <Sparkles className="w-3 h-3" />
                     {t('chat.sources')}
                 </div>

@@ -5,6 +5,8 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 
+import './sidebar-item.css';
+
 export interface SidebarItemProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     icon: LucideIcon;
     label: string;
@@ -25,11 +27,11 @@ function getButtonClassName(
     className?: string
 ): string {
     const baseClasses = cn(
-        'w-full flex items-center px-3 py-2 rounded-lg text-sm transition-colors duration-200 border border-transparent',
-        isCollapsed ? 'justify-center px-0' : 'gap-3'
+        'tengra-sidebar-item__button',
+        isCollapsed && 'tengra-sidebar-item__button--collapsed'
     );
-    const activeClasses = 'bg-primary/10 text-primary font-medium border-primary/5 shadow-sm';
-    const inactiveClasses = 'text-muted-foreground hover:text-foreground hover:bg-muted/30';
+    const activeClasses = 'tengra-sidebar-item__button--active';
+    const inactiveClasses = 'tengra-sidebar-item__button--inactive';
     const glassClasses =
         variant === 'glass' && !active ? 'hover:bg-background/40 hover:backdrop-blur-sm' : '';
 
@@ -51,10 +53,10 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
     iconClassName,
     ...props
 }) => (
-    <div className="group/item relative">
+    <div className="group/item tengra-sidebar-item">
         {active && (
             <motion.div
-                className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-primary rounded-r-full z-10"
+                className="tengra-sidebar-item__active-indicator"
                 initial={{ opacity: 0, x: -4 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -4 }}

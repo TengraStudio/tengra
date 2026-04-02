@@ -10,12 +10,34 @@ function getPort() {
     return process.parentPort || null;
 }
 
-function postResponse(requestId, success, payload, error) {
+function sendMessage(message) {
     const port = getPort();
-    if (!port) {
-        return;
+    if (port) {
+        port.postMessage(message);
+        return true;
     }
-    port.postMessage({ requestId, success, payload, error });
+
+    if (typeof process.send === 'function') {
+        process.send(message);
+        return true;
+    }
+
+    return false;
+}
+
+function postResponse(requestId, success, payload, error) {
+    sendMessage({ requestId, success, payload, error });
+}
+
+function registerMessageHandler(handler) {
+    const port = getPort();
+    if (port) {
+        port.on('message', handler);
+        return true;
+    }
+
+    process.on('message', handler);
+    return true;
 }
 
 function snapshot() {
@@ -34,54 +56,51 @@ function pushEvents(events) {
     }
 }
 
-const port = getPort();
-if (port) {
-    port.on('message', (message) => {
-        const requestId = typeof message?.requestId === 'string' ? message.requestId : '';
-        const type = typeof message?.type === 'string' ? message.type : '';
-        const payload = message?.payload ?? null;
+registerMessageHandler((message) => {
+    const requestId = typeof message?.requestId === 'string' ? message.requestId : '';
+    const type = typeof message?.type === 'string' ? message.type : '';
+    const payload = message?.payload ?? null;
 
-        try {
-            if (type === 'telemetry.track') {
-                const events = Array.isArray(payload?.events)
-                    ? payload.events
-                    : payload?.event
-                        ? [payload.event]
-                        : [];
-                pushEvents(events);
-                postResponse(requestId, true, snapshot());
-                return;
-            }
-
-            if (type === 'telemetry.flush') {
-                const flushedCount = queue.length;
-                queue.length = 0;
-                totalFlushedEvents += flushedCount;
-                lastFlushTime = Date.now();
-                postResponse(requestId, true, {
-                    flushedCount,
-                    state: snapshot(),
-                });
-                return;
-            }
-
-            if (type === 'telemetry.snapshot') {
-                postResponse(requestId, true, snapshot());
-                return;
-            }
-
-            if (type === 'telemetry.reset') {
-                queue.length = 0;
-                totalTrackedEvents = 0;
-                totalFlushedEvents = 0;
-                lastFlushTime = null;
-                postResponse(requestId, true, snapshot());
-                return;
-            }
-
-            postResponse(requestId, false, null, `Unsupported telemetry worker message: ${type}`);
-        } catch (error) {
-            postResponse(requestId, false, null, error instanceof Error ? error.message : String(error));
+    try {
+        if (type === 'telemetry.track') {
+            const events = Array.isArray(payload?.events)
+                ? payload.events
+                : payload?.event
+                    ? [payload.event]
+                    : [];
+            pushEvents(events);
+            postResponse(requestId, true, snapshot());
+            return;
         }
-    });
-}
+
+        if (type === 'telemetry.flush') {
+            const flushedCount = queue.length;
+            queue.length = 0;
+            totalFlushedEvents += flushedCount;
+            lastFlushTime = Date.now();
+            postResponse(requestId, true, {
+                flushedCount,
+                state: snapshot(),
+            });
+            return;
+        }
+
+        if (type === 'telemetry.snapshot') {
+            postResponse(requestId, true, snapshot());
+            return;
+        }
+
+        if (type === 'telemetry.reset') {
+            queue.length = 0;
+            totalTrackedEvents = 0;
+            totalFlushedEvents = 0;
+            lastFlushTime = null;
+            postResponse(requestId, true, snapshot());
+            return;
+        }
+
+        postResponse(requestId, false, null, `Unsupported telemetry worker message: ${type}`);
+    } catch (error) {
+        postResponse(requestId, false, null, error instanceof Error ? error.message : String(error));
+    }
+});

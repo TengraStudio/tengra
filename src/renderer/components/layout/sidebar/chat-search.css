@@ -1,0 +1,17 @@
+:root {
+    --sidebar-chat-search-input-bg: hsl(var(--muted) / 20%);
+    --sidebar-chat-search-input-border: hsl(var(--border) / 40%);
+}
+
+.tengra-chat-search {
+    padding: 0.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.tengra-chat-search__input {
+    width: 100%;
+    background: var(--sidebar-chat-search-input-bg);
+    border: 1px solid var(--sidebar-chat-search-input-border);
+}

@@ -6,10 +6,8 @@ import type {
 } from '@shared/types/workspace-agent-session';
 import {
     Check,
-    ChevronRight,
     Map,
     Send,
-    SlidersHorizontal,
     Square,
 } from 'lucide-react';
 import React from 'react';
@@ -22,7 +20,6 @@ import { Textarea } from '@/components/ui/textarea';
 import type { AppSettings, CodexUsage, GroupedModels, QuotaResponse } from '@/types';
 
 import { WorkspaceAgentCouncilSetup } from './WorkspaceAgentCouncilSetup';
-import { WorkspaceAgentPermissionEditor } from './WorkspaceAgentPermissionEditor';
 
 export type WorkspaceAgentComposerPreset = 'default-agent' | 'plan' | 'agent';
 
@@ -90,8 +87,6 @@ function buildPresetOptions(t: (key: string) => string): ComposerPresetOption[] 
     ];
 }
 
-type SettingsSubmenu = 'commands' | 'paths' | 'profile' | null;
-
 export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
     currentSession,
     currentModes,
@@ -119,8 +114,6 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
     codexUsage,
     t,
 }) => {
-    const [submenu, setSubmenu] = React.useState<SettingsSubmenu>(null);
-
     const handleEnter = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
@@ -134,19 +127,6 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
 
     const permissionPolicy = currentSession?.permissionPolicy ?? currentPermissionPolicy;
     const presetOptions = React.useMemo(() => buildPresetOptions(t), [t]);
-    
-    const commandOptions = React.useMemo(() => [
-        { value: 'blocked', title: t('workspaceAgent.permissions.policy.blocked') },
-        { value: 'ask-every-time', title: t('workspaceAgent.permissions.policy.ask-every-time') },
-        { value: 'allowlist', title: t('workspaceAgent.permissions.policy.allowlist') },
-        { value: 'full-access', title: t('workspaceAgent.permissions.policy.full-access') },
-    ], [t]);
-
-    const pathOptions = React.useMemo(() => [
-        { value: 'workspace-root-only', title: t('workspaceAgent.permissions.policy.workspace-root-only') },
-        { value: 'allowlist', title: t('workspaceAgent.permissions.policy.allowlist') },
-        { value: 'restricted-off-dangerous', title: t('workspaceAgent.permissions.policy.restricted-off-dangerous') },
-    ], [t]);
 
     const selectedPreset = React.useMemo(
         () =>
@@ -161,9 +141,6 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
         },
         [onUpdatePermissionPolicy]
     );
-
-    const selectedCommandPolicy = commandOptions.find(o => o.value === permissionPolicy.commandPolicy);
-    const selectedPathPolicy = pathOptions.find(o => o.value === permissionPolicy.pathPolicy);
 
     return (
         <div className="border-t border-border/5 bg-background/30 p-3">
@@ -212,164 +189,43 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                         <Button
                             type="button"
                             variant="outline"
-                            title={`${t('workspaceAgent.permissions.title')}: ${selectedPreset.title} · ${selectedCommandPolicy?.title} · ${selectedPathPolicy?.title}`}
+                            title={t('workspaceAgent.permissions.profile')}
                             className="h-10 w-10 shrink-0 flex items-center justify-center rounded-xl border-border/10 bg-background/30 hover:bg-background/40 transition-colors p-0"
                         >
-                            <SlidersHorizontal className="h-4 w-4 text-muted-foreground/60" />
+                            <span className="text-xs font-bold text-muted-foreground/60">
+                                {selectedPreset.value === 'default-agent' ? 'A' : selectedPreset.value === 'plan' ? 'P' : 'E'}
+                            </span>
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent
                         align="start"
-                        className="relative tw-w-300 rounded-2xl border border-border/40 bg-background/95 p-1.5 shadow-none"
+                        className="relative tw-w-280 rounded-2xl border border-border/40 bg-background/95 p-1.5 shadow-none animate-in fade-in zoom-in-95 duration-200"
                     >
-                        <div className="px-3 py-2 tw-text-10 font-black uppercase tw-tracking-20 text-muted-foreground/30 border-b border-border/30 mb-1.5">
-                            {t('workspaceAgent.permissions.title')}
-                        </div> 
-                        <div className="space-y-0.5">
-                            <button
-                                type="button"
-                                className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all hover:bg-muted/40 group"
-                                onMouseEnter={() => setSubmenu('profile')}
-                                onFocus={() => setSubmenu('profile')}
-                            >
-                                <span className="min-w-0">
-                                    <span className="block tw-text-10 font-bold text-muted-foreground/40 uppercase tracking-widest mb-0.5">
-                                        {t('workspaceAgent.permissions.profile')}
-                                    </span>
-                                    <span className="block truncate text-sm font-semibold text-foreground/90">
-                                        {selectedPreset.title}
-                                    </span>
-                                </span>
-                                <ChevronRight className="h-4 w-4 text-muted-foreground/20 group-hover:text-muted-foreground/50 transition-colors" />
-                            </button>
-                            <button
-                                type="button"
-                                className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all hover:bg-muted/40 group"
-                                onMouseEnter={() => setSubmenu('commands')}
-                                onFocus={() => setSubmenu('commands')}
-                            >
-                                <span className="min-w-0">
-                                    <span className="block tw-text-10 font-bold text-muted-foreground/40 uppercase tracking-widest mb-0.5">
-                                        {t('workspaceAgent.permissions.commands')}
-                                    </span>
-                                    <span className="block truncate text-sm font-semibold text-foreground/90">
-                                        {selectedCommandPolicy?.title}
-                                    </span>
-                                </span>
-                                <ChevronRight className="h-4 w-4 text-muted-foreground/20 group-hover:text-muted-foreground/50 transition-colors" />
-                            </button>
-                            <button
-                                type="button"
-                                className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all hover:bg-muted/40 group"
-                                onMouseEnter={() => setSubmenu('paths')}
-                                onFocus={() => setSubmenu('paths')}
-                            >
-                                <span className="min-w-0">
-                                    <span className="block tw-text-10 font-bold text-muted-foreground/40 uppercase tracking-widest mb-0.5">
-                                        {t('workspaceAgent.permissions.files')}
-                                    </span>
-                                    <span className="block truncate text-sm font-semibold text-foreground/90">
-                                        {selectedPathPolicy?.title}
-                                    </span>
-                                </span>
-                                <ChevronRight className="h-4 w-4 text-muted-foreground/20 group-hover:text-muted-foreground/50 transition-colors" />
-                            </button>
+                        <div className="px-3 py-1.5 tw-text-10 font-bold uppercase tracking-widest text-muted-foreground/30 border-b border-border/30 mb-1.5">
+                            {t('workspaceAgent.permissions.profile')}
                         </div>
-
-                        {submenu ? (
-                            <div
-                                className="absolute tw-right-out-4 top-0 tw-w-280 rounded-2xl border border-border/40 bg-background/95 p-1.5 shadow-none animate-in fade-in slide-in-from-right-1 duration-200"
-                                onMouseLeave={() => setSubmenu(null)}
-                            >
-                                {submenu === 'profile' ? (
-                                    <>
-                                        <div className="px-3 py-1.5 tw-text-10 font-bold uppercase tracking-widest text-muted-foreground/30 border-b border-border/30 mb-1.5">
-                                            {t('workspaceAgent.permissions.profile')}
-                                        </div>
-                                        <div className="space-y-0.5">
-                                            {presetOptions.map(option => (
-                                                <button
-                                                    key={option.value}
-                                                    type="button"
-                                                    className="flex w-full items-start justify-between rounded-xl px-3 py-2.5 text-left transition-all hover:bg-muted/40 group"
-                                                    onClick={() => void onSelectPreset(option.value)}
-                                                >
-                                                    <span className="min-w-0">
-                                                        <span className="block text-sm font-bold text-foreground/90 group-hover:text-foreground transition-colors">
-                                                            {option.title}
-                                                        </span>
-                                                        <span className="block tw-text-10 text-muted-foreground/50 leading-snug mt-0.5">
-                                                            {option.description}
-                                                        </span>
-                                                    </span>
-                                                    {selectedPreset.value === option.value && (
-                                                        <Check className="ml-3 h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                                                    )}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </>
-                                ) : null}
-                                {submenu === 'commands' ? (
-                                    <>
-                                        <div className="px-3 py-1.5 tw-text-10 font-bold uppercase tracking-widest text-muted-foreground/30 border-b border-border/30 mb-1.5">
-                                            {t('workspaceAgent.permissions.commands')}
-                                        </div>
-                                        <div className="space-y-0.5">
-                                            {commandOptions.map(option => (
-                                                <button
-                                                    key={option.value}
-                                                    type="button"
-                                                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition hover:bg-muted/40 group"
-                                                    onClick={() =>
-                                                        handlePermissionUpdate({
-                                                            ...permissionPolicy,
-                                                            commandPolicy: option.value as WorkspaceAgentPermissionPolicy['commandPolicy'],
-                                                        })
-                                                    }
-                                                >
-                                                    <span className="text-sm font-bold text-foreground/90 group-hover:text-foreground transition-colors">
-                                                        {option.title}
-                                                    </span>
-                                                    {permissionPolicy.commandPolicy === option.value && (
-                                                        <Check className="ml-3 h-3.5 w-3.5 text-primary shrink-0" />
-                                                    )}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </>
-                                ) : null}
-                                {submenu === 'paths' ? (
-                                    <>
-                                        <div className="px-3 py-1.5 tw-text-10 font-bold uppercase tracking-widest text-muted-foreground/30 border-b border-border/30 mb-1.5">
-                                            {t('workspaceAgent.permissions.files')}
-                                        </div>
-                                        <div className="space-y-0.5">
-                                            {pathOptions.map(option => (
-                                                <button
-                                                    key={option.value}
-                                                    type="button"
-                                                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition hover:bg-muted/40 group"
-                                                    onClick={() =>
-                                                        handlePermissionUpdate({
-                                                            ...permissionPolicy,
-                                                            pathPolicy: option.value as WorkspaceAgentPermissionPolicy['pathPolicy'],
-                                                        })
-                                                    }
-                                                >
-                                                    <span className="text-sm font-bold text-foreground/90 group-hover:text-foreground transition-colors">
-                                                        {option.title}
-                                                    </span>
-                                                    {permissionPolicy.pathPolicy === option.value && (
-                                                        <Check className="ml-3 h-3.5 w-3.5 text-primary shrink-0" />
-                                                    )}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </>
-                                ) : null}
-                            </div>
-                        ) : null}
+                        <div className="space-y-0.5">
+                            {presetOptions.map(option => (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    className="flex w-full items-start justify-between rounded-xl px-3 py-2.5 text-left transition-all hover:bg-muted/40 group"
+                                    onClick={() => void onSelectPreset(option.value)}
+                                >
+                                    <span className="min-w-0">
+                                        <span className="block text-sm font-bold text-foreground/90 group-hover:text-foreground transition-colors">
+                                            {option.title}
+                                        </span>
+                                        <span className="block tw-text-10 text-muted-foreground/50 leading-snug mt-0.5">
+                                            {option.description}
+                                        </span>
+                                    </span>
+                                    {selectedPreset.value === option.value && (
+                                        <Check className="ml-3 h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                                    )}
+                                </button>
+                            ))}
+                        </div>
                     </PopoverContent>
                 </Popover>
 
@@ -401,17 +257,11 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                         quotas={quotas}
                         codexUsage={codexUsage}
                         isIconOnly
+                        permissionPolicy={permissionPolicy}
+                        onUpdatePermissionPolicy={handlePermissionUpdate}
                     />
                 </div>
             </div>
-
-            {permissionPolicy && (
-                <WorkspaceAgentPermissionEditor
-                    permissionPolicy={permissionPolicy}
-                    onUpdatePermissions={handlePermissionUpdate}
-                    t={t}
-                />
-            )}
         </div>
     );
 };

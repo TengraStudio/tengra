@@ -9,6 +9,7 @@ import type {
     CollaborationSyncUpdate,
     JoinCollaborationRoom,
 } from '@shared/schemas/collaboration.schema';
+import type { LocalePack } from '@shared/types/locale';
 import type {
     InstallRequest,
     InstallResult,
@@ -640,6 +641,9 @@ export interface ElectronApiIntegrationsDomain {
     marketplace: {
         fetch: () => Promise<MarketplaceRegistry>;
         install: (request: InstallRequest) => Promise<InstallResult>;
+    };
+    locale: {
+        getAll: () => Promise<LocalePack[]>;
     };
 
     // Screenshot

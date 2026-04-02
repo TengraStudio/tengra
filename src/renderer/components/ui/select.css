@@ -1,0 +1,198 @@
+/**
+ * Select Component CSS
+ * Component-specific CSS custom properties for the Select dropdown component.
+ */
+
+:root {
+  /* Trigger variables */
+  --select-trigger-height: 2.25rem;
+  --select-trigger-bg: transparent;
+  --select-trigger-border: hsl(var(--input));
+  --select-trigger-border-radius: 0.375rem;
+  --select-trigger-padding-x: 0.75rem;
+  --select-trigger-padding-y: 0.5rem;
+  --select-trigger-font-size: 0.875rem;
+  --select-trigger-fg: hsl(var(--foreground));
+  --select-trigger-placeholder: hsl(var(--muted-foreground));
+  --select-trigger-ring: hsl(var(--ring));
+  --select-trigger-shadow: 0 1px 2px 0 rgb(0 0 0 / 5%);
+  --select-trigger-disabled-opacity: 0.5;
+  --select-trigger-transition: all 0.15s ease;
+
+  /* Icon variables */
+  --select-icon-size: 1rem;
+  --select-icon-opacity: 0.5;
+
+  /* Content variables */
+  --select-content-bg: hsl(var(--popover) / 95%);
+  --select-content-fg: hsl(var(--popover-foreground));
+  --select-content-border: hsl(var(--border) / 50%);
+  --select-content-border-radius: 0.375rem;
+  --select-content-shadow: 0 25px 50px -12px rgb(0 0 0 / 25%);
+  --select-content-padding: 0.25rem;
+  --select-content-max-height: 16rem;
+  --select-content-min-width: 8rem;
+  --select-content-backdrop-blur: blur(16px);
+  --select-content-z-index: 50;
+
+  /* Item variables */
+  --select-item-padding-x: 0.5rem;
+  --select-item-padding-y: 0.375rem;
+  --select-item-border-radius: 0.125rem;
+  --select-item-font-size: 0.875rem;
+  --select-item-hover-bg: hsl(var(--accent));
+  --select-item-hover-fg: hsl(var(--accent-foreground));
+  --select-item-disabled-opacity: 0.5;
+  --select-item-transition: all 0.1s ease;
+
+  /* Indicator variables */
+  --select-indicator-size: 0.875rem;
+
+  /* Label variables */
+  --select-label-padding-x: 0.5rem;
+  --select-label-padding-y: 0.375rem;
+  --select-label-font-size: 0.875rem;
+  --select-label-font-weight: 600;
+
+  /* Separator variables */
+  --select-separator-bg: hsl(var(--muted));
+  --select-separator-margin-x: -0.25rem;
+  --select-separator-margin-y: 0.25rem;
+
+  /* Scroll button variables */
+  --select-scroll-button-padding: 0.25rem;
+}
+
+/* Select trigger */
+.tengra-select-trigger {
+  display: flex;
+  height: var(--select-trigger-height);
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  white-space: nowrap;
+  border-radius: var(--select-trigger-border-radius);
+  border: 1px solid var(--select-trigger-border);
+  background-color: var(--select-trigger-bg);
+  padding: var(--select-trigger-padding-y) var(--select-trigger-padding-x);
+  font-size: var(--select-trigger-font-size);
+  color: var(--select-trigger-fg);
+  box-shadow: var(--select-trigger-shadow);
+  transition: var(--select-trigger-transition);
+}
+
+.tengra-select-trigger:focus {
+  outline: none;
+  box-shadow: 0 0 0 1px var(--select-trigger-ring);
+}
+
+.tengra-select-trigger:disabled {
+  cursor: not-allowed;
+  opacity: var(--select-trigger-disabled-opacity);
+}
+
+.tengra-select-trigger > span {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Select icon */
+.tengra-select-icon {
+  width: var(--select-icon-size);
+  height: var(--select-icon-size);
+  opacity: var(--select-icon-opacity);
+}
+
+/* Select content */
+.tengra-select-content {
+  position: relative;
+  z-index: var(--select-content-z-index);
+  max-height: var(--select-content-max-height);
+  min-width: var(--select-content-min-width);
+  overflow: hidden;
+  border-radius: var(--select-content-border-radius);
+  border: 1px solid var(--select-content-border);
+  background-color: var(--select-content-bg);
+  backdrop-filter: var(--select-content-backdrop-blur);
+  color: var(--select-content-fg);
+  box-shadow: var(--select-content-shadow);
+}
+
+/* Select viewport */
+.tengra-select-viewport {
+  padding: var(--select-content-padding);
+}
+
+/* Select item */
+.tengra-select-item {
+  position: relative;
+  display: flex;
+  width: 100%;
+  cursor: default;
+  user-select: none;
+  align-items: center;
+  border-radius: var(--select-item-border-radius);
+  padding: var(--select-item-padding-y) var(--select-item-padding-x);
+  padding-right: 2rem;
+  font-size: var(--select-item-font-size);
+  outline: none;
+  transition: var(--select-item-transition);
+}
+
+.tengra-select-item:focus,
+.tengra-select-item:hover {
+  background-color: var(--select-item-hover-bg);
+  color: var(--select-item-hover-fg);
+}
+
+.tengra-select-item:disabled,
+.tengra-select-item[data-disabled] {
+  pointer-events: none;
+  opacity: var(--select-item-disabled-opacity);
+}
+
+/* Item indicator */
+.tengra-select-item-indicator {
+  position: absolute;
+  right: 0.5rem;
+  display: flex;
+  height: 0.875rem;
+  width: 0.875rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.tengra-select-item-indicator svg {
+  width: var(--select-indicator-size);
+  height: var(--select-indicator-size);
+}
+
+/* Select label */
+.tengra-select-label {
+  padding: var(--select-label-padding-y) var(--select-label-padding-x);
+  font-size: var(--select-label-font-size);
+  font-weight: var(--select-label-font-weight);
+}
+
+/* Select separator */
+.tengra-select-separator {
+  margin: var(--select-separator-margin-y) var(--select-separator-margin-x);
+  height: 1px;
+  background-color: var(--select-separator-bg);
+}
+
+/* Scroll buttons */
+.tengra-select-scroll-button {
+  display: flex;
+  cursor: default;
+  align-items: center;
+  justify-content: center;
+  padding: var(--select-scroll-button-padding);
+}
+
+.tengra-select-scroll-button svg {
+  width: var(--select-icon-size);
+  height: var(--select-icon-size);
+}

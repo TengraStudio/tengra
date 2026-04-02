@@ -42,7 +42,7 @@ export const ImageSkeleton = () => {
                 <Sparkles className="w-6 h-6 text-primary/40" />
             </div>
             <div className="space-y-2 text-center">
-                <div className="text-xxs font-black uppercase tracking-widest text-muted-foreground/40 animate-pulse">
+                <div className="text-xxs font-bold text-muted-foreground/40 animate-pulse">
                     {t('messageBubble.TengraDrawing')}
                 </div>
                 <div className="flex gap-1 justify-center">

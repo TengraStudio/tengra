@@ -1,5 +1,6 @@
 import {
     ChevronRight,
+    Globe,
     Grid3X3,
     MessageSquare,
     Package,
@@ -14,7 +15,11 @@ import { useTranslation } from '@/i18n';
 
 import { McpMarketplace } from './components/McpMarketplace';
 
-type MarketplaceTab = 'mcp' | 'themes' | 'personas' | 'models' | 'prompts';
+type MarketplaceTab = 'mcp' | 'themes' | 'personas' | 'models' | 'prompts' | 'languages';
+
+function resolveLabel(translated: string, fallback: string): string {
+    return translated.includes('.') ? fallback : translated;
+}
 
 export const MarketplaceView: React.FC = () => {
     const { language } = useAuthLanguage();
@@ -27,7 +32,16 @@ export const MarketplaceView: React.FC = () => {
         { id: 'personas', icon: Sparkles },
         { id: 'models', icon: Zap },
         { id: 'prompts', icon: MessageSquare },
+        { id: 'languages', icon: Globe },
     ];
+    const tabLabels: Record<MarketplaceTab, string> = {
+        mcp: t('marketplace.tabs.mcp'),
+        themes: t('marketplace.tabs.themes'),
+        personas: t('marketplace.tabs.personas'),
+        models: t('marketplace.tabs.models'),
+        prompts: t('marketplace.tabs.prompts'),
+        languages: resolveLabel(t('settings.language'), 'Languages'),
+    };
 
     return (
         <div className="flex flex-col h-full bg-background">
@@ -37,10 +51,10 @@ export const MarketplaceView: React.FC = () => {
                     <div className="flex items-center gap-3">
                         <Grid3X3 className="w-5 h-5 text-primary" />
                         <div>
-                            <h1 className="text-lg font-bold tracking-tight leading-none">
+                            <h1 className="text-lg font-bold leading-none">
                                 {t('marketplace.title')}
                             </h1>
-                            <p className="text-xs text-muted-foreground mt-1 uppercase tracking-wider font-medium">
+                            <p className="text-xs text-muted-foreground mt-1 font-medium">
                                 {t('marketplace.subtitle')}
                             </p>
                         </div>
@@ -64,7 +78,7 @@ export const MarketplaceView: React.FC = () => {
                                     }`}
                                 >
                                     <tab.icon className="w-3.5 h-3.5" />
-                                    <span>{t(`marketplace.tabs.${tab.id}`)}</span>
+                                    <span>{tabLabels[tab.id]}</span>
                                 </button>
                             );
                         })}
@@ -93,7 +107,7 @@ const SimplePlaceholder: React.FC<{ tab: MarketplaceTab }> = ({ tab }) => {
     return (
         <div className="flex flex-col items-center justify-center py-20 border border-dashed border-border/40 rounded-xl bg-muted/5">
             <Sparkles className="w-10 h-10 text-primary opacity-20 mb-4" />
-            <h2 className="text-xl font-bold tracking-tight">
+            <h2 className="text-xl font-bold">
                 {t('marketplace.placeholders.soon.title', { tab: tab.toUpperCase() })}
             </h2>
             <p className="text-xs text-muted-foreground mt-2 max-w-sm text-center">

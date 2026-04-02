@@ -23,6 +23,7 @@ import { createIpcContractBridge } from './preload/domains/ipc-contract.preload'
 import { createLazyServicesBridge } from './preload/domains/lazy-services.preload';
 import { createLinkedAccountsBridge } from './preload/domains/linked-accounts.preload';
 import { createLlamaBridge } from './preload/domains/llama.preload';
+import { createLocaleBridge } from './preload/domains/locale.preload';
 import { createLogBridge } from './preload/domains/log.preload';
 import { createMarketplaceBridge } from './preload/domains/marketplace.preload';
 import { createMcpBridge } from './preload/domains/mcp.preload';
@@ -131,6 +132,7 @@ const api = {
     ssh: createSSHBridge(ipcRenderer),
     mcp: createMcpBridge(ipcRenderer),
     marketplace: createMarketplaceBridge(ipcRenderer),
+    locale: createLocaleBridge(ipcRenderer),
     proxyEmbed: createProxyEmbedBridge(ipcRenderer),
     runtime: createRuntimeBridge(ipcRenderer),
     extension: createExtensionBridge(ipcRenderer),
@@ -146,6 +148,9 @@ const api = {
     lazyServices: createLazyServicesBridge(ipcRenderer),
     ipcContract: createIpcContractBridge(ipcRenderer),
     files: createFilesBridge(ipcRenderer),
+    selectDirectory: () => ipcRenderer.invoke('files:selectDirectory'),
+    selectFile: (options?: { title?: string; filters?: { name: string; extensions: string[] }[] }) =>
+        ipcRenderer.invoke('files:selectFile', options),
     ...createSharedPromptsBridge(ipcRenderer),
     ...createPromptTemplatesBridge(ipcRenderer),
     liveCollaboration: createLiveCollaborationBridge(ipcRenderer),

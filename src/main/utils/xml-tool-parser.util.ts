@@ -1,5 +1,5 @@
-import { generateSecureId } from '@shared/utils/id.util';
 import { ToolCall } from '@shared/types/chat';
+import { generateSecureId } from '@shared/utils/id.util';
 
 /**
  * Utility for parsing XML-style tool calls often used by Copilot/Codex models.

@@ -1,5 +1,5 @@
 import { Message } from './chat';
-import { JsonObject } from './common';
+import { JsonObject, JsonValue } from './common';
 
 export type WorkspaceDashboardTab =
     | 'overview'
@@ -154,11 +154,20 @@ export interface Workspace {
         cursorBlinking?: 'blink' | 'smooth' | 'phase' | 'expand' | 'solid';
         fontLigatures?: boolean;
         formatOnPaste?: boolean;
+        formatOnType?: boolean;
         smoothScrolling?: boolean;
         folding?: boolean;
         codeLens?: boolean;
         inlayHints?: boolean;
-        additionalOptions?: Record<string, unknown>;
+        renderWhitespace?: 'none' | 'boundary' | 'selection' | 'trailing' | 'all';
+        cursorSmoothCaretAnimation?: 'on' | 'off' | 'explicit';
+        wordBasedSuggestions?: 'off' | 'currentDocument' | 'matchingDocuments' | 'allDocuments';
+        stickyScroll?: boolean;
+        bracketPairColorization?: boolean;
+        guidesIndentation?: boolean;
+        mouseWheelZoom?: boolean;
+        minimapRenderCharacters?: boolean;
+        additionalOptions?: Record<string, JsonValue>;
     };
 }
 

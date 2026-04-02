@@ -6,7 +6,7 @@
     color: hsl(var(--card-foreground));
     overflow: hidden;
     margin-top: 8px;
-    font-family: Inter, sans-serif;
+    font-family: var(--font-sans);
     transition: all 0.2s ease;
 }
 
@@ -19,8 +19,9 @@
     background: hsl(var(--muted) / 30%);
     cursor: pointer;
     user-select: none;
-    font-size: 13px;
-    font-weight: 500;
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    line-height: var(--leading-tight);
 }
 
 .tool-header-row:hover {
@@ -38,8 +39,9 @@
 .tool-name {
     flex: 1;
     margin-left: 8px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    line-height: var(--leading-tight);
     color: hsl(var(--foreground));
     display: flex;
     align-items: center;
@@ -48,7 +50,8 @@
 
 .tool-toggle {
     color: hsl(var(--muted-foreground));
-    font-size: 10px;
+    font-size: var(--text-xxxs);
+    line-height: var(--leading-none);
     width: 20px;
     text-align: right;
 }
@@ -56,7 +59,8 @@
 .tool-body {
     border-top: 1px solid hsl(var(--border) / 50%);
     padding: 12px;
-    font-size: 13px;
+    font-size: var(--text-xs);
+    line-height: var(--leading-normal);
     background: hsl(var(--card) / 50%);
 }
 
@@ -69,9 +73,9 @@
 }
 
 .section-label {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
+    font-size: var(--text-xxs);
+    font-weight: var(--font-semibold);
+    line-height: var(--leading-tight);
     letter-spacing: 0.05em;
     color: hsl(var(--muted-foreground));
     margin-bottom: 6px;
@@ -79,7 +83,7 @@
 
 /* Command Argument Style */
 .cmd-input {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
     color: hsl(var(--success));
     background: hsl(var(--background));
     padding: 8px 12px;
@@ -88,7 +92,7 @@
 }
 
 .file-path {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
     color: hsl(var(--primary));
     background: hsl(var(--primary) / 10%);
     padding: 4px 8px;
@@ -103,8 +107,9 @@
     border: 1px solid hsl(var(--border));
     margin: 0;
     overflow-x: auto;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    line-height: var(--leading-normal);
     color: hsl(var(--muted-foreground));
 }
 
@@ -112,7 +117,7 @@
 .terminal-output {
     background: hsl(var(--card));
     color: hsl(var(--card-foreground));
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
     padding: 12px;
     border-radius: 6px;
     overflow-x: auto;

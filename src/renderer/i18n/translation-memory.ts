@@ -6,8 +6,8 @@
  * This is a development-time utility, not a runtime feature.
  */
 
-import { en } from '@renderer/i18n/en';
-import { tr } from '@renderer/i18n/tr';
+import { enLocalePack } from '@renderer/i18n/locales';
+import { JsonValue } from '@shared/types/common';
 
 /** Represents a stored translation pair */
 export interface TranslationEntry {
@@ -21,16 +21,15 @@ export interface ScoredTranslationEntry extends TranslationEntry {
     similarity: number;
 }
 
-/** Supported language codes for translation memory */
-type LangCode = 'tr';
+function toTranslationRecordFromJson(value: JsonValue): Record<string, RendererDataValue> | null {
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+        return null;
+    }
 
-function toTranslationRecord<T extends object>(value: T): Record<string, RendererDataValue> {
     return value as Record<string, RendererDataValue>;
 }
 
-const LANG_MAP: Record<LangCode, Record<string, RendererDataValue>> = {
-    tr: toTranslationRecord(tr)
-};
+const LANG_MAP: Record<string, Record<string, RendererDataValue>> = {};
 
 /**
  * Computes the Levenshtein distance between two strings.
@@ -141,7 +140,12 @@ function resolveKey(obj: Record<string, RendererDataValue>, key: string): string
  * Returns entries that can be searched for similar strings.
  */
 export function buildTranslationMemory(): TranslationEntry[] {
-    const enFlat = flattenObject(toTranslationRecord(en));
+    const translationRecord = toTranslationRecordFromJson(enLocalePack.translations);
+    if (translationRecord === null) {
+        return [];
+    }
+
+    const enFlat = flattenObject(translationRecord);
     const entries: TranslationEntry[] = [];
 
     for (const [key, enValue] of enFlat) {

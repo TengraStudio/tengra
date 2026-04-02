@@ -2,6 +2,8 @@ import { AlertTriangle } from 'lucide-react';
 
 import { useTranslation } from '@/i18n';
 
+import './failover-indicator.css';
+
 /** Props for the FailoverIndicator component */
 interface FailoverIndicatorProps {
   /** The model that was originally requested */
@@ -28,8 +30,8 @@ const FailoverIndicator: React.FC<FailoverIndicatorProps> = ({
   }
 
   return (
-    <div className="flex items-center gap-2 rounded-md bg-warning/15 px-3 py-1.5 text-sm text-warning">
-      <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+    <div className="tengra-failover-indicator">
+      <AlertTriangle className="tengra-failover-indicator__icon" />
       <span>
         {t('common.failoverModelUsed', { fallback: fallbackModel, original: originalModel })}
       </span>

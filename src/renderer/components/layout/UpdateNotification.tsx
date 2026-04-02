@@ -6,6 +6,8 @@ import { useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { appLogger } from '@/utils/renderer-logger';
 
+import './update-notification.css';
+
 type UpdateState =
     | 'checking'
     | 'available'
@@ -89,14 +91,14 @@ function formatBytes(bytes: number, decimals = 2): string {
 }
 
 const DownloadProgress: React.FC<{ status: UpdateStatus }> = ({ status }) => (
-    <div className="space-y-1">
-        <div className="flex justify-between">
+    <div className="tengra-update-notification__progress">
+        <div className="tengra-update-notification__progress-meta">
             <span>{formatBytes(status.bytesPerSecond ?? 0)}/s</span>
             <span>{Math.round(status.progress ?? 0)}%</span>
         </div>
-        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+        <div className="tengra-update-notification__progress-track">
             <div
-                className="h-full bg-primary transition-all duration-300"
+                className="tengra-update-notification__progress-fill"
                 style={{ width: `${status.progress}%` }}
             />
         </div>
@@ -112,7 +114,7 @@ interface ActionButtonProps {
 const ActionButton: React.FC<ActionButtonProps> = ({ onClick, className, label }) => (
     <button
         onClick={onClick}
-        className={`flex-1 text-foreground text-xs py-1.5 px-3 rounded transition-colors ${className}`}
+        className={`tengra-update-notification__action ${className}`}
     >
         {label}
     </button>
@@ -172,16 +174,16 @@ export const UpdateNotification: React.FC = () => {
                 initial={{ opacity: 0, y: -50, x: 50 }}
                 animate={{ opacity: 1, y: 0, x: 0 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className="fixed top-20 right-4 z-50 w-80 bg-muted border border-border rounded-lg shadow-xl p-4 overflow-hidden"
+                className="tengra-update-notification"
             >
-                <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-2">
-                        <Icon className={`w-4 h-4 ${config.iconClass}`} />
-                        <h3 className="font-medium text-foreground text-sm">{title}</h3>
+                <div className="tengra-update-notification__header">
+                    <div className="tengra-update-notification__title-row">
+                        <Icon className={`tengra-update-notification__icon ${config.iconClass}`} />
+                        <h3 className="tengra-update-notification__title">{title}</h3>
                     </div>
                     <button
                         onClick={handleDismiss}
-                        className="text-muted-foreground hover:text-foreground"
+                        className="tengra-update-notification__dismiss"
                     >
                         <X className="w-4 h-4" />
                     </button>
@@ -210,7 +212,7 @@ const UpdateContent: React.FC<UpdateContentProps> = ({ status, config }) => {
     const stringContent = typeof contentValue === 'string' ? contentValue : null;
 
     return (
-        <div className="text-xs text-muted-foreground mb-3">
+        <div className="tengra-update-notification__content">
             {status.state === 'downloading' && <DownloadProgress status={status} />}
             {status.state === 'error' && status.error}
             {stringContent}
@@ -226,18 +228,18 @@ interface UpdateActionsProps {
 }
 
 const UpdateActions: React.FC<UpdateActionsProps> = ({ state, onDownload, onInstall, t }) => (
-    <div className="flex gap-2">
+    <div className="tengra-update-notification__actions">
         {state === 'available' && (
             <ActionButton
                 onClick={onDownload}
-                className="bg-info hover:bg-primary"
+                className="tengra-update-notification__action--download"
                 label={t('updateNotification.downloadAction')}
             />
         )}
         {state === 'downloaded' && (
             <ActionButton
                 onClick={onInstall}
-                className="bg-success hover:bg-success"
+                className="tengra-update-notification__action--install"
                 label={t('updateNotification.restartAction')}
             />
         )}

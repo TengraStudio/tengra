@@ -202,7 +202,7 @@ export const WorkspaceAgentPanelHeader: React.FC<WorkspaceAgentPanelHeaderProps>
                             <div className="truncate text-base font-semibold text-foreground">
                                 {currentSession.title}
                             </div>
-                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xxs uppercase tracking-wide text-muted-foreground">
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xxs text-muted-foreground">
                                 <span>{telemetry?.provider ?? 'workspace'}</span>
                                 <span>{telemetry?.model ?? 'session'}</span>
                             </div>

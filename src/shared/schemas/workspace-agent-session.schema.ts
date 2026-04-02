@@ -39,8 +39,10 @@ const workspaceAgentPermissionPolicySchema: z.ZodType<WorkspaceAgentPermissionPo
             'workspace-root-only',
             'allowlist',
             'restricted-off-dangerous',
+            'full-access',
         ]),
         allowedCommands: z.array(z.string().trim().min(1)).max(200),
+        disallowedCommands: z.array(z.string().trim().min(1)).max(200),
         allowedPaths: z.array(z.string().trim().min(1)).max(200),
     });
 

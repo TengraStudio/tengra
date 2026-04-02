@@ -108,7 +108,7 @@ function buildSystemMessage(provider: string, model: string, language: string): 
     return {
         id: generateId(),
         role: 'system',
-        content: getSystemPrompt(language as 'tr' | 'en', undefined, provider, model),
+        content: getSystemPrompt(language, undefined, provider, model),
         timestamp: new Date(),
     };
 }

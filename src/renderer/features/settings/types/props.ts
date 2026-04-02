@@ -22,7 +22,9 @@ export interface SettingsSharedProps {
     isOllamaRunning: boolean
     authStatus: AuthStatusState
     updateGeneral: (patch: Partial<AppSettings['general']>) => Promise<void>
+    updateEditor: (patch: Partial<NonNullable<AppSettings['editor']>>) => Promise<void>
     updateSpeech: (patch: Partial<NonNullable<AppSettings['speech']>>) => Promise<void>
+    updateRemoteAccounts: (patch: Partial<NonNullable<AppSettings['remoteAccounts']>>) => Promise<void>
     handleSave: (ns?: AppSettings) => Promise<void>
     startOllama: () => Promise<void>
     checkOllama: () => Promise<void>

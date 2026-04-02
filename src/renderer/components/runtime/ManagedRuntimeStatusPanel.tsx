@@ -3,6 +3,7 @@ import { AlertTriangle, CheckCircle2, Download, Play, RefreshCw, Wrench } from '
 import { useMemo, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
+import { translateErrorMessage } from '@/utils/error-handler.util';
 
 interface ManagedRuntimeStatusPanelProps {
     status: RuntimeBootstrapExecutionResult | null;
@@ -196,7 +197,7 @@ export function ManagedRuntimeStatusPanel({
 
                 {error && (
                     <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                        {error}
+                        {translateErrorMessage(error)}
                     </div>
                 )}
 
@@ -219,7 +220,7 @@ export function ManagedRuntimeStatusPanel({
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span
-                                        className={`rounded-full border px-2 py-1 text-xxxs font-semibold uppercase tracking-wide ${
+                                        className={`rounded-full border px-2 py-1 text-xxxs font-semibold   ${
                                             entry.statusTone === 'success'
                                                 ? 'border-success/30 text-success'
                                                 : entry.statusTone === 'warning'

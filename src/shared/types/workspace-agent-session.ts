@@ -38,12 +38,14 @@ export type WorkspaceAgentCommandPolicy =
 export type WorkspaceAgentPathPolicy =
     | 'workspace-root-only'
     | 'allowlist'
-    | 'restricted-off-dangerous';
+    | 'restricted-off-dangerous'
+    | 'full-access';
 
 export interface WorkspaceAgentPermissionPolicy extends JsonObject {
     commandPolicy: WorkspaceAgentCommandPolicy;
     pathPolicy: WorkspaceAgentPathPolicy;
     allowedCommands: string[];
+    disallowedCommands: string[];
     allowedPaths: string[];
 }
 

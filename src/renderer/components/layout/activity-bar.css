@@ -1,0 +1,216 @@
+/* Activity Bar Component CSS */
+
+:root {
+    /* Activity Bar Container */
+    --activity-bar-width: 3rem;
+    --activity-bar-bg: hsl(var(--card) / 50%);
+    --activity-bar-border-color: hsl(var(--border) / 30%);
+    
+    /* Activity Button */
+    --activity-button-size: 3rem;
+    --activity-button-icon-size: 1.25rem;
+    --activity-button-text-color: hsl(var(--muted-foreground));
+    --activity-button-hover-text-color: hsl(var(--foreground));
+    --activity-button-active-text-color: hsl(var(--foreground));
+    --activity-button-active-indicator-width: 2px;
+    --activity-button-active-indicator-color: hsl(var(--primary));
+    --activity-button-disabled-opacity: 0.5;
+    
+    /* Activity Badge */
+    --activity-badge-min-width: 1rem;
+    --activity-badge-height: 1rem;
+    --activity-badge-font-size: 0.625rem;
+    --activity-badge-bg: hsl(var(--primary));
+    --activity-badge-text-color: hsl(var(--primary-foreground));
+    --activity-badge-empty-bg: hsl(var(--muted));
+    --activity-badge-empty-text-color: hsl(var(--muted-foreground));
+    --activity-badge-top: 0.375rem;
+    --activity-badge-right: 0.375rem;
+    
+    /* Section Divider */
+    --activity-section-border-color: hsl(var(--border) / 20%);
+    
+    /* Activity Sidebar */
+    --activity-sidebar-bg: hsl(var(--card) / 30%);
+    --activity-sidebar-border-color: hsl(var(--border) / 30%);
+    --activity-sidebar-header-border-color: hsl(var(--border) / 20%);
+    --activity-sidebar-header-text-color: hsl(var(--muted-foreground));
+    --activity-sidebar-header-font-size: 0.75rem;
+    
+    /* Collapse Toggle */
+    --activity-collapse-bg-hover: hsl(var(--muted));
+    --activity-collapse-text-color: hsl(var(--muted-foreground));
+    --activity-collapse-width: 1.5rem;
+    --activity-collapse-icon-size: 1rem;
+}
+
+/* Base Activity Bar */
+.tengra-activity-bar {
+    width: var(--activity-bar-width);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--activity-bar-bg);
+    border-right: 1px solid var(--activity-bar-border-color);
+}
+
+/* Activity Button */
+.tengra-activity-bar__button {
+    position: relative;
+    width: var(--activity-button-size);
+    height: var(--activity-button-size);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--activity-button-text-color);
+    transition: color 0.15s ease;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.tengra-activity-bar__button:hover {
+    color: var(--activity-button-hover-text-color);
+}
+
+.tengra-activity-bar__button--active {
+    color: var(--activity-button-active-text-color);
+}
+
+.tengra-activity-bar__button--active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: var(--activity-button-active-indicator-width);
+    background-color: var(--activity-button-active-indicator-color);
+}
+
+.tengra-activity-bar__button--disabled {
+    opacity: var(--activity-button-disabled-opacity);
+    cursor: not-allowed;
+}
+
+.tengra-activity-bar__button-icon {
+    width: var(--activity-button-icon-size);
+    height: var(--activity-button-icon-size);
+}
+
+/* Activity Badge */
+.tengra-activity-bar__badge {
+    position: absolute;
+    top: var(--activity-badge-top);
+    right: var(--activity-badge-right);
+    min-width: var(--activity-badge-min-width);
+    height: var(--activity-badge-height);
+    padding: 0 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--activity-badge-font-size);
+    font-weight: 700;
+    border-radius: 9999px;
+    background-color: var(--activity-badge-bg);
+    color: var(--activity-badge-text-color);
+}
+
+.tengra-activity-bar__badge--empty {
+    background-color: var(--activity-badge-empty-bg);
+    color: var(--activity-badge-empty-text-color);
+}
+
+/* Sections */
+.tengra-activity-bar__top-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.tengra-activity-bar__bottom-section {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--activity-section-border-color);
+}
+
+/* Activity Layout */
+.tengra-activity-layout {
+    display: flex;
+    height: 100%;
+    width: 100%;
+}
+
+/* Activity Sidebar */
+.tengra-activity-sidebar {
+    height: 100%;
+    background-color: var(--activity-sidebar-bg);
+    border-right: 1px solid var(--activity-sidebar-border-color);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.tengra-activity-sidebar__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--activity-sidebar-header-border-color);
+}
+
+.tengra-activity-sidebar__title {
+    font-size: var(--activity-sidebar-header-font-size);
+    font-weight: 600;
+    color: var(--activity-sidebar-header-text-color);
+}
+
+.tengra-activity-sidebar__content {
+    flex: 1;
+    overflow: auto;
+}
+
+/* Collapse Toggle */
+.tengra-activity-collapse-toggle {
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    color: var(--activity-collapse-text-color);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.tengra-activity-collapse-toggle:hover {
+    background-color: var(--activity-collapse-bg-hover);
+}
+
+.tengra-activity-collapse-toggle__icon {
+    width: var(--activity-collapse-icon-size);
+    height: var(--activity-collapse-icon-size);
+}
+
+/* Collapsed Sidebar Toggle */
+.tengra-activity-collapsed-toggle {
+    width: var(--activity-collapse-width);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--activity-collapse-text-color);
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--activity-sidebar-border-color);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.tengra-activity-collapsed-toggle:hover {
+    background-color: hsl(var(--muted) / 50%);
+}
+
+/* Main Content */
+.tengra-activity-layout__main {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}

@@ -8,6 +8,9 @@ import { JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 
 const execAsync = promisify(exec);
+const DEFAULT_EXEC_SHELL = process.platform === 'win32'
+    ? 'powershell.exe'
+    : (process.env.SHELL && process.env.SHELL.trim().length > 0 ? process.env.SHELL : '/bin/bash');
 
 interface CommandResult {
     success: boolean;
@@ -149,7 +152,7 @@ export class CommandService {
             const child = exec(command, {
                 cwd: options.cwd ?? process.cwd(),
                 timeout: options.timeout ?? this.maxTimeout,
-                shell: options.shell ?? 'powershell.exe',
+                shell: options.shell ?? DEFAULT_EXEC_SHELL,
                 maxBuffer: 10 * 1024 * 1024
             }, (error, stdout, stderr) => {
                 this.activeProcesses.delete(options.id);
@@ -202,7 +205,7 @@ export class CommandService {
             const { stdout, stderr } = await execAsync(command, {
                 cwd: options?.cwd ?? process.cwd(),
                 timeout: options?.timeout ?? this.maxTimeout,
-                shell: options?.shell ?? 'powershell.exe',
+                shell: options?.shell ?? DEFAULT_EXEC_SHELL,
                 maxBuffer: 10 * 1024 * 1024
             });
             return { success: true, stdout: stdout.trim(), stderr: stderr.trim(), exitCode: 0 };

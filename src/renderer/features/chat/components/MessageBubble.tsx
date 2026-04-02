@@ -14,6 +14,7 @@ import {
     FileCode,
     ListTodo,
     RotateCcw,
+    Shield,
     Smile,
     Sparkles,
     ThumbsDown,
@@ -22,7 +23,7 @@ import {
     VolumeX,
 } from 'lucide-react';
 import { Highlight, themes } from 'prism-react-renderer';
-import { isValidElement, lazy, memo, Suspense, useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, { isValidElement, lazy, memo, Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -160,7 +161,7 @@ const MessageIcon = ({ short, color, title }: { short: string; color: string; ti
         )}
         title={title}
     >
-        <span className={cn('font-black text-xxs', `text-${color}-400`)}>{short}</span>
+        <span className={cn('font-bold text-xxs', `text-${color}-400`)}>{short}</span>
     </div>
 );
 
@@ -213,7 +214,7 @@ const ImageSkeleton = ({ t }: { t: TranslationFn }) => (
             <Sparkles className="w-6 h-6 text-primary/40" />
         </div>
         <div className="space-y-2 text-center">
-            <div className="text-xxs font-black uppercase tracking-widest text-muted-foreground/40 animate-pulse">
+            <div className="text-xxs font-bold text-muted-foreground/40 animate-pulse">
                 {t('messageBubble.TengraDrawing')}
             </div>
             <div className="flex gap-1 justify-center">
@@ -281,7 +282,7 @@ const QuotaErrorCard = memo(
                     <AlertCircle className="w-5 h-5" />
                 </div>
                 <div>
-                    <div className="font-bold text-sm uppercase tracking-tight">
+                    <div className="font-bold text-sm">
                         {t('messageBubble.quotaExceeded')}
                     </div>
                     {details.model && (
@@ -529,7 +530,7 @@ const CodeBlock = memo(
         return (
             <div className="not-prose my-3 rounded-xl overflow-hidden border border-border/30 bg-muted/30 group/code transition-premium">
                 <div className="flex items-center justify-between px-4 py-2 bg-muted/20 border-b border-border/20 backdrop-blur-sm">
-                    <span className="text-xxs text-muted-foreground uppercase font-black tracking-widest opacity-60 group-hover/code:opacity-100 transition-opacity">
+                    <span className="text-xxs text-muted-foreground font-bold opacity-60 group-hover/code:opacity-100 transition-opacity">
                         {language}
                     </span>
                     <div className="flex items-center gap-1.5">
@@ -616,7 +617,7 @@ const MarkdownImage = memo(
                         e.stopPropagation();
                         onCodeConvert(src);
                     }}
-                    className="absolute top-2 right-2 bg-background/60 hover:bg-background/80 backdrop-blur-md border border-border/50 text-foreground px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide opacity-0 group-hover/image:opacity-100 transition-all flex items-center gap-2 transform translate-y-2 group-hover/image:translate-y-0"
+                    className="absolute top-2 right-2 bg-background/60 hover:bg-background/80 backdrop-blur-md border border-border/50 text-foreground px-3 py-1.5 rounded-lg text-xs font-bold opacity-0 group-hover/image:opacity-100 transition-all flex items-center gap-2 transform translate-y-2 group-hover/image:translate-y-0"
                 >
                     <Code2 className="w-3.5 h-3.5" />
                     {t('messageBubble.convertToCode')}
@@ -766,7 +767,7 @@ const ThoughtSection = memo(
                                 )}
                             />
                         </div>
-                        <span className="text-xxs font-black uppercase tracking-widest">
+                        <span className="text-xxs font-bold">
                             {isThoughtExpanded
                                 ? t('messageBubble.TengraThinking')
                                 : t('messageBubble.showThought')}
@@ -831,7 +832,7 @@ const PlanSection = memo(
                     <div className="p-1.5 rounded-lg bg-primary/20">
                         <ListTodo className="w-4 h-4 text-primary" />
                     </div>
-                    <span className="text-xs font-black text-primary uppercase tracking-widest">
+                    <span className="text-xs font-bold text-primary">
                         {t('chat.plan')}
                     </span>
                 </div>
@@ -857,7 +858,7 @@ const PlanSection = memo(
                     <div className="mt-4 pt-4 border-t border-primary/10 flex justify-end">
                         <button
                             onClick={onApprovePlan}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20"
                         >
                             <Check className="w-3.5 h-3.5" />
                             {t('messageBubble.approvePlan')}
@@ -909,6 +910,58 @@ const PlanAndThought = memo(
 );
 PlanAndThought.displayName = 'PlanAndThought';
 
+const PermissionErrorCard = memo(({ t }: { t: TranslationFn }) => {
+    const handleConfigure = useCallback(() => {
+        window.dispatchEvent(
+            new CustomEvent('tengra:open-model-selector', {
+                detail: { tab: 'permissions' },
+            })
+        );
+    }, []);
+
+    return (
+        <div className="group relative overflow-hidden rounded-3xl border border-destructive/20 bg-destructive/5 p-6 transition-all duration-300 hover:border-destructive/30 hover:bg-destructive/10">
+            <div className="absolute right-0 top-0 -mr-8 -mt-8 h-32 w-32 rounded-full bg-destructive/10 blur-3xl transition-all duration-500 group-hover:bg-destructive/20" />
+
+            <div className="relative flex flex-col gap-5">
+                <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-destructive/20 text-destructive shadow-lg shadow-destructive/10 ring-1 ring-destructive/20">
+                        <Shield className="h-6 w-6" />
+                    </div>
+                    <div className="flex flex-col">
+                        <h3 className="tw-text-14 font-bold tw-tracking-20 text-foreground">
+                            {t('workspaceAgent.permissions.error') || 'Permission Denied'}
+                        </h3>
+                        <p className="tw-text-11 font-medium text-muted-foreground/70">
+                            {t('workspaceAgent.permissions.securityBlock') || 'Action blocked by safety policy'}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="rounded-2xl bg-background/40 p-4 border border-destructive/10">
+                    <p className="tw-text-12 leading-relaxed text-muted-foreground/80">
+                        {t('workspaceAgent.permissions.description') ||
+                            'This action was blocked by the workspace agent\'s permission policy. You can choose to allow specific commands or paths in the settings.'}
+                    </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={handleConfigure}
+                        className="flex h-10 items-center justify-center gap-2 rounded-xl bg-destructive px-6 tw-text-11 font-bold tw-tracking-20 text-destructive-foreground shadow-lg shadow-destructive/20 transition-all hover:-translate-y-0.5 hover:bg-destructive/90 active:translate-y-0"
+                    >
+                        {t('workspaceAgent.permissions.configure') || 'Configure Permissions'}
+                    </button>
+                    <div className="tw-text-10 font-bold tw-tracking-40 text-muted-foreground/40 uppercase">
+                        {t('workspaceAgent.permissions.requiresApproval') || 'Action Protected'}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+});
+PermissionErrorCard.displayName = 'PermissionErrorCard';
+
 const MessageBubbleContent = memo(
     ({
         showRawMarkdown,
@@ -937,14 +990,28 @@ const MessageBubbleContent = memo(
             ),
             [displayContent, onSpeak, onStop, isSpeaking, onCodeConvert, t]
         );
+
+        // Detect permission error in tool calls
+        const hasPermissionError = useMemo(() => {
+            if (isUser || !displayContent) {return false;}
+            // The content might contain tool call indicators or the displayContent itself might be the error
+            // However, based on the backend implementation, we should check if any tool result has errorType === 'permission'
+            // Since we don't have the raw message object here, we check the displayContent for the specific marker
+            return displayContent.includes('errorType') && displayContent.includes('permission');
+        }, [displayContent, isUser]);
+
         if (quotaDetails) {
             return <QuotaErrorCard details={quotaDetails} t={t} />;
+        }
+
+        if (hasPermissionError) {
+            return <PermissionErrorCard t={t} />;
         }
         if (!displayContent && images.length === 0) {
             return isStreaming ? (
                 <TypingIndicator />
             ) : (
-                <span className="italic opacity-50">...</span>
+                <span className="opacity-50">...</span>
             );
         }
         if (!displayContent) {
@@ -1118,7 +1185,7 @@ const MessageSources = memo(
         }
         return (
             <div className="flex flex-wrap gap-2 mt-3 animate-fade-in">
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-primary/5 border border-primary/10 text-xxs text-primary font-bold uppercase tracking-wider mb-1">
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-primary/5 border border-primary/10 text-xxs text-primary font-bold mb-1">
                     <Sparkles className="w-3 h-3" />
                     {t('chat.sources')}
                 </div>
@@ -1770,7 +1837,7 @@ const VariantsView = memo(
                     <div className="bg-primary/10 p-1.5 rounded-lg">
                         <Sparkles className="w-4 h-4 text-primary" />
                     </div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    <span className="text-xs font-bold text-muted-foreground">
                         {t('chat.modelComparison')}
                     </span>
                 </div>
@@ -2053,9 +2120,9 @@ const SingleMessageView = memo(
         const isUser = message.role === 'user';
         const [state, setState] = useState<MessageState>(initializeMessageState);
         const { isThoughtExpanded, showRawMarkdown } = state;
-        const setIsThoughtExpanded = (v: boolean) =>
-            setState(s => ({ ...s, isThoughtExpanded: v }));
-        const setShowRawMarkdown = (v: boolean) => setState(s => ({ ...s, showRawMarkdown: v }));
+        const setIsThoughtExpanded = useCallback((v: boolean) =>
+            setState(s => ({ ...s, isThoughtExpanded: v })), []);
+        const setShowRawMarkdown = useCallback((v: boolean) => setState(s => ({ ...s, showRawMarkdown: v })), []);
 
         const { thought, plan, displayContent } = useMessageContent(
             message.content,

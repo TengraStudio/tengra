@@ -1,7 +1,19 @@
+import type {
+    WorkspaceAgentCommandPolicy,
+    WorkspaceAgentPathPolicy,
+} from '@shared/types/workspace-agent-session';
 import { Brain } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { WorkspaceAgentPermissionEditor } from '@/features/workspace/workspace-agent/WorkspaceAgentPermissionEditor';
 import { cn } from '@/lib/utils';
 
 import { ModelCategory, ModelListItem } from '../types';
@@ -28,8 +40,30 @@ export type ThinkingLevel =
     | 'max'
     | string;
 type ModelFilter = 'local' | 'cloud' | 'free' | 'reasoning' | 'deprecated';
+const COMMAND_POLICY_OPTIONS: ReadonlyArray<WorkspaceAgentCommandPolicy> = [
+    'blocked',
+    'ask-every-time',
+    'allowlist',
+    'full-access',
+];
+const PATH_POLICY_OPTIONS: ReadonlyArray<WorkspaceAgentPathPolicy> = [
+    'workspace-root-only',
+    'allowlist',
+    'restricted-off-dangerous',
+    'full-access'
+];
+
+function isCommandPolicy(value: string): value is WorkspaceAgentCommandPolicy {
+    return COMMAND_POLICY_OPTIONS.includes(value as WorkspaceAgentCommandPolicy);
+}
+
+function isPathPolicy(value: string): value is WorkspaceAgentPathPolicy {
+    return PATH_POLICY_OPTIONS.includes(value as WorkspaceAgentPathPolicy);
+}
+
 interface ModelSelectorModalProps {
     isOpen: boolean;
+    initialTab?: 'models' | 'reasoning' | 'permissions';
     onClose: () => void;
     categories: ModelCategory[];
     selectedModels: Array<{ provider: string; model: string }>;
@@ -52,6 +86,8 @@ interface ModelSelectorModalProps {
     activeClaudeQuota?: import('@shared/types/quota').ClaudeQuota | null;
     activeCodexUsage?: ({ usage: import('@shared/types/quota').CodexUsage; accountId?: string; email?: string } & { isActive?: boolean }) | null;
     activeAntigravityQuota?: import('@shared/types/quota').QuotaResponse | null;
+    permissionPolicy?: import('@shared/types/workspace-agent-session').WorkspaceAgentPermissionPolicy;
+    onUpdatePermissionPolicy?: (policy: import('@shared/types/workspace-agent-session').WorkspaceAgentPermissionPolicy) => void;
 }
 
 const THINKING_LEVEL_LABEL_KEYS: Record<ThinkingLevel, string> = {
@@ -71,6 +107,205 @@ const MODEL_FILTER_OPTIONS: ReadonlyArray<readonly [ModelFilter, string]> = [
     ['deprecated', 'modelSelector.deprecated']
 ];
 
+interface ModelSelectorReasoningPanelProps {
+    canConfirm: boolean;
+    categories: ModelCategory[];
+    currentModelInfo: ModelListItem | null;
+    currentModelThinkingLevels: string[] | null;
+    handleCancelPending: () => void;
+    handleConfirmSelection: () => void;
+    handlePendingThinkingLevelChange: (level: string) => void;
+    onThinkingLevelChange?: (modelId: string, level: string) => void;
+    pendingModel: { provider: string; id: string } | null;
+    pendingModelThinkingLevels: string[] | null;
+    pendingThinkingLevel: string | null;
+    selectedModel: string;
+    t: (key: string) => string;
+    thinkingLevel: string;
+}
+
+const ModelSelectorReasoningPanel: React.FC<ModelSelectorReasoningPanelProps> = ({
+    canConfirm,
+    categories,
+    currentModelInfo,
+    currentModelThinkingLevels,
+    handleCancelPending,
+    handleConfirmSelection,
+    handlePendingThinkingLevelChange,
+    onThinkingLevelChange,
+    pendingModel,
+    pendingModelThinkingLevels,
+    pendingThinkingLevel,
+    selectedModel,
+    t,
+    thinkingLevel,
+}) => {
+    if (pendingModel && pendingModelThinkingLevels && pendingModelThinkingLevels.length > 0) {
+        return (
+            <div className="p-4">
+                <div className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                    <div className="mb-1 flex items-center gap-2">
+                        <Brain className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium text-foreground">
+                            {t('modelSelector.selectReasoningLevel')}
+                        </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                        {t('modelSelector.reasoningRequired')}
+                    </p>
+                </div>
+                <div className="mb-3 text-xs font-medium text-muted-foreground">
+                    {categories
+                        .flatMap(category => (Array.isArray(category.models) ? category.models : []))
+                        .find(model => model.id === pendingModel.id)?.label ?? pendingModel.id}
+                </div>
+                <div className="mb-4 flex flex-wrap gap-2">
+                    {pendingModelThinkingLevels.map(level => {
+                        const isActive = pendingThinkingLevel === level;
+                        return (
+                            <button
+                                key={level}
+                                onClick={() => handlePendingThinkingLevelChange(level)}
+                                className={cn(
+                                    'rounded-lg border px-4 py-2 text-sm font-medium transition-all',
+                                    isActive
+                                        ? 'border-primary bg-primary text-primary-foreground shadow-none'
+                                        : 'border-border/50 text-muted-foreground hover:border-border hover:bg-muted/50 hover:text-foreground'
+                                )}
+                            >
+                                {t(THINKING_LEVEL_LABEL_KEYS[level as ThinkingLevel] ?? '') || level}
+                            </button>
+                        );
+                    })}
+                </div>
+                <div className="flex items-center gap-2 border-t border-border/50 pt-3">
+                    <button
+                        onClick={handleCancelPending}
+                        className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                    >
+                        {t('common.cancel')}
+                    </button>
+                    <button
+                        onClick={handleConfirmSelection}
+                        disabled={!canConfirm}
+                        className={cn(
+                            'flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all',
+                            canConfirm
+                                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                                : 'cursor-not-allowed bg-muted text-muted-foreground'
+                        )}
+                    >
+                        {canConfirm
+                            ? t('modelSelector.confirmModel')
+                            : t('modelSelector.selectLevelFirst')}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (!currentModelThinkingLevels || currentModelThinkingLevels.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="p-6">
+            <div className="mb-3 text-[11px] font-bold text-muted-foreground/60 uppercase tracking-wider flex items-center gap-2">
+                <Brain className="w-3.5 h-3.5" />
+                {t('modelSelector.reasoning')} {'•'} {currentModelInfo?.label ?? selectedModel}
+            </div>
+            <div className="flex flex-wrap gap-2.5">
+                {currentModelThinkingLevels.map(level => {
+                    const isActive = thinkingLevel === level;
+                    return (
+                        <button
+                            key={level}
+                            onClick={() =>
+                                onThinkingLevelChange?.(currentModelInfo?.id ?? selectedModel, level)
+                            }
+                            className={cn(
+                                'rounded-xl border px-4 py-2 text-xs font-bold transition-all duration-200',
+                                isActive
+                                    ? 'bg-primary/10 text-primary border-primary/40 shadow-sm scale-105'
+                                    : 'border-border/40 text-muted-foreground/70 hover:bg-muted/50 hover:text-foreground'
+                            )}
+                        >
+                            {t(THINKING_LEVEL_LABEL_KEYS[level as ThinkingLevel] ?? '') || level}
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+interface ModelSelectorPermissionsPanelProps {
+    onUpdatePermissionPolicy: (policy: import('@shared/types/workspace-agent-session').WorkspaceAgentPermissionPolicy) => void;
+    permissionPolicy: import('@shared/types/workspace-agent-session').WorkspaceAgentPermissionPolicy;
+    t: (key: string) => string;
+    updatePermissionPolicy: (
+        key: 'commandPolicy' | 'pathPolicy',
+        value: string
+    ) => void;
+}
+
+const ModelSelectorPermissionsPanel: React.FC<ModelSelectorPermissionsPanelProps> = ({
+    onUpdatePermissionPolicy,
+    permissionPolicy,
+    t,
+    updatePermissionPolicy,
+}) => (
+    <div className="space-y-6 p-6">
+        <div className="space-y-4">
+            <div className="space-y-2">
+                <label className="text-sm font-semibold text-foreground/90">
+                    {t('workspaceAgent.permissions.commands')}
+                </label>
+                <Select
+                    value={permissionPolicy.commandPolicy}
+                    onValueChange={value => updatePermissionPolicy('commandPolicy', value)}
+                >
+                    <SelectTrigger className="w-full rounded-xl border border-border/50 bg-muted/30 p-2.5 text-sm text-foreground/90 transition-colors focus:ring-1 focus:ring-primary/50">
+                        <SelectValue placeholder={t('workspaceAgent.permissions.policy.blocked')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="blocked">{t('workspaceAgent.permissions.policy.blocked')}</SelectItem>
+                        <SelectItem value="ask-every-time">{t('workspaceAgent.permissions.policy.ask-every-time')}</SelectItem>
+                        <SelectItem value="allowlist">{t('workspaceAgent.permissions.policy.allowlist')}</SelectItem>
+                        <SelectItem value="full-access">{t('workspaceAgent.permissions.policy.full-access')}</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+
+            <div className="space-y-2">
+                <label className="text-sm font-semibold text-foreground/90">
+                    {t('workspaceAgent.permissions.files')}
+                </label>
+                <Select
+                    value={permissionPolicy.pathPolicy}
+                    onValueChange={value => updatePermissionPolicy('pathPolicy', value)}
+                >
+                    <SelectTrigger className="w-full rounded-xl border border-border/50 bg-muted/30 p-2.5 text-sm text-foreground/90 transition-colors focus:ring-1 focus:ring-primary/50">
+                        <SelectValue placeholder={t('workspaceAgent.permissions.policy.workspace-root-only')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="workspace-root-only">{t('workspaceAgent.permissions.policy.workspace-root-only')}</SelectItem>
+                        <SelectItem value="allowlist">{t('workspaceAgent.permissions.policy.allowlist')}</SelectItem>
+                        <SelectItem value="restricted-off-dangerous">{t('workspaceAgent.permissions.policy.restricted-off-dangerous')}</SelectItem>
+                        <SelectItem value="full-access">{t('workspaceAgent.permissions.policy.full-access')}</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+        </div>
+
+        <WorkspaceAgentPermissionEditor
+            permissionPolicy={permissionPolicy}
+            onUpdatePermissions={onUpdatePermissionPolicy}
+            t={t}
+        />
+    </div>
+);
+
 function resolvePreferredThinkingLevel(levels: string[], currentLevel?: string): string | null {
     if (levels.length === 0) {
         return null;
@@ -86,6 +321,7 @@ function resolvePreferredThinkingLevel(levels: string[], currentLevel?: string):
 
 export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     isOpen,
+    initialTab,
     onClose,
     categories,
     selectedModels,
@@ -106,14 +342,22 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     activeClaudeQuota,
     activeCodexUsage,
     activeAntigravityQuota,
+    permissionPolicy,
+    onUpdatePermissionPolicy: _onUpdatePermissionPolicy,
 }) => {
     const modalRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilters, setActiveFilters] = useState<ModelFilter[]>([]);
     const [internalChatMode, setInternalChatMode] = useState<SelectorChatMode>(chatMode);
-    const [activeTab, setActiveTab] = useState<'models' | 'reasoning'>('models');
+    const [activeTab, setActiveTab] = useState<'models' | 'reasoning' | 'permissions'>(initialTab || 'models');
     const [pendingModel, setPendingModel] = useState<{ provider: string; id: string } | null>(null);
+
+    useEffect(() => {
+        if (isOpen && initialTab) {
+            setActiveTab(initialTab);
+        }
+    }, [isOpen, initialTab]);
     const [modalStyle, setModalStyle] = useState<React.CSSProperties>({});
 
     // Calculate modal position to ensure it stays within viewport
@@ -396,6 +640,31 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
         [handleClose, requiresReasoningSelection, canConfirm]
     );
 
+    const updatePermissionPolicy = useCallback(
+        (
+            key: 'commandPolicy' | 'pathPolicy',
+            value: string
+        ) => {
+            if (!permissionPolicy || !_onUpdatePermissionPolicy) {
+                return;
+            }
+
+            if (key === 'commandPolicy') {
+                if (!isCommandPolicy(value)) {
+                    return;
+                }
+                _onUpdatePermissionPolicy({ ...permissionPolicy, commandPolicy: value });
+                return;
+            }
+
+            if (!isPathPolicy(value)) {
+                return;
+            }
+            _onUpdatePermissionPolicy({ ...permissionPolicy, pathPolicy: value });
+        },
+        [_onUpdatePermissionPolicy, permissionPolicy]
+    );
+
     if (!isOpen) {
         return null;
     }
@@ -419,10 +688,10 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                 ref={modalRef}
                 style={modalStyle}
                 className={cn(
-                    'relative w-full max-w-3xl max-h-screen flex flex-col',
-                    'bg-popover/95 backdrop-blur-xl rounded-2xl shadow-2xl',
-                    'border border-border/50',
-                    'animate-in fade-in-0 zoom-in-95 duration-200'
+                    'relative w-full max-w-3xl max-h-[85vh] flex flex-col',
+                    'bg-popover/95 backdrop-blur-[20px] rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)]',
+                    'border border-border/40',
+                    'animate-in fade-in-0 zoom-in-95 duration-300 ease-out'
                 )}
                 onClick={e => e.stopPropagation()}
             >
@@ -444,8 +713,9 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                     t={t}
                     showReasoningTab={
                         !!pendingModelThinkingLevels?.length ||
-                        !!currentModelThinkingLevels && currentModelThinkingLevels.length > 0
+                        (!!currentModelThinkingLevels && currentModelThinkingLevels.length > 0)
                     }
+                    showPermissionsTab={!!permissionPolicy}
                 />
 
                 {activeTab === 'models' && (
@@ -456,7 +726,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                             searchInputRef={searchInputRef}
                             placeholder={t('modelSelector.searchModels')}
                         />
-                        <div className="px-4 pb-2 flex flex-wrap gap-2 border-b border-border/50">
+                        <div className="px-5 pb-3 flex flex-wrap gap-2 border-b border-border/40 bg-muted/5">
                             {MODEL_FILTER_OPTIONS.map(([key, labelKey]) => {
                                 const active = activeFilters.includes(key);
                                 return (
@@ -470,10 +740,10 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                             );
                                         }}
                                         className={cn(
-                                            'px-2.5 py-1 rounded-full text-xxs font-semibold border transition-colors',
+                                            'px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all duration-200',
                                             active
-                                                ? 'bg-primary/15 text-primary border-primary/40'
-                                                : 'bg-muted/30 text-muted-foreground border-border/40 hover:text-foreground'
+                                                ? 'bg-primary/20 text-primary border-primary/30 shadow-sm scale-105'
+                                                : 'bg-background/40 text-muted-foreground/60 border-border/40 hover:text-foreground hover:bg-background/60 shadow-sm'
                                         )}
                                     >
                                         {t(labelKey)}
@@ -487,110 +757,35 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                 {/* Content - Scrollable */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                     {/* Pending Model Reasoning Selection */}
-                    {activeTab === 'reasoning' &&
-                        pendingModel &&
-                        pendingModelThinkingLevels &&
-                        pendingModelThinkingLevels.length > 0 && (
-                            <div className="p-4">
-                                <div className="mb-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <Brain className="w-4 h-4 text-primary" />
-                                        <span className="text-sm font-medium text-foreground">
-                                            {t('modelSelector.selectReasoningLevel')}
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">
-                                        {t('modelSelector.reasoningRequired')}
-                                    </p>
-                                </div>
-                                <div className="text-xs text-muted-foreground font-medium mb-3">
-                                    {categories
-                                        .flatMap(c => Array.isArray(c.models) ? c.models : [])
-                                        .find(m => m.id === pendingModel.id)?.label ??
-                                        pendingModel.id}
-                                </div>
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                    {pendingModelThinkingLevels.map(level => {
-                                        const isActive = pendingThinkingLevel === level;
-                                        return (
-                                            <button
-                                                key={level}
-                                                onClick={() =>
-                                                    handlePendingThinkingLevelChange(level)
-                                                }
-                                                className={cn(
-                                                    'px-4 py-2 rounded-lg text-sm font-medium transition-all border',
-                                                    isActive
-                                                        ? 'bg-primary text-primary-foreground border-primary shadow-md'
-                                                        : 'border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/50 hover:border-border'
-                                                )}
-                                            >
-                                                {t(THINKING_LEVEL_LABEL_KEYS[level as ThinkingLevel] ?? '') || level}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                                <div className="flex items-center gap-2 pt-3 border-t border-border/50">
-                                    <button
-                                        onClick={handleCancelPending}
-                                        className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors"
-                                    >
-                                        {t('common.cancel')}
-                                    </button>
-                                    <button
-                                        onClick={handleConfirmSelection}
-                                        disabled={!canConfirm}
-                                        className={cn(
-                                            'flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all',
-                                            canConfirm
-                                                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                                                : 'bg-muted text-muted-foreground cursor-not-allowed'
-                                        )}
-                                    >
-                                        {canConfirm
-                                            ? t('modelSelector.confirmModel')
-                                            : t('modelSelector.selectLevelFirst')}
-                                    </button>
-                                </div>
-                            </div>
-                        )}
+                    {activeTab === 'reasoning' && (
+                        <ModelSelectorReasoningPanel
+                            canConfirm={canConfirm}
+                            categories={categories}
+                            currentModelInfo={currentModelInfo}
+                            currentModelThinkingLevels={currentModelThinkingLevels}
+                            handleCancelPending={handleCancelPending}
+                            handleConfirmSelection={handleConfirmSelection}
+                            handlePendingThinkingLevelChange={
+                                handlePendingThinkingLevelChange
+                            }
+                            onThinkingLevelChange={onThinkingLevelChange}
+                            pendingModel={pendingModel}
+                            pendingModelThinkingLevels={pendingModelThinkingLevels}
+                            pendingThinkingLevel={pendingThinkingLevel}
+                            selectedModel={selectedModel}
+                            t={t}
+                            thinkingLevel={thinkingLevel}
+                        />
+                    )}
 
-                    {/* Current Model Reasoning (when not in pending state) */}
-                    {activeTab === 'reasoning' &&
-                        !pendingModel &&
-                        currentModelThinkingLevels &&
-                        currentModelThinkingLevels.length > 0 && (
-                            <div className="p-4">
-                                <div className="text-xs text-muted-foreground font-medium mb-2">
-                                    {t('modelSelector.reasoning')} •{' '}
-                                    {currentModelInfo?.label ?? selectedModel}
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {currentModelThinkingLevels.map(level => {
-                                        const isActive = thinkingLevel === level;
-                                        return (
-                                            <button
-                                                key={level}
-                                                onClick={() =>
-                                                    onThinkingLevelChange?.(
-                                                        currentModelInfo?.id ?? selectedModel,
-                                                        level
-                                                    )
-                                                }
-                                                className={cn(
-                                                    'px-3 py-1.5 rounded-md text-xs font-medium transition-all border border-border/50',
-                                                    isActive
-                                                        ? 'bg-primary/20 text-primary'
-                                                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                                                )}
-                                            >
-                                                {t(THINKING_LEVEL_LABEL_KEYS[level as ThinkingLevel] ?? '') || level}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
+                    {activeTab === 'permissions' && permissionPolicy && _onUpdatePermissionPolicy && (
+                        <ModelSelectorPermissionsPanel
+                            onUpdatePermissionPolicy={_onUpdatePermissionPolicy}
+                            permissionPolicy={permissionPolicy}
+                            t={t}
+                            updatePermissionPolicy={updatePermissionPolicy}
+                        />
+                    )}
 
                     {activeTab === 'models' ? (
                         <ModelSelectorCategoryList

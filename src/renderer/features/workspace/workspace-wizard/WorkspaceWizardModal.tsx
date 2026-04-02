@@ -14,6 +14,7 @@ import { WizardProgress } from '@/components/shared/wizard';
 import { Modal } from '@/components/ui/modal';
 import { Language, useTranslation } from '@/i18n';
 import { WorkspaceMount } from '@/types';
+import { normalizeDirectorySelectionResult } from '@/utils/directory-selection.util';
 
 interface WorkspaceWizardModalProps {
     isOpen: boolean;
@@ -107,7 +108,7 @@ export const WorkspaceWizardModal: React.FC<WorkspaceWizardModalProps> = ({ isOp
         setIsLoading(true);
         setError(null);
         try {
-            const result = await window.electron.selectDirectory();
+            const result = normalizeDirectorySelectionResult(await window.electron.selectDirectory());
             if (result.success && result.path) {
                 const normalizedPath = result.path.replace(/[/\\]+$/, '');
                 const dirName = normalizedPath.split(/[/\\]/).pop() || t('workspaceWizard.defaultWorkspaceName');
@@ -237,7 +238,7 @@ export const WorkspaceWizardModal: React.FC<WorkspaceWizardModalProps> = ({ isOp
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} size="3xl" className="!p-0 overflow-hidden">
-            <div className="relative tw-min-h-620 flex flex-col p-8 pt-5 bg-gradient-to-b from-background to-muted/10">
+            <div className="relative flex min-h-0 flex-col bg-background p-4 pt-4 sm:p-6 sm:pt-5 lg:p-8">
                 <div className="mb-7 space-y-3">
                     <WizardProgress
                         steps={progressSteps}
@@ -252,7 +253,7 @@ export const WorkspaceWizardModal: React.FC<WorkspaceWizardModalProps> = ({ isOp
                     loadingLabel={t('common.loading')}
                 />
 
-                <div className="flex-1 flex flex-col overflow-hidden rounded-2xl border border-border/50 bg-card/40 backdrop-blur-sm p-6">
+                <div className="flex min-h-0 flex-1 flex-col overflow-auto rounded-2xl border border-border/30 bg-card p-4 sm:p-5 lg:p-6">
                     {renderStep()}
                 </div>
 

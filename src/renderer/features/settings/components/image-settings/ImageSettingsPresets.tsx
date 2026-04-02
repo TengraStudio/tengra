@@ -1,4 +1,6 @@
-import { XCircle } from 'lucide-react';
+import { Button } from '@renderer/components/ui/button';
+import { Input } from '@renderer/components/ui/input';
+import { Bookmark, Download,Plus, Share2, Trash2, Zap } from 'lucide-react';
 import React from 'react';
 
 import { ImagePresetEntry } from '../../types';
@@ -33,66 +35,113 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
     t,
 }) => {
     return (
-        <div className="rounded-xl border border-border/40 bg-muted/30 p-4">
-            <h5 className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                {t('settings.images.presetsTitle')}
-            </h5>
-            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                <input
-                    value={presetName}
-                    onChange={event => setPresetName(event.target.value)}
-                    placeholder={t('settings.images.presetName')}
-                    className="rounded-md border border-border/40 bg-background/40 px-2 py-1.5 text-xs"
-                />
-                <input
-                    value={presetPromptPrefix}
-                    onChange={event => setPresetPromptPrefix(event.target.value)}
-                    placeholder={t('settings.images.promptPrefix')}
-                    className="rounded-md border border-border/40 bg-background/40 px-2 py-1.5 text-xs"
-                />
+        <div className="bg-card rounded-3xl border border-border/40 p-8 space-y-8 shadow-sm group/presets hover:border-border/60 transition-all duration-500 overflow-hidden relative">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1 relative z-10">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-2xl bg-primary/10 text-primary shadow-lg shadow-primary/5 group-hover/presets:scale-110 transition-transform duration-500">
+                        <Bookmark className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-foreground group-hover/presets:text-primary transition-colors">
+                            {t('settings.images.presetsTitle')}
+                        </h3>
+                        <p className="text-[10px] text-muted-foreground mt-1 font-bold opacity-60">
+                            {presetEntries.length} {t('settings.images.savedPresets')}
+                        </p>
+                    </div>
+                </div>
             </div>
-            <button
-                onClick={() => { void handleSavePreset(); }}
-                className="mt-2 rounded-lg border border-primary/35 px-2.5 py-1 tw-text-10 font-bold uppercase tracking-wider text-primary"
-            >
-                {t('settings.images.savePreset')}
-            </button>
-            <div className="mt-3 space-y-1.5">
+
+            <div className="space-y-6 relative z-10">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                        <div className="text-[9px] font-bold text-muted-foreground/40 px-1">Preset Name</div>
+                        <Input
+                            value={presetName}
+                            onChange={event => setPresetName(event.target.value)}
+                            placeholder={t('settings.images.presetName')}
+                            className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 text-xs font-bold placeholder:text-muted-foreground/30 shadow-inner group-hover:bg-muted/30 transition-all"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <div className="text-[9px] font-bold text-muted-foreground/40 px-1">Prompt Prefix</div>
+                        <Input
+                            value={presetPromptPrefix}
+                            onChange={event => setPresetPromptPrefix(event.target.value)}
+                            placeholder={t('settings.images.promptPrefix')}
+                            className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 text-xs font-bold placeholder:text-muted-foreground/30 shadow-inner group-hover:bg-muted/30 transition-all"
+                        />
+                    </div>
+                </div>
+                <Button
+                    onClick={() => { void handleSavePreset(); }}
+                    className="h-12 px-8 rounded-2xl bg-foreground text-background hover:bg-primary hover:text-primary-foreground text-[10px] font-bold transition-all active:scale-95 shadow-xl shadow-black/10 flex items-center gap-3 w-full sm:w-auto"
+                >
+                    <Plus className="w-4 h-4" />
+                    {t('settings.images.savePreset')}
+                </Button>
+            </div>
+
+            <div className="space-y-3 relative z-10">
                 {presetEntries.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">{t('settings.images.noPresets')}</p>
+                    <div className="flex flex-col items-center justify-center py-10 text-center bg-muted/5 border-2 border-dashed border-border/20 rounded-2xl opacity-40">
+                         <p className="text-[10px] font-bold text-muted-foreground px-6">
+                            {t('settings.images.noPresets')}
+                        </p>
+                    </div>
                 ) : (
-                    presetEntries.map(preset => (
-                        <div key={preset.id} className="flex items-center justify-between rounded border border-border/40 bg-background/40 px-2 py-1 text-xs">
-                            <span className="truncate">{preset.name}</span>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => { void handleExportPresetShare(preset.id); }}
-                                    className="rounded border border-border/50 px-1.5 py-0.5 tw-text-10 text-muted-foreground"
-                                >
-                                    {t('settings.images.exportPreset')}
-                                </button>
-                                <button onClick={() => { void handleDeletePreset(preset.id); }} className="text-destructive">
-                                    <XCircle className="h-3.5 w-3.5" />
-                                </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                        {presetEntries.map(preset => (
+                            <div key={preset.id} className="group/item flex items-center justify-between gap-4 bg-background/50 border border-border/20 rounded-2xl px-5 py-4 transition-all hover:bg-muted/10 hover:border-border/40 shadow-sm">
+                                <div className="flex items-center gap-4 min-w-0">
+                                    <div className="h-2 w-2 rounded-full bg-primary/40 group-hover/item:bg-primary group-hover/item:scale-125 transition-all" />
+                                    <span className="text-[10px] font-bold text-foreground truncate">{preset.name}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => { void handleExportPresetShare(preset.id); }}
+                                        className="h-8 w-8 text-muted-foreground/40 hover:text-primary hover:bg-primary/10 rounded-xl transition-all hover:scale-110"
+                                    >
+                                        <Share2 className="w-3.5 h-3.5" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => { void handleDeletePreset(preset.id); }}
+                                        className="h-8 w-8 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 rounded-xl transition-all hover:scale-110"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                    </Button>
+                                </div>
                             </div>
-                        </div>
-                    ))
+                        ))}
+                    </div>
                 )}
             </div>
-            <div className="mt-3 rounded-lg border border-border/40 bg-background/40 p-2">
+
+            <div className="bg-muted/20 border border-border/20 rounded-3xl p-6 space-y-4 relative z-10 group/share">
+                <div className="flex items-center gap-3 px-1">
+                    <Zap className="w-3.5 h-3.5 text-primary" />
+                    <div className="text-[10px] font-bold text-muted-foreground/40">Import / Export Code</div>
+                </div>
                 <textarea
                     value={presetShareCode}
                     onChange={event => setPresetShareCode(event.target.value)}
                     placeholder={t('settings.images.presetShareCodePlaceholder')}
-                    className="tw-min-h-58 w-full rounded-md border border-border/40 bg-background/40 px-2 py-1.5 font-mono tw-text-10"
+                    className="tw-min-h-32 w-full rounded-2xl border border-border/40 bg-background/40 p-6 font-mono text-[9px] text-muted-foreground leading-relaxed shadow-inner focus:ring-1 focus:ring-primary/20 outline-none transition-all custom-scrollbar"
                 />
-                <button
+                <Button
                     onClick={() => { void handleImportPresetShare(); }}
-                    className="mt-2 rounded-lg border border-primary/35 px-2.5 py-1 tw-text-10 font-bold uppercase tracking-wider text-primary"
+                    className="h-10 px-6 rounded-xl border-border/40 bg-muted/40 text-[9px] font-bold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all active:scale-95 shadow-sm flex items-center gap-2 w-full"
                 >
+                    <Download className="w-3.5 h-3.5" />
                     {t('settings.images.importPresetShare')}
-                </button>
+                </Button>
             </div>
+
+            <div className="absolute -right-20 -top-20 w-80 h-80 bg-primary/5 rounded-full blur-[100px] opacity-30 pointer-events-none" />
         </div>
     );
 };

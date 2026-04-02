@@ -58,7 +58,7 @@ export const ThoughtSection = memo(
                                 )}
                             />
                         </div>
-                        <span className="text-xxs font-black uppercase tracking-widest">
+                        <span className="text-xxs font-bold">
                             {isThoughtExpanded
                                 ? t('messageBubble.TengraThinking')
                                 : t('messageBubble.showThought')}

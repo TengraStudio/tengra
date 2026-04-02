@@ -1,0 +1,148 @@
+/**
+ * Dialog Component Styles
+ * Component-specific CSS custom properties for Tengra Dialog
+ */
+
+:root {
+  --dialog-overlay-bg: rgb(0 0 0 / 80%);
+  --dialog-bg: hsl(var(--background));
+  --dialog-fg: hsl(var(--foreground));
+  --dialog-border: hsl(var(--border));
+  --dialog-border-radius: 0.5rem;
+  --dialog-shadow: 0 25px 50px -12px rgb(0 0 0 / 25%);
+  --dialog-padding: 1.5rem;
+  --dialog-max-width: 32rem;
+  --dialog-title-font-size: 1.125rem;
+  --dialog-title-font-weight: 600;
+  --dialog-description-fg: hsl(var(--muted-foreground));
+  --dialog-close-size: 1rem;
+  --dialog-close-opacity: 0.7;
+  --dialog-transition: all 0.2s ease;
+}
+
+/* Dialog Overlay */
+.tengra-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background-color: var(--dialog-overlay-bg);
+  backdrop-filter: blur(4px);
+  transition: var(--dialog-transition);
+}
+
+/* Dialog Container */
+.tengra-dialog {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 50;
+  display: grid;
+  width: 100%;
+  max-width: var(--dialog-max-width);
+  transform: translate(-50%, -50%);
+  gap: 1rem;
+  border: 1px solid var(--dialog-border);
+  background-color: var(--dialog-bg);
+  color: var(--dialog-fg);
+  padding: var(--dialog-padding);
+  box-shadow: var(--dialog-shadow);
+  border-radius: var(--dialog-border-radius);
+  transition: var(--dialog-transition);
+}
+
+@media (width >= 640px) {
+  .tengra-dialog {
+    border-radius: 0.75rem;
+  }
+}
+
+/* Dialog Header */
+.tengra-dialog-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  text-align: center;
+}
+
+@media (width >= 640px) {
+  .tengra-dialog-header {
+    text-align: left;
+  }
+}
+
+/* Dialog Title */
+.tengra-dialog-title {
+  font-size: var(--dialog-title-font-size);
+  font-weight: var(--dialog-title-font-weight);
+  line-height: 1;
+  letter-spacing: -0.025em;
+  color: var(--dialog-fg);
+}
+
+/* Dialog Description */
+.tengra-dialog-description {
+  font-size: 0.875rem;
+  color: var(--dialog-description-fg);
+}
+
+/* Dialog Content Area */
+.tengra-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Dialog Footer */
+.tengra-dialog-footer {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.5rem;
+}
+
+@media (width >= 640px) {
+  .tengra-dialog-footer {
+    flex-direction: row;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+}
+
+/* Dialog Close Button */
+.tengra-dialog-close {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.125rem;
+  opacity: var(--dialog-close-opacity);
+  transition: var(--dialog-transition);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.tengra-dialog-close:hover {
+  opacity: 1;
+}
+
+.tengra-dialog-close:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(var(--ring));
+}
+
+.tengra-dialog-close:disabled {
+  pointer-events: none;
+}
+
+.tengra-dialog-close svg {
+  width: var(--dialog-close-size);
+  height: var(--dialog-close-size);
+}
+
+.tengra-dialog-close[data-state='open'] {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--muted-foreground));
+}

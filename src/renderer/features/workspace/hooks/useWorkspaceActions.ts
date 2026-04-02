@@ -1,3 +1,4 @@
+import { useWorkspaceSelection } from '@/context/WorkspaceContext';
 import { Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -14,6 +15,8 @@ export function useWorkspaceActions({
     t,
     onUpdateWorkspace,
 }: WorkspaceActionsProps) {
+    const { selectedWorkspace, setSelectedWorkspace, loadWorkspaces } = useWorkspaceSelection();
+
     const handleUpdateWorkspace = async (updates: Partial<Workspace>) => {
         try {
             if (onUpdateWorkspace) {
@@ -21,6 +24,13 @@ export function useWorkspaceActions({
             } else {
                 await window.electron.db.updateWorkspace(workspace.id, updates);
             }
+            if (selectedWorkspace?.id === workspace.id) {
+                setSelectedWorkspace({
+                    ...selectedWorkspace,
+                    ...updates,
+                });
+            }
+            await loadWorkspaces();
         } catch (error) {
             appLogger.error('WorkspaceActions', 'Update failed', error as Error);
             notify('error', t('workspaceDashboard.updateFailed'));

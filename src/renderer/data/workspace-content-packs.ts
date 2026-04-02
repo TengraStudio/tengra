@@ -48,15 +48,7 @@ export const editorPowerWorkflows = [
     'Multi-cursor batch edits followed by semantic preview/apply.',
     'Search/replace with rename impact guards and exclude patterns.',
 ];
-
-export const onboardingChecklist: WorkspaceChecklistItem[] = [
-    { id: 'mounts', title: 'Configure mounts', description: 'Attach local/SSH roots and verify labels.' },
-    { id: 'editor', title: 'Open editor', description: 'Open a code file and verify hints/lens toggles.' },
-    { id: 'terminal', title: 'Run terminal check', description: 'Run a simple command and verify output stream.' },
-    { id: 'git', title: 'Check git status', description: 'Confirm branch, status, and baseline cleanliness.' },
-    { id: 'tasks', title: 'Start first task', description: 'Create/track one task and mark progress.' },
-];
-
+ 
 export const troubleshootKnowledgeBase: TroubleshootEntry[] = [
     {
         id: 'ssh-auth-failure',

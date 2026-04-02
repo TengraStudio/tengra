@@ -1,3 +1,5 @@
+import { CheckedState } from '@radix-ui/react-checkbox';
+import { Checkbox } from '@renderer/components/ui/checkbox';
 import React from 'react';
 
 import { SettingsSectionProps } from './types';
@@ -13,14 +15,18 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({ formData, setF
             <div className="p-4 bg-muted/20 border border-border/50 rounded-xl space-y-3">
                 <div className="flex items-center justify-between">
                     <div>
-                        <div className="text-sm font-medium text-foreground">{t('workspaces.fileWatching')}</div>
-                        <div className="text-xs text-muted-foreground">{t('workspaces.fileWatchingDesc')}</div>
+                        <div className="text-sm font-medium text-foreground">
+                            {t('workspaces.fileWatching')}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                            {t('workspaces.fileWatchingDesc')}
+                        </div>
                     </div>
-                    <input
-                        type="checkbox"
+                    <Checkbox
                         checked={formData.fileWatchEnabled}
-                        onChange={e => setFormData(prev => ({ ...prev, fileWatchEnabled: e.target.checked }))}
-                        className="rounded border-border/50 bg-muted/20 text-primary focus:ring-primary h-5 w-5"
+                        onCheckedChange={(checked: CheckedState) =>
+                            setFormData(prev => ({ ...prev, fileWatchEnabled: checked === true }))
+                        }
                     />
                 </div>
             </div>
@@ -28,14 +34,18 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({ formData, setF
             <div className="p-4 bg-muted/20 border border-border/50 rounded-xl space-y-3">
                 <div className="flex items-center justify-between">
                     <div>
-                        <div className="text-sm font-medium text-foreground">{t('workspaces.indexing')}</div>
-                        <div className="text-xs text-muted-foreground">{t('workspaces.indexingDesc')}</div>
+                        <div className="text-sm font-medium text-foreground">
+                            {t('workspaces.indexing')}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                            {t('workspaces.indexingDesc')}
+                        </div>
                     </div>
-                    <input
-                        type="checkbox"
+                    <Checkbox
                         checked={formData.indexingEnabled}
-                        onChange={e => setFormData(prev => ({ ...prev, indexingEnabled: e.target.checked }))}
-                        className="rounded border-border/50 bg-muted/20 text-primary focus:ring-primary h-5 w-5"
+                        onCheckedChange={(checked: CheckedState) =>
+                            setFormData(prev => ({ ...prev, indexingEnabled: checked === true }))
+                        }
                     />
                 </div>
             </div>
@@ -43,17 +53,23 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({ formData, setF
             <div className="p-4 bg-muted/20 border border-border/50 rounded-xl space-y-3">
                 <div className="flex items-center justify-between">
                     <div>
-                        <div className="text-sm font-medium text-foreground">{t('workspaces.autoSave')}</div>
-                        <div className="text-xs text-muted-foreground">{t('workspaces.autoSaveDesc')}</div>
+                        <div className="text-sm font-medium text-foreground">
+                            {t('workspaces.autoSave')}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                            {t('workspaces.autoSaveDesc')}
+                        </div>
                     </div>
-                    <input
-                        type="checkbox"
+                    <Checkbox
                         checked={formData.autoSave}
-                        onChange={e => setFormData(prev => ({ ...prev, autoSave: e.target.checked }))}
-                        className="rounded border-border/50 bg-muted/20 text-primary focus:ring-primary h-5 w-5"
+                        onCheckedChange={(checked: CheckedState) =>
+                            setFormData(prev => ({ ...prev, autoSave: checked === true }))
+                        }
                     />
                 </div>
             </div>
         </div>
     </div>
 );
+
+

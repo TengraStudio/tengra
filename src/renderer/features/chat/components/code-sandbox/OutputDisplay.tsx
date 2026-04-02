@@ -43,7 +43,7 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({
             )}
 
             {!stdout && !stderr && (
-                <p className="text-sm italic text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                     {success ? t('codeSandbox.noOutput') : t('codeSandbox.error')}
                 </p>
             )}

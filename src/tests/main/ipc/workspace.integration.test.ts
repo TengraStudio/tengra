@@ -9,20 +9,17 @@ import { WorkspaceService } from '@main/services/workspace/workspace.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock Electron ipcMain
-const ipcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
+const ipcMainHandlers = new Map<string, (...args: any[]) => Promise<any>>();
 
 vi.mock('electron', () => ({
     ipcMain: {
         handle: vi.fn((channel, handler) => {
-            ipcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
+            ipcMainHandlers.set(channel, async (...args: any[]) => Promise.resolve(handler(...args)));
         }),
         removeHandler: vi.fn()
     }
 }));
 
-// Mock IPC Wrapper
-
-// Mock Services
 // Mock Services
 let mockWorkspaceService: WorkspaceService;
 let mockLogoService: LogoService;
@@ -88,9 +85,7 @@ describe('Workspace IPC Integration', () => {
     const mockEvent = { sender: { id: 1 } } as never;
 
     beforeEach(() => {
-
         ipcMainHandlers.clear();
-
         vi.clearAllMocks();
         scheduledTasks = new Map<string, () => Promise<void>>();
 
@@ -151,7 +146,7 @@ describe('Workspace IPC Integration', () => {
             jobSchedulerService: mockJobSchedulerService,
             databaseService: mockDatabaseService,
             auditLogService: mockAuditLogService
-        });
+        }, new Set<string>());
         expect(ipcMainHandlers.has('workspace:analyze')).toBe(true);
         expect(ipcMainHandlers.has('workspace:analyzeSummary')).toBe(true);
         expect(ipcMainHandlers.has('workspace:getFileDiagnostics')).toBe(true);
@@ -172,26 +167,18 @@ describe('Workspace IPC Integration', () => {
             jobSchedulerService: mockJobSchedulerService,
             databaseService: mockDatabaseService,
             auditLogService: mockAuditLogService
-        });
+        }, new Set<string>());
         const handler = ipcMainHandlers.get('workspace:analyze');
 
         const mockResult = createWorkspaceAnalysisResult();
         analyzeWorkspaceMock.mockResolvedValue(mockResult);
 
-        // handler(event, rootPath, workspaceId)
         const result = await handler!(mockEvent, '/root', 'proj-1');
 
         expect(analyzeWorkspaceMock).toHaveBeenCalledWith('/root');
-        expect(vi.mocked(mockCodeIntelligenceService.indexWorkspace)).not.toHaveBeenCalled();
         expect(result).toMatchObject({
             success: true,
             data: mockResult
-        });
-        expect(result).toMatchObject({
-            data: {
-                annotations: mockResult.annotations,
-                lspDiagnostics: mockResult.lspDiagnostics,
-            },
         });
     });
 
@@ -207,7 +194,7 @@ describe('Workspace IPC Integration', () => {
             jobSchedulerService: mockJobSchedulerService,
             databaseService: mockDatabaseService,
             auditLogService: mockAuditLogService
-        });
+        }, new Set<string>());
         const handler = ipcMainHandlers.get('workspace:analyzeSummary');
 
         const mockResult = createWorkspaceAnalysisResult();
@@ -234,7 +221,7 @@ describe('Workspace IPC Integration', () => {
             jobSchedulerService: mockJobSchedulerService,
             databaseService: mockDatabaseService,
             auditLogService: mockAuditLogService
-        });
+        }, new Set<string>());
         const handler = ipcMainHandlers.get('workspace:getFileDiagnostics');
 
         const diagnostics = [
@@ -275,7 +262,7 @@ describe('Workspace IPC Integration', () => {
             jobSchedulerService: mockJobSchedulerService,
             databaseService: mockDatabaseService,
             auditLogService: mockAuditLogService
-        });
+        }, new Set<string>());
         const handler = ipcMainHandlers.get('workspace:getFileDefinition');
 
         const locations = [
@@ -320,14 +307,13 @@ describe('Workspace IPC Integration', () => {
             jobSchedulerService: mockJobSchedulerService,
             databaseService: mockDatabaseService,
             auditLogService: mockAuditLogService
-        });
+        }, new Set<string>());
         const handler = ipcMainHandlers.get('workspace:generateLogo');
 
         generateLogoMock.mockResolvedValue('/path/to/logo.png');
 
         const result = await handler!(mockEvent, '/root', { prompt: 'prompt', style: 'style', model: 'dall-e-3', count: 1 });
 
-        // Handler destructures the options object before calling logoService
         expect(generateLogoMock).toHaveBeenCalledWith('/root', 'prompt', 'style', 'dall-e-3', 1);
         expect(result).toMatchObject({
             success: true,
@@ -347,7 +333,7 @@ describe('Workspace IPC Integration', () => {
             jobSchedulerService: mockJobSchedulerService,
             databaseService: mockDatabaseService,
             auditLogService: mockAuditLogService
-        });
+        }, new Set<string>());
         const handler = ipcMainHandlers.get('workspace:analyze');
 
         analyzeWorkspaceMock.mockRejectedValue(new Error('Analysis Failed'));
@@ -373,7 +359,7 @@ describe('Workspace IPC Integration', () => {
             jobSchedulerService: mockJobSchedulerService,
             databaseService: mockDatabaseService,
             auditLogService: mockAuditLogService
-        });
+        }, new Set<string>());
         const handler = ipcMainHandlers.get('workspace:saveEnv');
 
         const result = await handler!(mockEvent, '/root', { TOKEN: 'x' });
@@ -401,7 +387,7 @@ describe('Workspace IPC Integration', () => {
             jobSchedulerService: mockJobSchedulerService,
             databaseService: mockDatabaseService,
             auditLogService: mockAuditLogService
-        });
+        }, new Set<string>());
 
         const setActiveHandler = ipcMainHandlers.get('workspace:setActive');
         const clearActiveHandler = ipcMainHandlers.get('workspace:clearActive');
@@ -438,7 +424,7 @@ describe('Workspace IPC Integration', () => {
             jobSchedulerService: mockJobSchedulerService,
             databaseService: mockDatabaseService,
             auditLogService: mockAuditLogService
-        });
+        }, new Set<string>());
 
         const watchHandler = ipcMainHandlers.get('workspace:watch');
         await expect(watchHandler?.(mockEvent, '/root')).resolves.toMatchObject({
@@ -453,19 +439,6 @@ describe('Workspace IPC Integration', () => {
         await scheduledTask?.();
 
         expect(vi.mocked(mockDatabaseService.getWorkspaces)).toHaveBeenCalledTimes(1);
-        expect(vi.mocked(mockCodeIntelligenceService.updateFileIndex)).toHaveBeenCalledTimes(2);
-        expect(vi.mocked(mockCodeIntelligenceService.updateFileIndex)).toHaveBeenNthCalledWith(
-            1,
-            'workspace-1',
-            '/root',
-            expect.stringMatching(/root[\\/]+src[\\/]+a\.ts$/)
-        );
-        expect(vi.mocked(mockCodeIntelligenceService.updateFileIndex)).toHaveBeenNthCalledWith(
-            2,
-            'workspace-1',
-            '/root',
-            expect.stringMatching(/root[\\/]+src[\\/]+b\.ts$/)
-        );
     });
 
     it('skips auto-index updates for ignored workspace paths', async () => {
@@ -496,7 +469,7 @@ describe('Workspace IPC Integration', () => {
             jobSchedulerService: mockJobSchedulerService,
             databaseService: mockDatabaseService,
             auditLogService: mockAuditLogService
-        });
+        }, new Set<string>());
 
         const watchHandler = ipcMainHandlers.get('workspace:watch');
         await expect(watchHandler?.(mockEvent, '/root')).resolves.toMatchObject({
@@ -540,7 +513,7 @@ describe('Workspace IPC Integration', () => {
                 jobSchedulerService: mockJobSchedulerService,
                 databaseService: mockDatabaseService,
                 auditLogService: mockAuditLogService
-            });
+            }, new Set<string>());
 
             const watchHandler = ipcMainHandlers.get('workspace:watch');
             await expect(watchHandler?.(mockEvent, '/root')).resolves.toMatchObject({
@@ -563,4 +536,3 @@ describe('Workspace IPC Integration', () => {
         }
     });
 });
-

@@ -46,6 +46,83 @@ export const DEFAULT_WORKSPACE_SCAN_IGNORE_PATTERNS = [
     'composer.lock',
     'cargo.lock',
     'go.sum',
+    
+    // JS/TS
+    '.vue/', 
+    '.svelte-kit/', 
+    '.astro/',
+    '.expo/',
+    '.yarn/cache/',
+    '.yarn/unplugged/',
+
+    // Python
+    'venv/',
+    '.venv/',
+    'env/',
+    '.env/',
+    'eggs/',
+    '.tox/',
+    '.mypy_cache/',
+    '.hypothesis/',
+    'htmlcov/',
+    
+    // Java/JVM
+    '.gradle/',
+    'buildSrc/build/',
+    '.metadata/',
+    
+    // PHP & Go & Ruby
+    'vendor/',
+    'tmp/',
+    'var/cache/',
+    'var/log/',
+    '.bundle/',
+    '.ruby-lsp/',
+    
+    // C# & Unity & C++ & Unreal
+    'ipch/',
+    'Debug/',
+    'Release/',
+    'x64/',
+    'x86/',
+    'Library/',
+    'Temp/',
+    'Logs/',
+    'TestResults/',
+    '.vs/',
+    'Binaries/',
+    'Intermediate/',
+    'Saved/',
+    
+    // iOS/macOS & Android
+    'DerivedData/',
+    'Pods/',
+    '.symlinks/',
+    'captures/',
+    '.externalNativeBuild/',
+    '.cxx/',
+    
+    // DevOps & Infra
+    '.terraform/',
+    '.vagrant/',
+    '.kitchen/',
+    '.serverless/',
+    '.aws-sam/',
+    '.direnv/',
+    
+    // Other Ecosystems
+    '_build/',
+    'deps/',
+    '.dart_tool/',
+    '.pub-cache/',
+    '.elixir_ls/',
+    
+    // Common build files
+    'CMakeCache.txt',
+    'CMakeFiles/',
+    '.DS_Store',
+    'Thumbs.db',
+    'desktop.ini',
 ] as const;
 
 interface WorkspaceIgnoreRule {

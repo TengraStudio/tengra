@@ -101,7 +101,7 @@ export function TerminalAppearanceModals({
                     sideOffset={8}
                     className="tw-w-300 p-2 bg-popover border border-border rounded-lg space-y-2"
                 >
-                    <div className="tw-text-10 uppercase tracking-wide text-muted-foreground">
+                    <div className="tw-text-10 text-muted-foreground">
                         {t('terminal.theme')}
                     </div>
                     <div className="max-h-28 overflow-y-auto space-y-1">
@@ -135,7 +135,7 @@ export function TerminalAppearanceModals({
                         <div style={{ color: resolvedTerminalAppearance.theme.red }}>{t('terminal.previewError')}</div>
                         <div style={{ color: resolvedTerminalAppearance.theme.yellow }}>{t('terminal.previewWarning')}</div>
                     </div>
-                    <div className="tw-text-10 uppercase tracking-wide text-muted-foreground">
+                    <div className="tw-text-10 text-muted-foreground">
                         {t('terminal.font')}
                     </div>
                     <div className="space-y-1">
@@ -166,7 +166,7 @@ export function TerminalAppearanceModals({
                         />
                     </label>
                     <div className="pt-1 border-t border-border/50 space-y-1">
-                        <div className="tw-text-10 uppercase tracking-wide text-muted-foreground">
+                        <div className="tw-text-10 text-muted-foreground">
                             {t('terminal.cursorStyle')}
                         </div>
                         <div className="grid grid-cols-3 gap-1">
@@ -279,7 +279,7 @@ export function TerminalAppearanceModals({
                         />
                     </label>
                     <div className="pt-1 border-t border-border/50 space-y-1">
-                        <div className="tw-text-10 uppercase tracking-wide text-muted-foreground">
+                        <div className="tw-text-10 text-muted-foreground">
                             {t('terminal.customTheme')}
                         </div>
                         <div className="grid grid-cols-2 gap-1.5">

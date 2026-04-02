@@ -40,7 +40,7 @@ const StatsPanelContent = ({ stats }: { stats: MemoryStatistics }) => {
                 <config.icon className={cn('w-5 h-5', config.color.split(' ')[1])} />
                 <div>
                   <p className="text-sm font-medium">{t(config.labelKey)}</p>
-                  <p className="text-2xl font-black">{count}</p>
+                  <p className="text-2xl font-bold">{count}</p>
                 </div>
               </div>
             );
@@ -103,10 +103,10 @@ interface MetricCardProps {
 
 const MetricCard: React.FC<MetricCardProps> = ({ label, value, subtitle }) => (
   <div className="p-3 rounded-lg bg-muted/30">
-    <p className="text-xxs font-bold uppercase tracking-widest text-muted-foreground/60">
+    <p className="text-xxs font-bold text-muted-foreground/60">
       {label}
     </p>
-    <p className="text-xl font-black">{value}</p>
+    <p className="text-xl font-bold">{value}</p>
     {subtitle && <p className="text-xxs text-muted-foreground/50">{subtitle}</p>}
   </div>
 );

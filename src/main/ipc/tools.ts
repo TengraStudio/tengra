@@ -27,12 +27,13 @@ const toolExecuteResponseSchema = z.object({
     errorType: z.enum(['timeout', 'limit', 'permission', 'notFound', 'unknown']).optional(),
 });
 
-const WORKSPACE_AGENT_METADATA_KEY = 'workspaceAgentSession';
+import { WORKSPACE_AGENT_METADATA_KEY } from '@shared/constants/defaults';
 
 const DEFAULT_PERMISSION_POLICY: WorkspaceAgentPermissionPolicy = {
     commandPolicy: 'ask-every-time',
     pathPolicy: 'workspace-root-only',
     allowedCommands: [],
+    disallowedCommands: [],
     allowedPaths: [],
 };
 
@@ -89,7 +90,7 @@ function isPathAllowed(
     workspacePath: string,
     permissionPolicy: WorkspaceAgentPermissionPolicy
 ): boolean {
-    if (permissionPolicy.pathPolicy === 'restricted-off-dangerous') {
+    if (permissionPolicy.pathPolicy === 'restricted-off-dangerous' || permissionPolicy.pathPolicy === 'full-access') {
         return true;
     }
 
@@ -166,6 +167,17 @@ async function guardWorkspaceAgentToolExecution(options: {
     if (options.toolName === 'execute_command') {
         const command = typeof options.args.command === 'string' ? options.args.command : '';
         const commandBase = getCommandBase(command);
+        if (
+            permissionPolicy.disallowedCommands.some(disallowedCommand =>
+                disallowedCommand.trim().toLowerCase() === commandBase
+            )
+        ) {
+            return {
+                success: false,
+                error: `Command '${commandBase || command}' is explicitly blocked for this workspace session.`,
+                errorType: 'permission',
+            };
+        }
         if (permissionPolicy.commandPolicy === 'blocked') {
             return {
                 success: false,

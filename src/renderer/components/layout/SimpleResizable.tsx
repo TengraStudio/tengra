@@ -6,6 +6,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 
+import './simple-resizable.css';
+
 // Removed duplicate interface
 
 interface ResizableContainerProps {
@@ -46,7 +48,7 @@ export const ResizablePane: React.FC<ResizablePaneProps> = ({
     return (
         <div
             ref={containerRef}
-            className={cn('overflow-hidden', className)}
+            className={cn('tengra-resizable-pane', className)}
             style={{
                 width: direction === 'horizontal' ? `${size}%` : '100%',
                 height: direction === 'vertical' ? `${size}%` : '100%',
@@ -105,21 +107,23 @@ export const ResizableHandle: React.FC<{
         <div
             onMouseDown={handleMouseDown}
             className={cn(
-                'bg-transparent hover:bg-primary/20 transition-colors cursor-col-resize flex items-center justify-center group z-50',
-                direction === 'vertical' && 'cursor-row-resize',
-                isDragging && 'bg-primary/30',
+                'tengra-resizable-handle',
+                direction === 'horizontal' ? 'tengra-resizable-handle--horizontal' : 'tengra-resizable-handle--vertical',
+                isDragging && 'tengra-resizable-handle--dragging',
                 className
             )}
             style={{
-                width: direction === 'horizontal' ? '4px' : '100%',
-                height: direction === 'vertical' ? '4px' : '100%',
+                width: direction === 'horizontal' ? undefined : '100%',
+                height: direction === 'vertical' ? undefined : '100%',
                 flexShrink: 0,
             }}
         >
             <div
                 className={cn(
-                    'rounded-full bg-border/50 group-hover:bg-primary/50 transition-colors',
-                    direction === 'horizontal' ? 'h-8 w-1' : 'w-8 h-1'
+                    'tengra-resizable-handle__indicator',
+                    direction === 'horizontal'
+                        ? 'tengra-resizable-handle__indicator--horizontal'
+                        : 'tengra-resizable-handle__indicator--vertical'
                 )}
             />
         </div>
@@ -134,8 +138,8 @@ export const ResizableContainer: React.FC<ResizableContainerProps> = ({
     return (
         <div
             className={cn(
-                'flex w-full h-full',
-                direction === 'horizontal' ? 'flex-row' : 'flex-col',
+                'tengra-resizable-container',
+                direction === 'horizontal' ? 'tengra-resizable-container--horizontal' : 'tengra-resizable-container--vertical',
                 className
             )}
         >

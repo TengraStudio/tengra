@@ -6,12 +6,34 @@ function getPort() {
     return process.parentPort || null;
 }
 
-function postResponse(requestId, success, payload, error) {
+function sendMessage(message) {
     const port = getPort();
-    if (!port) {
-        return;
+    if (port) {
+        port.postMessage(message);
+        return true;
     }
-    port.postMessage({ requestId, success, payload, error });
+
+    if (typeof process.send === 'function') {
+        process.send(message);
+        return true;
+    }
+
+    return false;
+}
+
+function postResponse(requestId, success, payload, error) {
+    sendMessage({ requestId, success, payload, error });
+}
+
+function registerMessageHandler(handler) {
+    const port = getPort();
+    if (port) {
+        port.on('message', handler);
+        return true;
+    }
+
+    process.on('message', handler);
+    return true;
 }
 
 function buildIntegrityHash(entry, prevHash, timestamp, details) {
@@ -79,35 +101,32 @@ function verifyIntegrity(logs, sampleSize) {
     return { ok: true, checked: boundedLogs.length };
 }
 
-const port = getPort();
-if (port) {
-    port.on('message', (message) => {
-        const requestId = typeof message?.requestId === 'string' ? message.requestId : '';
-        const type = typeof message?.type === 'string' ? message.type : '';
-        const payload = message?.payload ?? null;
+registerMessageHandler((message) => {
+    const requestId = typeof message?.requestId === 'string' ? message.requestId : '';
+    const type = typeof message?.type === 'string' ? message.type : '';
+    const payload = message?.payload ?? null;
 
-        try {
-            if (type === 'audit.prepareEntry') {
-                postResponse(
-                    requestId,
-                    true,
-                    prepareEntry(payload?.entry ?? {}, payload?.prevHash)
-                );
-                return;
-            }
-
-            if (type === 'audit.verifyIntegrity') {
-                postResponse(
-                    requestId,
-                    true,
-                    verifyIntegrity(payload?.logs, payload?.sampleSize ?? 200)
-                );
-                return;
-            }
-
-            postResponse(requestId, false, null, `Unsupported audit worker message: ${type}`);
-        } catch (error) {
-            postResponse(requestId, false, null, error instanceof Error ? error.message : String(error));
+    try {
+        if (type === 'audit.prepareEntry') {
+            postResponse(
+                requestId,
+                true,
+                prepareEntry(payload?.entry ?? {}, payload?.prevHash)
+            );
+            return;
         }
-    });
-}
+
+        if (type === 'audit.verifyIntegrity') {
+            postResponse(
+                requestId,
+                true,
+                verifyIntegrity(payload?.logs, payload?.sampleSize ?? 200)
+            );
+            return;
+        }
+
+        postResponse(requestId, false, null, `Unsupported audit worker message: ${type}`);
+    } catch (error) {
+        postResponse(requestId, false, null, error instanceof Error ? error.message : String(error));
+    }
+});

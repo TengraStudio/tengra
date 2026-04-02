@@ -29,8 +29,9 @@
 
 .selector-header h3 {
     margin: 0;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    line-height: var(--leading-tight);
     color: var(--text-primary, #ccc);
 }
 
@@ -46,10 +47,11 @@
 
 .selector-section h4 {
     margin: 4px 16px 8px;
-    font-size: 11px;
-    text-transform: uppercase;
+    font-size: var(--text-xxs);
+    font-weight: var(--font-semibold);
+    line-height: var(--leading-tight);
     color: var(--text-muted, #858585);
-    letter-spacing: 0.5px;
+    letter-spacing: 0.05em;
 }
 
 .selector-item {
@@ -81,13 +83,15 @@
 }
 
 .item-name {
-    font-size: 13px;
+    font-size: var(--text-xs);
+    line-height: var(--leading-tight);
     color: var(--text-primary, #ccc);
-    font-weight: 500;
+    font-weight: var(--font-medium);
 }
 
 .item-desc {
-    font-size: 11px;
+    font-size: var(--text-xxs);
+    line-height: var(--leading-tight);
     color: var(--text-muted, #858585);
 }
 
@@ -103,7 +107,8 @@
 
 .empty-message {
     padding: 8px 16px;
-    font-size: 12px;
+    font-size: var(--text-xs);
+    line-height: var(--leading-normal);
     color: var(--text-muted, #858585);
     font-style: italic;
 }
@@ -111,13 +116,15 @@
 .selector-loading {
     padding: 16px;
     text-align: center;
-    font-size: 12px;
+    font-size: var(--text-xs);
+    line-height: var(--leading-normal);
     color: var(--text-muted, #858585);
 }
 
 .docker-icon {
-    font-weight: bold;
-    font-size: 10px;
+    font-weight: var(--font-semibold);
+    font-size: var(--text-xxxs);
+    line-height: var(--leading-none);
     border: 1px solid;
     padding: 1px 3px;
     border-radius: 3px;

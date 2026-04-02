@@ -1,12 +1,5 @@
 .settings-container {
     @apply h-full flex flex-col overflow-hidden bg-background;
-
-    background-image:
-        linear-gradient(180deg, rgb(255 255 255 / 2%), transparent 14rem),
-        linear-gradient(90deg, rgb(148 163 184 / 8%) 1px, transparent 1px),
-        linear-gradient(180deg, rgb(148 163 184 / 8%) 1px, transparent 1px);
-    background-size: auto, 24px 24px, 24px 24px;
-    background-position: 0 0, 0 0, 0 0;
 }
 
 .settings-shell {
@@ -14,7 +7,7 @@
 }
 
 .settings-rail {
-    @apply min-h-0;
+    @apply flex flex-col h-full min-h-0 overflow-hidden lg:w-[21rem] shrink-0;
 }
 
 .settings-main {
@@ -23,4 +16,12 @@
 
 .settings-section {
     @apply space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500;
+}
+
+.settings-shell-card {
+    @apply rounded-[24px] border border-border/20 bg-muted/10;
+}
+
+.settings-shell-note {
+    @apply rounded-xl border border-border/20 bg-background/70 px-4 py-3 text-xs text-muted-foreground;
 }

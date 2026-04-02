@@ -21,7 +21,7 @@ export const CollaborationMemory = memo(({
 }: CollaborationMemoryProps) => {
     return (
         <Card className="p-4 space-y-3 bg-muted/20 border-muted-foreground/10 hover:bg-muted/40 transition-colors">
-            <label className="text-sm font-bold tracking-tight uppercase text-muted-foreground/80 mb-2 block">
+            <label className="text-sm font-bold text-muted-foreground/80 mb-2 block">
                 {t('chat.collaboration.sharedMemory')}
             </label>
             <div className="flex gap-2">
@@ -35,7 +35,7 @@ export const CollaborationMemory = memo(({
                     size="sm"
                     onClick={handleAddMemory}
                     disabled={!sharedMemoryNote.trim()}
-                    className="h-8 px-4 text-xs font-bold uppercase transition-transform hover:scale-105"
+                    className="h-8 px-4 text-xs font-bold transition-transform hover:scale-105"
                 >
                     {t('common.add')}
                 </Button>
@@ -43,7 +43,7 @@ export const CollaborationMemory = memo(({
             <div className="max-h-24 overflow-y-auto space-y-1.5 scrollbar-thin pr-1 transition-all">
                 {sharedMemory.length === 0 ? (
                     <div className="p-2 border border-dashed border-muted-foreground/10 rounded-md text-center">
-                        <span className="text-xxxs text-muted-foreground italic font-medium opacity-50 uppercase tracking-widest">
+                        <span className="text-xxxs text-muted-foreground font-medium opacity-50">
                             {t('chat.collaboration.noSharedContextEntries')}
                         </span>
                     </div>

@@ -6,6 +6,9 @@
 /** Default Ollama API base URL */
 export const DEFAULT_OLLAMA_BASE_URL = 'http://127.0.0.1:11434';
 
+/** Metadata key for workspace agent session state in chat objects */
+export const WORKSPACE_AGENT_METADATA_KEY = 'workspaceAgentSession';
+
 /** Default retry configuration for services */
 export const RETRY_DEFAULTS = {
     /** Standard max retry attempts for most operations */

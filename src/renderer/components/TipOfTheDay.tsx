@@ -1,11 +1,11 @@
 import { Lightbulb,X } from 'lucide-react';
 import React, { useEffect,useState } from 'react';
 
-import { useTranslation } from '@/i18n';
+import { Language, useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 
 interface TipOfTheDayProps {
-    language?: 'en' | 'tr';
+    language?: Language;
 }
 
 export const TipOfTheDay: React.FC<TipOfTheDayProps> = ({ language = 'en' }) => {

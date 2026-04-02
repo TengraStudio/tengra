@@ -1,0 +1,131 @@
+/**
+ * Skeleton Component CSS
+ * Component-specific CSS custom properties for the Skeleton loading component.
+ */
+
+:root {
+  /* Base skeleton variables */
+  --skeleton-bg: hsl(var(--muted));
+  --skeleton-highlight: hsl(var(--muted-foreground) / 10%);
+  --skeleton-border-radius: 0.25rem;
+  --skeleton-animation-duration: 1.5s;
+
+  /* Variant border radii */
+  --skeleton-text-height: 1rem;
+  --skeleton-text-border-radius: 0.25rem;
+  --skeleton-circular-border-radius: 9999px;
+  --skeleton-rectangular-border-radius: 0;
+  --skeleton-rounded-border-radius: 0.5rem;
+
+  /* Card skeleton */
+  --skeleton-card-padding: 1rem;
+  --skeleton-card-gap: 1rem;
+  --skeleton-card-border: hsl(var(--border));
+  --skeleton-card-border-radius: 0.75rem;
+  --skeleton-card-image-height: 7.5rem;
+  --skeleton-card-title-height: 1.25rem;
+  --skeleton-card-title-width: 70%;
+
+  /* Text skeleton */
+  --skeleton-text-gap: 0.5rem;
+  --skeleton-text-last-width: 60%;
+}
+
+/* Base skeleton styles */
+.tengra-skeleton {
+  background-color: var(--skeleton-bg);
+  border-radius: var(--skeleton-border-radius);
+}
+
+/* Shimmer animation */
+.tengra-skeleton--animated {
+  position: relative;
+  overflow: hidden;
+}
+
+.tengra-skeleton--animated::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--skeleton-highlight) 50%,
+    transparent 100%
+  );
+  animation: skeleton-shimmer var(--skeleton-animation-duration) infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Variant: text */
+.tengra-skeleton--text {
+  height: var(--skeleton-text-height);
+  border-radius: var(--skeleton-text-border-radius);
+}
+
+/* Variant: circular */
+.tengra-skeleton--circular {
+  border-radius: var(--skeleton-circular-border-radius);
+}
+
+/* Variant: rectangular */
+.tengra-skeleton--rectangular {
+  border-radius: var(--skeleton-rectangular-border-radius);
+}
+
+/* Variant: rounded */
+.tengra-skeleton--rounded {
+  border-radius: var(--skeleton-rounded-border-radius);
+}
+
+/* SkeletonText component */
+.tengra-skeleton-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--skeleton-text-gap);
+}
+
+/* SkeletonCard component */
+.tengra-skeleton-card {
+  padding: var(--skeleton-card-padding);
+  display: flex;
+  flex-direction: column;
+  gap: var(--skeleton-card-gap);
+  border: 1px solid var(--skeleton-card-border);
+  border-radius: var(--skeleton-card-border-radius);
+}
+
+.tengra-skeleton-card__image {
+  width: 100%;
+  height: var(--skeleton-card-image-height);
+  border-radius: var(--skeleton-rounded-border-radius);
+}
+
+.tengra-skeleton-card__title {
+  width: var(--skeleton-card-title-width);
+  height: var(--skeleton-card-title-height);
+}
+
+/* Pulse animation variant */
+.tengra-skeleton--pulse {
+  animation: skeleton-pulse var(--skeleton-animation-duration) infinite ease-in-out;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}

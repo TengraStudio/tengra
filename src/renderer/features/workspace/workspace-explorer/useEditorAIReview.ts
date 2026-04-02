@@ -1,4 +1,4 @@
-import React from 'react';
+import { useCallback, useEffect, useReducer } from 'react';
 
 import {
     loadReviewRuleConfig,
@@ -62,17 +62,17 @@ export function useEditorAIReview({
     activeTab,
     workspacePath,
 }: UseEditorAIReviewParams): UseEditorAIReviewResult {
-    const [state, dispatch] = React.useReducer(aiReviewReducer, AI_REVIEW_INITIAL_STATE);
+    const [state, dispatch] = useReducer(aiReviewReducer, AI_REVIEW_INITIAL_STATE);
 
-    React.useEffect(() => {
+    useEffect(() => {
         saveReviewRuleConfig(state.rules);
     }, [state.rules]);
 
-    const setReviewRules = React.useCallback((rules: ReviewRuleConfig) => {
+    const setReviewRules = useCallback((rules: ReviewRuleConfig) => {
         dispatch({ type: 'SET_RULES', rules });
     }, []);
 
-    const runAiCodeReview = React.useCallback(async () => {
+    const runAiCodeReview = useCallback(async () => {
         if (!activeTab) {
             return;
         }
@@ -80,7 +80,7 @@ export function useEditorAIReview({
         dispatch({ type: 'SET_REVIEW_SUMMARY', summary: report.reviewComments.join('\n') });
     }, [activeTab, workspacePath, state.rules]);
 
-    const runAiBugScan = React.useCallback(() => {
+    const runAiBugScan = useCallback(() => {
         if (!activeTab) {
             return;
         }
@@ -94,7 +94,7 @@ export function useEditorAIReview({
         dispatch({ type: 'SET_BUG_SUMMARY', summary: lines.join('\n') });
     }, [activeTab]);
 
-    const runAiPerformanceScan = React.useCallback(() => {
+    const runAiPerformanceScan = useCallback(() => {
         if (!activeTab) {
             return;
         }

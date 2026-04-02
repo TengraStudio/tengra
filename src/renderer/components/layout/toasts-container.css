@@ -1,0 +1,90 @@
+:root {
+    --toasts-z-index: 50;
+    --toasts-gap: 0.5rem;
+    --toasts-mobile-bottom: 0.75rem;
+    --toasts-mobile-side: 0.75rem;
+    --toasts-desktop-bottom: 1.5rem;
+    --toasts-desktop-right: 1.5rem;
+    --toasts-card-radius: 0.5rem;
+    --toasts-card-border: hsl(var(--border) / 40%);
+    --toasts-card-shadow: 0 25px 50px -12px hsl(var(--foreground) / 30%);
+    --toasts-card-blur: 12px;
+    --toasts-card-padding-x: 1rem;
+    --toasts-card-padding-y: 0.75rem;
+    --toasts-success-bg: hsl(var(--success) / 20%);
+    --toasts-success-border: hsl(var(--success) / 30%);
+    --toasts-success-text: hsl(var(--success));
+    --toasts-error-bg: hsl(var(--destructive) / 20%);
+    --toasts-error-border: hsl(var(--destructive) / 30%);
+    --toasts-error-text: hsl(var(--destructive));
+    --toasts-warning-bg: hsl(var(--warning) / 20%);
+    --toasts-warning-border: hsl(var(--warning) / 40%);
+    --toasts-warning-text: hsl(var(--warning));
+    --toasts-info-bg: hsl(var(--muted) / 80%);
+    --toasts-info-text: hsl(var(--foreground));
+}
+
+.tengra-toasts {
+    position: fixed;
+    z-index: var(--toasts-z-index);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--toasts-gap);
+    pointer-events: none;
+}
+
+.tengra-toasts--mobile {
+    bottom: var(--toasts-mobile-bottom);
+    left: var(--toasts-mobile-side);
+    right: var(--toasts-mobile-side);
+}
+
+.tengra-toasts--desktop {
+    bottom: var(--toasts-desktop-bottom);
+    right: var(--toasts-desktop-right);
+}
+
+.tengra-toast-card {
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    border-radius: var(--toasts-card-radius);
+    border: 1px solid var(--toasts-card-border);
+    box-shadow: var(--toasts-card-shadow);
+    backdrop-filter: blur(var(--toasts-card-blur));
+    padding: var(--toasts-card-padding-y) var(--toasts-card-padding-x);
+}
+
+.tengra-toast-card--mobile {
+    width: 100%;
+}
+
+.tengra-toast-card--desktop {
+    min-width: 18rem;
+    max-width: 28rem;
+}
+
+.tengra-toast-card--success {
+    background: var(--toasts-success-bg);
+    border-color: var(--toasts-success-border);
+    color: var(--toasts-success-text);
+}
+
+.tengra-toast-card--error {
+    background: var(--toasts-error-bg);
+    border-color: var(--toasts-error-border);
+    color: var(--toasts-error-text);
+}
+
+.tengra-toast-card--warning {
+    background: var(--toasts-warning-bg);
+    border-color: var(--toasts-warning-border);
+    color: var(--toasts-warning-text);
+}
+
+.tengra-toast-card--info {
+    background: var(--toasts-info-bg);
+    color: var(--toasts-info-text);
+}

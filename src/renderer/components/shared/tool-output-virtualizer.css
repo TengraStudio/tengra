@@ -1,0 +1,104 @@
+/* ToolOutputVirtualizer Component CSS */
+:root {
+  /* Container */
+  --tool-output-padding: 0.75rem;
+  --tool-output-radius: 0.5rem;
+  --tool-output-font-size: 0.625rem;
+  --tool-output-font-family: monospace;
+  --tool-output-max-height: 400px;
+
+  /* Dark theme */
+  --tool-output-dark-bg: hsl(var(--card) / 70%);
+  --tool-output-dark-border: hsl(var(--border) / 40%);
+  --tool-output-dark-text: hsl(var(--warning-light) / 70%);
+
+  /* Light theme */
+  --tool-output-light-bg: hsl(var(--muted) / 30%);
+  --tool-output-light-border: hsl(var(--border) / 50%);
+  --tool-output-light-text: hsl(var(--foreground) / 80%);
+
+  /* Line */
+  --tool-output-line-padding: 0.125rem 0.75rem;
+  --tool-output-line-hover-bg: hsl(var(--muted) / 20%);
+  --tool-output-line-number-width: 2rem;
+  --tool-output-line-number-margin: 1rem;
+  --tool-output-line-number-color: hsl(var(--muted-foreground) / 30%);
+  --tool-output-line-number-border: hsl(var(--border) / 40%);
+}
+
+/* Simple pre (non-virtualized) */
+.tengra-tool-output {
+  padding: var(--tool-output-padding);
+  border-radius: var(--tool-output-radius);
+  border-width: 1px;
+  border-style: solid;
+  font-family: var(--tool-output-font-family);
+  font-size: var(--tool-output-font-size);
+  overflow: auto;
+}
+
+.tengra-tool-output--dark {
+  background: var(--tool-output-dark-bg);
+  border-color: var(--tool-output-dark-border);
+  color: var(--tool-output-dark-text);
+}
+
+.tengra-tool-output--light {
+  background: var(--tool-output-light-bg);
+  border-color: var(--tool-output-light-border);
+  color: var(--tool-output-light-text);
+}
+
+/* Virtualized container */
+.tengra-tool-output-virtualized {
+  border-radius: var(--tool-output-radius);
+  border-width: 1px;
+  border-style: solid;
+  font-family: var(--tool-output-font-family);
+  font-size: var(--tool-output-font-size);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.tengra-tool-output-virtualized--dark {
+  background: var(--tool-output-dark-bg);
+  border-color: var(--tool-output-dark-border);
+  color: var(--tool-output-dark-text);
+}
+
+.tengra-tool-output-virtualized--light {
+  background: var(--tool-output-light-bg);
+  border-color: var(--tool-output-light-border);
+  color: var(--tool-output-light-text);
+}
+
+/* Line item */
+.tengra-tool-output__line {
+  padding: var(--tool-output-line-padding);
+  white-space: pre;
+  word-break: break-all;
+  line-height: 1.2;
+  transition: background 100ms;
+}
+
+.tengra-tool-output__line:hover {
+  background: var(--tool-output-line-hover-bg);
+}
+
+/* Line number */
+.tengra-tool-output__line-number {
+  display: inline-block;
+  width: var(--tool-output-line-number-width);
+  margin-right: var(--tool-output-line-number-margin);
+  text-align: right;
+  color: var(--tool-output-line-number-color);
+  user-select: none;
+  border-right: 1px solid var(--tool-output-line-number-border);
+  padding-right: 0.5rem;
+}
+
+/* Line content */
+.tengra-tool-output__line-content {
+  /* Content span */
+}

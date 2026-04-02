@@ -19,20 +19,22 @@ module.exports = {
         },
         extend: {
             fontFamily: {
-                sans: ['Inter', 'Plus Jakarta Sans', 'sans-serif'],
-                mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+                sans: ['var(--font-sans)', 'Segoe UI', 'Segoe UI Variable', 'system-ui', 'sans-serif'],
+                display: ['var(--font-display)', 'Segoe UI', 'Segoe UI Variable', 'system-ui', 'sans-serif'],
+                mono: ['var(--font-mono)', 'Cascadia Mono', 'Cascadia Code', 'Consolas', 'Courier New', 'ui-monospace', 'monospace'],
             },
             fontSize: {
-                xxxs: '0.65rem', // ~10.4px
-                xxs: '0.75rem', // ~12px
-                xs: '0.9rem', // ~14.4px
-                sm: '1rem', // 16px
-                base: '1.125rem', // 18px
-                lg: '1.25rem', // 20px
-                xl: '1.5rem', // 24px
-                '2xl': '1.875rem',
-                '3xl': '2.25rem',
-                '4xl': '3rem',
+                xxxs: ['0.625rem', { lineHeight: '1.2' }],
+                xxs: ['0.6875rem', { lineHeight: '1.2' }],
+                xs: ['0.8125rem', { lineHeight: '1.35' }],
+                sm: ['0.875rem', { lineHeight: '1.55' }],
+                base: ['1rem', { lineHeight: '1.68' }],
+                lg: ['1.0625rem', { lineHeight: '1.68' }],
+                xl: ['1.25rem', { lineHeight: '1.35' }],
+                '2xl': ['1.5rem', { lineHeight: '1.35' }],
+                '3xl': ['1.875rem', { lineHeight: '1.2' }],
+                '4xl': ['2.25rem', { lineHeight: '1.2' }],
+                '5xl': ['2.75rem', { lineHeight: '1.1' }],
             },
             colors: {
                 border: 'hsl(var(--border))',

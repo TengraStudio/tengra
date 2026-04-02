@@ -34,11 +34,11 @@ const PROVIDER_CONFIGS: Record<ProviderKey, BrandConfig> = {
 };
 
 const MODEL_CONFIGS: Record<ModelKey, BrandConfig> = {
-    llama: { bgClass: 'bg-primary/10', borderClass: 'border-primary/10', titleKey: 'assistantIdentity.llama', content: () => <span className="font-black text-primary text-xxs">LL</span> },
-    mistral: { bgClass: 'bg-warning/20', borderClass: 'border-warning/40', titleKey: 'assistantIdentity.mistral', content: () => <span className="font-black text-warning text-xxs">M</span> },
-    deepseek: { bgClass: 'bg-info/20', borderClass: 'border-info/40', titleKey: 'assistantIdentity.deepseek', content: () => <span className="font-black text-info text-xxs">DS</span> },
-    qwen: { bgClass: 'bg-accent/20', borderClass: 'border-accent/40', titleKey: 'assistantIdentity.qwen', content: () => <span className="font-black text-accent text-xxs">Q</span> },
-    phi: { bgClass: 'bg-info/20', borderClass: 'border-info/40', titleKey: 'assistantIdentity.phi', content: () => <span className="font-black text-info text-xxs">Φ</span> },
+    llama: { bgClass: 'bg-primary/10', borderClass: 'border-primary/10', titleKey: 'assistantIdentity.llama', content: () => <span className="font-bold text-primary text-xxs">LL</span> },
+    mistral: { bgClass: 'bg-warning/20', borderClass: 'border-warning/40', titleKey: 'assistantIdentity.mistral', content: () => <span className="font-bold text-warning text-xxs">M</span> },
+    deepseek: { bgClass: 'bg-info/20', borderClass: 'border-info/40', titleKey: 'assistantIdentity.deepseek', content: () => <span className="font-bold text-info text-xxs">DS</span> },
+    qwen: { bgClass: 'bg-accent/20', borderClass: 'border-accent/40', titleKey: 'assistantIdentity.qwen', content: () => <span className="font-bold text-accent text-xxs">Q</span> },
+    phi: { bgClass: 'bg-info/20', borderClass: 'border-info/40', titleKey: 'assistantIdentity.phi', content: () => <span className="font-bold text-info text-xxs">Φ</span> },
 };
 
 const PROVIDER_MATCHERS: { keywords: string[]; key: ProviderKey }[] = [

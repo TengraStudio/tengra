@@ -1,0 +1,150 @@
+/**
+ * AnimatedProgressBar Component CSS
+ * Component-specific CSS custom properties for the AnimatedProgressBar component.
+ */
+
+:root {
+  /* Base progress bar variables */
+  --progress-bar-bg: hsl(var(--muted));
+  --progress-bar-border-radius: 9999px;
+  --progress-bar-transition: all 0.5s ease-out;
+
+  /* Size variants */
+  --progress-bar-height-sm: 0.25rem;
+  --progress-bar-height-md: 0.5rem;
+  --progress-bar-height-lg: 0.75rem;
+
+  /* Variant colors */
+  --progress-bar-fill-default: hsl(var(--primary));
+  --progress-bar-fill-success: hsl(var(--success));
+  --progress-bar-fill-warning: hsl(var(--warning));
+  --progress-bar-fill-error: hsl(var(--destructive));
+
+  /* Gradient variant */
+  --progress-bar-gradient-start: hsl(var(--accent));
+  --progress-bar-gradient-mid: hsl(var(--primary));
+  --progress-bar-gradient-end: hsl(var(--info));
+
+  /* Label styles */
+  --progress-bar-label-font-size: 0.75rem;
+  --progress-bar-label-fg: hsl(var(--muted-foreground));
+  --progress-bar-label-margin-top: 0.25rem;
+
+  /* Animation */
+  --progress-bar-stripe-size: 1rem;
+  --progress-bar-animation-duration: 1s;
+}
+
+/* Base progress bar container */
+.tengra-progress-bar {
+  width: 100%;
+}
+
+/* Track */
+.tengra-progress-bar__track {
+  width: 100%;
+  background-color: var(--progress-bar-bg);
+  border-radius: var(--progress-bar-border-radius);
+  overflow: hidden;
+}
+
+/* Size variants */
+.tengra-progress-bar--sm .tengra-progress-bar__track {
+  height: var(--progress-bar-height-sm);
+}
+
+.tengra-progress-bar--md .tengra-progress-bar__track {
+  height: var(--progress-bar-height-md);
+}
+
+.tengra-progress-bar--lg .tengra-progress-bar__track {
+  height: var(--progress-bar-height-lg);
+}
+
+/* Fill */
+.tengra-progress-bar__fill {
+  height: 100%;
+  border-radius: var(--progress-bar-border-radius);
+  transition: var(--progress-bar-transition);
+}
+
+/* Variant colors */
+.tengra-progress-bar--default .tengra-progress-bar__fill {
+  background-color: var(--progress-bar-fill-default);
+}
+
+.tengra-progress-bar--success .tengra-progress-bar__fill {
+  background-color: var(--progress-bar-fill-success);
+}
+
+.tengra-progress-bar--warning .tengra-progress-bar__fill {
+  background-color: var(--progress-bar-fill-warning);
+}
+
+.tengra-progress-bar--error .tengra-progress-bar__fill {
+  background-color: var(--progress-bar-fill-error);
+}
+
+.tengra-progress-bar--gradient .tengra-progress-bar__fill {
+  background: linear-gradient(
+    to right,
+    var(--progress-bar-gradient-start),
+    var(--progress-bar-gradient-mid),
+    var(--progress-bar-gradient-end)
+  );
+}
+
+/* Striped pattern */
+.tengra-progress-bar--striped .tengra-progress-bar__fill {
+  background-image: linear-gradient(
+    45deg,
+    rgb(255 255 255 / 15%) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgb(255 255 255 / 15%) 50%,
+    rgb(255 255 255 / 15%) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: var(--progress-bar-stripe-size) var(--progress-bar-stripe-size);
+}
+
+/* Animated stripes */
+.tengra-progress-bar--animated .tengra-progress-bar__fill {
+  animation: progress-stripes var(--progress-bar-animation-duration) linear infinite;
+}
+
+@keyframes progress-stripes {
+  0% {
+    background-position: var(--progress-bar-stripe-size) 0;
+  }
+
+  100% {
+    background-position: 0 0;
+  }
+}
+
+/* Labels */
+.tengra-progress-bar__labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--progress-bar-label-margin-top);
+  font-size: var(--progress-bar-label-font-size);
+  color: var(--progress-bar-label-fg);
+}
+
+/* Indeterminate animation */
+.tengra-progress-bar--indeterminate .tengra-progress-bar__fill {
+  width: 30%;
+  animation: progress-indeterminate 1.5s infinite ease-in-out;
+}
+
+@keyframes progress-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(400%);
+  }
+}

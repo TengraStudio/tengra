@@ -5,8 +5,7 @@ import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { en } from '../../../../renderer/i18n/en';
-import { tr } from '../../../../renderer/i18n/tr';
+import { en } from '../../../../renderer/i18n/locales';
 
 vi.mock('@main/logging/logger');
 vi.mock('@main/services/security/auth.service');
@@ -194,7 +193,6 @@ describe('TokenService - Refresh Logic', () => {
         expect(emptyMetrics.uiState).toBe('empty');
         expect(emptyMetrics.performanceBudget.executeMs).toBeDefined();
         expect(en.serviceHealth.token.empty).toBe(emptyMetrics.messageKey);
-        expect(tr.serviceHealth.token.empty).toBeTruthy();
     });
 
     it('should bootstrap native accounts from proxy-backed database state on initialize', async () => {

@@ -10,7 +10,7 @@ export const ImageSkeleton = ({ t }: { t: TranslationFn }) => (
             <Sparkles className="w-6 h-6 text-primary/40" />
         </div>
         <div className="space-y-2 text-center">
-            <div className="text-xxs font-black uppercase tracking-widest text-muted-foreground/40 animate-pulse">
+            <div className="text-xxs font-bold text-muted-foreground/40 animate-pulse">
                 {t('messageBubble.TengraDrawing')}
             </div>
             <div className="flex gap-1 justify-center">
@@ -44,7 +44,7 @@ export const MessageImages = memo(({ images, t }: MessageImagesProps) => {
             <div className="mb-4 overflow-hidden rounded-3xl border border-border/60 bg-card/50">
                 <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
                     <div className="flex flex-col">
-                        <span className="text-xxs font-semibold uppercase tracking-widest text-muted-foreground/70">
+                        <span className="text-xxs font-semibold text-muted-foreground/70">
                             {t('input.generate')}
                         </span>
                         <span className="text-sm font-medium text-foreground/90">

@@ -25,7 +25,7 @@ export const DeleteWorkspaceModal: React.FC<DeleteWorkspaceModalProps> = ({ work
                         <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
                             <p className="text-sm text-destructive">
                                 {t('workspaces.deleteConfirmation')} <span className="font-bold text-foreground">{workspace.title}</span>?
-                                <span className="block mt-1 text-xs text-destructive/70 font-medium italic">{t('workspaces.deleteWarning')}</span>
+                                <span className="block mt-1 text-xs text-destructive/70 font-medium">{t('workspaces.deleteWarning')}</span>
                             </p>
                         </div>
                         <DeleteFilesCheckbox checked={deleteFiles} onChange={setDeleteFiles} t={t} />

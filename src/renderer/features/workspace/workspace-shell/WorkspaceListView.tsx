@@ -29,7 +29,7 @@ export const WorkspaceListView: React.FC<WorkspaceListViewProps> = memo(({
 }) => {
     return (
         <div className="rounded-xl border border-border/40 overflow-hidden">
-            <div className="grid tw-grid-cols-todo gap-3 px-4 py-3 bg-muted/20 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            <div className="grid tw-grid-cols-todo gap-3 px-4 py-3 bg-muted/20 text-xs font-semibold text-muted-foreground">
                 <div />
                 <button onClick={() => toggleSort('title')} className="flex items-center gap-1 text-left hover:text-foreground transition-colors">
                     {t('workspaces.tableName')} <ArrowDownUp className="w-3 h-3" />

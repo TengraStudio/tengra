@@ -30,7 +30,7 @@ export const SidebarDivider: React.FC<SidebarDividerProps> = ({
                 className
             )}>
                 <div className="flex-1 h-px bg-gradient-to-r from-border/50 to-transparent" />
-                <span className="text-xxxs font-semibold uppercase tracking-widest text-muted-foreground/40">
+                <span className="text-xxxs font-semibold text-muted-foreground/40">
                     {label}
                 </span>
                 <div className="flex-1 h-px bg-gradient-to-l from-border/50 to-transparent" />

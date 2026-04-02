@@ -82,6 +82,9 @@ export type SystemEvents = {
     'collaboration:left': { roomId: string }
     'collaboration:sync': { roomId: string; data: string }
     'collaboration:error': { roomId: string; error: string }
+    // Proactive social media notification events
+    'notification:task-completed': { taskId: string; summary: string; platform?: 'discord' | 'telegram'; timestamp: number }
+    'notification:cron-triggered': { cronId: string; label: string; message: string; timestamp: number }
 }
 
 export type SystemEventKey = keyof SystemEvents;

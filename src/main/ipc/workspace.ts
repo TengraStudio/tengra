@@ -1,4 +1,6 @@
-import path from 'path';
+import * as path from 'path';
+import { dialog, ipcMain } from 'electron';
+import { z } from 'zod';
 
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
@@ -32,8 +34,6 @@ import {
     WorkspaceIdSchema,
     WorkspaceRootPathSchema,
 } from '@shared/schemas/service-hardening.schema';
-import { dialog, ipcMain } from 'electron';
-import { z } from 'zod';
 
 /** Dependencies required by the workspace IPC handlers. */
 export interface WorkspaceIpcDeps {
@@ -98,7 +98,25 @@ const AUTO_INDEX_SKIPPED_SEGMENTS = [
     '.tengra',
     'coverage',
     'logs',
+    'vendor',
+    'bin',
+    'obj',
+    'out',
+    'target',
+    '__pycache__',
+    '.venv',
+    'venv',
+    '.gradle',
+    '.idea',
+    '.vscode',
+    'artifacts',
+    'deps',
+    'pkg',
+    'lib',
+    '.svn',
+    '.hg',
 ] as const;
+
 const AUTO_INDEX_SKIPPED_SUFFIXES = [
     '.tmp',
     '.temp',
@@ -107,6 +125,12 @@ const AUTO_INDEX_SKIPPED_SUFFIXES = [
     '.log',
     '.map',
     '~',
+    '.exe',
+    '.dll',
+    '.so',
+    '.dylib',
+    '.pyc',
+    '.class',
 ] as const;
 
 function normalizeWorkspacePath(value: string): string {
@@ -247,10 +271,12 @@ function createWorkspaceAutoIndexer(
  * logo generation, directory analysis, and environment variable management.
  * @param getWindow - Factory function to retrieve the main BrowserWindow
  * @param deps - The workspace IPC dependency container
+ * @param allowedFileRoots - Set of allowed root paths for safe-file protocol
  */
 export const registerWorkspaceIpc = (
     getWindow: () => Electron.BrowserWindow | null,
-    deps: WorkspaceIpcDeps
+    deps: WorkspaceIpcDeps,
+    allowedFileRoots: Set<string>
 ): void => {
     const {
         workspaceService,
@@ -367,6 +393,10 @@ export const registerWorkspaceIpc = (
                     'WorkspaceIPC',
                     `Analyze requested for ${rootPath} (ID: ${workspaceId})`
                 );
+                
+                // Dynamically allow this workspace root for safe-file protocol
+                allowedFileRoots.add(path.resolve(rootPath));
+                
                 const results = await resolvedWorkspaceService.analyzeWorkspace(rootPath);
                 return results;
             },
@@ -384,12 +414,15 @@ export const registerWorkspaceIpc = (
             'workspace:getFileDiagnostics',
             async (event, rootPath: string, filePath: string, content: string) => {
                 validateSender(event);
+                if (rootPath) {
+                    allowedFileRoots.add(path.resolve(rootPath));
+                }
                 return await resolvedWorkspaceService.getFileDiagnostics(rootPath, filePath, content);
             },
             {
                 argsSchema: z.tuple([
                     WorkspaceRootPathSchema,
-                    WorkspaceRootPathSchema,
+                    z.string().max(4096),
                     z.string(),
                 ]),
                 responseSchema: WorkspaceFileDiagnosticsSchema,
@@ -410,6 +443,9 @@ export const registerWorkspaceIpc = (
                 position: { line: number; column: number }
             ) => {
                 validateSender(event);
+                if (rootPath) {
+                    allowedFileRoots.add(path.resolve(rootPath));
+                }
                 return await resolvedWorkspaceService.getFileDefinition(
                     rootPath,
                     filePath,
@@ -421,7 +457,7 @@ export const registerWorkspaceIpc = (
             {
                 argsSchema: z.tuple([
                     WorkspaceRootPathSchema,
-                    WorkspaceRootPathSchema,
+                    z.string().max(4096),
                     z.string(),
                     z.object({
                         line: z.number().int().positive(),
@@ -443,6 +479,10 @@ export const registerWorkspaceIpc = (
             'workspace:watch',
             async (event, rootPath: string) => {
                 validateSender(event);
+                if (rootPath) {
+                    allowedFileRoots.add(path.resolve(rootPath));
+                }
+                
                 await resolvedWorkspaceService.watchWorkspace(rootPath, (watchEvent: string, filePath: string) => {
                     enqueueFileChangeEvent({
                         event: watchEvent,
@@ -480,6 +520,10 @@ export const registerWorkspaceIpc = (
                     'WorkspaceIPC',
                     `Summary analysis requested for ${rootPath} (ID: ${workspaceId})`
                 );
+
+                // Dynamically allow this workspace root for safe-file protocol
+                allowedFileRoots.add(path.resolve(rootPath));
+                
                 const results = await resolvedWorkspaceService.analyzeWorkspaceSummary(rootPath);
                 return results;
             },
@@ -497,6 +541,9 @@ export const registerWorkspaceIpc = (
             'workspace:setActive',
             async (event, rootPath: string | null) => {
                 validateSender(event);
+                if (rootPath) {
+                    allowedFileRoots.add(path.resolve(rootPath));
+                }
                 await resolvedWorkspaceService.setActiveWorkspace(rootPath);
                 return getActiveWorkspaceState();
             },
@@ -625,6 +672,10 @@ export const registerWorkspaceIpc = (
                 validateSender(event);
                 try {
                     const result = await logoService.applyLogo(workspacePath, tempLogoPath);
+                    
+                    // Dynamically allow this workspace root for safe-file protocol
+                    allowedFileRoots.add(path.resolve(workspacePath));
+                    
                     await logDestructiveAction('workspace.apply-logo', workspacePath, true, {
                         hasTempLogoPath: Boolean(tempLogoPath),
                     });
@@ -728,6 +779,9 @@ export const registerWorkspaceIpc = (
             'workspace:uploadLogo',
             async (event, workspacePath: string) => {
                 validateSender(event);
+                if (workspacePath) {
+                    allowedFileRoots.add(path.resolve(workspacePath));
+                }
                 const result = await dialog.showOpenDialog({
                     properties: ['openFile'],
                     filters: [{ name: 'Images', extensions: ['jpg', 'png', 'gif', 'webp', 'svg'] }],

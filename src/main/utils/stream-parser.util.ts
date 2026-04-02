@@ -1,5 +1,5 @@
-import { XmlToolParser } from '@main/utils/xml-tool-parser.util';
 import { appLogger } from '@main/logging/logger';
+import { XmlToolParser } from '@main/utils/xml-tool-parser.util';
 import { ToolCall } from '@shared/types/chat';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';

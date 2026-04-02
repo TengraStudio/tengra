@@ -1,0 +1,78 @@
+:root {
+    --layout-manager-bg: hsl(var(--background));
+    --layout-manager-text: hsl(var(--foreground));
+    --layout-manager-sidebar-bg: hsl(var(--background));
+    --layout-manager-sidebar-border: hsl(var(--border));
+    --layout-manager-right-sidebar-bg: hsl(var(--background));
+    --layout-manager-right-sidebar-border: hsl(var(--border));
+    --layout-manager-divider: hsl(var(--border) / 50%);
+    --layout-manager-panel-bg: hsl(var(--card));
+    --layout-manager-panel-border: hsl(var(--border));
+    --layout-manager-sidebar-z: 20;
+    --layout-manager-right-sidebar-z: 30;
+}
+
+.tengra-layout-manager {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    gap: 10px;
+    overflow: hidden;
+    background: var(--layout-manager-bg);
+    color: var(--layout-manager-text);
+}
+
+.tengra-layout-manager__sidebar {
+    position: relative;
+    height: 100%;
+    flex-shrink: 0;
+    overflow: visible;
+    z-index: var(--layout-manager-sidebar-z);
+    background: var(--layout-manager-sidebar-bg);
+    border-inline-end: 1px solid var(--layout-manager-sidebar-border);
+}
+
+.tengra-layout-manager__main {
+    flex: 1;
+    height: 100%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+
+.tengra-layout-manager__main-full {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.tengra-layout-manager__main-content {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.tengra-layout-manager__panel-divider {
+    height: 1px;
+    background: var(--layout-manager-divider);
+}
+
+.tengra-layout-manager__panel {
+    height: 25%;
+    min-height: 6rem;
+    background: var(--layout-manager-panel-bg);
+    border-top: 1px solid var(--layout-manager-panel-border);
+    overflow: hidden;
+}
+
+.tengra-layout-manager__right-sidebar {
+    height: 100%;
+    flex-shrink: 0;
+    border-left: 1px solid var(--layout-manager-right-sidebar-border);
+    background: var(--layout-manager-right-sidebar-bg);
+    z-index: var(--layout-manager-right-sidebar-z);
+}

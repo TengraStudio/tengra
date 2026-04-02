@@ -1,3 +1,13 @@
+import { Label } from '@renderer/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@renderer/components/ui/select';
+import { Slider } from '@renderer/components/ui/slider';
+import { Switch } from '@renderer/components/ui/switch';
 import {
     clamp,
     DEFAULT_TERMINAL_APPEARANCE,
@@ -9,10 +19,8 @@ import {
 } from '@renderer/features/terminal/constants/terminal-panel-constants';
 import { useTerminalAppearance } from '@renderer/features/terminal/hooks/useTerminalAppearance';
 import type { TerminalAppearancePreferences } from '@renderer/features/terminal/types/terminal-appearance';
+import { getTerminalTheme } from '@renderer/lib/terminal-theme';
 import React from 'react';
-
-import { getTerminalTheme } from '@/lib/terminal-theme';
-import { cn } from '@/lib/utils';
 
 interface TerminalAppearanceSectionProps {
     t: (key: string) => string;
@@ -58,7 +66,7 @@ export const TerminalAppearanceSection: React.FC<TerminalAppearanceSectionProps>
     return (
         <div className="premium-glass p-8 space-y-8">
             <div>
-                <div className="text-base font-black text-foreground uppercase tracking-tight">
+                <div className="text-base font-bold text-foreground">
                     {t('terminal.appearance')}
                 </div>
                 <div className="text-xs font-medium text-muted-foreground/70">
@@ -79,151 +87,188 @@ export const TerminalAppearanceSection: React.FC<TerminalAppearanceSectionProps>
                 }}
             >
                 <div>{t('terminal.previewCommand')}</div>
-                <div style={{ color: resolvedAppearance.theme.green }}>{t('terminal.previewSuccess')}</div>
-                <div style={{ color: resolvedAppearance.theme.red }}>{t('terminal.previewError')}</div>
-                <div style={{ color: resolvedAppearance.theme.yellow }}>{t('terminal.previewWarning')}</div>
+                <div style={{ color: resolvedAppearance.theme.green }}>
+                    {t('terminal.previewSuccess')}
+                </div>
+                <div style={{ color: resolvedAppearance.theme.red }}>
+                    {t('terminal.previewError')}
+                </div>
+                <div style={{ color: resolvedAppearance.theme.yellow }}>
+                    {t('terminal.previewWarning')}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <label className="grid gap-2 text-xs font-medium text-muted-foreground">
-                    <span>{t('terminal.theme')}</span>
-                    <select
+                <div className="grid gap-2">
+                    <Label className="text-xs font-medium text-muted-foreground">
+                        {t('terminal.theme')}
+                    </Label>
+                    <Select
                         value={terminalAppearance.themePresetId}
-                        onChange={event => updateAppearance({ themePresetId: event.target.value })}
-                        className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2 text-sm text-foreground"
+                        onValueChange={(value: string) => updateAppearance({ themePresetId: value })}
                     >
-                        {TERMINAL_THEME_PRESETS.map(preset => (
-                            <option key={preset.id} value={preset.id}>
-                                {t(`terminal.themes.${preset.id}`) || preset.name}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                <label className="grid gap-2 text-xs font-medium text-muted-foreground">
-                    <span>{t('terminal.font')}</span>
-                    <select
+                        <SelectTrigger>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {TERMINAL_THEME_PRESETS.map(preset => (
+                                <SelectItem key={preset.id} value={preset.id}>
+                                    {t(`terminal.themes.${preset.id}`) || preset.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="grid gap-2">
+                    <Label className="text-xs font-medium text-muted-foreground">
+                        {t('terminal.font')}
+                    </Label>
+                    <Select
                         value={terminalAppearance.fontPresetId}
-                        onChange={event => updateAppearance({ fontPresetId: event.target.value })}
-                        className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2 text-sm text-foreground"
+                        onValueChange={(value: string) => updateAppearance({ fontPresetId: value })}
                     >
-                        {TERMINAL_FONT_PRESETS.map(preset => (
-                            <option key={preset.id} value={preset.id}>
-                                {t(`terminal.fonts.${preset.id}`) || preset.name}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                <label className="grid gap-2 text-xs font-medium text-muted-foreground">
-                    <span>{t('terminal.cursorStyle')}</span>
-                    <select
+                        <SelectTrigger>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {TERMINAL_FONT_PRESETS.map(preset => (
+                                <SelectItem key={preset.id} value={preset.id}>
+                                    {t(`terminal.fonts.${preset.id}`) || preset.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="grid gap-2">
+                    <Label className="text-xs font-medium text-muted-foreground">
+                        {t('terminal.cursorStyle')}
+                    </Label>
+                    <Select
                         value={terminalAppearance.cursorStyle}
-                        onChange={event =>
-                            updateAppearance({
-                                cursorStyle: event.target.value as TerminalAppearancePreferences['cursorStyle'],
-                            })
-                        }
-                        className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2 text-sm text-foreground"
+                        onValueChange={(
+                            value: TerminalAppearancePreferences['cursorStyle']
+                        ) => updateAppearance({ cursorStyle: value })}
                     >
-                        {TERMINAL_CURSOR_STYLES.map(cursorStyle => (
-                            <option key={cursorStyle.id} value={cursorStyle.id}>
-                                {t(`terminal.cursors.${cursorStyle.id}`) || cursorStyle.name}
-                            </option>
-                        ))}
-                    </select>
-                </label>
+                        <SelectTrigger>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {TERMINAL_CURSOR_STYLES.map(cursorStyle => (
+                                <SelectItem key={cursorStyle.id} value={cursorStyle.id}>
+                                    {t(`terminal.cursors.${cursorStyle.id}`) || cursorStyle.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <button
-                    type="button"
-                    onClick={() => updateAppearance({ ligatures: !terminalAppearance.ligatures })}
-                    className={cn(
-                        'flex items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors',
-                        terminalAppearance.ligatures
-                            ? 'border-primary/40 bg-primary/10 text-foreground'
-                            : 'border-border/40 bg-muted/10 text-muted-foreground'
-                    )}
-                >
-                    <span>{t('terminal.fontLigatures')}</span>
-                    <span
-                        aria-hidden="true"
-                        className={cn(
-                            'h-2.5 w-2.5 rounded-full border',
-                            terminalAppearance.ligatures
-                                ? 'border-primary bg-primary'
-                                : 'border-border bg-transparent'
-                        )}
+                <div className="flex items-center justify-between rounded-2xl border border-border/40 bg-muted/10 px-4 py-3 transition-colors">
+                    <Label
+                        htmlFor="ligatures-toggle"
+                        className="text-sm font-medium text-muted-foreground cursor-pointer"
+                    >
+                        {t('terminal.fontLigatures')}
+                    </Label>
+                    <Switch
+                        id="ligatures-toggle"
+                        checked={terminalAppearance.ligatures}
+                        onCheckedChange={(checked: boolean) =>
+                            updateAppearance({ ligatures: checked })
+                        }
                     />
-                </button>
-                <button
-                    type="button"
-                    onClick={() => updateAppearance({ cursorBlink: !terminalAppearance.cursorBlink })}
-                    className={cn(
-                        'flex items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors',
-                        terminalAppearance.cursorBlink
-                            ? 'border-primary/40 bg-primary/10 text-foreground'
-                            : 'border-border/40 bg-muted/10 text-muted-foreground'
-                    )}
-                >
-                    <span>{t('terminal.cursorBlink')}</span>
-                    <span
-                        aria-hidden="true"
-                        className={cn(
-                            'h-2.5 w-2.5 rounded-full border',
-                            terminalAppearance.cursorBlink
-                                ? 'border-primary bg-primary'
-                                : 'border-border bg-transparent'
-                        )}
+                </div>
+                <div className="flex items-center justify-between rounded-2xl border border-border/40 bg-muted/10 px-4 py-3 transition-colors">
+                    <Label
+                        htmlFor="cursor-blink-toggle"
+                        className="text-sm font-medium text-muted-foreground cursor-pointer"
+                    >
+                        {t('terminal.cursorBlink')}
+                    </Label>
+                    <Switch
+                        id="cursor-blink-toggle"
+                        checked={terminalAppearance.cursorBlink}
+                        onCheckedChange={(checked: boolean) =>
+                            updateAppearance({ cursorBlink: checked })
+                        }
                     />
-                </button>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <label className="grid gap-2 text-xs font-medium text-muted-foreground">
-                    <span>{t('terminal.fontSize')}: {terminalAppearance.fontSize}</span>
-                    <input
-                        type="range"
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+                <div className="grid gap-4">
+                    <Label className="text-xs font-medium text-muted-foreground flex justify-between">
+                        <span>{t('terminal.fontSize')}</span>
+                        <span className="text-primary font-bold">
+                            {terminalAppearance.fontSize}
+                        </span>
+                    </Label>
+                    <Slider
                         min={8}
                         max={32}
                         step={1}
-                        value={terminalAppearance.fontSize}
-                        onChange={event => updateAppearance({ fontSize: Number(event.target.value) })}
+                        value={[terminalAppearance.fontSize]}
+                        onValueChange={(values: number[]) =>
+                            updateAppearance({ fontSize: values[0] })
+                        }
                     />
-                </label>
-                <label className="grid gap-2 text-xs font-medium text-muted-foreground">
-                    <span>{t('terminal.lineHeight')}: {terminalAppearance.lineHeight.toFixed(1)}</span>
-                    <input
-                        type="range"
+                </div>
+                <div className="grid gap-4">
+                    <Label className="text-xs font-medium text-muted-foreground flex justify-between">
+                        <span>{t('terminal.lineHeight')}</span>
+                        <span className="text-primary font-bold">
+                            {terminalAppearance.lineHeight.toFixed(1)}
+                        </span>
+                    </Label>
+                    <Slider
                         min={1}
                         max={2}
                         step={0.1}
-                        value={terminalAppearance.lineHeight}
-                        onChange={event => updateAppearance({ lineHeight: Number(event.target.value) })}
+                        value={[terminalAppearance.lineHeight]}
+                        onValueChange={(values: number[]) =>
+                            updateAppearance({ lineHeight: values[0] })
+                        }
                     />
-                </label>
-                <label className="grid gap-2 text-xs font-medium text-muted-foreground">
-                    <span>{t('terminal.transparency')}: {terminalAppearance.surfaceOpacity.toFixed(2)}</span>
-                    <input
-                        type="range"
+                </div>
+                <div className="grid gap-4">
+                    <Label className="text-xs font-medium text-muted-foreground flex justify-between">
+                        <span>{t('terminal.transparency')}</span>
+                        <span className="text-primary font-bold">
+                            {terminalAppearance.surfaceOpacity.toFixed(2)}
+                        </span>
+                    </Label>
+                    <Slider
                         min={0.6}
                         max={1}
                         step={0.05}
-                        value={terminalAppearance.surfaceOpacity}
-                        onChange={event => updateAppearance({ surfaceOpacity: Number(event.target.value) })}
+                        value={[terminalAppearance.surfaceOpacity]}
+                        onValueChange={(values: number[]) =>
+                            updateAppearance({ surfaceOpacity: values[0] })
+                        }
                     />
-                </label>
-                <label className="grid gap-2 text-xs font-medium text-muted-foreground">
-                    <span>{t('terminal.blur')}: {terminalAppearance.surfaceBlur}</span>
-                    <input
-                        type="range"
+                </div>
+                <div className="grid gap-4">
+                    <Label className="text-xs font-medium text-muted-foreground flex justify-between">
+                        <span>{t('terminal.blur')}</span>
+                        <span className="text-primary font-bold">
+                            {terminalAppearance.surfaceBlur}
+                        </span>
+                    </Label>
+                    <Slider
                         min={0}
                         max={24}
                         step={1}
-                        value={terminalAppearance.surfaceBlur}
-                        onChange={event => updateAppearance({ surfaceBlur: Number(event.target.value) })}
+                        value={[terminalAppearance.surfaceBlur]}
+                        onValueChange={(values: number[]) =>
+                            updateAppearance({ surfaceBlur: values[0] })
+                        }
                     />
-                </label>
+                </div>
             </div>
         </div>
     );
 };
+

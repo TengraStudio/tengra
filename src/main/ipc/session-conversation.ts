@@ -26,7 +26,7 @@ import {
 } from '@shared/schemas/session-conversation-ipc.schema';
 import { Message, ToolDefinition } from '@shared/types/chat';
 import { SystemMode } from '@shared/types/chat';
-import { JsonObject } from '@shared/types/common';
+import { JsonObject, RuntimeValue } from '@shared/types/common';
 import { SessionCapability, SessionMessageEnvelope, SessionStartOptions } from '@shared/types/session-engine';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { sanitizeObject, sanitizeString } from '@shared/utils/sanitize.util';
@@ -108,11 +108,12 @@ class ChatUtils {
      * @param settingsService The service to retrieve application settings.
      * @returns The updated array of messages with the system prompt injected.
      */
-    static injectSystemPrompt(messages: Message[], provider: string, model: string, settingsService: SettingsService): Message[] {
+    static injectSystemPrompt(messages: Message[], provider: string, model: string, settingsService: SettingsService, permissionPolicy?: string) {
         const settings = settingsService.getSettings();
         const customPrompt = this.getCustomPrompt(settings, provider);
         const branding = this.getBrandingInstruction(provider, model);
-        const finalInstruction = branding + (customPrompt ? `\n\n${customPrompt}` : '');
+        const policyPart = permissionPolicy ? `\n\nPermission Policy: ${permissionPolicy}` : '';
+        const finalInstruction = branding + (customPrompt ? `\n\n${customPrompt}` : '') + policyPart;
 
         const systemMessage = messages.find(m => m.role === 'system');
         if (systemMessage) {
@@ -245,9 +246,9 @@ class SessionConversationIpcManager {
             new ChatSessionRegistryService(new EventBusService());
     }
 
-    async handleConversationComplete(_event: IpcMainInvokeEvent, params: { messages: Message[], model: string, tools?: ToolDefinition[], provider: string, workspaceId?: string, systemMode?: SystemMode }) {
-        const { messages, model, provider, tools, workspaceId, systemMode } = params;
-        const sanitized = this.sanitizeRequestParams({ messages, model, provider, tools, workspaceId, systemMode });
+    async handleConversationComplete(_event: IpcMainInvokeEvent, params: { messages: Message[], model: string, tools?: ToolDefinition[], provider: string, workspaceId?: string, systemMode?: SystemMode, chatId?: string }) {
+        const { messages, model, provider, tools, workspaceId, systemMode, chatId } = params;
+        const sanitized = this.sanitizeRequestParams({ messages, model, provider, tools, workspaceId, systemMode, chatId });
         let sources: string[] = [];
         const sessionId = `session-conversation-complete-${Date.now()}`;
         await this.startChatSession({
@@ -270,7 +271,15 @@ class SessionConversationIpcManager {
             sources = await RAGUtils.handleRAGContext(sanitized.messages, sanitized.workspaceId, this.options.contextRetrievalService);
         }
 
-        const finalMessages = ChatUtils.injectSystemPrompt(sanitized.messages, sanitized.provider, sanitized.model, this.options.settingsService);
+        const chat = params.chatId ? await this.options.databaseService.chats.getChat(params.chatId) : null;
+        const permissionPolicy = (chat?.metadata as any)?.workspaceAgentSession?.permissionPolicy;
+        const finalMessages = ChatUtils.injectSystemPrompt(
+            sanitized.messages, 
+            sanitized.provider, 
+            sanitized.model, 
+            this.options.settingsService,
+            permissionPolicy
+        );
 
         try {
             const result = await this.executeGeneralChat(sanitized, finalMessages, sources);
@@ -377,7 +386,7 @@ class SessionConversationIpcManager {
         const controller = new AbortController();
         const { signal } = controller;
 
-        const cancelHandler = (_: RuntimeValue, { chatId }: { chatId: string }) => {
+        const cancelHandler = (_: any, { chatId }: { chatId: string }) => {
             if (chatId === params.chatId) {
                 controller.abort();
             }
@@ -465,8 +474,8 @@ class SessionConversationIpcManager {
         };
     }
 
-    private sanitizeRequestParams(params: { messages: Message[], model: string, provider: string, tools?: ToolDefinition[], workspaceId?: string, systemMode?: SystemMode }) {
-        const { messages, model, provider, tools, workspaceId, systemMode } = params;
+    private sanitizeRequestParams(params: { messages: Message[], model: string, provider: string, tools?: ToolDefinition[], workspaceId?: string, systemMode?: SystemMode, chatId?: string }) {
+        const { messages, model, provider, tools, workspaceId, systemMode, chatId } = params;
         if (!Array.isArray(messages) || messages.length === 0) { throw new Error('error.chat.invalid_messages'); }
         if (!model) { throw new Error('error.chat.invalid_model'); }
         if (!provider) { throw new Error('error.chat.invalid_provider'); }
@@ -477,7 +486,8 @@ class SessionConversationIpcManager {
             provider: sanitizeString(provider, { maxLength: 50, allowNewlines: false }),
             workspaceId: workspaceId ? sanitizeString(workspaceId, { maxLength: 100, allowNewlines: false }) : undefined,
             tools: ChatUtils.sanitizeTools(tools),
-            systemMode
+            systemMode,
+            chatId: chatId ? sanitizeString(chatId, { maxLength: 100, allowNewlines: false }) : undefined
         };
     }
 
@@ -501,7 +511,7 @@ class SessionConversationIpcManager {
         const { messages, model, provider, chatId, tools, workspaceId, systemMode } = params;
         if (!chatId) { throw new Error('error.chat.invalid_id'); }
 
-        const sanitized = this.sanitizeRequestParams({ messages, model, provider, tools, workspaceId, systemMode });
+        const sanitized = this.sanitizeRequestParams({ messages, model, provider, tools, workspaceId, systemMode, chatId });
         return {
             ...sanitized,
             chatId: sanitizeString(chatId, { maxLength: 100, allowNewlines: false })
@@ -776,5 +786,3 @@ export function registerSessionConversationIpc(options: SessionConversationIpcOp
         }
     ));
 }
-
-

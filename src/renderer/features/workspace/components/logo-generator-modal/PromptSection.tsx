@@ -29,7 +29,7 @@ export const PromptSection: React.FC<PromptSectionProps> = ({
     return (
         <div className="space-y-2">
             <div className="flex items-center justify-between">
-                <label className="text-xxs font-bold uppercase text-muted-foreground tracking-widest">
+                <label className="text-xxs font-bold text-muted-foreground">
                     {translateKey('workspaces.prompt')}
                 </label>
                 <div className="flex items-center gap-3">

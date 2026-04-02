@@ -1,3 +1,7 @@
+import { CheckedState } from '@radix-ui/react-checkbox';
+import { Checkbox } from '@renderer/components/ui/checkbox';
+import { Input } from '@renderer/components/ui/input';
+import { Label } from '@renderer/components/ui/label';
 import { Play } from 'lucide-react';
 import React from 'react';
 
@@ -12,14 +16,18 @@ export const DevServerSection: React.FC<SettingsSectionProps> = ({ formData, set
 
         <div className="grid grid-cols-1 gap-6">
             <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground uppercase">{t('workspaces.startCommand')}</label>
+                <Label className="text-xs font-medium text-muted-foreground">
+                    {t('workspaces.startCommand')}
+                </Label>
                 <div className="relative">
-                    <Play className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
+                    <Play className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+                    <Input
                         type="text"
                         value={formData.devCommand}
-                        onChange={e => setFormData(prev => ({ ...prev, devCommand: e.target.value }))}
-                        className="w-full bg-muted/30 border border-border/50 rounded-lg py-2 pl-9 pr-4 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setFormData(prev => ({ ...prev, devCommand: e.target.value }))
+                        }
+                        className="pl-9 font-mono"
                         placeholder={t('placeholder.devCommand')}
                     />
                 </div>
@@ -27,27 +35,36 @@ export const DevServerSection: React.FC<SettingsSectionProps> = ({ formData, set
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground uppercase">{t('workspaces.port')}</label>
-                    <input
+                    <Label className="text-xs font-medium text-muted-foreground">
+                        {t('workspaces.port')}
+                    </Label>
+                    <Input
                         type="number"
                         value={formData.devPort}
-                        onChange={e => setFormData(prev => ({ ...prev, devPort: parseInt(e.target.value) || 3000 }))}
-                        className="w-full bg-muted/30 border border-border/50 rounded-lg py-2 px-4 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setFormData(prev => ({
+                                ...prev,
+                                devPort: parseInt(e.target.value, 10) || 3000,
+                            }))
+                        }
+                        className="font-mono"
                         placeholder={t('placeholder.portNumber')}
                     />
                 </div>
                 <div className="space-y-2 flex items-center pt-8">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="checkbox"
+                    <Label className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
                             checked={formData.devAutoStart}
-                            onChange={e => setFormData(prev => ({ ...prev, devAutoStart: e.target.checked }))}
-                            className="rounded border-border/50 bg-muted/20 text-primary focus:ring-primary"
+                            onCheckedChange={(checked: CheckedState) =>
+                                setFormData(prev => ({ ...prev, devAutoStart: checked === true }))
+                            }
                         />
                         <span className="text-sm text-foreground">{t('workspaces.autoStart')}</span>
-                    </label>
+                    </Label>
                 </div>
             </div>
         </div>
     </div>
 );
+
+

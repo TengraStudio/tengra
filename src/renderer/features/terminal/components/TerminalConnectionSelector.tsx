@@ -11,6 +11,8 @@ import {
     TerminalIpcContract
 } from '../utils/terminal-ipc';
 
+import '@renderer/features/terminal/components/TerminalConnectionSelector.css';
+
 interface ConnectionOption {
     id: string;
     name: string;

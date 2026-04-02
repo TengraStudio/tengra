@@ -2,6 +2,8 @@ import { InlineSuggestionSource } from '@shared/schemas/inline-suggestions.schem
 
 import { JsonValue } from '@/types/common';
 
+import type { Workspace } from './workspace';
+
 export type McpPermissionProfile = 'read-only' | 'workspace-only' | 'network-enabled' | 'destructive' | 'full-access';
 
 export type ModelGovernanceSettings = {
@@ -11,10 +13,24 @@ export type ModelGovernanceSettings = {
     [key: string]: JsonValue | undefined;
 };
 
+/** A user-defined scheduled notification entry */
+export interface CronJobEntry {
+    /** Unique identifier */
+    id: string;
+    /** Human-readable label */
+    label: string;
+    /** Standard cron expression (e.g. '0 9 * * 1-5') */
+    cronExpression: string;
+    /** The message template sent to target platforms */
+    message: string;
+    /** Whether this job is active */
+    enabled: boolean;
+    /** Target platforms (e.g. 'discord', 'telegram') */
+    platforms: string[];
+    [key: string]: JsonValue | undefined;
+}
+
 export interface AppSettings {
-
-
-
     ollama: {
         url: string;
         numCtx?: number;
@@ -47,11 +63,12 @@ export interface AppSettings {
     activeAccountId?: string;
 
     general: {
-        language: 'tr' | 'en';
+        language: string;
         theme: string;
         resolution: string;
         fontSize: number;
         fontFamily?: string;
+        typographyScale?: 'compact' | 'balanced' | 'comfortable';
         highContrast?: boolean;
         reduceMotion?: boolean;
 
@@ -80,6 +97,11 @@ export interface AppSettings {
         hiddenModels?: string[];
         dismissedRuntimeInstallPrompts?: string[];
         completedRuntimeInstalls?: string[];
+        agentCommandPolicy?: 'blocked' | 'ask-every-time' | 'allowlist' | 'full-access';
+        agentPathPolicy?: 'workspace-root-only' | 'allowlist' | 'restricted-off-dangerous';
+        agentAllowedCommands?: string[];
+        agentDisallowedCommands?: string[];
+        agentAllowedPaths?: string[];
     };
     modelGovernance?: ModelGovernanceSettings;
     github?: {
@@ -326,6 +348,7 @@ export interface AppSettings {
             }>;
         };
     };
+    editor?: Workspace['editor'];
     terminal?: {
         fontSize?: number;
         fontFamily?: string;
@@ -335,9 +358,33 @@ export interface AppSettings {
         cursorBlink?: boolean;
         scrollback?: number;
     };
+    remoteAccounts?: {
+        discord?: {
+            enabled: boolean;
+            token: string;
+            allowedUserIds: string[];
+            notifications?: boolean;
+        };
+        telegram?: {
+            enabled: boolean;
+            token: string;
+            allowedUserIds: string[];
+            notifications?: boolean;
+        };
+        whatsapp?: {
+            enabled: boolean;
+            mode: 'qr' | 'api';
+            token?: string;
+            botId?: string;
+            allowedUserIds: string[];
+            notifications?: boolean;
+        };
+        /** User-defined scheduled notifications */
+        cronJobs?: CronJobEntry[];
+    };
     extensionWarningDismissed?: boolean; // Browser extension warning dismissed
     [key: string]: JsonValue | undefined;
-};
+}
 
 export type MCPServerConfig = {
     id: string; // Unique identifier (e.g., 'github', 'postgres')

@@ -60,7 +60,7 @@ const StorySidebar: React.FC<{
       <nav className="p-2">
         {Object.entries(grouped).map(([category, items]) => (
           <div key={category} className="mb-3">
-            <p className="px-2 py-1 text-xs font-bold uppercase text-muted-foreground tracking-wider">
+            <p className="px-2 py-1 text-xs font-bold text-muted-foreground">
               {t(category)}
             </p>
             {items.map((s) => (

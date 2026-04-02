@@ -20,6 +20,8 @@ import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import type { ModelInfo } from '@/types';
 import { Chat, Workspace } from '@/types';
 
+import './command-palette.css';
+
 export interface CommandItem {
     id: string;
     label: string;
@@ -313,17 +315,17 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-50 flex items-start justify-center pt-20 md:pt-24"
+                    className="tengra-command-palette__overlay"
                     onClick={onClose}
                 >
-                    <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
+                    <div className="tengra-command-palette__backdrop" />
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: -20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -20 }}
                         ref={panelRef}
                         onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                        className="relative w-full max-w-3xl bg-card border border-border rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl flex flex-col h-96"
+                        className="tengra-command-palette__panel"
                         role="dialog"
                         aria-modal="true"
                         aria-label={t('commandPalette.title')}
@@ -340,7 +342,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                             inputRef={inputRef}
                             t={t}
                         />
-                        <div className="flex flex-1 overflow-hidden">
+                        <div className="tengra-command-palette__body">
                             <ResultsList
                                 groupedCommands={grouped}
                                 categoryLabels={categoryLabels}

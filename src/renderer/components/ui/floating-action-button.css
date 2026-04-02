@@ -1,0 +1,164 @@
+/* FloatingActionButton Component CSS */
+:root {
+    /* Position offsets */
+    --fab-offset: 1.5rem;
+    
+    /* Main button */
+    --fab-main-size: 3.5rem;
+    --fab-main-bg: hsl(var(--primary));
+    --fab-main-color: hsl(var(--primary-foreground));
+    --fab-main-border-radius: 50%;
+    --fab-main-shadow: 0 10px 15px -3px rgb(0 0 0 / 10%);
+    --fab-main-hover-shadow: 0 20px 25px -5px rgb(0 0 0 / 15%);
+    --fab-main-hover-scale: 1.05;
+    --fab-main-icon-size: 1.5rem;
+    
+    /* Open state */
+    --fab-main-open-bg: hsl(var(--destructive));
+    --fab-main-open-rotation: 45deg;
+    
+    /* Action buttons */
+    --fab-action-size: 3rem;
+    --fab-action-bg: hsl(var(--primary));
+    --fab-action-color: hsl(var(--primary-foreground));
+    --fab-action-border-radius: 50%;
+    --fab-action-shadow: 0 10px 15px -3px rgb(0 0 0 / 10%);
+    --fab-action-hover-scale: 1.1;
+    --fab-action-icon-size: 1.25rem;
+    
+    /* Labels */
+    --fab-label-padding-x: 0.5rem;
+    --fab-label-padding-y: 0.25rem;
+    --fab-label-font-size: 0.75rem;
+    --fab-label-font-weight: 500;
+    --fab-label-bg: hsl(var(--popover) / 95%);
+    --fab-label-color: hsl(var(--popover-foreground));
+    --fab-label-border-color: hsl(var(--border) / 40%);
+    --fab-label-border-radius: 0.25rem;
+    --fab-label-shadow: 0 1px 2px 0 rgb(0 0 0 / 5%);
+    
+    /* Animation */
+    --fab-transition-duration: 300ms;
+    --fab-transition-timing: ease-out;
+    --fab-action-stagger-delay: 50ms;
+    
+    /* Radial menu radius */
+    --fab-radial-radius: 80px;
+}
+
+/* Container */
+.tengra-fab {
+    position: fixed;
+    z-index: 50;
+}
+
+/* Position variants */
+.tengra-fab--bottom-right {
+    bottom: var(--fab-offset);
+    right: var(--fab-offset);
+}
+
+.tengra-fab--bottom-left {
+    bottom: var(--fab-offset);
+    left: var(--fab-offset);
+}
+
+.tengra-fab--top-right {
+    top: var(--fab-offset);
+    right: var(--fab-offset);
+}
+
+.tengra-fab--top-left {
+    top: var(--fab-offset);
+    left: var(--fab-offset);
+}
+
+/* Main button */
+.tengra-fab__main {
+    width: var(--fab-main-size);
+    height: var(--fab-main-size);
+    border-radius: var(--fab-main-border-radius);
+    background: var(--fab-main-bg);
+    color: var(--fab-main-color);
+    border: none;
+    box-shadow: var(--fab-main-shadow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--fab-transition-duration) var(--fab-transition-timing);
+}
+
+.tengra-fab__main:hover {
+    transform: scale(var(--fab-main-hover-scale));
+    box-shadow: var(--fab-main-hover-shadow);
+}
+
+.tengra-fab__main--open {
+    background: var(--fab-main-open-bg);
+    transform: rotate(var(--fab-main-open-rotation));
+}
+
+.tengra-fab__main--open:hover {
+    transform: rotate(var(--fab-main-open-rotation)) scale(var(--fab-main-hover-scale));
+}
+
+.tengra-fab__main-icon {
+    width: var(--fab-main-icon-size);
+    height: var(--fab-main-icon-size);
+}
+
+/* Action button */
+.tengra-fab__action {
+    position: absolute;
+    width: var(--fab-action-size);
+    height: var(--fab-action-size);
+    border-radius: var(--fab-action-border-radius);
+    background: var(--fab-action-bg);
+    color: var(--fab-action-color);
+    border: none;
+    box-shadow: var(--fab-action-shadow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--fab-transition-duration) var(--fab-transition-timing);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(0, 0) scale(0);
+}
+
+.tengra-fab__action--visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.tengra-fab__action:hover {
+    transform: var(--action-transform) scale(var(--fab-action-hover-scale)) !important;
+}
+
+.tengra-fab__action-icon {
+    width: var(--fab-action-icon-size);
+    height: var(--fab-action-icon-size);
+}
+
+/* Labels */
+.tengra-fab__label {
+    position: absolute;
+    padding: var(--fab-label-padding-y) var(--fab-label-padding-x);
+    font-size: var(--fab-label-font-size);
+    font-weight: var(--fab-label-font-weight);
+    background: var(--fab-label-bg);
+    color: var(--fab-label-color);
+    border: 1px solid var(--fab-label-border-color);
+    border-radius: var(--fab-label-border-radius);
+    box-shadow: var(--fab-label-shadow);
+    white-space: nowrap;
+    pointer-events: none;
+    transition: all var(--fab-transition-duration) var(--fab-transition-timing);
+    opacity: 0;
+}
+
+.tengra-fab__label--visible {
+    opacity: 1;
+}

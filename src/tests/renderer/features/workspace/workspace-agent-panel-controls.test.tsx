@@ -40,6 +40,7 @@ function createPermissionPolicy(): WorkspaceAgentPermissionPolicy {
         commandPolicy: 'ask-every-time',
         pathPolicy: 'workspace-root-only',
         allowedCommands: [],
+        disallowedCommands: [],
         allowedPaths: ['c:/workspace'],
     };
 }
@@ -296,6 +297,7 @@ describe('WorkspaceAgentComposer', () => {
                     commandPolicy: 'allowlist',
                     pathPolicy: 'workspace-root-only',
                     allowedCommands: ['npm', 'git'],
+                    disallowedCommands: [],
                     allowedPaths: ['c:/workspace'],
                 },
             }),
@@ -314,6 +316,7 @@ describe('WorkspaceAgentComposer', () => {
                     commandPolicy: 'allowlist',
                     pathPolicy: 'allowlist',
                     allowedCommands: ['npm'],
+                    disallowedCommands: [],
                     allowedPaths: ['c:/workspace'],
                 },
             }),

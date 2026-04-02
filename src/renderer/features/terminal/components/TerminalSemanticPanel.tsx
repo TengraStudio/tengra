@@ -67,7 +67,7 @@ export function TerminalSemanticPanel({
                             <div className="flex items-center justify-between gap-2">
                                 <span
                                     className={cn(
-                                        'text-xxxs uppercase tracking-wide font-semibold',
+                                        'text-xxxs   font-semibold',
                                         issue.severity === 'error'
                                             ? 'text-destructive'
                                             : 'text-warning'

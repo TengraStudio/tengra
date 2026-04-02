@@ -4,7 +4,10 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { normalizeDirectorySelectionResult } from '@/utils/directory-selection.util';
 import { appLogger } from '@/utils/renderer-logger';
+
+import './gallery-view.css';
 
 interface GalleryItemMetadata {
     prompt?: string;
@@ -90,9 +93,9 @@ interface MetadataDisplayProps {
 }
 
 const MetadataItem = memo(({ icon: Icon, value }: { icon: LucideIcon; value: string | number }) => (
-    <div className="flex items-center gap-1.5 text-muted-foreground">
-        <Icon className="w-3 h-3" />
-        <span className="truncate">{value}</span>
+    <div className="tengra-gallery-meta__item">
+        <Icon className="tengra-gallery-meta__icon" />
+        <span className="tengra-gallery-meta__value">{value}</span>
     </div>
 ));
 MetadataItem.displayName = 'MetadataItem';
@@ -100,7 +103,7 @@ MetadataItem.displayName = 'MetadataItem';
 const GenerationParams = memo(({ metadata, t }: { metadata?: GalleryItemMetadata; t: (key: string) => string }) => {
     if (!metadata || !(metadata.steps || metadata.cfg_scale || metadata.seed)) { return null; }
     return (
-        <div className="flex flex-wrap gap-2 text-xxxs text-muted-foreground border-t border-border/10 pt-2 mt-2">
+        <div className="tengra-gallery-meta__params">
             {metadata.steps && <span>{t('gallery.steps')}: {metadata.steps}</span>}
             {metadata.cfg_scale && <span>{t('gallery.cfg')}: {metadata.cfg_scale}</span>}
             {metadata.seed && <span>{t('gallery.seed')}: {metadata.seed}</span>}
@@ -110,16 +113,16 @@ const GenerationParams = memo(({ metadata, t }: { metadata?: GalleryItemMetadata
 GenerationParams.displayName = 'GenerationParams';
 
 const PromptSection = memo(({ prompt, t }: { prompt: string; t: (key: string) => string }) => (
-    <div className="mt-2 pt-2 border-t border-border/20">
-        <div className="text-xxxs text-muted-foreground uppercase font-bold mb-1">{t('gallery.prompt')}</div>
-        <div className="text-foreground/80 line-clamp-3 leading-relaxed">{prompt}</div>
+    <div className="tengra-gallery-meta__prompt">
+        <div className="tengra-gallery-meta__prompt-label">{t('gallery.prompt')}</div>
+        <div className="tengra-gallery-meta__prompt-text">{prompt}</div>
     </div>
 ));
 PromptSection.displayName = 'PromptSection';
 
 const MetadataDisplay = memo(({ metadata, mtime, t }: MetadataDisplayProps) => {
     return (
-        <div className="space-y-2 text-xxs">
+        <div className="tengra-gallery-meta">
             {/* Date */}
             <MetadataItem icon={Calendar} value={formatDate(mtime, t('common.locale'))} />
 
@@ -163,80 +166,80 @@ const GalleryCard = memo(({ img, deleting, selected, onPreview, onDelete, onOpen
     return (
         <div
             key={img.path}
-            className="group relative h-full bg-card/40 rounded-xl overflow-hidden border border-border/20 hover:border-primary/50 transition-all"
+            className="tengra-gallery-card"
             onMouseEnter={() => setShowDetails(true)}
             onMouseLeave={() => setShowDetails(false)}
         >
-            <div className="absolute top-2 left-2 z-20">
+            <div className="tengra-gallery-card__checkbox">
                 <input
                     type="checkbox"
                     checked={selected}
                     onChange={() => onToggleSelection(img.path)}
                     onClick={event => event.stopPropagation()}
                     aria-label={t('gallery.selectImage')}
-                    className="h-4 w-4 rounded border-border/70 bg-background/80"
+                    className="tengra-gallery-card__checkbox-input"
                 />
             </div>
             <button
                 type="button"
                 onClick={() => onPreview(img)}
-                className="block w-full h-full text-left"
+                className="tengra-gallery-card__image-btn"
                 aria-label={t('gallery.openPreview')}
             >
                 <img
                     src={img.url}
                     alt={img.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    className="tengra-gallery-card__image"
                     loading="lazy"
                 />
             </button>
 
             {/* Hover Overlay with Details */}
             <div className={cn(
-                "absolute inset-0 bg-gradient-to-t from-background/90 via-background/60 to-transparent transition-opacity flex flex-col justify-end p-3",
-                showDetails ? "opacity-100" : "opacity-0"
+                "tengra-gallery-card__overlay",
+                showDetails && "tengra-gallery-card__overlay--visible"
             )}>
                 {/* File name */}
-                <div className="text-xs text-foreground truncate font-medium mb-2">{img.name}</div>
+                <div className="tengra-gallery-card__filename">{img.name}</div>
 
                 {/* Metadata */}
                 <MetadataDisplay metadata={img.metadata} mtime={img.mtime} t={t} />
 
                 {/* Actions */}
-                <div className="flex gap-2 justify-end mt-3 pt-2 border-t border-border/20">
+                <div className="tengra-gallery-card__actions">
                     {img.metadata?.prompt && (
                         <button
                             onClick={(e) => { e.stopPropagation(); }}
-                            className="p-1.5 bg-info/20 hover:bg-info/40 text-info rounded-lg backdrop-blur-sm transition-colors"
+                            className="tengra-gallery-card__action-btn tengra-gallery-card__action-btn--info"
                             title={t('gallery.viewPrompt')}
                         >
-                            <Info className="w-4 h-4" />
+                            <Info className="tengra-gallery-card__action-icon" />
                         </button>
                     )}
                     <button
                         onClick={(e) => { e.stopPropagation(); onReveal(img.path); }}
-                        className="p-1.5 bg-muted/20 hover:bg-muted/40 text-foreground rounded-lg backdrop-blur-sm transition-colors"
+                        className="tengra-gallery-card__action-btn tengra-gallery-card__action-btn--muted"
                         title={t('gallery.openLocation')}
                     >
-                        <FolderOpen className="w-4 h-4" />
+                        <FolderOpen className="tengra-gallery-card__action-icon" />
                     </button>
                     <button
                         onClick={(e) => { e.stopPropagation(); onOpen(img.path); }}
-                        className="p-1.5 bg-primary/20 hover:bg-primary/40 text-primary rounded-lg backdrop-blur-sm transition-colors"
+                        className="tengra-gallery-card__action-btn tengra-gallery-card__action-btn--primary"
                         title={t('gallery.open')}
                     >
-                        <ExternalLink className="w-4 h-4" />
+                        <ExternalLink className="tengra-gallery-card__action-icon" />
                     </button>
                     <button
                         onClick={(e) => { e.stopPropagation(); onDelete(img.path); }}
                         disabled={!!deleting}
-                        className="p-1.5 bg-destructive/20 hover:bg-destructive/40 text-destructive rounded-lg backdrop-blur-sm transition-colors"
+                        className="tengra-gallery-card__action-btn tengra-gallery-card__action-btn--destructive"
                         title={t('gallery.delete')}
                     >
                         {deleting === img.path ? (
-                            <div className="w-4 h-4 border-2 border-destructive border-t-transparent rounded-full animate-spin" />
+                            <div className="tengra-gallery-card__action-spinner" />
                         ) : (
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="tengra-gallery-card__action-icon" />
                         )}
                     </button>
                 </div>
@@ -359,7 +362,7 @@ export function GalleryView({ language }: GalleryViewProps) {
         setIsBatchDownloading(true);
         trackGalleryEvent('batch_download_started', { selectedCount: selectedPaths.length });
         try {
-            const result = await window.electron.selectDirectory();
+            const result = normalizeDirectorySelectionResult(await window.electron.selectDirectory());
             if (!result.success || !result.path) {
                 return;
             }
@@ -486,33 +489,33 @@ export function GalleryView({ language }: GalleryViewProps) {
     }, [handleClosePreview, previewImage]);
 
     return (
-        <div className="h-full flex flex-col">
-            <div className="p-4 border-b border-border/20 flex items-center justify-between bg-muted/5">
+        <div className="tengra-gallery">
+            <div className="tengra-gallery__header">
                 <div className="flex items-center gap-3">
-                    <h3 className="text-foreground font-medium">{t('gallery.title')}</h3>
-                    <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{t('gallery.imageCount', { count: filteredImages.length })}</span>
+                    <h3 className="tengra-gallery__title">{t('gallery.title')}</h3>
+                    <span className="tengra-gallery__badge">{t('gallery.imageCount', { count: filteredImages.length })}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                <div className="tengra-gallery__actions">
+                    <span className="tengra-gallery__badge">
                         {t('gallery.selectedCount', { count: selectedPaths.length })}
                     </span>
                     <button
                         onClick={handleClearSelection}
                         disabled={selectedPaths.length === 0 || isBatchDownloading}
-                        className="px-2 py-1 text-xs border border-border/40 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="tengra-gallery__clear-btn"
                     >
                         {t('gallery.clearSelection')}
                     </button>
                     <button
                         onClick={() => void handleBatchDownload()}
                         disabled={selectedPaths.length === 0 || isBatchDownloading}
-                        className="px-2 py-1 text-xs rounded-md bg-primary/20 text-primary hover:bg-primary/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                        className="tengra-gallery__download-btn"
                     >
-                        <Download className={cn("w-3.5 h-3.5", isBatchDownloading && "animate-pulse")} />
+                        <Download className={cn("tengra-gallery__download-icon", isBatchDownloading && "tengra-gallery__download-icon--loading")} />
                         {isBatchDownloading ? t('gallery.downloadingSelected') : t('gallery.downloadSelected')}
                     </button>
-                    <div className="relative w-64">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
+                    <div className="tengra-gallery__search">
+                        <Search className="tengra-gallery__search-icon" />
                         <Input
                             value={searchQuery}
                             onChange={event => setSearchQuery(event.target.value)}
@@ -522,24 +525,24 @@ export function GalleryView({ language }: GalleryViewProps) {
                     </div>
                     <button
                         onClick={() => void loadImages()}
-                        className="p-1.5 hover:bg-muted/20 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                        className="tengra-gallery__refresh-btn"
                         title={t('gallery.refresh')}
                     >
-                        <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+                        <RefreshCw className={cn("tengra-gallery__refresh-icon", loading && "tengra-gallery__refresh-icon--loading")} />
                     </button>
                 </div>
             </div>
 
-            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6">
+            <div ref={scrollContainerRef} className="tengra-gallery__content">
                 {images.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                        <Image className="w-12 h-12 mb-3 opacity-20" />
+                    <div className="tengra-gallery__empty">
+                        <Image className="tengra-gallery__empty-icon" />
                         <p>{t('gallery.noImages')}</p>
-                        <p className="text-xs mt-1">{t('gallery.emptyState')}</p>
+                        <p className="tengra-gallery__empty-subtitle">{t('gallery.emptyState')}</p>
                     </div>
                 ) : filteredImages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                        <Search className="w-12 h-12 mb-3 opacity-20" />
+                    <div className="tengra-gallery__empty">
+                        <Search className="tengra-gallery__empty-icon" />
                         <p>{t('gallery.noResults')}</p>
                     </div>
                 ) : (
@@ -578,31 +581,31 @@ export function GalleryView({ language }: GalleryViewProps) {
 
             {previewImage && (
                 <div
-                    className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm flex items-center justify-center p-6"
+                    className="tengra-gallery-preview"
                     onClick={handleClosePreview}
                 >
-                    <div className="absolute top-4 right-4 flex items-center gap-2">
+                    <div className="tengra-gallery-preview__controls">
                         <button
                             type="button"
                             onClick={(event) => { event.stopPropagation(); handleZoomChange(0.2); }}
                             title={t('gallery.zoomIn')}
-                            className="p-2 rounded-md bg-muted/70 hover:bg-muted text-foreground transition-colors"
+                            className="tengra-gallery-preview__btn"
                         >
-                            <Plus className="w-4 h-4" />
+                            <Plus className="tengra-gallery-preview__btn-icon" />
                         </button>
                         <button
                             type="button"
                             onClick={(event) => { event.stopPropagation(); handleZoomChange(-0.2); }}
                             title={t('gallery.zoomOut')}
-                            className="p-2 rounded-md bg-muted/70 hover:bg-muted text-foreground transition-colors"
+                            className="tengra-gallery-preview__btn"
                         >
-                            <Minus className="w-4 h-4" />
+                            <Minus className="tengra-gallery-preview__btn-icon" />
                         </button>
                         <button
                             type="button"
                             onClick={(event) => { event.stopPropagation(); handleResetPreview(); }}
                             title={t('gallery.resetView')}
-                            className="px-3 py-2 text-xs rounded-md bg-muted/70 hover:bg-muted text-foreground transition-colors"
+                            className="tengra-gallery-preview__btn tengra-gallery-preview__btn--text"
                         >
                             {t('gallery.resetView')}
                         </button>
@@ -610,9 +613,9 @@ export function GalleryView({ language }: GalleryViewProps) {
                             type="button"
                             onClick={(event) => { event.stopPropagation(); handleClosePreview(); }}
                             title={t('gallery.closePreview')}
-                            className="p-2 rounded-md bg-muted/70 hover:bg-muted text-foreground transition-colors"
+                            className="tengra-gallery-preview__btn"
                         >
-                            <X className="w-4 h-4" />
+                            <X className="tengra-gallery-preview__btn-icon" />
                         </button>
                     </div>
                     <div
@@ -639,13 +642,17 @@ export function GalleryView({ language }: GalleryViewProps) {
                         }}
                         onMouseUp={() => setIsPanning(false)}
                         onMouseLeave={() => setIsPanning(false)}
-                        className={cn("max-w-screen-lg max-h-screen overflow-hidden", previewZoom > 1 && "cursor-grab", isPanning && "cursor-grabbing")}
+                        className={cn(
+                            "tengra-gallery-preview__image-container",
+                            previewZoom > 1 && "tengra-gallery-preview__image-container--zoomable",
+                            isPanning && "tengra-gallery-preview__image-container--panning"
+                        )}
                     >
                         <img
                             src={previewImage.url}
                             alt={previewImage.name}
                             draggable={false}
-                            className="max-w-screen-lg max-h-screen object-contain select-none"
+                            className="tengra-gallery-preview__image"
                             style={{
                                 transform: `translate(${previewPan.x}px, ${previewPan.y}px) scale(${previewZoom})`,
                                 transition: isPanning ? 'none' : 'transform 120ms ease-out',

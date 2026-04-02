@@ -18,6 +18,9 @@ import { ExportService } from '@main/services/export/export.service';
 import { FeatureFlagService } from '@main/services/external/feature-flag.service';
 import { HttpService } from '@main/services/external/http.service';
 import type { LogoService } from '@main/services/external/logo.service';
+import { CronSchedulerService } from '@main/services/external/cron-scheduler.service';
+import { NotificationDispatcherService } from '@main/services/external/notification-dispatcher.service';
+import { SocialMediaService } from '@main/services/external/social-media.service';
 import { RuleService } from '@main/services/external/rule.service';
 import { WebService } from '@main/services/external/web.service';
 import type { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
@@ -81,6 +84,7 @@ import { RuntimeHealthService } from '@main/services/system/runtime-health.servi
 import { RuntimeManifestService } from '@main/services/system/runtime-manifest.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { SystemService } from '@main/services/system/system.service';
+import { LocaleService } from '@main/services/system/locale.service';
 import type { UpdateService } from '@main/services/system/update.service';
 import { UtilityProcessService } from '@main/services/system/utility-process.service';
 import { DockerBackend } from '@main/services/terminal/backends/docker.backend';
@@ -182,6 +186,7 @@ export interface Services {
     agentService: AgentService;
     dataService: DataService;
     updateService: UpdateService;
+    localeService: LocaleService;
 
     healthCheckService: HealthCheckService;
     fileManagementService: FileManagementService;
@@ -219,6 +224,9 @@ export interface Services {
     modelDownloaderService: ModelDownloaderService;
     councilCapabilityService: CouncilCapabilityService;
     marketplaceService: MarketplaceService;
+    socialMediaService: SocialMediaService;
+    cronSchedulerService: CronSchedulerService;
+    notificationDispatcherService: NotificationDispatcherService;
 }
 
 /**
@@ -360,7 +368,31 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
     );
 
     // Marketplace Service
-    container.register('marketplaceService', () => new MarketplaceService());
+    container.register('marketplaceService', ls => new MarketplaceService(ls as LocaleService), [
+        'localeService',
+    ]);
+
+    container.register(
+        'socialMediaService',
+        (ss, ls, eb) => new SocialMediaService(ss as SettingsService, ls as LLMService, eb as EventBusService),
+        ['settingsService', 'llmService', 'eventBusService']
+    );
+
+    container.register(
+        'cronSchedulerService',
+        (ss, eb) => new CronSchedulerService(ss as SettingsService, eb as EventBusService),
+        ['settingsService', 'eventBusService']
+    );
+
+    container.register(
+        'notificationDispatcherService',
+        (sm, eb) => new NotificationDispatcherService(sm as SocialMediaService, eb as EventBusService),
+        ['socialMediaService', 'eventBusService']
+    );
+
+    container.register('localeService', ds => new LocaleService(ds as DataService), [
+        'dataService',
+    ]);
 }
 
 function registerDataServices() {
@@ -975,6 +1007,10 @@ function buildServicesMap(
             'councilCapabilityService'
         ),
         marketplaceService: container.resolve<MarketplaceService>('marketplaceService'),
+        socialMediaService: container.resolve<SocialMediaService>('socialMediaService'),
+        cronSchedulerService: container.resolve<CronSchedulerService>('cronSchedulerService'),
+        notificationDispatcherService: container.resolve<NotificationDispatcherService>('notificationDispatcherService'),
+        localeService: container.resolve<LocaleService>('localeService'),
         apiServerService: null as RuntimeValue as ApiServerService, // Will be created in main.ts after ToolExecutor
     };
 }

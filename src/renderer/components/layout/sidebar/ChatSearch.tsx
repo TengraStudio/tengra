@@ -3,6 +3,8 @@ import React from 'react';
 
 import { Button } from '@/components/ui/button';
 
+import './chat-search.css';
+
 interface ChatSearchProps {
     searchQuery: string;
     setSearchQuery: (query: string) => void;
@@ -17,7 +19,7 @@ export const ChatSearch: React.FC<ChatSearchProps> = ({
     t,
 }) => {
     return (
-        <div className="px-4 py-2 space-y-2">
+        <div className="tengra-chat-search">
             <div className="relative group">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
                 <input
@@ -25,7 +27,7 @@ export const ChatSearch: React.FC<ChatSearchProps> = ({
                     placeholder={t('sidebar.searchChats')}
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    className="w-full bg-muted/20 border border-border/40 focus:border-primary/50 focus:bg-muted/30 text-xs rounded-lg pl-8 pr-3 py-2 outline-none transition-all font-medium placeholder:text-muted-foreground/50"
+                    className="tengra-chat-search__input focus:border-primary/50 focus:bg-muted/30 text-xs rounded-lg pl-8 pr-3 py-2 outline-none transition-all font-medium placeholder:text-muted-foreground/50"
                 />
             </div>
             <Button

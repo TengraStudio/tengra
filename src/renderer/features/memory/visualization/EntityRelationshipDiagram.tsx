@@ -23,7 +23,7 @@ const EntityNode = ({ data }: { data: { name: string; type: string; properties: 
     return (
         <div className="px-4 py-3 rounded-2xl border-2 border-primary/30 bg-background/90 backdrop-blur-xl shadow-2xl min-w-52">
             <div className="flex items-center gap-2 mb-2">
-                <div className="px-1.5 py-0.5 rounded-md bg-primary/20 text-primary text-xxxs uppercase font-bold">
+                <div className="px-1.5 py-0.5 rounded-md bg-primary/20 text-primary text-xxxs font-bold">
                     {data.type}
                 </div>
                 <div className="text-sm font-bold text-foreground truncate">{data.name}</div>
@@ -31,7 +31,7 @@ const EntityNode = ({ data }: { data: { name: string; type: string; properties: 
             <div className="space-y-1.5">
                 {Object.entries(data.properties).map(([key, value]) => (
                     <div key={key} className="flex flex-col gap-0.5 border-t border-border/40 pt-1.5 first:border-0 first:pt-0">
-                        <span className="text-xxxs text-muted-foreground uppercase tracking-wider">{key}</span>
+                        <span className="text-xxxs text-muted-foreground">{key}</span>
                         <span className="text-xs text-foreground/80 line-clamp-2">{value}</span>
                     </div>
                 ))}

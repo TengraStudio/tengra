@@ -1,0 +1,199 @@
+/* TipModal Component CSS */
+:root {
+    /* Container */
+    --tip-modal-padding: 1.5rem;
+    --tip-modal-gap: 1.5rem;
+    
+    /* Icon container */
+    --tip-modal-icon-size: 4rem;
+    --tip-modal-icon-bg: hsl(var(--primary) / 10%);
+    --tip-modal-icon-border-radius: 1.5rem;
+    --tip-modal-icon-color: hsl(var(--primary));
+    --tip-modal-icon-inner-size: 2rem;
+    
+    /* Icon glow */
+    --tip-modal-icon-glow-bg: hsl(var(--primary) / 20%);
+    --tip-modal-icon-glow-blur: 1rem;
+    --tip-modal-icon-glow-hover-blur: 1.5rem;
+    
+    /* Badge */
+    --tip-modal-badge-bg: hsl(var(--warning));
+    --tip-modal-badge-color: hsl(var(--foreground));
+    --tip-modal-badge-padding: 0.25rem;
+    --tip-modal-badge-border-radius: 9999px;
+    --tip-modal-badge-icon-size: 0.75rem;
+    
+    /* Title */
+    --tip-modal-title-font-size: 1.125rem;
+    --tip-modal-title-font-weight: 700;
+    --tip-modal-title-color: hsl(var(--foreground) / 80%);
+    --tip-modal-title-icon-size: 1rem;
+    --tip-modal-title-icon-color: hsl(var(--primary));
+    
+    /* Content */
+    --tip-modal-content-color: hsl(var(--muted-foreground));
+    --tip-modal-content-font-weight: 500;
+    --tip-modal-content-line-height: 1.625;
+    
+    /* Buttons */
+    --tip-modal-button-height: 3rem;
+    --tip-modal-button-border-radius: 1rem;
+    --tip-modal-button-outline-border-color: hsl(var(--border) / 40%);
+    --tip-modal-button-outline-hover-bg: hsl(var(--accent) / 30%);
+    --tip-modal-button-primary-shadow: 0 20px 25px -5px hsl(var(--primary) / 20%);
+    
+    /* Footer link */
+    --tip-modal-footer-font-size: 0.625rem;
+    --tip-modal-footer-color: hsl(var(--muted-foreground) / 40%);
+    --tip-modal-footer-hover-color: hsl(var(--muted-foreground));
+}
+
+/* Container */
+.tengra-tip-modal {
+    padding: var(--tip-modal-padding);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--tip-modal-gap);
+}
+
+/* Icon wrapper */
+.tengra-tip-modal__icon-wrapper {
+    position: relative;
+    width: var(--tip-modal-icon-size);
+    height: var(--tip-modal-icon-size);
+    border-radius: var(--tip-modal-icon-border-radius);
+    background: var(--tip-modal-icon-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Icon glow */
+.tengra-tip-modal__icon-glow {
+    position: absolute;
+    inset: 0;
+    background: var(--tip-modal-icon-glow-bg);
+    border-radius: var(--tip-modal-icon-border-radius);
+    filter: blur(var(--tip-modal-icon-glow-blur));
+    transition: filter 300ms ease;
+}
+
+.tengra-tip-modal__icon-wrapper:hover .tengra-tip-modal__icon-glow {
+    filter: blur(var(--tip-modal-icon-glow-hover-blur));
+}
+
+/* Main icon */
+.tengra-tip-modal__icon {
+    position: relative;
+    z-index: 10;
+    width: var(--tip-modal-icon-inner-size);
+    height: var(--tip-modal-icon-inner-size);
+    color: var(--tip-modal-icon-color);
+    animation: tip-modal-pulse 2s ease-in-out infinite;
+}
+
+/* Badge */
+.tengra-tip-modal__badge {
+    position: absolute;
+    top: -0.5rem;
+    right: -0.5rem;
+    padding: var(--tip-modal-badge-padding);
+    background: var(--tip-modal-badge-bg);
+    border-radius: var(--tip-modal-badge-border-radius);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 10%);
+}
+
+.tengra-tip-modal__badge-icon {
+    width: var(--tip-modal-badge-icon-size);
+    height: var(--tip-modal-badge-icon-size);
+    color: var(--tip-modal-badge-color);
+}
+
+/* Content section */
+.tengra-tip-modal__content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Title */
+.tengra-tip-modal__title {
+    font-size: var(--tip-modal-title-font-size);
+    font-weight: var(--tip-modal-title-font-weight);
+    color: var(--tip-modal-title-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.tengra-tip-modal__title-icon {
+    width: var(--tip-modal-title-icon-size);
+    height: var(--tip-modal-title-icon-size);
+    color: var(--tip-modal-title-icon-color);
+}
+
+/* Text */
+.tengra-tip-modal__text {
+    color: var(--tip-modal-content-color);
+    font-weight: var(--tip-modal-content-font-weight);
+    line-height: var(--tip-modal-content-line-height);
+}
+
+/* Actions */
+.tengra-tip-modal__actions {
+    width: 100%;
+    display: flex;
+    gap: 0.75rem;
+    padding-top: 1rem;
+}
+
+.tengra-tip-modal__button {
+    flex: 1;
+    height: var(--tip-modal-button-height);
+    border-radius: var(--tip-modal-button-border-radius);
+}
+
+.tengra-tip-modal__button--outline {
+    border-color: var(--tip-modal-button-outline-border-color);
+}
+
+.tengra-tip-modal__button--outline:hover {
+    background: var(--tip-modal-button-outline-hover-bg);
+}
+
+.tengra-tip-modal__button--primary {
+    box-shadow: var(--tip-modal-button-primary-shadow);
+}
+
+/* Footer */
+.tengra-tip-modal__footer {
+    padding-top: 0.5rem;
+}
+
+.tengra-tip-modal__dismiss {
+    font-size: var(--tip-modal-footer-font-size);
+    font-weight: 700;
+    color: var(--tip-modal-footer-color);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: color 150ms ease;
+}
+
+.tengra-tip-modal__dismiss:hover {
+    color: var(--tip-modal-footer-hover-color);
+}
+
+/* Animations */
+@keyframes tip-modal-pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}

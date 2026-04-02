@@ -44,7 +44,7 @@ const MemoryNode = ({ data }: { data: { label: string; category: MemoryCategory;
 
     return (
         <div className={`px-4 py-2 rounded-xl border-2 shadow-xl backdrop-blur-md min-w-36 transition-all hover:scale-105 ${getCategoryColor(data.category)}`}>
-            <div className="text-xs uppercase font-bold opacity-70 mb-1">{data.category}</div>
+            <div className="text-xs font-bold opacity-70 mb-1">{data.category}</div>
             <div className="text-sm font-medium line-clamp-2 leading-tight">{data.label}</div>
             <div className="mt-2 h-1 w-full bg-muted/40 rounded-full overflow-hidden">
                 <div

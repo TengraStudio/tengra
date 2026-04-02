@@ -1,0 +1,10 @@
+:root {
+    --sidebar-navigation-gap: 0.25rem;
+}
+
+.tengra-sidebar-navigation {
+    padding: 0 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sidebar-navigation-gap);
+}

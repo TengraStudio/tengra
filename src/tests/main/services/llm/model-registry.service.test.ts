@@ -12,8 +12,7 @@ import { SettingsService } from '@main/services/system/settings.service';
 import type { AppSettings } from '@shared/types/settings';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { en } from '../../../../renderer/i18n/en';
-import { tr } from '../../../../renderer/i18n/tr';
+import { en } from '../../../../renderer/i18n/locales';
 
 interface MockHuggingFaceService {
     searchModels: ReturnType<typeof vi.fn>;
@@ -494,7 +493,6 @@ describe('ModelRegistryService', () => {
             expect(emptyMetrics.uiState).toBe('empty');
             expect(emptyMetrics.performanceBudget.cacheRefreshMs).toBe(2000);
             expect(en.serviceHealth.modelRegistry.empty).toBe(emptyMetrics.messageKey);
-            expect(tr.serviceHealth.modelRegistry.empty).toBeTruthy();
 
             vi.mocked(mockOllamaService.getModels!).mockRejectedValue(new Error('provider unavailable'));
             await service.getInstalledModels();
@@ -502,7 +500,6 @@ describe('ModelRegistryService', () => {
             const failureMetrics = service.getHealthMetrics();
             expect(failureMetrics.uiState).toBe('failure');
             expect(en.serviceHealth.modelRegistry.failure).toBe(failureMetrics.messageKey);
-            expect(tr.serviceHealth.modelRegistry.failure).toBeTruthy();
         });
     });
 });

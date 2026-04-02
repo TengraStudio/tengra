@@ -35,7 +35,7 @@ export const MemoryHistoryPanel: React.FC<MemoryHistoryPanelProps> = ({
                     history.map((version, index) => (
                         <div key={index} className="space-y-2 group">
                             <div className="flex items-center justify-between">
-                                <span className="text-xxxs font-bold uppercase tracking-wider text-muted-foreground/60">
+                                <span className="text-xxxs font-bold text-muted-foreground/60">
                                     {new Date(version.timestamp).toLocaleString()}
                                 </span>
                                 {index > 0 && (
@@ -53,7 +53,7 @@ export const MemoryHistoryPanel: React.FC<MemoryHistoryPanelProps> = ({
                             <div className="p-3 bg-muted/30 rounded-lg text-sm border border-transparent group-hover:border-primary/20 transition-colors">
                                 <p className="leading-relaxed opacity-80">{version.content}</p>
                                 <div className="mt-2 flex gap-1 items-center overflow-hidden">
-                                    <span className="text-xxxs bg-primary/10 text-primary px-1.5 py-0.5 rounded uppercase font-bold">
+                                    <span className="text-xxxs bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold">
                                         {version.category}
                                     </span>
                                     {version.tags.map((tag, i) => (

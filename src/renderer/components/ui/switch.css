@@ -1,0 +1,88 @@
+/**
+ * Switch Component CSS
+ * Component-specific CSS custom properties for the Switch toggle component.
+ */
+
+:root {
+  /* Base switch variables */
+  --switch-width: 2.25rem;
+  --switch-height: 1.25rem;
+  --switch-bg-unchecked: hsl(var(--input));
+  --switch-bg-checked: hsl(var(--primary));
+  --switch-border: transparent;
+  --switch-border-radius: 9999px;
+  --switch-ring: hsl(var(--ring));
+  --switch-ring-offset: hsl(var(--background));
+  --switch-disabled-opacity: 0.5;
+  --switch-transition: all 0.15s ease;
+
+  /* Thumb variables */
+  --switch-thumb-size: 1rem;
+  --switch-thumb-bg: hsl(var(--background));
+  --switch-thumb-shadow: 0 10px 15px -3px rgb(0 0 0 / 10%), 0 4px 6px -4px rgb(0 0 0 / 10%);
+  --switch-thumb-translate: 1rem;
+}
+
+/* Base switch styles */
+.tengra-switch {
+  display: inline-flex;
+  height: var(--switch-height);
+  width: var(--switch-width);
+  flex-shrink: 0;
+  cursor: pointer;
+  align-items: center;
+  border-radius: var(--switch-border-radius);
+  border: 2px solid var(--switch-border);
+  background-color: var(--switch-bg-unchecked);
+  transition: var(--switch-transition);
+}
+
+.tengra-switch:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--switch-ring-offset), 0 0 0 4px var(--switch-ring);
+}
+
+.tengra-switch:disabled {
+  cursor: not-allowed;
+  opacity: var(--switch-disabled-opacity);
+}
+
+/* Checked state */
+.tengra-switch[data-state="checked"] {
+  background-color: var(--switch-bg-checked);
+}
+
+/* Switch thumb */
+.tengra-switch__thumb {
+  display: block;
+  height: var(--switch-thumb-size);
+  width: var(--switch-thumb-size);
+  border-radius: var(--switch-border-radius);
+  background-color: var(--switch-thumb-bg);
+  box-shadow: var(--switch-thumb-shadow);
+  pointer-events: none;
+  transition: var(--switch-transition);
+}
+
+.tengra-switch[data-state="checked"] .tengra-switch__thumb {
+  transform: translateX(var(--switch-thumb-translate));
+}
+
+.tengra-switch[data-state="unchecked"] .tengra-switch__thumb {
+  transform: translateX(0);
+}
+
+/* Size variants */
+.tengra-switch--sm {
+  --switch-width: 1.75rem;
+  --switch-height: 1rem;
+  --switch-thumb-size: 0.75rem;
+  --switch-thumb-translate: 0.75rem;
+}
+
+.tengra-switch--lg {
+  --switch-width: 2.75rem;
+  --switch-height: 1.5rem;
+  --switch-thumb-size: 1.25rem;
+  --switch-thumb-translate: 1.25rem;
+}

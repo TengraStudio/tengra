@@ -42,7 +42,7 @@ export const MemoryHeader: React.FC<MemoryHeaderProps> = ({
     return (
         <div className="flex items-center justify-between">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">{t('memory.title')}</h1>
+                <h1 className="text-3xl font-bold">{t('memory.title')}</h1>
                 <p className="text-muted-foreground mt-1">{t('memory.subtitle')}</p>
             </div>
             <div className="flex items-center gap-3">
@@ -123,7 +123,7 @@ const StatCardContent = ({
         <>
             <div className="flex items-center gap-2">
                 <Icon className={cn('w-4 h-4', color)} />
-                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">
+                <span className="text-xs font-bold text-muted-foreground/60">
                     {t(label)}
                 </span>
             </div>

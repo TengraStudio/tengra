@@ -34,7 +34,7 @@ export const CollaborationSession = memo(({
                         setSessionRecording((current) => !current);
                         appendRecordingEvent(t('chat.collaboration.recordingToggled'));
                     }}
-                    className={`h-8 px-4 text-xxxs font-bold uppercase transition-all duration-300 relative group overflow-hidden ${sessionRecording ? 'shadow-lg shadow-destructive/20 border-destructive/20' : 'hover:border-primary/40'
+                    className={`h-8 px-4 text-xxxs font-bold  transition-all duration-300 relative group overflow-hidden ${sessionRecording ? 'shadow-lg shadow-destructive/20 border-destructive/20' : 'hover:border-primary/40'
                         }`}
                 >
                     {sessionRecording && (
@@ -49,7 +49,7 @@ export const CollaborationSession = memo(({
                     size="sm"
                     variant="outline"
                     onClick={generateShareLink}
-                    className="h-8 px-4 text-xxxs font-bold uppercase transition-transform hover:scale-105 hover:border-primary/40 hover:bg-primary/5 group"
+                    className="h-8 px-4 text-xxxs font-bold transition-transform hover:scale-105 hover:border-primary/40 hover:bg-primary/5 group"
                 >
                     <Copy className="w-3.5 h-3.5 mr-2.5 transition-transform group-hover:rotate-12" />
                     {t('chat.collaboration.generateShareLink')}
@@ -66,21 +66,21 @@ export const CollaborationSession = memo(({
                                 className="h-8 text-xxs font-mono font-medium truncate pr-16 bg-muted border-muted-foreground/10 focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-all"
                             />
                             <div className="absolute right-0 top-0 h-full flex items-center pr-2.5 group-hover:opacity-100 opacity-50 transition-opacity">
-                                <span className="text-xxxs uppercase font-bold tracking-tighter text-primary">{t('chat.collaboration.copied')}</span>
+                                <span className="text-xxxs font-bold text-primary">{t('chat.collaboration.copied')}</span>
                             </div>
                         </div>
                     )}
-                    <div className="max-h-32 overflow-y-auto space-y-1.5 scrollbar-thin pr-1 text-xxxs font-mono font-medium tracking-tight">
+                    <div className="max-h-32 overflow-y-auto space-y-1.5 scrollbar-thin pr-1 text-xxxs font-mono font-medium">
                         {recordedEvents.length === 0 ? (
                             <div className="p-3 border border-dashed border-muted-foreground/10 rounded-md text-center">
-                                <span className="text-xxxs text-muted-foreground italic font-medium opacity-50 uppercase tracking-widest leading-relaxed">
+                                <span className="text-xxxs text-muted-foreground font-medium opacity-50 leading-relaxed">
                                     {t('chat.collaboration.noEventsInSession')}
                                 </span>
                             </div>
                         ) : (
                             recordedEvents.map((event, index) => (
                                 <div key={index} className="flex gap-2.5 items-start opacity-70 hover:opacity-100 transition-opacity group">
-                                    <span className="text-primary font-black opacity-30 select-none group-hover:opacity-100 transition-opacity">›</span>
+                                    <span className="text-primary font-bold opacity-30 select-none group-hover:opacity-100 transition-opacity">›</span>
                                     <p className="text-muted-foreground break-all leading-tight">
                                         {event}
                                     </p>

@@ -1,5 +1,5 @@
 import { useSettingsLogic } from '@renderer/features/settings/hooks/useSettingsLogic';
-import { SettingsCategory } from '@renderer/features/settings/types';
+import { SettingsCategory, SettingsSharedProps } from '@renderer/features/settings/types';
 import { ChevronRight } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 
@@ -15,6 +15,7 @@ import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { recordSettingsPageHealthEvent } from '@/store/settings-page-health.store';
 import type { GroupedModels, ModelInfo } from '@/types';
+import { translateErrorMessage } from '@/utils/error-handler.util';
 
 import { ManualSessionModal, ManualSessionModalState } from './components/ManualSessionModal';
 import {
@@ -71,16 +72,16 @@ export function SettingsPage({
 }: SettingsPageProps) {
     const {
         settings, setSettings, isLoading, settingsUiState, lastErrorCode, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
-        updateGeneral, updateSpeech, handleSave, startOllama, checkOllama, refreshAuthStatus,
+        updateGeneral, updateEditor, updateSpeech, updateRemoteAccounts, handleSave, startOllama, checkOllama, refreshAuthStatus,
         connectGitHubProfile, connectCopilot, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
         statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, setReloadTrigger,
         benchmarkResult, isBenchmarking, handleRunBenchmark,
         editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,
         linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
-        manualSessionModal, setManualSessionModal, handleSaveClaudeSession
+        manualSessionModal, setManualSessionModal, handleSaveClaudeSession, reloadSettings
     } = useSettingsLogic(onRefreshModels);
 
-    const { t } = useTranslation(settings?.general?.language ?? 'tr');
+    const { t } = useTranslation(settings?.general?.language ?? 'en');
 
     // Search query is controlled from the global app header.
     const normalizedSearchQuery = useMemo(
@@ -119,7 +120,13 @@ export function SettingsPage({
         const resetPayload = {
             ollama: { url: 'http://localhost:11434' },
             embeddings: { provider: 'none' as const },
-            general: { language: 'tr' as const, theme: 'dark', resolution: '1920x1080', fontSize: 14 },
+            general: {
+                language: 'en' as const,
+                theme: 'graphite',
+                resolution: '1920x1080',
+                fontSize: 14,
+                typographyScale: 'balanced' as const,
+            },
             proxy: { enabled: true, url: 'http://127.0.0.1:8317', key: '' }
         };
 
@@ -157,110 +164,70 @@ export function SettingsPage({
         setShowResetConfirm(true);
     }, []);
 
-    const loadSettings = useCallback(async () => {
-        const startedAt = Date.now();
-        try {
-            const data = await withSettingsPageRetry(() => window.electron.getSettings());
-            if (!validateSettingsPayload(data)) {
-                setStatusMessage('errors.unexpected');
-                recordSettingsPageHealthEvent({
-                    channel: 'settings.load',
-                    status: 'validation-failure',
-                    durationMs: Date.now() - startedAt,
-                    errorCode: settingsPageErrorCodes.validation,
-                });
-                return;
-            }
-
-            await setSettings(data);
-            recordSettingsPageHealthEvent({
-                channel: 'settings.load',
-                status: 'success',
-                durationMs: Date.now() - startedAt,
-            });
-        } catch {
-            setStatusMessage('errors.unexpected');
-            recordSettingsPageHealthEvent({
-                channel: 'settings.load',
-                status: 'failure',
-                durationMs: Date.now() - startedAt,
-                errorCode: settingsPageErrorCodes.loadFailed,
-            });
-        }
-    }, [setSettings, setStatusMessage]);
-
-    const sharedProps = useMemo(() => ({
-        settings, setSettings, isLoading, settingsUiState, lastErrorCode, statusMessage, 
-        setStatusMessage: (m: string) => { setStatusMessage(m); }, 
+    const sharedProps: SettingsSharedProps = useMemo(() => ({
+        settings, setSettings, isLoading, settingsUiState, lastErrorCode, statusMessage,
+        setStatusMessage: (m: string) => { setStatusMessage(m); },
         authBusy, authMessage, isOllamaRunning, authStatus,
-        updateGeneral, updateSpeech, handleSave, startOllama, checkOllama, refreshAuthStatus,
+        updateGeneral, updateEditor, updateSpeech, updateRemoteAccounts, handleSave, startOllama, checkOllama, refreshAuthStatus,
         connectGitHubProfile, connectCopilot, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
-        statsLoading, statsPeriod, 
-        setStatsPeriod: (p: 'daily' | 'weekly' | 'monthly' | 'yearly') => { setStatsPeriod(p); }, 
-        statsData, quotaData, copilotQuota, codexUsage, claudeQuota, 
+        statsLoading, statsPeriod,
+        setStatsPeriod: (p: 'daily' | 'weekly' | 'monthly' | 'yearly') => { setStatsPeriod(p); },
+        statsData, quotaData, copilotQuota, codexUsage, claudeQuota,
         setReloadTrigger: (trigger: number | ((prev: number) => number)) => { setReloadTrigger(trigger); },
         benchmarkResult, isBenchmarking, handleRunBenchmark,
-        editingPersonaId, 
-        setEditingPersonaId: (id: string | null) => { setEditingPersonaId(id); }, 
+        editingPersonaId,
+        setEditingPersonaId: (id: string | null) => { setEditingPersonaId(id); },
         personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,
         linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
-        manualSessionModal, 
-        setManualSessionModal: (m: ManualSessionModalState) => { setManualSessionModal(m); }, 
+        manualSessionModal,
+        setManualSessionModal: (m: ManualSessionModalState) => { setManualSessionModal(m); },
         handleSaveClaudeSession,
-        t, 
-        onRefreshModels: (bypassCache?: boolean) => { onRefreshModels?.(bypassCache); }, 
-        loadSettings, setIsLoading: (_value: boolean) => { }, onReset: handleFactoryReset
+        t,
+        onRefreshModels: (bypassCache?: boolean) => { onRefreshModels?.(bypassCache); },
+        loadSettings: reloadSettings, setIsLoading: (_value: boolean) => { }, onReset: handleFactoryReset
     }), [
         settings, setSettings, isLoading, settingsUiState, lastErrorCode, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
-        updateGeneral, updateSpeech, handleSave, startOllama, checkOllama, refreshAuthStatus,
+        updateGeneral, updateEditor, updateSpeech, updateRemoteAccounts, handleSave, startOllama, checkOllama, refreshAuthStatus,
         connectGitHubProfile, connectCopilot, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
         statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, setReloadTrigger,
         benchmarkResult, isBenchmarking, handleRunBenchmark,
         editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,
         linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
         manualSessionModal, setManualSessionModal, handleSaveClaudeSession,
-        t, onRefreshModels, loadSettings, handleFactoryReset
+        t, onRefreshModels, reloadSettings, handleFactoryReset
     ]);
 
     const renderedStatusMessage = useMemo(() => {
         if (statusMessage.trim() === '') {
             return '';
         }
-        if (statusMessage.includes('.')) {
-            return t(statusMessage);
+        if (
+            statusMessage.includes('.')
+            || statusMessage === statusMessage.toUpperCase()
+            || statusMessage.includes(' timed out after ')
+        ) {
+            return translateErrorMessage(statusMessage);
         }
         return statusMessage;
-    }, [statusMessage, t]);
+    }, [statusMessage]);
 
     return (
-        <div className="settings-container">
-            <div className="settings-shell flex h-full flex-col gap-6 p-5 lg:flex-row lg:gap-8 lg:p-6">
-                <aside className="settings-rail flex w-full shrink-0 flex-col gap-4 lg:w-[21rem]">
-                    <div className="rounded-[24px] border border-border/70 bg-background/92 p-6">
-                        <p className="mb-3 text-[10px] font-black uppercase tracking-[0.32em] text-muted-foreground/70">
-                            {t('nav.settings')}
-                        </p>
-                        <h1 className="text-[1.65rem] font-black tracking-tight text-foreground">
-                            {t('settings.title')}
-                        </h1>
-                        <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground/90">
-                            {t('settings.subtitle')}
-                        </p>
-                    </div>
-
-                    <div className="min-h-0 rounded-[24px] border border-border/70 bg-background/88 p-3">
+        <div className="settings-container h-full overflow-hidden">
+            <div className="settings-shell flex h-full min-h-0 flex-col gap-4 p-4 lg:flex-row lg:gap-6 lg:p-6">
+                <aside className="settings-rail flex h-full w-full shrink-0 flex-col lg:w-72">
+                    <div className="settings-shell-card flex min-h-0 flex-1 flex-col overflow-hidden p-3">
                         {searchQuery && (
-                            <div className="mb-3 rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-xs text-muted-foreground">
+                            <div className="settings-shell-note mb-3">
                                 {filteredTabs.length > 0
                                     ? t('settings.searchResults', { count: filteredTabs.length })
                                     : t('settings.noResults')}
                             </div>
                         )}
 
-                        <div className="flex max-h-full flex-col gap-4 overflow-y-auto pr-1" role="tablist" aria-orientation="vertical">
+                        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1" role="tablist" aria-orientation="vertical">
                             {groupedTabs.length > 0 ? groupedTabs.map(group => (
                                 <div key={group.label} className="space-y-2">
-                                    <p className="px-3 text-[10px] font-black uppercase tracking-[0.28em] text-muted-foreground/50">
+                                    <p className="px-3 text-xs font-medium text-muted-foreground/60">
                                         {group.label}
                                     </p>
                                     <div className="space-y-1">
@@ -278,10 +245,10 @@ export function SettingsPage({
                                                     aria-controls={`settings-panel-${item.id}`}
                                                     onClick={() => { handleSelectTab(item.id); }}
                                                     className={cn(
-                                                        'group flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors duration-150',
+                                                        'group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors duration-150',
                                                         isActive
-                                                            ? 'border-border bg-foreground/[0.045] text-foreground'
-                                                            : 'border-transparent bg-transparent text-muted-foreground hover:border-border/70 hover:bg-muted/20 hover:text-foreground'
+                                                            ? 'border border-border/35 bg-background text-foreground'
+                                                            : 'bg-transparent text-muted-foreground hover:bg-background/70 hover:text-foreground'
                                                     )}
                                                 >
                                                     <span className={cn(
@@ -295,10 +262,7 @@ export function SettingsPage({
                                                     <span className="min-w-0 flex-1">
                                                         <span className="block truncate text-sm font-semibold">
                                                             {item.label}
-                                                        </span>
-                                                        <span className="block truncate text-xs text-muted-foreground/75">
-                                                            {item.sectionLabel}
-                                                        </span>
+                                                        </span> 
                                                     </span>
                                                     <ChevronRight className={cn(
                                                         'h-4 w-4 shrink-0 transition-transform',
@@ -320,22 +284,16 @@ export function SettingsPage({
 
                 <main className="settings-main min-w-0 flex-1 overflow-y-auto">
                     <div className="settings-stage flex min-h-full flex-col gap-5 pb-16">
-                        <section className="rounded-[24px] border border-border/70 bg-background/94 px-6 py-6 lg:px-8">
-                            <p className="text-[10px] font-black uppercase tracking-[0.32em] text-muted-foreground/70">
-                                {activeNavigationItem?.sectionLabel ?? t('nav.settings')}
-                            </p>
-                            <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                        <section className="settings-shell-card px-5 py-5 lg:px-7"> 
+                            <div className="mt-3 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                                 <div className="space-y-2">
-                                    <h2 className="text-[2rem] font-black tracking-tight text-foreground">
+                                    <h2 className="text-[1.8rem] font-semibold text-foreground sm:text-[2rem]">
                                         {activeNavigationItem?.label ?? t('settings.title')}
                                     </h2>
                                     <p className="max-w-2xl text-sm leading-6 text-muted-foreground/90">
                                         {t('settings.subtitle')}
                                     </p>
-                                </div>
-                                <div className="rounded-xl border border-border/70 bg-muted/10 px-4 py-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                                    {filteredTabs.length} / {allTabs.length}
-                                </div>
+                                </div> 
                             </div>
                         </section>
 
@@ -350,24 +308,24 @@ export function SettingsPage({
                             role="tabpanel"
                             aria-labelledby={`settings-tab-${activeTab}`}
                             className={cn(
-                                'rounded-[24px] border border-border/70 bg-background/94 p-4 lg:p-6',
-                                (activeTab === 'models' || activeTab === 'gallery') && 'max-w-none'
+                                'settings-shell-card p-4 lg:p-6',
+                                (activeTab === 'models' || activeTab === 'images') && 'max-w-none'
                             )}
                         >
                             {isLoading && settings === null ? (
-                                <div className="rounded-xl border border-border/60 bg-muted/10 p-6 text-sm text-muted-foreground">
+                                <div className="settings-shell-note p-6 text-sm">
                                     {t('common.loading')}
                                 </div>
                             ) : settingsUiState === 'failure' ? (
-                                <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6 text-sm text-destructive">
+                                <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-6 text-sm text-destructive">
                                     {t('errors.unexpected')} ({lastErrorCode ?? settingsPageErrorCodes.saveFailed})
                                 </div>
                             ) : settings === null ? (
-                                <div className="rounded-xl border border-border/60 bg-muted/10 p-6 text-sm text-muted-foreground">
+                                <div className="settings-shell-note p-6 text-sm">
                                     {t('settings.noResults')}
                                 </div>
                             ) : (searchQuery && !isActiveTabVisible) || hasInvalidSearchQuery ? (
-                                <div className="rounded-xl border border-border/60 bg-muted/10 p-6 text-sm text-muted-foreground">
+                                <div className="settings-shell-note p-6 text-sm">
                                     {t('settings.noResults')}
                                 </div>
                             ) : (

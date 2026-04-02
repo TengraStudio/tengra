@@ -16,8 +16,7 @@ export const HorizontalProgressBar = ({ percentage, color = "var(--primary)" }: 
             className="h-full rounded-full transition-all duration-1000 ease-out" 
             style={{ 
                 width: `${Math.max(0, Math.min(100, percentage))}%`, 
-                backgroundColor: resolvedColor,
-                boxShadow: `0 0 10px color-mix(in srgb, ${resolvedColor} 40%, transparent)`
+                backgroundColor: resolvedColor
             }} 
         />
     </div>
@@ -32,13 +31,13 @@ export const StatusBadge = ({ status, text }: { status: 'active' | 'error' | 'ex
     };
     
     const dots = {
-        active: "bg-success tw-shadow-success-soft",
-        error: "bg-destructive tw-shadow-destructive-soft",
-        expired: "bg-warning tw-shadow-warning-soft",
+        active: "bg-success",
+        error: "bg-destructive",
+        expired: "bg-warning",
     };
 
     return (
-        <div className={cn("tw-text-9 font-black py-0.5 px-2.5 rounded-full border uppercase tracking-widest flex items-center gap-2", colors[status])}>
+        <div className={cn("tw-text-9 font-bold py-0.5 px-2.5 rounded-full border   flex items-center gap-2", colors[status])}>
             <div className={cn("w-1.5 h-1.5 rounded-full", dots[status])} />
             {text}
         </div>

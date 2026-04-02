@@ -34,50 +34,50 @@ export const WorkspaceStatsCards: React.FC<WorkspaceStatsCardsProps> = ({ stats,
         <div className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-premium hover:shadow-md">
-                    <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">
+                    <div className="text-xxs font-bold text-muted-foreground mb-1">
                         {t('workspaceDashboard.fileCount')}
                     </div>
-                    <div className="text-2xl font-black text-foreground">{stats?.fileCount ?? 0}</div>
+                    <div className="text-2xl font-bold text-foreground">{stats?.fileCount ?? 0}</div>
                 </div>
                 <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-premium hover:shadow-md">
-                    <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">
+                    <div className="text-xxs font-bold text-muted-foreground mb-1">
                         {t('workspaceDashboard.loc')}
                     </div>
-                    <div className="text-2xl font-black text-foreground">~{formattedLoc}</div>
-                    <div className="mt-1 tw-text-10 uppercase tracking-wider text-muted-foreground/70">
+                    <div className="text-2xl font-bold text-foreground">~{formattedLoc}</div>
+                    <div className="mt-1 tw-text-10 text-muted-foreground/70">
                         {t('workspaceDashboard.locHint')}
                     </div>
                 </div>
                 <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-premium hover:shadow-md">
-                    <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">
+                    <div className="text-xxs font-bold text-muted-foreground mb-1">
                         {t('workspaceDashboard.modules')}
                     </div>
-                    <div className="text-2xl font-black text-foreground">{moduleCount}</div>
+                    <div className="text-2xl font-bold text-foreground">{moduleCount}</div>
                 </div>
                 <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-premium hover:shadow-md">
-                    <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">
+                    <div className="text-xxs font-bold text-muted-foreground mb-1">
                         {t('workspaceDashboard.type')}
                     </div>
-                    <div className="text-2xl font-black text-primary capitalize">{type}</div>
+                    <div className="text-2xl font-bold text-primary capitalize">{type}</div>
                 </div>
             </div>
 
             <div className="bg-card rounded-xl border border-border p-4 hover:border-primary/20 transition-premium hover:shadow-md">
                 <div className="mb-4 flex items-start justify-between gap-3">
                     <div>
-                        <div className="text-xxs font-bold uppercase text-muted-foreground tracking-wider">
+                        <div className="text-xxs font-bold text-muted-foreground">
                             {t('workspaceDashboard.totalSize')}
                         </div>
-                        <div className="mt-1 text-3xl font-black text-foreground">{formattedSize}</div>
+                        <div className="mt-1 text-3xl font-bold text-foreground">{formattedSize}</div>
                     </div>
-                    <div className="tw-text-10 uppercase tracking-wider text-muted-foreground/70">
+                    <div className="tw-text-10 text-muted-foreground/70">
                         {t('workspaceDashboard.scannedStorageOnly')}
                     </div>
                 </div>
 
                 {largestDirectories.length > 0 && (
                     <>
-                        <div className="mb-3 text-xxs font-bold uppercase text-muted-foreground tracking-wider">
+                        <div className="mb-3 text-xxs font-bold text-muted-foreground">
                             {t('workspaceDashboard.storageBreakdown')}
                         </div>
                         <div className="space-y-2">
@@ -90,7 +90,7 @@ export const WorkspaceStatsCards: React.FC<WorkspaceStatsCardsProps> = ({ stats,
                                     <div className="truncate font-mono text-xs text-foreground">
                                         {entry.path}
                                     </div>
-                                    <div className="tw-text-10 uppercase tracking-wider text-muted-foreground/70">
+                                    <div className="tw-text-10 text-muted-foreground/70">
                                         {t('workspaceDashboard.storageFiles', { count: entry.fileCount })}
                                     </div>
                                 </div>

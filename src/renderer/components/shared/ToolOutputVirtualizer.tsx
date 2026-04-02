@@ -3,6 +3,8 @@ import { Virtuoso } from 'react-virtuoso';
 
 import { cn } from '@/lib/utils';
 
+import './tool-output-virtualizer.css';
+
 interface ToolOutputVirtualizerProps {
     content: string;
     maxHeight?: string;
@@ -23,10 +25,8 @@ export const ToolOutputVirtualizer: React.FC<ToolOutputVirtualizerProps> = ({
         return (
             <pre
                 className={cn(
-                    'p-3 rounded-lg border font-mono text-xxs overflow-auto custom-scrollbar',
-                    isDark
-                        ? 'bg-card/70 border-border/40 text-warning-light/70'
-                        : 'bg-muted/30 border-border/50 text-foreground/80',
+                    'tengra-tool-output custom-scrollbar',
+                    isDark ? 'tengra-tool-output--dark' : 'tengra-tool-output--light',
                     className
                 )}
                 style={{ maxHeight }}
@@ -38,13 +38,11 @@ export const ToolOutputVirtualizer: React.FC<ToolOutputVirtualizerProps> = ({
 
     return (
         <div
-                className={cn(
-                    'rounded-lg border font-mono text-xxs overflow-hidden flex flex-col',
-                    isDark
-                        ? 'bg-card/70 border-border/40 text-warning-light/70'
-                        : 'bg-muted/30 border-border/50 text-foreground/80',
-                    className
-                )}
+            className={cn(
+                'tengra-tool-output-virtualized',
+                isDark ? 'tengra-tool-output-virtualized--dark' : 'tengra-tool-output-virtualized--light',
+                className
+            )}
             style={{ height: maxHeight }}
         >
             <Virtuoso
@@ -52,11 +50,11 @@ export const ToolOutputVirtualizer: React.FC<ToolOutputVirtualizerProps> = ({
                 totalCount={lines.length}
                 data={lines}
                 itemContent={(index, line) => (
-                    <div className="px-3 py-0.5 whitespace-pre break-all hover:bg-muted/20 transition-colors leading-tight">
-                        <span className="inline-block w-8 mr-4 text-right text-muted-foreground/30 select-none border-r border-border/40 pr-2">
+                    <div className="tengra-tool-output__line">
+                        <span className="tengra-tool-output__line-number">
                             {index + 1}
                         </span>
-                        <span>{line || ' '}</span>
+                        <span className="tengra-tool-output__line-content">{line || ' '}</span>
                     </div>
                 )}
                 className="custom-scrollbar"

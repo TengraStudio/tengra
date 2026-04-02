@@ -111,7 +111,7 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({ id, title, icon, badge, b
         onClick={onToggle}
         className={cn(
             'sidebar-section-header w-full flex items-center justify-between',
-            'px-3 py-2 mx-0.5 rounded-lg text-xxs font-semibold uppercase tracking-wider',
+            'px-3 py-2 mx-0.5 rounded-lg text-xxs font-semibold  ',
             'text-muted-foreground/70 hover:text-foreground hover:bg-background/40 hover:backdrop-blur-sm transition-all duration-200',
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 group',
             isExpanded && 'text-foreground bg-background/20'
@@ -216,7 +216,7 @@ const SidebarCollapsedSection: React.FC<{
                             'py-2'
                         )}
                     >
-                        <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/50 mb-1">
+                        <div className="px-3 py-2 text-xs font-semibold text-muted-foreground border-b border-border/50 mb-1">
                             {tooltip}
                         </div>
                         {children}

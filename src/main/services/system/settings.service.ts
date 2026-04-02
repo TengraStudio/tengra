@@ -38,6 +38,8 @@ const DEFAULT_SETTINGS: AppSettings = {
         theme: 'graphite',
         resolution: '1280x800',
         fontSize: 14,
+        fontFamily: 'system',
+        typographyScale: 'balanced',
 
         defaultModel: 'gpt-4o',
         defaultTerminalBackend: 'node-pty',
@@ -132,7 +134,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     },
     terminal: {
         fontSize: 13,
-        fontFamily: '"JetBrains Mono", "Cascadia Code", "Fira Code", "SF Mono", Monaco, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace',
+        fontFamily: '"Cascadia Mono", "Cascadia Code", Consolas, "Courier New", ui-monospace, "SFMono-Regular", Menlo, Monaco, "Liberation Mono", "DejaVu Sans Mono", monospace',
         lineHeight: 1.4,
         letterSpacing: 0.2,
         cursorStyle: 'block',
@@ -151,12 +153,57 @@ const DEFAULT_SETTINGS: AppSettings = {
             'mistral:7b',
         ],
     },
+    editor: {
+        fontSize: 14,
+        lineHeight: 1.6,
+        minimap: true,
+        wordWrap: 'off',
+        lineNumbers: 'on',
+        tabSize: 4,
+        cursorBlinking: 'smooth',
+        fontLigatures: true,
+        formatOnPaste: true,
+        formatOnType: true,
+        smoothScrolling: true,
+        folding: true,
+        codeLens: true,
+        inlayHints: true,
+        renderWhitespace: 'selection',
+        cursorSmoothCaretAnimation: 'on',
+        wordBasedSuggestions: 'matchingDocuments',
+        stickyScroll: true,
+        bracketPairColorization: true,
+        guidesIndentation: true,
+        mouseWheelZoom: false,
+        minimapRenderCharacters: false,
+
+        additionalOptions: {},
+    },
+    remoteAccounts: {
+        discord: {
+            enabled: false,
+            token: '',
+            allowedUserIds: [],
+        },
+        telegram: {
+            enabled: false,
+            token: '',
+            allowedUserIds: [],
+        },
+        whatsapp: {
+            enabled: false,
+            mode: 'qr',
+            allowedUserIds: [],
+        },
+    },
 };
 
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
 import { LinkedAccount } from '@main/services/data/database.service';
 import { AuthService } from '@main/services/security/auth.service';
+
+type RuntimeValue = any;
 
 export class SettingsService extends BaseService {
     private static readonly ERROR_CODES = {
@@ -371,7 +418,12 @@ export class SettingsService extends BaseService {
             copilot: this.mergeOAuthProviderState(authAccounts, 'copilot', loaded.copilot),
             groq: this.mergeProvider(authAccounts, 'groq', loaded.groq, 'apiKey'),
             nvidia: this.mergeProvider(authAccounts, 'nvidia', loaded.nvidia, 'apiKey'),
+            remoteAccounts: this.mergeRemoteAccounts(authAccounts, loaded.remoteAccounts),
             proxy: this.mergeProxy(authAccounts, loaded.proxy),
+            editor: {
+                ...DEFAULT_SETTINGS.editor,
+                ...(loaded.editor ?? {}),
+            },
             security: {
                 ...DEFAULT_SETTINGS.security,
                 ...(loaded.security ?? {}),
@@ -462,6 +514,31 @@ export class SettingsService extends BaseService {
         };
     }
 
+    private mergeRemoteAccounts(
+        authAccounts: LinkedAccount[],
+        loaded?: Partial<AppSettings['remoteAccounts']>
+    ): AppSettings['remoteAccounts'] {
+        const def = DEFAULT_SETTINGS.remoteAccounts!;
+        const res: AppSettings['remoteAccounts'] = {
+            discord: {
+                ...def.discord!,
+                ...(loaded?.discord ?? {}),
+                token: this.findTokenInAuth(authAccounts, 'remote_discord') || (loaded?.discord?.token ?? ''),
+            },
+            telegram: {
+                ...def.telegram!,
+                ...(loaded?.telegram ?? {}),
+                token: this.findTokenInAuth(authAccounts, 'remote_telegram') || (loaded?.telegram?.token ?? ''),
+            },
+            whatsapp: {
+                ...def.whatsapp!,
+                ...(loaded?.whatsapp ?? {}),
+                token: this.findTokenInAuth(authAccounts, 'remote_whatsapp') || (loaded?.whatsapp?.token ?? ''),
+            },
+        };
+        return res;
+    }
+
     private migrateDeprecatedSettings(settings: AppSettings): void {
         const embeddings = settings.embeddings as { provider: string; model?: string } | undefined;
         if (
@@ -507,7 +584,6 @@ export class SettingsService extends BaseService {
         for (let i = startIndex; i < cleanData.length; i++) {
             const char = cleanData[i];
 
-            // Handle escapes first
             if (escapeNext) {
                 escapeNext = false;
                 continue;
@@ -517,7 +593,6 @@ export class SettingsService extends BaseService {
                 continue;
             }
 
-            // Handle strings
             if (char === '"') {
                 inString = !inString;
                 continue;
@@ -526,7 +601,6 @@ export class SettingsService extends BaseService {
                 continue;
             }
 
-            // Handle nesting
             if (char === '{') {
                 depth++;
             } else if (char === '}') {
@@ -630,6 +704,9 @@ export class SettingsService extends BaseService {
             groq_key: settings.groq?.apiKey,
             nvidia_key: settings.nvidia?.apiKey,
             proxy_key: settings.proxy?.key,
+            remote_discord: settings.remoteAccounts?.discord?.token,
+            remote_telegram: settings.remoteAccounts?.telegram?.token,
+            remote_whatsapp: settings.remoteAccounts?.whatsapp?.token,
         };
 
         for (const [providerKey, token] of Object.entries(providers)) {
@@ -707,6 +784,14 @@ export class SettingsService extends BaseService {
         this.checkTokenMapping(mappings, 'groq_key', groq?.apiKey, oG?.apiKey);
         this.checkTokenMapping(mappings, 'nvidia_key', nvidia?.apiKey, oN?.apiKey);
         this.checkTokenMapping(mappings, 'proxy_key', proxy?.key, oP?.key);
+
+        if (newSettings.remoteAccounts) {
+            const { discord, telegram, whatsapp } = newSettings.remoteAccounts;
+            const oRA = oldSettings.remoteAccounts;
+            this.checkTokenMapping(mappings, 'remote_discord', discord?.token, oRA?.discord?.token);
+            this.checkTokenMapping(mappings, 'remote_telegram', telegram?.token, oRA?.telegram?.token);
+            this.checkTokenMapping(mappings, 'remote_whatsapp', whatsapp?.token, oRA?.whatsapp?.token);
+        }
     }
 
     private checkTokenMapping(
@@ -768,8 +853,21 @@ export class SettingsService extends BaseService {
         if (groq) {
             groq.apiKey = '';
         }
+
         if (settings.nvidia) {
             settings.nvidia.apiKey = '';
+        }
+
+        if (settings.remoteAccounts) {
+            if (settings.remoteAccounts.discord) {
+                settings.remoteAccounts.discord.token = '';
+            }
+            if (settings.remoteAccounts.telegram) {
+                settings.remoteAccounts.telegram.token = '';
+            }
+            if (settings.remoteAccounts.whatsapp) {
+                settings.remoteAccounts.whatsapp.token = '';
+            }
         }
 
         this.stripOtherSecrets(settings);
@@ -880,6 +978,9 @@ export class SettingsService extends BaseService {
             groq: ['groq_key', 'groq'],
             nvidia: ['nvidia_key', 'nvidia'],
             proxy: ['proxy_key', 'proxy'],
+            remote_discord: ['remote_discord'],
+            remote_telegram: ['remote_telegram'],
+            remote_whatsapp: ['remote_whatsapp'],
         };
 
         const searchProviders = [provider, ...(providers[provider] ?? []), ...fallbackKeys];
@@ -1025,6 +1126,20 @@ export class SettingsService extends BaseService {
         preserveToken('nvidia', 'apiKey');
         preserveToken('proxy', 'key');
 
+        if (newSettings.remoteAccounts) {
+            const { discord, telegram, whatsapp } = newSettings.remoteAccounts;
+            const oRA = this.settings.remoteAccounts;
+            if (discord && oRA?.discord && !discord.token && oRA.discord.token) {
+                discord.token = oRA.discord.token;
+            }
+            if (telegram && oRA?.telegram && !telegram.token && oRA.telegram.token) {
+                telegram.token = oRA.telegram.token;
+            }
+            if (whatsapp && oRA?.whatsapp && !whatsapp.token && oRA.whatsapp.token) {
+                whatsapp.token = oRA.whatsapp.token;
+            }
+        }
+
         const newProxy = newSettings.proxy;
         const oldProxy = this.settings.proxy;
         if (newProxy && oldProxy) {
@@ -1036,4 +1151,3 @@ export class SettingsService extends BaseService {
         }
     }
 }
-

@@ -7,6 +7,8 @@ import React, { useMemo } from 'react';
 import { useTranslation } from '@/i18n';
 import { type ProgressItem,useProgressStore } from '@/store/progress.store';
 
+import './global-progress.css';
+
 /** Aggregate multiple progress items into a single percentage. */
 function aggregatePercent(items: ProgressItem[]): number {
   if (items.length === 0) {return 0;}
@@ -33,16 +35,16 @@ export const GlobalProgress: React.FC = () => {
 
   return (
     <div
-      className="fixed top-0 left-0 right-0 z-50"
+      className="tengra-global-progress"
       role="progressbar"
       aria-valuenow={percent}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={label}
     >
-      <div className="h-1 w-full bg-transparent">
+      <div className="tengra-global-progress__track">
         <div
-          className="h-full bg-primary transition-all duration-300 ease-out"
+          className="tengra-global-progress__fill"
           style={{ width: `${percent}%` }}
         />
       </div>

@@ -5,6 +5,8 @@ import React, { useRef } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
 
+import './layout-manager.css';
+
 interface LayoutManagerProps {
     sidebarContent: React.ReactNode;
     mainContent: React.ReactNode;
@@ -45,37 +47,37 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
             ref={containerRef}
             dir={isRTL ? 'rtl' : 'ltr'}
             className={cn(
-                'fixed inset-0 flex overflow-hidden bg-background text-foreground',
+                'tengra-layout-manager',
                 theme
             )}
         >
             {/* Sidebar */}
             <div
-                className="relative h-full flex-shrink-0 overflow-visible z-20 bg-background border-e border-border"
+                className="tengra-layout-manager__sidebar"
                 style={{ width: effectiveSidebarWidth }}
             >
                 {sidebarContent}
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 h-full min-w-0 flex flex-col overflow-hidden relative">
+            <div className="tengra-layout-manager__main">
                 {showPanel && panelContent ? (
                     <>
-                        <div className="flex-1 min-h-0 overflow-hidden">{mainContent}</div>
-                        <div className="h-px bg-border/50" />
-                        <div className="h-1/4 min-h-24 bg-card border-t border-border overflow-hidden">
+                        <div className="tengra-layout-manager__main-content">{mainContent}</div>
+                        <div className="tengra-layout-manager__panel-divider" />
+                        <div className="tengra-layout-manager__panel">
                             {panelContent}
                         </div>
                     </>
                 ) : (
-                    <div className="h-full w-full flex flex-col overflow-hidden">{mainContent}</div>
+                    <div className="tengra-layout-manager__main-full">{mainContent}</div>
                 )}
             </div>
 
             {/* Right Sidebar */}
             {showRightSidebar && rightSidebarContent && (
                 <div
-                    className="h-full flex-shrink-0 border-l border-border bg-background z-30 animate-in slide-in-from-right duration-300"
+                    className="tengra-layout-manager__right-sidebar animate-in slide-in-from-right duration-300"
                     style={{ width: rightSidebarWidth }}
                 >
                     {rightSidebarContent}

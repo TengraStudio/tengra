@@ -1,0 +1,26 @@
+:root {
+    --sidebar-bg: hsl(var(--background));
+    --sidebar-divider: hsl(var(--border) / 30%);
+}
+
+.tengra-sidebar {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--sidebar-bg);
+    transition: width 0.3s ease-in-out;
+}
+
+.tengra-sidebar--collapsed {
+    width: 5rem;
+}
+
+.tengra-sidebar--expanded {
+    width: 100%;
+}
+
+.tengra-sidebar__divider {
+    margin: 0.5rem 0.75rem;
+    height: 1px;
+    background: var(--sidebar-divider);
+}

@@ -1,4 +1,6 @@
-import { Code, Search,Shield } from 'lucide-react';
+import { Input } from '@renderer/components/ui/input';
+import { Label } from '@renderer/components/ui/label';
+import { Code, Search, Shield } from 'lucide-react';
 import React from 'react';
 
 import { SettingsSectionProps } from './types';
@@ -12,42 +14,54 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
 
         <div className="grid grid-cols-1 gap-6">
             <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground uppercase">{t('workspaces.buildCommand')}</label>
+                <Label className="text-xs font-medium text-muted-foreground">
+                    {t('workspaces.buildCommand')}
+                </Label>
                 <div className="relative">
-                    <Code className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
+                    <Code className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+                    <Input
                         type="text"
                         value={formData.buildCommand}
-                        onChange={e => setFormData(prev => ({ ...prev, buildCommand: e.target.value }))}
-                        className="w-full bg-muted/30 border border-border/50 rounded-lg py-2 pl-9 pr-4 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setFormData(prev => ({ ...prev, buildCommand: e.target.value }))
+                        }
+                        className="pl-9 font-mono"
                         placeholder={t('placeholder.buildCommand')}
                     />
                 </div>
             </div>
 
             <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground uppercase">{t('workspaces.testCommand')}</label>
+                <Label className="text-xs font-medium text-muted-foreground">
+                    {t('workspaces.testCommand')}
+                </Label>
                 <div className="relative">
-                    <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
+                    <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+                    <Input
                         type="text"
                         value={formData.testCommand}
-                        onChange={e => setFormData(prev => ({ ...prev, testCommand: e.target.value }))}
-                        className="w-full bg-muted/30 border border-border/50 rounded-lg py-2 pl-9 pr-4 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setFormData(prev => ({ ...prev, testCommand: e.target.value }))
+                        }
+                        className="pl-9 font-mono"
                         placeholder={t('placeholder.testCommand')}
                     />
                 </div>
             </div>
 
             <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground uppercase">{t('workspaces.lintCommand')}</label>
+                <Label className="text-xs font-medium text-muted-foreground">
+                    {t('workspaces.lintCommand')}
+                </Label>
                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+                    <Input
                         type="text"
                         value={formData.lintCommand}
-                        onChange={e => setFormData(prev => ({ ...prev, lintCommand: e.target.value }))}
-                        className="w-full bg-muted/30 border border-border/50 rounded-lg py-2 pl-9 pr-4 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setFormData(prev => ({ ...prev, lintCommand: e.target.value }))
+                        }
+                        className="pl-9 font-mono"
                         placeholder={t('placeholder.lintCommand')}
                     />
                 </div>
@@ -55,22 +69,30 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground uppercase">{t('workspaces.outputDir')}</label>
-                    <input
+                    <Label className="text-xs font-medium text-muted-foreground">
+                        {t('workspaces.outputDir')}
+                    </Label>
+                    <Input
                         type="text"
                         value={formData.outputDir}
-                        onChange={e => setFormData(prev => ({ ...prev, outputDir: e.target.value }))}
-                        className="w-full bg-muted/30 border border-border/50 rounded-lg py-2 px-4 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setFormData(prev => ({ ...prev, outputDir: e.target.value }))
+                        }
+                        className="font-mono"
                         placeholder={t('placeholder.outputDir')}
                     />
                 </div>
                 <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground uppercase">{t('workspaces.envFile')}</label>
-                    <input
+                    <Label className="text-xs font-medium text-muted-foreground">
+                        {t('workspaces.envFile')}
+                    </Label>
+                    <Input
                         type="text"
                         value={formData.envFile}
-                        onChange={e => setFormData(prev => ({ ...prev, envFile: e.target.value }))}
-                        className="w-full bg-muted/30 border border-border/50 rounded-lg py-2 px-4 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setFormData(prev => ({ ...prev, envFile: e.target.value }))
+                        }
+                        className="font-mono"
                         placeholder={t('placeholder.envFile')}
                     />
                 </div>
@@ -78,3 +100,4 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
         </div>
     </div>
 );
+

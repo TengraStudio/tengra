@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
+import './confetti.css';
+
 interface ConfettiPiece {
     id: number
     x: number
@@ -69,7 +71,7 @@ export const Confetti: React.FC<ConfettiProps> = ({
             {pieces.map((piece) => (
                 <div
                     key={piece.id}
-                    className="confetti-piece"
+                    className="tengra-confetti-piece"
                     style={{
                         left: `${piece.x}%`,
                         backgroundColor: piece.color,

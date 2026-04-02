@@ -12,6 +12,8 @@ import { cn } from '@/lib/utils';
 
 import { Button } from '../ui/button';
 
+import './action-controls.css';
+
 export interface ActionControlsProps {
     /** Callback fired when the primary action is triggered */
     onSave: () => void;
@@ -54,7 +56,7 @@ export const ActionControls: React.FC<ActionControlsProps> = ({
     const resolvedCancelLabel = cancelLabel ?? t('common.cancel');
 
     return (
-        <div className={cn('flex items-center justify-end gap-3', className)}>
+        <div className={cn('tengra-action-controls', className)}>
             <Button
                 variant="ghost"
                 size="sm"
@@ -70,9 +72,9 @@ export const ActionControls: React.FC<ActionControlsProps> = ({
                 disabled={disabled || isLoading}
             >
                 {isLoading ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="tengra-action-controls__spinner" />
                 ) : showIcon ? (
-                    <Save className="w-4 h-4 mr-2" />
+                    <Save className="tengra-action-controls__icon" />
                 ) : null}
                 {resolvedSaveLabel}
             </Button>

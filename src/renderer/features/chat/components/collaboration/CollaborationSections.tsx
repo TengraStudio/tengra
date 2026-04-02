@@ -113,7 +113,7 @@ export const ActivitySection = memo(({
             </div>
             <div className="max-h-24 overflow-y-auto space-y-1">
                 {cursorMarkers.map((marker) => (
-                    <p key={marker.id} className="text-xxxs text-muted-foreground italic">
+                    <p key={marker.id} className="text-xxxs text-muted-foreground">
                         {marker.user} → {marker.target}
                     </p>
                 ))}
@@ -181,7 +181,7 @@ export const SharingSection = memo(({
         </div>
         {shareLink && <Input value={shareLink} readOnly className="h-8 text-xs bg-muted/50" />}
         <div className="max-h-32 overflow-y-auto space-y-1 rounded border border-border/50 bg-muted/30 p-2 px-1 font-mono text-xxxs">
-            {recordedEvents.length === 0 && <p className="text-muted-foreground/50 italic">{t('chat.collaboration.noEvents')}</p>}
+            {recordedEvents.length === 0 && <p className="text-muted-foreground/50">{t('chat.collaboration.noEvents')}</p>}
             {recordedEvents.map((event, index) => (
                 <p key={index} className="text-muted-foreground leading-tight hover:text-foreground transition-colors">{event}</p>
             ))}

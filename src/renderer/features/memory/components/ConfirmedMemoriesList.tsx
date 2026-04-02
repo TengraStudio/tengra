@@ -205,7 +205,7 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
               )}
             </button>
 
-            <Badge className={cn('border-none text-xxs uppercase font-bold', config.color)}>
+            <Badge className={cn('border-none text-xxs  font-bold', config.color)}>
               <config.icon className="w-3 h-3 mr-1" />
               {t(config.labelKey)}
             </Badge>

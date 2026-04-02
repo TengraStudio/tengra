@@ -4,6 +4,8 @@ import { type CSSProperties, type ReactNode, useCallback, useEffect, useMemo, us
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
+import './title-bar.css';
+
 
 type AppRegionStyle = CSSProperties & { WebkitAppRegion?: 'drag' | 'no-drag' };
 
@@ -59,20 +61,17 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
     return (
         <>
             <header
-                className={cn(
-                    'h-12 border-b border-border/40 flex items-center justify-between px-6 bg-card/40 backdrop-blur-md z-40 select-none',
-                    className
-                )}
+                className={cn("tengra-title-bar", className)}
                 style={dragStyle}
             >
-                <div className="flex items-center gap-4" style={noDragStyle}>
-                    <div className="flex items-center gap-2">
+                <div className="tengra-title-bar__left" style={noDragStyle}>
+                    <div className="tengra-title-bar__logo">
                         <img
                             src="@renderer/assets/logo.png"
                             alt={t('app.name')}
-                            className="w-8 h-8 object-contain"
+                            className="tengra-title-bar__logo-image"
                         />
-                        <span className="text-xs font-bold tracking-widest text-foreground/80 uppercase">
+                        <span className="tengra-title-bar__logo-text">
                             {t('app.name')}
                         </span>
                     </div>
@@ -82,51 +81,51 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                 {/* Center Content (e.g. Token Counter) */}
                 {children}
 
-                <div className="flex items-center gap-2" style={noDragStyle}>
-                    <div className="flex gap-2 titlebar-controls px-2">
+                <div className="tengra-title-bar__right" style={noDragStyle}>
+                    <div className="tengra-title-bar__controls titlebar-controls">
                         <div
-                            className="px-2 py-1 rounded-md border border-border/60 text-xxs text-muted-foreground flex items-center gap-1"
+                            className="tengra-title-bar__status"
                             title={t('titleBar.lazyServicesStatus', {
                                 loaded: lazyStatus.loaded,
                                 registered: lazyStatus.registered
                             })}
                         >
-                            {lazyStatus.loading > 0 && <Loader2 className="w-3 h-3 animate-spin" />}
+                            {lazyStatus.loading > 0 && <Loader2 className="tengra-title-bar__status-spinner" />}
                             <span>{lazyStatus.loaded}/{lazyStatus.registered}</span>
                         </div>
                         {onExtensionClick && (
                             <button
                                 onClick={onExtensionClick}
-                                className="p-1.5 hover:bg-info/10 hover:text-info rounded-md transition-all duration-200 text-muted-foreground"
+                                className="tengra-title-bar__control tengra-title-bar__control--extension"
                                 title={t('titleBar.extension')}
                                 aria-label={t('titleBar.extension')}
                             >
-                                <Puzzle className="w-4 h-4" />
+                                <Puzzle className="tengra-title-bar__control-icon" />
                             </button>
                         )}
                         <button
                             onClick={handleMinimize}
-                            className="p-1.5 hover:bg-muted/50 rounded-md transition-all duration-200 text-muted-foreground hover:text-foreground"
+                            className="tengra-title-bar__control"
                             title={t('titleBar.minimize')}
                             aria-label={t('titleBar.minimize')}
                         >
-                            <Minus className="w-4 h-4" />
+                            <Minus className="tengra-title-bar__control-icon" />
                         </button>
                         <button
                             onClick={handleMaximize}
-                            className="p-1.5 hover:bg-muted/50 rounded-md transition-all duration-200 text-muted-foreground hover:text-foreground"
+                            className="tengra-title-bar__control"
                             title={t('titleBar.maximize')}
                             aria-label={t('titleBar.maximize')}
                         >
-                            <Square className="w-3.5 h-3.5" />
+                            <Square className="tengra-title-bar__control-icon tengra-title-bar__control-icon--maximize" />
                         </button>
                         <button
                             onClick={handleClose}
-                            className="p-1.5 hover:bg-destructive hover:text-destructive-foreground rounded-md transition-all duration-200 text-muted-foreground"
+                            className="tengra-title-bar__control tengra-title-bar__control--close"
                             title={t('titleBar.close')}
                             aria-label={t('titleBar.close')}
                         >
-                            <X className="w-4 h-4" />
+                            <X className="tengra-title-bar__control-icon" />
                         </button>
                     </div>
                 </div>

@@ -57,6 +57,11 @@
 - [x] Restore Monaco minimap visibility, surface unsaved-change markers in the overview/minimap, and add Ctrl+hover/Ctrl+click import navigation through backend definitions
 - [x] Limit workspace storage breakdown to root-relative directories only and merge total-size plus largest-directories into a single dashboard section
 - [x] Clarify workspace line-count labeling and extract website backend/frontend repos out of the main workspace after pushing pending frontend changes
+- [x] Flatten settings UI chrome, reduce shadcn border/ring intensity, and make core settings tabs responsive across narrow widths
+- [x] Make shared/custom modals responsive with fluid heights, lighter chrome, and restore the workspace wizard existing-folder picker so directory selection opens reliably
+- [x] Implement UI for workspace agent permission-denied errors with actionable configuration links in the chat interface.
+- [x] Fix workspace logo rendering by normalizing `safe-file` image URLs in the renderer and whitelisting workspace roots for protocol-backed logo previews.
+- [x] Normalize workspace logo `safe-file` rendering so uploaded/generated logos display immediately on Windows instead of resolving to broken image URLs.
 
 ## Provider Follow-up
 - [ ] Research and prototype `groq` provider support, including OAuth flow validation and current API compatibility gaps
@@ -149,10 +154,32 @@
 - [x] Removed browser extension install modal and associated translations (Turkish and English) to simplify the core application interface and reduce unnecessary dependencies.
 
 - [x] Streamlined MCP architecture by removing 19 redundant server modules, merging monitoring into the system core, and modernizing the Marketplace UI with accessible font scaling, enhanced status indicators, and full i18n support for all module descriptions.
+- [x] Reworked i18n around runtime locale packs by making English the single built-in JSON locale pack, removing per-key fallback behavior, deleting legacy `en`/`tr` source trees, and aligning translation export/runtime loading with marketplace-installed languages.
+- [x] Fixed runtime theme restoration for marketplace-installed themes by loading the theme registry eagerly at startup and reapplying theme variables when the runtime registry updates; also hardened utility workers to handle Electron message channels reliably without timing out into local fallbacks.
 
 ---
 - [x] Removed the automated onboarding system and "Start Tour" functionality from the application core and settings, while preserving translation keys for weekend-only updates.
 
 - [x] Removed unused optional environment variables (Sentry, OAuth redirects, and secrets) from .env.example to eliminate redundant EnvValidator warnings.
+
+- [x] Fixed an infinite update loop in the `useVoice` hook that caused "Maximum update depth exceeded" errors in General Settings by splitting voice synthesis and recognition initialization and stabilizing callback dependencies.
+- [x] Resolved build-time TypeScript errors in `session-conversation.ts` and `protocols.ts` related to protocol registration and chatId metadata access.
+
+## UI Modernization & Design System
+- [x] Initialize Shadcn/ui with standard configuration and @/renderer aliases
+- [x] Create core Shadcn/ui components (Input, Checkbox, Label, Textarea) with HSL theme support
+- [x] Migrate Workspace Settings fields to Shadcn/ui (General, Editor, Advanced, Dev Server)
+- [ ] Continue migrating inputs and checkboxes across other features (SSH, SFTP, Chat, Terminal)
+
+## Remote Interaction (Günün Hedefi: Discord & Telegram)
+- [x] Define `RemoteAccountsSettings` schema and update `AppSettings` interface
+- [x] Create `SocialMediaService` in Main process with platform-agnostic provider architecture
+- [x] Implement Discord bot provider (Token based) with message routing
+- [x] Implement Telegram bot provider (BotFather token based) with message routing
+- [x] Develop Whitelist security layer (User ID verification)
+- [x] Create IPC handlers for remote account management (handled via generic settings update)
+- [x] Build "Social Media" Tab in Settings using Shadcn/ui (Card-based UI)
+- [ ] Implement proactive notifications (finished task alerts via bot)
+- [ ] WhatsApp Integration (QR or API - Next Priority)
 
 *Updated on 2026-04-01*

@@ -387,19 +387,19 @@ export const MemoryInspector: React.FC = () => {
                 </div>
                 <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div className="rounded-md bg-muted/30 p-3">
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">{t('memory.contextPreviewCount')}</p>
+                        <p className="text-xs text-muted-foreground">{t('memory.contextPreviewCount')}</p>
                         <p className="text-lg font-bold">{memoryData.contextPreview.length}</p>
                     </div>
                     <div className="rounded-md bg-muted/30 p-3">
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">{t('memory.totalSearchQueries')}</p>
+                        <p className="text-xs text-muted-foreground">{t('memory.totalSearchQueries')}</p>
                         <p className="text-lg font-bold">{memoryData.searchAnalytics?.totalQueries ?? 0}</p>
                     </div>
                     <div className="rounded-md bg-muted/30 p-3">
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">{t('memory.hybridSearchQueries')}</p>
+                        <p className="text-xs text-muted-foreground">{t('memory.hybridSearchQueries')}</p>
                         <p className="text-lg font-bold">{memoryData.searchAnalytics?.hybridQueries ?? 0}</p>
                     </div>
                     <div className="rounded-md bg-muted/30 p-3">
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground">{t('memory.avgSearchResults')}</p>
+                        <p className="text-xs text-muted-foreground">{t('memory.avgSearchResults')}</p>
                         <p className="text-lg font-bold">{(memoryData.searchAnalytics?.averageResults ?? 0).toFixed(1)}</p>
                     </div>
                 </div>

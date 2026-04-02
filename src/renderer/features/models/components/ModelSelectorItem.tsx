@@ -97,7 +97,7 @@ const ModelInfoBadges: React.FC<{ model: ModelListItem, t: (k: string) => string
     <>
         <ModelLifecycleBadge model={model} />
         {model.disabled && (
-            <span className="text-xxxs font-black text-destructive flex items-center gap-1 bg-destructive/10 px-1.5 py-0.5 rounded leading-none" title={model.disabledReason ?? t('modelSelector.limit')}>
+            <span className="text-xxxs font-bold text-destructive flex items-center gap-1 bg-destructive/10 px-1.5 py-0.5 rounded leading-none" title={model.disabledReason ?? t('modelSelector.limit')}>
                 <Info className="w-2.5 h-2.5" />
                 {model.disabledReason ?? t('modelSelector.limit')}
             </span>
@@ -112,7 +112,7 @@ const ModelActions: React.FC<{
     toggleFavorite?: (modelId: string) => void;
     modelIndex?: number;
 }> = ({ model, isSelected, isPrimary, toggleFavorite, modelIndex }) => (
-    <div className="flex items-center gap-1 ml-auto shrink-0">
+    <div className="flex items-center gap-1.5 ml-auto shrink-0">
         {toggleFavorite && (
             <div
                 onClick={(e) => {
@@ -120,16 +120,20 @@ const ModelActions: React.FC<{
                     toggleFavorite(model.id);
                 }}
                 className={cn(
-                    "p-1 rounded hover:bg-muted/50 transition-colors cursor-pointer mr-1",
-                    model.pinned ? "text-warning opacity-100" : "text-muted-foreground/50 opacity-0 group-hover:opacity-100"
+                    "p-1.5 rounded-md hover:bg-muted/50 transition-all cursor-pointer mr-0.5",
+                    model.pinned ? "text-warning opacity-100 scale-110" : "text-muted-foreground/30 opacity-0 group-hover:opacity-100 hover:scale-110"
                 )}
             >
-                <Pin className={cn("w-3 h-3", model.pinned && "fill-current")} />
+                <Pin className={cn("w-3.5 h-3.5", model.pinned && "fill-current")} />
             </div>
         )}
-        {(isPrimary || isSelected) && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
+        {(isPrimary || isSelected) && (
+            <div className="bg-primary/10 p-1 rounded-full shadow-sm">
+                <Check className="w-3.5 h-3.5 text-primary stroke-[3]" />
+            </div>
+        )}
         {isSelected && modelIndex !== undefined && modelIndex >= 0 && (
-            <span className="text-xxxs font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded leading-none">
+            <span className="text-[10px] font-bold text-primary bg-primary/20 px-2 py-0.5 rounded-full border border-primary/20 leading-none shadow-sm">
                 {modelIndex + 1}
             </span>
         )}
@@ -149,7 +153,7 @@ const ModelQuotaDisplay: React.FC<{
 
         return (
             <div className="mt-2 space-y-1">
-                <div className="flex items-center justify-between gap-2 text-xxxs font-black uppercase tracking-widest">
+                <div className="flex items-center justify-between gap-2 text-xxxs font-bold">
                     <span className="text-muted-foreground/55">{t('statistics.quotaStatus')}</span>
                     <span className={cn("rounded border px-1.5 py-0.5 leading-none", getQuotaTone(percent).split(' ').slice(1).join(' '))}>
                         {percent}%
@@ -201,12 +205,12 @@ export const ModelSelectorItem: React.FC<ModelSelectorItemProps> = ({
         >
             <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                    <span className="truncate flex-1 flex items-center gap-2 font-semibold">
+                    <span className="truncate flex-1 flex items-center gap-2 font-bold tracking-tight text-foreground/90">
                         {model.label}
-                        {model.type === 'image' && <ImageIcon className="w-3.5 h-3.5 text-success" />}
+                        {model.type === 'image' && <ImageIcon className="w-3.5 h-3.5 text-success/80" />}
                         {(model.contextWindow ?? 0) > 0 && (
-                            <span className="text-xxxs text-muted-foreground bg-muted/50 px-1 rounded border border-border/50">
-                                {(model.contextWindow ?? 0) >= 1000000 ? `${(model.contextWindow ?? 0) / 1000000}m` : `${(model.contextWindow ?? 0) / 1000}k`}
+                            <span className="text-[10px] font-bold text-muted-foreground/80 bg-muted/50 px-1.5 py-0.5 rounded-md border border-border/40 shadow-sm">
+                                {(model.contextWindow ?? 0) >= 1000000 ? `${(model.contextWindow ?? 0) / 1000000}M` : `${(model.contextWindow ?? 0) / 1000}K`}
                             </span>
                         )}
                     </span>

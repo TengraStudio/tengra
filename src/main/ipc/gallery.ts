@@ -116,7 +116,12 @@ export function registerGalleryIpc(galleryPath: string, databaseService?: Databa
                         metadataMap[row.path] = row;
                     });
                 } catch (e) {
-                    appLogger.error('Gallery', `Failed to fetch gallery metadata: ${e}`);
+                    const message = String(e);
+                    if (message.includes('no such table: gallery_items')) {
+                        appLogger.warn('Gallery', 'Gallery metadata table is unavailable; continuing without metadata');
+                    } else {
+                        appLogger.error('Gallery', `Failed to fetch gallery metadata: ${e}`);
+                    }
                 }
             }
 

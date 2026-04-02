@@ -1,0 +1,109 @@
+/**
+ * AnimatedCard Component CSS
+ * Component-specific CSS custom properties for the AnimatedCard component.
+ */
+
+:root {
+  /* Base animated card variables */
+  --animated-card-bg: hsl(var(--card));
+  --animated-card-fg: hsl(var(--card-foreground));
+  --animated-card-border: hsl(var(--border));
+  --animated-card-border-radius: 0.75rem;
+  --animated-card-padding: 1rem;
+  --animated-card-shadow: 0 1px 3px 0 rgb(0 0 0 / 10%);
+  --animated-card-transition: all 0.2s ease;
+
+  /* Lift effect */
+  --animated-card-lift-translate: -4px;
+  --animated-card-lift-shadow: 0 10px 25px -5px rgb(0 0 0 / 15%), 0 8px 10px -6px rgb(0 0 0 / 10%);
+
+  /* Glow effect */
+  --animated-card-glow-color: hsl(var(--primary) / 30%);
+  --animated-card-glow-spread: 0 0 20px;
+
+  /* Scale effect */
+  --animated-card-scale-factor: 1.02;
+
+  /* 3D effect */
+  --animated-card-3d-perspective: 1000px;
+
+  /* Gradient border */
+  --animated-card-gradient-start: hsl(var(--primary));
+  --animated-card-gradient-mid: hsl(var(--accent));
+  --animated-card-gradient-end: hsl(var(--info));
+  --animated-card-gradient-angle: 45deg;
+}
+
+/* Base animated card styles */
+.tengra-animated-card {
+  padding: var(--animated-card-padding);
+  border-radius: var(--animated-card-border-radius);
+  border: 1px solid var(--animated-card-border);
+  background-color: var(--animated-card-bg);
+  color: var(--animated-card-fg);
+  transition: var(--animated-card-transition);
+}
+
+.tengra-animated-card--clickable {
+  cursor: pointer;
+}
+
+/* Lift effect */
+.tengra-animated-card--lift:hover {
+  transform: translateY(var(--animated-card-lift-translate));
+  box-shadow: var(--animated-card-lift-shadow);
+}
+
+/* Glow effect */
+.tengra-animated-card--glow:hover {
+  box-shadow: var(--animated-card-glow-spread) var(--animated-card-glow-color);
+}
+
+/* Scale effect */
+.tengra-animated-card--scale:hover {
+  transform: scale(var(--animated-card-scale-factor));
+}
+
+/* 3D effect */
+.tengra-animated-card--3d {
+  transform-style: preserve-3d;
+}
+
+/* Gradient border card */
+.tengra-gradient-border-card {
+  padding: 2px;
+  background: linear-gradient(
+    var(--animated-card-gradient-angle),
+    var(--animated-card-gradient-start),
+    var(--animated-card-gradient-mid),
+    var(--animated-card-gradient-end)
+  );
+  border-radius: var(--animated-card-border-radius);
+}
+
+.tengra-gradient-border-card__inner {
+  background-color: var(--animated-card-bg);
+  border-radius: calc(var(--animated-card-border-radius) - 2px);
+  padding: var(--animated-card-padding);
+  height: 100%;
+}
+
+/* Animated gradient rotation */
+@keyframes gradient-rotate {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.tengra-gradient-border-card--animated {
+  background-size: 200% 200%;
+  animation: gradient-rotate 3s ease infinite;
+}

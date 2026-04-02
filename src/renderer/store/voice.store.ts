@@ -42,9 +42,16 @@ function createVoiceStore(): VoiceStore {
 
 // Singleton store instance
 const store = createVoiceStore();
-let sessionRevision = 0;
+let storeRevision = 0;
+
 let cachedSessionRevision = -1;
 let cachedSessionSnapshot: VoiceSessionState = { ...store.session };
+
+let cachedSettingsRevision = -1;
+let cachedSettingsSnapshot: VoiceSettings = { ...store.settings };
+
+let cachedCommandsRevision = -1;
+let cachedCommandsSnapshot: VoiceCommand[] = [...store.commands];
 
 /** Subscribe to store changes */
 function subscribe(listener: () => void): () => void {
@@ -64,7 +71,7 @@ function subscribeToEvents(listener: (event: VoiceEvent) => void): () => void {
 
 /** Notify all listeners of state change */
 function notifyListeners(): void {
-    sessionRevision += 1;
+    storeRevision += 1;
     store.listeners.forEach((listener) => listener());
 }
 
@@ -75,21 +82,29 @@ function notifyEventListeners(event: VoiceEvent): void {
 
 /** Get current snapshot */
 function getSnapshot(): VoiceSessionState {
-    if (cachedSessionRevision !== sessionRevision) {
+    if (cachedSessionRevision !== storeRevision) {
         cachedSessionSnapshot = { ...store.session };
-        cachedSessionRevision = sessionRevision;
+        cachedSessionRevision = storeRevision;
     }
     return cachedSessionSnapshot;
 }
 
 /** Get current settings */
 function getSettings(): VoiceSettings {
-    return { ...store.settings };
+    if (cachedSettingsRevision !== storeRevision) {
+        cachedSettingsSnapshot = { ...store.settings };
+        cachedSettingsRevision = storeRevision;
+    }
+    return cachedSettingsSnapshot;
 }
 
 /** Get current commands */
 function getCommands(): VoiceCommand[] {
-    return [...store.commands];
+    if (cachedCommandsRevision !== storeRevision) {
+        cachedCommandsSnapshot = [...store.commands];
+        cachedCommandsRevision = storeRevision;
+    }
+    return cachedCommandsSnapshot;
 }
 
 /** Update settings */

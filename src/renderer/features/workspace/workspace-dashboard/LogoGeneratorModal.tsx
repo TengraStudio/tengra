@@ -18,6 +18,7 @@ import { useLogoGenerator } from '@/features/workspace/hooks/useLogoGenerator';
 import { Language, useTranslation } from '@/i18n';
 import { Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
+import { toSafeFileUrl } from '@/utils/safe-file-url.util';
 
 interface LogoGeneratorModalProps {
     isOpen: boolean;
@@ -177,7 +178,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                             <div className="space-y-6 mt-4">
                                 {/* Mode Selection */}
                                 <div className="space-y-3">
-                                    <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                    <Label className="text-xs font-bold text-muted-foreground">
                                         {t('workspaces.generationMode')}
                                     </Label>
                                     <div className="grid grid-cols-2 gap-2">
@@ -202,7 +203,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
 
                                 {/* Model Selection */}
                                 <div className="space-y-2.5">
-                                    <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                    <Label className="text-xs font-bold text-muted-foreground">
                                         {t('workspaces.aiModel')}
                                     </Label>
                                     <Select
@@ -279,7 +280,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                 {/* Count Selection */}
                                 <div className="space-y-2.5">
                                     <div className="flex justify-between">
-                                        <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                        <Label className="text-xs font-bold text-muted-foreground">
                                             {t('workspaces.numberOfLogos')}
                                         </Label>
                                         <span className="text-sm text-muted-foreground">
@@ -303,7 +304,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
 
                                 {/* Prompt Input */}
                                 <div className="space-y-2">
-                                    <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                    <Label className="text-xs font-bold text-muted-foreground">
                                         {t('workspaces.prompt')}
                                     </Label>
                                     {mode === 'auto' ? (
@@ -439,12 +440,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                         className="group relative aspect-square overflow-hidden border-2 border-border/60 hover:border-primary transition-all"
                                     >
                                         <img
-                                            src={
-                                                logoPath.startsWith('http') ||
-                                                logoPath.startsWith('safe-file')
-                                                    ? logoPath
-                                                    : `safe-file://${logoPath}`
-                                            }
+                                            src={toSafeFileUrl(logoPath) ?? logoPath}
                                             alt={`Generated Logo ${index + 1}`}
                                             className="w-full h-full object-contain p-4 bg-checkered"
                                         />

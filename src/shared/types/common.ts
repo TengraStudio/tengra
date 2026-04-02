@@ -49,6 +49,7 @@ export type RuntimeValue =
     | RuntimeObject
     | RuntimeArray
     | Record<string, unknown>
+    | Uint8Array
     | unknown[];
 
 export interface RuntimeObject {

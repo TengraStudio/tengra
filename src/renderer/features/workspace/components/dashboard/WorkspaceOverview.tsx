@@ -2,6 +2,7 @@ import { Camera, Check, Pencil, RefreshCw, Sparkles } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Workspace, WorkspaceAnalysis, WorkspaceStats } from '@/types';
+import { toSafeFileUrl } from '@/utils/safe-file-url.util';
 
 interface WorkspaceOverviewHeaderProps {
     workspace: Workspace
@@ -42,13 +43,16 @@ export function WorkspaceOverviewHeader({
     onOpenLogoGenerator,
     t
 }: WorkspaceOverviewHeaderProps) {
+    const baseLogoUrl = toSafeFileUrl(workspace.logo);
+    const workspaceLogoUrl = baseLogoUrl ? `${baseLogoUrl}?t=${workspace.updatedAt}` : null;
+
     return (
         <div className="flex flex-col md:flex-row gap-8 items-start bg-card/40 p-6 rounded-3xl border border-border backdrop-blur-sm">
             {/* Logo Area */}
             <div className="relative group shrink-0">
                 <div className="w-32 h-32 rounded-2xl bg-muted/40 border-2 border-dashed border-border flex items-center justify-center overflow-hidden transition-all group-hover:border-primary/50 shadow-inner">
-                    {workspace.logo ? (
-                        <img src={`safe-file://${workspace.logo}`} alt={t('workspaces.logoAlt')} className="w-full h-full object-cover" />
+                    {workspaceLogoUrl ? (
+                        <img src={workspaceLogoUrl} alt={t('workspaces.logoAlt')} className="w-full h-full object-cover" />
                     ) : (
                         <Sparkles className="w-10 h-10 text-muted-foreground/20" />
                     )}
@@ -58,7 +62,7 @@ export function WorkspaceOverviewHeader({
                         className="absolute inset-0 bg-primary/60 tw-backdrop-blur-2 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2 text-primary-foreground"
                     >
                         <Camera className="w-6 h-6" />
-                        <span className="text-xxs font-bold uppercase tracking-tighter">{t('workspaces.changeLogo')}</span>
+                        <span className="text-xxs font-bold">{t('workspaces.changeLogo')}</span>
                     </button>
                 </div>
             </div>
@@ -77,7 +81,7 @@ export function WorkspaceOverviewHeader({
                                     if (e.key === 'Escape') { onEditName(false); }
                                 }}
                                 onBlur={() => onSaveName()}
-                                className="text-3xl font-black bg-transparent border border-primary/50 rounded-lg px-2 py-1 outline-none w-full tracking-tight text-foreground"
+                                className="text-3xl font-bold bg-transparent border border-primary/50 rounded-lg px-2 py-1 outline-none w-full text-foreground"
                             />
                             <button onClick={onSaveName} className="p-2 bg-primary text-primary-foreground rounded-lg">
                                 <Check className="w-4 h-4" />
@@ -86,7 +90,7 @@ export function WorkspaceOverviewHeader({
                     ) : (
                         <h1
                             onClick={() => onEditName(true)}
-                            className="text-4xl font-black tracking-tighter text-foreground cursor-pointer hover:text-primary transition-colors flex items-center gap-3"
+                            className="text-4xl font-bold text-foreground cursor-pointer hover:text-primary transition-colors flex items-center gap-3"
                         >
                             {workspace.title}
                             <Pencil className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
@@ -120,7 +124,7 @@ export function WorkspaceOverviewHeader({
                 <div className="flex items-center gap-4 pt-2">
                     <div className="flex items-center gap-1.5 px-2.5 py-1 bg-success/10 border border-success/20 rounded-md">
                         <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                        <span className="text-xxs font-bold text-success uppercase tracking-wider">{analysis.type}</span>
+                        <span className="text-xxs font-bold text-success">{analysis.type}</span>
                     </div>
                     <div className="text-xxs font-medium text-muted-foreground font-mono bg-accent/50 px-2 py-1 rounded border border-border">
                         {workspaceRoot}
@@ -151,24 +155,24 @@ export function WorkspaceStatsCards({ stats, analysis, t, formatBytes }: Workspa
     return (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('workspaceDashboard.fileCount')}</div>
-                <div className="text-2xl font-black text-foreground">{stats?.fileCount ?? 0}</div>
+                <div className="text-xxs font-bold text-muted-foreground mb-1">{t('workspaceDashboard.fileCount')}</div>
+                <div className="text-2xl font-bold text-foreground">{stats?.fileCount ?? 0}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('workspaceDashboard.loc')}</div>
-                <div className="text-2xl font-black text-foreground">~{stats?.loc ?? 0}</div>
+                <div className="text-xxs font-bold text-muted-foreground mb-1">{t('workspaceDashboard.loc')}</div>
+                <div className="text-2xl font-bold text-foreground">~{stats?.loc ?? 0}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('workspaceDashboard.totalSize')}</div>
-                <div className="text-2xl font-black text-foreground">{stats ? formatBytes(stats.totalSize) : '0 B'}</div>
+                <div className="text-xxs font-bold text-muted-foreground mb-1">{t('workspaceDashboard.totalSize')}</div>
+                <div className="text-2xl font-bold text-foreground">{stats ? formatBytes(stats.totalSize) : '0 B'}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-[10px) font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('workspaceDashboard.modules')}</div>
-                <div className="text-2xl font-black text-foreground">{analysis.monorepo?.packages.length ?? Object.keys(analysis.dependencies).length}</div>
+                <div className="text-[10px) font-bold text-muted-foreground mb-1">{t('workspaceDashboard.modules')}</div>
+                <div className="text-2xl font-bold text-foreground">{analysis.monorepo?.packages.length ?? Object.keys(analysis.dependencies).length}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('workspaceDashboard.type')}</div>
-                <div className="text-2xl font-black text-primary capitalize">{analysis.type}</div>
+                <div className="text-xxs font-bold text-muted-foreground mb-1">{t('workspaceDashboard.type')}</div>
+                <div className="text-2xl font-bold text-primary capitalize">{analysis.type}</div>
             </div>
         </div>
     );

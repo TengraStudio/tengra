@@ -38,7 +38,7 @@ function formatDownloads(downloads: number): string {
 }
 
 const DownloadBadge: React.FC<{ count: string | number }> = ({ count }) => (
-    <div className="flex items-center gap-2 text-xxs font-black text-muted-foreground/80 bg-muted/30 px-3 py-1.5 rounded-xl border border-border/30">
+    <div className="flex items-center gap-2 text-xxs font-bold text-muted-foreground/80 bg-muted/30 px-3 py-1.5 rounded-xl border border-border/30">
         <Download className="w-3.5 h-3.5" />
         {count}
     </div>
@@ -65,11 +65,11 @@ interface ModelHeaderProps {
 const ModelHeader: React.FC<ModelHeaderProps> = ({ isOllama, isInstalled, badgeContent, t }) => (
     <div className="flex justify-between items-start mb-6">
         <div className="flex items-center gap-2">
-            <div className={cn('text-xxxs font-black px-3 py-1.5 rounded-xl uppercase tracking-widest shadow-sm', isOllama ? 'bg-warning/20 text-warning border border-warning/40' : 'bg-warning/20 text-warning-foreground border border-warning/40')}>
+            <div className={cn('text-xxxs font-bold px-3 py-1.5 rounded-xl   shadow-sm', isOllama ? 'bg-warning/20 text-warning border border-warning/40' : 'bg-warning/20 text-warning-foreground border border-warning/40')}>
                 {isOllama ? 'OLLAMA' : 'HUGGINGFACE'}
             </div>
             {isInstalled && (
-                <div className="text-xxxs font-black px-3 py-1.5 rounded-xl uppercase tracking-widest bg-success/20 text-success border border-success/20 shadow-sm">
+                <div className="text-xxxs font-bold px-3 py-1.5 rounded-xl bg-success/20 text-success border border-success/20 shadow-sm">
                     {t('modelExplorer.pulled')}
                 </div>
             )}
@@ -81,11 +81,11 @@ const ModelHeader: React.FC<ModelHeaderProps> = ({ isOllama, isInstalled, badgeC
 const ModelTags: React.FC<{ tags: string[] }> = ({ tags }) => (
     <div className="flex flex-wrap gap-2 mt-auto">
         {tags.slice(0, 4).map(tag => (
-            <span key={tag} className="px-3 py-1.5 bg-muted/40 rounded-xl text-xxs font-bold uppercase tracking-wider text-muted-foreground/60 border border-transparent group-hover:border-primary/20 group-hover:bg-primary/5 group-hover:text-primary transition-all">
+            <span key={tag} className="px-3 py-1.5 bg-muted/40 rounded-xl text-xxs font-bold text-muted-foreground/60 border border-transparent group-hover:border-primary/20 group-hover:bg-primary/5 group-hover:text-primary transition-all">
                 {tag}
             </span>
         ))}
-        {tags.length > 4 && <span className="px-2 py-1 text-xxs font-black text-muted-foreground/30">+{tags.length - 4}</span>}
+        {tags.length > 4 && <span className="px-2 py-1 text-xxs font-bold text-muted-foreground/30">+{tags.length - 4}</span>}
     </div>
 );
 
@@ -119,13 +119,13 @@ export const ModelCard = memo(({
                 {(isRecommended || isWatchlisted) && (
                     <div className="flex items-center gap-2 mb-3">
                         {isRecommended && (
-                            <span className="inline-flex items-center gap-1 text-xxxs font-black uppercase tracking-wider px-2 py-1 rounded-lg bg-primary/15 text-primary border border-primary/20">
+                            <span className="inline-flex items-center gap-1 text-xxxs font-bold px-2 py-1 rounded-lg bg-primary/15 text-primary border border-primary/20">
                                 <Sparkles className="w-3 h-3" />
                                 {t('modelExplorer.recommended')}
                             </span>
                         )}
                         {isWatchlisted && (
-                            <span className="inline-flex items-center gap-1 text-xxxs font-black uppercase tracking-wider px-2 py-1 rounded-lg bg-warning/15 text-warning border border-warning/20">
+                            <span className="inline-flex items-center gap-1 text-xxxs font-bold px-2 py-1 rounded-lg bg-warning/15 text-warning border border-warning/20">
                                 <Star className="w-3 h-3" />
                                 {t('modelExplorer.watchlist')}
                             </span>
@@ -133,12 +133,12 @@ export const ModelCard = memo(({
                     </div>
                 )}
                 <div className="relative mb-2">
-                    <h3 className="font-black text-2xl line-clamp-1 tracking-tighter" title={name}>{name}</h3>
+                    <h3 className="font-bold text-2xl line-clamp-1" title={name}>{name}</h3>
                 </div>
                 <div className="flex items-center gap-3 mb-6">
-                    <span className="text-xxs font-black uppercase tracking-widest text-primary/70">{architecture}</span>
+                    <span className="text-xxs font-bold text-primary/70">{architecture}</span>
                     {params && <span className="w-1 h-1 rounded-full bg-border" />}
-                    {params && <span className="text-xxs font-black uppercase tracking-widest text-muted-foreground">{params} {t('modelExplorer.paramsSuffix')}</span>}
+                    {params && <span className="text-xxs font-bold text-muted-foreground">{params} {t('modelExplorer.paramsSuffix')}</span>}
                 </div>
                 <p className="text-sm text-muted-foreground/70 line-clamp-3 mb-8 leading-relaxed font-medium">
                     {model.description || t('modelExplorer.defaultDescription')}

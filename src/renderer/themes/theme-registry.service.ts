@@ -15,6 +15,7 @@ import { themeIpc } from '@/utils/theme-ipc.util';
 export class ThemeRegistryService {
     private themes: ThemeRegistry = {};
     private isLoaded = false;
+    private readonly listeners = new Set<() => void>();
 
     constructor() {
         // Listen for theme updates from Main process (e.g. after marketplace install)
@@ -42,11 +43,13 @@ export class ThemeRegistryService {
             }
 
             this.isLoaded = true;
+            this.emitChange();
         } catch (error) {
             appLogger.error('ThemeRegistry', 'Failed to load themes', error as Error);
             // Fallback to empty registry
             this.themes = {};
             this.isLoaded = true;
+            this.emitChange();
         }
     }
 
@@ -110,6 +113,17 @@ export class ThemeRegistryService {
         return Object.values(this.themes);
     }
 
+    subscribe(listener: () => void): () => void {
+        this.listeners.add(listener);
+        return () => {
+            this.listeners.delete(listener);
+        };
+    }
+
+    getSnapshot(): number {
+        return Object.keys(this.themes).length + (this.isLoaded ? 1_000_000 : 0);
+    }
+
     /**
      * Get themes by type
      */
@@ -136,6 +150,12 @@ export class ThemeRegistryService {
             typeof m.colors === 'object' &&
             m.colors !== null
         );
+    }
+
+    private emitChange(): void {
+        for (const listener of this.listeners) {
+            listener();
+        }
     }
 }
 

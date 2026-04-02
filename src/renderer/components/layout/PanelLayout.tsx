@@ -16,6 +16,8 @@ import {
     serializePersistedPanelLayout,
 } from './panel-layout-persistence';
 
+import './panel-layout.css';
+
 // Types
 export type PanelPosition = 'left' | 'right' | 'bottom' | 'center'
 export type PanelSize = 'small' | 'medium' | 'large' | number
@@ -85,10 +87,8 @@ const PanelTab: React.FC<{
     <div
         onClick={onClick}
         className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium cursor-pointer border-b-2 transition-colors",
-            isActive
-                ? "border-primary text-foreground bg-muted/50"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30"
+            "tengra-panel-tab",
+            isActive && "tengra-panel-tab--active"
         )}
     >
         {panel.icon && <span className="w-4 h-4">{panel.icon}</span>}
@@ -96,7 +96,7 @@ const PanelTab: React.FC<{
         {panel.closable !== false && onClose && (
             <button
                 onClick={(e) => { e.stopPropagation(); onClose(); }}
-                className="ml-1 p-0.5 rounded hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
+                className="tengra-panel-tab__close"
             >
                 <X className="w-3 h-3" />
             </button>
@@ -116,8 +116,8 @@ const PanelHeader: React.FC<{
     if (group.panels.length === 0) { return null; }
 
     return (
-        <div className="flex items-center justify-between border-b border-border/30 bg-card/50">
-            <div className="flex items-center overflow-x-auto hide-scrollbar">
+        <div className="tengra-panel-header">
+            <div className="tengra-panel-header__tabs hide-scrollbar">
                 {group.panels.map(panel => (
                     <PanelTab
                         key={panel.id}
@@ -128,11 +128,11 @@ const PanelHeader: React.FC<{
                     />
                 ))}
             </div>
-            <div className="flex items-center gap-1 px-2">
+            <div className="tengra-panel-header__actions">
                 {group.position !== 'center' && onToggleCollapse && (
                     <button
                         onClick={onToggleCollapse}
-                        className="p-1 rounded hover:bg-muted text-muted-foreground"
+                        className="tengra-panel-header__action"
                         title={group.collapsed ? t('panelLayout.expand') : t('panelLayout.collapse')}
                     >
                         {group.collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -141,7 +141,7 @@ const PanelHeader: React.FC<{
                 {onMaximize && (
                     <button
                         onClick={onMaximize}
-                        className="p-1 rounded hover:bg-muted text-muted-foreground"
+                        className="tengra-panel-header__action"
                         title={t('panelLayout.maximize')}
                     >
                         <Maximize2 className="w-3.5 h-3.5" />
@@ -193,11 +193,11 @@ const Resizer: React.FC<{
         <div
             onMouseDown={handleMouseDown}
             className={cn(
-                "flex-shrink-0 transition-colors hover:bg-primary/30",
+                "tengra-panel-resizer",
                 direction === 'horizontal'
-                    ? "w-1 cursor-col-resize hover:w-1.5"
-                    : "h-1 cursor-row-resize hover:h-1.5",
-                isDragging && "bg-primary/50"
+                    ? "tengra-panel-resizer--horizontal"
+                    : "tengra-panel-resizer--vertical",
+                isDragging && "tengra-panel-resizer--dragging"
             )}
         />
     );
@@ -217,8 +217,8 @@ const PanelGroupView: React.FC<{
     return (
         <div
             className={cn(
-                "flex flex-col bg-card/30 border border-border/20 rounded-lg overflow-hidden",
-                group.collapsed && "w-10",
+                "tengra-panel-group",
+                group.collapsed && "tengra-panel-group--collapsed",
                 className
             )}
             style={style}
@@ -228,7 +228,7 @@ const PanelGroupView: React.FC<{
                 onToggleCollapse={() => toggleCollapse(group.id)}
             />
             {group.collapsed ? null : (
-                <div className="flex-1 overflow-auto">
+                <div className="tengra-panel-group__content">
                     {activePanel.content}
                 </div>
             )}
@@ -479,10 +479,10 @@ export const PanelLayout: React.FC<{
     }, [bottom.size, resizeGroup]);
 
     return (
-        <div className={cn("flex flex-col h-full w-full overflow-hidden", className)}>
-            <div className="flex-1 flex overflow-hidden">
+        <div className={cn("tengra-panel-layout", className)}>
+            <div className="tengra-panel-layout__main">
                 <Sidebar group={left} size={left.size ?? DEFAULT_SIZES.left} onResize={handleLeftResize} direction="left" />
-                <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+                <div className="tengra-panel-layout__center-stack">
                     <CenterArea group={center}>{children}</CenterArea>
                     <BottomPanelView group={bottom} size={bottom.size ?? DEFAULT_SIZES.bottom} onResize={handleBottomResize} />
                 </div>

@@ -47,7 +47,7 @@ export function PackageManager({ connectionId }: PackageManagerProps) {
                             key={m}
                             onClick={() => setManager(m)}
                             className={cn(
-                                "px-4 py-1.5 rounded-md text-sm font-medium transition-all uppercase",
+                                "px-4 py-1.5 rounded-md text-sm font-medium transition-all ",
                                 manager === m ? "bg-muted/50 text-foreground shadow-sm" : "text-muted-foreground/40 hover:text-muted-foreground/60"
                             )}
                         >

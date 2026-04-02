@@ -1,4 +1,15 @@
 
+import { Input } from '@renderer/components/ui/input';
+import { Label } from '@renderer/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@renderer/components/ui/select';
+import { Textarea } from '@renderer/components/ui/textarea';
+import { appLogger } from '@renderer/utils/renderer-logger';
 import {
     addEdge,
     Background,
@@ -33,7 +44,6 @@ import {
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { JsonObject, JsonValue, Workspace } from '@/types';
-import { appLogger } from '@/utils/renderer-logger';
 
 import '@xyflow/react/dist/style.css';
 
@@ -630,14 +640,83 @@ const WorkspaceTodoTabCanvas: React.FC<WorkspaceTodoTabProps> = ({ workspace, on
                     <span>{t('workspaceDashboard.todoList')}:</span><span>{stats.total}</span><span className="text-success">{stats.completed}</span><span className="text-warning">{stats.inProgress}</span><span>{stats.pending}</span><span className="text-destructive">{t('workspaceDashboard.todoCanvas.blockedLabel')}:{stats.blocked}</span>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                    <div className="relative"><Filter className="w-3.5 h-3.5 absolute left-2 top-2.5 text-muted-foreground" /><input value={query} onChange={event => setQuery(event.target.value)} placeholder={t('placeholder.search')} className="h-8 w-32 rounded-md border border-border bg-background pl-7 pr-2 text-xs" /></div>
-                    <select value={statusFilter} onChange={event => setStatusFilter(event.target.value as 'all' | TodoStatus)} className="h-8 rounded-md border border-border bg-background px-2 text-xs"><option value="all">{t('workspaceDashboard.todoCanvas.statusAll')}</option><option value="pending">{t('workspaceDashboard.pending')}</option><option value="in_progress">{t('workspaceDashboard.todoCanvas.inProgress')}</option><option value="completed">{t('workspaceDashboard.todoCanvas.completed')}</option></select>
-                    <select value={categoryFilter} onChange={event => setCategoryFilter(event.target.value)} className="h-8 rounded-md border border-border bg-background px-2 text-xs"><option value="all">{t('workspaceDashboard.todoCanvas.allCategories')}</option>{categories.map(category => <option key={category} value={category}>{category}</option>)}</select>
-                    <button onClick={addTodoNode} className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs inline-flex items-center gap-1"><Plus className="w-3.5 h-3.5" />{t('workspaceDashboard.createTodo')}</button>
-                    <button onClick={exportJson} className="h-8 px-2 rounded-md border border-border text-xs"><FileJson className="w-3.5 h-3.5" /></button>
-                    <button onClick={exportMarkdown} className="h-8 px-2 rounded-md border border-border text-xs"><FileText className="w-3.5 h-3.5" /></button>
-                    <label className="h-8 px-2 rounded-md border border-border text-xs inline-flex items-center cursor-pointer"><Upload className="w-3.5 h-3.5" /><input type="file" accept="application/json" className="hidden" onChange={importJson} /></label>
-                    {saving ? <RefreshCw className="w-4 h-4 animate-spin text-muted-foreground" /> : null}
+                    <div className="relative">
+                        <Filter className="w-3.5 h-3.5 absolute left-2 top-2.5 text-muted-foreground z-10" />
+                        <Input
+                            value={query}
+                            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                                setQuery(event.target.value)
+                            }
+                            placeholder={t('placeholder.search')}
+                            className="h-8 w-32 pl-7 pr-2 text-xs"
+                        />
+                    </div>
+                    <Select
+                        value={statusFilter}
+                        onValueChange={(val: 'all' | TodoStatus) => setStatusFilter(val)}
+                    >
+                        <SelectTrigger className="h-8 w-[120px] text-xs">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                {t('workspaceDashboard.todoCanvas.statusAll')}
+                            </SelectItem>
+                            <SelectItem value="pending">{t('workspaceDashboard.pending')}</SelectItem>
+                            <SelectItem value="in_progress">
+                                {t('workspaceDashboard.todoCanvas.inProgress')}
+                            </SelectItem>
+                            <SelectItem value="completed">
+                                {t('workspaceDashboard.todoCanvas.completed')}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                        <SelectTrigger className="h-8 w-[140px] text-xs">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                {t('workspaceDashboard.todoCanvas.allCategories')}
+                            </SelectItem>
+                            {categories.map(category => (
+                                <SelectItem key={category} value={category}>
+                                    {category}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <button
+                        onClick={addTodoNode}
+                        className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs inline-flex items-center gap-1 transition-colors hover:bg-primary/90"
+                    >
+                        <Plus className="w-3.5 h-3.5" />
+                        {t('workspaceDashboard.createTodo')}
+                    </button>
+                    <button
+                        onClick={exportJson}
+                        className="h-8 px-2 rounded-md border border-border text-xs transition-colors hover:bg-muted"
+                    >
+                        <FileJson className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                        onClick={exportMarkdown}
+                        className="h-8 px-2 rounded-md border border-border text-xs transition-colors hover:bg-muted"
+                    >
+                        <FileText className="w-3.5 h-3.5" />
+                    </button>
+                    <label className="h-8 px-2 rounded-md border border-border text-xs inline-flex items-center cursor-pointer transition-colors hover:bg-muted">
+                        <Upload className="w-3.5 h-3.5" />
+                        <input
+                            type="file"
+                            accept="application/json"
+                            className="hidden"
+                            onChange={importJson}
+                        />
+                    </label>
+                    {saving ? (
+                        <RefreshCw className="w-4 h-4 animate-spin text-muted-foreground" />
+                    ) : null}
                 </div>
             </div>
             {canvasError ? <div className="px-3 py-1.5 text-xs text-destructive border-b border-destructive/30 bg-destructive/5">{canvasError}</div> : null}
@@ -666,37 +745,129 @@ const WorkspaceTodoTabCanvas: React.FC<WorkspaceTodoTabProps> = ({ workspace, on
                     ) : (
                         <>
                             <div className="space-y-1">
-                                <label className="text-xs text-muted-foreground">{t('workspaceDashboard.todoCanvas.task')}</label>
-                                <input value={selectedNode.data.title} onChange={event => updateSelectedNodeData({ title: event.target.value })} className="w-full h-9 rounded-md border border-border bg-background px-2 text-sm" />
+                                <Label className="text-xs text-muted-foreground">
+                                    {t('workspaceDashboard.todoCanvas.task')}
+                                </Label>
+                                <Input
+                                    value={selectedNode.data.title}
+                                    onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                                        updateSelectedNodeData({ title: event.target.value })
+                                    }
+                                    className="h-9"
+                                />
                             </div>
                             <div className="grid grid-cols-2 gap-2">
                                 <div className="space-y-1">
-                                    <label className="text-xs text-muted-foreground">{t('workspaceDashboard.status')}</label>
-                                    <select value={selectedNode.data.status} onChange={event => updateSelectedNodeData({ status: event.target.value as TodoStatus })} className="w-full h-9 rounded-md border border-border bg-background px-2 text-sm"><option value="pending">{t('workspaceDashboard.pending')}</option><option value="in_progress">{t('workspaceDashboard.todoCanvas.inProgress')}</option><option value="completed">{t('workspaceDashboard.todoCanvas.completed')}</option></select>
+                                    <Label className="text-xs text-muted-foreground">
+                                        {t('workspaceDashboard.status')}
+                                    </Label>
+                                    <Select
+                                        value={selectedNode.data.status}
+                                        onValueChange={(val: TodoStatus) =>
+                                            updateSelectedNodeData({ status: val })
+                                        }
+                                    >
+                                        <SelectTrigger className="h-9">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="pending">
+                                                {t('workspaceDashboard.pending')}
+                                            </SelectItem>
+                                            <SelectItem value="in_progress">
+                                                {t('workspaceDashboard.todoCanvas.inProgress')}
+                                            </SelectItem>
+                                            <SelectItem value="completed">
+                                                {t('workspaceDashboard.todoCanvas.completed')}
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs text-muted-foreground">{t('workspaceDashboard.todoCanvas.category')}</label>
-                                    <input value={selectedNode.data.category} onChange={event => updateSelectedNodeData({ category: event.target.value })} className="w-full h-9 rounded-md border border-border bg-background px-2 text-sm" />
+                                    <Label className="text-xs text-muted-foreground">
+                                        {t('workspaceDashboard.todoCanvas.category')}
+                                    </Label>
+                                    <Input
+                                        value={selectedNode.data.category}
+                                        onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                                            updateSelectedNodeData({ category: event.target.value })
+                                        }
+                                        className="h-9"
+                                    />
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-2">
                                 <div className="space-y-1">
-                                    <label className="text-xs text-muted-foreground">{t('workspaceDashboard.todoCanvas.assignee')}</label>
-                                    <input value={selectedNode.data.assignee} onChange={event => updateSelectedNodeData({ assignee: event.target.value })} className="w-full h-9 rounded-md border border-border bg-background px-2 text-sm" />
+                                    <Label className="text-xs text-muted-foreground">
+                                        {t('workspaceDashboard.todoCanvas.assignee')}
+                                    </Label>
+                                    <Input
+                                        value={selectedNode.data.assignee}
+                                        onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                                            updateSelectedNodeData({ assignee: event.target.value })
+                                        }
+                                        className="h-9"
+                                    />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs text-muted-foreground">{t('workspaceDashboard.todoCanvas.parent')}</label>
-                                    <select value={selectedNode.data.parentId} onChange={event => updateSelectedNodeData({ parentId: event.target.value })} className="w-full h-9 rounded-md border border-border bg-background px-2 text-sm"><option value="">{t('workspaceDashboard.todoCanvas.none')}</option>{nodes.filter(node => node.id !== selectedNode.id).map(node => <option key={node.id} value={node.id}>{node.data.title || node.id}</option>)}</select>
+                                    <Label className="text-xs text-muted-foreground">
+                                        {t('workspaceDashboard.todoCanvas.parent')}
+                                    </Label>
+                                    <Select
+                                        value={selectedNode.data.parentId}
+                                        onValueChange={(val: string) =>
+                                            updateSelectedNodeData({ parentId: val })
+                                        }
+                                    >
+                                        <SelectTrigger className="h-9">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="">
+                                                {t('workspaceDashboard.todoCanvas.none')}
+                                            </SelectItem>
+                                            {nodes
+                                                .filter(node => node.id !== selectedNode.id)
+                                                .map(node => (
+                                                    <SelectItem key={node.id} value={node.id}>
+                                                        {node.data.title || node.id}
+                                                    </SelectItem>
+                                                ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-xs text-muted-foreground">{t('workspaceDashboard.todoCanvas.links')}</label>
-                                <textarea value={selectedNode.data.links} onChange={event => updateSelectedNodeData({ links: event.target.value })} className="w-full min-h-24 rounded-md border border-border bg-background px-2 py-1 text-xs" />
+                                <Label className="text-xs text-muted-foreground">
+                                    {t('workspaceDashboard.todoCanvas.links')}
+                                </Label>
+                                <Textarea
+                                    value={selectedNode.data.links}
+                                    onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) =>
+                                        updateSelectedNodeData({ links: event.target.value })
+                                    }
+                                    className="min-h-24 py-1 text-xs"
+                                />
                             </div>
                             <div className="flex flex-wrap gap-2">
-                                <button onClick={addSubTask} className="h-8 px-3 rounded-md border border-border text-xs">{t('workspaceDashboard.todoCanvas.subTask')}</button>
-                                <button onClick={deleteSelectedNode} className="h-8 px-3 rounded-md border border-destructive/40 text-destructive text-xs">{t('common.delete')}</button>
-                                <button onClick={applyAutoLayout} className="h-8 px-3 rounded-md border border-border text-xs">{t('workspaceDashboard.todoCanvas.swimlaneLayout')}</button>
+                                <button
+                                    onClick={addSubTask}
+                                    className="h-8 px-3 rounded-md border border-border text-xs transition-colors hover:bg-muted"
+                                >
+                                    {t('workspaceDashboard.todoCanvas.subTask')}
+                                </button>
+                                <button
+                                    onClick={deleteSelectedNode}
+                                    className="h-8 px-3 rounded-md border border-destructive/40 text-destructive text-xs transition-colors hover:bg-destructive/10"
+                                >
+                                    {t('common.delete')}
+                                </button>
+                                <button
+                                    onClick={applyAutoLayout}
+                                    className="h-8 px-3 rounded-md border border-border text-xs transition-colors hover:bg-muted"
+                                >
+                                    {t('workspaceDashboard.todoCanvas.swimlaneLayout')}
+                                </button>
                             </div>
                         </>
                     )}

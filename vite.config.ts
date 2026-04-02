@@ -67,7 +67,18 @@ export default defineConfig(({ mode }) => {
                                     'ws',
                                     'bufferutil',
                                     'utf-8-validate',
-                                    'better-sqlite3' // Native module
+                                    'better-sqlite3', // Native module
+                                    // discord.js and its optional native dependencies
+                                    'discord.js',
+                                    '@discordjs/ws',
+                                    '@discordjs/rest',
+                                    '@discordjs/collection',
+                                    'zlib-sync',
+                                    'erlpack',
+                                    '@discordjs/opus',
+                                    'sodium',
+                                    'sodium-native',
+                                    'libsodium-wrappers',
                                 ],
                                 // UZAY OPTİMİZASYONU: Main process code splitting
                                 output: {

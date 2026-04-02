@@ -39,13 +39,13 @@ const StatsSection = ({ fileCount, totalSize }: { fileCount: number; totalSize: 
     return (
         <div className="grid grid-cols-2 gap-3">
             <div className="p-3 rounded-lg bg-accent/20 border border-border/50">
-                <div className="text-xxs uppercase text-muted-foreground mb-1">
+                <div className="text-xxs text-muted-foreground mb-1">
                     {t('workspaceDashboard.folderInspector.files')}
                 </div>
                 <div className="text-xl font-bold">{fileCount}</div>
             </div>
             <div className="p-3 rounded-lg bg-accent/20 border border-border/50">
-                <div className="text-xxs uppercase text-muted-foreground mb-1">
+                <div className="text-xxs text-muted-foreground mb-1">
                     {t('workspaceDashboard.folderInspector.size')}
                 </div>
                 <div className="text-xl font-bold">{(totalSize / 1024).toFixed(1)} KB</div>
@@ -65,7 +65,7 @@ const ScriptsSection = ({ scripts }: { scripts: ScriptsRecord }) => {
 
     return (
         <div className="pt-2 border-t border-border/50 mt-2">
-            <div className="text-xxs uppercase text-muted-foreground mb-2">
+            <div className="text-xxs text-muted-foreground mb-2">
                 {t('workspaceDashboard.folderInspector.scripts')}
             </div>
             <div className="grid grid-cols-1 gap-1">
@@ -84,7 +84,7 @@ const ScriptsSection = ({ scripts }: { scripts: ScriptsRecord }) => {
                     </div>
                 ))}
                 {scriptKeys.length > 5 && (
-                    <div className="text-xxs text-muted-foreground italic px-1 pt-1">
+                    <div className="text-xxs text-muted-foreground px-1 pt-1">
                         {t('workspaceDashboard.folderInspector.moreScripts', {
                             count: scriptKeys.length - 5,
                         })}
@@ -106,7 +106,7 @@ const DependenciesSection = ({ dependencies }: { dependencies: DependenciesRecor
 
     return (
         <div className="pt-2 border-t border-border/50 mt-2">
-            <div className="text-xxs uppercase text-muted-foreground mb-2">
+            <div className="text-xxs text-muted-foreground mb-2">
                 {t('workspaceDashboard.folderInspector.dependencies')}
             </div>
             <div className="flex flex-wrap gap-1">
@@ -127,7 +127,7 @@ const PackageInfoSection = ({ pkg }: { pkg: Record<string, IpcValue> }) => {
     const { t } = useTranslation();
     return (
         <div className="space-y-3">
-            <h3 className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-2">
+            <h3 className="text-xs font-bold text-muted-foreground flex items-center gap-2">
                 <Package className="w-3.5 h-3.5" />{' '}
                 {t('workspaceDashboard.folderInspector.packageTitle')}
             </h3>
@@ -163,7 +163,7 @@ const ReadmeSection = ({ readme }: { readme: string }) => {
 
     return (
         <div className="space-y-3">
-            <h3 className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-2">
+            <h3 className="text-xs font-bold text-muted-foreground flex items-center gap-2">
                 <FileText className="w-3.5 h-3.5" /> {t('workspaceDashboard.folderInspector.readme')}
             </h3>
             <div className="bg-muted/30 rounded-lg p-3 border border-border/50 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-muted text-xs text-muted-foreground leading-relaxed">

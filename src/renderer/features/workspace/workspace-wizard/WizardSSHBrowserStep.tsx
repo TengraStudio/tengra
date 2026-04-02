@@ -1,7 +1,9 @@
+import { Button } from '@renderer/components/ui/button';
+import { Input } from '@renderer/components/ui/input';
+import { cn } from '@renderer/lib/utils';
 import { ArrowRight, Code, FolderOpen, Terminal } from 'lucide-react';
 import React from 'react';
 
-import { cn } from '@/lib/utils';
 import { SSHFile } from '@/types';
 
 interface WizardSSHBrowserStepProps {
@@ -21,9 +23,9 @@ export const WizardSSHBrowserStep: React.FC<WizardSSHBrowserStepProps> = ({
 }) => {
     return (
         <div className="space-y-4 flex-1 pt-4 flex flex-col min-h-0">
-            <div className="flex items-center gap-2 p-3 bg-muted/10 rounded-lg border border-border/50">
+            <div className="flex items-center gap-2 p-3 bg-muted/10 rounded-lg border border-border/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
                 <Terminal className="w-4 h-4 text-primary shrink-0" />
-                <input
+                <Input
                     value={sshPath}
                     onChange={e => setSshPath(e.target.value)}
                     onKeyDown={e => {
@@ -31,32 +33,37 @@ export const WizardSSHBrowserStep: React.FC<WizardSSHBrowserStepProps> = ({
                             void loadRemoteDirectory(sshConnectionId, sshPath);
                         }
                     }}
-                    className="flex-1 bg-transparent text-sm text-foreground focus:outline-none font-mono"
+                    className="flex-1 bg-transparent border-none focus-visible:ring-0 shadow-none h-auto py-0 text-sm font-mono p-0"
                 />
-                <button
+                <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => sshConnectionId && void loadRemoteDirectory(sshConnectionId, sshPath)}
-                    className="p-1 hover:bg-muted/40 rounded-md transition-colors"
+                    className="h-8 w-8 hover:bg-muted/40"
                 >
                     <ArrowRight className="w-4 h-4 text-foreground/50" />
-                </button>
+                </Button>
             </div>
 
             <div className="flex-1 overflow-y-auto bg-muted/10 rounded-xl border border-border/50 p-2 space-y-1">
                 {sshPath !== '/' && (
-                    <button
+                    <Button
+                        variant="ghost"
                         onClick={() => {
                             const parent = sshPath.split('/').slice(0, -1).join('/') || '/';
                             if (sshConnectionId) { void loadRemoteDirectory(sshConnectionId, parent); }
                         }}
-                        className="w-full flex items-center gap-3 p-2 hover:bg-muted/20 rounded-lg text-left transition-colors group"
+                        className="w-full justify-start gap-3 p-2 hover:bg-muted/20 rounded-lg text-left transition-colors group font-normal h-auto"
                     >
                         <FolderOpen className="w-4 h-4 text-warning/70 group-hover:text-warning" />
                         <span className="text-sm text-foreground/70 group-hover:text-foreground">..</span>
-                    </button>
+                    </Button>
                 )}
                 {sshFiles.map((file, i) => (
-                    <button
+                    <Button
                         key={i}
+                        variant="ghost"
+                        disabled={!file.isDirectory}
                         onClick={() => {
                             if (file.isDirectory && sshConnectionId) {
                                 const newPath = sshPath === '/' ? `/${file.name}` : `${sshPath}/${file.name}`;
@@ -64,7 +71,7 @@ export const WizardSSHBrowserStep: React.FC<WizardSSHBrowserStepProps> = ({
                             }
                         }}
                         className={cn(
-                            "w-full flex items-center gap-3 p-2 hover:bg-muted/20 rounded-lg text-left transition-colors group",
+                            "w-full justify-start gap-3 p-2 hover:bg-muted/20 rounded-lg text-left transition-colors group font-normal h-auto",
                             !file.isDirectory && "opacity-50 cursor-default"
                         )}
                     >
@@ -74,7 +81,7 @@ export const WizardSSHBrowserStep: React.FC<WizardSSHBrowserStepProps> = ({
                             <Code className="w-4 h-4 text-foreground/30" />
                         )}
                         <span className="text-sm text-foreground/80 group-hover:text-foreground truncate">{file.name}</span>
-                    </button>
+                    </Button>
                 ))}
             </div>
         </div>

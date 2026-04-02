@@ -7,6 +7,8 @@
 
 import React, { memo } from 'react';
 
+import './empty-state.css';
+
 /** Props for the EmptyState component */
 interface EmptyStateAction {
   label: string;
@@ -34,22 +36,22 @@ export const EmptyState: React.FC<EmptyStateProps> = memo(({
   description,
   action,
 }) => (
-  <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-muted/10 rounded-2xl border border-dashed border-border/50">
+  <div className="tengra-empty-state">
     {icon && (
-      <div className="text-muted-foreground/20">
+      <div className="tengra-empty-state__icon">
         {icon}
       </div>
     )}
-    <div className="space-y-1">
-      <h3 className="font-bold text-muted-foreground">{title}</h3>
+    <div className="tengra-empty-state__content">
+      <h3 className="tengra-empty-state__title">{title}</h3>
       {description && (
-        <p className="text-xs text-muted-foreground/50 max-w-72">{description}</p>
+        <p className="tengra-empty-state__description">{description}</p>
       )}
     </div>
     {action && (
       <button
         onClick={action.onClick}
-        className="mt-2 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg text-xs font-bold transition-all border border-primary/30"
+        className="tengra-empty-state__action"
       >
         {action.label}
       </button>

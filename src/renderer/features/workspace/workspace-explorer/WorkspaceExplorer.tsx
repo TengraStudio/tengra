@@ -924,7 +924,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                         : 'border-b border-border/50 bg-transparent'
                 )}
             >
-                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground/50">
+                <span className="text-xs font-bold text-muted-foreground/50">
                     {t('workspace.files')}
                 </span>
                 <button

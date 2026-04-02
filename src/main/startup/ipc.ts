@@ -20,6 +20,7 @@ import { registerHFModelIpc } from '@main/ipc/huggingface';
 import { registerKeyRotationIpc } from '@main/ipc/key-rotation';
 import { registerLazyServicesIpc } from '@main/ipc/lazy-services';
 import { registerLlamaIpc } from '@main/ipc/llama';
+import { registerLocaleIpc } from '@main/ipc/locale';
 import { registerLoggingIpc } from '@main/ipc/logging';
 import { registerMarketplaceIpc } from '@main/ipc/marketplace';
 import { registerMcpIpc } from '@main/ipc/mcp';
@@ -46,6 +47,7 @@ import { registerTerminalIpc } from '@main/ipc/terminal';
 import { registerThemeIpc } from '@main/ipc/theme';
 import { registerTokenEstimationIpc } from '@main/ipc/token-estimation';
 import { registerToolsIpc } from '@main/ipc/tools';
+import { registerUsageIpc } from '@main/ipc/usage';
 import { registerVoiceIpc } from '@main/ipc/voice';
 import { registerWindowIpc } from '@main/ipc/window';
 import { registerWorkspaceIpc } from '@main/ipc/workspace';
@@ -137,13 +139,13 @@ export function registerIpcHandlers(
         jobSchedulerService: services.jobSchedulerService,
         databaseService: services.databaseService,
         auditLogService: services.auditLogService,
-    });
+    }, allowedFileRoots);
     registerAgentIpc(getMainWindow, services.agentService);
     registerProcessIpc(getMainWindow, services.processService);
     setupProcessEvents(services.processService);
     registerCodeIntelligenceIpc(services.codeIntelligenceService);
 
-    registerDbIpc(getMainWindow, services.databaseService, services.embeddingService);
+    registerDbIpc(getMainWindow, services.databaseService, services.embeddingService, undefined, allowedFileRoots);
     registerLlamaIpc(getMainWindow, services.llamaService);
     registerMemoryIpc(getMainWindow, services.memoryService);
     registerAdvancedMemoryIpc(services.advancedMemoryService);
@@ -204,7 +206,9 @@ export function registerIpcHandlers(
         services.databaseService
     );
     registerMcpIpc(mcpDispatcher, getMainWindow);
-    registerMarketplaceIpc(services.marketplaceService, services.themeService, getMainWindow);
+    registerMarketplaceIpc(services.marketplaceService, services.themeService, services.localeService, getMainWindow);
+    registerLocaleIpc(services.localeService);
+    registerUsageIpc(services.settingsService);
 
     registerLoggingIpc();
 
@@ -254,3 +258,4 @@ export async function registerDeferredIpcHandlers(
     const sshService = await services.sshService.resolve();
     registerSshIpc(getMainWindow, sshService, services.rateLimitService);
 }
+

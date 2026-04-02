@@ -5,7 +5,9 @@ import { useEffect,useState } from 'react';
 
 import { Language,useTranslation } from '@/i18n';
 
-export function TipModal({ language = 'tr' }: { language?: Language }) {
+import './tip-modal.css';
+
+export function TipModal({ language = 'en' }: { language?: Language }) {
     const { t } = useTranslation(language);
     const [isOpen, setIsOpen] = useState(false);
     const [currentTip, setCurrentTip] = useState("");
@@ -37,41 +39,43 @@ export function TipModal({ language = 'tr' }: { language?: Language }) {
 
     return (
         <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title={t('tips.title')}>
-            <div className="p-6 flex flex-col items-center text-center space-y-6">
-                <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center relative group">
-                    <div className="absolute inset-0 bg-primary/20 rounded-3xl blur-xl transition-all group-hover:blur-2xl" />
-                    <Lightbulb className="w-8 h-8 text-primary relative z-10 animate-pulse" />
-                    <div className="absolute -top-2 -right-2 bg-warning rounded-full p-1 shadow-lg">
-                        <Sparkles className="w-3 h-3 text-foreground" />
+            <div className="tengra-tip-modal">
+                <div className="tengra-tip-modal__icon-wrapper">
+                    <div className="tengra-tip-modal__icon-glow" />
+                    <Lightbulb className="tengra-tip-modal__icon" />
+                    <div className="tengra-tip-modal__badge">
+                        <Sparkles className="tengra-tip-modal__badge-icon" />
                     </div>
                 </div>
 
-                <div className="space-y-2">
-                    <h3 className="text-lg font-black uppercase tracking-widest text-foreground/80 flex items-center justify-center gap-2">
-                        <Zap className="w-4 h-4 text-primary" />
+                <div className="tengra-tip-modal__content">
+                    <h3 className="tengra-tip-modal__title">
+                        <Zap className="tengra-tip-modal__title-icon" />
                         {t('tips.didYouKnow')}
                     </h3>
-                    <p className="text-muted-foreground leading-relaxed font-medium">
+                    <p className="tengra-tip-modal__text">
                         "{currentTip}"
                     </p>
                 </div>
 
-                <div className="w-full flex gap-3 pt-4">
-                    <Button variant="outline" className="flex-1 rounded-2xl h-12 border-border/40 hover:bg-accent/30" onClick={() => setIsOpen(false)}>
+                <div className="tengra-tip-modal__actions">
+                    <Button variant="outline" className="tengra-tip-modal__button tengra-tip-modal__button--outline" onClick={() => setIsOpen(false)}>
                         {t('tips.gotIt')}
                     </Button>
-                    <Button className="flex-1 rounded-2xl h-12 shadow-xl shadow-primary/20" onClick={() => setIsOpen(false)}>
+                    <Button className="tengra-tip-modal__button tengra-tip-modal__button--primary" onClick={() => setIsOpen(false)}>
                         <Brain className="w-4 h-4 mr-2" />
                         {t('tips.discoverMore')}
                     </Button>
                 </div>
 
-                <button
-                    onClick={() => setIsOpen(false)}
-                    className="text-xxs font-bold text-muted-foreground/40 hover:text-muted-foreground transition-colors uppercase tracking-widest pt-2"
-                >
-                    {t('tips.dontShowAgain')}
-                </button>
+                <div className="tengra-tip-modal__footer">
+                    <button
+                        onClick={() => setIsOpen(false)}
+                        className="tengra-tip-modal__dismiss"
+                    >
+                        {t('tips.dontShowAgain')}
+                    </button>
+                </div>
             </div>
         </Modal>
     );

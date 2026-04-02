@@ -1,7 +1,9 @@
 import { Language, useLanguage } from '@renderer/i18n';
+import { localeRegistry } from '@renderer/i18n/locale-registry.service';
 import { themeRegistry } from '@renderer/themes/theme-registry.service';
 import { useCallback, useEffect, useRef } from 'react';
 
+import { unwrapSettingsResponse } from '@/utils/app-settings.util';
 import { appLogger } from '@/utils/renderer-logger';
 
 export function useAppInitialization() {
@@ -35,21 +37,26 @@ export function useAppInitialization() {
 
     // Load theme registry on app start
     useEffect(() => {
-        const loadThemes = async () => {
+        void themeRegistry.loadThemes().catch(error => {
+            appLogger.error('AppInit', 'Failed to load runtime theme registry', error as Error);
+        });
+
+        const loadLocales = async () => {
             try {
-                await themeRegistry.loadThemes();
+                await localeRegistry.loadLocales();
             } catch (error) {
-                appLogger.error('AppInit', 'Failed to load theme registry', error as Error);
+                appLogger.error('AppInit', 'Failed to load runtime locale registry', error as Error);
             }
         };
+
         const idleCallback = (window as Window & { requestIdleCallback?: (cb: IdleRequestCallback) => number }).requestIdleCallback;
         if (idleCallback) {
             idleCallback(() => {
-                void loadThemes();
+                void loadLocales();
             });
         } else {
             window.setTimeout(() => {
-                void loadThemes();
+                void loadLocales();
             }, 200);
         }
     }, []);
@@ -62,10 +69,11 @@ export function useAppInitialization() {
                 return;
             }
 
-            const settings = await window.electron.getSettings();
+            const response = await window.electron.getSettings();
+            const settings = unwrapSettingsResponse(response);
             if (!abortController.signal.aborted && !settings?.general?.language) {
                 const browserLang = window.navigator.language.split('-')[0];
-                const supported = ['tr', 'en'];
+                const supported = localeRegistry.getAvailableLocales().map(locale => locale.locale);
                 if (supported.includes(browserLang)) {
                     void setLanguageRef.current(browserLang as Language);
                 }

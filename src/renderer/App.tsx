@@ -8,7 +8,6 @@ import { Sidebar } from '@renderer/components/layout/Sidebar';
 import { ToastsContainer } from '@renderer/components/layout/ToastsContainer';
 import { ErrorBoundary } from '@renderer/components/shared/ErrorBoundary';
 import { ErrorFallback } from '@renderer/components/shared/ErrorFallback';
-import { LanguageSelectionPrompt } from '@renderer/components/shared/LanguageSelectionPrompt';
 import { validateDroppedFile } from '@renderer/features/chat/hooks/useAttachments';
 import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech';
 import { useVoiceInput } from '@renderer/features/chat/hooks/useVoiceInput';
@@ -23,6 +22,7 @@ import { useLanguage, useTranslation } from '@renderer/i18n';
 import { useBreakpoint } from '@renderer/lib/responsive';
 import { trackResponsiveBreakpoint } from '@renderer/store/responsive-analytics.store';
 import { ViewManager } from '@renderer/views/ViewManager';
+import * as React from 'react';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAuthSettingsUi } from '@/context/AuthContext';
@@ -136,15 +136,13 @@ const SidebarConnector: React.FC<{
     isCollapsed: boolean;
     onChangeView: (view: AppView) => void;
     toggleSidebar: () => void;
-    onOpenSettings: (category?: SettingsCategory) => void;
-}> = ({ currentView, isCollapsed, onChangeView, toggleSidebar, onOpenSettings }) => {
+}> = ({ currentView, isCollapsed, onChangeView, toggleSidebar }) => {
     return (
         <Sidebar
             currentView={currentView}
             onChangeView={onChangeView}
             isCollapsed={isCollapsed}
             toggleSidebar={toggleSidebar}
-            onOpenSettings={onOpenSettings}
             onSearch={() => { }}
         />
     );
@@ -171,38 +169,38 @@ const AppModalsConnector: React.FC<{
     showSSHManager,
     setShowSSHManager,
 }) => {
-    const { handleAntigravityLogout, isAuthModalOpen, setIsAuthModalOpen, setSettingsCategory } =
-        useAuthSettingsUi();
-    const { setInput } = useChatComposer();
-    const handleVoiceInput = useCallback((text: string) => {
-        setInput(prev => prev + text);
-    }, [setInput]);
-    const { isListening, startListening, stopListening } = useVoiceInput(handleVoiceInput);
-    const { stop: handleStopSpeak, isSpeaking } = useTextToSpeech();
+        const { handleAntigravityLogout, isAuthModalOpen, setIsAuthModalOpen, setSettingsCategory } =
+            useAuthSettingsUi();
+        const { setInput } = useChatComposer();
+        const handleVoiceInput = useCallback((text: string) => {
+            setInput(prev => prev + text);
+        }, [setInput]);
+        const { isListening, startListening, stopListening } = useVoiceInput(handleVoiceInput);
+        const { stop: handleStopSpeak, isSpeaking } = useTextToSpeech();
 
-    return (
-        <AppModals
-            isAuthModalOpen={isAuthModalOpen}
-            setIsAuthModalOpen={setIsAuthModalOpen}
-            t={t}
-            handleAntigravityLogout={handleAntigravityLogout}
-            setSettingsCategory={setSettingsCategory}
-            setCurrentView={setCurrentView}
-            showShortcuts={showShortcuts}
-            setShowShortcuts={setShowShortcuts}
-            isAudioOverlayOpen={isAudioOverlayOpen}
-            setIsAudioOverlayOpen={setIsAudioOverlayOpen}
-            isListening={isListening}
-            startListening={startListening}
-            stopListening={stopListening}
-            isSpeaking={isSpeaking}
-            handleStopSpeak={handleStopSpeak}
-            language={language}
-            showSSHManager={showSSHManager}
-            setShowSSHManager={setShowSSHManager}
-        />
-    );
-};
+        return (
+            <AppModals
+                isAuthModalOpen={isAuthModalOpen}
+                setIsAuthModalOpen={setIsAuthModalOpen}
+                t={t}
+                handleAntigravityLogout={handleAntigravityLogout}
+                setSettingsCategory={setSettingsCategory}
+                setCurrentView={setCurrentView}
+                showShortcuts={showShortcuts}
+                setShowShortcuts={setShowShortcuts}
+                isAudioOverlayOpen={isAudioOverlayOpen}
+                setIsAudioOverlayOpen={setIsAudioOverlayOpen}
+                isListening={isListening}
+                startListening={startListening}
+                stopListening={stopListening}
+                isSpeaking={isSpeaking}
+                handleStopSpeak={handleStopSpeak}
+                language={language}
+                showSSHManager={showSSHManager}
+                setShowSSHManager={setShowSSHManager}
+            />
+        );
+    };
 
 const VoiceActionsConnector: React.FC<{
     setCurrentView: (view: AppView) => void;
@@ -243,68 +241,68 @@ const KeyboardShortcutsConnector: React.FC<{
     onToggleSidebar,
     onOpenSettings,
 }) => {
-    const { createNewChat } = useChatShell();
-    const { currentChatId, clearMessages } = useChatHeader();
+        const { createNewChat } = useChatShell();
+        const { currentChatId, clearMessages } = useChatHeader();
 
-    const keyboardShortcutsConfig = useMemo(
-        () => ({
-            onCommandPalette: () => {
-                setShowCommandPalette(!showCommandPalette);
-            },
-            onNewChat: createNewChat,
-            onOpenSettings: () => {
-                onOpenSettings('general');
-            },
-            onShowShortcuts: () => {
-                setShowShortcuts(true);
-            },
-            onClearChat: () => {
-                void clearMessages();
-            },
-            onSwitchView: (view: AppView) => {
-                setCurrentView(view);
-            },
-            onToggleSidebar: () => {
-                onToggleSidebar();
-            },
-            onZoomIn: () => {
-                void window.electron.stepZoomFactor(1);
-            },
-            onZoomOut: () => {
-                void window.electron.stepZoomFactor(-1);
-            },
-            onResetZoom: () => {
-                void window.electron.resetZoomFactor();
-            },
-            onCloseModals: () => {
-                setShowCommandPalette(false);
-                setShowShortcuts(false);
-                setShowSSHManager(false);
-            },
-            showCommandPalette,
-            showShortcuts,
-            showSSHManager,
-            currentChatId,
-        }),
-        [
-            clearMessages,
-            createNewChat,
-            currentChatId,
-            onOpenSettings,
-            onToggleSidebar,
-            setCurrentView,
-            setShowCommandPalette,
-            setShowShortcuts,
-            setShowSSHManager,
-            showCommandPalette,
-            showShortcuts,
-            showSSHManager,
-        ]
-    );
+        const keyboardShortcutsConfig = useMemo(
+            () => ({
+                onCommandPalette: () => {
+                    setShowCommandPalette(!showCommandPalette);
+                },
+                onNewChat: createNewChat,
+                onOpenSettings: () => {
+                    onOpenSettings('general');
+                },
+                onShowShortcuts: () => {
+                    setShowShortcuts(true);
+                },
+                onClearChat: () => {
+                    void clearMessages();
+                },
+                onSwitchView: (view: AppView) => {
+                    setCurrentView(view);
+                },
+                onToggleSidebar: () => {
+                    onToggleSidebar();
+                },
+                onZoomIn: () => {
+                    void window.electron.stepZoomFactor(1);
+                },
+                onZoomOut: () => {
+                    void window.electron.stepZoomFactor(-1);
+                },
+                onResetZoom: () => {
+                    void window.electron.resetZoomFactor();
+                },
+                onCloseModals: () => {
+                    setShowCommandPalette(false);
+                    setShowShortcuts(false);
+                    setShowSSHManager(false);
+                },
+                showCommandPalette,
+                showShortcuts,
+                showSSHManager,
+                currentChatId,
+            }),
+            [
+                clearMessages,
+                createNewChat,
+                currentChatId,
+                onOpenSettings,
+                onToggleSidebar,
+                setCurrentView,
+                setShowCommandPalette,
+                setShowShortcuts,
+                setShowSSHManager,
+                showCommandPalette,
+                showShortcuts,
+                showSSHManager,
+            ]
+        );
 
-    useKeyboardShortcuts(keyboardShortcutsConfig);
-    return null;
-};
+        useKeyboardShortcuts(keyboardShortcutsConfig);
+        return null;
+    };
 
 const QuickActionBarConnector: React.FC<{
     language: ReturnType<typeof useLanguage>['language'];
@@ -460,44 +458,44 @@ const DragDropContent: React.FC<{
     setShowFileMenu,
     settingsSearchQuery,
 }) => {
-    const { processFile } = useChatComposer();
-    const { t } = useTranslation();
+        const { processFile } = useChatComposer();
+        const { t } = useTranslation();
 
-    return (
-        <DragDropWrapper
-            isDragging={isDragging}
-            setIsDragging={setIsDragging}
-            onFileDrop={file => {
-                void (async () => {
-                    const validation = await validateDroppedFile(file, t);
-                    if (!validation.valid) {
-                        addToast({
-                            type: 'error',
-                            message: validation.error || t('common.invalidInput'),
-                        });
-                        return;
-                    }
-                    void processFile(file);
-                })();
-            }}
-        >
-            <ViewManager
-                currentView={currentView}
-                templates={templates}
-                messagesEndRef={messagesEndRef}
-                fileInputRef={fileInputRef}
-                textareaRef={textareaRef}
-                onScrollToBottom={onScrollToBottom}
-                showScrollButton={showScrollButton}
-                setShowScrollButton={setShowScrollButton}
-                showFileMenu={showFileMenu}
-                setShowFileMenu={setShowFileMenu}
-                settingsSearchQuery={settingsSearchQuery}
-            />
-            <div id="modal-root" />
-        </DragDropWrapper>
-    );
-};
+        return (
+            <DragDropWrapper
+                isDragging={isDragging}
+                setIsDragging={setIsDragging}
+                onFileDrop={file => {
+                    void (async () => {
+                        const validation = await validateDroppedFile(file, t);
+                        if (!validation.valid) {
+                            addToast({
+                                type: 'error',
+                                message: validation.error || t('common.invalidInput'),
+                            });
+                            return;
+                        }
+                        void processFile(file);
+                    })();
+                }}
+            >
+                <ViewManager
+                    currentView={currentView}
+                    templates={templates}
+                    messagesEndRef={messagesEndRef}
+                    fileInputRef={fileInputRef}
+                    textareaRef={textareaRef}
+                    onScrollToBottom={onScrollToBottom}
+                    showScrollButton={showScrollButton}
+                    setShowScrollButton={setShowScrollButton}
+                    showFileMenu={showFileMenu}
+                    setShowFileMenu={setShowFileMenu}
+                    settingsSearchQuery={settingsSearchQuery}
+                />
+                <div id="modal-root" />
+            </DragDropWrapper>
+        );
+    };
 
 export default function App() {
     if (isDetachedTerminalWindow) {
@@ -524,16 +522,9 @@ function MainApp() {
     const breakpoint = useBreakpoint();
     const settingsSearchQuery = '';
 
-    
+
     const nonCriticalUiReady = useDeferredNonCriticalUi();
-    const [showLanguagePrompt, setShowLanguagePrompt] = useState(() => {
-        // Show prompt only on first run if language wasn't explicitly selected
-        return !localStorage.getItem('app.languageSelected');
-    });
-
     useAppInitialization();
-
-
 
     // Auto-collapse sidebar when entering the workspace view.
     useEffect(() => {
@@ -620,7 +611,6 @@ function MainApp() {
                                     onChangeView={setCurrentView}
                                     isCollapsed={appState.isSidebarCollapsed}
                                     toggleSidebar={handleToggleSidebar}
-                                    onOpenSettings={openSettings}
                                 />
                             }
                             mainContent={
@@ -645,16 +635,6 @@ function MainApp() {
         >
             <div className="app-container h-screen w-full overflow-hidden">
                 <OfflineBanner />
-                {showLanguagePrompt && (
-                    <LanguageSelectionPrompt
-                        onClose={() => {
-                            localStorage.setItem('app.languageSelected', 'true');
-                            setShowLanguagePrompt(false);
-                        }}
-                    />
-                )}
-
-
 
                 <AppModalsConnector
                     t={t}
@@ -724,7 +704,6 @@ function MainApp() {
                                 onChangeView={setCurrentView}
                                 isCollapsed={appState.isSidebarCollapsed}
                                 toggleSidebar={handleToggleSidebar}
-                                onOpenSettings={openSettings}
                             />
                         }
                         mainContent={

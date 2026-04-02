@@ -1,12 +1,17 @@
+import { Button } from '@renderer/components/ui/button';
+import { Checkbox } from '@renderer/components/ui/checkbox';
+import { Input } from '@renderer/components/ui/input';
+import { Label } from '@renderer/components/ui/label';
+import { Modal } from '@renderer/components/ui/modal';
+import { Textarea } from '@renderer/components/ui/textarea';
 import {
     isValidWorkspaceDescription,
     isValidWorkspaceTitle
 } from '@renderer/features/workspace/components/modals/modalValidation';
+import { AnimatePresence } from '@renderer/lib/framer-motion-compat';
+import { cn } from '@renderer/lib/utils';
 import React from 'react';
 
-import { Modal } from '@/components/ui/modal';
-import { AnimatePresence } from '@/lib/framer-motion-compat';
-import { cn } from '@/lib/utils';
 import { Workspace } from '@/types';
 
 interface WorkspaceModalsProps {
@@ -90,18 +95,16 @@ const EditWorkspaceModal: React.FC<{
                 <Modal isOpen={!!workspace} onClose={onClose} title={t('workspaces.editWorkspace')}>
                     <div className="space-y-4 pt-2">
                         <div className="space-y-2">
-                            <label className="text-xs font-medium text-muted-foreground uppercase">
+                            <Label className="text-xs font-medium text-muted-foreground">
                                 {t('workspaces.nameLabel')}
-                            </label>
-                            <input
+                            </Label>
+                            <Input
                                 value={form.title}
                                 onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))}
                                 aria-invalid={!hasValidTitle}
                                 className={cn(
-                                    'w-full bg-muted/30 border rounded-lg px-3 py-2 text-sm focus:outline-none',
-                                    hasValidTitle
-                                        ? 'border-border/50 focus:border-primary/50'
-                                        : 'border-destructive/50 focus:border-destructive'
+                                    'w-full bg-muted/30 border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary/20',
+                                    !hasValidTitle && 'border-destructive/50 focus-visible:ring-destructive'
                                 )}
                                 placeholder={t('workspaces.namePlaceholder')}
                             />
@@ -110,20 +113,18 @@ const EditWorkspaceModal: React.FC<{
                             )}
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-medium text-muted-foreground uppercase">
+                            <Label className="text-xs font-medium text-muted-foreground">
                                 {t('workspaces.description')}
-                            </label>
-                            <textarea
+                            </Label>
+                            <Textarea
                                 value={form.description}
                                 onChange={e =>
                                     setForm(prev => ({ ...prev, description: e.target.value }))
                                 }
                                 aria-invalid={!hasValidDescription}
                                 className={cn(
-                                    'w-full bg-muted/30 border rounded-lg px-3 py-2 text-sm focus:outline-none tw-min-h-80 resize-none',
-                                    hasValidDescription
-                                        ? 'border-border/50 focus:border-primary/50'
-                                        : 'border-destructive/50 focus:border-destructive'
+                                    'w-full bg-muted/30 border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary/20 tw-min-h-80 resize-none',
+                                    !hasValidDescription && 'border-destructive/50 focus-visible:ring-destructive'
                                 )}
                                 placeholder={t('workspaces.workspaceDescPlaceholder')}
                             />
@@ -132,21 +133,20 @@ const EditWorkspaceModal: React.FC<{
                             )}
                         </div>
                         <div className="flex justify-end gap-2 pt-2">
-                            <button
+                            <Button
+                                variant="ghost"
                                 onClick={onClose}
-                                className="px-4 py-2 rounded-lg text-sm hover:bg-muted/50 transition-colors"
                             >
                                 {t('common.cancel')}
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                                 onClick={() => {
                                     void handleSubmit();
                                 }}
                                 disabled={!hasValidTitle || isSaving}
-                                className="px-4 py-2 rounded-lg text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
                             >
                                 {t('common.save')}
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </Modal>
@@ -177,7 +177,7 @@ const DeleteWorkspaceModal: React.FC<{
                             <p className="text-sm text-destructive">
                                 {t('workspaces.deleteConfirmation')}{' '}
                                 <span className="font-bold text-foreground">{workspace.title}</span>?
-                                <span className="block mt-1 text-xs text-destructive/70 font-medium italic">
+                                <span className="block mt-1 text-xs text-destructive/70 font-medium">
                                     {t('workspaces.deleteWarning')}
                                 </span>
                             </p>
@@ -188,20 +188,21 @@ const DeleteWorkspaceModal: React.FC<{
                             t={t}
                         />
                         <div className="flex justify-end gap-2 pt-2">
-                            <button
+                            <Button
+                                variant="ghost"
                                 onClick={onClose}
-                                className="px-4 py-2 rounded-lg text-sm hover:bg-muted/40 transition-colors"
                             >
                                 {t('common.cancel')}
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                                variant="destructive"
                                 onClick={() => {
                                     void onSubmit(deleteFiles);
                                 }}
-                                className="px-6 py-2 rounded-lg text-sm font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-95 transition-all shadow-lg shadow-destructive/20"
+                                className="px-6 shadow-lg shadow-destructive/20"
                             >
                                 {t('common.delete')}
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </Modal>
@@ -226,7 +227,7 @@ const ArchiveWorkspaceModal: React.FC<{
                                 ? t('workspaces.restoreConfirmation')
                                 : t('workspaces.archiveConfirmation')}{' '}
                             <span className="font-semibold text-foreground">{workspace.title}</span>?
-                            <span className="block mt-1 text-xs text-success font-normal italic opacity-80">
+                            <span className="block mt-1 text-xs text-success font-normal opacity-80">
                                 {workspace.status === 'archived'
                                     ? t('workspaces.restoreWarning')
                                     : t('workspaces.archiveWarning')}
@@ -234,22 +235,23 @@ const ArchiveWorkspaceModal: React.FC<{
                         </p>
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
-                        <button
+                        <Button
+                            variant="ghost"
                             onClick={onClose}
-                            className="px-4 py-2 rounded-lg text-sm hover:bg-muted/40 transition-colors font-light"
                         >
                             {t('common.cancel')}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                            variant="secondary"
                             onClick={() => {
                                 void onSubmit();
                             }}
-                            className="px-6 py-2 rounded-lg text-sm font-medium bg-success text-foreground hover:bg-success active:scale-95 transition-all shadow-lg shadow-emerald-900/20"
+                            className="px-6 bg-success/80 hover:bg-success text-success-foreground border-none transition-all shadow-lg shadow-emerald-900/20"
                         >
                             {workspace.status === 'archived'
                                 ? t('common.unarchive')
                                 : t('workspaces.archiveWorkspace')}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </Modal>
@@ -278,7 +280,7 @@ const BulkArchiveModal: React.FC<{
                                 {count} {t('sidebar.workspaces').toLowerCase()}
                             </span>
                             ?
-                            <span className="block mt-1 text-xs text-success font-normal italic opacity-80">
+                            <span className="block mt-1 text-xs text-success font-normal opacity-80">
                                 {mode === 'restore'
                                     ? t('workspaces.restoreWarning')
                                     : t('workspaces.archiveWarning')}
@@ -286,22 +288,23 @@ const BulkArchiveModal: React.FC<{
                         </p>
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
-                        <button
+                        <Button
+                            variant="ghost"
                             onClick={onClose}
-                            className="px-4 py-2 rounded-lg text-sm hover:bg-muted/40 transition-colors font-light"
                         >
                             {t('common.cancel')}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                            variant="secondary"
                             onClick={() => {
                                 void onSubmit();
                             }}
-                            className="px-6 py-2 rounded-lg text-sm font-medium bg-success text-foreground hover:bg-success active:scale-95 transition-all shadow-lg shadow-emerald-900/20"
+                            className="px-6 bg-success/80 hover:bg-success text-success-foreground border-none transition-all shadow-lg shadow-emerald-900/20"
                         >
                             {mode === 'restore'
                                 ? t('workspaces.bulkRestore')
                                 : t('workspaces.bulkArchive')}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </Modal>
@@ -335,7 +338,7 @@ const BulkDeleteModal: React.FC<{
                                     {count} {t('sidebar.workspaces').toLowerCase()}
                                 </span>
                                 ?
-                                <span className="block mt-1 text-xs text-destructive/70 font-normal italic opacity-80">
+                                <span className="block mt-1 text-xs text-destructive/70 font-normal opacity-80">
                                     {t('workspaces.deleteWarning')}
                                 </span>
                             </p>
@@ -346,20 +349,21 @@ const BulkDeleteModal: React.FC<{
                             t={t}
                         />
                         <div className="flex justify-end gap-2 pt-2">
-                            <button
+                            <Button
+                                variant="ghost"
                                 onClick={onClose}
-                                className="px-4 py-2 rounded-lg text-sm hover:bg-muted/40 transition-colors font-light"
                             >
                                 {t('common.cancel')}
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                                variant="destructive"
                                 onClick={() => {
                                     void onSubmit(deleteFiles);
                                 }}
-                                className="px-6 py-2 rounded-lg text-sm font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-95 transition-all shadow-lg shadow-destructive/20"
+                                className="px-6 shadow-lg shadow-destructive/20"
                             >
                                 {t('workspaces.bulkDelete')}
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </Modal>
@@ -373,38 +377,24 @@ const DeleteFilesCheckbox: React.FC<{
     onChange: (b: boolean) => void;
     t: (key: string) => string;
 }> = ({ checked, onChange, t }) => (
-    <label className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors group">
-        <div className="relative flex items-center justify-center w-5 h-5">
-            <input
-                type="checkbox"
-                checked={checked}
-                onChange={e => onChange(e.target.checked)}
-                className="peer appearance-none w-5 h-5 border border-border/50 rounded bg-muted/20 checked:bg-destructive checked:border-destructive transition-all cursor-pointer"
-            />
-            <svg
-                className="absolute w-3.5 h-3.5 text-foreground opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-            >
-                <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-        </div>
-        <div className="flex flex-col">
-            <span className="text-sm font-medium text-foreground group-hover:text-destructive transition-colors">
+    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors group">
+        <Checkbox
+            id="delete-files"
+            checked={checked}
+            onCheckedChange={(checked) => onChange(typeof checked === 'boolean' ? checked : false)}
+            className="w-5 h-5 border-border/50 bg-muted/20 data-[state=checked]:bg-destructive data-[state=checked]:border-destructive"
+        />
+        <div className="flex flex-col select-none cursor-pointer" onClick={() => onChange(!checked)}>
+            <Label htmlFor="delete-files" className="text-sm font-medium text-foreground group-hover:text-destructive transition-colors cursor-pointer">
                 {t('workspaces.deleteWorkspaceFiles')}
-            </span>
+            </Label>
             {checked && (
-                <span className="text-xxs text-destructive font-bold uppercase animate-pulse">
+                <span className="text-xxs text-destructive font-bold animate-pulse">
                     {t('workspaceModals.permanentDeletionWarning')}
                 </span>
             )}
         </div>
-    </label>
+    </div>
 );
 
 export const WorkspaceModals: React.FC<WorkspaceModalsProps> = ({

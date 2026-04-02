@@ -8,6 +8,8 @@ import {
 } from '@/hooks/shortcutBindings';
 import { useTranslation } from '@/i18n';
 
+import './keyboard-shortcut-reference.css';
+
 interface ShortcutCategory {
     titleKey: string;
     items: ReadonlyArray<{ id: ShortcutActionId; labelKey: string }>;
@@ -76,7 +78,7 @@ export const KeyboardShortcutReference: React.FC<KeyboardShortcutReferenceProps>
 
         return (
             <div
-                className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-200"
+                className="tengra-shortcut-ref"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="shortcut-ref-title"
@@ -84,51 +86,51 @@ export const KeyboardShortcutReference: React.FC<KeyboardShortcutReferenceProps>
             >
                 <div
                     ref={overlayRef}
-                    className="w-full max-w-screen-lg bg-card border border-border/50 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+                    className="tengra-shortcut-ref__modal"
                 >
                     {/* Header */}
-                    <div className="h-14 border-b border-border/50 flex items-center justify-between px-6 bg-muted/20">
-                        <div className="flex items-center gap-2">
-                            <Keyboard className="w-5 h-5 text-primary" aria-hidden="true" />
+                    <div className="tengra-shortcut-ref__header">
+                        <div className="tengra-shortcut-ref__header-left">
+                            <Keyboard className="tengra-shortcut-ref__icon" aria-hidden="true" />
                             <div>
-                                <h2 id="shortcut-ref-title" className="text-lg font-medium text-foreground">
+                                <h2 id="shortcut-ref-title" className="tengra-shortcut-ref__title">
                                     {t('shortcuts.title')}
                                 </h2>
-                                <p className="text-xxs text-muted-foreground/60">
+                                <p className="tengra-shortcut-ref__subtitle">
                                     {t('shortcutReference.description')}
                                 </p>
                             </div>
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2 hover:bg-muted/30 rounded-lg transition-colors text-muted-foreground/60 hover:text-foreground"
+                            className="tengra-shortcut-ref__close-btn"
                             aria-label={t('shortcuts.close')}
                         >
-                            <X className="w-5 h-5" aria-hidden="true" />
+                            <X className="tengra-shortcut-ref__close-icon" aria-hidden="true" />
                         </button>
                     </div>
 
                     {/* Content */}
-                    <div className="p-6 space-y-5 overflow-y-auto max-h-screen">
+                    <div className="tengra-shortcut-ref__content">
                         {CATEGORIES.map((category) => (
-                            <div key={category.titleKey}>
-                                <h3 className="text-xs font-bold text-muted-foreground/40 uppercase tracking-widest mb-2 px-1">
+                            <div key={category.titleKey} className="tengra-shortcut-ref__category">
+                                <h3 className="tengra-shortcut-ref__category-title">
                                     {t(category.titleKey)}
                                 </h3>
-                                <div className="bg-muted/20 rounded-xl px-4 border border-border/50">
+                                <div className="tengra-shortcut-ref__category-list">
                                     {category.items.map((item) => {
                                         const keys = shortcutBindingLabel(bindings[item.id], isMac).split(' + ');
                                         return (
                                             <div
                                                 key={item.id}
-                                                className="flex items-center justify-between py-2 border-b border-border/50 last:border-0"
+                                                className="tengra-shortcut-ref__item"
                                             >
-                                                <span className="text-sm text-muted-foreground/70">{t(item.labelKey)}</span>
-                                                <div className="flex items-center gap-1.5">
+                                                <span className="tengra-shortcut-ref__item-label">{t(item.labelKey)}</span>
+                                                <div className="tengra-shortcut-ref__item-keys">
                                                     {keys.map((key, i) => (
                                                         <kbd
                                                             key={`${key}-${i}`}
-                                                            className="px-2 py-1 bg-muted/50 border border-border/50 rounded text-xxs font-mono text-muted-foreground/80 min-w-6 text-center shadow-sm"
+                                                            className="tengra-shortcut-ref__kbd"
                                                         >
                                                             {key}
                                                         </kbd>
@@ -143,8 +145,8 @@ export const KeyboardShortcutReference: React.FC<KeyboardShortcutReferenceProps>
                     </div>
 
                     {/* Footer */}
-                    <div className="p-4 bg-muted/20 border-t border-border/50 text-center">
-                        <p className="text-xxs text-muted-foreground/40">{t('shortcuts.footer')}</p>
+                    <div className="tengra-shortcut-ref__footer">
+                        <p className="tengra-shortcut-ref__footer-text">{t('shortcuts.footer')}</p>
                     </div>
                 </div>
             </div>

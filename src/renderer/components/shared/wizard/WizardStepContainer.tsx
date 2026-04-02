@@ -50,7 +50,7 @@ export const WizardStepContainer: React.FC<WizardStepContainerProps> = ({
                     <div className="flex items-center gap-3">
                         {icon && <div className="text-primary">{icon}</div>}
                         {title && (
-                            <h3 className="text-lg font-bold text-foreground tracking-tight">
+                            <h3 className="text-lg font-bold text-foreground">
                                 {title}
                             </h3>
                         )}
@@ -86,7 +86,7 @@ export const WizardStepContainer: React.FC<WizardStepContainerProps> = ({
                             onClick={nextButton.onClick}
                             disabled={nextButton.disabled}
                             className={cn(
-                                'px-8 py-3 rounded-xl font-bold text-sm tracking-tight transition-all disabled:opacity-40 disabled:grayscale flex items-center gap-3 shadow-lg relative overflow-hidden group/btn hover:brightness-105 active:scale-95',
+                                'px-8 py-3 rounded-xl font-bold text-sm  transition-all disabled:opacity-40 disabled:grayscale flex items-center gap-3 shadow-lg relative overflow-hidden group/btn hover:brightness-105 active:scale-95',
                                 nextButton.variant === 'secondary'
                                     ? 'bg-muted text-foreground'
                                     : 'bg-primary text-primary-foreground shadow-primary/30 hover:shadow-primary/50'

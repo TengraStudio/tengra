@@ -53,6 +53,11 @@ npm run dev
 
 # Build for production
 npm run build
+
+# Package installers
+npm run build:exe    # Windows
+npm run build:mac    # macOS
+npm run build:linux  # Linux
 ```
 
 ## 🤝 Contributing

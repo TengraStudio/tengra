@@ -15,6 +15,9 @@ import { useAuthLanguage } from '@/context/AuthContext';
 import { useChatHeader } from '@/context/ChatContext';
 import { AppView } from '@/hooks/useAppState';
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
+
+import './app-header.css';
 
 interface AppHeaderProps {
     currentView: AppView
@@ -56,13 +59,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
     return (
         <>
-            <header className="h-14 flex items-center justify-between px-6 bg-background/95 z-20 app-drag-region">
-                <div className="flex items-center gap-4 no-drag">
-                    <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                        <Icon className="w-5 h-5" />
+            <header className="tengra-app-header app-drag-region">
+                <div className="tengra-app-header__left no-drag">
+                    <div className="tengra-app-header__icon-container">
+                        <Icon className="tengra-app-header__icon" />
                     </div>
                     <div>
-                        <h1 className="text-sm font-bold uppercase tracking-widest text-foreground/90 flex items-center gap-2">
+                        <h1 className="tengra-app-header__title">
                             {currentView === 'chat' && currentChatTitle
                                 ? currentChatTitle
                                 : t(`nav.${currentView}`)}
@@ -70,55 +73,54 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 no-drag">
+                <div className="tengra-app-header__right no-drag">
                     {currentView === 'chat' && currentChatId && (
                         <button
                             onClick={() => void clearMessages()}
-                            className="p-2 hover:bg-accent/50 rounded-xl transition-all text-muted-foreground hover:text-foreground group"
+                            className="tengra-app-header__action group"
                             title={t('chat.clear')}
                         >
-                            <Eraser className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                            <Eraser className="tengra-app-header__action-icon tengra-app-header__action-icon--rotate" />
                         </button>
                     )}
 
                     <button
                         onClick={onOpenSettings}
-                        className={`
-                            p-2 rounded-lg transition-colors
-                            ${currentView === 'settings'
-                                ? 'text-primary bg-primary/10'
-                                : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
-                            }
-                        `}
+                        className={cn(
+                            "tengra-app-header__settings",
+                            currentView === 'settings'
+                                ? "tengra-app-header__settings--active"
+                                : "tengra-app-header__settings--inactive"
+                        )}
                         title={t('nav.settings')}
                         aria-label={t('nav.settings')}
                     >
-                        <SettingsIcon className="w-4 h-4" />
+                        <SettingsIcon className="tengra-app-header__settings-icon" />
                     </button>
 
-                    <div className="h-4 w-px bg-border/50 mx-2" />
+                    <div className="tengra-app-header__divider" />
 
-                    <div className="flex items-center gap-1">
+                    <div className="tengra-app-header__window-controls">
                         <button
                             data-testid="window-minimize"
                             onClick={handleMinimize}
-                            className="p-2 hover:bg-accent/50 rounded-lg text-muted-foreground transition-colors"
+                            className="tengra-app-header__window-control"
                         >
-                            <Minus className="w-4 h-4" />
+                            <Minus className="tengra-app-header__window-control-icon" />
                         </button>
                         <button
                             data-testid="window-maximize"
                             onClick={handleMaximize}
-                            className="p-2 hover:bg-accent/50 rounded-lg text-muted-foreground transition-colors"
+                            className="tengra-app-header__window-control"
                         >
-                            <Square className="w-3.5 h-3.5" />
+                            <Square className="tengra-app-header__window-control-icon tengra-app-header__window-control-icon--maximize" />
                         </button>
                         <button
                             data-testid="window-close"
                             onClick={handleClose}
-                            className="p-2 hover:bg-destructive/20 hover:text-destructive rounded-lg text-muted-foreground transition-colors"
+                            className="tengra-app-header__window-control tengra-app-header__window-control--close"
                         >
-                            <X className="w-4 h-4" />
+                            <X className="tengra-app-header__window-control-icon" />
                         </button>
                     </div>
                 </div>

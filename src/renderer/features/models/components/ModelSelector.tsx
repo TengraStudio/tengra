@@ -34,6 +34,8 @@ interface ModelSelectorProps {
     onThinkingLevelChange?: (modelId: string, level: string) => void;
     chatMode?: 'instant' | 'thinking' | 'agent';
     onChatModeChange?: (mode: 'instant' | 'thinking' | 'agent') => void;
+    permissionPolicy?: import('@shared/types/workspace-agent-session').WorkspaceAgentPermissionPolicy;
+    onUpdatePermissionPolicy?: (policy: import('@shared/types/workspace-agent-session').WorkspaceAgentPermissionPolicy) => void;
 }
 
 export const ModelSelector = memo(({
@@ -57,11 +59,13 @@ export const ModelSelector = memo(({
     thinkingLevel,
     onThinkingLevelChange,
     chatMode = 'instant',
-    onChatModeChange
+    onChatModeChange,
+    permissionPolicy,
+    onUpdatePermissionPolicy
 }: ModelSelectorProps) => {
     const { t } = useTranslation(language);
     const [isOpen, setIsOpen] = useState(false);
-    const [searchQuery] = useState('');
+    const [initialTab, setInitialTab] = useState<'models' | 'reasoning' | 'permissions'>('models');
     const [activeCopilotAccountId, setActiveCopilotAccountId] = useState<string | null>(null);
     const [activeCopilotAccountEmail, setActiveCopilotAccountEmail] = useState<string | null>(null);
     const [resolvedCopilotQuota, setResolvedCopilotQuota] = useState(copilotQuota);
@@ -74,6 +78,7 @@ export const ModelSelector = memo(({
     const [activeCodexAccountEmail, setActiveCodexAccountEmail] = useState<string | null>(null);
     const [activeAntigravityAccountId, setActiveAntigravityAccountId] = useState<string | null>(null);
     const [activeAntigravityAccountEmail, setActiveAntigravityAccountEmail] = useState<string | null>(null);
+    const [searchQuery] = useState('');
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
     const onOpenChangeRef = useRef(onOpenChange);
     const lastReportedOpenStateRef = useRef(isOpen);
@@ -109,6 +114,19 @@ export const ModelSelector = memo(({
 
     const handleClose = useCallback(() => {
         setIsOpen(false);
+        setInitialTab('models');
+    }, []);
+
+    useEffect(() => {
+        const handleOpenEvent = (e: Event) => {
+            const customEvent = e as CustomEvent<{ tab?: 'models' | 'reasoning' | 'permissions' }>;
+            if (customEvent.detail?.tab) {
+                setInitialTab(customEvent.detail.tab);
+            }
+            setIsOpen(true);
+        };
+        window.addEventListener('tengra:open-model-selector', handleOpenEvent as EventListener);
+        return () => window.removeEventListener('tengra:open-model-selector', handleOpenEvent as EventListener);
     }, []);
 
     useEffect(() => {
@@ -302,11 +320,13 @@ export const ModelSelector = memo(({
                 contextUsagePercent={contextUsagePercent}
                 t={t}
                 isIconOnly={isIconOnly}
+                chatMode={chatMode}
             />
 
             <ModelSelectorModal
                 isOpen={isOpen}
                 onClose={handleClose}
+                initialTab={initialTab}
                 categories={categories}
                 selectedModels={selectedModels}
                 selectedModel={selectedModel}
@@ -327,6 +347,8 @@ export const ModelSelector = memo(({
                 activeClaudeQuota={activeClaudeQuota}
                 activeCodexUsage={activeCodexUsage}
                 activeAntigravityQuota={activeAntigravityQuota}
+                permissionPolicy={permissionPolicy}
+                onUpdatePermissionPolicy={onUpdatePermissionPolicy}
             />
         </div>
     );

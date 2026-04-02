@@ -25,7 +25,7 @@ export const GitCommitDiffView: React.FC<CommitDiffViewProps> = ({
                     {selectedCommit.hash.substring(0, 7)}
                 </h4>
             </div>
-            <div className="text-xxs text-muted-foreground uppercase tracking-widest font-bold">
+            <div className="text-xxs text-muted-foreground font-bold">
                 {t('workspaceDashboard.unifiedDiff')}
             </div>
         </div>
@@ -42,7 +42,7 @@ export const GitCommitDiffView: React.FC<CommitDiffViewProps> = ({
                     ))}
                 </div>
             ) : (
-                <div className="h-40 flex items-center justify-center text-muted-foreground text-sm italic">
+                <div className="h-40 flex items-center justify-center text-muted-foreground text-sm">
                     {t('workspaceDashboard.noDiffData')}
                 </div>
             )}

@@ -15,7 +15,7 @@ const CardBase = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
             <div
                 ref={ref}
                 role={role ?? (hasAccessibleName ? 'region' : undefined)}
-                className={cn('rounded-xl border bg-card text-card-foreground shadow', className)}
+                className={cn('rounded-xl border border-border/35 bg-card text-card-foreground', className)}
                 {...props}
             />
         );
@@ -38,7 +38,7 @@ const CardTitleBase = React.forwardRef<
     HTMLHeadingElement,
     React.HTMLAttributes<HTMLHeadingElement>
 >(({ className, ...props }, ref) => (
-    <h3 ref={ref} className={cn('font-semibold leading-none tracking-tight', className)} {...props} />
+    <h3 ref={ref} className={cn('font-semibold leading-none', className)} {...props} />
 ));
 CardTitleBase.displayName = 'CardTitle';
 const CardTitle = React.memo(CardTitleBase);

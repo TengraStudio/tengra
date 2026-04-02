@@ -52,9 +52,10 @@ interface ModelSelectorModeTabsProps {
     modeLabel: string;
     chatMode: SelectorChatMode;
     onChatModeChange?: (mode: SelectorChatMode) => void;
-    activeTab: 'models' | 'reasoning';
-    onTabChange: (tab: 'models' | 'reasoning') => void;
+    activeTab: 'models' | 'reasoning' | 'permissions';
+    onTabChange: (tab: 'models' | 'reasoning' | 'permissions') => void;
     showReasoningTab: boolean;
+    showPermissionsTab?: boolean;
     t: (key: string) => string;
 }
 
@@ -65,12 +66,13 @@ export const ModelSelectorModeTabs: React.FC<ModelSelectorModeTabsProps> = ({
     activeTab,
     onTabChange,
     showReasoningTab,
+    showPermissionsTab = false,
     t,
 }) => (
-    <div className="px-4 py-3 border-b border-border/50 flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground font-medium">{modeLabel}:</span>
-            <div className="flex gap-1 bg-muted/30 rounded-lg p-1">
+    <div className="px-4 py-3.5 border-b border-border/40 flex flex-wrap items-center gap-6 bg-muted/5">
+        <div className="flex items-center gap-3">
+            <span className="text-[11px] text-muted-foreground/80 font-bold uppercase tracking-wider">{modeLabel}</span>
+            <div className="flex gap-1 bg-background/50 backdrop-blur-sm rounded-xl p-1 border border-border/40 shadow-sm">
                 {(Object.keys(MODE_CONFIG) as SelectorChatMode[]).map(mode => {
                     const config = MODE_CONFIG[mode];
                     const Icon = config.icon;
@@ -80,10 +82,10 @@ export const ModelSelectorModeTabs: React.FC<ModelSelectorModeTabsProps> = ({
                             key={mode}
                             onClick={() => onChatModeChange?.(mode)}
                             className={cn(
-                                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all',
+                                'flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200',
                                 isActive
-                                    ? cn(config.bg, config.color)
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                    ? cn(config.bg, config.color, "shadow-[0_2px_8px_-2px_rgba(0,0,0,0.2)] scale-[1.02]")
+                                    : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/50'
                             )}
                         >
                             <Icon className="w-3.5 h-3.5" />
@@ -94,30 +96,45 @@ export const ModelSelectorModeTabs: React.FC<ModelSelectorModeTabsProps> = ({
             </div>
         </div>
 
-        {showReasoningTab && (
-            <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-1 ml-auto">
+        {(showReasoningTab || showPermissionsTab) && (
+            <div className="flex items-center gap-1 bg-background/50 backdrop-blur-sm rounded-xl p-1 border border-border/40 shadow-sm ml-auto">
                 <button
                     onClick={() => onTabChange('models')}
                     className={cn(
-                        'px-3 py-1.5 rounded-md text-xs font-medium transition-all',
+                        'px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200',
                         activeTab === 'models'
-                            ? 'bg-primary/20 text-primary'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                            ? 'bg-primary/20 text-primary shadow-[0_2px_8px_-2px_rgba(0,0,0,0.1)]'
+                            : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/50'
                     )}
                 >
                     {t('modelSelector.tabs.models')}
                 </button>
-                <button
-                    onClick={() => onTabChange('reasoning')}
-                    className={cn(
-                        'px-3 py-1.5 rounded-md text-xs font-medium transition-all',
-                        activeTab === 'reasoning'
-                            ? 'bg-primary/20 text-primary'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                    )}
-                >
-                    {t('modelSelector.tabs.reasoning')}
-                </button>
+                {showReasoningTab && (
+                    <button
+                        onClick={() => onTabChange('reasoning')}
+                        className={cn(
+                            'px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200',
+                            activeTab === 'reasoning'
+                                ? 'bg-primary/20 text-primary shadow-[0_2_2px_8px_-2px_rgba(0,0,0,0.1)]'
+                                : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/50'
+                        )}
+                    >
+                        {t('modelSelector.tabs.reasoning')}
+                    </button>
+                )}
+                {showPermissionsTab && (
+                    <button
+                        onClick={() => onTabChange('permissions')}
+                        className={cn(
+                            'px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200',
+                            activeTab === 'permissions'
+                                ? 'bg-primary/20 text-primary shadow-[0_2px_8px_-2px_rgba(0,0,0,0.1)]'
+                                : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/50'
+                        )}
+                    >
+                        {t('workspaceAgent.permissions.title')}
+                    </button>
+                )}
             </div>
         )}
     </div>
@@ -136,16 +153,16 @@ export const ModelSelectorSearch: React.FC<ModelSelectorSearchProps> = ({
     searchInputRef,
     placeholder,
 }) => (
-    <div className="p-3 border-b border-border/50">
-        <div className="flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-2 border border-border/50 focus-within:border-primary/50 transition-colors">
-            <Search className="w-4 h-4 text-muted-foreground" />
+    <div className="px-4 py-3 bg-muted/5 border-b border-border/40">
+        <div className="flex items-center gap-3 bg-background/50 backdrop-blur-sm rounded-xl px-4 py-2.5 border border-border/50 focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all shadow-sm">
+            <Search className="w-4 h-4 text-muted-foreground/60" />
             <input
                 ref={searchInputRef}
                 type="text"
                 placeholder={placeholder}
                 value={searchQuery}
                 onChange={e => onSearchQueryChange(e.target.value)}
-                className="bg-transparent border-none p-0 text-sm focus:ring-0 w-full placeholder:text-muted-foreground/50 outline-none text-foreground"
+                className="bg-transparent border-none p-0 text-sm focus:ring-0 w-full placeholder:text-muted-foreground/40 outline-none text-foreground font-medium"
             />
         </div>
     </div>
@@ -194,9 +211,9 @@ const CircularQuota: React.FC<{ value: number; label: string }> = ({ value, labe
                         strokeDashoffset={offset}
                     />
                 </svg>
-                <span className="text-xxxs font-black text-foreground/90">{normalized}</span>
+                <span className="text-xxxs font-bold text-foreground/90">{normalized}</span>
             </div>
-            <span className="text-xxxs font-black uppercase tracking-wider text-muted-foreground/70">{label}</span>
+            <span className="text-xxxs font-bold text-muted-foreground/70">{label}</span>
         </div>
     );
 };
@@ -234,24 +251,24 @@ function renderProviderQuota(categoryId: string, options: {
 
         return {
             badges: (
-                <>
-                    <span className="text-xxxs text-primary font-black uppercase tracking-widest bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20 leading-none">
+                <div className="flex items-center gap-1.5">
+                    <span className="text-xxxs text-primary font-bold bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 leading-none">
                         {remaining}/{limit || 0} {t('modelSelector.creditsLeft')}
                     </span>
                     {rateLimit && (
-                        <span className="text-xxxs text-warning font-black uppercase tracking-widest bg-warning/10 px-1.5 py-0.5 rounded border border-warning/20 leading-none">
+                        <span className="text-xxxs text-warning font-bold bg-warning/10 px-2 py-0.5 rounded-full border border-warning/20 leading-none">
                             {t('statistics.rateLimit')} {rateLimit.remaining}/{rateLimit.limit}
                         </span>
                     )}
-                </>
+                </div>
             ),
             progress: (
-                <div className="px-4 pb-3 bg-popover/95">
-                    <div className="flex items-center justify-between text-xxxs font-black uppercase tracking-widest text-muted-foreground/70 mb-1.5">
-                        <span>{t('statistics.usageStatus')}</span>
-                        <span className="text-foreground/80">{creditsPercent}%</span>
+                <div className="px-4 pb-3.5 bg-muted/5">
+                    <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground/60 mb-1.5">
+                        <span className="uppercase tracking-tight">{t('statistics.usageStatus')}</span>
+                        <span className="text-foreground/70">{creditsPercent}%</span>
                     </div>
-                    <div className="h-1.5 w-full rounded-full bg-muted/30 overflow-hidden">
+                    <div className="h-1.5 w-full rounded-full bg-muted/30 overflow-hidden shadow-inner">
                         <div
                             className={cn(
                                 "h-full transition-all duration-700 ease-out",
@@ -273,10 +290,10 @@ function renderProviderQuota(categoryId: string, options: {
         }
         return {
             badges: (
-                <>
+                <div className="flex items-center gap-2">
                     {fiveHour && <CircularQuota value={100 - fiveHour.utilization} label="5H" />}
                     {sevenDay && <CircularQuota value={100 - sevenDay.utilization} label="7D" />}
-                </>
+                </div>
             )
         };
     }
@@ -293,10 +310,10 @@ function renderProviderQuota(categoryId: string, options: {
         }
         return {
             badges: (
-                <>
+                <div className="flex items-center gap-2">
                     {hasDaily && <CircularQuota value={100 - (usage.dailyUsedPercent ?? 0)} label={t('modelSelector.quota.day')} />}
                     {hasWeekly && <CircularQuota value={100 - (usage.weeklyUsedPercent ?? 0)} label={t('modelSelector.quota.week')} />}
-                </>
+                </div>
             )
         };
     }
@@ -316,11 +333,11 @@ const ModelSection: React.FC<ModelSectionProps> = ({
     t,
 }) => (
     <div className="border-b border-border/30">
-        <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 bg-muted/20">
+        <div className="px-4 py-2.5 text-[11px] font-bold text-muted-foreground/70 uppercase tracking-wider flex items-center gap-2 bg-muted/20">
             {icon}
             <span>{title}</span>
         </div>
-        <div className="p-2 grid grid-cols-1 sm:grid-cols-2 gap-1">
+        <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
             {models.map(model => (
                 <ModelSelectorItem
                     key={`section-${model.provider}-${model.id}`}
@@ -392,12 +409,12 @@ const CategoryRow: React.FC<{
         <button
             type="button"
             onClick={() => onToggleCollapse(category.id)}
-            className="sticky top-0 z-10 w-full px-4 py-3 text-xxxs font-bold uppercase tracking-widest text-muted-foreground/70 flex items-center gap-2 bg-popover/95 backdrop-blur-md hover:text-foreground transition-all group/cat relative overflow-hidden"
+            className="sticky top-0 z-10 w-full px-4 py-3.5 text-[10px] font-bold text-muted-foreground/60 flex items-center gap-2 bg-popover/95 backdrop-blur-md hover:text-foreground transition-all group/cat relative overflow-hidden uppercase tracking-wider"
             aria-expanded={!collapsed}
             aria-label={`${category.name} ${t('modelSelector.categoryLabelSuffix')}`}
         >
             <div className={cn(
-                "w-1.5 h-1.5 rounded-full shrink-0 animate-pulse",
+                "w-1.5 h-1.5 rounded-full shrink-0 animate-pulse shadow-[0_0_8px_rgba(0,0,0,0.2)]",
                 category.color.replace('text-', 'bg-')
             )} />
             <span className="truncate">{category.name}</span>
@@ -406,14 +423,14 @@ const CategoryRow: React.FC<{
                     {providerQuota.badges}
                 </div>
             )}
-            <span className="text-muted-foreground/30 font-normal ml-1">({category.models.length})</span>
+            <span className="text-muted-foreground/30 font-normal ml-1 normal-case">({category.models.length})</span>
             <span className="ml-auto opacity-0 group-hover/cat:opacity-100 transition-opacity">
-                {collapsed ? <Zap className="w-3 h-3" /> : <Box className="w-3 h-3" />}
+                {collapsed ? <Zap className="w-3.5 h-3.5 text-muted-foreground/40" /> : <Box className="w-3.5 h-3.5 text-muted-foreground/40" />}
             </span>
         </button>
         {providerQuota?.progress}
         {!collapsed && (
-            <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {category.models.map(model => (
                     <ModelSelectorItem
                         key={`${category.id}-${model.provider}-${model.id}`}
@@ -544,18 +561,18 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
             )}
 
             {showCuratedSections && (
-                <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/20 border-b border-border/30">
+                <div className="px-4 py-2.5 text-[11px] font-bold text-muted-foreground/60 bg-muted/20 border-b border-border/30 uppercase tracking-wider">
                     {t('modelSelector.allModels')}
                 </div>
             )}
 
             {modeFilteredCategories.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">
-                    <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p>{t('modelSelector.noModelsFound')}</p>
+                <div className="p-12 text-center text-muted-foreground/50">
+                    <Search className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                    <p className="text-sm font-medium">{t('modelSelector.noModelsFound')}</p>
                 </div>
             ) : shouldVirtualize ? (
-                <div className="h-96 sm:h-96">
+                <div className="h-[500px]">
                     <Virtuoso
                         style={{ height: '100%' }}
                         data={modeFilteredCategories}

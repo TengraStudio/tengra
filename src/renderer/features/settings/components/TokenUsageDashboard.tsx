@@ -160,8 +160,8 @@ const TokenUsageDashboard: React.FC<TokenUsageDashboardProps> = ({ providerUsage
 /** Small summary card for top-level metrics */
 const SummaryCard: React.FC<{ label: string; value: string }> = ({ label, value }) => (
     <div className="rounded-xl border border-border/40 bg-card/50 p-3 text-center">
-        <p className="text-xxxs uppercase tracking-wider text-muted-foreground font-bold">{label}</p>
-        <p className="text-lg font-black text-foreground mt-1">{value}</p>
+        <p className="text-xxxs text-muted-foreground font-bold">{label}</p>
+        <p className="text-lg font-bold text-foreground mt-1">{value}</p>
     </div>
 );
 

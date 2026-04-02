@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useSyncExternalStore } from 'react';
 
 import { useTheme } from '@/hooks/useTheme';
 import { themeRegistry } from '@/themes/theme-registry.service';
@@ -11,9 +11,14 @@ import { appLogger } from '@/utils/renderer-logger';
  */
 export const RuntimeThemeManager: React.FC = () => {
     const { theme } = useTheme();
+    useSyncExternalStore(
+        listener => themeRegistry.subscribe(listener),
+        () => themeRegistry.getSnapshot(),
+        () => themeRegistry.getSnapshot()
+    );
     
     // Get manifest from registry based on current theme ID
-    const manifest = useMemo(() => themeRegistry.getTheme(theme), [theme]);
+    const manifest = themeRegistry.getTheme(theme);
 
     useEffect(() => {
         // 'black' and 'white' are hardcoded in index.css for reliability/stability

@@ -285,13 +285,13 @@ export function WorkspaceCollaborationSurface({
     return (
         <div className="rounded-xl border border-border/40 bg-background/70 px-3 py-3">
             <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 tw-text-11 font-semibold uppercase tw-tracking-18 text-muted-foreground/60">
+                <div className="flex items-center gap-2 tw-text-11 font-semibold tw-tracking-18 text-muted-foreground/60">
                     <Users className="h-3.5 w-3.5" />
                     <span>{t('chat.collaboration.presence')}</span>
                 </div>
                 <div
                     className={cn(
-                        'flex items-center gap-1 tw-text-10 font-semibold uppercase tw-tracking-18',
+                        'flex items-center gap-1 tw-text-10 font-semibold  tw-tracking-18',
                         collaboration.status === 'connected'
                             ? 'text-success'
                             : collaboration.status === 'connecting'
@@ -354,7 +354,7 @@ export function WorkspaceCollaborationSurface({
 
             {feedEntries.length > 0 && (
                 <div className="mt-3 border-t border-border/40 pt-3">
-                    <div className="tw-text-11 font-semibold uppercase tw-tracking-18 text-muted-foreground/60">
+                    <div className="tw-text-11 font-semibold tw-tracking-18 text-muted-foreground/60">
                         {t('agent.history')}
                     </div>
                     <div className="mt-2 space-y-1.5">
@@ -373,7 +373,7 @@ export function WorkspaceCollaborationSurface({
                                 </div>
                                 <div
                                     className={cn(
-                                        'shrink-0 tw-text-10 font-semibold uppercase tw-tracking-16',
+                                        'shrink-0 tw-text-10 font-semibold  tw-tracking-16',
                                         entry.kind === 'workspace:file-focus'
                                             ? 'text-primary'
                                             : 'text-muted-foreground'

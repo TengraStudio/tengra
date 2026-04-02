@@ -5,6 +5,8 @@ import { unwrapSettingsResponse } from '@/utils/app-settings.util';
 import { appLogger } from '@/utils/renderer-logger';
 
 const SETTINGS_DRAFT_STORAGE_KEY = 'tengra.settings.draft.v1';
+const SETTINGS_PENDING_DRAFT_STORAGE_KEY = 'tengra.settings.pending-draft.v1';
+const SETTINGS_CACHE_STORAGE_KEY = 'tengra.settings.cache.v1';
 const AUTO_SAVE_DELAY_MS = 2000;
 
 interface SettingsStoreState {
@@ -18,9 +20,23 @@ type Listener = () => void;
 const listeners = new Set<Listener>();
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
+export function readCachedSettings(): AppSettings | null {
+    const raw = localStorage.getItem(SETTINGS_CACHE_STORAGE_KEY);
+    if (!raw) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(raw) as AppSettings;
+    } catch {
+        localStorage.removeItem(SETTINGS_CACHE_STORAGE_KEY);
+        return null;
+    }
+}
+
 let state: SettingsStoreState = {
-    settings: null,
-    originalSettings: null,
+    settings: readCachedSettings(),
+    originalSettings: readCachedSettings(),
     isLoading: true
 };
 
@@ -82,10 +98,23 @@ function setState(partial: Partial<SettingsStoreState>): void {
 
 function clearDraft(): void {
     localStorage.removeItem(SETTINGS_DRAFT_STORAGE_KEY);
+    localStorage.removeItem(SETTINGS_PENDING_DRAFT_STORAGE_KEY);
+}
+
+function persistSettingsCache(settings: AppSettings): void {
+    localStorage.setItem(SETTINGS_CACHE_STORAGE_KEY, JSON.stringify(settings));
 }
 
 function persistDraft(settings: AppSettings): void {
     localStorage.setItem(SETTINGS_DRAFT_STORAGE_KEY, JSON.stringify(settings));
+}
+
+function markPendingDraft(): void {
+    localStorage.setItem(SETTINGS_PENDING_DRAFT_STORAGE_KEY, '1');
+}
+
+function hasPendingDraft(): boolean {
+    return localStorage.getItem(SETTINGS_PENDING_DRAFT_STORAGE_KEY) === '1';
 }
 
 function readDraft(): AppSettings | null {
@@ -122,7 +151,14 @@ export async function loadSettings(): Promise<void> {
             throw new Error('SETTINGS_INVALID_RESPONSE');
         }
         const draft = readDraft();
-        const resolved = draft ?? persisted;
+        const shouldUseDraft = draft !== null && (!isObjectValue(persisted) || hasPendingDraft());
+        const resolved = shouldUseDraft ? draft : persisted;
+
+        if (draft && deepEqual(draft, persisted)) {
+            clearDraft();
+        }
+
+        persistSettingsCache(resolved);
 
         setState({
             settings: resolved,
@@ -147,6 +183,7 @@ export async function flushSettings(): Promise<void> {
         if (!saved) {
             throw new Error('SETTINGS_INVALID_SAVE_RESPONSE');
         }
+        persistSettingsCache(saved);
         setState({ originalSettings: structuredClone(saved) });
         clearDraft();
     } catch (error) {
@@ -157,8 +194,11 @@ export async function flushSettings(): Promise<void> {
 
 export async function updateSettings(newSettings: AppSettings, saveImmediately = true): Promise<void> {
     setState({ settings: newSettings });
+    persistSettingsCache(newSettings);
 
     if (saveImmediately) {
+        persistDraft(newSettings);
+        markPendingDraft();
         await flushSettings();
         return;
     }
@@ -169,6 +209,7 @@ export async function updateSettings(newSettings: AppSettings, saveImmediately =
     }
 
     persistDraft(newSettings);
+    markPendingDraft();
     scheduleAutoSave();
 }
 

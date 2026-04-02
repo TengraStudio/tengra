@@ -3,6 +3,8 @@ import React, { useRef } from 'react';
 
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 
+import './drag-drop-wrapper.css';
+
 interface DragDropWrapperProps {
     isDragging: boolean;
     setIsDragging: (isDragging: boolean) => void;
@@ -54,7 +56,7 @@ export const DragDropWrapper: React.FC<DragDropWrapperProps> = ({
 
     return (
         <div
-            className="flex-1 min-h-0 flex flex-col relative overflow-hidden"
+            className="tengra-drag-drop-wrapper"
             onDragEnter={handleDragEnter}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -68,15 +70,15 @@ export const DragDropWrapper: React.FC<DragDropWrapperProps> = ({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+                        className="tengra-drag-drop-wrapper__overlay"
                     >
-                        <div className="absolute inset-0 bg-primary/5 animate-pulse" />
-                        <div className="relative text-center space-y-4">
-                            <div className="text-6xl mb-4">🏮</div>
-                            <div className="text-2xl font-black tracking-tight text-foreground uppercase font-sans">
+                        <div className="tengra-drag-drop-wrapper__pulse" />
+                        <div className="tengra-drag-drop-wrapper__content space-y-4">
+                            <div className="tengra-drag-drop-wrapper__emoji">🏮</div>
+                            <div className="tengra-drag-drop-wrapper__title">
                                 {t('dragDrop.title')}
                             </div>
-                            <div className="text-muted-foreground/60 text-sm font-medium">
+                            <div className="tengra-drag-drop-wrapper__description">
                                 {t('dragDrop.description')}
                             </div>
                         </div>

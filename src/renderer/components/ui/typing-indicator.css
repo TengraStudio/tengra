@@ -1,0 +1,138 @@
+/**
+ * TypingIndicator Component CSS
+ * Component-specific CSS custom properties for the TypingIndicator component.
+ */
+
+:root {
+  /* Base typing indicator variables */
+  --typing-indicator-dot-color: hsl(var(--primary) / 60%);
+  --typing-indicator-label-fg: hsl(var(--muted-foreground));
+  --typing-indicator-label-font-size: 0.75rem;
+  --typing-indicator-label-margin-left: 0.5rem;
+
+  /* Dot sizes */
+  --typing-indicator-dot-size-sm: 0.375rem;
+  --typing-indicator-dot-size-md: 0.5rem;
+  --typing-indicator-dot-size-lg: 0.625rem;
+
+  /* Gap sizes */
+  --typing-indicator-gap-sm: 0.25rem;
+  --typing-indicator-gap-md: 0.375rem;
+  --typing-indicator-gap-lg: 0.5rem;
+
+  /* Animation */
+  --typing-indicator-animation-duration: 1.4s;
+  --typing-indicator-animation-delay-1: 0s;
+  --typing-indicator-animation-delay-2: 0.2s;
+  --typing-indicator-animation-delay-3: 0.4s;
+}
+
+/* Base typing indicator container */
+.tengra-typing-indicator {
+  display: flex;
+  align-items: center;
+}
+
+/* Dots container */
+.tengra-typing-indicator__dots {
+  display: flex;
+  align-items: center;
+}
+
+/* Size variants */
+.tengra-typing-indicator--sm {
+  gap: var(--typing-indicator-gap-sm);
+}
+
+.tengra-typing-indicator--sm .tengra-typing-indicator__dots {
+  gap: var(--typing-indicator-gap-sm);
+}
+
+.tengra-typing-indicator--md {
+  gap: var(--typing-indicator-gap-md);
+}
+
+.tengra-typing-indicator--md .tengra-typing-indicator__dots {
+  gap: var(--typing-indicator-gap-md);
+}
+
+.tengra-typing-indicator--lg {
+  gap: var(--typing-indicator-gap-lg);
+}
+
+.tengra-typing-indicator--lg .tengra-typing-indicator__dots {
+  gap: var(--typing-indicator-gap-lg);
+}
+
+/* Dot */
+.tengra-typing-indicator__dot {
+  border-radius: 9999px;
+  background-color: var(--typing-indicator-dot-color);
+  animation: typing-bounce var(--typing-indicator-animation-duration) ease-in-out infinite;
+}
+
+/* Size variants for dots */
+.tengra-typing-indicator--sm .tengra-typing-indicator__dot {
+  width: var(--typing-indicator-dot-size-sm);
+  height: var(--typing-indicator-dot-size-sm);
+}
+
+.tengra-typing-indicator--md .tengra-typing-indicator__dot {
+  width: var(--typing-indicator-dot-size-md);
+  height: var(--typing-indicator-dot-size-md);
+}
+
+.tengra-typing-indicator--lg .tengra-typing-indicator__dot {
+  width: var(--typing-indicator-dot-size-lg);
+  height: var(--typing-indicator-dot-size-lg);
+}
+
+/* Animation delays */
+.tengra-typing-indicator__dot:nth-child(1) {
+  animation-delay: var(--typing-indicator-animation-delay-1);
+}
+
+.tengra-typing-indicator__dot:nth-child(2) {
+  animation-delay: var(--typing-indicator-animation-delay-2);
+}
+
+.tengra-typing-indicator__dot:nth-child(3) {
+  animation-delay: var(--typing-indicator-animation-delay-3);
+}
+
+/* Bounce animation */
+@keyframes typing-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.6;
+  }
+
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* Label */
+.tengra-typing-indicator__label {
+  font-size: var(--typing-indicator-label-font-size);
+  color: var(--typing-indicator-label-fg);
+  margin-left: var(--typing-indicator-label-margin-left);
+}
+
+/* Pulse variant */
+.tengra-typing-indicator--pulse .tengra-typing-indicator__dot {
+  animation: typing-pulse var(--typing-indicator-animation-duration) ease-in-out infinite;
+}
+
+@keyframes typing-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}

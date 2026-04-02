@@ -2,6 +2,8 @@ import { Loader2 } from 'lucide-react';
 
 import { useTranslation } from '@/i18n';
 
+import './retry-indicator.css';
+
 /** Props for the RetryIndicator component */
 interface RetryIndicatorProps {
   /** Whether a retry is currently in progress */
@@ -26,8 +28,8 @@ const RetryIndicator: React.FC<RetryIndicatorProps> = ({ isRetrying, attempt, ma
   const showAttempts = attempt !== undefined && maxAttempts !== undefined;
 
   return (
-    <div className="flex items-center gap-2 text-sm text-warning">
-      <Loader2 className="h-4 w-4 animate-spin" />
+    <div className="tengra-retry-indicator">
+      <Loader2 className="tengra-retry-indicator__spinner" />
       <span>
         {showAttempts
           ? t('common.retryingWithAttempt', { attempt, maxAttempts })

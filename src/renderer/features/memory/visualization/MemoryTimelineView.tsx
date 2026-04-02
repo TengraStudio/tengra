@@ -135,7 +135,7 @@ export const MemoryTimelineView: React.FC = () => {
                             <button
                                 key={f}
                                 onClick={() => setFilter(f)}
-                                className={`px-3 py-1 rounded-md text-xxxs font-bold uppercase transition-all ${filter === f ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'
+                                className={`px-3 py-1 rounded-md text-xxxs font-bold  transition-all ${filter === f ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'
                                     }`}
                             >
                                 {f === 'all'
@@ -203,7 +203,7 @@ export const MemoryTimelineView: React.FC = () => {
                                                                 <Brain className="w-3.5 h-3.5" />
                                                             </div>
                                                         )}
-                                                        <span className="text-xs font-bold uppercase tracking-wider text-foreground/60">
+                                                        <span className="text-xs font-bold text-foreground/60">
                                                             {item.title}
                                                         </span>
                                                     </div>

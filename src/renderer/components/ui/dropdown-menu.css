@@ -1,0 +1,100 @@
+/**
+ * DropdownMenu Component CSS
+ * Component-specific CSS custom properties and classes
+ */
+
+:root {
+  /* Background & Foreground */
+  --dropdown-bg: hsl(var(--popover));
+  --dropdown-fg: hsl(var(--popover-foreground));
+
+  /* Border & Shape */
+  --dropdown-border: hsl(var(--border));
+  --dropdown-border-radius: 0.375rem;
+  --dropdown-shadow: 0 10px 15px -3px rgb(0 0 0 / 10%);
+  --dropdown-padding: 0.25rem;
+
+  /* Item Properties */
+  --dropdown-item-padding: 0.375rem 0.5rem;
+  --dropdown-item-border-radius: 0.25rem;
+  --dropdown-item-hover-bg: hsl(var(--accent));
+  --dropdown-item-hover-fg: hsl(var(--accent-foreground));
+  --dropdown-item-disabled-opacity: 0.5;
+
+  /* Separator */
+  --dropdown-separator-bg: hsl(var(--muted));
+
+  /* Label & Shortcut */
+  --dropdown-label-fg: hsl(var(--muted-foreground));
+  --dropdown-shortcut-fg: hsl(var(--muted-foreground));
+
+  /* Animation */
+  --dropdown-transition: all 0.15s ease;
+}
+
+/* Main Dropdown Container */
+.tengra-dropdown {
+  background: var(--dropdown-bg);
+  color: var(--dropdown-fg);
+  border: 1px solid var(--dropdown-border);
+  border-radius: var(--dropdown-border-radius);
+  box-shadow: var(--dropdown-shadow);
+  padding: var(--dropdown-padding);
+  transition: var(--dropdown-transition);
+}
+
+/* Dropdown Item */
+.tengra-dropdown-item {
+  padding: var(--dropdown-item-padding);
+  border-radius: var(--dropdown-item-border-radius);
+  transition: var(--dropdown-transition);
+}
+
+.tengra-dropdown-item:hover,
+.tengra-dropdown-item:focus {
+  background: var(--dropdown-item-hover-bg);
+  color: var(--dropdown-item-hover-fg);
+}
+
+.tengra-dropdown-item[data-disabled] {
+  opacity: var(--dropdown-item-disabled-opacity);
+  pointer-events: none;
+}
+
+/* Dropdown Separator */
+.tengra-dropdown-separator {
+  background: var(--dropdown-separator-bg);
+  height: 1px;
+  margin: 0.25rem -0.25rem;
+}
+
+/* Dropdown Label */
+.tengra-dropdown-label {
+  color: var(--dropdown-label-fg);
+  padding: var(--dropdown-item-padding);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Dropdown Shortcut */
+.tengra-dropdown-shortcut {
+  color: var(--dropdown-shortcut-fg);
+  font-size: 0.75rem;
+  margin-left: auto;
+  letter-spacing: 0.05em;
+  opacity: 0.6;
+}
+
+/* Dropdown Sub Trigger */
+.tengra-dropdown-sub-trigger {
+  padding: var(--dropdown-item-padding);
+  border-radius: var(--dropdown-item-border-radius);
+  transition: var(--dropdown-transition);
+}
+
+.tengra-dropdown-sub-trigger:hover,
+.tengra-dropdown-sub-trigger:focus,
+.tengra-dropdown-sub-trigger[data-state='open'] {
+  background: var(--dropdown-item-hover-bg);
+  color: var(--dropdown-item-hover-fg);
+}

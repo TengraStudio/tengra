@@ -28,7 +28,7 @@ export const CollaborationPresence = memo(({
     return (
         <Card className="p-4 space-y-3 bg-muted/20 border-muted-foreground/10 hover:bg-muted/40 transition-colors">
             <div className="flex items-center justify-between">
-                <span className="text-sm font-bold tracking-tight uppercase text-muted-foreground/80">
+                <span className="text-sm font-bold text-muted-foreground/80">
                     {t('chat.collaboration.presence')}
                 </span>
                 <Button
@@ -38,7 +38,7 @@ export const CollaborationPresence = memo(({
                         setAllowGuests((current) => !current);
                         appendRecordingEvent(t('chat.collaboration.guestPolicyChanged'));
                     }}
-                    className={`h-7 px-2.5 text-xxxs font-bold uppercase tracking-wider transition-all duration-300 ${allowGuests ? 'bg-secondary/80 hover:bg-secondary' : 'hover:border-primary/40'
+                    className={`h-7 px-2.5 text-xxxs font-bold   transition-all duration-300 ${allowGuests ? 'bg-secondary/80 hover:bg-secondary' : 'hover:border-primary/40'
                         }`}
                 >
                     {allowGuests ? t('chat.collaboration.guestsAllowed') : t('chat.collaboration.guestsBlocked')}
@@ -54,16 +54,16 @@ export const CollaborationPresence = memo(({
                                 <span className="absolute inset-0 rounded-full bg-success animate-ping opacity-25" />
                             )}
                         </div>
-                        <span className={`transition-colors ${participant.isOnline ? 'text-foreground' : 'text-muted-foreground italic'}`}>
+                        <span className={`transition-colors ${participant.isOnline ? 'text-foreground' : 'text-muted-foreground '}`}>
                             {participant.name}
                         </span>
                         {participant.role === 'owner' && (
-                            <span className="text-xxxs uppercase font-black bg-primary/10 text-primary px-1.5 py-0.5 rounded tracking-tighter">
+                            <span className="text-xxxs font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded">
                                 {t('chat.collaboration.host')}
                             </span>
                         )}
                         {participant.role === 'ai' && (
-                            <span className="text-xxxs uppercase font-black bg-secondary/10 text-secondary px-1.5 py-0.5 rounded tracking-tighter">
+                            <span className="text-xxxs font-bold bg-secondary/10 text-secondary px-1.5 py-0.5 rounded">
                                 {t('chat.collaboration.ai')}
                             </span>
                         )}

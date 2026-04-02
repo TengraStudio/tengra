@@ -20,7 +20,7 @@ export const QuotaErrorCard = memo(({ details, t }: QuotaErrorCardProps) => (
                 <AlertCircle className="w-5 h-5" />
             </div>
             <div>
-                <div className="font-bold text-sm uppercase tracking-tight">
+                <div className="font-bold text-sm">
                     {t('messageBubble.quotaExceeded')}
                 </div>
                 {details.model && (

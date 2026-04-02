@@ -1,467 +1,288 @@
-import { Language } from '@renderer/i18n';
-import { terminalGetBackendsResponseSchema } from '@shared/schemas/terminal.schema';
-import type { TerminalIpcContract } from '@shared/terminal-ipc';
-import { Database, Download, Globe, RefreshCw } from 'lucide-react';
+import { Input } from '@renderer/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@renderer/components/ui/select';
+import { Switch } from '@renderer/components/ui/switch';
+import {
+    Clock,
+    Globe,
+    Settings,
+    Shield,
+    Volume2,
+} from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
-import { SelectDropdown } from '@/components/ui/SelectDropdown';
-import { Switch } from '@/components/ui/switch';
-import { invokeTypedIpc } from '@/lib/ipc-client';
-import { AppSettings } from '@/types/settings';
+import { ModelSelector } from '@/components/shared/ModelSelector';
+import { useVoice } from '@/features/voice/hooks/useVoice';
+import { localeRegistry } from '@/i18n/locale-registry.service';
+import type { GroupedModels } from '@/types';
 
 import type { SettingsSharedProps } from '../types';
 
+import {
+    SettingsField,
+    SettingsInputClassName,
+    SettingsPanel,
+    SettingsToggleRow,
+} from './SettingsPrimitives';
+
 type GeneralTabProps = Pick<
     SettingsSharedProps,
-    'settings' | 'updateGeneral' | 'handleSave' | 't' | 'linkedAccounts'
->;
-
-type TerminalBackendOption = {
-    id: string;
-    name: string;
-    available: boolean;
+    'settings' | 'updateGeneral' | 't'
+> & {
+    groupedModels?: GroupedModels;
 };
 
-const ToggleSwitch: React.FC<{
-    enabled: boolean;
-    onToggle: () => void;
-    title?: string;
-    description?: string;
-}> = ({ enabled, onToggle, title, description }) => (
-    <div className="flex items-center justify-between p-5 rounded-2xl border border-border/40 bg-muted/5 hover:bg-muted/10 transition-colors group">
-        {(title || description) && (
-            <div>
-                {title && (
-                    <div className="text-sm font-black text-foreground uppercase tracking-tight">
-                        {title}
-                    </div>
-                )}
-                {description && (
-                    <div className="text-xs font-medium text-muted-foreground/70">
-                        {description}
-                    </div>
-                )}
-            </div>
-        )}
-        <div className="ml-auto">
-            <Switch checked={enabled} onCheckedChange={() => onToggle()} />
-        </div>
-    </div>
-);
+function normalizeCsvValue(value: string): string[] {
+    return value
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean);
+}
 
 export const GeneralTab: React.FC<GeneralTabProps> = ({
     settings,
     updateGeneral,
-    handleSave,
-    linkedAccounts,
+    groupedModels,
     t,
 }) => {
-    const [isLoadingTerminalBackends, setIsLoadingTerminalBackends] = useState(false);
-    const [terminalBackends, setTerminalBackends] = useState<TerminalBackendOption[]>([]);
-
-    const languageOptions = [
-        { value: 'tr', label: t('languages.tr') },
-        { value: 'en', label: t('languages.en') },
-    ];
+    const { settings: voiceSettings, updateSettings: updateVoiceSettings } = useVoice();
+    const [availableLocalesVersion, setAvailableLocalesVersion] = useState(0);
 
     useEffect(() => {
-        let cancelled = false;
-        void (async () => {
-            try {
-                setIsLoadingTerminalBackends(true);
-                const backends = await invokeTypedIpc<TerminalIpcContract, 'terminal:getBackends'>('terminal:getBackends', [], { responseSchema: terminalGetBackendsResponseSchema });
-                if (!cancelled && Array.isArray(backends)) {
-                    setTerminalBackends(backends);
-                }
-            } catch {
-                if (!cancelled) {
-                    setTerminalBackends([]);
-                }
-            } finally {
-                if (!cancelled) {
-                    setIsLoadingTerminalBackends(false);
-                }
-            }
-        })();
-
-        return () => {
-            cancelled = true;
-        };
+        void localeRegistry.loadLocales();
+        return localeRegistry.subscribe(() => {
+            setAvailableLocalesVersion(previousValue => previousValue + 1);
+        });
     }, []);
 
-    const terminalBackendOptions = useMemo(() => {
-        const options =
-            terminalBackends.length > 0
-                ? terminalBackends
-                : [
-                    { id: 'node-pty', name: t('general.terminalBackendIntegrated'), available: true },
-                    { id: 'windows-terminal', name: t('general.terminalBackendWindowsTerminal'), available: true },
-                    { id: 'kitty', name: t('general.terminalBackendKitty'), available: true },
-                    { id: 'ghostty', name: t('general.terminalBackendGhostty'), available: true },
-                    { id: 'alacritty', name: t('general.terminalBackendAlacritty'), available: true },
-                    { id: 'warp', name: t('general.terminalBackendWarp'), available: true },
-                ];
-
-        return options.map(backend => ({
-            value: backend.id,
-            label: backend.available ? backend.name : `${backend.name} ${t('general.terminalBackendUnavailable')}`,
+    const languageOptions = useMemo(() => {
+        void availableLocalesVersion;
+        return localeRegistry.getAvailableLocales().map(locale => ({
+            value: locale.locale,
+            label: locale.nativeName,
         }));
-    }, [t, terminalBackends]);
+    }, [availableLocalesVersion]);
 
-    const updateAutoUpdate = (patch: Partial<AppSettings['autoUpdate']>) => {
-        if (!settings) {
-            return;
-        }
-        const current = settings.autoUpdate ?? {
-            enabled: true,
-            checkOnStartup: true,
-            downloadAutomatically: false,
-            notifyOnly: false,
-        };
-        void handleSave({ ...settings, autoUpdate: { ...current, ...patch } });
-    };
-
-    const autoUpdate = settings?.autoUpdate ?? {
-        enabled: true,
-        checkOnStartup: true,
-        downloadAutomatically: false,
-        notifyOnly: false,
-    };
-    const inlineSuggestionSource = settings?.general.inlineSuggestionsSource ?? 'custom';
-    const inlineSuggestionProvider = settings?.general.inlineSuggestionsProvider ?? 'openai';
-    const inlineSuggestionModel = settings?.general.inlineSuggestionsModel ?? 'gpt-4o-mini';
-    const inlineSuggestionAccountId = settings?.general.inlineSuggestionsCopilotAccountId ?? '';
-    const inlineSuggestionSourceOptions = useMemo(
-        () => [
-            {
-                value: 'copilot',
-                label: t('general.inlineSuggestionsSourceCopilot'),
-            },
-            {
-                value: 'custom',
-                label: t('general.inlineSuggestionsSourceCustom'),
-            },
-        ],
-        [t]
-    );
-    const copilotAccountOptions = useMemo(() => {
-        return linkedAccounts.accounts
-            .filter(account => account.provider === 'copilot')
-            .map(account => ({
-                value: account.id,
-                label:
-                    account.displayName?.trim()
-                    || account.email?.trim()
-                    || account.id,
-            }));
-    }, [linkedAccounts.accounts]);
+    if (!settings) {
+        return null;
+    }
 
     return (
-        <div className="space-y-6">
-            {/* Workspace Basics Card */}
-            <div className="premium-glass p-8 space-y-8">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-2xl bg-primary/10 text-primary border border-primary/20 shadow-lg shadow-primary/10">
-                        <Globe className="w-6 h-6" />
-                    </div>
-                    <div>
-                        <div className="text-base font-black text-foreground uppercase tracking-tight">
-                            {t('general.workspaceBasics')}
-                        </div>
-                        <div className="text-xs font-medium text-muted-foreground/70">
-                            {t('general.workspaceBasicsDesc')}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <label className="tw-text-10 font-black uppercase tw-tracking-20 text-muted-foreground/50 px-1">
-                            {t('settings.language')}
-                        </label>
-                        <SelectDropdown
-                            value={settings?.general.language ?? 'en'}
-                            options={languageOptions}
-                            onChange={val => {
-                                void updateGeneral({ language: val as Language });
+        <div className="mx-auto flex max-w-5xl flex-col gap-6 pb-10">
+            <SettingsPanel
+                title={t('settings.generalTitle')}
+                description={t('settings.generalDescription')}
+                icon={Settings}
+            >
+                <div className="grid gap-5 md:grid-cols-2">
+                    <SettingsField label={t('settings.language')}>
+                        <Select
+                            value={settings.general.language ?? 'en'}
+                            onValueChange={value => {
+                                void updateGeneral({ language: value });
                             }}
-                            className="w-full"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="tw-text-10 font-black uppercase tw-tracking-20 text-muted-foreground/50 px-1">
-                            {t('general.contextMessageLimit')}
-                        </label>
-                        <input
-                            type="number"
-                            value={settings?.general.contextMessageLimit ?? 50}
-                            onChange={e => {
-                                const nextLimit = Number.parseInt(e.target.value, 10);
+                        >
+                            <SelectTrigger className="h-11 w-full rounded-2xl bg-background">
+                                <div className="flex items-center gap-2">
+                                    <Globe className="h-3.5 w-3.5 text-primary/50" />
+                                    <SelectValue />
+                                </div>
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border-border/30">
+                                {languageOptions.map(option => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </SettingsField>
+
+                    <SettingsField
+                        label={t('settings.defaultModel')}
+                    >
+                        <ModelSelector
+                            selectedProvider={settings.general.lastProvider ?? ''}
+                            selectedModel={settings.general.defaultModel ?? ''}
+                            onSelect={(provider, model) => {
                                 void updateGeneral({
-                                    contextMessageLimit: Number.isNaN(nextLimit) ? 0 : nextLimit,
+                                    defaultModel: model,
+                                    lastModel: model,
+                                    lastProvider: provider,
                                 });
                             }}
-                            className="w-full bg-muted/5 border border-border/40 rounded-xl px-4 py-3 text-sm font-mono text-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            settings={settings}
+                            groupedModels={groupedModels}
                         />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                        <label className="tw-text-10 font-black uppercase tw-tracking-20 text-muted-foreground/50 px-1">
-                            {t('workspaceWizard.selectFolder')}
-                        </label>
-                        <input
-                            type="text"
-                            value={settings?.general.workspacesBasePath ?? ''}
+                    </SettingsField>
+
+                    <SettingsField label={t('general.contextMessageLimit')}>
+                        <Input
+                            type="number"
+                            min={10}
+                            max={200}
+                            value={settings.general.contextMessageLimit ?? 50}
                             onChange={event => {
-                                void updateGeneral({ workspacesBasePath: event.target.value });
-                            }}
-                            className="w-full bg-muted/5 border border-border/40 rounded-xl px-4 py-3 text-sm font-mono text-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            placeholder={t('workspaceWizard.selectRootDesc')}
-                        />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                        <label className="tw-text-10 font-black uppercase tw-tracking-20 text-muted-foreground/50 px-1">
-                            {t('general.terminalBackend')}
-                        </label>
-                        <SelectDropdown
-                            value={settings?.general.defaultTerminalBackend ?? 'node-pty'}
-                            options={terminalBackendOptions}
-                            onChange={value => {
-                                void updateGeneral({ defaultTerminalBackend: value });
-                            }}
-                            className="w-full"
-                        />
-                        <div className="tw-text-11 text-muted-foreground/70 px-1">
-                            {isLoadingTerminalBackends
-                                ? t('common.loading')
-                                : t('general.defaultTerminalBackendDesc')}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* App Intelligence Card */}
-            <div className="premium-glass p-8 space-y-8">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-2xl bg-success/10 text-success border border-success/20 shadow-lg shadow-success/10">
-                        <Database className="w-6 h-6" />
-                    </div>
-                    <div>
-                        <div className="text-base font-black text-foreground uppercase tracking-tight">
-                            {t('general.appIntelligence')}
-                        </div>
-                        <div className="text-xs font-medium text-muted-foreground/70">
-                            {t('general.appIntelligenceDesc')}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-center gap-4 p-5 rounded-2xl border border-border/40 bg-muted/5 group">
-                        <Database className="w-10 h-10 text-primary/30 group-hover:text-primary/50 transition-colors" />
-                        <div>
-                            <div className="text-sm font-black text-foreground uppercase tracking-tight">
-                                {t('general.database')}
-                            </div>
-                            <div className="text-xs font-medium text-muted-foreground/70">
-                                {t('general.databaseDesc')}
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-                <div className="rounded-2xl border border-border/40 bg-muted/5 p-5 space-y-4">
-                    <div>
-                        <div className="text-sm font-black text-foreground uppercase tracking-tight">
-                            {t('general.inlineSuggestions')}
-                        </div>
-                        <div className="text-xs font-medium text-muted-foreground/70">
-                            {t('general.inlineSuggestionsDesc')}
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <ToggleSwitch
-                            enabled={settings?.general.inlineSuggestionsEnabled ?? true}
-                            onToggle={() =>
+                                const nextValue = Number.parseInt(event.target.value, 10);
                                 void updateGeneral({
-                                    inlineSuggestionsEnabled:
-                                        !(settings?.general.inlineSuggestionsEnabled ?? true),
-                                })
-                            }
-                            title={t('general.inlineSuggestions')}
-                            description={t('general.inlineSuggestionsDesc')}
+                                    contextMessageLimit: Number.isNaN(nextValue) ? 50 : nextValue,
+                                });
+                            }}
+                            className={SettingsInputClassName}
                         />
+                    </SettingsField>
 
-                        <div className="space-y-2">
-                            <label className="tw-text-10 font-black uppercase tw-tracking-20 text-muted-foreground/50 px-1">
-                                {t('general.inlineSuggestionsSource')}
-                            </label>
-                            <SelectDropdown
-                                value={inlineSuggestionSource}
-                                options={inlineSuggestionSourceOptions}
-                                onChange={value =>
-                                    void updateGeneral({
-                                        inlineSuggestionsSource: value as 'copilot' | 'custom',
-                                        inlineSuggestionsCopilotAccountId:
-                                            value === 'copilot'
-                                                ? settings?.general.inlineSuggestionsCopilotAccountId
-                                                : '',
-                                    })
-                                }
-                                className="w-full"
-                            />
-                        </div>
+                    <SettingsField label={t('settings.agentSoftDeadline')}>
+                        <Input
+                            type="number"
+                            min={500}
+                            step={500}
+                            value={settings.general.agentSoftDeadlineMs ?? 4000}
+                            onChange={event => {
+                                const nextValue = Number.parseInt(event.target.value, 10);
+                                void updateGeneral({
+                                    agentSoftDeadlineMs: Number.isNaN(nextValue) ? 4000 : nextValue,
+                                });
+                            }}
+                            className={SettingsInputClassName}
+                        />
+                    </SettingsField>
 
-                        <div className="space-y-2">
-                            <label className="tw-text-10 font-black uppercase tw-tracking-20 text-muted-foreground/50 px-1">
-                                {t('general.inlineSuggestionsModel')}
-                            </label>
-                            <input
-                                type="text"
-                                value={inlineSuggestionModel}
-                                onChange={event =>
-                                    void updateGeneral({
-                                        inlineSuggestionsModel: event.target.value,
-                                    })
-                                }
-                                className="w-full bg-muted/5 border border-border/40 rounded-xl px-4 py-3 text-sm font-mono text-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                placeholder={t('general.inlineSuggestionsModelPlaceholder')}
-                            />
-                        </div>
-
-                        {inlineSuggestionSource === 'copilot' ? (
-                            <div className="space-y-2">
-                                <label className="tw-text-10 font-black uppercase tw-tracking-20 text-muted-foreground/50 px-1">
-                                    {t('general.inlineSuggestionsCopilotAccount')}
-                                </label>
-                                <SelectDropdown
-                                    value={inlineSuggestionAccountId}
-                                    options={copilotAccountOptions}
-                                    onChange={value =>
-                                        void updateGeneral({
-                                            inlineSuggestionsCopilotAccountId: value,
-                                        })
+                    <SettingsField label={t('settings.agentHardDeadline')}>
+                        <Input
+                            type="number"
+                            min={1000}
+                            step={1000}
+                            value={settings.general.agentHardDeadlineMs ?? 25000}
+                            onChange={event => {
+                                const nextValue = Number.parseInt(event.target.value, 10);
+                                void updateGeneral({
+                                    agentHardDeadlineMs: Number.isNaN(nextValue) ? 25000 : nextValue,
+                                });
+                            }}
+                            className={SettingsInputClassName}
+                        />
+                    </SettingsField>
+                    <div className="md:col-span-2">
+                        <SettingsToggleRow
+                            title={t('settings.agentPathPolicyTitle')}
+                            description={t('settings.agentPathPolicyDescription')}
+                            control={(
+                                <Switch
+                                    checked={
+                                        (settings.general.agentPathPolicy ?? 'workspace-root-only')
+                                        === 'restricted-off-dangerous'
                                     }
-                                    placeholder={t('general.inlineSuggestionsCopilotAccountPlaceholder')}
-                                    className="w-full"
-                                />
-                            </div>
-                        ) : (
-                            <div className="space-y-2">
-                                <label className="tw-text-10 font-black uppercase tw-tracking-20 text-muted-foreground/50 px-1">
-                                    {t('general.inlineSuggestionsProvider')}
-                                </label>
-                                <input
-                                    type="text"
-                                    value={inlineSuggestionProvider}
-                                    onChange={event =>
+                                    onCheckedChange={checked => {
                                         void updateGeneral({
-                                            inlineSuggestionsProvider: event.target.value,
-                                        })
-                                    }
-                                    className="w-full bg-muted/5 border border-border/40 rounded-xl px-4 py-3 text-sm font-mono text-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                    placeholder={t('general.inlineSuggestionsProviderPlaceholder')}
+                                            agentPathPolicy: checked
+                                                ? 'restricted-off-dangerous'
+                                                : 'workspace-root-only',
+                                        });
+                                    }}
                                 />
-                            </div>
+                            )}
+                            icon={Shield}
+                        />
+                    </div>
+
+                    <SettingsField label={t('settings.agentAllowedCommands')}>
+                        <Input
+                            type="text"
+                            value={(settings.general.agentAllowedCommands ?? []).join(', ')}
+                            onChange={event => {
+                                void updateGeneral({
+                                    agentAllowedCommands: normalizeCsvValue(event.target.value),
+                                });
+                            }}
+                            className={SettingsInputClassName}
+                            placeholder={t('settings.agentAllowedCommandsPlaceholder')}
+                        />
+                    </SettingsField>
+
+                    <SettingsField label={t('settings.agentDisallowedCommands')}>
+                        <Input
+                            type="text"
+                            value={(settings.general.agentDisallowedCommands ?? []).join(', ')}
+                            onChange={event => {
+                                void updateGeneral({
+                                    agentDisallowedCommands: normalizeCsvValue(event.target.value),
+                                });
+                            }}
+                            className={SettingsInputClassName}
+                            placeholder={t('settings.agentDisallowedCommandsPlaceholder')}
+                        />
+                    </SettingsField>
+                </div>
+            </SettingsPanel>
+
+            <SettingsPanel
+                title={t('voice.interfaceTitle')}
+                description={t('voice.interfaceSubtitle')}
+                icon={Volume2}
+            >
+                <div className="space-y-4">
+                    <SettingsToggleRow
+                        title={t('settings.voiceInterfaceEnabled')}
+                        description={t('settings.voiceInterfaceEnabledDescription')}
+                        control={(
+                            <Switch
+                                checked={voiceSettings.enabled}
+                                onCheckedChange={checked => {
+                                    void updateVoiceSettings({ enabled: checked });
+                                }}
+                            />
                         )}
+                        icon={Volume2}
+                    />
+                    <SettingsToggleRow
+                        title={t('voice.continuousListening')}
+                        description={t('settings.voiceContinuousListeningDescription')}
+                        control={(
+                            <Switch
+                                checked={voiceSettings.continuousListening}
+                                onCheckedChange={checked => {
+                                    void updateVoiceSettings({ continuousListening: checked });
+                                }}
+                            />
+                        )}
+                        icon={Clock}
+                    />
+                    <div className="grid gap-5 md:grid-cols-2">
+                        <SettingsField label={t('voice.wakeWord')}>
+                            <Input
+                                type="text"
+                                value={voiceSettings.wakeWord}
+                                onChange={event => {
+                                    void updateVoiceSettings({ wakeWord: event.target.value });
+                                }}
+                                className={SettingsInputClassName}
+                                placeholder={t('placeholder.wakeWord')}
+                            />
+                        </SettingsField>
+                        <SettingsField label={t('settings.voiceSilenceTimeout')}>
+                            <Input
+                                type="number"
+                                min={500}
+                                step={100}
+                                value={voiceSettings.silenceTimeout}
+                                onChange={event => {
+                                    const nextValue = Number.parseInt(event.target.value, 10);
+                                    void updateVoiceSettings({
+                                        silenceTimeout: Number.isNaN(nextValue) ? 1500 : nextValue,
+                                    });
+                                }}
+                                className={SettingsInputClassName}
+                            />
+                        </SettingsField>
                     </div>
                 </div>
-            </div>
-
-            {/* App Lifecycle & Updates */}
-            <div className="premium-glass p-8 space-y-8">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-2xl bg-info/10 text-info border border-info/20 shadow-lg shadow-blue-500/10">
-                        <Download className="w-6 h-6" />
-                    </div>
-                    <div>
-                        <div className="text-base font-black text-foreground uppercase tracking-tight">
-                            {t('general.lifecycle')}
-                        </div>
-                        <div className="text-xs font-medium text-muted-foreground/70">
-                            {t('general.lifecycleDesc')}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <ToggleSwitch
-                        enabled={autoUpdate.enabled}
-                        onToggle={() => updateAutoUpdate({ enabled: !autoUpdate.enabled })}
-                        title={t('general.autoUpdate')}
-                        description={t('general.autoUpdateDesc')}
-                    />
-                    <ToggleSwitch
-                        enabled={autoUpdate.checkOnStartup}
-                        onToggle={() =>
-                            updateAutoUpdate({ checkOnStartup: !autoUpdate.checkOnStartup })
-                        }
-                        title={t('general.checkOnStartup')}
-                        description={t('general.checkOnStartupDesc')}
-                    />
-                    <ToggleSwitch
-                        enabled={settings?.window?.startOnStartup ?? false}
-                        onToggle={() => {
-                            if (!settings) {
-                                return;
-                            }
-                            const currentWindow = settings.window ?? {
-                                width: 1280,
-                                height: 800,
-                                x: 0,
-                                y: 0,
-                            };
-                            void handleSave({
-                                ...settings,
-                                window: {
-                                    ...currentWindow,
-                                    startOnStartup: !currentWindow.startOnStartup,
-                                },
-                            });
-                        }}
-                        title={t('general.startOnStartup')}
-                        description={t('general.startOnStartupDesc')}
-                    />
-                    <ToggleSwitch
-                        enabled={settings?.window?.workAtBackground ?? false}
-                        onToggle={() => {
-                            if (!settings) {
-                                return;
-                            }
-                            const currentWindow = settings.window ?? {
-                                width: 1280,
-                                height: 800,
-                                x: 0,
-                                y: 0,
-                            };
-                            void handleSave({
-                                ...settings,
-                                window: {
-                                    ...currentWindow,
-                                    workAtBackground: !currentWindow.workAtBackground,
-                                },
-                            });
-                        }}
-                        title={t('general.workAtBackground')}
-                        description={t('general.workAtBackgroundDesc')}
-                    />
-                </div>
-
-                <div className="flex justify-end pt-4 border-t border-border/20">
-                    <button
-                        onClick={() => {
-                            void window.electron.update.checkForUpdates();
-                        }}
-                        className="flex items-center gap-2.5 px-6 py-3 bg-primary text-primary-foreground text-xs font-black uppercase rounded-xl transition-all shadow-xl shadow-primary/20 tw-hover-scale-102 active:scale-95"
-                    >
-                        <RefreshCw className="w-4 h-4" />
-                        {t('general.checkForUpdates')}
-                    </button>
-                </div>
-            </div>
-
-
+            </SettingsPanel>
         </div>
     );
 };

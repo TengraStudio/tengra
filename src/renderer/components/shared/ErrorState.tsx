@@ -4,6 +4,8 @@ import type { ReactNode } from 'react';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
+import './error-state.css';
+
 /** Props for the ErrorState component */
 interface ErrorStateProps {
     /** Error title displayed prominently */
@@ -34,19 +36,16 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
     return (
         <div
             role="alert"
-            className={cn(
-                'flex flex-col items-center justify-center gap-3 p-6 text-center',
-                className,
-            )}
+            className={cn('tengra-error-state', className)}
         >
-            <div className="p-3 rounded-xl bg-destructive/10 text-destructive">
-                {icon ?? <AlertCircle className="h-6 w-6" />}
+            <div className="tengra-error-state__icon">
+                {icon ?? <AlertCircle className="tengra-error-state__icon-svg" />}
             </div>
 
-            <div className="space-y-1">
-                <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+            <div className="tengra-error-state__content">
+                <h3 className="tengra-error-state__title">{title}</h3>
                 {message && (
-                    <p className="text-xs text-muted-foreground max-w-sm">{message}</p>
+                    <p className="tengra-error-state__message">{message}</p>
                 )}
             </div>
 
@@ -54,9 +53,9 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
                 <button
                     type="button"
                     onClick={onRetry}
-                    className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+                    className="tengra-error-state__retry"
                 >
-                    <RotateCcw className="h-3 w-3" />
+                    <RotateCcw className="tengra-error-state__retry-icon" />
                     {t('common.retry')}
                 </button>
             )}

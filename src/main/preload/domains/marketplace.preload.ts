@@ -1,5 +1,5 @@
-import { IpcRenderer } from 'electron';
 import { InstallRequest, InstallResult, MarketplaceRegistry } from '@shared/types/marketplace';
+import { IpcRenderer } from 'electron';
 
 export interface MarketplaceBridge {
     fetch: () => Promise<MarketplaceRegistry>;

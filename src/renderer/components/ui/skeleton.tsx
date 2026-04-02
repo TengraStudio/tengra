@@ -2,6 +2,8 @@ import React from 'react';
 
 import { cn } from '@/lib/utils';
 
+import './skeleton.css';
+
 interface SkeletonProps {
     className?: string
     variant?: 'text' | 'circular' | 'rectangular' | 'rounded'
@@ -30,10 +32,10 @@ export const Skeleton: React.FC<SkeletonProps> = React.memo(({
     animate = true
 }) => {
     const variantClasses = {
-        text: 'h-4 rounded',
-        circular: 'rounded-full',
-        rectangular: 'rounded-none',
-        rounded: 'rounded-lg'
+        text: 'tengra-skeleton--text',
+        circular: 'tengra-skeleton--circular',
+        rectangular: 'tengra-skeleton--rectangular',
+        rounded: 'tengra-skeleton--rounded'
     };
 
     const style: React.CSSProperties = {
@@ -44,8 +46,8 @@ export const Skeleton: React.FC<SkeletonProps> = React.memo(({
     return (
         <div
             className={cn(
-                'bg-muted',
-                animate && 'skeleton',
+                'tengra-skeleton',
+                animate && 'tengra-skeleton--animated',
                 variantClasses[variant],
                 className
             )}
@@ -68,7 +70,7 @@ export const SkeletonText: React.FC<{
     lastLineWidth?: string
 }> = React.memo(({ lines = 3, className, lastLineWidth = '60%' }) => {
     return (
-        <div className={cn('space-y-2', className)}>
+        <div className={cn('tengra-skeleton-text', className)}>
             {Array.from({ length: lines }).map((_, i) => (
                 <Skeleton
                     key={i}
@@ -99,12 +101,12 @@ export const SkeletonCard: React.FC<{
     showDescription = true 
 }) => {
     return (
-        <div className={cn('p-4 space-y-4 border border-border rounded-xl', className)}>
+        <div className={cn('tengra-skeleton-card', className)}>
             {showImage && (
-                <Skeleton variant="rounded" width="100%" height={120} />
+                <Skeleton className="tengra-skeleton-card__image" variant="rounded" width="100%" height={120} />
             )}
             {showTitle && (
-                <Skeleton variant="text" width="70%" height={20} />
+                <Skeleton className="tengra-skeleton-card__title" variant="text" width="70%" height={20} />
             )}
             {showDescription && (
                 <SkeletonText lines={2} />

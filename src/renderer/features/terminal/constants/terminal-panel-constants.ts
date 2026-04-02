@@ -146,19 +146,9 @@ export const TERMINAL_THEME_PRESETS: TerminalAppearancePreset[] = [
 
 export const TERMINAL_FONT_PRESETS: TerminalFontPreset[] = [
     {
-        id: 'jetbrains',
-        name: 'JetBrains Mono',
-        fontFamily: "'JetBrains Mono', 'Cascadia Code', Consolas, monospace",
-    },
-    {
-        id: 'fira',
-        name: 'Fira Code',
-        fontFamily: "'Fira Code', 'JetBrains Mono', Consolas, monospace",
-    },
-    {
-        id: 'cascadia',
-        name: 'Cascadia Code',
-        fontFamily: "'Cascadia Code', 'JetBrains Mono', Consolas, monospace",
+        id: 'system',
+        name: 'Segoe UI',
+        fontFamily: "var(--font-sans)",
     },
 ];
 
@@ -174,7 +164,7 @@ export const TERMINAL_CURSOR_STYLES: { id: TerminalCursorStyle; name: string }[]
 
 export const DEFAULT_TERMINAL_APPEARANCE: TerminalAppearancePreferences = {
     themePresetId: 'system',
-    fontPresetId: 'jetbrains',
+    fontPresetId: 'system',
     ligatures: true,
     surfaceOpacity: 0.92,
     surfaceBlur: 14,
@@ -206,7 +196,7 @@ export function resolveTerminalAppearance(
         TERMINAL_THEME_PRESETS.find(item => item.id === appearance.themePresetId) ??
         TERMINAL_THEME_PRESETS[0];
     const fontPreset =
-        TERMINAL_FONT_PRESETS.find(item => item.id === appearance.fontPresetId) ??
+        TERMINAL_FONT_PRESETS.find(item => item.id === DEFAULT_TERMINAL_APPEARANCE.fontPresetId) ??
         TERMINAL_FONT_PRESETS[0];
 
     const mergedTheme: ITheme = {

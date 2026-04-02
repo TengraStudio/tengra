@@ -1,8 +1,15 @@
+import { Input } from '@renderer/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@renderer/components/ui/select';
+import { Language, useTranslation } from '@renderer/i18n';
+import { cn } from '@renderer/lib/utils';
 import { Download, FileText, RefreshCw, Search, Trash2 } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-
-import { Language, useTranslation } from '@/i18n';
-import { cn } from '@/lib/utils';
 
 interface LogEntry {
     timestamp: string;
@@ -16,7 +23,10 @@ interface WorkspaceLogsTabProps {
     language: Language;
 }
 
-export const WorkspaceLogsTab: React.FC<WorkspaceLogsTabProps> = ({ workspacePath, language }) => {
+export const WorkspaceLogsTab: React.FC<WorkspaceLogsTabProps> = ({
+    workspacePath,
+    language,
+}) => {
     const { t } = useTranslation(language);
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [filter, setFilter] = useState('');
@@ -27,7 +37,10 @@ export const WorkspaceLogsTab: React.FC<WorkspaceLogsTabProps> = ({ workspacePat
 
     // Listen for terminal output as logs
     useEffect(() => {
-        const handleTerminalData = (_event: RendererDataValue, data: { sessionId: string; data: string }) => {
+        const handleTerminalData = (
+            _event: unknown,
+            data: { sessionId: string; data: string }
+        ) => {
             const lines = data.data.split('\n').filter(line => line.trim());
             const newEntries: LogEntry[] = lines.map(line => {
                 let level: LogEntry['level'] = 'info';
@@ -49,7 +62,8 @@ export const WorkspaceLogsTab: React.FC<WorkspaceLogsTabProps> = ({ workspacePat
             setLogs(prev => [...prev.slice(-500), ...newEntries]); // Keep last 500 lines
         };
 
-        const listener = handleTerminalData as Parameters<typeof window.electron.ipcRenderer.on>[1];
+        const listener =
+            handleTerminalData as Parameters<typeof window.electron.ipcRenderer.on>[1];
         window.electron.ipcRenderer.on('terminal:data', listener);
         const removeProcessDataListener = window.electron.process.onData(data => {
             const lines = data.data.split('\n').filter(line => line.trim());
@@ -58,10 +72,10 @@ export const WorkspaceLogsTab: React.FC<WorkspaceLogsTabProps> = ({ workspacePat
                 level: /error/i.test(line)
                     ? 'error'
                     : /warn/i.test(line)
-                        ? 'warn'
-                        : /debug/i.test(line)
-                            ? 'debug'
-                            : 'info',
+                    ? 'warn'
+                    : /debug/i.test(line)
+                    ? 'debug'
+                    : 'info',
                 source: data.id,
                 message: line,
             }));
@@ -76,10 +90,15 @@ export const WorkspaceLogsTab: React.FC<WorkspaceLogsTabProps> = ({ workspacePat
                     source: data.id,
                     message:
                         data.code === 0
-                            ? t('workspace.issueBanner.runbookTimelineMessages.completedSuccessfully')
-                            : t('workspace.issueBanner.runbookTimelineMessages.failedWithCode', {
-                                code: data.code,
-                            }),
+                            ? t(
+                                  'workspace.issueBanner.runbookTimelineMessages.completedSuccessfully'
+                              )
+                            : t(
+                                  'workspace.issueBanner.runbookTimelineMessages.failedWithCode',
+                                  {
+                                      code: data.code,
+                                  }
+                              ),
                 },
             ]);
         });
@@ -153,7 +172,9 @@ export const WorkspaceLogsTab: React.FC<WorkspaceLogsTabProps> = ({ workspacePat
         const content = filteredLogs
             .map(
                 entry =>
-                    `[${new Date(entry.timestamp).toISOString()}] [${entry.level.toUpperCase()}] ${entry.message}`
+                    `[${new Date(entry.timestamp).toISOString()}] [${entry.level.toUpperCase()}] ${
+                        entry.message
+                    }`
             )
             .join('\n');
         const blob = new Blob([content], { type: 'text/plain' });
@@ -175,7 +196,10 @@ export const WorkspaceLogsTab: React.FC<WorkspaceLogsTabProps> = ({ workspacePat
         const normalizedFilter = filter.toLowerCase();
         return parts.map((part, idx) =>
             part.toLowerCase() === normalizedFilter ? (
-                <mark key={`${part}-${idx}`} className="bg-warning/25 text-foreground px-0.5 rounded-sm">
+                <mark
+                    key={`${part}-${idx}`}
+                    className="bg-warning/25 text-foreground px-0.5 rounded-sm"
+                >
                     {part}
                 </mark>
             ) : (
@@ -215,7 +239,7 @@ export const WorkspaceLogsTab: React.FC<WorkspaceLogsTabProps> = ({ workspacePat
             {/* Header */}
             <div className="flex items-center justify-between shrink-0">
                 <div className="flex flex-col gap-2">
-                    <h2 className="text-2xl font-black tracking-tight text-foreground flex items-center gap-3">
+                    <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
                         <FileText className="w-8 h-8 text-primary" />
                         {t('workspaceDashboard.logs')}
                     </h2>
@@ -225,45 +249,54 @@ export const WorkspaceLogsTab: React.FC<WorkspaceLogsTabProps> = ({ workspacePat
                 </div>
                 <div className="flex gap-2 items-center">
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <input
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+                        <Input
                             type="text"
                             value={filter}
-                            onChange={e => setFilter(e.target.value)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                setFilter(e.target.value)
+                            }
                             placeholder={t('workspaceDashboard.logsFilter')}
-                            className="pl-10 pr-4 py-2 bg-muted/30 border border-border/50 rounded-lg text-sm outline-none focus:border-primary/50 w-64"
+                            className="pl-10 w-64 h-10"
                         />
                     </div>
-                    <select
+                    <Select
                         value={levelFilter}
-                        onChange={e => setLevelFilter(e.target.value as 'all' | LogEntry['level'])}
-                        className="px-3 py-2 bg-muted/30 border border-border/50 rounded-lg text-sm outline-none focus:border-primary/50"
+                        onValueChange={(val: 'all' | LogEntry['level']) => setLevelFilter(val)}
                     >
-                        <option value="all">{t('logging.allLevels')}</option>
-                        <option value="info">{t('logging.info')}</option>
-                        <option value="warn">{t('logging.warn')}</option>
-                        <option value="error">{t('logging.error')}</option>
-                        <option value="debug">{t('logging.debug')}</option>
-                    </select>
-                    <select
-                        value={sourceFilter}
-                        onChange={e => setSourceFilter(e.target.value)}
-                        className="px-3 py-2 bg-muted/30 border border-border/50 rounded-lg text-sm outline-none focus:border-primary/50"
-                    >
-                        <option value="all">{t('workspaceDashboard.logsAllSources')}</option>
-                        {availableSources.map(source => (
-                            <option key={source} value={source}>
-                                {source}
-                            </option>
-                        ))}
-                    </select>
+                        <SelectTrigger className="w-[140px] h-10">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">{t('logging.allLevels')}</SelectItem>
+                            <SelectItem value="info">{t('logging.info')}</SelectItem>
+                            <SelectItem value="warn">{t('logging.warn')}</SelectItem>
+                            <SelectItem value="error">{t('logging.error')}</SelectItem>
+                            <SelectItem value="debug">{t('logging.debug')}</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                        <SelectTrigger className="w-[180px] h-10">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                {t('workspaceDashboard.logsAllSources')}
+                            </SelectItem>
+                            {availableSources.map(source => (
+                                <SelectItem key={source} value={source}>
+                                    {source}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                     <button
                         onClick={() => setAutoScroll(!autoScroll)}
                         className={cn(
-                            'p-2 rounded-lg border transition-colors',
+                            'p-2 rounded-lg border transition-colors h-10 w-10 flex items-center justify-center',
                             autoScroll
                                 ? 'bg-primary/10 border-primary/20 text-primary'
-                                : 'bg-muted/30 border-border/50 text-muted-foreground'
+                                : 'bg-muted/30 border-border/50 text-muted-foreground hover:bg-muted/50'
                         )}
                         title={t('logging.autoScroll')}
                     >
@@ -271,14 +304,14 @@ export const WorkspaceLogsTab: React.FC<WorkspaceLogsTabProps> = ({ workspacePat
                     </button>
                     <button
                         onClick={exportLogs}
-                        className="flex items-center gap-2 px-4 py-2 bg-muted/30 hover:bg-muted/50 border border-border/50 rounded-lg text-sm font-medium transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-muted/30 hover:bg-muted/50 border border-border/50 rounded-lg text-sm font-medium transition-colors h-10"
                     >
                         <Download className="w-4 h-4" />
                         {t('logging.export')}
                     </button>
                     <button
                         onClick={clearLogs}
-                        className="flex items-center gap-2 px-4 py-2 bg-muted/30 hover:bg-muted/50 border border-border/50 rounded-lg text-sm font-medium transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-muted/30 hover:bg-muted/50 border border-border/50 rounded-lg text-sm font-medium transition-colors h-10"
                     >
                         <Trash2 className="w-4 h-4" />
                         {t('workspaceDashboard.logsClear')}
@@ -289,11 +322,21 @@ export const WorkspaceLogsTab: React.FC<WorkspaceLogsTabProps> = ({ workspacePat
             {/* Logs Container */}
             <div className="flex-1 min-h-0 bg-background rounded-2xl border border-border/50 overflow-hidden flex flex-col font-mono text-xs">
                 <div className="px-4 py-2 border-b border-border/40 flex items-center gap-2 text-xxs text-muted-foreground">
-                    <span>{t('workspaceDashboard.logsStats.total')}: {levelStats.total}</span>
-                    <span>{t('workspaceDashboard.logsStats.info')}: {levelStats.info}</span>
-                    <span>{t('workspaceDashboard.logsStats.warn')}: {levelStats.warn}</span>
-                    <span>{t('workspaceDashboard.logsStats.error')}: {levelStats.error}</span>
-                    <span>{t('workspaceDashboard.logsStats.debug')}: {levelStats.debug}</span>
+                    <span>
+                        {t('workspaceDashboard.logsStats.total')}: {levelStats.total}
+                    </span>
+                    <span>
+                        {t('workspaceDashboard.logsStats.info')}: {levelStats.info}
+                    </span>
+                    <span>
+                        {t('workspaceDashboard.logsStats.warn')}: {levelStats.warn}
+                    </span>
+                    <span>
+                        {t('workspaceDashboard.logsStats.error')}: {levelStats.error}
+                    </span>
+                    <span>
+                        {t('workspaceDashboard.logsStats.debug')}: {levelStats.debug}
+                    </span>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-1 scrollbar-thin scrollbar-thumb-border/50">
                     {filteredLogs.length > 0 ? (
@@ -309,16 +352,20 @@ export const WorkspaceLogsTab: React.FC<WorkspaceLogsTabProps> = ({ workspacePat
                                     <span className="text-muted-foreground mr-2">
                                         {new Date(log.timestamp).toLocaleTimeString()}
                                     </span>
-                                    <span className="text-muted-foreground/70 mr-2">[{log.source}]</span>
+                                    <span className="text-muted-foreground/70 mr-2">
+                                        [{log.source}]
+                                    </span>
                                     <span
                                         className={cn(
-                                            'uppercase font-bold mr-2',
+                                            ' font-bold mr-2',
                                             getLevelColor(log.level)
                                         )}
                                     >
                                         [{log.level}]
                                     </span>
-                                    <span className={getLevelColor(log.level)}>{highlightMatch(log.message)}</span>
+                                    <span className={getLevelColor(log.level)}>
+                                        {highlightMatch(log.message)}
+                                    </span>
                                 </div>
                             ))}
                             <div ref={logsEndRef} />

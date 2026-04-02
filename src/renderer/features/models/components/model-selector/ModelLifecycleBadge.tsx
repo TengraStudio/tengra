@@ -19,7 +19,7 @@ export const ModelLifecycleBadge: React.FC<ModelLifecycleBadgeProps> = ({ model 
 
     return (
         <span
-            className="text-xxxs font-black text-warning bg-warning/15 px-1.5 py-0.5 rounded leading-none mr-1 border border-warning/30"
+            className="text-xxxs font-bold text-warning bg-warning/15 px-1.5 py-0.5 rounded leading-none mr-1 border border-warning/30"
             title={title}
         >
             {label}

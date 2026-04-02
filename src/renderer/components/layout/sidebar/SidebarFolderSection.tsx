@@ -53,7 +53,7 @@ export const SidebarFolderSection = React.memo(({
                         </div>
                     ))}
                     {folderChats.length === 0 && (
-                        <p className="text-xxs text-muted-foreground/50 py-1 px-2 italic">{t('sidebar.emptyFolder')}</p>
+                        <p className="text-xxs text-muted-foreground/50 py-1 px-2">{t('sidebar.emptyFolder')}</p>
                     )}
                 </div>
             )}

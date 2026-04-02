@@ -119,7 +119,7 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Badge
-                            className={cn('border-none text-xxs uppercase font-bold', config.color)}
+                            className={cn('border-none text-xxs  font-bold', config.color)}
                         >
                             <config.icon className="w-3 h-3 mr-1" />
                             {t(config.labelKey)}
@@ -220,7 +220,7 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
                                     {t('memory.contradictionLabel')}
                                 </span>
                                 <span className="text-muted-foreground">{c.existingContent}</span>
-                                <p className="mt-1 text-warning-light/70 italic">
+                                <p className="mt-1 text-warning-light/70">
                                     {c.conflictExplanation}
                                 </p>
                             </div>

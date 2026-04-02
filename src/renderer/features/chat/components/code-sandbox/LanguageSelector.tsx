@@ -1,6 +1,12 @@
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@renderer/components/ui/select';
+import { useTranslation } from '@renderer/i18n';
 import React from 'react';
-
-import { useTranslation } from '@/i18n';
 
 type SandboxLanguage = 'javascript' | 'typescript' | 'python' | 'shell';
 
@@ -10,7 +16,12 @@ interface LanguageSelectorProps {
     disabled?: boolean;
 }
 
-const LANGUAGE_OPTIONS: ReadonlyArray<SandboxLanguage> = ['javascript', 'typescript', 'python', 'shell'];
+const LANGUAGE_OPTIONS: ReadonlyArray<SandboxLanguage> = [
+    'javascript',
+    'typescript',
+    'python',
+    'shell',
+];
 
 /** Language selector dropdown for the code sandbox */
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
@@ -20,27 +31,28 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 }) => {
     const { t } = useTranslation();
 
-    const handleChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
-        onChange(e.target.value as SandboxLanguage);
+    const handleChange = (val: string): void => {
+        onChange(val as SandboxLanguage);
     };
 
     return (
-        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>{t('codeSandbox.languageLabel')}</span>
-            <select
-                value={value}
-                onChange={handleChange}
-                disabled={disabled}
-                className="rounded border border-border/50 bg-muted/30 px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
-            >
-                {LANGUAGE_OPTIONS.map((opt) => (
-                    <option key={opt} value={opt}>
-                        {t(`codeSandbox.languages.${opt}`)}
-                    </option>
-                ))}
-            </select>
-        </label>
+            <Select value={value} onValueChange={handleChange} disabled={disabled}>
+                <SelectTrigger className="h-8 w-[120px] px-2 py-1 text-xs">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    {LANGUAGE_OPTIONS.map(opt => (
+                        <SelectItem key={opt} value={opt}>
+                            {t(`codeSandbox.languages.${opt}`)}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
     );
 };
 
 LanguageSelector.displayName = 'LanguageSelector';
+

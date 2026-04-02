@@ -4,6 +4,8 @@ import React from 'react';
 
 import { cn } from '@/lib/utils';
 
+import './results-list.css';
+
 interface ResultsListProps {
     groupedCommands: Record<string, CommandItem[]>;
     categoryLabels: Record<string, string>;
@@ -25,13 +27,13 @@ export const ResultsList: React.FC<ResultsListProps> = ({
 }) => {
     return (
         <div
-            className="flex-1 overflow-y-auto py-2 border-r border-border/10 custom-scrollbar"
+            className="tengra-results-list custom-scrollbar"
             role="listbox"
             aria-label={t('commandPalette.results')}
         >
             {Object.entries(groupedCommands).map(([category, items]) => (
                 <div key={category}>
-                    <h3 className="px-4 py-1.5 text-xxs font-bold text-foreground/20 uppercase tracking-widest">
+                    <h3 className="tengra-results-list__heading">
                         {categoryLabels[category]}
                     </h3>
                     {items.map(cmd => {
@@ -44,33 +46,31 @@ export const ResultsList: React.FC<ResultsListProps> = ({
                                 onClick={cmd.action}
                                 onMouseEnter={() => setSelectedIndex(cmd.id)}
                                 className={cn(
-                                    'w-full flex items-center gap-3 px-4 py-2 text-left transition-all duration-150',
-                                    isSelected
-                                        ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-                                        : 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground'
+                                    'tengra-results-list__item',
+                                    isSelected && 'tengra-results-list__item--selected'
                                 )}
                                 role="option"
                                 aria-selected={isSelected}
                             >
                                 <span
                                     className={cn(
-                                        'p-1.5 rounded-lg transition-colors',
-                                        isSelected ? 'bg-primary-foreground/20' : 'bg-muted/10'
+                                        'tengra-results-list__item-icon-wrap',
+                                        isSelected && 'tengra-results-list__item-icon-wrap--selected'
                                     )}
                                 >
                                     {cmd.icon}
                                 </span>
-                                <div className="flex-1 min-w-0">
-                                    <div className="font-semibold text-sm truncate">
+                                <div className="tengra-results-list__item-content">
+                                    <div className="tengra-results-list__item-label truncate">
                                         {cmd.label}
                                     </div>
                                     {cmd.description && (
                                         <div
                                             className={cn(
-                                                'text-xxs truncate',
+                                                'tengra-results-list__item-description truncate',
                                                 isSelected
-                                                    ? 'text-primary-foreground/70'
-                                                    : 'text-muted-foreground/50'
+                                                    ? 'tengra-results-list__item-description--selected'
+                                                    : 'tengra-results-list__item-description--default'
                                             )}
                                         >
                                             {cmd.description}
@@ -80,10 +80,10 @@ export const ResultsList: React.FC<ResultsListProps> = ({
                                 {cmd.shortcut && (
                                     <kbd
                                         className={cn(
-                                            'px-1.5 py-0.5 text-xxxs font-bold rounded border',
+                                            'tengra-results-list__kbd',
                                             isSelected
-                                                ? 'bg-primary-foreground/20 border-primary-foreground/20 text-primary-foreground'
-                                                : 'bg-foreground/5 border-border/20 text-muted-foreground/50'
+                                                ? 'tengra-results-list__kbd--selected'
+                                                : 'tengra-results-list__kbd--default'
                                         )}
                                     >
                                         {cmd.shortcut}
@@ -96,9 +96,9 @@ export const ResultsList: React.FC<ResultsListProps> = ({
             ))}
 
             {noResults && (
-                <div className="flex flex-col items-center justify-center h-full py-12 px-4 text-center">
-                    <div className="w-12 h-12 rounded-full bg-muted/10 flex items-center justify-center mb-4">
-                        <Search className="w-6 h-6 text-muted-foreground/20" />
+                <div className="tengra-results-list__empty">
+                    <div className="tengra-results-list__empty-icon-wrap">
+                        <Search className="tengra-results-list__empty-icon" />
                     </div>
                     <div className="text-foreground font-semibold mb-1">
                         {t('commandPalette.noResults')}

@@ -2,14 +2,19 @@ import { Mic, MicOff, Paperclip, Send, Sparkles, Square } from 'lucide-react';
 import { memo } from 'react';
 
 import { ModelSelector } from '@/components/shared/ModelSelector';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 import { useChatInputController } from '../../hooks/useChatInputController';
 
 type ControllerType = ReturnType<typeof useChatInputController>;
 
+/**
+ * ModelSelectorWrapper - Integrated model selector button
+ */
 export const ModelSelectorWrapper = memo(({ ctrl }: { ctrl: ControllerType }) => (
-    <div data-testid="model-selector">
+    <div data-testid="model-selector" className="flex items-center">
         <ModelSelector
             selectedProvider={ctrl.selectedProvider}
             selectedModel={ctrl.selectedModel}
@@ -27,6 +32,7 @@ export const ModelSelectorWrapper = memo(({ ctrl }: { ctrl: ControllerType }) =>
             language={ctrl.language}
             toggleFavorite={ctrl.toggleFavorite}
             isFavorite={ctrl.isFavorite}
+            isIconOnly={true}
             chatMode={
                 ctrl.systemMode === 'thinking'
                     ? 'thinking'
@@ -41,52 +47,53 @@ export const ModelSelectorWrapper = memo(({ ctrl }: { ctrl: ControllerType }) =>
             onThinkingLevelChange={(modelId, level) =>
                 ctrl.setModelReasoningLevel?.(modelId, level)
             }
-        />
+            permissionPolicy={ctrl.permissionPolicy}
+            onUpdatePermissionPolicy={ctrl.setPermissionPolicy}
+        /> 
     </div>
 ));
 ModelSelectorWrapper.displayName = 'ModelSelectorWrapper';
 
+/**
+ * EnhanceButton - Minimalism-focused enhance button
+ */
 export const EnhanceButton = memo(({ ctrl }: { ctrl: ControllerType }) => {
     const isEnhancable = ctrl.input.trim() !== '' && !ctrl.isLoading;
     const isEnhancing = ctrl.isEnhancing;
-    const btnClass = cn(
-        'p-2 rounded-lg transition-all duration-200 flex items-center justify-center mb-0.5',
-        isEnhancing
-            ? 'bg-warning/20 text-warning animate-pulse'
-            : isEnhancable
-                ? 'bg-warning/10 text-warning hover:bg-warning/20 hover:text-warning-light'
-                : 'bg-muted/30 text-muted-foreground/50 cursor-not-allowed'
-    );
+    
     return (
-        <button
+        <Button
             type="button"
             onClick={() => {
                 void ctrl.handleEnhancePrompt();
             }}
             disabled={!isEnhancable || isEnhancing}
-            className={btnClass}
+            variant="ghost"
+            size="icon"
+            className={cn(
+                'h-8 w-8 rounded-full transition-all active:scale-95',
+                isEnhancing
+                    ? 'bg-warning/10 text-warning animate-pulse'
+                    : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+            )}
             title={ctrl.t('input.enhancePrompt')}
             aria-label={ctrl.t('input.enhancePrompt')}
         >
-            <Sparkles size={18} className={cn(isEnhancing && 'animate-spin')} aria-hidden="true" />
-        </button>
+            <Sparkles size={16} className={cn(isEnhancing && 'animate-spin')} aria-hidden="true" />
+        </Button>
     );
 });
 EnhanceButton.displayName = 'EnhanceButton';
 
+/**
+ * SendButton - Premium look send button
+ */
 export const SendButton = memo(({ ctrl }: { ctrl: ControllerType }) => {
     const hasContent = ctrl.input.trim() !== '' || ctrl.attachments.length > 0;
     const isLoading = ctrl.isLoading;
-    const btnClass = cn(
-        'p-2 rounded-lg transition-all duration-200 flex items-center justify-center mb-0.5',
-        isLoading
-            ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
-            : hasContent
-                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity'
-                : 'bg-muted/30 text-muted-foreground/50 cursor-not-allowed'
-    );
+    
     return (
-        <button
+        <Button
             type="button"
             onClick={
                 isLoading
@@ -96,13 +103,21 @@ export const SendButton = memo(({ ctrl }: { ctrl: ControllerType }) => {
                     }
             }
             disabled={!isLoading && !hasContent}
-            className={btnClass}
+            size="icon"
+            className={cn(
+                'h-8 w-8 rounded-full transition-all duration-200 active:scale-90 shadow-sm',
+                isLoading
+                    ? 'bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/10'
+                    : hasContent
+                        ? 'bg-primary text-primary-foreground hover:bg-primary/95 hover:shadow-primary/20 active:translate-y-0.5'
+                        : 'bg-muted/40 text-muted-foreground/30'
+            )}
             aria-label={isLoading ? ctrl.t('common.stop') : ctrl.t('common.send')}
             aria-busy={isLoading}
             aria-live="polite"
         >
             <SendIcon isLoading={isLoading} hasContent={hasContent} />
-        </button>
+        </Button>
     );
 });
 SendButton.displayName = 'SendButton';
@@ -111,19 +126,24 @@ const SendIcon = memo(({ isLoading, hasContent }: { isLoading: boolean; hasConte
     const Icon = isLoading ? Square : Send;
     const colorFill = isLoading ? 'currentColor' : 'none';
     const iClass = cn(isLoading && 'animate-pulse', !isLoading && hasContent && 'ml-0.5');
-    return <Icon size={18} fill={colorFill} className={iClass} aria-hidden="true" />;
+    return <Icon size={16} fill={colorFill} className={iClass} aria-hidden="true" />;
 });
 SendIcon.displayName = 'SendIcon';
 
+/**
+ * VoiceButton - Minimalist mic toggle
+ */
 export const VoiceButton = memo(({ ctrl }: { ctrl: ControllerType }) => (
-    <button
+    <Button
         type="button"
+        variant="ghost"
+        size="icon"
         onClick={ctrl.isListening ? ctrl.stopListening : ctrl.startListening}
         className={cn(
-            'p-2 rounded-lg transition-all',
+            'h-8 w-8 rounded-full transition-all active:scale-95',
             ctrl.isListening
-                ? 'bg-destructive/20 text-destructive animate-pulse'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                ? 'bg-destructive/10 text-destructive animate-pulse'
+                : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
         )}
         title={
             ctrl.isListening
@@ -138,24 +158,80 @@ export const VoiceButton = memo(({ ctrl }: { ctrl: ControllerType }) => (
         aria-pressed={ctrl.isListening}
     >
         {ctrl.isListening ? (
-            <MicOff size={20} aria-hidden="true" />
+            <MicOff size={16} aria-hidden="true" />
         ) : (
-            <Mic size={20} aria-hidden="true" />
+            <Mic size={16} aria-hidden="true" />
         )}
-    </button>
+    </Button>
 ));
 VoiceButton.displayName = 'VoiceButton';
 
+/**
+ * AttachButton - Minimalist paperclip button
+ */
 export const AttachButton = memo(({ onClick, ctrl }: { onClick: () => void; ctrl: ControllerType }) => (
-    <button
+    <Button
         type="button"
+        variant="ghost"
+        size="icon"
         onClick={onClick}
-        className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors"
+        className="h-8 w-8 rounded-full text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-all active:scale-95"
         title={ctrl.t('input.attachFile')}
         aria-label={ctrl.t('input.attachFile')}
     >
-        <Paperclip size={20} aria-hidden="true" />
-    </button>
+        <Paperclip size={16} aria-hidden="true" />
+    </Button>
 ));
 AttachButton.displayName = 'AttachButton';
- 
+
+/**
+ * ComposerStateBadges - Status indicators in the bottom bar
+ */
+export const ComposerStateBadges = memo(({ ctrl }: { ctrl: ControllerType }) => (
+    <div className="flex items-center gap-1.5 ml-1"> 
+        {ctrl.isListening && (
+            <Badge
+                variant="destructive"
+                className="h-6 rounded-full border-transparent px-1.5 text-[10px] animate-pulse"
+            >
+                <Mic size={10} aria-hidden="true" />
+            </Badge>
+        )}
+        {ctrl.attachments.length > 0 && (
+            <Badge
+                variant="secondary"
+                className="h-6 gap-1 rounded-full px-2 text-[10px] font-medium"
+            >
+                <Paperclip size={10} aria-hidden="true" />
+                <span>{ctrl.attachments.length}</span>
+            </Badge>
+        )}
+    </div>
+));
+ComposerStateBadges.displayName = 'ComposerStateBadges';
+
+/**
+ * ImageCountPanel - Settings for image generation models
+ */
+export const ImageCountPanel = memo(({ ctrl }: { ctrl: ControllerType }) => (
+    <div className="mb-2 flex items-center gap-2 rounded-xl border border-border/15 bg-muted/5 px-3 py-1.5 transition-all animate-in fade-in slide-in-from-top-1">
+        <span className="text-[11px] text-muted-foreground font-medium">{ctrl.t('input.imageCountLabel')}</span>
+        <input
+            type="number"
+            min={1}
+            max={5}
+            value={ctrl.imageRequestCount}
+            onChange={event => {
+                const nextValue = Number.parseInt(event.target.value, 10);
+                if (!Number.isFinite(nextValue)) {
+                    ctrl.setImageRequestCount(1);
+                    return;
+                }
+                ctrl.setImageRequestCount(Math.max(1, Math.min(5, nextValue)));
+            }}
+            className="ml-auto h-7 w-12 rounded-lg border border-border/20 bg-background px-1.5 text-center text-xs text-foreground outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/5"
+            aria-label={ctrl.t('input.imageCountLabel')}
+        />
+    </div>
+));
+ImageCountPanel.displayName = 'ImageCountPanel';
