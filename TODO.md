@@ -77,10 +77,11 @@
 - [x] Decompose `MessageBubble` into shared message presentation modules, centralize permission/recovery cards, and feed main-process prompt injection with runtime locale-pack metadata so all chat surfaces follow the same AI runtime contract.
 - [x] Add shared AI evidence extraction plus deterministic lookup answer composition so low-signal tool loops can fall back to structured evidence instead of generic failure text.
 - [x] Extend session conversation complete/stream flows with shared assistant runtime metadata so main-process persistence, session registry envelopes, and non-stream complete results all use the same AI presentation contract.
-- [x] Introduce a dedicated renderer tool-evidence state helper so turn-local tool call maps, cached signatures, and tool messages stop living as ad-hoc local variables inside `useChatGenerator`.
 - [x] Extract the renderer tool-turn loop into a dedicated orchestration utility and move session IPC prompt/RAG helpers into standalone main-process runtime modules so chat entrypoints stop accumulating provider/runtime policy logic inline.
 - [x] Split session conversation input sanitization, reasoning-option parsing, and renderer-side session stream consumption into dedicated runtime utilities so session chat surfaces follow the same modular orchestration structure as the main chat flow.
 - [x] Move session conversation streamed-assistant persistence, token accounting, and stream chunk transport into standalone runtime helpers so the IPC manager primarily orchestrates request flow instead of owning low-level side effects.
+- [x] Stabilize AI runtime session state and IPC contracts: resolved SessionJsonValueSchema circularity, aligned assistant envelope creation with strict schemas, and standardized i18n t() signatures for interpolation.
+- [x] Resolved renderer tool-turn loop execution type errors and addressed React hook cascading render warnings in useChatManager to achieve a clean, production-ready build.
 
 ## AI Runtime Refactor Handoff Plan
 
