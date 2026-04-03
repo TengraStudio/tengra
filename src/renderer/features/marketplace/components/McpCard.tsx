@@ -13,14 +13,17 @@ export const McpCard = ({ plugin, t, onToggle, onUninstall }: McpCardProps): JSX
             plugin.isEnabled ? 'bg-card border-border shadow-sm ring-1 ring-primary/5' : 'bg-muted/10 border-border/20 opacity-60 grayscale-50'
         }`}>
             <div className="p-5 space-y-4">
-                <CardHeader plugin={plugin} description={description} onToggle={onToggle} onUninstall={onUninstall} />
+                <CardHeader plugin={plugin} description={description} onToggle={onToggle} onUninstall={onUninstall} t={t} />
                 {plugin.isEnabled && plugin.actions.length > 0 && <CardActions actions={plugin.actions} t={t} />}
             </div>
         </div>
     );
 };
 
-function CardHeader({ plugin, description, onToggle, onUninstall }: Omit<McpCardProps, 't'> & { description: string }) {
+function CardHeader({ plugin, description, onToggle, onUninstall, t }: Omit<McpCardProps, 't'> & {
+    description: string;
+    t: McpCardProps['t'];
+}) {
     return (
         <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-4 min-w-0">
@@ -30,7 +33,7 @@ function CardHeader({ plugin, description, onToggle, onUninstall }: Omit<McpCard
                 <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-1.5">
                         <h3 className="text-sm font-bold truncate leading-none text-foreground">{plugin.name}</h3>
-                        <StatusBadge isEnabled={plugin.isEnabled} />
+                        <StatusBadge isEnabled={plugin.isEnabled} t={t} />
                     </div>
                     <p className="text-sm text-muted-foreground font-medium leading-relaxed line-clamp-3">{description}</p>
                 </div>
@@ -40,14 +43,14 @@ function CardHeader({ plugin, description, onToggle, onUninstall }: Omit<McpCard
     );
 }
 
-function StatusBadge({ isEnabled }: { isEnabled: boolean }) {
+function StatusBadge({ isEnabled, t }: { isEnabled: boolean; t: McpCardProps['t'] }) {
     return isEnabled ? (
         <span className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-full bg-success/10 text-success text-xs font-bold">
-            <div className="w-1 h-1 rounded-full bg-success animate-pulse" /> Active
+            <div className="w-1 h-1 rounded-full bg-success animate-pulse" /> {t('common.active')}
         </span>
     ) : (
         <span className="px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground/40 text-xs font-bold">
-            Standby
+            {t('marketplace.mcp.stats.inactive')}
         </span>
     );
 }

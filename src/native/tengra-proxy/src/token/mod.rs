@@ -68,10 +68,7 @@ pub async fn background_refresh_loop() {
             continue;
         }
 
-        eprintln!(
-            "[DEBUG] Tokens to refresh: {}",
-            tokens_to_refresh.len()
-        );
+        eprintln!("[DEBUG] Tokens to refresh: {}", tokens_to_refresh.len());
 
         for (account_id, provider, token) in tokens_to_refresh {
             eprintln!("[DEBUG] Refreshing token for {} ({})", account_id, provider);
@@ -181,7 +178,8 @@ fn build_refresh_candidate_with_master_key(
             email: None,
         });
 
-    auth_token.access_token = decrypt_refresh_token_field(auth_token.access_token, master_key.as_deref());
+    auth_token.access_token =
+        decrypt_refresh_token_field(auth_token.access_token, master_key.as_deref());
     auth_token.refresh_token =
         decrypt_refresh_token_field(auth_token.refresh_token, master_key.as_deref());
     auth_token.session_token =
@@ -238,10 +236,7 @@ fn build_refresh_candidate_with_master_key(
     Some(auth_token)
 }
 
-fn decrypt_refresh_token_field(
-    token: Option<String>,
-    master_key: Option<&[u8]>,
-) -> Option<String> {
+fn decrypt_refresh_token_field(token: Option<String>, master_key: Option<&[u8]>) -> Option<String> {
     let value = token?;
     if !value.starts_with("Tengra:v1:") {
         return Some(value);
@@ -330,11 +325,8 @@ async fn load_provider_client_config(provider: &str) -> (String, Option<String>)
 #[cfg(test)]
 mod tests {
     use super::{
-        build_refresh_candidate,
-        provider_supports_background_refresh,
-        refresh_threshold_ms,
-        build_refresh_candidate_with_master_key,
-        COPILOT_REFRESH_THRESHOLD_MS,
+        build_refresh_candidate, build_refresh_candidate_with_master_key,
+        provider_supports_background_refresh, refresh_threshold_ms, COPILOT_REFRESH_THRESHOLD_MS,
         REFRESH_THRESHOLD_MS,
     };
     use crate::security::encrypt_token;
@@ -375,7 +367,10 @@ mod tests {
 
     #[test]
     fn uses_tighter_refresh_threshold_for_copilot() {
-        assert_eq!(refresh_threshold_ms("copilot"), COPILOT_REFRESH_THRESHOLD_MS);
+        assert_eq!(
+            refresh_threshold_ms("copilot"),
+            COPILOT_REFRESH_THRESHOLD_MS
+        );
         assert_eq!(refresh_threshold_ms("codex"), REFRESH_THRESHOLD_MS);
     }
 
@@ -398,9 +393,12 @@ mod tests {
             "antigravity",
             Some(&master_key),
         )
-            .expect("encrypted refresh token should still be usable");
+        .expect("encrypted refresh token should still be usable");
 
-        assert_eq!(candidate.refresh_token.as_deref(), Some("real-refresh-token"));
+        assert_eq!(
+            candidate.refresh_token.as_deref(),
+            Some("real-refresh-token")
+        );
         assert_eq!(candidate.access_token.as_deref(), Some("real-access-token"));
     }
 
@@ -413,15 +411,14 @@ mod tests {
             "access_token": encrypted_access
         });
 
-        let candidate = build_refresh_candidate_with_master_key(
-            &row,
-            "acc-5",
-            "copilot",
-            Some(&master_key),
-        )
-            .expect("encrypted copilot access token should be usable");
+        let candidate =
+            build_refresh_candidate_with_master_key(&row, "acc-5", "copilot", Some(&master_key))
+                .expect("encrypted copilot access token should be usable");
 
-        assert_eq!(candidate.access_token.as_deref(), Some("github-access-token"));
+        assert_eq!(
+            candidate.access_token.as_deref(),
+            Some("github-access-token")
+        );
         assert_eq!(candidate.expires_at, Some(0));
     }
 }

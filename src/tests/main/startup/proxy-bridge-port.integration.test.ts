@@ -1,0 +1,37 @@
+import * as net from 'net';
+
+import { DatabaseService } from '@main/services/data/database.service';
+import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
+import { AuthService } from '@main/services/security/auth.service';
+import { SettingsService } from '@main/services/system/settings.service';
+import { describe, expect, it, vi } from 'vitest';
+
+describe('startup proxy bridge port integration', () => {
+    it('fails startup when fixed OAuth bridge port 1455 is occupied', async () => {
+        const listener = net.createServer();
+        await new Promise<void>((resolve, reject) => {
+            listener.once('error', reject);
+            listener.listen(1455, '127.0.0.1', () => resolve());
+        });
+
+        const service = new ProxyProcessManager(
+            {
+                getSettings: vi.fn().mockReturnValue({ proxy: { enabled: true, url: 'http://127.0.0.1:8317/v1', key: '' } }),
+                saveSettings: vi.fn().mockResolvedValue(undefined),
+            } as never as SettingsService,
+            {
+                getRuntimeMasterKeyHex: vi.fn().mockReturnValue(''),
+            } as never as AuthService,
+            {
+                exec: vi.fn(),
+            } as never as DatabaseService
+        );
+
+        const status = await service.start({ port: 8317 });
+        listener.close();
+
+        expect(status.running).toBe(false);
+        expect(status.errorCode).toBe('PROXY_PORT_IN_USE');
+        expect(status.error).toContain('1455');
+    });
+});

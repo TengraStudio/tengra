@@ -1,39 +1,34 @@
-import { _electron as electron, ElectronApplication, expect, Page, test } from '@playwright/test';
+import { ElectronApplication, expect, Page, test } from '@playwright/test';
+
+import { closeElectronApp, launchElectronApp } from './e2e-test-utils';
 
 test.describe('Workspace Management E2E', () => {
     let electronApp: ElectronApplication;
     let appWindow: Page;
 
     test.beforeAll(async () => {
-        electronApp = await electron.launch({
-            args: ['dist/main/main.js'],
-            env: { ...process.env, NODE_ENV: 'test' }
-        });
-        appWindow = await electronApp.firstWindow();
-        await appWindow.waitForLoadState('domcontentloaded');
-        await appWindow.waitForTimeout(2000);
+        const launched = await launchElectronApp();
+        electronApp = launched.electronApp;
+        appWindow = launched.appWindow;
+        await expect(appWindow.getByRole('complementary').first()).toBeVisible({ timeout: 10000 });
     });
 
     test.afterAll(async () => {
-        if (electronApp) {
-            await electronApp.close();
-        }
+        await closeElectronApp(electronApp);
     });
 
     test('should display sidebar with navigation', async () => {
-        const sidebar = appWindow.getByTestId('sidebar');
+        const sidebar = appWindow.getByRole('complementary').first();
         await expect(sidebar).toBeVisible();
     });
 
     test('should navigate to workspace view', async () => {
-        // Look for the workspaces button in the sidebar.
-        const sidebar = appWindow.getByTestId('sidebar');
-        const workspacesButton = sidebar.getByRole('button', { name: /workspace|proje/i }).first();
-
-        if (await workspacesButton.count() > 0 && await workspacesButton.isVisible()) {
-            await workspacesButton.click();
-            await appWindow.waitForTimeout(500);
-        }
+        const workspacesButton = appWindow.getByTestId('sidebar-nav-workspace');
+        await expect(workspacesButton).toBeVisible();
+        await workspacesButton.click();
+        await expect
+            .poll(async () => workspacesButton.getAttribute('class'))
+            .toContain('tengra-sidebar-item__button--active');
     });
 
     test('should display workspace list or empty state', async () => {
@@ -45,7 +40,7 @@ test.describe('Workspace Management E2E', () => {
         const hasEmptyState = await emptyState.count() > 0;
 
         // One of these should be visible on the workspace page.
-        expect(hasWorkspaces || hasEmptyState || true).toBeTruthy();
+        expect(hasWorkspaces || hasEmptyState).toBeTruthy();
     });
 
     test('should look for new workspace button', async () => {
@@ -66,7 +61,6 @@ test.describe('Workspace Management E2E', () => {
 
         if (await newWorkspaceButton.count() > 0 && await newWorkspaceButton.isVisible()) {
             await newWorkspaceButton.click();
-            await appWindow.waitForTimeout(500);
 
             // A modal or wizard should appear
             const modal = appWindow.locator('[role="dialog"], .modal, [class*="Modal"], [class*="Wizard"]').first();
@@ -75,7 +69,7 @@ test.describe('Workspace Management E2E', () => {
 
                 // Close the wizard
                 await appWindow.keyboard.press('Escape');
-                await appWindow.waitForTimeout(300);
+                await expect(modal).not.toBeVisible();
             }
         }
     });
@@ -91,47 +85,9 @@ test.describe('Workspace Management E2E', () => {
 
             // Right-click or context menu trigger
             await firstCard.click({ button: 'right' });
-            await appWindow.waitForTimeout(300);
 
             // Dismiss context menu
             await appWindow.keyboard.press('Escape');
-            await appWindow.waitForTimeout(200);
         }
-    });
-});
-
-test.describe('Workspace E2E', () => {
-    let electronApp: ElectronApplication;
-    let appWindow: Page;
-
-    test.beforeAll(async () => {
-        electronApp = await electron.launch({
-            args: ['dist/main/main.js'],
-            env: { ...process.env, NODE_ENV: 'test' }
-        });
-        appWindow = await electronApp.firstWindow();
-        await appWindow.waitForLoadState('domcontentloaded');
-        await appWindow.waitForTimeout(2000);
-    });
-
-    test.afterAll(async () => {
-        if (electronApp) {
-            await electronApp.close();
-        }
-    });
-
-    test('should display main workspace area', async () => {
-        const chatView = appWindow.getByTestId('chat-view');
-        await expect(chatView).toBeVisible();
-    });
-
-    test('should have functional sidebar navigation', async () => {
-        const sidebar = appWindow.getByTestId('sidebar');
-        await expect(sidebar).toBeVisible();
-
-        // Verify sidebar contains navigable items
-        const sidebarItems = sidebar.locator('button, a, [role="button"]');
-        const itemCount = await sidebarItems.count();
-        expect(itemCount).toBeGreaterThan(0);
     });
 });

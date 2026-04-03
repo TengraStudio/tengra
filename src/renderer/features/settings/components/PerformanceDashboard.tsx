@@ -283,7 +283,7 @@ export const PerformanceDashboard: React.FC = () => {
                                             {formatBytes(p.memory)}
                                         </td>
                                         <td className="px-4 py-2 text-right opacity-40">
-                                            {p.name || '-'}
+                                            {p.name || t('common.notAvailable')}
                                         </td>
                                     </tr>
                                 ))}

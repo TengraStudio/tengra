@@ -42,7 +42,7 @@ const createToolTurnStream = async function* () {
             type: 'function' as const,
             function: {
                 name: 'list_directory',
-                arguments: JSON.stringify({ path: 'C:/Users/agnes/Desktop' }),
+                arguments: JSON.stringify({ path: '%USERPROFILE%/Desktop' }),
             },
         }],
     };
@@ -57,6 +57,20 @@ const createSameToolTurnStream = async function* () {
         type: 'tool_calls' as const,
         tool_calls: [{
             id: 'tool-call-repeated',
+            type: 'function' as const,
+            function: {
+                name: 'get_system_info',
+                arguments: '{}',
+            },
+        }],
+    };
+};
+
+const createSystemInfoToolTurnStream = async function* () {
+    yield {
+        type: 'tool_calls' as const,
+        tool_calls: [{
+            id: 'tool-call-system',
             type: 'function' as const,
             function: {
                 name: 'get_system_info',
@@ -115,7 +129,7 @@ const createSplitToolTurnStream = async function* () {
             type: 'function' as const,
             function: {
                 name: '',
-                arguments: JSON.stringify({ path: 'C:/Users/agnes/Desktop' }),
+                arguments: JSON.stringify({ path: '%USERPROFILE%/Desktop' }),
             },
         }],
     };
@@ -129,7 +143,7 @@ const createInvalidToolTurnStream = async function* () {
             type: 'function' as const,
             function: {
                 name: '',
-                arguments: JSON.stringify({ path: 'C:/Users/agnes/Desktop' }),
+                arguments: JSON.stringify({ path: '%USERPROFILE%/Desktop' }),
             },
         }],
     };
@@ -144,7 +158,7 @@ const createInvalidToolWithTextTurnStream = async function* () {
             type: 'function' as const,
             function: {
                 name: '',
-                arguments: JSON.stringify({ path: 'C:/Users/agnes/Desktop' }),
+                arguments: JSON.stringify({ path: '%USERPROFILE%/Desktop' }),
             },
         }],
     };
@@ -287,7 +301,8 @@ describe('useChatGenerator', () => {
         expect(mockExecuteTools).toHaveBeenCalledWith(
             'generate_image',
             { prompt: 'Bir görsel oluştur', count: 1 },
-            expect.any(String)
+            expect.any(String),
+            'chat-1'
         );
         expect(result.current.chats[0]?.isGenerating).toBe(false);
         expect(result.current.chats[0]?.messages[0]).toEqual(
@@ -456,8 +471,9 @@ describe('useChatGenerator', () => {
 
         expect(mockExecuteTools).toHaveBeenCalledWith(
             'list_directory',
-            { path: 'C:/Users/agnes/Desktop' },
-            'tool-call-1'
+            { path: '%USERPROFILE%/Desktop' },
+            'tool-call-1',
+            'chat-1'
         );
     });
 
@@ -515,7 +531,8 @@ describe('useChatGenerator', () => {
         expect(mockExecuteTools).toHaveBeenCalledWith(
             'get_system_info',
             {},
-            'tool-call-primitive'
+            'tool-call-primitive',
+            'chat-1'
         );
     });
 
@@ -558,7 +575,7 @@ describe('useChatGenerator', () => {
                 formatChatError: (err: CatchError) =>
                     err instanceof Error ? err.message : String(err ?? ''),
                 systemMode: 'agent',
-                activeWorkspacePath: 'C:/Users/agnes/Desktop/projects/tengra',
+                activeWorkspacePath: 'C:/workspace/tengra',
             });
 
             return {
@@ -576,8 +593,9 @@ describe('useChatGenerator', () => {
 
         expect(mockExecuteTools).toHaveBeenCalledWith(
             'execute_command',
-            { command: 'Get-ChildItem', cwd: 'C:/Users/agnes/Desktop/projects/tengra' },
-            'tool-call-command'
+            { command: 'Get-ChildItem', cwd: 'C:/workspace/tengra' },
+            'tool-call-command',
+            'chat-1'
         );
     });
 
@@ -732,7 +750,7 @@ describe('useChatGenerator', () => {
         expect(result.current.chats[0]?.messages[0]?.content).toContain('Masaustunde 8 oge var.');
     });
 
-    it('breaks repeated identical tool loop and forces final no-tools answer', async () => {
+    it('reuses duplicate tool calls without executing them again', async () => {
         mockGetToolDefinitions.mockResolvedValue([
             {
                 type: 'function',
@@ -747,7 +765,6 @@ describe('useChatGenerator', () => {
             },
         ]);
         mockChatStream
-            .mockImplementationOnce(() => createSameToolTurnStream())
             .mockImplementationOnce(() => createSameToolTurnStream())
             .mockImplementationOnce(() => createSameToolTurnStream())
             .mockImplementationOnce(() => createFinalAnswerStream());
@@ -787,17 +804,110 @@ describe('useChatGenerator', () => {
             });
         });
 
-        expect(mockExecuteTools).toHaveBeenCalledTimes(3);
-        expect(mockChatStream).toHaveBeenCalledTimes(4);
-        expect(mockChatStream.mock.calls[3][0]).toEqual(expect.objectContaining({
-            tools: [],
-        }));
+        expect(mockExecuteTools).toHaveBeenCalledTimes(1);
+        expect(mockChatStream).toHaveBeenCalledTimes(3);
+        const repeatedFollowUpRequest = mockChatStream.mock.calls[2]?.[0] as ChatStreamRequest;
+        const repeatedReminder = repeatedFollowUpRequest.messages[repeatedFollowUpRequest.messages.length - 1];
+        const repeatedReminderContent = typeof repeatedReminder?.content === 'string'
+            ? repeatedReminder.content
+            : '';
+        expect(repeatedReminderContent).toContain('already executed earlier in this turn');
         expect(result.current.chats[0]?.messages[0]?.content).not.toContain('chat.error');
         expect(result.current.chats[0]?.messages[0]?.toolCalls).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({ id: 'tool-call-repeated' }),
             ])
         );
+    });
+
+    it('rebinds repeated tool results to the new tool call id without re-executing the duplicate', async () => {
+        mockGetToolDefinitions.mockResolvedValue([
+            {
+                type: 'function',
+                function: {
+                    name: 'get_system_info',
+                    description: 'Get system info',
+                    parameters: {
+                        type: 'object',
+                        properties: {},
+                    },
+                },
+            },
+            {
+                type: 'function',
+                function: {
+                    name: 'list_directory',
+                    description: 'List directory contents',
+                    parameters: {
+                        type: 'object',
+                        properties: { path: { type: 'string' } },
+                    },
+                },
+            },
+        ]);
+        mockChatStream
+            .mockImplementationOnce(() => createSystemInfoToolTurnStream())
+            .mockImplementationOnce(() => createToolTurnStream())
+            .mockImplementationOnce(() => createToolTurnStream())
+            .mockImplementationOnce(() => createFinalAnswerStream());
+        mockExecuteTools.mockImplementation((toolName: string) => {
+            if (toolName === 'get_system_info') {
+                return Promise.resolve({
+                    toolCallId: 'tool-call-system',
+                    name: 'get_system_info',
+                    success: true,
+                    result: { homeDir: '%USERPROFILE%' },
+                });
+            }
+            return Promise.resolve({
+                toolCallId: 'tool-call-1',
+                name: 'list_directory',
+                success: true,
+                result: [{ name: 'file.txt', isDirectory: false }],
+            });
+        });
+
+        const { result } = renderHook(() => {
+            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const chatGenerator = useChatGenerator({
+                chats,
+                setChats,
+                selectedModel: 'model-a',
+                selectedProvider: 'codex',
+                language: 'tr',
+                t: (key: string) => key,
+                handleSpeak: vi.fn(),
+                autoReadEnabled: false,
+                formatChatError: (err: CatchError) =>
+                    err instanceof Error ? err.message : String(err ?? ''),
+                systemMode: 'agent',
+            });
+
+            return {
+                ...chatGenerator,
+                chats,
+            };
+        });
+
+        await act(async () => {
+            await result.current.generateResponse('chat-1', {
+                ...createUserMessage(),
+                content: 'Masaustumde hangi dosyalar var?',
+            });
+        });
+
+        expect(mockExecuteTools).toHaveBeenCalledTimes(2);
+        expect(mockChatStream).toHaveBeenCalledTimes(4);
+
+        const finalAnswerRequest = mockChatStream.mock.calls[3]?.[0] as ChatStreamRequest;
+        const repeatedToolOutputs = finalAnswerRequest.messages.filter(message => (
+            message.role === 'tool'
+            && typeof message.content === 'string'
+            && message.content.includes('"_reused":true')
+        ));
+        expect(repeatedToolOutputs).toHaveLength(1);
+        expect(repeatedToolOutputs[0]?.toolCallId).toBe('tool-call-1');
+        expect(typeof repeatedToolOutputs[0]?.content === 'string' && repeatedToolOutputs[0].content.includes('file.txt')).toBe(true);
     });
 
     it('does not expose planning tools in standard chat agent mode', async () => {

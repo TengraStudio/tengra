@@ -1,6 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::net::SocketAddr;
 use std::sync::OnceLock;
+use std::time::Instant;
 
 use anyhow::{anyhow, Result};
 use axum::{
@@ -25,9 +26,11 @@ const SESSION_TTL_SECS: i64 = 300;
 const CODEX_CALLBACK_PORT: u16 = 1455;
 const CLAUDE_CALLBACK_PORT: u16 = 54545;
 const ANTIGRAVITY_CALLBACK_PORT: u16 = 51121;
+const CALLBACK_LATENCY_SAMPLE_LIMIT: usize = 512;
 
 static OAUTH_SESSIONS: OnceLock<RwLock<HashMap<String, OAuthSession>>> = OnceLock::new();
 static CALLBACK_SERVERS: OnceLock<RwLock<HashSet<&'static str>>> = OnceLock::new();
+static CALLBACK_BRIDGE_TELEMETRY: OnceLock<RwLock<CallbackBridgeTelemetryState>> = OnceLock::new();
 
 #[derive(Clone, Serialize)]
 pub struct SessionStatus {
@@ -57,6 +60,44 @@ struct CallbackState {
     provider: &'static str,
 }
 
+#[derive(Clone, Serialize)]
+pub struct CallbackRouteHealth {
+    pub callback_url: String,
+    pub callback_route: String,
+    pub callback_port: u16,
+    pub route_healthy: bool,
+}
+
+#[derive(Clone, Serialize, Default)]
+pub struct CallbackBridgeLatencySnapshot {
+    pub p50: u64,
+    pub p95: u64,
+    pub sample_count: usize,
+}
+
+#[derive(Clone, Serialize, Default)]
+pub struct CallbackBridgeTelemetrySnapshot {
+    pub redirect_count: u64,
+    pub error_count: u64,
+    pub latency_ms: CallbackBridgeLatencySnapshot,
+}
+
+#[derive(Default)]
+struct CallbackBridgeTelemetryState {
+    redirect_count: u64,
+    error_count: u64,
+    latency_samples_ms: VecDeque<u64>,
+}
+
+#[derive(Default)]
+struct CodexProfileClaims {
+    email: Option<String>,
+    display_name: Option<String>,
+    avatar_url: Option<String>,
+    organization_id: Option<String>,
+    organization_name: Option<String>,
+}
+
 #[derive(Deserialize)]
 struct CallbackQuery {
     code: Option<String>,
@@ -80,6 +121,10 @@ fn sessions() -> &'static RwLock<HashMap<String, OAuthSession>> {
 
 fn callback_servers() -> &'static RwLock<HashSet<&'static str>> {
     CALLBACK_SERVERS.get_or_init(|| RwLock::new(HashSet::new()))
+}
+
+fn callback_bridge_telemetry() -> &'static RwLock<CallbackBridgeTelemetryState> {
+    CALLBACK_BRIDGE_TELEMETRY.get_or_init(|| RwLock::new(CallbackBridgeTelemetryState::default()))
 }
 
 pub async fn create_session(
@@ -171,25 +216,42 @@ pub async fn ensure_callback_server(provider: &str) -> Result<()> {
     Ok(())
 }
 
+pub async fn verify_callback_route(provider: &str) -> Result<CallbackRouteHealth> {
+    let (route, addr, _) = callback_config(provider)?;
+    let route_healthy = callback_server_responds(addr, route).await;
+    Ok(CallbackRouteHealth {
+        callback_url: format!("http://localhost:{}{}", addr.port(), route),
+        callback_route: route.to_string(),
+        callback_port: addr.port(),
+        route_healthy,
+    })
+}
+
 pub async fn handle_manual_callback_request(payload: ManualOAuthCallback) -> Result<SessionStatus> {
-    complete_session(
+    let started_at = Instant::now();
+    let result = complete_session(
         payload.provider.as_str(),
         payload.state.as_str(),
         payload.code.as_deref(),
         payload.error.as_deref(),
         payload.error_description.as_deref(),
     )
-    .await
+    .await;
+    record_callback_bridge_event(false, result.is_err(), elapsed_ms(started_at)).await;
+    result
 }
 
 async fn handle_callback(
     State(state): State<CallbackState>,
     Query(query): Query<CallbackQuery>,
 ) -> axum::response::Html<&'static str> {
+    let started_at = Instant::now();
     let Some(session_state) = query.state.as_deref() else {
+        record_callback_bridge_event(true, true, elapsed_ms(started_at)).await;
         return crate::auth::common::close_window_html();
     };
 
+    let mut had_error = false;
     if let Err(e) = complete_session(
         state.provider,
         session_state,
@@ -199,8 +261,10 @@ async fn handle_callback(
     )
     .await
     {
+        had_error = true;
         let _ = mark_session_error(state.provider, session_state, e.to_string()).await;
     }
+    record_callback_bridge_event(true, had_error, elapsed_ms(started_at)).await;
 
     crate::auth::common::close_window_html()
 }
@@ -232,21 +296,32 @@ async fn exchange_codex(session: OAuthSession, code: &str) -> Result<SessionStat
         .code_verifier
         .as_deref()
         .ok_or_else(|| anyhow!("Missing PKCE verifier for codex session"))?;
-    let client = CodexClient::new().await;
+    let client = CodexClient::new().await?;
     let token = client.exchange_code(code, verifier).await?;
-    let (email, display_name, avatar_url) = extract_codex_profile_claims(&token.id_token);
-    let token_json = json!({
+    let claims = extract_codex_profile_claims(&token.id_token);
+    let mut token_json = json!({
         "access_token": token.access_token,
         "refresh_token": token.refresh_token,
         "id_token": token.id_token,
         "token_type": token.token_type,
         "expires_in": token.expires_in,
         "expires_at": now_ts_ms() + ((token.expires_in as i64) * 1000),
-        "email": email,
-        "display_name": display_name,
-        "avatar_url": avatar_url
+        "email": claims.email,
+        "display_name": claims.display_name,
+        "avatar_url": claims.avatar_url
     });
-    crate::db::save_token(token_json, &session.account_id, "codex").await?;
+    if let Some(map) = token_json.as_object_mut() {
+        if claims.organization_id.is_some() || claims.organization_name.is_some() {
+            map.insert(
+                "organization".to_string(),
+                json!({
+                    "id": claims.organization_id,
+                    "name": claims.organization_name
+                }),
+            );
+        }
+    }
+    crate::db::save_token_with_retry(token_json, &session.account_id, "codex", 3).await?;
     mark_session_complete(&session.state).await
 }
 
@@ -255,21 +330,64 @@ async fn exchange_claude(session: OAuthSession, code: &str) -> Result<SessionSta
         .code_verifier
         .as_deref()
         .ok_or_else(|| anyhow!("Missing PKCE verifier for claude session"))?;
-    let client = ClaudeClient::new().await;
+    let client = ClaudeClient::new().await?;
     let token = client.exchange_code(code, verifier).await?;
-    let token_json = serde_json::to_value(token)?;
-    crate::db::save_token(token_json, &session.account_id, "claude").await?;
+    let mut token_json = serde_json::to_value(token)?;
+    if let Some(map) = token_json.as_object_mut() {
+        match client
+            .fetch_profile_metadata(
+                map.get("access_token")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or_default(),
+            )
+            .await
+        {
+            Ok(profile_metadata) => {
+                if let Some(profile) = profile_metadata.as_object() {
+                    if let Some(email) = profile.get("email").and_then(serde_json::Value::as_str) {
+                        map.entry("email".to_string())
+                            .or_insert_with(|| serde_json::Value::String(email.to_string()));
+                    }
+                    if let Some(display_name) = profile
+                        .get("display_name")
+                        .and_then(serde_json::Value::as_str)
+                    {
+                        map.entry("display_name".to_string())
+                            .or_insert_with(|| serde_json::Value::String(display_name.to_string()));
+                    }
+                    if let Some(avatar_url) = profile
+                        .get("avatar_url")
+                        .and_then(serde_json::Value::as_str)
+                    {
+                        map.entry("avatar_url".to_string())
+                            .or_insert_with(|| serde_json::Value::String(avatar_url.to_string()));
+                    }
+                }
+                map.insert("provider_profile".to_string(), profile_metadata);
+            }
+            Err(error) => {
+                map.insert(
+                    "provider_profile_enrichment_error".to_string(),
+                    serde_json::Value::String(error.to_string()),
+                );
+            }
+        }
+    }
+    crate::db::save_token_with_retry(token_json, &session.account_id, "claude", 3).await?;
     mark_session_complete(&session.state).await
 }
 
 async fn exchange_antigravity(session: OAuthSession, code: &str) -> Result<SessionStatus> {
-    let client = AntigravityClient::new().await;
+    let client = AntigravityClient::new().await?;
     let token = client.exchange_code(code).await?;
     let email = client
         .get_user_email(&token.access_token)
         .await
         .unwrap_or_default();
-    let project_context = client.discover_project_context(&token.access_token).await.ok();
+    let project_context = client
+        .discover_project_context(&token.access_token)
+        .await
+        .ok();
     let project_id = if let Some(context) = project_context.as_ref() {
         client
             .ensure_onboarded(&token.access_token, context)
@@ -293,7 +411,7 @@ async fn exchange_antigravity(session: OAuthSession, code: &str) -> Result<Sessi
             .unwrap_or_else(|| "legacy-tier".to_string()),
         "type": "antigravity"
     });
-    crate::db::save_token(storage, &session.account_id, "antigravity").await?;
+    crate::db::save_token_with_retry(storage, &session.account_id, "antigravity", 3).await?;
     mark_session_complete(&session.state).await
 }
 
@@ -374,7 +492,14 @@ fn callback_config(provider: &str) -> Result<(&'static str, SocketAddr, Callback
 
 async fn callback_server_responds(addr: SocketAddr, route: &str) -> bool {
     let url = format!("http://{}{}", addr, route);
-    match reqwest::get(url).await {
+    let client = match reqwest::Client::builder()
+        .timeout(std::time::Duration::from_millis(500))
+        .build()
+    {
+        Ok(client) => client,
+        Err(_) => return false,
+    };
+    match client.get(url).send().await {
         Ok(response) => response.status().is_success(),
         Err(_) => false,
     }
@@ -432,20 +557,18 @@ fn now_ts_ms() -> i64 {
     chrono::Utc::now().timestamp_millis()
 }
 
-fn extract_codex_profile_claims(
-    id_token: &str,
-) -> (Option<String>, Option<String>, Option<String>) {
+fn extract_codex_profile_claims(id_token: &str) -> CodexProfileClaims {
     let mut segments = id_token.split('.');
     let _header = segments.next();
     let Some(payload) = segments.next() else {
-        return (None, None, None);
+        return CodexProfileClaims::default();
     };
 
     let Ok(decoded_payload) = URL_SAFE_NO_PAD.decode(payload) else {
-        return (None, None, None);
+        return CodexProfileClaims::default();
     };
     let Ok(claims) = serde_json::from_slice::<serde_json::Value>(&decoded_payload) else {
-        return (None, None, None);
+        return CodexProfileClaims::default();
     };
 
     let email = claims
@@ -461,14 +584,103 @@ fn extract_codex_profile_claims(
         .and_then(|value| value.as_str())
         .map(str::to_string);
 
-    (email, display_name, avatar_url)
+    let (organization_id, organization_name) = extract_codex_organization(&claims);
+    CodexProfileClaims {
+        email,
+        display_name,
+        avatar_url,
+        organization_id,
+        organization_name,
+    }
+}
+
+fn extract_codex_organization(claims: &serde_json::Value) -> (Option<String>, Option<String>) {
+    let first_org = claims
+        .get("organizations")
+        .and_then(|value| value.as_array())
+        .and_then(|items| items.first())
+        .and_then(|value| value.as_object());
+    let org_id = first_org
+        .and_then(|value| value.get("id"))
+        .and_then(|value| value.as_str())
+        .map(str::to_string)
+        .or_else(|| {
+            claims
+                .get("org_id")
+                .and_then(|value| value.as_str())
+                .map(str::to_string)
+        });
+    let org_name = first_org
+        .and_then(|value| value.get("name"))
+        .and_then(|value| value.as_str())
+        .map(str::to_string)
+        .or_else(|| {
+            claims
+                .get("org_name")
+                .and_then(|value| value.as_str())
+                .map(str::to_string)
+        });
+    (org_id, org_name)
+}
+
+fn elapsed_ms(started_at: Instant) -> u64 {
+    started_at.elapsed().as_millis().min(u128::from(u64::MAX)) as u64
+}
+
+async fn record_callback_bridge_event(was_redirect: bool, had_error: bool, latency_ms: u64) {
+    let mut telemetry = callback_bridge_telemetry().write().await;
+    if was_redirect {
+        telemetry.redirect_count = telemetry.redirect_count.saturating_add(1);
+    }
+    if had_error {
+        telemetry.error_count = telemetry.error_count.saturating_add(1);
+    }
+    telemetry.latency_samples_ms.push_back(latency_ms);
+    while telemetry.latency_samples_ms.len() > CALLBACK_LATENCY_SAMPLE_LIMIT {
+        telemetry.latency_samples_ms.pop_front();
+    }
+}
+
+fn percentile(values: &[u64], percentile: u8) -> u64 {
+    if values.is_empty() {
+        return 0;
+    }
+    let mut sorted = values.to_vec();
+    sorted.sort_unstable();
+    let rank = ((usize::from(percentile) * sorted.len()).saturating_sub(1)) / 100;
+    let index = rank.min(sorted.len().saturating_sub(1));
+    sorted[index]
+}
+
+pub async fn callback_bridge_telemetry_snapshot() -> CallbackBridgeTelemetrySnapshot {
+    let telemetry = callback_bridge_telemetry().read().await;
+    let samples: Vec<u64> = telemetry.latency_samples_ms.iter().copied().collect();
+    CallbackBridgeTelemetrySnapshot {
+        redirect_count: telemetry.redirect_count,
+        error_count: telemetry.error_count,
+        latency_ms: CallbackBridgeLatencySnapshot {
+            p50: percentile(&samples, 50),
+            p95: percentile(&samples, 95),
+            sample_count: samples.len(),
+        },
+    }
+}
+
+#[cfg(test)]
+async fn reset_callback_bridge_telemetry_for_tests() {
+    let mut telemetry = callback_bridge_telemetry().write().await;
+    telemetry.redirect_count = 0;
+    telemetry.error_count = 0;
+    telemetry.latency_samples_ms.clear();
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
-        callback_config, cancel_session, create_session, extract_codex_profile_claims,
-        get_session_status_for, normalize_error, ManualOAuthCallback,
+        callback_bridge_telemetry_snapshot, callback_config, cancel_session, create_session,
+        extract_codex_profile_claims, get_session_status_for, normalize_error,
+        record_callback_bridge_event, reset_callback_bridge_telemetry_for_tests,
+        ManualOAuthCallback,
     };
     use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 
@@ -544,18 +756,37 @@ mod tests {
 
     #[test]
     fn decodes_codex_profile_claims_from_id_token() {
-        let payload = r#"{"email":"test@example.com","name":"Test User","picture":"https://example.com/avatar.png"}"#;
+        let payload = r#"{"email":"test@example.com","name":"Test User","picture":"https://example.com/avatar.png","org_id":"org_123","org_name":"Acme"}"#;
         let token = format!(
             "header.{}.signature",
             URL_SAFE_NO_PAD.encode(payload.as_bytes())
         );
 
-        let (email, display_name, avatar_url) = extract_codex_profile_claims(&token);
-        assert_eq!(email.as_deref(), Some("test@example.com"));
-        assert_eq!(display_name.as_deref(), Some("Test User"));
+        let claims = extract_codex_profile_claims(&token);
+        assert_eq!(claims.email.as_deref(), Some("test@example.com"));
+        assert_eq!(claims.display_name.as_deref(), Some("Test User"));
         assert_eq!(
-            avatar_url.as_deref(),
+            claims.avatar_url.as_deref(),
             Some("https://example.com/avatar.png")
         );
+        assert_eq!(claims.organization_id.as_deref(), Some("org_123"));
+        assert_eq!(claims.organization_name.as_deref(), Some("Acme"));
+    }
+
+    #[tokio::test]
+    async fn tracks_callback_bridge_telemetry_percentiles() {
+        reset_callback_bridge_telemetry_for_tests().await;
+        record_callback_bridge_event(true, false, 10).await;
+        record_callback_bridge_event(true, false, 20).await;
+        record_callback_bridge_event(true, true, 30).await;
+        record_callback_bridge_event(true, false, 40).await;
+        record_callback_bridge_event(true, true, 100).await;
+
+        let snapshot = callback_bridge_telemetry_snapshot().await;
+        assert_eq!(snapshot.redirect_count, 5);
+        assert_eq!(snapshot.error_count, 2);
+        assert_eq!(snapshot.latency_ms.sample_count, 5);
+        assert_eq!(snapshot.latency_ms.p50, 30);
+        assert_eq!(snapshot.latency_ms.p95, 100);
     }
 }

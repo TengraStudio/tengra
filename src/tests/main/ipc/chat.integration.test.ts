@@ -44,6 +44,7 @@ const mockProxyService = { getProxyKey: vi.fn().mockReturnValue('dummy-key') };
 const mockCodeIntelligenceService = { queryIndexedSymbols: vi.fn().mockResolvedValue([]) };
 
 const mockContextRetrievalService = { retrieveContext: vi.fn().mockResolvedValue({ contextString: '', sources: [] }) };
+const mockLocaleService = { getLocalePack: vi.fn().mockReturnValue(undefined) };
 const mockRateLimitService = { waitForToken: vi.fn() };
 const mockDatabaseService = {
     addTokenUsage: vi.fn(),
@@ -79,6 +80,7 @@ describe('Session conversation IPC integration', () => {
             proxyService: mockProxyService as never,
             codeIntelligenceService: mockCodeIntelligenceService as never,
             contextRetrievalService: mockContextRetrievalService as never,
+            localeService: mockLocaleService as never,
             databaseService: mockDatabaseService as never,
             ...(overrides ?? {})
         });

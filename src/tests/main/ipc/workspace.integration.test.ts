@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock Electron ipcMain
 const ipcMainHandlers = new Map<string, (...args: any[]) => Promise<any>>();
+const showOpenDialogMock = vi.fn();
 
 vi.mock('electron', () => ({
     ipcMain: {
@@ -17,7 +18,10 @@ vi.mock('electron', () => ({
             ipcMainHandlers.set(channel, async (...args: any[]) => Promise.resolve(handler(...args)));
         }),
         removeHandler: vi.fn()
-    }
+    },
+    dialog: {
+        showOpenDialog: (...args: never[]) => showOpenDialogMock(...args),
+    },
 }));
 
 // Mock Services
@@ -88,6 +92,11 @@ describe('Workspace IPC Integration', () => {
         ipcMainHandlers.clear();
         vi.clearAllMocks();
         scheduledTasks = new Map<string, () => Promise<void>>();
+        showOpenDialogMock.mockReset();
+        showOpenDialogMock.mockResolvedValue({
+            canceled: false,
+            filePaths: ['C:\\workspace\\logo.png'],
+        });
 
         mockWorkspaceService = {
             analyzeWorkspace: vi.fn(),
@@ -318,6 +327,59 @@ describe('Workspace IPC Integration', () => {
         expect(result).toMatchObject({
             success: true,
             data: '/path/to/logo.png'
+        });
+    });
+
+    it('should handle workspace:uploadLogo with allowed image extension', async () => {
+        const applyLogoMock = vi.fn();
+        mockLogoService.applyLogo = applyLogoMock;
+        applyLogoMock.mockResolvedValue('C:\\workspace\\.tengra\\logo.png');
+
+        registerWorkspaceIpc(() => null, {
+            workspaceService: mockWorkspaceService,
+            logoService: mockLogoService,
+            inlineSuggestionService: mockInlineSuggestionService,
+            codeIntelligenceService: mockCodeIntelligenceService,
+            jobSchedulerService: mockJobSchedulerService,
+            databaseService: mockDatabaseService,
+            auditLogService: mockAuditLogService
+        }, new Set<string>());
+        const handler = ipcMainHandlers.get('workspace:uploadLogo');
+
+        const result = await handler!(mockEvent, 'C:\\workspace');
+
+        expect(showOpenDialogMock).toHaveBeenCalledTimes(1);
+        expect(applyLogoMock).toHaveBeenCalledWith('C:\\workspace', 'C:\\workspace\\logo.png');
+        expect(result).toMatchObject({
+            success: true,
+            data: 'C:\\workspace\\.tengra\\logo.png',
+        });
+    });
+
+    it('should reject workspace:uploadLogo for unsupported file extension', async () => {
+        showOpenDialogMock.mockResolvedValue({
+            canceled: false,
+            filePaths: ['C:\\workspace\\logo.txt'],
+        });
+
+        registerWorkspaceIpc(() => null, {
+            workspaceService: mockWorkspaceService,
+            logoService: mockLogoService,
+            inlineSuggestionService: mockInlineSuggestionService,
+            codeIntelligenceService: mockCodeIntelligenceService,
+            jobSchedulerService: mockJobSchedulerService,
+            databaseService: mockDatabaseService,
+            auditLogService: mockAuditLogService
+        }, new Set<string>());
+        const handler = ipcMainHandlers.get('workspace:uploadLogo');
+
+        const result = await handler!(mockEvent, 'C:\\workspace');
+        expect(result).toEqual({
+            success: false,
+            error: {
+                message: 'Invalid logo file type selected',
+                code: 'IPC_HANDLER_ERROR'
+            }
         });
     });
 

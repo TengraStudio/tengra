@@ -64,8 +64,9 @@ interface PanelLayoutContextType {
 const PanelLayoutContext = createContext<PanelLayoutContextType | null>(null);
 
 export const usePanelLayout = () => {
+    const { t } = useTranslation();
     const context = useContext(PanelLayoutContext);
-    if (!context) { throw new Error('usePanelLayout must be used within PanelLayoutProvider'); }
+    if (!context) { throw new Error(t('errors.context.usePanelLayoutProvider')); }
     return context;
 };
 

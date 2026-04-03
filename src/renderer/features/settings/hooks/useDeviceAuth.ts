@@ -15,13 +15,24 @@ const INITIAL_MODAL_STATE: DeviceCodeModalState = {
     errorMessage: undefined,
 };
 
-export function useDeviceAuth(
-    settings: AppSettings | null,
-    updateSettings: (s: AppSettings, save: boolean) => Promise<void>,
-    setAuthBusy: (busy: AuthBusyState | null) => void,
-    setAuthNotice: (msg: string, duration?: number) => void,
-    onRefreshModels?: (bypassCache?: boolean) => void
-) {
+interface DeviceAuthOptions {
+    settings: AppSettings | null;
+    updateSettings: (s: AppSettings, save: boolean) => Promise<void>;
+    setAuthBusy: (busy: AuthBusyState | null) => void;
+    setAuthNotice: (msg: string, duration?: number) => void;
+    t: (key: string, options?: Record<string, string | number>) => string;
+    onRefreshModels?: (bypassCache?: boolean) => void;
+}
+
+export function useDeviceAuth(options: DeviceAuthOptions) {
+    const {
+        settings,
+        updateSettings,
+        setAuthBusy,
+        setAuthNotice,
+        t,
+        onRefreshModels
+    } = options;
     const [deviceCodeModal, setDeviceCodeModal] =
         useState<DeviceCodeModalState>(INITIAL_MODAL_STATE);
     const activeRequestRef = useRef(0);
@@ -84,7 +95,7 @@ export function useDeviceAuth(
                         username:
                             (settings.github as { username?: string }).username ??
                             pollResult.account?.displayName ??
-                            'GitHub User',
+                            t('auth.githubUser'),
                     },
                 };
                 await updateSettings(updated, true);
@@ -95,7 +106,7 @@ export function useDeviceAuth(
                 setDeviceCodeModal(prev => ({
                     ...prev,
                     status: 'error',
-                    errorMessage: pollResult.error || 'GitHub bağlanamadı.',
+                    errorMessage: pollResult.error || t('auth.githubConnectionFailed'),
                 }));
             }
         } catch (error) {
@@ -106,14 +117,14 @@ export function useDeviceAuth(
             setDeviceCodeModal(prev => ({
                 ...prev,
                 status: 'error',
-                errorMessage: 'GitHub bağlanamadı.',
+                errorMessage: t('auth.githubConnectionFailed'),
             }));
         } finally {
             if (requestId === activeRequestRef.current) {
                 setAuthBusy(null);
             }
         }
-    }, [settings, updateSettings, setAuthBusy, setAuthNotice, onRefreshModels]);
+    }, [onRefreshModels, setAuthBusy, setAuthNotice, settings, t, updateSettings]);
 
     const connectCopilot = useCallback(async () => {
         if (!settings) {
@@ -173,7 +184,7 @@ export function useDeviceAuth(
                 setDeviceCodeModal(prev => ({
                     ...prev,
                     status: 'error',
-                    errorMessage: pollResult.error || 'Copilot bağlanamadı.',
+                    errorMessage: pollResult.error || t('auth.copilotConnectionFailed'),
                 }));
             }
         } catch (error) {
@@ -184,18 +195,18 @@ export function useDeviceAuth(
             setDeviceCodeModal(prev => ({
                 ...prev,
                 status: 'error',
-                errorMessage: 'Copilot bağlanamadı.',
+                errorMessage: t('auth.copilotConnectionFailed'),
             }));
         } finally {
             if (requestId === activeRequestRef.current) {
                 setAuthBusy(null);
             }
         }
-    }, [settings, updateSettings, setAuthBusy, setAuthNotice, onRefreshModels]);
+    }, [onRefreshModels, setAuthBusy, setAuthNotice, settings, t, updateSettings]);
 
     const closeDeviceCodeModal = useCallback(() => {
-        resetDeviceAuth('Connection cancelled.');
-    }, [resetDeviceAuth]);
+        resetDeviceAuth(t('auth.connectionCancelled'));
+    }, [resetDeviceAuth, t]);
 
     return {
         deviceCodeModal,

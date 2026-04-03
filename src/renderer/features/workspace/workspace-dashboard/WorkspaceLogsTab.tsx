@@ -55,7 +55,7 @@ export const WorkspaceLogsTab: React.FC<WorkspaceLogsTabProps> = ({
                 return {
                     timestamp: new Date().toISOString(),
                     level,
-                    source: data.sessionId || 'terminal',
+                    source: data.sessionId || t('workspaceDashboard.logsTerminalSource'),
                     message: line,
                 };
             });

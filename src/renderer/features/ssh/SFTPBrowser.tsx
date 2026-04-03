@@ -75,6 +75,36 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
         });
     }, []);
 
+    const getReconnectStateLabel = useCallback((state: ReconnectDiagnostics['state']): string => {
+        if (state === 'connected') {
+            return t('ssh.reconnectStateConnected');
+        }
+        if (state === 'reconnecting') {
+            return t('ssh.reconnectStateReconnecting');
+        }
+        return t('ssh.reconnectStateFailed');
+    }, [t]);
+
+    const getTransferDirectionLabel = useCallback((direction: TransferItem['direction']): string => {
+        if (direction === 'upload') {
+            return t('ssh.transferDirectionUpload');
+        }
+        return t('ssh.transferDirectionDownload');
+    }, [t]);
+
+    const getTransferStatusLabel = useCallback((status: TransferItem['status']): string => {
+        if (status === 'queued') {
+            return t('ssh.transferStatusQueued');
+        }
+        if (status === 'running') {
+            return t('ssh.transferStatusRunning');
+        }
+        if (status === 'done') {
+            return t('ssh.transferStatusDone');
+        }
+        return t('ssh.transferStatusFailed');
+    }, [t]);
+
     const loadFiles = useCallback(async (path: string, options?: { forceRefresh?: boolean }) => {
         const cached = cache[path];
         if (cached && !options?.forceRefresh && Date.now() - cached.cachedAt < REMOTE_TREE_CACHE_TTL_MS) {
@@ -151,12 +181,12 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
             clearDirectoryCache(currentPath);
             void loadFiles(currentPath);
         } else {
-            appLogger.warn('SFTPBrowser', t('ssh.connectionError', { error: result.error ?? 'Unknown error' }));
+            appLogger.warn('SFTPBrowser', t('ssh.connectionError', { error: result.error ?? t('ssh.unknownError') }));
         }
     };
 
     const handleMkdir = async () => {
-        const name = 'new-folder'; // Replaced prompt with default name
+        const name = t('ssh.defaultNewFolderName');
         appLogger.warn('SFTPBrowser', t('ssh.newFolderName'));
 
         const path = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`;
@@ -165,7 +195,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
             clearDirectoryCache(currentPath);
             void loadFiles(currentPath);
         } else {
-            appLogger.warn('SFTPBrowser', t('ssh.connectionError', { error: result.error ?? 'Unknown error' }));
+            appLogger.warn('SFTPBrowser', t('ssh.connectionError', { error: result.error ?? t('ssh.unknownError') }));
         }
     };
 
@@ -181,7 +211,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
             clearDirectoryCache(currentPath);
             void loadFiles(currentPath);
         } else {
-            appLogger.warn('SFTPBrowser', t('ssh.connectionError', { error: result.error ?? 'Unknown error' }));
+            appLogger.warn('SFTPBrowser', t('ssh.connectionError', { error: result.error ?? t('ssh.unknownError') }));
         }
     };
 
@@ -214,7 +244,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
         const baseRemotePath = currentPath === '/' ? `/${filename}` : `${currentPath}/${filename}`;
         const hasConflict = files.some(file => !file.isDirectory && file.name === filename);
         if (hasConflict && conflictPolicy === 'skip') {
-            setEditorStatus(t('ssh.connectionError', { error: 'Upload skipped due to conflict policy' }));
+            setEditorStatus(t('ssh.uploadSkippedConflict'));
             return;
         }
         const remotePath = hasConflict && conflictPolicy === 'rename'
@@ -467,7 +497,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
                 <div className="px-2 py-1 text-xs border-b border-border/40 bg-muted/20">
                     <div>
                         {t('ssh.reconnectStatus', {
-                            state: reconnectDiagnostics.state,
+                            state: getReconnectStateLabel(reconnectDiagnostics.state),
                             attempts: reconnectDiagnostics.attempts
                         })}
                         {reconnectDiagnostics.lastReconnectAt
@@ -522,8 +552,14 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
                                     >
                                         {file.isDirectory ? '📁 ' : '📄 '} {file.name}
                                     </td>
-                                    <td style={{ padding: '8px' }}>{!file.isDirectory && file.size ? (file.size / 1024).toFixed(1) + ' KB' : '-'}</td>
-                                    <td style={{ padding: '8px', fontSize: '0.8em', opacity: 0.6 }}>{file.mtime ? new Date(file.mtime).toLocaleDateString() : '-'}</td>
+                                    <td style={{ padding: '8px' }}>
+                                        {!file.isDirectory && file.size
+                                            ? t('ssh.fileSizeKilobytes', { size: (file.size / 1024).toFixed(1) })
+                                            : t('common.notAvailable')}
+                                    </td>
+                                    <td style={{ padding: '8px', fontSize: '0.8em', opacity: 0.6 }}>
+                                        {file.mtime ? new Date(file.mtime).toLocaleDateString() : t('common.notAvailable')}
+                                    </td>
                                     <td style={{ padding: '8px', display: 'flex', gap: '4px' }}>
                                         <button onClick={() => void handleRename(file)} style={{ fontSize: '0.9em' }}>✎</button>
                                         <button onClick={() => void handleDelete(file)} style={{ fontSize: '0.9em' }} className="text-destructive hover:text-destructive">🗑</button>
@@ -589,8 +625,8 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
                     <div className="max-h-28 overflow-auto space-y-1">
                         {transferItems.map(item => (
                             <div key={item.id} className="text-xs rounded border border-border/40 px-2 py-1">
-                                <div>{item.direction}: {item.remotePath}</div>
-                                <div className="text-muted-foreground">{item.status}</div>
+                                <div>{getTransferDirectionLabel(item.direction)}: {item.remotePath}</div>
+                                <div className="text-muted-foreground">{getTransferStatusLabel(item.status)}</div>
                                 {item.error && <div className="text-destructive">{item.error}</div>}
                                 {item.status === 'failed' && (
                                     <button className="secondary-btn text-xs mt-1" onClick={() => retryTransfer(item.id)}>

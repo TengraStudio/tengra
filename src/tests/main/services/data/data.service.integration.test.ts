@@ -3,6 +3,8 @@
  * Tests the full lifecycle: initialize → getPath → getAllPaths → cleanup
  */
 
+import * as path from 'path';
+
 import { afterEach,beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('electron', () => ({
@@ -25,7 +27,6 @@ vi.mock('@main/logging/logger', () => ({
 }));
 
 import * as fsp from 'fs/promises';
-import * as path from 'path';
 
 import type { TelemetryService } from '@main/services/analysis/telemetry.service';
 import type { DataType } from '@main/services/data/data.service';
@@ -97,7 +98,7 @@ describe('DataService Integration', () => {
     });
 
     it('should centralize logs under userData/logs instead of data/logs', () => {
-        expect(service.getPath('logs')).toBe('/mock/userData/logs');
+        expect(service.getPath('logs')).toBe(path.join('/mock/userData', 'logs'));
     });
 
     it('should return a copy of paths from getAllPaths', () => {

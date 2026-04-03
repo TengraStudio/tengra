@@ -58,6 +58,7 @@ export class ToolExecutor {
     private static readonly TOOL_TIMEOUT_MS: Partial<Record<string, number>> = {
         generate_image: 120000,
     };
+    private static readonly LIST_DIRECTORY_RESULT_HINT = 'This directory listing is complete for the requested path. For listing or count questions, answer directly from entryCount, fileCount, directoryCount, and entries. Do not call file_exists or get_system_info for the same path unless the user explicitly needs different evidence.';
 
     private idempotentTools = new Set([
         'read_file',
@@ -108,19 +109,39 @@ export class ToolExecutor {
 
     async execute(name: string, args: JsonObject, context?: ToolExecutionContext): Promise<InternalToolResult> {
         const timeoutMs = context?.timeoutMs ?? this.resolveTimeoutMs(name);
+        const executionId = randomUUID().slice(0, 8);
+        const startedAt = Date.now();
 
         // AGT-10: Caching for idempotent tools
         if (this.idempotentTools.has(name)) {
             const cacheKey = `${name}:${JSON.stringify(args)}`;
             const cached = this.toolCache.get(cacheKey);
             if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
-                appLogger.info('ToolExecutor', `Cache hit for tool: ${name}`);
-                return cached.result;
+                const cacheAgeMs = Date.now() - cached.timestamp;
+                appLogger.info(
+                    'ToolExecutor',
+                    `Tool cache hit (id=${executionId}, name=${name}, ageMs=${cacheAgeMs}, taskId=${context?.taskId ?? 'none'})`
+                );
+                // Annotate cached results so the model knows this data was previously returned
+                const annotatedResult = { ...cached.result };
+                if (annotatedResult.success && annotatedResult.result !== undefined) {
+                    const hint = `This is a cached result. You already received this data from '${name}'. Use it to answer the user instead of calling this tool again.`;
+                    if (typeof annotatedResult.result === 'object' && annotatedResult.result !== null && !Array.isArray(annotatedResult.result)) {
+                        annotatedResult.result = { ...(annotatedResult.result), _cached: true, _cacheHint: hint };
+                    } else {
+                        annotatedResult.result = { data: annotatedResult.result, _cached: true, _cacheHint: hint };
+                    }
+                }
+                return annotatedResult;
             }
         }
 
         try {
-            appLogger.info('ToolExecutor', `Executing tool: ${name} (taskId: ${context?.taskId ?? 'none'}, timeout: ${timeoutMs}ms)`);
+            appLogger.info(
+                'ToolExecutor',
+                `Tool execution started (id=${executionId}, name=${name}, taskId=${context?.taskId ?? 'none'}, timeoutMs=${timeoutMs})`,
+                { args }
+            );
 
             const executionPromise = this.routeToolCall(name, args, context);
 
@@ -134,6 +155,11 @@ export class ToolExecutor {
                 `Tool execution timed out after ${timeoutMs}ms`
             ) as InternalToolResult;
 
+            appLogger.info(
+                'ToolExecutor',
+                `Tool execution completed (id=${executionId}, name=${name}, success=${result.success}, durationMs=${Date.now() - startedAt}, errorType=${result.errorType ?? 'none'})`
+            );
+
             // AGT-10: Update cache for idempotent tools
             if (result.success && this.idempotentTools.has(name)) {
                 const cacheKey = `${name}:${JSON.stringify(args)}`;
@@ -145,7 +171,11 @@ export class ToolExecutor {
             const errorMessage = (error as Error).message;
             const isTimeout = errorMessage.includes('timed out');
 
-            appLogger.error('ToolExecutor', `Error executing tool ${name}`, error as Error);
+            appLogger.error(
+                'ToolExecutor',
+                `Tool execution failed (id=${executionId}, name=${name}, durationMs=${Date.now() - startedAt}, timeoutMs=${timeoutMs})`,
+                error as Error
+            );
 
             return {
                 success: false,
@@ -373,7 +403,22 @@ export class ToolExecutor {
             if (!response.success || !response.data) {
                 return { success: false, error: response.error ?? 'Failed to list directory' };
             }
-            return { success: true, result: response.data };
+            const entries = response.data;
+            const directoryCount = entries.filter(entry => entry.isDirectory).length;
+            const fileCount = entries.length - directoryCount;
+            return {
+                success: true,
+                result: {
+                    path,
+                    complete: true,
+                    pathExists: true,
+                    entryCount: entries.length,
+                    fileCount,
+                    directoryCount,
+                    entries,
+                    _toolHint: ToolExecutor.LIST_DIRECTORY_RESULT_HINT,
+                },
+            };
         } catch (e) {
             return { success: false, error: String(e) };
         }

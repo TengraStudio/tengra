@@ -371,16 +371,26 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                     <div className="rounded-lg border border-border/30 p-3">
                         <div className="text-muted-foreground">{t('modelExplorer.updated')}</div>
                         <div className="font-bold">
-                            {isHF ? hfModel?.lastModified?.split('T')[0] : (ollamaModel?.lastUpdated || '-')}
+                            {isHF
+                                ? (hfModel?.lastModified?.split('T')[0] ?? t('common.notAvailable'))
+                                : (ollamaModel?.lastUpdated || t('common.notAvailable'))}
                         </div>
                     </div>
                     <div className="rounded-lg border border-border/30 p-3">
                         <div className="text-muted-foreground">{t('modelExplorer.popularity')}</div>
-                        <div className="font-bold">{isHF ? (hfModel?.downloads?.toLocaleString() || '0') : (ollamaModel?.pulls || '-')}</div>
+                        <div className="font-bold">
+                            {isHF
+                                ? (hfModel?.downloads ?? 0).toLocaleString()
+                                : (ollamaModel?.pulls || t('common.notAvailable'))}
+                        </div>
                     </div>
                     <div className="rounded-lg border border-border/30 p-3">
                         <div className="text-muted-foreground">{t('modelExplorer.diskRam')}</div>
-                        <div className="font-bold">{preview?.requirements?.diskGB ? `${preview.requirements.diskGB}GB` : '-'}</div>
+                        <div className="font-bold">
+                            {preview?.requirements?.diskGB
+                                ? `${preview.requirements.diskGB}GB`
+                                : t('common.notAvailable')}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -499,10 +509,18 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                                             return (
                                                 <tr key={v.version} className="border-t border-border/30">
                                                     <td className="px-3 py-2 font-mono">{v.version}</td>
-                                                    <td className="px-3 py-2">{v.size || '-'}</td>
-                                                    <td className="px-3 py-2">{v.maxContext || '-'}</td>
-                                                    <td className="px-3 py-2">{v.inputType || '-'}</td>
-                                                    <td className="px-3 py-2 font-mono">{v.digest || '-'}</td>
+                                                    <td className="px-3 py-2">
+                                                        {v.size || t('common.notAvailable')}
+                                                    </td>
+                                                    <td className="px-3 py-2">
+                                                        {v.maxContext || t('common.notAvailable')}
+                                                    </td>
+                                                    <td className="px-3 py-2">
+                                                        {v.inputType || t('common.notAvailable')}
+                                                    </td>
+                                                    <td className="px-3 py-2 font-mono">
+                                                        {v.digest || t('common.notAvailable')}
+                                                    </td>
                                                     <td className="px-3 py-2">
                                                         {installed ? (
                                                             <button

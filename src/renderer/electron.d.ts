@@ -52,7 +52,9 @@ import {
     PendingMemory,
     RecallContext,
 } from '@/shared/types/advanced-memory';
+import type { MarketplaceSkill } from '@/shared/types/marketplace';
 import type { RuntimeBootstrapExecutionResult } from '@/shared/types/runtime-manifest';
+import type { ProxySkill, ProxySkillUpsertInput } from '@/shared/types/skill';
 import {
     VoiceCommand,
     VoiceInfo,
@@ -235,6 +237,13 @@ export interface ElectronAPI {
         account_id?: string;
         account?: Record<string, IpcValue>;
     }>;
+    verifyAuthBridge: (provider?: 'antigravity' | 'claude' | 'codex') => Promise<{
+        status: string;
+        provider: string;
+        readiness?: IpcValue;
+        callback?: IpcValue;
+        error?: string;
+    }>;
 
     saveClaudeSession: (
         sessionKey: string,
@@ -374,6 +383,12 @@ export interface ElectronAPI {
         provider?: string,
         model?: string
     ) => Promise<number>;
+    listSkills: () => Promise<ProxySkill[]>;
+    saveSkill: (input: ProxySkillUpsertInput) => Promise<ProxySkill>;
+    toggleSkill: (skillId: string, enabled: boolean) => Promise<ProxySkill>;
+    deleteSkill: (skillId: string) => Promise<boolean>;
+    listMarketplaceSkills: () => Promise<MarketplaceSkill[]>;
+    installMarketplaceSkill: (skillId: string) => Promise<ProxySkill>;
     performance: ElectronApiWorkspaceSystemDomain['performance'];
     runCommand: (
         command: string,
@@ -545,6 +560,12 @@ export interface ElectronAPI {
         provider?: string,
         model?: string
     ) => Promise<number>;
+    listSkills: () => Promise<ProxySkill[]>;
+    saveSkill: (input: ProxySkillUpsertInput) => Promise<ProxySkill>;
+    toggleSkill: (skillId: string, enabled: boolean) => Promise<ProxySkill>;
+    deleteSkill: (skillId: string) => Promise<boolean>;
+    listMarketplaceSkills: () => Promise<MarketplaceSkill[]>;
+    installMarketplaceSkill: (skillId: string) => Promise<ProxySkill>;
     performance: ElectronApiWorkspaceSystemDomain['performance'];
     runCommand: (
         command: string,

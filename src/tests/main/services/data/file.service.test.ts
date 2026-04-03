@@ -1,7 +1,13 @@
 import * as fs from 'fs/promises';
+import * as os from 'os';
+import * as path from 'path';
 
 import { FileManagementService } from '@main/services/data/file.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const TEST_NOTES_PATH = path.join(os.tmpdir(), 'tengra-tests', 'notes');
+const TEST_RENAME_PATH = path.join(os.tmpdir(), 'tengra-tests', 'rename');
+const TEST_WATCH_PATH = path.join(os.tmpdir(), 'tengra-tests', 'watch');
 
 vi.mock('@main/logging/logger', () => ({
     appLogger: {
@@ -15,7 +21,7 @@ vi.mock('@main/logging/logger', () => ({
 vi.mock('electron', () => ({
     app: {
         once: vi.fn(),
-        getPath: vi.fn().mockReturnValue('/tmp/userData')
+        getPath: vi.fn().mockReturnValue(path.join(os.tmpdir(), 'tengra-tests', 'userData'))
     }
 }));
 
@@ -90,14 +96,14 @@ describe('FileManagementService', () => {
         it('should write a note file', async () => {
             vi.mocked(fs.writeFile).mockResolvedValue(undefined);
 
-            const result = await service.syncNote('My Note', 'content here', '/tmp/notes');
+            const result = await service.syncNote('My Note', 'content here', TEST_NOTES_PATH);
             expect(result.success).toBe(true);
             expect(result.result?.path).toContain('my_note.md');
         });
 
         it('should return error when content exceeds write limit', async () => {
             const bigContent = 'x'.repeat(11 * 1024 * 1024);
-            const result = await service.syncNote('big', bigContent, '/tmp/notes');
+            const result = await service.syncNote('big', bigContent, TEST_NOTES_PATH);
             expect(result.success).toBe(false);
             expect(result.error).toContain('size limit');
         });
@@ -108,7 +114,7 @@ describe('FileManagementService', () => {
             vi.mocked(fs.readdir).mockResolvedValue(['file_old.txt', 'file_old2.txt', 'other.txt'] as never as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.rename).mockResolvedValue(undefined);
 
-            const result = await service.batchRename('/tmp/dir', '_old', '_new');
+            const result = await service.batchRename(TEST_RENAME_PATH, '_old', '_new');
             expect(result.success).toBe(true);
             expect(result.message).toContain('2 files renamed');
         });
@@ -116,7 +122,7 @@ describe('FileManagementService', () => {
         it('should handle empty directory', async () => {
             vi.mocked(fs.readdir).mockResolvedValue([] as never as Awaited<ReturnType<typeof fs.readdir>>);
 
-            const result = await service.batchRename('/tmp/dir', 'x', 'y');
+            const result = await service.batchRename(TEST_RENAME_PATH, 'x', 'y');
             expect(result.success).toBe(true);
             expect(result.message).toContain('0 files renamed');
         });
@@ -158,7 +164,7 @@ describe('FileManagementService', () => {
 
     describe('watchFolder', () => {
         it('should set up a folder watcher', () => {
-            const result = service.watchFolder('/tmp/watch');
+            const result = service.watchFolder(TEST_WATCH_PATH);
             expect(result.success).toBe(true);
             expect(result.data?.close).toBeInstanceOf(Function);
         });

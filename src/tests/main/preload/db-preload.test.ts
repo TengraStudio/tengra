@@ -27,10 +27,30 @@ describe('Db preload bridge', () => {
 
     it('forwards updateWorkspace and archiveWorkspace with handler-compatible arguments', async () => {
         const bridge = createDbBridge(ipcRenderer);
+        const workspaceResponse = {
+            id: 'ws-1',
+            title: 'Updated',
+            description: 'desc',
+            path: 'C:\\workspace',
+            mounts: [],
+            chatIds: [],
+            councilConfig: {
+                enabled: false,
+                members: [],
+                consensusThreshold: 0.7,
+            },
+            status: 'active',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+        };
+        mockInvoke
+            .mockResolvedValueOnce(workspaceResponse)
+            .mockResolvedValueOnce({ success: true });
 
-        await bridge.updateWorkspace('ws-1', { title: 'Updated' });
+        const updatedWorkspace = await bridge.updateWorkspace('ws-1', { title: 'Updated' });
         await bridge.archiveWorkspace('ws-1', true);
 
+        expect(updatedWorkspace).toEqual(workspaceResponse);
         expect(mockInvoke).toHaveBeenNthCalledWith(1, 'db:updateWorkspace', 'ws-1', { title: 'Updated' });
         expect(mockInvoke).toHaveBeenNthCalledWith(2, 'db:archiveWorkspace', 'ws-1', true);
     });

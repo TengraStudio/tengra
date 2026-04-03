@@ -548,18 +548,18 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                     </div>
                     <div>
                         <h3 className="text-2xl font-bold text-foreground leading-none">
-                            {t('advanced.title') || "Advanced Engine"}
+                            {t('advanced.title')}
                         </h3>
                         <div className="flex items-center gap-2 mt-2">
                             <div className="h-1 w-8 bg-primary rounded-full group-hover:w-12 transition-all duration-700" />
                             <p className="text-[10px] font-bold text-muted-foreground opacity-50">
-                                High-Frequency Tuning
+                                {t('advanced.subtitle')}
                             </p>
                         </div>
                     </div>
                 </div>
                 <p className="text-xs text-muted-foreground/60 leading-relaxed max-w-2xl font-medium px-1">
-                    Fine-tune the underlying neural orchestration, service synchronization, and inference parameters.
+                    {t('advanced.description')}
                 </p>
             </div>
 
@@ -584,7 +584,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                     <div className="bg-card rounded-3xl border border-border/40 p-10 space-y-8 shadow-sm group/benchmark hover:border-border/60 transition-all duration-500 overflow-hidden relative">
                          <div className="flex items-center gap-3 px-1 relative z-10">
                             <Gauge className="w-4 h-4 text-primary" />
-                            <h4 className="text-[10px] font-bold text-muted-foreground/40">Engine Throughput Snapshot</h4>
+                            <h4 className="text-[10px] font-bold text-muted-foreground/40">{t('advanced.throughputSnapshot')}</h4>
                         </div>
                         <div className="relative z-10">
                             <BenchmarkResults result={benchmarkResult} t={t} />

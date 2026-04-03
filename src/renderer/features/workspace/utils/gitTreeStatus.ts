@@ -4,6 +4,7 @@ type GitTreeStatusPreviewEntry = {
     statuses: string[]
     path: string
     isDirectory: boolean
+    isIgnored: boolean
 };
 
 type GitTreeStatusPreviewResponse = {
@@ -112,7 +113,7 @@ function applyPreviewEntries(
 
         return {
             ...node,
-            isGitIgnored: false,
+            isGitIgnored: previewEntry.isIgnored,
             gitRawStatus: previewEntry.statuses[0],
             gitStatus: toBadge(previewEntry.statuses),
         };

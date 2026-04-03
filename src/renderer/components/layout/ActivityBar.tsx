@@ -40,8 +40,9 @@ interface ActivityBarContextType {
 const ActivityBarContext = createContext<ActivityBarContextType | null>(null);
 
 export const useActivityBar = () => {
+    const { t } = useTranslation();
     const context = useContext(ActivityBarContext);
-    if (!context) { throw new Error('useActivityBar must be used within ActivityBarProvider'); }
+    if (!context) { throw new Error(t('errors.context.useActivityBarProvider')); }
     return context;
 };
 
@@ -208,7 +209,7 @@ export const ActivityBarLayout: React.FC<{
                     {/* Sidebar header */}
                     <div className="tengra-activity-sidebar__header">
                         <span className="tengra-activity-sidebar__title">
-                            {activityItems?.find(i => i.id === activeItem)?.label ?? activeItem}
+                            {activityItems?.find(i => i.id === activeItem)?.label ?? t('common.unknown')}
                         </span>
                         <button
                             onClick={() => setCollapsed(true)}

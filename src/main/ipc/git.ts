@@ -54,17 +54,16 @@ function normalizeGitPath(value: string): string {
 function buildTreeStatusPreviewEntries(
     entries: Array<{ status: string; path: string; isIgnored: boolean }>,
     relativeTargetPath: string
-): Array<{ path: string; statuses: string[]; isDirectory: boolean }> {
+): Array<{ path: string; statuses: string[]; isDirectory: boolean; isIgnored: boolean }> {
     const normalizedTargetPath = normalizeGitPath(
         relativeTargetPath === '.' ? '' : relativeTargetPath
     );
-    const previewEntries = new Map<string, { statuses: string[]; isDirectory: boolean }>();
+    const previewEntries = new Map<
+        string,
+        { statuses: string[]; isDirectory: boolean; isIgnored: boolean }
+    >();
 
     for (const entry of entries) {
-        if (entry.isIgnored) {
-            continue;
-        }
-
         const normalizedEntryPath = normalizeGitPath(entry.path);
         if (!normalizedEntryPath) {
             continue;
@@ -92,11 +91,12 @@ function buildTreeStatusPreviewEntries(
         const childPath = normalizedTargetPath
             ? `${normalizedTargetPath}/${firstSegment}`
             : firstSegment;
-        const existing = previewEntries.get(childPath) ?? { statuses: [], isDirectory: false };
+        const existing = previewEntries.get(childPath) ?? { statuses: [], isDirectory: false, isIgnored: true };
         existing.statuses.push(entry.status);
         if (remainingSegments.length > 0) {
             existing.isDirectory = true;
         }
+        existing.isIgnored = existing.isIgnored && entry.isIgnored;
         previewEntries.set(childPath, existing);
     }
 
@@ -104,6 +104,7 @@ function buildTreeStatusPreviewEntries(
         path,
         statuses: Array.from(new Set(value.statuses)),
         isDirectory: value.isDirectory,
+        isIgnored: value.isIgnored,
     }));
 }
 
@@ -297,7 +298,7 @@ function registerStatusHandlers(gitService: GitService, validateSender: SenderVa
                     const relativeTarget = path.relative(repoRoot, absoluteTarget).replace(/\\/g, '/');
                     const statusResult = await gitService.executeRaw(
                         repoRoot,
-                        'status --porcelain=1 --untracked-files=normal'
+                        'status --porcelain=1 --ignored=matching --untracked-files=all'
                     );
                     const response = {
                         success: true,

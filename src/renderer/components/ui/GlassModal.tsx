@@ -79,7 +79,7 @@ function useFocusTrap(isOpen: boolean, modalRef: React.RefObject<HTMLDivElement 
  * 
  * @example
  * ```tsx
- * <GlassModal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Settings">
+ * <GlassModal isOpen={isOpen} onClose={() => setIsOpen(false)} title={t('settings.title')}>
  *   <p>Modal content here</p>
  * </GlassModal>
  * ```

@@ -1,3 +1,5 @@
+import * as path from 'path';
+
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { DatabaseService } from '@main/services/data/database.service';
@@ -236,15 +238,38 @@ export function registerToolsIpc(
         workspaceAgentSessionId?: string;
     }) => {
         validateSender(event);
+
+        // AGT-LOOP-03: Pre-process arguments to normalize paths against workspace root
+        if (payload.workspaceAgentSessionId) {
+            const permissionContext = await getWorkspaceAgentPermissionContext(
+                payload.workspaceAgentSessionId,
+                databaseService
+            );
+
+            if (permissionContext) {
+                const { workspacePath } = permissionContext;
+                const pathKeys = ['path', 'cwd', 'dirPath', 'filePath', 'source', 'destination'];
+                
+                for (const key of pathKeys) {
+                    const argValue = payload.args[key];
+                    if (typeof argValue === 'string' && argValue.trim().length > 0 && !path.isAbsolute(argValue)) {
+                        payload.args[key] = path.join(workspacePath, argValue);
+                    }
+                }
+            }
+        }
+
         const permissionResult = await guardWorkspaceAgentToolExecution({
             toolName: payload.toolName,
             args: payload.args,
             sessionId: payload.workspaceAgentSessionId,
             databaseService,
         });
+
         if (permissionResult) {
             return permissionResult;
         }
+
         return await withRateLimit('tools', () => toolExecutor.execute(payload.toolName, payload.args));
     }, {
         argsSchema: z.tuple([toolExecuteRequestSchema]),

@@ -152,8 +152,14 @@ async fn execute_upstream_request(
     let request_body = request::translate_request(provider, &prepared_payload);
 
     let res = if provider == "antigravity" {
-        execute_antigravity_request(provider, auth_token, active_key_row, &prepared_payload, &request_body)
-            .await?
+        execute_antigravity_request(
+            provider,
+            auth_token,
+            active_key_row,
+            &prepared_payload,
+            &request_body,
+        )
+        .await?
     } else {
         send_upstream_request(
             provider,
@@ -240,7 +246,8 @@ async fn send_upstream_request(
     request_body: &Value,
     base_url_override: Option<&str>,
 ) -> Result<reqwest::Response, (StatusCode, Json<serde_json::Value>)> {
-    let upstream_url = get_upstream_url(provider, payload.stream, active_key_row, base_url_override);
+    let upstream_url =
+        get_upstream_url(provider, payload.stream, active_key_row, base_url_override);
     let builder = headers::apply_headers(
         upstream_http_client().post(upstream_url),
         provider,
@@ -262,6 +269,25 @@ async fn prepare_payload(
     auth_token: &str,
     active_key_row: &Value,
 ) -> Result<ChatCompletionRequest, (StatusCode, Json<serde_json::Value>)> {
+    if let Some(injection) = crate::proxy::skills::build_skill_injection(provider)
+        .await
+        .map_err(|error| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("Failed to resolve skills: {}", error)})),
+            )
+        })?
+    {
+        crate::proxy::skills::inject_skill_prompt(&mut payload, &injection.content).map_err(
+            |error| {
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json(json!({"error": format!("Failed to inject skills: {}", error)})),
+                )
+            },
+        )?;
+    }
+
     if provider != "antigravity" {
         return Ok(payload);
     }
@@ -285,7 +311,14 @@ async fn resolve_antigravity_project_id(
         return Ok(project_id);
     }
 
-    let client = crate::auth::antigravity::client::AntigravityClient::new().await;
+    let client = crate::auth::antigravity::client::AntigravityClient::new()
+        .await
+        .map_err(|error| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("Failed to initialize Antigravity OAuth client: {}", error)})),
+            )
+        })?;
     let context = client
         .discover_project_context(auth_token)
         .await
@@ -299,11 +332,11 @@ async fn resolve_antigravity_project_id(
         .ensure_onboarded(auth_token, &context)
         .await
         .map_err(|error| {
-        (
-            StatusCode::BAD_GATEWAY,
-            Json(json!({"error": format!("Failed to resolve Antigravity project: {}", error)})),
-        )
-    })?;
+            (
+                StatusCode::BAD_GATEWAY,
+                Json(json!({"error": format!("Failed to resolve Antigravity project: {}", error)})),
+            )
+        })?;
 
     if let Some(account_id) = active_key_row.get("id").and_then(Value::as_str) {
         let _ = crate::db::merge_metadata_patch(

@@ -1,5 +1,6 @@
 import { Input } from '@renderer/components/ui/input';
 import { Switch } from '@renderer/components/ui/switch';
+import type { AppSettings, CronJobEntry } from '@shared/types/settings';
 import {
     AlertCircle,
     Bot,
@@ -13,7 +14,6 @@ import {
 } from 'lucide-react';
 import React, { useCallback, useMemo, useState } from 'react';
 
-import type { AppSettings, CronJobEntry } from '@shared/types/settings';
 import type { SettingsSharedProps } from '../types';
 
 import {
@@ -65,10 +65,6 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
     const [showNewCronForm, setShowNewCronForm] = useState(false);
     const [newCronDraft, setNewCronDraft] = useState<CronJobEntry>(createEmptyCronJob);
 
-    if (!settings?.remoteAccounts) {
-        return null;
-    }
-
     const handleDiscordUpdate = (patch: Partial<NonNullable<AppSettings['remoteAccounts']>['discord']>) => {
         void updateRemoteAccounts({ discord: { ...discordConfig, ...patch } });
     };
@@ -97,6 +93,10 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
         const updated = cronJobs.map(j => (j.id === id ? { ...j, enabled } : j));
         void updateRemoteAccounts({ cronJobs: updated });
     }, [cronJobs, updateRemoteAccounts]);
+
+    if (!settings?.remoteAccounts) {
+        return null;
+    }
 
     return (
         <div className="mx-auto flex max-w-5xl flex-col gap-8 pb-10">

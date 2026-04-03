@@ -30,7 +30,12 @@ const mockTemplates: ChatTemplate[] = [
 ];
 
 describe('WelcomeScreen', () => {
-    const mockT = (key: string) => key;
+    const translations: Record<string, string> = {
+        'welcome.title': 'Welcome to Tengra',
+        'welcome.tagline': 'Build faster with your AI teammates',
+        'welcome.logoAlt': 'Tengra logo',
+    };
+    const mockT = (key: string) => translations[key] ?? key;
     const mockOnSelect = vi.fn();
 
     it('renders without crashing', () => {
@@ -44,8 +49,8 @@ describe('WelcomeScreen', () => {
         render(
             <WelcomeScreen t={mockT} templates={mockTemplates} onSelectTemplate={mockOnSelect} />
         );
-        expect(screen.getByText('welcome.title')).toBeInTheDocument();
-        expect(screen.getByText('welcome.tagline')).toBeInTheDocument();
+        expect(screen.getByText('Welcome to Tengra')).toBeInTheDocument();
+        expect(screen.getByText('Build faster with your AI teammates')).toBeInTheDocument();
     });
 
     it('renders template buttons', () => {
@@ -85,7 +90,7 @@ describe('WelcomeScreen', () => {
         render(
             <WelcomeScreen t={mockT} templates={mockTemplates} onSelectTemplate={mockOnSelect} />
         );
-        const logo = screen.getByAltText('logo');
+        const logo = screen.getByAltText('Tengra logo');
         expect(logo).toBeInTheDocument();
     });
 });

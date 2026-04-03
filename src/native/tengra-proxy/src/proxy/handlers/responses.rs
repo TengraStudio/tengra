@@ -218,7 +218,17 @@ fn openai_chunk_to_responses_events(chunk: &Value, response_id: &str) -> Vec<Str
                 .and_then(Value::as_str)
                 .filter(|id| !id.is_empty())
                 .map(str::to_string)
-                .unwrap_or_else(|| format!("{}-{}", if function_name.is_empty() { "tool" } else { function_name }, index));
+                .unwrap_or_else(|| {
+                    format!(
+                        "{}-{}",
+                        if function_name.is_empty() {
+                            "tool"
+                        } else {
+                            function_name
+                        },
+                        index
+                    )
+                });
             events.push(
                 json!({
                     "type": "response.function_call_arguments.delta",
@@ -292,7 +302,17 @@ fn openai_chat_to_responses(chat_response: Value) -> Value {
                 .and_then(Value::as_str)
                 .filter(|id| !id.is_empty())
                 .map(str::to_string)
-                .unwrap_or_else(|| format!("{}-{}", if function_name.is_empty() { "tool" } else { function_name }, index));
+                .unwrap_or_else(|| {
+                    format!(
+                        "{}-{}",
+                        if function_name.is_empty() {
+                            "tool"
+                        } else {
+                            function_name
+                        },
+                        index
+                    )
+                });
             output.push(json!({
                 "type": "function_call",
                 "id": tool_call_id.clone(),

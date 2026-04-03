@@ -193,6 +193,12 @@ export interface AppSettings {
         managementPassword?: string;
         port?: number;
         authStoreKey?: string;
+        oauthTimeoutMs?: {
+            default?: number;
+            codex?: number;
+            claude?: number;
+            antigravity?: number;
+        };
     };
     speech?: {
         voiceURI?: string;

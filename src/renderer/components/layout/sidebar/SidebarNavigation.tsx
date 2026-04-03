@@ -24,10 +24,31 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
     t
 }) => {
     const navItems = useMemo(() => ([
-        { view: 'chat' as const, icon: MessageSquare, label: t('sidebar.chats'), badge: chatsCount > 0 ? chatsCount : undefined },
-        { view: 'workspace' as const, icon: Rocket, label: t('sidebar.workspaces') },
-        { view: 'memory' as const, icon: Brain, label: t('sidebar.memory') },
-        { view: 'marketplace' as const, icon: ShoppingBag, label: t('sidebar.marketplace') }
+        {
+            view: 'chat' as const,
+            icon: MessageSquare,
+            label: t('sidebar.chats'),
+            badge: chatsCount > 0 ? chatsCount : undefined,
+            testId: 'sidebar-nav-chat'
+        },
+        {
+            view: 'workspace' as const,
+            icon: Rocket,
+            label: t('sidebar.workspaces'),
+            testId: 'sidebar-nav-workspace'
+        },
+        {
+            view: 'memory' as const,
+            icon: Brain,
+            label: t('sidebar.memory'),
+            testId: 'sidebar-nav-memory'
+        },
+        {
+            view: 'marketplace' as const,
+            icon: ShoppingBag,
+            label: t('sidebar.marketplace'),
+            testId: 'sidebar-nav-marketplace'
+        }
     ]), [chatsCount, t]);
     const [focusedIndex, setFocusedIndex] = useState(0);
     const preloadedViewsRef = useRef<Set<AppView>>(new Set());
@@ -73,6 +94,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                     onClick={() => onChangeView(item.view)}
                     onMouseEnter={() => preloadView(item.view)}
                     badge={item.badge}
+                    data-testid={item.testId}
                     isCollapsed={isCollapsed}
                     tabIndex={focusedIndex === index ? 0 : -1}
                     onFocus={() => {

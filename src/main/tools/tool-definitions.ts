@@ -11,7 +11,7 @@ export const toolDefinitions: ToolDefinition[] = [
                 properties: {
                     path: {
                         type: 'string',
-                        description: 'Path of the file to be read. Do not guess Windows usernames. For user-specific folders prefer values derived from get_system_info or paths like %USERPROFILE%/Desktop.'
+                        description: 'Path of the file to be read. Prefer direct Windows environment-variable paths like %USERPROFILE%/Desktop. Only use get_system_info if direct access fails or you truly need host metadata.'
                     }
                 },
                 required: ['path']
@@ -43,13 +43,13 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'list_directory',
-            description: 'Lists files and subdirectories in the specified folder.',
+            description: 'Lists files and subdirectories in the specified folder and returns complete count/list evidence for that path.',
             parameters: {
                 type: 'object',
                 properties: {
                     path: {
                         type: 'string',
-                        description: 'Path of the folder to be listed. Do not invent paths like C:/Users/user/...; resolve the real home/profile path first when needed.'
+                        description: 'Path of the folder to be listed. Prefer direct Windows environment-variable paths like %USERPROFILE%/Desktop or %USERPROFILE%/Documents. Do not call get_system_info first for ordinary file listing; use it only if direct access fails. After a successful list_directory result, answer count/list questions directly from that result instead of probing the same path again.'
                     }
                 },
                 required: ['path']
@@ -100,7 +100,7 @@ export const toolDefinitions: ToolDefinition[] = [
                 properties: {
                     path: {
                         type: 'string',
-                        description: 'Path of the file to be checked. Avoid hardcoded usernames in Windows paths.'
+                        description: 'Path of the file to be checked. Avoid hardcoded usernames in Windows paths. Do not use this for a directory that was already listed successfully with list_directory.'
                     }
                 },
                 required: ['path']
@@ -245,7 +245,7 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'get_system_info',
-            description: 'Returns system information (hostname, username, OS, etc.). Use this before constructing user-specific filesystem paths on Windows.',
+            description: 'Returns system context (hostname, username, OS, platform, shell, homeDir). Use only when the task truly requires host metadata or when direct %USERPROFILE%-style paths failed.',
             parameters: {
                 type: 'object',
                 properties: {},

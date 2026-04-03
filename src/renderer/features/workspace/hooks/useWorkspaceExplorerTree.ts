@@ -113,6 +113,7 @@ function makeWorkspaceEntry(mountId: string, node: FileNode): WorkspaceEntry {
         name: node.name,
         path: node.path,
         isDirectory: node.isDirectory,
+        isGitIgnored: node.isGitIgnored,
     };
 }
 

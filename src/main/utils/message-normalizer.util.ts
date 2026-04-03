@@ -1,5 +1,6 @@
 import { ChatMessage } from '@main/types/llm.types';
 import { Message } from '@shared/types/chat';
+import { JsonObject } from '@shared/types/common';
 import {
     AnthropicContentBlock,
     AnthropicMessage,
@@ -274,6 +275,26 @@ export class MessageNormalizer {
             if (message.role === 'system') {
                 continue;
             }
+            
+            // Handle tool role messages (tool results)
+            if (message.role === 'tool') {
+                const toolCallId = this.sanitizeToolCallId(message);
+                if (!toolCallId) {
+                    continue;
+                }
+                const toolOutput = typeof message.content === 'string' ? message.content : '';
+                // Anthropic requires tool results in a user message with tool_result blocks
+                result.push({
+                    role: 'user',
+                    content: [{
+                        type: 'tool_result' as const,
+                        tool_use_id: toolCallId,
+                        content: toolOutput
+                    }]
+                });
+                continue;
+            }
+            
             result.push(this.normalizeAnthropicMessage(message));
         }
         return result;
@@ -288,17 +309,49 @@ export class MessageNormalizer {
     private static normalizeAnthropicMessage(message: Message | ChatMessage): AnthropicMessage {
         const imageArray = Array.isArray(message.images) ? message.images : [];
         const images = imageArray.filter((img): img is string => !!img);
-
-        if (images.length === 0) {
-            const textContent = typeof message.content === 'string' ? message.content : '';
-            return { role: message.role as 'user' | 'assistant', content: textContent };
-        }
-
         const content: AnthropicContentBlock[] = [];
+        
+        // For assistant messages with tool calls, add tool_use blocks
+        if (message.role === 'assistant') {
+            const toolCalls = (message as Message).toolCalls || (message as ChatMessage).tool_calls;
+            if (Array.isArray(toolCalls) && toolCalls.length > 0) {
+                for (const tc of toolCalls) {
+                    const funcName = tc.function?.name;
+                    if (!funcName) { continue; }
+                    
+                    let inputObj: JsonObject = {};
+                    try {
+                        const args = tc.function.arguments;
+                        inputObj = typeof args === 'string' ? JSON.parse(args) as JsonObject : (args as JsonObject ?? {});
+                    } catch {
+                        inputObj = {};
+                    }
+                    
+                    content.push({
+                        type: 'tool_use' as const,
+                        id: tc.id || `tool_${Date.now()}`,
+                        name: funcName,
+                        input: inputObj
+                    });
+                }
+            }
+        }
+        
+        // Add text content
         if (message.content && typeof message.content === 'string') {
             content.push({ type: 'text' as const, text: message.content });
         }
-        this.addImagesToAnthropicContent(content, images);
+        
+        // Add images
+        if (images.length > 0) {
+            this.addImagesToAnthropicContent(content, images);
+        }
+        
+        // If no content blocks, add empty text to avoid API error
+        if (content.length === 0) {
+            content.push({ type: 'text' as const, text: '' });
+        }
+        
         return { role: message.role as 'user' | 'assistant', content };
     }
 

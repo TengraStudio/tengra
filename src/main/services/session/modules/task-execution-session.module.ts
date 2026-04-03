@@ -36,5 +36,22 @@ export class TaskExecutionSessionModule implements SessionRuntimeModule {
             previousStatus,
             nextStatus: state.status,
         });
+
+        if (state.status === 'completed' && state.metadata.taskId) {
+            this.eventBus.emit('notification:task-completed', {
+                taskId: state.metadata.taskId,
+                summary: this.buildCompletionSummary(state),
+                timestamp: Date.now(),
+            });
+        }
+    }
+
+    private buildCompletionSummary(state: SessionState): string {
+        const title = state.metadata.title?.trim();
+        if (title) {
+            return title;
+        }
+
+        return state.metadata.taskId ?? state.id;
     }
 }

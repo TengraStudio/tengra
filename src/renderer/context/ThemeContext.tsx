@@ -2,6 +2,8 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 
 export type Theme = string;
 
+import { translateErrorMessage } from '@/utils/error-handler.util';
+
 interface ThemeContextType {
     theme: Theme;
     setTheme: (theme: Theme) => void;
@@ -76,7 +78,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 export const useTheme = () => {
     const context = useContext(ThemeContext);
     if (context === undefined) {
-        throw new Error('useTheme must be used within a ThemeProvider');
+        throw new Error(translateErrorMessage('useTheme must be used within a ThemeProvider'));
     }
     return context;
 };

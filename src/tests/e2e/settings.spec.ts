@@ -1,33 +1,29 @@
-import { _electron as electron, ElectronApplication, expect, Page, test } from '@playwright/test';
+import { ElectronApplication, expect, Page, test } from '@playwright/test';
+
+import {
+    closeElectronApp,
+    launchElectronApp,
+    openSettingsPanel,
+    pressAppShortcut
+} from './e2e-test-utils';
 
 test.describe('Settings Panel E2E', () => {
     let electronApp: ElectronApplication;
     let appWindow: Page;
 
     test.beforeAll(async () => {
-        electronApp = await electron.launch({
-            args: ['dist/main/main.js'],
-            env: { ...process.env, NODE_ENV: 'test' }
-        });
-        appWindow = await electronApp.firstWindow();
-        await appWindow.waitForLoadState('domcontentloaded');
-        await appWindow.waitForTimeout(2000);
+        const launched = await launchElectronApp();
+        electronApp = launched.electronApp;
+        appWindow = launched.appWindow;
+        await expect(appWindow.getByRole('group', { name: /chat input/i })).toBeVisible({ timeout: 10000 });
     });
 
     test.afterAll(async () => {
-        if (electronApp) {
-            await electronApp.close();
-        }
+        await closeElectronApp(electronApp);
     });
 
     test('should open settings panel via button', async () => {
-        const settingsButton = appWindow.getByTestId('settings-button');
-        await expect(settingsButton).toBeVisible();
-        await settingsButton.click();
-        await appWindow.waitForTimeout(500);
-
-        const settingsContainer = appWindow.locator('.settings-container');
-        await expect(settingsContainer).toBeVisible();
+        await openSettingsPanel(appWindow);
     });
 
     test('should display settings tabs', async () => {
@@ -41,49 +37,50 @@ test.describe('Settings Panel E2E', () => {
     });
 
     test('should navigate to appearance tab', async () => {
-        const appearanceTab = appWindow.locator('.settings-tab-btn', { hasText: /appearance|görünüm/i });
-        if (await appearanceTab.count() > 0) {
-            await appearanceTab.first().click();
-            await appWindow.waitForTimeout(300);
-        }
+        const appearanceTab = appWindow.locator('#settings-tab-appearance');
+        await expect(appearanceTab).toBeVisible();
+        await appearanceTab.click();
+        const appearancePanel = appWindow.locator('#settings-panel-appearance');
+        await expect(appearancePanel).toBeVisible();
     });
 
     test('should navigate to general tab', async () => {
-        const generalTab = appWindow.locator('.settings-tab-btn', { hasText: /general|genel/i });
-        if (await generalTab.count() > 0) {
-            await generalTab.first().click();
-            await appWindow.waitForTimeout(300);
-        }
+        const generalTab = appWindow.locator('#settings-tab-general');
+        await expect(generalTab).toBeVisible();
+        await generalTab.click();
+        const generalPanel = appWindow.locator('#settings-panel-general');
+        await expect(generalPanel).toBeVisible();
     });
 
     test('should navigate to advanced tab', async () => {
-        const advancedTab = appWindow.locator('.settings-tab-btn', { hasText: /advanced|gelişmiş/i });
-        if (await advancedTab.count() > 0) {
-            await advancedTab.first().click();
-            await appWindow.waitForTimeout(300);
-        }
+        const advancedTab = appWindow.locator('#settings-tab-advanced');
+        await expect(advancedTab).toBeVisible();
+        await advancedTab.click();
+        const advancedPanel = appWindow.locator('#settings-panel-advanced');
+        await expect(advancedPanel).toBeVisible();
     });
 
     test('should navigate to about tab', async () => {
-        const aboutTab = appWindow.locator('.settings-tab-btn', { hasText: /about|hakkında/i });
-        if (await aboutTab.count() > 0) {
-            await aboutTab.first().click();
-            await appWindow.waitForTimeout(300);
-        }
+        const aboutTab = appWindow.locator('#settings-tab-about');
+        await expect(aboutTab).toBeVisible();
+        await aboutTab.click();
+        const aboutPanel = appWindow.locator('#settings-panel-about');
+        await expect(aboutPanel).toBeVisible();
     });
 
     test('should close settings with Escape key', async () => {
+        await expect(appWindow.locator('.settings-container')).toBeVisible();
         await appWindow.keyboard.press('Escape');
-        await appWindow.waitForTimeout(300);
+        await expect(appWindow.locator('.settings-container')).not.toBeVisible();
     });
 
     test('should reopen settings with keyboard shortcut', async () => {
-        await appWindow.keyboard.press('Control+,');
-        await appWindow.waitForTimeout(500);
+        await pressAppShortcut(appWindow, ',');
+        await expect(appWindow.locator('.settings-container')).toBeVisible();
 
         // Clean up
         await appWindow.keyboard.press('Escape');
-        await appWindow.waitForTimeout(300);
+        await expect(appWindow.locator('.settings-container')).not.toBeVisible();
     });
 });
 
@@ -92,32 +89,23 @@ test.describe('Settings Language Switching E2E', () => {
     let appWindow: Page;
 
     test.beforeAll(async () => {
-        electronApp = await electron.launch({
-            args: ['dist/main/main.js'],
-            env: { ...process.env, NODE_ENV: 'test' }
-        });
-        appWindow = await electronApp.firstWindow();
-        await appWindow.waitForLoadState('domcontentloaded');
-        await appWindow.waitForTimeout(2000);
+        const launched = await launchElectronApp();
+        electronApp = launched.electronApp;
+        appWindow = launched.appWindow;
+        await expect(appWindow.getByRole('group', { name: /chat input/i })).toBeVisible({ timeout: 10000 });
     });
 
     test.afterAll(async () => {
-        if (electronApp) {
-            await electronApp.close();
-        }
+        await closeElectronApp(electronApp);
     });
 
     test('should open settings and verify language selector exists', async () => {
-        const settingsButton = appWindow.getByTestId('settings-button');
-        await settingsButton.click();
-        await appWindow.waitForTimeout(500);
+        await openSettingsPanel(appWindow);
 
         // General tab should contain language settings
-        const generalTab = appWindow.locator('.settings-tab-btn', { hasText: /general|genel/i });
-        if (await generalTab.count() > 0) {
-            await generalTab.first().click();
-            await appWindow.waitForTimeout(300);
-        }
+        const generalTab = appWindow.locator('#settings-tab-general');
+        await expect(generalTab).toBeVisible();
+        await generalTab.click();
 
         // Verify the settings content area is rendered
         const settingsMain = appWindow.locator('.settings-main');
@@ -126,16 +114,13 @@ test.describe('Settings Language Switching E2E', () => {
 
     test('should have language dropdown or selector in general settings', async () => {
         // Look for a select element or language-related UI in the settings
-        const languageSelector = appWindow.locator('select, [role="combobox"], [role="listbox"]').first();
-        const hasLanguageSelector = await languageSelector.count() > 0;
+        const languageSelectors = appWindow.locator('select, [role="combobox"], [role="listbox"]');
+        const selectorCount = await languageSelectors.count();
 
-        // At minimum, the settings main area should be visible
         const settingsMain = appWindow.locator('.settings-main');
         await expect(settingsMain).toBeVisible();
 
-        // Language selector presence is feature-dependent
-        if (hasLanguageSelector) {
-            await expect(languageSelector).toBeVisible();
-        }
+        expect(selectorCount).toBeGreaterThan(0);
+        await expect(languageSelectors.first()).toBeVisible();
     });
 });

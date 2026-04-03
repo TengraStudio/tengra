@@ -10,12 +10,13 @@ use tokio::sync::RwLock;
 use uuid::Uuid;
 
 #[derive(Serialize)]
-struct QueryRequest {
-    sql: String,
-    params: Vec<serde_json::Value>,
+pub struct QueryRequest {
+    pub sql: String,
+    pub params: Vec<serde_json::Value>,
 }
 
 const DB_REQUEST_TIMEOUT_SECS: u64 = 10;
+const CALLBACK_DB_WRITE_RETRY_BACKOFF_MS: u64 = 250;
 
 static DB_CLIENT: OnceLock<Client> = OnceLock::new();
 static DB_QUERY_URL_CACHE: OnceLock<RwLock<Option<String>>> = OnceLock::new();
@@ -105,6 +106,29 @@ async fn execute_query(payload: &QueryRequest) -> Result<Response> {
             execute_query_once(&fallback_url, payload).await
         }
     }
+}
+
+pub async fn execute_query_json(payload: &QueryRequest) -> Result<Value> {
+    let response = execute_query(payload).await?;
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Err(anyhow!("Query failed with status {}: {}", status, body));
+    }
+    let parsed = response.json::<Value>().await?;
+    Ok(parsed)
+}
+
+pub async fn query_rows(payload: &QueryRequest) -> Result<Vec<Map<String, Value>>> {
+    let body = execute_query_json(payload).await?;
+    let rows = extract_query_rows(&body).unwrap_or_default();
+    let mut mapped = Vec::with_capacity(rows.len());
+    for row in rows {
+        if let Some(object) = row.as_object() {
+            mapped.push(object.clone());
+        }
+    }
+    Ok(mapped)
 }
 
 async fn execute_query_once(url: &str, payload: &QueryRequest) -> Result<Response> {
@@ -243,6 +267,77 @@ fn pick_optional_i64(preferred: &Value, fallback: &Value, key: &str) -> Value {
         return Value::from(value);
     }
     Value::Null
+}
+
+fn normalize_openai_metadata_map(row: &Value) -> Option<Map<String, Value>> {
+    let mut metadata = parse_metadata_object(row);
+    let token_object = metadata.get("token").and_then(Value::as_object).cloned();
+    let mut changed = false;
+
+    let Some(token) = token_object else {
+        return None;
+    };
+
+    for key in [
+        "access_token",
+        "refresh_token",
+        "session_token",
+        "expires_at",
+        "expires_in",
+    ] {
+        if !metadata.contains_key(key) {
+            if let Some(value) = token.get(key).cloned() {
+                metadata.insert(key.to_string(), value);
+                changed = true;
+            }
+        }
+    }
+
+    if metadata
+        .get("oauth_provider")
+        .and_then(Value::as_str)
+        .is_none()
+    {
+        metadata.insert(
+            "oauth_provider".to_string(),
+            Value::String("openai".to_string()),
+        );
+        changed = true;
+    }
+
+    if let Some(existing_org) = token
+        .get("organization")
+        .or_else(|| token.get("org"))
+        .cloned()
+    {
+        if !metadata.contains_key("organization") {
+            metadata.insert("organization".to_string(), existing_org);
+            changed = true;
+        }
+    }
+
+    if metadata
+        .get("migrated_by")
+        .and_then(Value::as_str)
+        .is_none()
+    {
+        metadata.insert(
+            "migrated_by".to_string(),
+            Value::String("oauth-bridge-openai-metadata-v1".to_string()),
+        );
+        changed = true;
+    }
+
+    if metadata
+        .get("migration_ts")
+        .and_then(Value::as_i64)
+        .is_none()
+    {
+        metadata.insert("migration_ts".to_string(), Value::from(now_ms()));
+        changed = true;
+    }
+
+    changed.then_some(metadata)
 }
 
 fn emit_auth_update(provider: &str, account_id: &str, token_data: &Value) {
@@ -385,6 +480,53 @@ pub async fn save_token(
         let err_text = res.text().await?;
         Err(anyhow!("Failed to save token to DB: {}", err_text))
     }
+}
+
+fn callback_retry_backoff_ms(attempt: u32) -> u64 {
+    CALLBACK_DB_WRITE_RETRY_BACKOFF_MS.saturating_mul(attempt as u64)
+}
+
+pub async fn save_token_with_retry(
+    token_data: serde_json::Value,
+    account_id: &str,
+    provider: &str,
+    max_attempts: u32,
+) -> Result<()> {
+    let attempts = max_attempts.max(1);
+    let canonical_id = canonical_account_id(provider, account_id);
+    let mut last_error = String::new();
+
+    for attempt in 1..=attempts {
+        match save_token(token_data.clone(), account_id, provider).await {
+            Ok(()) => return Ok(()),
+            Err(error) => {
+                last_error = error.to_string();
+                eprintln!(
+                    "[WARN] OAuth callback DB write attempt {}/{} failed for {} ({}): {}",
+                    attempt, attempts, provider, canonical_id, last_error
+                );
+                if attempt < attempts {
+                    tokio::time::sleep(Duration::from_millis(callback_retry_backoff_ms(attempt)))
+                        .await;
+                }
+            }
+        }
+    }
+
+    let failure_payload = serde_json::json!({
+        "provider": provider,
+        "accountId": canonical_id,
+        "attempts": attempts,
+        "error": last_error
+    });
+    eprintln!("__TENGRA_AUTH_UPDATE_FAILURE__:{}", failure_payload);
+    Err(anyhow!(
+        "OAuth callback DB write failed after {} attempts for {} ({}): {}",
+        attempts,
+        provider,
+        account_id,
+        last_error
+    ))
 }
 
 pub async fn update_quota(
@@ -681,6 +823,31 @@ pub async fn migrate_legacy_browser_oauth_accounts() -> Result<()> {
     Ok(())
 }
 
+pub async fn normalize_legacy_openai_linked_account_metadata() -> Result<u64> {
+    let mut normalized = 0_u64;
+    for provider in ["codex", "openai"] {
+        let accounts = get_provider_accounts(provider).await?;
+        for row in accounts {
+            let Some(account_id) = string_field(&row, "id") else {
+                continue;
+            };
+            let Some(normalized_metadata) = normalize_openai_metadata_map(&row) else {
+                continue;
+            };
+            update_metadata(
+                account_id.as_str(),
+                provider,
+                Value::Object(normalized_metadata),
+            )
+            .await?;
+            normalized = normalized.saturating_add(1);
+        }
+    }
+
+    invalidate_linked_accounts_cache().await;
+    Ok(normalized)
+}
+
 async fn rename_account(provider: &str, old_id: &str, new_id: &str) -> Result<()> {
     let sql = "UPDATE linked_accounts SET id = $1, updated_at = $2 WHERE id = $3 AND provider = $4";
     let payload = QueryRequest {
@@ -787,10 +954,10 @@ async fn merge_legacy_browser_account(
 #[cfg(test)]
 mod tests {
     use super::{
-        canonical_account_id, generate_browser_account_id, normalize_provider,
-        parse_metadata_object, provider_matches, resolved_email,
+        callback_retry_backoff_ms, canonical_account_id, generate_browser_account_id, normalize_openai_metadata_map,
+        normalize_provider, parse_metadata_object, provider_matches, resolved_email,
     };
-    use serde_json::json;
+    use serde_json::{json, Value};
 
     #[test]
     fn normalizes_provider_aliases() {
@@ -860,5 +1027,65 @@ mod tests {
         });
 
         assert_eq!(resolved_email(&row).as_deref(), Some("test@example.com"));
+    }
+
+    #[test]
+    fn callback_db_retry_backoff_increases_per_attempt() {
+        assert_eq!(callback_retry_backoff_ms(1), 250);
+        assert_eq!(callback_retry_backoff_ms(2), 500);
+        assert_eq!(callback_retry_backoff_ms(3), 750);
+    }
+
+    #[test]
+    fn normalizes_legacy_openai_token_metadata_shape() {
+        let row = json!({
+            "metadata": {
+                "token": {
+                    "access_token": "legacy-access",
+                    "refresh_token": "legacy-refresh",
+                    "organization": {
+                        "id": "org_legacy",
+                        "name": "Legacy Org"
+                    }
+                }
+            }
+        });
+
+        let normalized = normalize_openai_metadata_map(&row).expect("normalized");
+        assert_eq!(
+            normalized
+                .get("access_token")
+                .and_then(|value| value.as_str()),
+            Some("legacy-access")
+        );
+        assert_eq!(
+            normalized
+                .get("refresh_token")
+                .and_then(|value| value.as_str()),
+            Some("legacy-refresh")
+        );
+        assert_eq!(
+            normalized
+                .get("oauth_provider")
+                .and_then(|value| value.as_str()),
+            Some("openai")
+        );
+        assert_eq!(
+            normalized
+                .get("organization")
+                .and_then(|value| value.get("id"))
+                .and_then(|value| value.as_str()),
+            Some("org_legacy")
+        );
+        assert_eq!(
+            normalized
+                .get("migrated_by")
+                .and_then(|value| value.as_str()),
+            Some("oauth-bridge-openai-metadata-v1")
+        );
+        assert!(normalized
+            .get("migration_ts")
+            .and_then(Value::as_i64)
+            .is_some());
     }
 }

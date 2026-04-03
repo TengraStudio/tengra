@@ -2,6 +2,7 @@ import { appLogger } from '@main/logging/logger';
 import { SettingsService } from '@main/services/system/settings.service';
 import { ChatMessage, ContentPart } from '@main/types/llm.types';
 import { sanitizePrompt, validatePromptSafety } from '@main/utils/prompt-sanitizer.util';
+import { buildLocaleReinforcementInstruction } from '@shared/instructions';
 import { Message, MessageContentPart } from '@shared/types/chat';
 import { ValidationError } from '@shared/utils/error.util';
 
@@ -63,45 +64,6 @@ export function sanitizeMessages(messages: Array<Message | ChatMessage>): Array<
     });
 }
 
-/** Locale instruction definitions for non-English languages. */
-const LOCALE_INSTRUCTIONS: Record<string, { language: string; localeStyle: string; modelPreference: string }> = {
-    tr: {
-        language: 'Respond in Turkish.',
-        localeStyle: 'Use Turkish terminology, metric units, and examples relevant to Turkiye.',
-        modelPreference: 'Prefer model behaviors that provide strong Turkish fluency when equivalent options exist.'
-    },
-    ar: {
-        language: 'Respond in Arabic.',
-        localeStyle: 'Use Modern Standard Arabic with region-neutral phrasing unless the user requests a dialect.',
-        modelPreference: 'Prefer model behaviors that provide strong Arabic fluency when equivalent options exist.'
-    },
-    de: {
-        language: 'Respond in German.',
-        localeStyle: 'Use German formatting conventions and terminology suitable for DACH users.',
-        modelPreference: 'Prefer model behaviors that provide strong German fluency when equivalent options exist.'
-    },
-    es: {
-        language: 'Respond in Spanish.',
-        localeStyle: 'Use neutral Spanish phrasing and locale-aware units/date formats.',
-        modelPreference: 'Prefer model behaviors that provide strong Spanish fluency when equivalent options exist.'
-    },
-    fr: {
-        language: 'Respond in French.',
-        localeStyle: 'Use French terminology and locale-appropriate formatting conventions.',
-        modelPreference: 'Prefer model behaviors that provide strong French fluency when equivalent options exist.'
-    },
-    ja: {
-        language: 'Respond in Japanese.',
-        localeStyle: 'Use natural Japanese register with locale-appropriate honorific-neutral business style by default.',
-        modelPreference: 'Prefer model behaviors that provide strong Japanese fluency when equivalent options exist.'
-    },
-    zh: {
-        language: 'Respond in Chinese.',
-        localeStyle: 'Use Simplified Chinese and locale-aware terminology unless the user requests otherwise.',
-        modelPreference: 'Prefer model behaviors that provide strong Chinese fluency when equivalent options exist.'
-    },
-};
-
 /**
  * Injects locale-specific instructions into the system prompt.
  */
@@ -113,10 +75,7 @@ export function applyLocaleInstructions(
     const lang = settings.general?.language ?? 'en';
 
     if (lang === 'en') { return messages; }
-
-    const selectedLocale = LOCALE_INSTRUCTIONS[lang];
-    if (!selectedLocale) { return messages; }
-    const instruction = `${selectedLocale.language} ${selectedLocale.localeStyle} ${selectedLocale.modelPreference}`;
+    const instruction = buildLocaleReinforcementInstruction(lang);
 
     const result = [...messages];
     const systemMsgIndex = result.findIndex(m => m.role === 'system');

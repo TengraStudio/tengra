@@ -5,6 +5,7 @@ import {
     settingsPageErrorCodes,
     validateSettingsPayload
 } from '@/features/settings/utils/settings-page-validation';
+import { useTranslation } from '@/i18n';
 import { recordSettingsPageHealthEvent } from '@/store/settings-page-health.store';
 import { AppSettings } from '@/types';
 
@@ -41,6 +42,7 @@ async function withRetry<T>(operation: () => Promise<T>, attempts = SETTINGS_RET
 
 export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => void) {
     const { settings, updateSettings, reloadSettings, isLoading: isSettingsLoading } = useSettings();
+    const { t } = useTranslation(settings?.general?.language ?? 'en');
 
     // Wrapper for backward compatibility
     const setSettings = useCallback(async (newSettings: AppSettings | null) => {
@@ -60,6 +62,7 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
         settings,
         updateSettings,
         linkedAccountsBase,
+        t,
         onRefreshModels
     );
     const cancelBrowserAuthForAccount = auth.cancelBrowserAuthForAccount;

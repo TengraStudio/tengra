@@ -1,10 +1,11 @@
 import * as fs from 'fs';
+import * as path from 'path';
 
 import { DataService } from '@main/services/data/data.service';
 import { EvaluationContext, FeatureFlag, FeatureFlagError, FeatureFlagErrorCode, FeatureFlagService } from '@main/services/external/feature-flag.service';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const FEATURES_PATH = '/mock/config/features.json';
+const FEATURES_PATH = path.join('/mock/config', 'features.json');
 
 /** The 5 default council flags that FeatureFlagService always merges */
 const DEFAULT_COUNCIL_FLAGS: FeatureFlag[] = [
@@ -22,7 +23,7 @@ const flushMicrotasks = async (): Promise<void> => {
 
 const createService = (): FeatureFlagService => {
     const dataServiceMock: Pick<DataService, 'getPath'> = {
-        getPath: vi.fn().mockReturnValue('/mock/config'),
+        getPath: vi.fn().mockReturnValue(path.join('/mock', 'config')),
     };
 
     return new FeatureFlagService(dataServiceMock as never as DataService);
@@ -72,7 +73,7 @@ describe('FeatureFlagService', () => {
         service.enable('beta');
         await flushMicrotasks();
 
-        expect(fs.promises.mkdir).toHaveBeenCalledWith('/mock/config', { recursive: true, mode: 0o700 });
+        expect(fs.promises.mkdir).toHaveBeenCalledWith(path.join('/mock', 'config'), { recursive: true, mode: 0o700 });
         expect(fs.promises.writeFile).toHaveBeenCalledTimes(1);
 
         const enablePayload = String(vi.mocked(fs.promises.writeFile).mock.calls[0]?.[1]);

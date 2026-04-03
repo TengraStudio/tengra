@@ -29,6 +29,7 @@ const mockLLMService = {
 const mockProxyService = { getProxyKey: vi.fn().mockReturnValue('dummy-key') };
 const mockCodeIntelligenceService = { queryIndexedSymbols: vi.fn().mockResolvedValue([]) };
 const mockContextRetrievalService = { retrieveContext: vi.fn().mockResolvedValue({ contextString: '', sources: [] }) };
+const mockLocaleService = { getLocalePack: vi.fn().mockReturnValue(undefined) };
 const mockDatabaseService = {
     addTokenUsage: vi.fn(),
     addMessage: vi.fn(),
@@ -55,6 +56,7 @@ describe('Chat stream persistence', () => {
             proxyService: mockProxyService as never,
             codeIntelligenceService: mockCodeIntelligenceService as never,
             contextRetrievalService: mockContextRetrievalService as never,
+            localeService: mockLocaleService as never,
             databaseService: mockDatabaseService as never,
         });
     });
@@ -77,7 +79,7 @@ describe('Chat stream persistence', () => {
         });
 
         expect(result).toMatchObject({ success: true });
-        expect(mockDatabaseService.chats.addMessage).toHaveBeenCalledWith(expect.objectContaining({
+        expect(mockDatabaseService.addMessage).toHaveBeenCalledWith(expect.objectContaining({
             chatId: 'chat-1',
             role: 'assistant',
             content: '{"name":"generate_image"}',

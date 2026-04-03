@@ -377,9 +377,11 @@ export class LLMOpenAIChatService {
     private sanitizeTools(tools: ToolDefinition[]): RuntimeValue[] {
         return tools.map(tool => {
             const params = tool.function.parameters ? { ...tool.function.parameters as JsonObject } : {};
-            if (params.required) {
-                delete params.required;
-            }
+            // AGT-LLM-01: DO NOT delete mandatory 'required' parameters.
+            // Models rely on this to know which arguments are necessary.
+            // if (params.required) {
+            //    delete params.required;
+            // }
             return {
                 ...tool,
                 function: {

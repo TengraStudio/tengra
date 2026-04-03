@@ -57,6 +57,17 @@ export function setIpcEventBus(eventBus: EventBusService | null): void {
  * @param durationMs - Time elapsed during execution
  * @param errorMessage - Error message if phase is 'failed'
  */
+const lastEmitMap = new Map<string, number>();
+const EMIT_THROTTLE_MS = 100;
+
+/**
+ * Emits an IPC lifecycle event to the event bus with throttling.
+ *
+ * @param phase - The lifecycle phase (started, succeeded, failed)
+ * @param handlerName - The name of the IPC handler
+ * @param durationMs - Time elapsed during execution
+ * @param errorMessage - Error message if phase is 'failed'
+ */
 function emitIpcLifecycleEvent(
     phase: 'started' | 'succeeded' | 'failed',
     handlerName: string,
@@ -64,6 +75,16 @@ function emitIpcLifecycleEvent(
     errorMessage?: string
 ): void {
     if (!ipcEventBus) { return; }
+
+    // Always emit failures immediately
+    if (phase !== 'failed') {
+        const now = Date.now();
+        const last = lastEmitMap.get(`${handlerName}:${phase}`) || 0;
+        if (now - last < EMIT_THROTTLE_MS) {
+            return;
+        }
+        lastEmitMap.set(`${handlerName}:${phase}`, now);
+    }
 
     ipcEventBus.emitCustom('ipc:lifecycle', {
         phase,

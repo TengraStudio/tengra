@@ -102,7 +102,10 @@ mod tests {
     #[test]
     fn maps_aliases_bidirectionally() {
         assert_eq!(alias_model_name("gemini-3-flash"), "gemini-3-flash-preview");
-        assert_eq!(upstream_model_name("gemini-3-flash-preview"), "gemini-3-flash");
+        assert_eq!(
+            upstream_model_name("gemini-3-flash-preview"),
+            "gemini-3-flash"
+        );
         assert_eq!(
             alias_model_name("claude-sonnet-4-5-20250929"),
             "gemini-claude-sonnet-4-5"

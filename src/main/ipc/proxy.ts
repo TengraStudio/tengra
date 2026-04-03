@@ -121,6 +121,10 @@ export function registerProxyIpc(
         return await proxyService.getBrowserAuthStatus(provider as 'antigravity' | 'claude' | 'codex', state, accountId);
     }, { status: 'error', error: 'Failed to fetch auth status', accountId: '' }));
 
+    ipcMain.handle('proxy:verifyAuthBridge', createSafeIpcHandler('proxy:verifyAuthBridge', async (_event, provider?: string) => {
+        return await proxyService.verifyAuthBridge(provider as 'antigravity' | 'claude' | 'codex' | undefined);
+    }, { status: 'failed', provider: 'codex' }));
+
     ipcMain.handle('proxy:cancelAuth', createSafeIpcHandler('proxy:cancelAuth', async (_event, provider: string, state: string, accountId: string) => {
         appLogger.info('ProxyIPC', `proxy:cancelAuth requested for ${provider}:${accountId}`);
         return await proxyService.cancelBrowserAuth(provider as 'antigravity' | 'claude' | 'codex', state, accountId);
@@ -129,6 +133,67 @@ export function registerProxyIpc(
     ipcMain.handle('proxy:getModels', createSafeIpcHandler('proxy:getModels', async () => {
         return await proxyService.getModels();
     }, { data: [] }));
+
+    ipcMain.handle('proxy:listSkills', createSafeIpcHandler('proxy:listSkills', async () => {
+        return await proxyService.listSkills();
+    }, []));
+
+    ipcMain.handle('proxy:saveSkill', createSafeIpcHandler('proxy:saveSkill', async (_event, input: {
+        id?: string;
+        name: string;
+        description?: string;
+        provider?: string;
+        content: string;
+        enabled?: boolean;
+    }) => {
+        return await proxyService.saveSkill(input);
+    }, {
+        id: '',
+        name: '',
+        description: '',
+        provider: 'all',
+        content: '',
+        enabled: false,
+        source: '',
+        created_at: 0,
+        updated_at: 0,
+    }));
+
+    ipcMain.handle('proxy:toggleSkill', createSafeIpcHandler('proxy:toggleSkill', async (_event, skillId: string, enabled: boolean) => {
+        return await proxyService.toggleSkill(skillId, { enabled });
+    }, {
+        id: '',
+        name: '',
+        description: '',
+        provider: 'all',
+        content: '',
+        enabled: false,
+        source: '',
+        created_at: 0,
+        updated_at: 0,
+    }));
+
+    ipcMain.handle('proxy:deleteSkill', createSafeIpcHandler('proxy:deleteSkill', async (_event, skillId: string) => {
+        return await proxyService.deleteSkill(skillId);
+    }, false));
+
+    ipcMain.handle('proxy:listMarketplaceSkills', createSafeIpcHandler('proxy:listMarketplaceSkills', async () => {
+        return await proxyService.listMarketplaceSkills();
+    }, []));
+
+    ipcMain.handle('proxy:installMarketplaceSkill', createSafeIpcHandler('proxy:installMarketplaceSkill', async (_event, skillId: string) => {
+        return await proxyService.installMarketplaceSkill({ id: skillId });
+    }, {
+        id: '',
+        name: '',
+        description: '',
+        provider: 'all',
+        content: '',
+        enabled: false,
+        source: '',
+        created_at: 0,
+        updated_at: 0,
+    }));
 
     ipcMain.handle('proxy:getQuota', createSafeIpcHandler('proxy:getQuota', async () => {
         return await proxyService.getQuota();

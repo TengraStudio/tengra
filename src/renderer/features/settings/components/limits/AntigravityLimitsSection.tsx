@@ -105,7 +105,7 @@ export const AntigravityLimitsSection: React.FC<AntigravityLimitsSectionProps> =
 
                 {antigravityModels.length === 0 && (
                     <div className="py-12 text-center opacity-30 text-sm">
-                        {t('settings.usageLimits.noAntigravityModels') || 'No Antigravity models found'}
+                        {t('settings.usageLimits.noAntigravityModels')}
                     </div>
                 )}
             </div>

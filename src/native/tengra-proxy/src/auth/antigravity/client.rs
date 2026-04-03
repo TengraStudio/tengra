@@ -3,8 +3,10 @@ use crate::static_config;
 use anyhow::{anyhow, Result};
 use reqwest;
 use serde_json::{json, Value};
+use std::time::Duration;
 
 pub struct AntigravityClient {
+    client: reqwest::Client,
     client_id: String,
     client_secret: String,
     redirect_uri: String,
@@ -17,12 +19,17 @@ pub struct AntigravityProjectContext {
 }
 
 impl AntigravityClient {
-    pub async fn new() -> Self {
-        Self {
+    pub async fn new() -> Result<Self> {
+        let timeout_secs = static_config::oauth_provider_timeout_secs("antigravity")?;
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(timeout_secs))
+            .build()?;
+        Ok(Self {
+            client,
             client_id: static_config::ANTIGRAVITY_CLIENT_ID.to_string(),
             client_secret: static_config::ANTIGRAVITY_CLIENT_SECRET.to_string(),
             redirect_uri: "http://localhost:51121/oauth-callback".to_string(),
-        }
+        })
     }
 
     pub fn generate_auth_url(&self, state: &str) -> String {
@@ -52,7 +59,6 @@ impl AntigravityClient {
     }
 
     pub async fn exchange_code(&self, code: &str) -> Result<AntigravityToken> {
-        let client = reqwest::Client::new();
         let params = [
             ("client_id", &self.client_id),
             ("client_secret", &self.client_secret),
@@ -61,7 +67,8 @@ impl AntigravityClient {
             ("grant_type", &"authorization_code".to_string()),
         ];
 
-        let res = client
+        let res = self
+            .client
             .post("https://oauth2.googleapis.com/token")
             .form(&params)
             .send()
@@ -77,8 +84,8 @@ impl AntigravityClient {
     }
 
     pub async fn get_user_email(&self, access_token: &str) -> Result<String> {
-        let client = reqwest::Client::new();
-        let res = client
+        let res = self
+            .client
             .get("https://www.googleapis.com/oauth2/v1/userinfo?alt=json")
             .bearer_auth(access_token)
             .send()
@@ -96,8 +103,8 @@ impl AntigravityClient {
         &self,
         access_token: &str,
     ) -> Result<AntigravityProjectContext> {
-        let client = reqwest::Client::new();
-        let res = client
+        let res = self
+            .client
             .post("https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist")
             .bearer_auth(access_token)
             .header("Content-Type", "application/json")
@@ -137,10 +144,10 @@ impl AntigravityClient {
         access_token: &str,
         context: &AntigravityProjectContext,
     ) -> Result<String> {
-        let client = reqwest::Client::new();
         let mut attempts = 0;
         while attempts < 6 {
-            let res = client
+            let res = self
+                .client
                 .post("https://cloudcode-pa.googleapis.com/v1internal:onboardUser")
                 .bearer_auth(access_token)
                 .header("Content-Type", "application/json")
@@ -169,9 +176,8 @@ impl AntigravityClient {
 
             let body: Value = res.json().await?;
             if body.get("done").and_then(Value::as_bool) == Some(true) {
-                return Ok(
-                    extract_onboarded_project_id(&body).unwrap_or_else(|| context.project_id.clone())
-                );
+                return Ok(extract_onboarded_project_id(&body)
+                    .unwrap_or_else(|| context.project_id.clone()));
             }
 
             attempts += 1;
@@ -221,8 +227,7 @@ fn extract_default_tier_id(body: &Value) -> Option<String> {
 }
 
 fn extract_onboarded_project_id(body: &Value) -> Option<String> {
-    body.get("response")
-        .and_then(extract_project_id)
+    body.get("response").and_then(extract_project_id)
 }
 
 #[cfg(test)]

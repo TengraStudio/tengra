@@ -1,6 +1,8 @@
 import { useWorkspaceListManager } from '@renderer/features/workspace/hooks/useWorkspaceListManager';
 import { createContext, ReactNode, useContext, useMemo } from 'react';
 
+import { translateErrorMessage } from '@/utils/error-handler.util';
+
 type WorkspaceContextType = ReturnType<typeof useWorkspaceListManager>
 type WorkspaceSelectionContextType = Pick<
     WorkspaceContextType,
@@ -73,7 +75,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 export function useWorkspace() {
     const context = useContext(WorkspaceContext);
     if (!context) {
-        throw new Error('useWorkspace must be used within a WorkspaceProvider');
+        throw new Error(translateErrorMessage('useWorkspace must be used within a WorkspaceProvider'));
     }
     return context;
 }
@@ -81,7 +83,7 @@ export function useWorkspace() {
 export function useWorkspaceSelection() {
     const context = useContext(WorkspaceSelectionContext);
     if (!context) {
-        throw new Error('useWorkspaceSelection must be used within a WorkspaceProvider');
+        throw new Error(translateErrorMessage('useWorkspaceSelection must be used within a WorkspaceProvider'));
     }
     return context;
 }
@@ -89,7 +91,7 @@ export function useWorkspaceSelection() {
 export function useWorkspaceLibrary() {
     const context = useContext(WorkspaceLibraryContext);
     if (!context) {
-        throw new Error('useWorkspaceLibrary must be used within a WorkspaceProvider');
+        throw new Error(translateErrorMessage('useWorkspaceLibrary must be used within a WorkspaceProvider'));
     }
     return context;
 }
@@ -97,7 +99,7 @@ export function useWorkspaceLibrary() {
 export function useWorkspaceTerminal() {
     const context = useContext(WorkspaceTerminalContext);
     if (!context) {
-        throw new Error('useWorkspaceTerminal must be used within a WorkspaceProvider');
+        throw new Error(translateErrorMessage('useWorkspaceTerminal must be used within a WorkspaceProvider'));
     }
     return context;
 }

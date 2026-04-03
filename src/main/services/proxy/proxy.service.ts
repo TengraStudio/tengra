@@ -5,7 +5,7 @@ import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { ProxyEmbedStatus, ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
-import { validateInterval, validatePort, validateProvider, validateToken } from '@main/services/proxy/proxy-validation.util';
+import { validateInterval, validateOAuthTimeoutMs, validatePort, validateProvider, validateToken } from '@main/services/proxy/proxy-validation.util';
 import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { SecurityService } from '@main/services/security/security.service';
@@ -13,6 +13,14 @@ import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { ClaudeQuota, CodexUsage, CopilotQuota, ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota';
+import {
+  ProxyMarketplaceSkillInstallInput,
+  ProxySkill,
+  ProxySkillItemResponse,
+  ProxySkillListResponse,
+  ProxySkillToggleInput,
+  ProxySkillUpsertInput,
+} from '@shared/types/skill';
 import { AppErrorCode, getErrorMessage, ProxyServiceError, ValidationError } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { net } from 'electron';
@@ -124,6 +132,22 @@ export interface TokenResponse {
 }
 
 type BrowserAuthProvider = 'antigravity' | 'claude' | 'codex';
+type OAuthTimeoutProvider = BrowserAuthProvider | 'default';
+
+interface OAuthTimeoutConfig {
+  default?: number;
+  codex?: number;
+  claude?: number;
+  antigravity?: number;
+}
+
+interface ProxyRequestExecutionOptions {
+  timeoutMs: number;
+  apiKey?: string;
+  method?: 'GET' | 'POST' | 'DELETE';
+  body?: RuntimeValue;
+  rateLimit?: { provider: string; priority?: number; isPremiumBypass?: boolean };
+}
 
 interface BrowserAuthUrlResponse {
   url: string;
@@ -140,6 +164,24 @@ interface BrowserAuthStatusResponse {
   accountId?: string;
   account_id?: string;
   account?: JsonValue;
+}
+
+interface BrowserAuthVerifyResponse {
+  status: string;
+  provider: string;
+  readiness?: JsonValue;
+  callback?: JsonValue;
+  error?: string;
+}
+
+interface ProxyMarketplaceSkill {
+  id: string;
+  name: string;
+  description: string;
+  provider: string;
+  content: string;
+  version: string;
+  enabled_by_default: boolean;
 }
 
 
@@ -198,6 +240,19 @@ export class ProxyService extends BaseService {
 
   constructor(private options: ProxyServiceOptions) {
     super('ProxyService');
+  }
+
+  private getOAuthTimeoutMs(provider: OAuthTimeoutProvider): number {
+    const settings = this.settingsService.getSettings();
+    const config = settings.proxy?.oauthTimeoutMs as OAuthTimeoutConfig | undefined;
+    const providerTimeout = provider === 'default' ? undefined : config?.[provider];
+    const fallback = config?.default ?? PROXY_PERFORMANCE_BUDGETS.AUTH_MS;
+    const resolved = providerTimeout ?? fallback;
+    const validationError = validateOAuthTimeoutMs(resolved);
+    if (validationError) {
+      throw new ValidationError(`Invalid OAuth timeout for ${provider}: ${validationError}`);
+    }
+    return resolved;
   }
 
   get settingsService(): SettingsService { return this.options.settingsService; }
@@ -669,12 +724,14 @@ export class ProxyService extends BaseService {
     };
 
     try {
-      const response = await this.makeRequest<BrowserAuthStatusResponse>(
+      const response = await this.makeRequestWithTimeout<BrowserAuthStatusResponse>(
         `/v0/management/get-auth-status?${params.toString()}`,
-        await this.getRuntimeProxyApiKey(),
-        'GET',
-        undefined,
-        { provider, priority: 2, isPremiumBypass: true }
+        {
+          timeoutMs: this.getOAuthTimeoutMs(provider),
+          apiKey: await this.getRuntimeProxyApiKey(),
+          method: 'GET',
+          rateLimit: { provider, priority: 2, isPremiumBypass: true }
+        }
       );
 
       if ('status' in response && typeof response.status === 'string') {
@@ -729,13 +786,12 @@ export class ProxyService extends BaseService {
     }
     const requestPath = `/v0/management/${route}${params.size > 0 ? `?${params.toString()}` : ''}`;
     appLogger.debug('ProxyService', `getBrowserAuthUrl: requesting ${requestPath} on port ${this.currentPort}`);
-    const response = await this.makeRequest<BrowserAuthUrlResponse>(
-      requestPath,
-      await this.getRuntimeProxyApiKey(),
-      'GET',
-      undefined,
-      { provider, priority: 2, isPremiumBypass: true }
-    );
+    const response = await this.makeRequestWithTimeout<BrowserAuthUrlResponse>(requestPath, {
+      timeoutMs: this.getOAuthTimeoutMs(provider),
+      apiKey: await this.getRuntimeProxyApiKey(),
+      method: 'GET',
+      rateLimit: { provider, priority: 2, isPremiumBypass: true }
+    });
     appLogger.debug('ProxyService', `getBrowserAuthUrl: response keys=${Object.keys(response).join(',')}, url=${'url' in response ? 'present' : 'missing'}, state=${'state' in response ? 'present' : 'missing'}`);
 
     const normalized = this.normalizeBrowserAuthUrlResponse(response);
@@ -777,6 +833,31 @@ export class ProxyService extends BaseService {
       return 'cancelled' in response && response.cancelled === true;
     }
     return false;
+  }
+
+  async verifyAuthBridge(
+    provider: BrowserAuthProvider = 'codex'
+  ): Promise<BrowserAuthVerifyResponse> {
+    const params = new URLSearchParams({ provider });
+    const response = await this.makeRequestWithTimeout<BrowserAuthVerifyResponse>(
+      `/api/auth/oauth/verify?${params.toString()}`,
+      {
+        timeoutMs: this.getOAuthTimeoutMs(provider),
+        apiKey: await this.getRuntimeProxyApiKey(),
+        method: 'GET',
+        rateLimit: { provider, priority: 2, isPremiumBypass: true }
+      }
+    );
+    if ('status' in response && typeof response.status === 'string') {
+      return {
+        status: response.status,
+        provider: 'provider' in response && typeof response.provider === 'string' ? response.provider : provider,
+        readiness: 'readiness' in response ? response.readiness : undefined,
+        callback: 'callback' in response ? response.callback : undefined,
+        error: 'error' in response && typeof response.error === 'string' ? response.error : undefined,
+      };
+    }
+    return { status: 'failed', provider, error: 'Invalid auth verification response' };
   }
 
   private normalizeBrowserAuthUrlResponse(
@@ -1022,6 +1103,102 @@ export class ProxyService extends BaseService {
     return { data };
   }
 
+  async listSkills(): Promise<ProxySkill[]> {
+    await this.ensureEmbeddedProxyReady();
+    const response = await this.makeRequest<ProxySkillListResponse>(
+      '/v0/skills',
+      await this.getRuntimeProxyApiKey(),
+      'GET',
+      undefined,
+      { provider: 'proxy', priority: 1, isPremiumBypass: true }
+    );
+    if (!('items' in response) || !Array.isArray(response.items)) {
+      return [];
+    }
+    return response.items;
+  }
+
+  async saveSkill(input: ProxySkillUpsertInput): Promise<ProxySkill> {
+    await this.ensureEmbeddedProxyReady();
+    const response = await this.makeRequest<ProxySkillItemResponse>(
+      '/v0/skills',
+      await this.getRuntimeProxyApiKey(),
+      'POST',
+      input as unknown as RuntimeValue,
+      { provider: 'proxy', priority: 2, isPremiumBypass: true }
+    );
+    if ('item' in response && response.item) {
+      return response.item;
+    }
+    const errorText = 'error' in response && typeof response.error === 'string'
+      ? response.error
+      : 'Skill save failed';
+    throw new ProxyServiceError(errorText, AppErrorCode.PROXY_REQUEST_FAILED, false);
+  }
+
+  async toggleSkill(skillId: string, input: ProxySkillToggleInput): Promise<ProxySkill> {
+    await this.ensureEmbeddedProxyReady();
+    const response = await this.makeRequest<ProxySkillItemResponse>(
+      `/v0/skills/${encodeURIComponent(skillId)}/toggle`,
+      await this.getRuntimeProxyApiKey(),
+      'POST',
+      input as unknown as RuntimeValue,
+      { provider: 'proxy', priority: 2, isPremiumBypass: true }
+    );
+    if ('item' in response && response.item) {
+      return response.item;
+    }
+    const errorText = 'error' in response && typeof response.error === 'string'
+      ? response.error
+      : 'Skill toggle failed';
+    throw new ProxyServiceError(errorText, AppErrorCode.PROXY_REQUEST_FAILED, false);
+  }
+
+  async deleteSkill(skillId: string): Promise<boolean> {
+    await this.ensureEmbeddedProxyReady();
+    const response = await this.makeRequest<{ success?: boolean; error?: string }>(
+      `/v0/skills/${encodeURIComponent(skillId)}`,
+      await this.getRuntimeProxyApiKey(),
+      'DELETE',
+      undefined,
+      { provider: 'proxy', priority: 2, isPremiumBypass: true }
+    );
+    return 'success' in response && response.success === true;
+  }
+
+  async listMarketplaceSkills(): Promise<ProxyMarketplaceSkill[]> {
+    await this.ensureEmbeddedProxyReady();
+    const response = await this.makeRequest<{ items?: ProxyMarketplaceSkill[] }>(
+      '/v0/skills/marketplace',
+      await this.getRuntimeProxyApiKey(),
+      'GET',
+      undefined,
+      { provider: 'proxy', priority: 1, isPremiumBypass: true }
+    );
+    if (!('items' in response) || !Array.isArray(response.items)) {
+      return [];
+    }
+    return response.items;
+  }
+
+  async installMarketplaceSkill(input: ProxyMarketplaceSkillInstallInput): Promise<ProxySkill> {
+    await this.ensureEmbeddedProxyReady();
+    const response = await this.makeRequest<ProxySkillItemResponse>(
+      '/v0/skills/marketplace/install',
+      await this.getRuntimeProxyApiKey(),
+      'POST',
+      input as unknown as RuntimeValue,
+      { provider: 'proxy', priority: 2, isPremiumBypass: true }
+    );
+    if ('item' in response && response.item) {
+      return response.item;
+    }
+    const errorText = 'error' in response && typeof response.error === 'string'
+      ? response.error
+      : 'Marketplace skill installation failed';
+    throw new ProxyServiceError(errorText, AppErrorCode.PROXY_REQUEST_FAILED, false);
+  }
+
   private async getProxyModels(apiKey: string): Promise<ModelItem[]> {
     try {
       this.logDebug(`getProxyModels: Fetching from http://127.0.0.1:${this.currentPort}/v1/models`);
@@ -1212,21 +1389,38 @@ export class ProxyService extends BaseService {
   private makeRequest<T = JsonObject>(
     path: string,
     apiKey?: string,
-    method: 'GET' | 'POST' = 'GET',
+    method: 'GET' | 'POST' | 'DELETE' = 'GET',
     body?: RuntimeValue,
     rateLimit?: { provider: string; priority?: number; isPremiumBypass?: boolean }
   ): Promise<ProxyRequestResponse<T>> {
+    return this.makeRequestWithTimeout(path, {
+      timeoutMs: PROXY_REQUEST_TIMEOUT_MS,
+      apiKey,
+      method,
+      body,
+      rateLimit
+    });
+  }
+
+  private makeRequestWithTimeout<T = JsonObject>(
+    path: string,
+    options: ProxyRequestExecutionOptions
+  ): Promise<ProxyRequestResponse<T>> {
+    const method = options.method ?? 'GET';
+    const timeoutMs = options.timeoutMs;
+    const requestApiKey = options.apiKey;
+    const requestBody = options.body;
     const requestStart = performance.now();
     return new Promise((resolve, reject) => {
       const run = async () => {
-        const snapshot = rateLimit
-          ? await this.waitForRateLimit(rateLimit.provider, {
-            priority: rateLimit.priority,
-            isPremiumBypass: rateLimit.isPremiumBypass
+        const snapshot = options.rateLimit
+          ? await this.waitForRateLimit(options.rateLimit.provider, {
+            priority: options.rateLimit.priority,
+            isPremiumBypass: options.rateLimit.isPremiumBypass
           })
           : undefined;
 
-        const options = {
+        const requestOptions = {
           method,
           protocol: 'http:' as const,
           hostname: '127.0.0.1',
@@ -1234,7 +1428,7 @@ export class ProxyService extends BaseService {
           path
         };
 
-        const request = net.request(options);
+        const request = net.request(requestOptions);
         let settled = false;
         let timeoutHandle: ReturnType<typeof setTimeout> | null = setTimeout(() => {
           if (settled) {
@@ -1245,17 +1439,17 @@ export class ProxyService extends BaseService {
             request.abort();
           }
           reject(new ProxyServiceError(
-            `Proxy request timed out after ${PROXY_REQUEST_TIMEOUT_MS}ms`,
+            `Proxy request timed out after ${timeoutMs}ms`,
             AppErrorCode.PROXY_TIMEOUT,
             true,
             { path, method }
           ));
-        }, PROXY_REQUEST_TIMEOUT_MS);
-        const token = apiKey ?? this.settingsService.getSettings().proxy?.apiKey ?? this.settingsService.getSettings().proxy?.key;
+        }, timeoutMs);
+        const token = requestApiKey ?? this.settingsService.getSettings().proxy?.apiKey ?? this.settingsService.getSettings().proxy?.key;
         if (token) {
           request.setHeader('Authorization', `Bearer ${token}`);
         }
-        if (body) {
+        if (requestBody) {
           request.setHeader('Content-Type', 'application/json');
         }
 
@@ -1341,8 +1535,8 @@ export class ProxyService extends BaseService {
             { path, method }
           ));
         });
-        if (body) {
-          request.write(JSON.stringify(body));
+        if (requestBody) {
+          request.write(JSON.stringify(requestBody));
         }
         request.end();
       };

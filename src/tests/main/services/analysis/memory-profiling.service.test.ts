@@ -1,3 +1,5 @@
+import * as path from 'path';
+
 import type { MemoryReport, MemorySnapshot } from '@main/services/analysis/memory-profiling.service';
 import { MemoryProfilingService } from '@main/services/analysis/memory-profiling.service';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -456,7 +458,7 @@ describe('MemoryProfilingService', () => {
 
             const v8Module = await import('v8');
             expect(vi.mocked(v8Module.writeHeapSnapshot)).toHaveBeenCalledWith(
-                expect.stringContaining('/custom/logs')
+                expect.stringContaining(path.join('custom', 'logs'))
             );
 
             await svcWithData.cleanup();
@@ -467,7 +469,7 @@ describe('MemoryProfilingService', () => {
 
             const v8Module = await import('v8');
             expect(vi.mocked(v8Module.writeHeapSnapshot)).toHaveBeenCalledWith(
-                expect.stringContaining('/tmp')
+                expect.stringContaining(path.join('userData', 'heap-'))
             );
         });
 

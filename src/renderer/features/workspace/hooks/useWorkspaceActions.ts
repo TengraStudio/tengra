@@ -19,15 +19,20 @@ export function useWorkspaceActions({
 
     const handleUpdateWorkspace = async (updates: Partial<Workspace>) => {
         try {
+            let persistedWorkspace: Workspace | null = null;
             if (onUpdateWorkspace) {
                 await onUpdateWorkspace(updates);
             } else {
-                await window.electron.db.updateWorkspace(workspace.id, updates);
+                persistedWorkspace = await window.electron.db.updateWorkspace(workspace.id, updates);
             }
             if (selectedWorkspace?.id === workspace.id) {
-                setSelectedWorkspace({
+                const nextWorkspace = {
                     ...selectedWorkspace,
+                    ...(persistedWorkspace ?? {}),
                     ...updates,
+                };
+                setSelectedWorkspace({
+                    ...nextWorkspace,
                 });
             }
             await loadWorkspaces();

@@ -1,20 +1,25 @@
-import { _electron as electron, ElectronApplication, expect, Page, test } from '@playwright/test';
+import { ElectronApplication, expect, Page, test } from '@playwright/test';
+
+import {
+    closeElectronApp,
+    launchElectronApp,
+    openSettingsPanel,
+    settleVisualState
+} from './e2e-test-utils';
 
 test.describe('Visual Regression', () => {
     let electronApp: ElectronApplication;
     let window: Page;
 
     test.beforeAll(async () => {
-        electronApp = await electron.launch({
-            args: ['dist/main/main.js'],
-            env: { ...process.env, NODE_ENV: 'test' }
-        });
-        window = await electronApp.firstWindow();
-        await window.waitForLoadState('domcontentloaded');
+        const launched = await launchElectronApp();
+        electronApp = launched.electronApp;
+        window = launched.appWindow;
+        await settleVisualState(window);
     });
 
     test.afterAll(async () => {
-        await electronApp?.close();
+        await closeElectronApp(electronApp);
     });
 
     test('main window baseline screenshot', async () => {
@@ -24,9 +29,7 @@ test.describe('Visual Regression', () => {
     });
 
     test('settings visual baseline', async () => {
-        const settingsButton = window.getByTestId('settings-button');
-        await settingsButton.click();
-        await window.waitForTimeout(300);
+        await openSettingsPanel(window);
         await expect(window).toHaveScreenshot('settings-window.png', {
             maxDiffPixels: 250
         });

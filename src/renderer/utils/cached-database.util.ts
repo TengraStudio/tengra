@@ -177,7 +177,7 @@ export class CachedDatabase {
     /**
      * Update workspace and invalidate cache
      */
-    static async updateWorkspace(id: string, updates: Partial<Workspace>): Promise<void> {
+    static async updateWorkspace(id: string, updates: Partial<Workspace>): Promise<Workspace | null> {
         const result = await window.electron.db.updateWorkspace(id, updates);
 
         // Invalidate workspace cache

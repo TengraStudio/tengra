@@ -194,6 +194,7 @@ export class WorkspaceRepository extends BaseRepository {
             chat_ids: workspace.chat_ids,
             council_config: workspace.council_config,
             status: workspace.status,
+            logo: workspace.logo,
             metadata: workspace.metadata,
             created_at: workspace.created_at,
             updated_at: workspace.updated_at,

@@ -327,7 +327,7 @@ async fn build_auth_url(
                     code_challenge: crate::auth::codex::pkce::generate_challenge(code_verifier),
                 })
                 .ok_or_else(|| anyhow::anyhow!("Missing PKCE verifier for codex auth"))?;
-            Ok(CodexClient::new().await.generate_auth_url(state, &pkce))
+            Ok(CodexClient::new().await?.generate_auth_url(state, &pkce))
         }
         "claude" => {
             let pkce = verifier
@@ -336,9 +336,9 @@ async fn build_auth_url(
                     code_challenge: crate::auth::codex::pkce::generate_challenge(code_verifier),
                 })
                 .ok_or_else(|| anyhow::anyhow!("Missing PKCE verifier for claude auth"))?;
-            Ok(ClaudeClient::new().await.generate_auth_url(state, &pkce))
+            Ok(ClaudeClient::new().await?.generate_auth_url(state, &pkce))
         }
-        "antigravity" => Ok(AntigravityClient::new().await.generate_auth_url(state)),
+        "antigravity" => Ok(AntigravityClient::new().await?.generate_auth_url(state)),
         _ => Err(anyhow::anyhow!("Unsupported auth provider: {}", provider)),
     }
 }

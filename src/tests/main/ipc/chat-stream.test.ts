@@ -37,6 +37,7 @@ const mockLLMService = {
 const mockProxyService = { getProxyKey: vi.fn().mockReturnValue('dummy-key') };
 const mockCodeIntelligenceService = { queryIndexedSymbols: vi.fn().mockResolvedValue([]) };
 const mockContextRetrievalService = { retrieveContext: vi.fn().mockResolvedValue({ contextString: '', sources: [] }) };
+const mockLocaleService = { getLocalePack: vi.fn().mockReturnValue(undefined) };
 const mockRateLimitService = { waitForToken: vi.fn() };
 const mockDatabaseService = {
     addTokenUsage: vi.fn(),
@@ -79,6 +80,7 @@ const initIPC = (overrides?: Record<string, TestValue>) => {
         proxyService: mockProxyService as never,
         codeIntelligenceService: mockCodeIntelligenceService as never,
         contextRetrievalService: mockContextRetrievalService as never,
+        localeService: mockLocaleService as never,
         databaseService: mockDatabaseService as never,
         ...(overrides ?? {})
     });
@@ -469,7 +471,7 @@ const getCancelHandler = (): ((_: TestValue, payload: { chatId: string }) => voi
 
             await handler!(mockEvent, createStreamRequest());
 
-            expect(mockDatabaseService.chats.addMessage).toHaveBeenCalledWith(
+            expect(mockDatabaseService.addMessage).toHaveBeenCalledWith(
                 expect.objectContaining({
                     chatId: 'stream-test-1',
                     role: 'assistant',
@@ -509,7 +511,7 @@ const getCancelHandler = (): ((_: TestValue, payload: { chatId: string }) => voi
 
             await handler!(mockEvent, createStreamRequest());
 
-            expect(mockDatabaseService.chats.addMessage).not.toHaveBeenCalled();
+            expect(mockDatabaseService.addMessage).not.toHaveBeenCalled();
         });
 
         it('should accumulate reasoning content and save to DB', async () => {
@@ -522,7 +524,7 @@ const getCancelHandler = (): ((_: TestValue, payload: { chatId: string }) => voi
 
             await handler!(mockEvent, createStreamRequest());
 
-            expect(mockDatabaseService.chats.addMessage).toHaveBeenCalledWith(
+            expect(mockDatabaseService.addMessage).toHaveBeenCalledWith(
                 expect.objectContaining({
                     chatId: 'stream-test-1',
                     content: 'answer part2',
@@ -553,7 +555,7 @@ const getCancelHandler = (): ((_: TestValue, payload: { chatId: string }) => voi
 
             await handler!(mockEvent, createStreamRequest());
 
-            expect(mockDatabaseService.chats.addMessage).toHaveBeenCalledWith(
+            expect(mockDatabaseService.addMessage).toHaveBeenCalledWith(
                 expect.objectContaining({
                     chatId: 'stream-test-1',
                     content: 'partial'
@@ -684,7 +686,7 @@ const getCancelHandler = (): ((_: TestValue, payload: { chatId: string }) => voi
 
             await handler!(mockEvent, createStreamRequest({ provider: 'opencode' }));
 
-            expect(mockDatabaseService.addTokenUsage).toHaveBeenCalledWith(
+            expect(mockDatabaseService.system.addTokenUsage).toHaveBeenCalledWith(
                 expect.objectContaining({
                     chatId: 'stream-test-1',
                     provider: 'opencode',

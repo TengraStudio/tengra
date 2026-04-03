@@ -51,7 +51,7 @@ export class XmlToolParser {
             }
             
             // 4. Remove the XML block from the cleaned text
-            cleanedText = cleanedText.replace(blockFullContent, '');
+            cleanedText = cleanedText.replace(blockFullContent, '').trim();
         }
 
         // 5. Also look for orphaned <invoke> blocks if they aren't wrapped in <function_calls>

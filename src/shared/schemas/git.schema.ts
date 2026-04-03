@@ -21,6 +21,7 @@ export const gitTreeStatusPreviewResponseSchema = z.object({
             path: z.string(),
             statuses: z.array(z.string()),
             isDirectory: z.boolean(),
+            isIgnored: z.boolean(),
         })
     ),
     error: z.string().optional(),

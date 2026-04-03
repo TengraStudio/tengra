@@ -13,7 +13,7 @@ const mounts: WorkspaceMount[] = [
         id: 'mount-local',
         name: 'Local',
         type: 'local',
-        rootPath: 'C:\\workspaces\\demo-workspace',
+        rootPath: '/workspaces/demo-workspace',
     },
 ];
 
@@ -31,13 +31,13 @@ describe('workspaceUtils', () => {
         localStorage.removeItem(key);
 
         saveExpandedTreeState(key, {
-            'mount-local:C:\\workspaces\\demo-workspace\\src': true,
-            'mount-local:C:\\workspaces\\demo-workspace\\README.md': false,
+            'mount-local:/workspaces/demo-workspace/src': true,
+            'mount-local:/workspaces/demo-workspace/README.md': false,
         });
 
         expect(loadExpandedTreeState(key)).toEqual({
-            'mount-local:C:\\workspaces\\demo-workspace\\src': true,
-            'mount-local:C:\\workspaces\\demo-workspace\\README.md': false,
+            'mount-local:/workspaces/demo-workspace/src': true,
+            'mount-local:/workspaces/demo-workspace/README.md': false,
         });
     });
 });

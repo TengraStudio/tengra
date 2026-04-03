@@ -1,21 +1,20 @@
-import { _electron as electron, ElectronApplication, expect, Page, test } from '@playwright/test';
+import { ElectronApplication, expect, Page, test } from '@playwright/test';
+
+import { closeElectronApp, launchElectronApp, settleVisualState } from './e2e-test-utils';
 
 test.describe('Responsive & Window Controls Visual Regression', () => {
     let electronApp: ElectronApplication;
     let window: Page;
 
     test.beforeAll(async () => {
-        electronApp = await electron.launch({
-            args: ['dist/main/main.js'],
-            env: { ...process.env, NODE_ENV: 'test' }
-        });
-        window = await electronApp.firstWindow();
-        await window.waitForLoadState('domcontentloaded');
-        await window.waitForTimeout(1000);
+        const launched = await launchElectronApp();
+        electronApp = launched.electronApp;
+        window = launched.appWindow;
+        await settleVisualState(window);
     });
 
     test.afterAll(async () => {
-        await electronApp?.close();
+        await closeElectronApp(electronApp);
     });
 
     test('window controls baseline', async () => {
@@ -39,13 +38,7 @@ test.describe('Responsive & Window Controls Visual Regression', () => {
     });
 
     test('narrow window layout', async () => {
-        await electronApp.evaluate(
-            async ({ BrowserWindow }: { BrowserWindow: { getAllWindows: () => Array<{ setSize: (w: number, h: number) => void }> } }) => {
-                const win = BrowserWindow.getAllWindows()[0];
-                win.setSize(900, 700);
-            }
-        );
-        await window.waitForTimeout(500);
+        await setWindowSize(electronApp, window, 900, 700);
 
         await expect(window).toHaveScreenshot('layout-narrow-900.png', {
             maxDiffPixels: 400
@@ -53,13 +46,7 @@ test.describe('Responsive & Window Controls Visual Regression', () => {
     });
 
     test('wide window layout', async () => {
-        await electronApp.evaluate(
-            async ({ BrowserWindow }: { BrowserWindow: { getAllWindows: () => Array<{ setSize: (w: number, h: number) => void }> } }) => {
-                const win = BrowserWindow.getAllWindows()[0];
-                win.setSize(1600, 900);
-            }
-        );
-        await window.waitForTimeout(500);
+        await setWindowSize(electronApp, window, 1600, 900);
 
         await expect(window).toHaveScreenshot('layout-wide-1600.png', {
             maxDiffPixels: 400
@@ -67,16 +54,39 @@ test.describe('Responsive & Window Controls Visual Regression', () => {
     });
 
     test('compact window layout', async () => {
-        await electronApp.evaluate(
-            async ({ BrowserWindow }: { BrowserWindow: { getAllWindows: () => Array<{ setSize: (w: number, h: number) => void }> } }) => {
-                const win = BrowserWindow.getAllWindows()[0];
-                win.setSize(800, 600);
-            }
-        );
-        await window.waitForTimeout(500);
+        await setWindowSize(electronApp, window, 800, 600);
 
         await expect(window).toHaveScreenshot('layout-compact-800x600.png', {
             maxDiffPixels: 400
         });
     });
 });
+
+async function setWindowSize(
+    electronApp: ElectronApplication,
+    _window: Page,
+    width: number,
+    height: number
+): Promise<void> {
+    await electronApp.evaluate(
+        async ({ BrowserWindow }, dimensions: { width: number; height: number }) => {
+            const win = BrowserWindow.getAllWindows()[0];
+            win.setSize(dimensions.width, dimensions.height);
+        },
+        { width, height }
+    );
+    await expect
+        .poll(async () => {
+            const size = await electronApp.evaluate(
+                async ({ BrowserWindow }) => {
+                    const currentSize = BrowserWindow.getAllWindows()[0]?.getSize();
+                    if (currentSize && currentSize.length >= 2) {
+                        return [currentSize[0], currentSize[1]];
+                    }
+                    return [0, 0];
+                }
+            );
+            return size.join('x');
+        })
+        .toBe(`${width}x${height}`);
+}

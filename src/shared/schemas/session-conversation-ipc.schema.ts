@@ -87,6 +87,7 @@ export const sessionConversationCompleteResponseSchema = z.object({
     images: z.array(z.string()).optional(),
     role: z.literal('assistant'),
     sources: z.array(z.string()).optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const sessionConversationStreamResponseSchema = z.void();

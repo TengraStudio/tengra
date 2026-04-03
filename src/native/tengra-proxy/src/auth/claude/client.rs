@@ -2,6 +2,8 @@ use crate::auth::claude::types::ClaudeTokenResponse;
 use crate::auth::codex::pkce::PKCECodes; // PKCE logic is same
 use crate::static_config;
 use reqwest::Client;
+use serde_json::{Map, Value};
+use std::time::Duration;
 use url::Url;
 
 pub struct ClaudeClient {
@@ -10,11 +12,15 @@ pub struct ClaudeClient {
 }
 
 impl ClaudeClient {
-    pub async fn new() -> Self {
-        Self {
-            client: Client::new(),
+    pub async fn new() -> anyhow::Result<Self> {
+        let timeout_secs = static_config::oauth_provider_timeout_secs("claude")?;
+        let client = Client::builder()
+            .timeout(Duration::from_secs(timeout_secs))
+            .build()?;
+        Ok(Self {
+            client,
             client_id: static_config::ANTHROPIC_OAUTH_CLIENT_ID.to_string(),
-        }
+        })
     }
 
     pub fn generate_auth_url(&self, state: &str, pkce: &PKCECodes) -> String {
@@ -63,5 +69,64 @@ impl ClaudeClient {
 
         let token_resp: ClaudeTokenResponse = resp.json().await?;
         Ok(token_resp)
+    }
+
+    pub async fn fetch_profile_metadata(&self, access_token: &str) -> anyhow::Result<Value> {
+        let trimmed = access_token.trim();
+        if trimmed.is_empty() {
+            return Err(anyhow::anyhow!(
+                "Missing Anthropic access token for profile enrichment"
+            ));
+        }
+
+        let mut profile = Map::new();
+        let mut organizations = Vec::<Value>::new();
+
+        let org_response = self
+            .client
+            .get("https://api.anthropic.com/api/organizations")
+            .bearer_auth(trimmed)
+            .send()
+            .await;
+
+        if let Ok(response) = org_response {
+            if response.status().is_success() {
+                if let Ok(value) = response.json::<Value>().await {
+                    if let Some(items) = value.as_array() {
+                        for item in items {
+                            if let Some(item_object) = item.as_object() {
+                                organizations.push(Value::Object(item_object.clone()));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if let Some(first_org) = organizations.first().and_then(Value::as_object).cloned() {
+            if let Some(name) = first_org.get("name").and_then(Value::as_str) {
+                profile.insert("display_name".to_string(), Value::String(name.to_string()));
+            }
+            if let Some(slug) = first_org
+                .get("slug")
+                .or_else(|| first_org.get("id"))
+                .and_then(Value::as_str)
+            {
+                profile.insert(
+                    "organization".to_string(),
+                    serde_json::json!({
+                        "id": first_org.get("id").and_then(Value::as_str),
+                        "name": first_org.get("name").and_then(Value::as_str),
+                        "slug": slug
+                    }),
+                );
+            }
+        }
+
+        if !organizations.is_empty() {
+            profile.insert("organizations".to_string(), Value::Array(organizations));
+        }
+
+        Ok(Value::Object(profile))
     }
 }

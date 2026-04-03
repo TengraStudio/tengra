@@ -1,4 +1,5 @@
 import * as fs from 'fs/promises';
+import * as path from 'path';
 
 import { DatabaseService } from '@main/services/data/database.service';
 import { FileChangeTracker } from '@main/services/data/file-change-tracker.service';
@@ -135,7 +136,7 @@ describe('FileChangeTracker', () => {
                 id: 'diff-id-001',
                 chatSessionId: 'chat-1',
                 aiSystem: 'chat',
-                filePath: '/repo/file.ts',
+                filePath: path.resolve('/repo/file.ts'),
                 beforeContent: 'old line\n',
                 afterContent: 'new line\n',
                 timestamp: 1_717_171_717_000,
@@ -145,7 +146,7 @@ describe('FileChangeTracker', () => {
             expect(String(storedDiff.diffContent)).toContain('-old line');
             expect(String(storedDiff.diffContent)).toContain('+new line');
             expect(context.emitMock).toHaveBeenCalledWith('file-changed', {
-                path: '/repo/file.ts',
+                path: path.resolve('/repo/file.ts'),
                 type: 'update',
             });
             expect(result).toEqual(storedDiff);

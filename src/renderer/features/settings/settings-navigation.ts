@@ -85,6 +85,12 @@ export function getSettingsNavigationItems(t: SettingsTranslationFn): SettingsNa
             icon: Sparkles,
         },
         {
+            id: 'skills',
+            label: t('settings.tabs.skills'),
+            sectionLabel: t('settings.categories.ai'),
+            icon: Sparkles,
+        },
+        {
             id: 'quotas',
             label: t('statistics.connectedAppsUsage'),
             sectionLabel: t('settings.categories.ai'),

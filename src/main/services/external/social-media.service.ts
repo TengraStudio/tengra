@@ -7,10 +7,9 @@ import { Message } from '@shared/types/chat';
 import { AppSettings } from '@shared/types/settings';
 
 import { DiscordProvider } from './social-media/discord.provider';
+import { SocialMediaMessage, SocialMediaProvider } from './social-media/social-media.types';
 import { TelegramProvider } from './social-media/telegram.provider';
 import { WhatsAppProvider } from './social-media/whatsapp.provider';
-
-import { SocialMediaMessage, SocialMediaProvider } from './social-media/social-media.types';
 
 /** Maximum response length sent back to social platforms */
 const MAX_REPLY_LENGTH = 1800;

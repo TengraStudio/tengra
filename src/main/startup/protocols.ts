@@ -1,6 +1,7 @@
-import { protocol } from 'electron';
 import path from 'path';
+
 import { appLogger } from '@main/logging/logger';
+import { protocol } from 'electron';
 
 /**
  * Pre-register protocols before app is ready
@@ -24,6 +25,57 @@ export const preRegisterProtocols = (): void => {
  * Register custom protocols for the application
  */
 export const registerProtocols = (allowedFileRoots: Set<string>): void => {
+    const decodeSafeFileUrlComponent = (value: string): string => {
+        try {
+            return decodeURIComponent(value);
+        } catch {
+            return value;
+        }
+    };
+
+    const resolveSafeFilePath = (requestUrl: string): string => {
+        const withoutFragment = requestUrl.split('#')[0] ?? requestUrl;
+        const withoutQuery = withoutFragment.split('?')[0] ?? withoutFragment;
+        try {
+            const parsed = new URL(withoutQuery);
+            const decodedHost = decodeSafeFileUrlComponent(parsed.hostname);
+            const decodedPathname = decodeSafeFileUrlComponent(parsed.pathname);
+
+            if (process.platform === 'win32') {
+                // Browser URL normalization can rewrite "C:/..." into host="c", pathname="/...".
+                if (/^[A-Za-z]$/.test(decodedHost)) {
+                    const driveRoot = `${decodedHost.toUpperCase()}:\\`;
+                    const relativePath = decodedPathname.replace(/^\/+/, '').replace(/\//g, '\\');
+                    return path.normalize(path.join(driveRoot, relativePath));
+                }
+
+                const trimmedPath = decodedPathname.replace(/^\/+/, '');
+                if (/^[A-Za-z]:[\\/]/.test(trimmedPath)) {
+                    return path.normalize(trimmedPath);
+                }
+            }
+
+            const combinedPath = decodedHost.length > 0
+                ? `/${decodedHost}${decodedPathname}`
+                : decodedPathname;
+            return path.normalize(combinedPath);
+        } catch {
+            let legacyPath = withoutQuery.replace(/^safe-file:\/\//i, '');
+            legacyPath = decodeSafeFileUrlComponent(legacyPath);
+
+            if (process.platform === 'win32') {
+                if (/^[A-Za-z]\//.test(legacyPath)) {
+                    legacyPath = `${legacyPath[0]}:${legacyPath.slice(1)}`;
+                }
+                if (legacyPath.startsWith('/')) {
+                    legacyPath = legacyPath.slice(1);
+                }
+            }
+
+            return path.normalize(legacyPath);
+        }
+    };
+
     /**
      * Check if a path is within the allowed root directories
      */
@@ -45,31 +97,7 @@ export const registerProtocols = (allowedFileRoots: Set<string>): void => {
      * Allows accessing files within specific allowed directories (like workspace folders)
      */
     const handleSafeFile = (request: Electron.ProtocolRequest, callback: (response: Electron.ProtocolResponse) => void) => {
-        let url = request.url.replace('safe-file://', '');
-
-        // Remove query params and fragments
-        url = url.split(/[?#]/)[0] ?? url;
-
-        // Remove leading slashes
-        while (url.startsWith('/')) {
-            url = url.slice(1);
-        }
-
-        let decoded: string;
-        try {
-            decoded = decodeURIComponent(url);
-        } catch (e) {
-            decoded = url;
-        }
-
-        // On Windows, if we have /C:/..., remove the leading slash again after decoding
-        if (process.platform === 'win32') {
-            if (decoded.startsWith('/')) {
-                decoded = decoded.slice(1);
-            }
-        }
-
-        const absolutePath = path.normalize(decoded);
+        const absolutePath = resolveSafeFilePath(request.url);
         const allowed = isPathAllowed(absolutePath);
 
         if (!allowed) {

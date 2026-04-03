@@ -26,7 +26,10 @@ vi.mock('os', () => ({
     uptime: vi.fn().mockReturnValue(3600),
     hostname: vi.fn().mockReturnValue('test-host'),
     release: vi.fn().mockReturnValue('10.0'),
-    platform: vi.fn().mockReturnValue('win32')
+    platform: vi.fn().mockReturnValue('win32'),
+    userInfo: vi.fn().mockReturnValue({ username: 'test-user' }),
+    homedir: vi.fn().mockReturnValue('C:\\Users\\test-user'),
+    tmpdir: vi.fn().mockReturnValue('C:\\Users\\test-user\\AppData\\Local\\Temp')
 }));
 
 describe('SystemService', () => {

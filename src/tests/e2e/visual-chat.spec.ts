@@ -1,21 +1,20 @@
-import { _electron as electron, ElectronApplication, expect, Page, test } from '@playwright/test';
+import { ElectronApplication, expect, Page, test } from '@playwright/test';
+
+import { closeElectronApp, launchElectronApp, settleVisualState } from './e2e-test-utils';
 
 test.describe('Chat Interface Visual Regression', () => {
     let electronApp: ElectronApplication;
     let window: Page;
 
     test.beforeAll(async () => {
-        electronApp = await electron.launch({
-            args: ['dist/main/main.js'],
-            env: { ...process.env, NODE_ENV: 'test' }
-        });
-        window = await electronApp.firstWindow();
-        await window.waitForLoadState('domcontentloaded');
-        await window.waitForTimeout(1000);
+        const launched = await launchElectronApp();
+        electronApp = launched.electronApp;
+        window = launched.appWindow;
+        await settleVisualState(window);
     });
 
     test.afterAll(async () => {
-        await electronApp?.close();
+        await closeElectronApp(electronApp);
     });
 
     test('chat view default empty state', async () => {
@@ -37,7 +36,7 @@ test.describe('Chat Interface Visual Regression', () => {
     test('chat input with text entered', async () => {
         const chatTextarea = window.getByTestId('chat-textarea');
         await chatTextarea.fill('Hello, this is a visual regression test message');
-        await window.waitForTimeout(200);
+        await expect(chatTextarea).toHaveValue('Hello, this is a visual regression test message');
         await expect(chatTextarea).toHaveScreenshot('chat-textarea-with-text.png', {
             maxDiffPixels: 200
         });
@@ -46,7 +45,7 @@ test.describe('Chat Interface Visual Regression', () => {
     test('chat input multiline text', async () => {
         const chatTextarea = window.getByTestId('chat-textarea');
         await chatTextarea.fill('Line 1\nLine 2\nLine 3\nThis is a longer message to test textarea expansion');
-        await window.waitForTimeout(200);
+        await expect(chatTextarea).toHaveValue(/Line 1[\s\S]*Line 3/);
         await expect(chatTextarea).toHaveScreenshot('chat-textarea-multiline.png', {
             maxDiffPixels: 250
         });

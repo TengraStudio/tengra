@@ -10,6 +10,7 @@ import { useChatManager } from '@/features/chat/hooks/useChatManager';
 import { useTextToSpeech } from '@/features/chat/hooks/useTextToSpeech';
 import { useTranslation } from '@/i18n';
 import { Chat, Workspace } from '@/types';
+import { translateErrorMessage } from '@/utils/error-handler.util';
 
 // We extend the return type to include TTS functions since they are closely related
 type ChatContextType = ReturnType<typeof useChatManager> & {
@@ -95,7 +96,7 @@ function formatRateLimitError(message: string, t: (key: string) => string): stri
 }
 
 function handleChatError(e: CatchError, t: (key: string) => string): string {
-    if (!(e instanceof Error)) { return String(e ?? 'Unknown error'); }
+    if (!(e instanceof Error)) { return String(e ?? t('errors.unknown')); }
     const message = e.message;
     const isRateLimit = message.includes('429') || message.includes('RESOURCE_EXHAUSTED') || message.includes('rate limit') || message.includes('quota');
     return isRateLimit ? formatRateLimitError(message, t) : message;
@@ -347,7 +348,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 export function useChat() {
     const context = useContext(ChatContext);
     if (!context) {
-        throw new Error('useChat must be used within a ChatProvider');
+        throw new Error(translateErrorMessage('useChat must be used within a ChatProvider'));
     }
     return context;
 }
@@ -355,7 +356,7 @@ export function useChat() {
 export function useChatHeader() {
     const context = useContext(ChatHeaderContext);
     if (!context) {
-        throw new Error('useChatHeader must be used within a ChatProvider');
+        throw new Error(translateErrorMessage('useChatHeader must be used within a ChatProvider'));
     }
     return context;
 }
@@ -363,7 +364,7 @@ export function useChatHeader() {
 export function useChatShell() {
     const context = useContext(ChatShellContext);
     if (!context) {
-        throw new Error('useChatShell must be used within a ChatProvider');
+        throw new Error(translateErrorMessage('useChatShell must be used within a ChatProvider'));
     }
     return context;
 }
@@ -371,7 +372,7 @@ export function useChatShell() {
 export function useChatLibrary() {
     const context = useContext(ChatLibraryContext);
     if (!context) {
-        throw new Error('useChatLibrary must be used within a ChatProvider');
+        throw new Error(translateErrorMessage('useChatLibrary must be used within a ChatProvider'));
     }
     return context;
 }
@@ -379,7 +380,7 @@ export function useChatLibrary() {
 export function useChatComposer() {
     const context = useContext(ChatComposerContext);
     if (!context) {
-        throw new Error('useChatComposer must be used within a ChatProvider');
+        throw new Error(translateErrorMessage('useChatComposer must be used within a ChatProvider'));
     }
     return context;
 }
@@ -387,7 +388,7 @@ export function useChatComposer() {
 export function useChatWindowCommand() {
     const context = useContext(ChatWindowCommandContext);
     if (!context) {
-        throw new Error('useChatWindowCommand must be used within a ChatProvider');
+        throw new Error(translateErrorMessage('useChatWindowCommand must be used within a ChatProvider'));
     }
     return context;
 }
@@ -395,7 +396,7 @@ export function useChatWindowCommand() {
 export function useChatListening() {
     const context = useContext(ChatListeningContext);
     if (!context) {
-        throw new Error('useChatListening must be used within a ChatProvider');
+        throw new Error(translateErrorMessage('useChatListening must be used within a ChatProvider'));
     }
     return context;
 }

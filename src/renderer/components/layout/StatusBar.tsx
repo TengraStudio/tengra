@@ -32,9 +32,10 @@ interface StatusBarContextType {
 const StatusBarContext = createContext<StatusBarContextType | null>(null);
 
 export const useStatusBar = () => {
+    const { t } = useTranslation();
     const context = useContext(StatusBarContext);
     if (!context) {
-        throw new Error('useStatusBar must be used within StatusBarProvider');
+        throw new Error(t('errors.context.useStatusBarProvider'));
     }
     return context;
 };

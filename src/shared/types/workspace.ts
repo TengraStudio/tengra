@@ -48,6 +48,7 @@ export interface WorkspaceEntry {
     path: string;
     isDirectory: boolean;
     mountId: string;
+    isGitIgnored?: boolean;
     size?: number;
     lastModified?: Date;
     children?: WorkspaceEntry[];

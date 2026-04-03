@@ -17,6 +17,7 @@ interface UseTerminalClipboardActionsParams {
     writeInputToTargetSessions: (value: string) => Promise<void>;
     setTerminalContextMenu: (menu: { x: number; y: number } | null) => void;
     setPasteHistory: (fn: (prev: string[]) => string[]) => void;
+    t: (key: string, options?: Record<string, string | number>) => string;
 }
 
 export function useTerminalClipboardActions({
@@ -25,6 +26,7 @@ export function useTerminalClipboardActions({
     writeInputToTargetSessions,
     setTerminalContextMenu,
     setPasteHistory,
+    t,
 }: UseTerminalClipboardActionsParams) {
     const getActiveTerminalInstance = useCallback(() => {
         if (!activeTabIdRef.current) {
@@ -105,7 +107,10 @@ export function useTerminalClipboardActions({
                         .join('\n')
                         .slice(0, 240);
                     const confirmed = confirmDialog(
-                        `Paste ${text.split(/\r?\n/).length} lines?\n\n${preview}`
+                        t('terminal.pasteConfirmLines', {
+                            count: text.split(/\r?\n/).length,
+                            preview
+                        })
                     );
                     if (!confirmed) {
                         return;
@@ -126,7 +131,7 @@ export function useTerminalClipboardActions({
         } finally {
             setTerminalContextMenu(null);
         }
-    }, [activeTabIdRef, writeInputToTargetSessions, setTerminalContextMenu, setPasteHistory]);
+    }, [activeTabIdRef, setPasteHistory, setTerminalContextMenu, t, writeInputToTargetSessions]);
 
     const handlePasteFromHistory = useCallback(async (entry: string) => {
         try {
@@ -148,13 +153,13 @@ export function useTerminalClipboardActions({
                 return;
             }
             const hasAnsi = ANSI_ESCAPE_SEQUENCE_REGEX.test(text);
-            alertDialog(summarizePasteText(text, hasAnsi));
+            alertDialog(summarizePasteText(text, hasAnsi, t));
         } catch (error) {
             appLogger.error('TerminalPanel', 'Failed to test paste', error as Error);
         } finally {
             setTerminalContextMenu(null);
         }
-    }, [setTerminalContextMenu]);
+    }, [setTerminalContextMenu, t]);
 
     const handleSelectAll = useCallback(() => {
         getActiveTerminalInstance()?.selectAll();

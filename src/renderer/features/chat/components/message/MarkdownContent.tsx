@@ -1,14 +1,17 @@
-import React, { isValidElement, lazy, memo, Suspense, useCallback, useMemo } from 'react';
+import React, { isValidElement, lazy, memo, Suspense, useMemo } from 'react';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 
 import { cn } from '@/lib/utils';
+import { Attachment } from '@/types';
 
+import { AttachmentList } from '../input/AttachmentList';
 import { TypingIndicator } from '../TypingIndicator';
 
 import { CodeBlock } from './CodeBlock';
 import { MarkdownImage } from './MarkdownImage';
+import { PermissionErrorCard } from './PermissionErrorCard';
 import { QuotaErrorCard } from './QuotaErrorCard';
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
@@ -129,7 +132,7 @@ export interface MessageBubbleContentProps {
     onStop?: () => void;
     isSpeaking?: boolean;
     onCodeConvert?: (imageUrl: string) => void;
-    attachments?: string[];
+    attachments?: Attachment[];
     t: TranslationFn;
     isUser: boolean;
 }
@@ -143,52 +146,6 @@ export interface MessageBubbleContentProps {
  * - Raw markdown (for users or when toggled)
  * - Rendered markdown
  */
-const PermissionErrorCard = memo(({ t }: { t: TranslationFn }) => {
-    const handleConfigure = useCallback(() => {
-        window.dispatchEvent(
-            new CustomEvent('tengra:open-model-selector', {
-                detail: { tab: 'permissions' },
-            })
-        );
-    }, []);
-
-    return (
-        <div className="group relative overflow-hidden rounded-3xl border border-destructive/20 bg-destructive/5 p-6 transition-all duration-300 hover:border-destructive/30 hover:bg-destructive/10">
-            <div className="relative flex flex-col gap-5">
-                <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-destructive/20 text-destructive shadow-lg shadow-destructive/10 ring-1 ring-destructive/20">
-                        {/* Shield icon placeholder since lucide-react is not imported here with Shield */}
-                        <div className="h-6 w-6 border-2 border-current rounded-full flex items-center justify-center font-bold text-xs">!</div>
-                    </div>
-                    <div className="flex flex-col">
-                        <h3 className="text-sm font-bold tracking-tight text-foreground">
-                            {t('workspaceAgent.permissions.error') || 'Permission Denied'}
-                        </h3>
-                        <p className="text-xs font-medium text-muted-foreground/70">
-                            {t('workspaceAgent.permissions.securityBlock') || 'Action blocked by safety policy'}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="rounded-2xl bg-background/40 p-4 border border-destructive/10">
-                    <p className="text-xs leading-relaxed text-muted-foreground/80">
-                        {t('workspaceAgent.permissions.description') ||
-                            'This action was blocked by the workspace agent\'s permission policy. You can choose to allow specific commands or paths in the settings.'}
-                    </p>
-                </div>
-
-                <button
-                    onClick={handleConfigure}
-                    className="flex h-10 items-center justify-center gap-2 rounded-xl bg-destructive px-6 text-xs font-bold text-destructive-foreground shadow-lg shadow-destructive/20 transition-all hover:-translate-y-0.5 hover:bg-destructive/90 active:translate-y-0"
-                >
-                    {t('workspaceAgent.permissions.configure') || 'Configure Permissions'}
-                </button>
-            </div>
-        </div>
-    );
-});
-PermissionErrorCard.displayName = 'PermissionErrorCard';
-
 export const MessageBubbleContent = memo(
     ({
         showRawMarkdown,
@@ -200,6 +157,7 @@ export const MessageBubbleContent = memo(
         onStop,
         isSpeaking,
         onCodeConvert,
+        attachments,
         t,
         isUser,
     }: MessageBubbleContentProps) => {
@@ -242,12 +200,20 @@ export const MessageBubbleContent = memo(
         }
         if (showRawMarkdown || isUser) {
             return (
-                <div className="whitespace-pre-wrap font-mono text-sm bg-accent/20 rounded-lg p-3 border border-border/30 overflow-x-auto text-foreground/90 leading-relaxed">
-                    {displayContent}
+                <div className="flex flex-col gap-2">
+                    <AttachmentList attachments={attachments ?? []} onRemove={() => {}} t={t} />
+                    <div className="whitespace-pre-wrap font-mono text-sm bg-accent/20 rounded-lg p-3 border border-border/30 overflow-x-auto text-foreground/90 leading-relaxed">
+                        {displayContent}
+                    </div>
                 </div>
             );
         }
-        return markdownNode;
+        return (
+            <div className="flex flex-col gap-2">
+                <AttachmentList attachments={attachments ?? []} onRemove={() => {}} t={t} />
+                {markdownNode}
+            </div>
+        );
     }
 );
 

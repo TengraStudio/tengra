@@ -6,6 +6,7 @@ import {
 } from '@/lib/typography-settings';
 import { loadSettings, updateSettings as updateSettingsInStore, useSettingsStore } from '@/store/settings.store';
 import { AppSettings } from '@/types';
+import { translateErrorMessage } from '@/utils/error-handler.util';
 
 interface SettingsContextType {
     settings: AppSettings | null
@@ -67,7 +68,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 export function useSettings() {
     const context = useContext(SettingsContext);
     if (!context) {
-        throw new Error('useSettings must be used within a SettingsProvider');
+        throw new Error(translateErrorMessage('useSettings must be used within a SettingsProvider'));
     }
     return context;
 }

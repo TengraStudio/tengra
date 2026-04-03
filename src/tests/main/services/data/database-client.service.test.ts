@@ -1,3 +1,4 @@
+import { DataService } from '@main/services/data/data.service';
 import { DatabaseClientService } from '@main/services/data/database-client.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
@@ -19,7 +20,10 @@ function createService(): DatabaseClientService {
         getServicePort: vi.fn(),
         on: vi.fn(),
     } as never as ProcessManagerService;
-    return new DatabaseClientService(mockEventBus, mockProcessManager);
+    const mockDataService = {
+        getAppDataPath: vi.fn().mockReturnValue('mock-path'),
+    } as never as DataService;
+    return new DatabaseClientService(mockEventBus, mockProcessManager, mockDataService);
 }
 
 describe('DatabaseClientService input validation', () => {

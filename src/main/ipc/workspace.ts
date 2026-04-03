@@ -1,6 +1,4 @@
 import * as path from 'path';
-import { dialog, ipcMain } from 'electron';
-import { z } from 'zod';
 
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
@@ -34,6 +32,8 @@ import {
     WorkspaceIdSchema,
     WorkspaceRootPathSchema,
 } from '@shared/schemas/service-hardening.schema';
+import { dialog, ipcMain } from 'electron';
+import { z } from 'zod';
 
 /** Dependencies required by the workspace IPC handlers. */
 export interface WorkspaceIpcDeps {
@@ -133,6 +133,8 @@ const AUTO_INDEX_SKIPPED_SUFFIXES = [
     '.class',
 ] as const;
 
+const WORKSPACE_LOGO_ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg']);
+
 function normalizeWorkspacePath(value: string): string {
     return value.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
 }
@@ -144,6 +146,11 @@ function shouldAutoIndexPath(filePath: string): boolean {
         return false;
     }
     return !AUTO_INDEX_SKIPPED_SUFFIXES.some(suffix => normalizedPath.endsWith(suffix));
+}
+
+function isAllowedWorkspaceLogoPath(filePath: string): boolean {
+    const extension = path.extname(filePath).toLowerCase();
+    return WORKSPACE_LOGO_ALLOWED_EXTENSIONS.has(extension);
 }
 
 function createWorkspaceAutoIndexer(
@@ -791,7 +798,12 @@ export const registerWorkspaceIpc = (
                     return null;
                 }
 
-                return await logoService.applyLogo(workspacePath, result.filePaths[0] || '');
+                const selectedFilePath = result.filePaths[0];
+                if (!selectedFilePath || !isAllowedWorkspaceLogoPath(selectedFilePath)) {
+                    throw new Error('Invalid logo file type selected');
+                }
+
+                return await logoService.applyLogo(workspacePath, selectedFilePath);
             },
             {
                 argsSchema: z.tuple([WorkspaceRootPathSchema]),

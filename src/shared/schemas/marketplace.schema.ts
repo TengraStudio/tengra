@@ -46,12 +46,23 @@ const marketplacePersonaSchema = marketplaceItemBaseSchema.extend({
 const marketplaceModelSchema = marketplaceItemBaseSchema.extend({
     itemType: z.literal('model'),
     parameters: z.string().optional(),
-    provider: z.enum(['ollama', 'llama', 'custom']),
+    provider: z.enum(['ollama', 'huggingface', 'custom']),
+    source: z.enum(['ollama', 'huggingface', 'custom']).optional(),
+    sourceUrl: z.string().url().optional(),
+    category: z.string().min(1).max(64).optional(),
+    pipelineTag: z.string().min(1).max(64).optional(),
 });
 
 const marketplacePromptSchema = marketplaceItemBaseSchema.extend({
     itemType: z.literal('prompt'),
     category: z.string().min(1).max(64),
+});
+
+const marketplaceSkillSchema = marketplaceItemBaseSchema.extend({
+    itemType: z.literal('skill'),
+    provider: z.string().min(1).max(128).optional(),
+    content: z.string().min(1).optional(),
+    enabled_by_default: z.boolean().optional(),
 });
 
 export const marketplaceRegistrySchema = z.object({
@@ -63,10 +74,19 @@ export const marketplaceRegistrySchema = z.object({
     models: z.array(marketplaceModelSchema).optional(),
     prompts: z.array(marketplacePromptSchema).optional(),
     languages: z.array(marketplaceLanguageSchema).optional(),
+    skills: z.array(marketplaceSkillSchema).optional(),
 }) satisfies z.ZodType<MarketplaceRegistry>;
 
 export const marketplaceInstallRequestSchema = z.object({
-    type: z.enum(['theme', 'mcp', 'persona', 'model', 'prompt', 'language']),
+    type: z.enum(['theme', 'mcp', 'persona', 'model', 'prompt', 'language', 'skill']),
     id: z.string().min(1).max(128),
     downloadUrl: z.string().url(),
+    provider: z.enum(['ollama', 'huggingface', 'custom']).optional(),
+    sourceUrl: z.string().url().optional(),
+    category: z.string().min(1).max(64).optional(),
+    pipelineTag: z.string().min(1).max(64).optional(),
+    name: z.string().min(1).max(128).optional(),
+    description: z.string().min(1).max(280).optional(),
+    author: z.string().min(1).max(128).optional(),
+    version: z.string().min(1).max(32).optional(),
 }) satisfies z.ZodType<InstallRequest>;

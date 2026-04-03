@@ -195,6 +195,52 @@ describe('LLMService', () => {
             );
         });
 
+        it('should route kimi provider to moonshot openai-compatible endpoint', async () => {
+            mockKeyRotationService.getCurrentKey.mockImplementation((provider: string) =>
+                provider === 'kimi' ? 'kimi-key' : null
+            );
+            mockHttpService.fetch.mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    choices: [{ message: { content: 'Kimi response', role: 'assistant' } }],
+                    usage: { completion_tokens: 4 }
+                })
+            });
+
+            await service.chat([{ role: 'user', content: 'Hi' }], 'kimi-k2', undefined, 'kimi');
+
+            expect(mockHttpService.fetch).toHaveBeenCalledWith(
+                'https://api.moonshot.ai/v1/chat/completions',
+                expect.objectContaining({
+                    headers: expect.objectContaining({
+                        Authorization: 'Bearer kimi-key'
+                    }),
+                })
+            );
+        });
+
+        it('should route cursor provider to proxy compatibility path', async () => {
+            mockHttpService.fetch.mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    choices: [{ message: { content: 'Cursor compatibility response', role: 'assistant' } }],
+                    usage: { completion_tokens: 2 }
+                })
+            });
+
+            await service.chat([{ role: 'user', content: 'Hi' }], 'cursor/gpt-4o', undefined, 'cursor');
+
+            expect(mockHttpService.fetch).toHaveBeenCalledWith(
+                'http://localhost:8317/v1/chat/completions',
+                expect.objectContaining({
+                    headers: expect.objectContaining({
+                        Authorization: 'Bearer test-key'
+                    }),
+                    body: expect.stringContaining('"provider":"cursor"'),
+                })
+            );
+        });
+
         it('should cache uncached chat responses as regression coverage for routing flow', async () => {
             mockCacheService.get.mockResolvedValueOnce(null);
             mockHttpService.fetch.mockResolvedValue({
@@ -236,6 +282,19 @@ describe('LLMService', () => {
             const failureMetrics = service.getHealthMetrics();
             expect(failureMetrics.uiState).toBe('failure');
             expect(en.serviceHealth.llm.failure).toBe(failureMetrics.messageKey);
+        });
+    });
+
+    describe('provider availability', () => {
+        it('should include kimi when kimi key is configured', async () => {
+            service.setKimiApiKey('kimi-key');
+            const providers = await service.getAvailableProviders();
+            expect(providers).toContain('kimi');
+        });
+
+        it('should include cursor when proxy key is available', async () => {
+            const providers = await service.getAvailableProviders();
+            expect(providers).toContain('cursor');
         });
     });
 });

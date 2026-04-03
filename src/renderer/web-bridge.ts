@@ -380,6 +380,49 @@ export const webElectronMock: ElectronAPI = {
         _provider?: string,
         _model?: string
     ) => 0,
+    listSkills: async () => [],
+    saveSkill: async (input: {
+        id?: string;
+        name: string;
+        description?: string;
+        provider?: string;
+        content: string;
+        enabled?: boolean;
+    }) => ({
+        id: input.id ?? `skill-${Date.now()}`,
+        name: input.name,
+        description: input.description ?? '',
+        provider: input.provider ?? 'all',
+        content: input.content,
+        enabled: input.enabled ?? true,
+        source: 'user',
+        created_at: Date.now(),
+        updated_at: Date.now(),
+    }),
+    toggleSkill: async (skillId: string, enabled: boolean) => ({
+        id: skillId,
+        name: skillId,
+        description: '',
+        provider: 'all',
+        content: '',
+        enabled,
+        source: 'user',
+        created_at: Date.now(),
+        updated_at: Date.now(),
+    }),
+    deleteSkill: async (_skillId: string) => true,
+    listMarketplaceSkills: async () => [],
+    installMarketplaceSkill: async (skillId: string) => ({
+        id: skillId,
+        name: skillId,
+        description: '',
+        provider: 'all',
+        content: '',
+        enabled: true,
+        source: 'builtin',
+        created_at: Date.now(),
+        updated_at: Date.now(),
+    }),
     performance: {
         getMemoryStats: async () => ({ success: true, data: { main: {}, timestamp: Date.now() } }),
         getProcessMetrics: async () => ({ success: true, data: [] }),
@@ -613,7 +656,7 @@ export const webElectronMock: ElectronAPI = {
                 createdAt: Date.now(),
                 updatedAt: Date.now(),
             }) as Workspace,
-        updateWorkspace: async (_id: string, _updates: Partial<Workspace>) => { },
+        updateWorkspace: async (_id: string, _updates: Partial<Workspace>) => null,
         deleteWorkspace: async (_id: string, _deleteFiles?: boolean) => { },
         archiveWorkspace: async (_id: string, _isArchived: boolean) => { },
         bulkDeleteWorkspaces: async (_ids: string[], _deleteFiles?: boolean) => { },
@@ -1586,6 +1629,49 @@ export const webElectronMock: ElectronAPI = {
         checkLimit: async () => ({ allowed: true }),
         getUsageCount: async () => 0,
         recordUsage: async () => ({ success: true }),
+        listSkills: async () => [],
+        saveSkill: async (input: {
+            id?: string;
+            name: string;
+            description?: string;
+            provider?: string;
+            content: string;
+            enabled?: boolean;
+        }) => ({
+            id: input.id ?? `skill-${Date.now()}`,
+            name: input.name,
+            description: input.description ?? '',
+            provider: input.provider ?? 'all',
+            content: input.content,
+            enabled: input.enabled ?? true,
+            source: 'user',
+            created_at: Date.now(),
+            updated_at: Date.now(),
+        }),
+        toggleSkill: async (skillId: string, enabled: boolean) => ({
+            id: skillId,
+            name: skillId,
+            description: '',
+            provider: 'all',
+            content: '',
+            enabled,
+            source: 'user',
+            created_at: Date.now(),
+            updated_at: Date.now(),
+        }),
+        deleteSkill: async () => true,
+        listMarketplaceSkills: async () => [],
+        installMarketplaceSkill: async (skillId: string) => ({
+            id: skillId,
+            name: skillId,
+            description: '',
+            provider: 'all',
+            content: '',
+            enabled: true,
+            source: 'builtin',
+            created_at: Date.now(),
+            updated_at: Date.now(),
+        }),
     },
     voice: {
         getSettings: async () => ({

@@ -7,6 +7,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use serde::Deserialize;
 use serde_json::json;
 use std::net::SocketAddr;
 use std::path::PathBuf;
@@ -24,7 +25,13 @@ pub struct AppState {
     // No db_url needed, db module handles it
 }
 
+#[derive(Deserialize)]
+struct OAuthVerifyQuery {
+    provider: Option<String>,
+}
+
 pub async fn start_proxy_server(port: u16) -> anyhow::Result<()> {
+    ensure_bridge_startup_preflight().await?;
     let state = Arc::new(AppState {});
     let protected = Router::new()
         .route(
@@ -117,6 +124,28 @@ pub async fn start_proxy_server(port: u16) -> anyhow::Result<()> {
             "/v0/management/oauth-callback",
             post(crate::proxy::handlers::management::handle_manual_oauth_callback),
         )
+        .route(
+            "/v0/skills",
+            get(crate::proxy::handlers::skills::handle_list_skills)
+                .post(crate::proxy::handlers::skills::handle_upsert_skill),
+        )
+        .route(
+            "/v0/skills/marketplace",
+            get(crate::proxy::handlers::skills::handle_list_marketplace_skills),
+        )
+        .route(
+            "/v0/skills/marketplace/install",
+            post(crate::proxy::handlers::skills::handle_install_marketplace_skill),
+        )
+        .route(
+            "/v0/skills/:skill_id",
+            get(crate::proxy::handlers::skills::handle_get_skill)
+                .delete(crate::proxy::handlers::skills::handle_delete_skill),
+        )
+        .route(
+            "/v0/skills/:skill_id/toggle",
+            post(crate::proxy::handlers::skills::handle_toggle_skill),
+        )
         .layer(middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,
@@ -129,6 +158,7 @@ pub async fn start_proxy_server(port: u16) -> anyhow::Result<()> {
             "/api/auth/oauth/bridge/readiness",
             get(oauth_bridge_readiness),
         )
+        .route("/api/auth/oauth/verify", get(oauth_bridge_verify))
         .merge(protected)
         .layer(CorsLayer::permissive())
         .with_state(state);
@@ -146,6 +176,8 @@ pub async fn start_proxy_server(port: u16) -> anyhow::Result<()> {
 async fn health_check() -> Json<serde_json::Value> {
     let db_connected = crate::db::get_all_linked_accounts().await.is_ok();
     let client_id_configured = codex_client_id_configured().await;
+    let callback_bridge_telemetry =
+        crate::auth::session::callback_bridge_telemetry_snapshot().await;
     Json(json!({
         "status": if db_connected { "ok" } else { "degraded" },
         "db": {
@@ -153,7 +185,8 @@ async fn health_check() -> Json<serde_json::Value> {
         },
         "oauth_bridge": {
             "callback_port": 1455,
-            "openai_client_id_configured": client_id_configured
+            "openai_client_id_configured": client_id_configured,
+            "telemetry": callback_bridge_telemetry
         }
     }))
 }
@@ -171,8 +204,65 @@ async fn oauth_bridge_readiness() -> Json<serde_json::Value> {
     }))
 }
 
+async fn oauth_bridge_verify(
+    query: axum::extract::Query<OAuthVerifyQuery>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    let provider = query.provider.as_deref().unwrap_or("codex");
+    let readiness = oauth_provider_readiness(provider)?;
+    let route_health = crate::auth::session::verify_callback_route(provider)
+        .await
+        .map_err(|_| StatusCode::BAD_REQUEST)?;
+    let status = if readiness.client_configured && route_health.route_healthy {
+        "ok"
+    } else {
+        "failed"
+    };
+    Ok(Json(json!({
+        "status": status,
+        "provider": readiness.provider,
+        "readiness": {
+            "client_id_configured": readiness.client_configured,
+            "client_secret_configured": readiness.client_secret_configured
+        },
+        "callback": route_health
+    })))
+}
+
 async fn codex_client_id_configured() -> bool {
     !static_config::OPENAI_OAUTH_CLIENT_ID.trim().is_empty()
+}
+
+struct OAuthProviderReadiness {
+    provider: &'static str,
+    client_configured: bool,
+    client_secret_configured: bool,
+}
+
+fn oauth_provider_readiness(provider: &str) -> Result<OAuthProviderReadiness, StatusCode> {
+    let normalized = match provider {
+        "openai" => "codex",
+        "anthropic" => "claude",
+        "google" => "antigravity",
+        value => value,
+    };
+    let client_id = static_config::oauth_client_id(normalized).ok_or(StatusCode::BAD_REQUEST)?;
+    let client_secret = static_config::oauth_client_secret(normalized);
+    Ok(OAuthProviderReadiness {
+        provider: match normalized {
+            "codex" => "codex",
+            "claude" => "claude",
+            "antigravity" => "antigravity",
+            _ => return Err(StatusCode::BAD_REQUEST),
+        },
+        client_configured: !client_id.trim().is_empty(),
+        client_secret_configured: client_secret
+            .map(|value| !value.trim().is_empty())
+            .unwrap_or(true),
+    })
+}
+
+async fn ensure_bridge_startup_preflight() -> anyhow::Result<()> {
+    crate::auth::session::ensure_callback_server("codex").await
 }
 
 async fn auth_middleware(
@@ -353,7 +443,11 @@ mod tests {
     use axum::http::Request;
     use serde_json::json;
 
-    use super::{extract_auth_candidates, extract_proxy_keys_from_settings_value};
+    use super::{
+        ensure_bridge_startup_preflight, extract_auth_candidates,
+        extract_proxy_keys_from_settings_value, oauth_provider_readiness,
+    };
+    use tokio::net::TcpListener;
 
     #[test]
     fn extracts_auth_candidates_from_headers_and_query() {
@@ -402,5 +496,23 @@ mod tests {
                 "legacy-proxy-key".to_string()
             ]
         );
+    }
+
+    #[test]
+    fn resolves_oauth_provider_readiness_for_aliases() {
+        let readiness = oauth_provider_readiness("openai").expect("readiness");
+        assert_eq!(readiness.provider, "codex");
+        assert!(readiness.client_configured);
+    }
+
+    #[tokio::test]
+    async fn startup_preflight_fails_when_bridge_port_occupied() {
+        let listener = match TcpListener::bind(("127.0.0.1", 1455)).await {
+            Ok(listener) => listener,
+            Err(_) => return,
+        };
+        let result = ensure_bridge_startup_preflight().await;
+        drop(listener);
+        assert!(result.is_err());
     }
 }

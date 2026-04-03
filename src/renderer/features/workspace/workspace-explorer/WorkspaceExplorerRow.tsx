@@ -56,6 +56,10 @@ function getGitBadgeClass(gitStatus?: WorkspaceEntryRow['gitStatus']): string {
     return 'text-muted-foreground';
 }
 
+function getIgnoredEntryClassName(isIgnored?: boolean): string {
+    return isIgnored === true ? 'opacity-55 text-amber-300/80 hover:text-amber-200/90' : '';
+}
+
 function WorkspaceExplorerDiagnosticsBadges({
     diagnostics,
 }: {
@@ -201,7 +205,8 @@ const EntryRowView: React.FC<{
                     : 'hover:bg-muted/20 text-muted-foreground/80 hover:text-foreground',
                 isFocused && 'ring-1 ring-primary/30 bg-primary/5',
                 isOver && 'bg-primary/20 border-dashed border-primary ring-2 ring-primary/20',
-                isDragging && 'opacity-20 cursor-grabbing bg-muted/40'
+                isDragging && 'opacity-20 cursor-grabbing bg-muted/40',
+                getIgnoredEntryClassName(row.entry.isGitIgnored)
             )}
             style={{ ...style, paddingLeft: `${row.depth * 14 + 10}px` }}
             onClick={e => {

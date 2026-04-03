@@ -1,23 +1,25 @@
-import { _electron as electron, ElectronApplication, expect, Page, test } from '@playwright/test';
+import { ElectronApplication, expect, Page, test } from '@playwright/test';
+
+import {
+    closeElectronApp,
+    launchElectronApp,
+    openSettingsPanel,
+    settleVisualState
+} from './e2e-test-utils';
 
 test.describe('Model Management E2E', () => {
     let electronApp: ElectronApplication;
     let appWindow: Page;
 
     test.beforeAll(async () => {
-        electronApp = await electron.launch({
-            args: ['dist/main/main.js'],
-            env: { ...process.env, NODE_ENV: 'test' }
-        });
-        appWindow = await electronApp.firstWindow();
-        await appWindow.waitForLoadState('domcontentloaded');
-        await appWindow.waitForTimeout(2000);
+        const launched = await launchElectronApp();
+        electronApp = launched.electronApp;
+        appWindow = launched.appWindow;
+        await settleVisualState(appWindow);
     });
 
     test.afterAll(async () => {
-        if (electronApp) {
-            await electronApp.close();
-        }
+        await closeElectronApp(electronApp);
     });
 
     test('should display model selector in chat view', async () => {
@@ -28,28 +30,17 @@ test.describe('Model Management E2E', () => {
     test('should open model selector modal on click', async () => {
         const modelSelector = appWindow.getByTestId('model-selector');
         await modelSelector.click();
-        await appWindow.waitForTimeout(500);
 
         // A modal or dropdown should appear
-        const modal = appWindow.locator('[role="dialog"], [class*="Modal"], [class*="modal"]').first();
-        if (await modal.count() > 0) {
-            await expect(modal).toBeVisible();
-        }
+        const modal = appWindow.locator('[role="dialog"], [class*="Modal"], [class*="modal"]')
+            .first();
+        await expect(modal.or(modelSelector)).toBeVisible();
     });
 
     test('should display model list or categories', async () => {
         // Check for model items in the selector
         const modelItems = appWindow.locator('[class*="ModelSelector"], [class*="model-selector"], [class*="model-item"]');
-        const itemCount = await modelItems.count();
-
-        // Either model items or the selector container should be present
-        expect(itemCount).toBeGreaterThanOrEqual(0);
-
-        // Look for model-related content
-        const modelContent = appWindow.locator('[class*="Model"], [class*="model"]').first();
-        if (await modelContent.count() > 0) {
-            await expect(modelContent).toBeVisible();
-        }
+        await expect(modelItems.first().or(appWindow.getByTestId('model-selector'))).toBeVisible();
     });
 
     test('should have filter or search capability in model selector', async () => {
@@ -61,11 +52,11 @@ test.describe('Model Management E2E', () => {
 
             // Type a search query
             await searchInput.fill('gpt');
-            await appWindow.waitForTimeout(300);
+            await expect(searchInput).toHaveValue('gpt');
 
             // Clear the search
             await searchInput.clear();
-            await appWindow.waitForTimeout(200);
+            await expect(searchInput).toHaveValue('');
         }
     });
 
@@ -80,13 +71,13 @@ test.describe('Model Management E2E', () => {
             // Click through available tabs
             const firstTab = tabs.first();
             await firstTab.click();
-            await appWindow.waitForTimeout(300);
+            await expect(firstTab).toBeVisible();
         }
     });
 
     test('should close model selector', async () => {
         await appWindow.keyboard.press('Escape');
-        await appWindow.waitForTimeout(300);
+        await expect(appWindow.getByTestId('model-selector')).toBeVisible();
     });
 });
 
@@ -95,30 +86,23 @@ test.describe('Model Settings Tab E2E', () => {
     let appWindow: Page;
 
     test.beforeAll(async () => {
-        electronApp = await electron.launch({
-            args: ['dist/main/main.js'],
-            env: { ...process.env, NODE_ENV: 'test' }
-        });
-        appWindow = await electronApp.firstWindow();
-        await appWindow.waitForLoadState('domcontentloaded');
-        await appWindow.waitForTimeout(2000);
+        const launched = await launchElectronApp();
+        electronApp = launched.electronApp;
+        appWindow = launched.appWindow;
+        await settleVisualState(appWindow);
     });
 
     test.afterAll(async () => {
-        if (electronApp) {
-            await electronApp.close();
-        }
+        await closeElectronApp(electronApp);
     });
 
     test('should open settings and navigate to models tab', async () => {
-        const settingsButton = appWindow.getByTestId('settings-button');
-        await settingsButton.click();
-        await appWindow.waitForTimeout(500);
+        await openSettingsPanel(appWindow);
 
         const modelsTab = appWindow.locator('.settings-tab-btn', { hasText: /model|yapay zeka/i });
         if (await modelsTab.count() > 0) {
             await modelsTab.first().click();
-            await appWindow.waitForTimeout(500);
+            await expect(appWindow.locator('.settings-main')).toBeVisible();
         }
     });
 
@@ -133,6 +117,6 @@ test.describe('Model Settings Tab E2E', () => {
 
     test('should close settings after model settings tests', async () => {
         await appWindow.keyboard.press('Escape');
-        await appWindow.waitForTimeout(300);
+        await expect(appWindow.locator('.settings-container')).not.toBeVisible();
     });
 });

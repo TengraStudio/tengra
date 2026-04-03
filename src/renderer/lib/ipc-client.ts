@@ -7,6 +7,8 @@ import {
 import { IpcContractEntry, IpcContractMap, IpcValue } from '@shared/types/common';
 import { z, ZodError, ZodType } from 'zod';
 
+import { translateErrorMessage } from '@/utils/error-handler.util';
+
 const DEFAULT_MAX_ATTEMPTS = 3;
 const DEFAULT_BASE_DELAY_MS = 150;
 const DEFAULT_MAX_DELAY_MS = 1500;
@@ -80,12 +82,12 @@ function isRetryableError(error: RendererDataValue): boolean {
 
 function ensureElectronApi(): void {
     if (!window.electron?.ipcRenderer?.invoke) {
-        throw new Error('IPC bridge is not available');
+        throw new Error(translateErrorMessage('IPC bridge is not available'));
     }
 }
 
 function formatContractMismatch(info: IpcContractVersionInfo): string {
-    return `Incompatible IPC contract: renderer v${IPC_CONTRACT_VERSION} (requires main >= v${IPC_CONTRACT_MIN_MAIN_VERSION}), main v${info.version} (requires renderer >= v${info.minRendererVersion})`;
+    return translateErrorMessage(`Incompatible IPC contract: renderer v${IPC_CONTRACT_VERSION} (requires main >= v${IPC_CONTRACT_MIN_MAIN_VERSION}), main v${info.version} (requires renderer >= v${info.minRendererVersion})`);
 }
 
 async function ensureIpcContractCompatibility(): Promise<void> {
@@ -103,7 +105,7 @@ async function ensureIpcContractCompatibility(): Promise<void> {
                 throw new Error(formatContractMismatch(contractInfo));
             }
         } catch (error) {
-            throw new Error(`IPC contract negotiation failed: ${getErrorMessage(error as TypeAssertionValue)}`);
+            throw new Error(translateErrorMessage(`IPC contract negotiation failed: ${getErrorMessage(error as TypeAssertionValue)}`));
         }
     })();
 
@@ -176,7 +178,7 @@ async function executeWithRetry<T>(opts: RetryOptions<T>): Promise<T> {
         }
     }
 
-    throw new Error(`IPC ${channel} failed after ${maxAttempts} attempt(s): ${getErrorMessage(lastError)}`);
+    throw new Error(translateErrorMessage(`IPC ${channel} failed after ${maxAttempts} attempt(s): ${getErrorMessage(lastError)}`));
 }
 
 /**

@@ -3,6 +3,9 @@
  * Covers: all export formats, options, edge cases, error handling,
  * exportChat flow, exportToPDF flow, and helper methods.
  */
+import * as os from 'os';
+import * as path from 'path';
+
 import { ExportFormat, ExportOptions, ExportService } from '@main/services/data/export.service';
 import { Chat, Message, ToolCall } from '@shared/types/chat';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -33,6 +36,8 @@ import { dialog } from 'electron';
 
 const mockShowSaveDialog = dialog.showSaveDialog as ReturnType<typeof vi.fn>;
 const mockWriteFile = fs.writeFile as ReturnType<typeof vi.fn>;
+const TEST_EXPORT_ROOT = path.join(os.tmpdir(), 'tengra-tests', 'exports');
+const exportPath = (fileName: string): string => path.join(TEST_EXPORT_ROOT, fileName);
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -604,14 +609,15 @@ describe('ExportService - file operations', () => {
         });
 
         it('should return success when file is saved', async () => {
-            mockShowSaveDialog.mockResolvedValue({ filePath: '/tmp/export.md', canceled: false });
+            const filePath = exportPath('export.md');
+            mockShowSaveDialog.mockResolvedValue({ filePath, canceled: false });
             mockWriteFile.mockResolvedValue(undefined);
 
             const result = await service.exportChat(chat, { format: 'markdown' });
 
             expect(result.success).toBe(true);
-            expect(result.path).toBe('/tmp/export.md');
-            expect(mockWriteFile).toHaveBeenCalledWith('/tmp/export.md', expect.any(String), 'utf-8');
+            expect(result.path).toBe(filePath);
+            expect(mockWriteFile).toHaveBeenCalledWith(filePath, expect.any(String), 'utf-8');
         });
 
         it('should return success:false when dialog is canceled', async () => {
@@ -625,7 +631,7 @@ describe('ExportService - file operations', () => {
         });
 
         it('should return error on write failure', async () => {
-            mockShowSaveDialog.mockResolvedValue({ filePath: '/tmp/fail.md', canceled: false });
+            mockShowSaveDialog.mockResolvedValue({ filePath: exportPath('fail.md'), canceled: false });
             mockWriteFile.mockRejectedValue(new Error('Permission denied'));
 
             const result = await service.exportChat(chat, { format: 'markdown' });
@@ -652,7 +658,7 @@ describe('ExportService - file operations', () => {
         });
 
         it('should use custom title in the export', async () => {
-            mockShowSaveDialog.mockResolvedValue({ filePath: '/tmp/custom.md', canceled: false });
+            mockShowSaveDialog.mockResolvedValue({ filePath: exportPath('custom.md'), canceled: false });
             mockWriteFile.mockResolvedValue(undefined);
 
             await service.exportChat(chat, { format: 'markdown', title: 'My Export' });
@@ -662,7 +668,7 @@ describe('ExportService - file operations', () => {
         });
 
         it('should sanitize title for filename (strips special chars)', async () => {
-            mockShowSaveDialog.mockResolvedValue({ filePath: '/tmp/test.json', canceled: false });
+            mockShowSaveDialog.mockResolvedValue({ filePath: exportPath('test.json'), canceled: false });
             mockWriteFile.mockResolvedValue(undefined);
 
             const specialChat = createChat({ title: 'Chat: "test" <file>' });
@@ -678,7 +684,7 @@ describe('ExportService - file operations', () => {
         });
 
         it('should handle non-Error thrown objects', async () => {
-            mockShowSaveDialog.mockResolvedValue({ filePath: '/tmp/fail.md', canceled: false });
+            mockShowSaveDialog.mockResolvedValue({ filePath: exportPath('fail.md'), canceled: false });
             mockWriteFile.mockRejectedValue('string error');
 
             const result = await service.exportChat(chat, { format: 'markdown' });
@@ -693,7 +699,7 @@ describe('ExportService - file operations', () => {
             ['json', 'json'],
             ['txt', 'txt']
         ])('should set correct file extension for %s format', async (format, ext) => {
-            mockShowSaveDialog.mockResolvedValue({ filePath: `/tmp/file.${ext}`, canceled: false });
+            mockShowSaveDialog.mockResolvedValue({ filePath: exportPath(`file.${ext}`), canceled: false });
             mockWriteFile.mockResolvedValue(undefined);
 
             await service.exportChat(chat, { format });
@@ -735,19 +741,20 @@ describe('ExportService - file operations', () => {
 
         it('should write PDF buffer to file on success', async () => {
             const pdfBuffer = Buffer.from('fake-pdf');
-            mockShowSaveDialog.mockResolvedValue({ filePath: '/tmp/chat.pdf', canceled: false });
+            const filePath = exportPath('chat.pdf');
+            mockShowSaveDialog.mockResolvedValue({ filePath, canceled: false });
             mockPrintToPDF.mockResolvedValue(pdfBuffer);
             mockWriteFile.mockResolvedValue(undefined);
 
             const result = await service.exportToPDF(chat);
 
             expect(result.success).toBe(true);
-            expect(result.path).toBe('/tmp/chat.pdf');
-            expect(mockWriteFile).toHaveBeenCalledWith('/tmp/chat.pdf', pdfBuffer);
+            expect(result.path).toBe(filePath);
+            expect(mockWriteFile).toHaveBeenCalledWith(filePath, pdfBuffer);
         });
 
         it('should use custom title from options', async () => {
-            mockShowSaveDialog.mockResolvedValue({ filePath: '/tmp/custom.pdf', canceled: false });
+            mockShowSaveDialog.mockResolvedValue({ filePath: exportPath('custom.pdf'), canceled: false });
             mockPrintToPDF.mockResolvedValue(Buffer.from('pdf'));
             mockWriteFile.mockResolvedValue(undefined);
 
@@ -758,7 +765,7 @@ describe('ExportService - file operations', () => {
         });
 
         it('should return error on printToPDF failure', async () => {
-            mockShowSaveDialog.mockResolvedValue({ filePath: '/tmp/fail.pdf', canceled: false });
+            mockShowSaveDialog.mockResolvedValue({ filePath: exportPath('fail.pdf'), canceled: false });
             mockPrintToPDF.mockRejectedValue(new Error('Print failed'));
 
             const result = await service.exportToPDF(chat);
@@ -768,7 +775,7 @@ describe('ExportService - file operations', () => {
         });
 
         it('should handle non-Error thrown objects in PDF export', async () => {
-            mockShowSaveDialog.mockResolvedValue({ filePath: '/tmp/fail.pdf', canceled: false });
+            mockShowSaveDialog.mockResolvedValue({ filePath: exportPath('fail.pdf'), canceled: false });
             mockPrintToPDF.mockRejectedValue('pdf error string');
 
             const result = await service.exportToPDF(chat);
@@ -779,7 +786,7 @@ describe('ExportService - file operations', () => {
 
         it('should use "Untitled Chat" when no title given', async () => {
             const noTitle = createChat({ title: '' });
-            mockShowSaveDialog.mockResolvedValue({ filePath: '/tmp/untitled.pdf', canceled: false });
+            mockShowSaveDialog.mockResolvedValue({ filePath: exportPath('untitled.pdf'), canceled: false });
             mockPrintToPDF.mockResolvedValue(Buffer.from('pdf'));
             mockWriteFile.mockResolvedValue(undefined);
 
@@ -787,21 +794,6 @@ describe('ExportService - file operations', () => {
 
             const dialogOpts = mockShowSaveDialog.mock.calls[0]![1] as { defaultPath: string };
             expect(dialogOpts.defaultPath).toContain('Untitled_Chat');
-        });
-    });
-
-    // ── setWindow ────────────────────────────────────────────────────────
-
-    describe('setWindow', () => {
-        it('should allow setting window to a BrowserWindow instance', () => {
-            const mockWindow = {} as Electron.BrowserWindow;
-            service.setWindow(mockWindow);
-            // No error thrown — verify via exportToPDF not returning "No window"
-        });
-
-        it('should allow setting window to null', () => {
-            service.setWindow(null);
-            // Verify via exportToPDF returning no-window error
         });
     });
 

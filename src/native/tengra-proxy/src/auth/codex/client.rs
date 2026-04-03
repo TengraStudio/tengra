@@ -2,6 +2,7 @@ use crate::auth::codex::pkce::PKCECodes;
 use crate::auth::codex::types::CodexTokenResponse;
 use crate::static_config;
 use reqwest::Client;
+use std::time::Duration;
 use url::Url;
 
 const OPENAI_AUTH_URL: &str = "https://auth.openai.com/oauth/authorize";
@@ -14,11 +15,15 @@ pub struct CodexClient {
 }
 
 impl CodexClient {
-    pub async fn new() -> Self {
-        Self {
-            client: Client::new(),
+    pub async fn new() -> anyhow::Result<Self> {
+        let timeout_secs = static_config::oauth_provider_timeout_secs("codex")?;
+        let client = Client::builder()
+            .timeout(Duration::from_secs(timeout_secs))
+            .build()?;
+        Ok(Self {
+            client,
             client_id: static_config::OPENAI_OAUTH_CLIENT_ID.to_string(),
-        }
+        })
     }
 
     pub fn generate_auth_url(&self, state: &str, pkce: &PKCECodes) -> String {

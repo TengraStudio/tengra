@@ -984,7 +984,7 @@ impl Database {
         let workspace_table = legacy_workspace_table();
         let query = format!(
             "SELECT id, title, description, path, mounts, chat_ids, council_config,
-                    status, metadata, created_at, updated_at
+                    status, logo, metadata, created_at, updated_at
              FROM {workspace_table} ORDER BY updated_at DESC"
         );
         let mut stmt = conn.prepare(&query)?;
@@ -1007,11 +1007,12 @@ impl Database {
                     .get::<_, Option<String>>(6)?
                     .and_then(|s| serde_json::from_str(&s).ok()),
                 status: row.get(7)?,
+                logo: row.get(8)?,
                 metadata: row
-                    .get::<_, Option<String>>(8)?
+                    .get::<_, Option<String>>(9)?
                     .and_then(|s| serde_json::from_str(&s).ok()),
-                created_at: row.get(9)?,
-                updated_at: row.get(10)?,
+                created_at: row.get(10)?,
+                updated_at: row.get(11)?,
             })
         })?;
 
@@ -1024,7 +1025,7 @@ impl Database {
         let workspace_table = legacy_workspace_table();
         let query = format!(
             "SELECT id, title, description, path, mounts, chat_ids, council_config,
-                    status, metadata, created_at, updated_at
+                    status, logo, metadata, created_at, updated_at
              FROM {workspace_table} WHERE id = ?"
         );
         let result = conn
@@ -1046,11 +1047,12 @@ impl Database {
                         .get::<_, Option<String>>(6)?
                         .and_then(|s| serde_json::from_str(&s).ok()),
                     status: row.get(7)?,
+                    logo: row.get(8)?,
                     metadata: row
-                        .get::<_, Option<String>>(8)?
+                        .get::<_, Option<String>>(9)?
                         .and_then(|s| serde_json::from_str(&s).ok()),
-                    created_at: row.get(9)?,
-                    updated_at: row.get(10)?,
+                    created_at: row.get(10)?,
+                    updated_at: row.get(11)?,
                 })
             })
             .optional()?;
@@ -1063,8 +1065,8 @@ impl Database {
         let workspace_table = legacy_workspace_table();
         let insert_sql = format!(
             "INSERT INTO {workspace_table} (id, title, description, path, mounts, chat_ids, council_config,
-                                  status, metadata, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, '[]', ?, 'active', ?, ?, ?)"
+                                  status, logo, metadata, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, '[]', ?, 'active', ?, ?, ?, ?)"
         );
 
         conn.execute(
@@ -1078,6 +1080,7 @@ impl Database {
                 req.council_config
                     .as_ref()
                     .map(|c| serde_json::to_string(c).unwrap_or_default()),
+                req.logo,
                 req.metadata
                     .as_ref()
                     .map(|m| serde_json::to_string(m).unwrap_or_default()),
@@ -1095,6 +1098,7 @@ impl Database {
             chat_ids: vec![],
             council_config: req.council_config,
             status: "active".to_string(),
+            logo: req.logo,
             metadata: req.metadata,
             created_at: now,
             updated_at: now,
@@ -1136,6 +1140,10 @@ impl Database {
         if let Some(status) = req.status {
             updates.push("status = ?".to_string());
             values.push(Box::new(status));
+        }
+        if let Some(logo) = req.logo {
+            updates.push("logo = ?".to_string());
+            values.push(Box::new(logo));
         }
         if let Some(metadata) = req.metadata {
             updates.push("metadata = ?".to_string());

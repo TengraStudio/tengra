@@ -1,5 +1,4 @@
 import {
-    ChevronRight,
     Globe,
     Grid3X3,
     MessageSquare,
@@ -14,20 +13,18 @@ import { useAuthLanguage } from '@/context/AuthContext';
 import { useTranslation } from '@/i18n';
 
 import { McpMarketplace } from './components/McpMarketplace';
+import { SkillsMarketplace } from './components/SkillsMarketplace';
 
-type MarketplaceTab = 'mcp' | 'themes' | 'personas' | 'models' | 'prompts' | 'languages';
+type MarketplaceTab = 'mcp' | 'skills' | 'themes' | 'personas' | 'models' | 'prompts' | 'languages';
 
-function resolveLabel(translated: string, fallback: string): string {
-    return translated.includes('.') ? fallback : translated;
-}
-
-export const MarketplaceView: React.FC = () => {
+export function MarketplaceView(): JSX.Element {
     const { language } = useAuthLanguage();
     const { t } = useTranslation(language);
     const [activeTab, setActiveTab] = useState<MarketplaceTab>('mcp');
 
     const tabs: Array<{ id: MarketplaceTab, icon: React.ElementType }> = [
         { id: 'mcp', icon: Package },
+        { id: 'skills', icon: Sparkles },
         { id: 'themes', icon: Palette },
         { id: 'personas', icon: Sparkles },
         { id: 'models', icon: Zap },
@@ -36,11 +33,12 @@ export const MarketplaceView: React.FC = () => {
     ];
     const tabLabels: Record<MarketplaceTab, string> = {
         mcp: t('marketplace.tabs.mcp'),
+        skills: t('marketplace.tabs.skills'),
         themes: t('marketplace.tabs.themes'),
         personas: t('marketplace.tabs.personas'),
         models: t('marketplace.tabs.models'),
         prompts: t('marketplace.tabs.prompts'),
-        languages: resolveLabel(t('settings.language'), 'Languages'),
+        languages: t('marketplace.tabs.languages'),
     };
 
     return (
@@ -63,7 +61,7 @@ export const MarketplaceView: React.FC = () => {
                     {/* Navigation Tabs */}
                     <nav className="flex items-center gap-1 bg-muted/30 p-1 rounded-lg border border-border/40">
                         {tabs.map((tab) => {
-                            const isEnabled = tab.id !== 'models';
+                            const isEnabled = true;
                             return (
                                 <button
                                     key={tab.id}
@@ -88,37 +86,16 @@ export const MarketplaceView: React.FC = () => {
                 {/* Content Area */}
                 <main className="flex-1 overflow-y-auto p-6 scroll-smooth">
                     <div className="max-w-6xl mx-auto">
-                        {activeTab !== 'models' ? (
-                            <McpMarketplace key={activeTab} mode={activeTab} />
+                        {activeTab === 'skills' ? (
+                            <SkillsMarketplace />
                         ) : (
-                            <SimplePlaceholder tab={activeTab} />
+                            <McpMarketplace key={activeTab} mode={activeTab} />
                         )}
                     </div>
                 </main>
             </div>
         </div>
     );
-};
-
-const SimplePlaceholder: React.FC<{ tab: MarketplaceTab }> = ({ tab }) => {
-    const { language } = useAuthLanguage();
-    const { t } = useTranslation(language);
-
-    return (
-        <div className="flex flex-col items-center justify-center py-20 border border-dashed border-border/40 rounded-xl bg-muted/5">
-            <Sparkles className="w-10 h-10 text-primary opacity-20 mb-4" />
-            <h2 className="text-xl font-bold">
-                {t('marketplace.placeholders.soon.title', { tab: tab.toUpperCase() })}
-            </h2>
-            <p className="text-xs text-muted-foreground mt-2 max-w-sm text-center">
-                {t('marketplace.placeholders.soon.description', { tab: tab })}
-            </p>
-            <button className="mt-6 flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground text-xs font-bold rounded-lg hover:opacity-90 transition-opacity">
-                {t('marketplace.placeholders.soon.button')}
-                <ChevronRight className="w-3 h-3" />
-            </button>
-        </div>
-    );
-};
+}
 
 export default MarketplaceView;

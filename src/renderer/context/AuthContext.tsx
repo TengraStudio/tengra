@@ -1,6 +1,8 @@
 import { useAuthManager } from '@renderer/features/settings/hooks/useAuthManager';
 import { createContext, ReactNode, useContext, useMemo } from 'react';
 
+import { translateErrorMessage } from '@/utils/error-handler.util';
+
 type AuthContextType = ReturnType<typeof useAuthManager>
 type AuthLanguageContextType = {
     language: AuthContextType['language'];
@@ -58,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
     const context = useContext(AuthContext);
     if (!context) {
-        throw new Error('useAuth must be used within an AuthProvider');
+        throw new Error(translateErrorMessage('useAuth must be used within an AuthProvider'));
     }
     return context;
 }
@@ -66,7 +68,7 @@ export function useAuth() {
 export function useAuthLanguage() {
     const context = useContext(AuthLanguageContext);
     if (!context) {
-        throw new Error('useAuthLanguage must be used within an AuthProvider');
+        throw new Error(translateErrorMessage('useAuthLanguage must be used within an AuthProvider'));
     }
     return context;
 }
@@ -74,7 +76,7 @@ export function useAuthLanguage() {
 export function useAuthSettingsUi() {
     const context = useContext(AuthSettingsUiContext);
     if (!context) {
-        throw new Error('useAuthSettingsUi must be used within an AuthProvider');
+        throw new Error(translateErrorMessage('useAuthSettingsUi must be used within an AuthProvider'));
     }
     return context;
 }

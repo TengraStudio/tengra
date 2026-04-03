@@ -5,3 +5,4 @@ pub mod embeddings;
 pub mod management;
 pub mod models;
 pub mod responses;
+pub mod skills;

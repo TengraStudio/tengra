@@ -31,4 +31,14 @@ export interface OllamaLibraryModel {
     lastUpdated: string
 }
 
-export type AIProvider = 'ollama' | 'llama.cpp' | 'openai' | 'anthropic' | 'claude' | 'groq' | 'antigravity' | 'copilot'
+export type AIProvider =
+    | 'ollama'
+    | 'llama.cpp'
+    | 'openai'
+    | 'anthropic'
+    | 'claude'
+    | 'groq'
+    | 'antigravity'
+    | 'copilot'
+    | 'cursor'
+    | 'kimi'

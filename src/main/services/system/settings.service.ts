@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
+import { RuntimeValue } from '@shared/types/common';
 import { AppSettings } from '@shared/types/settings';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
@@ -202,8 +203,6 @@ import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
 import { LinkedAccount } from '@main/services/data/database.service';
 import { AuthService } from '@main/services/security/auth.service';
-
-type RuntimeValue = any;
 
 export class SettingsService extends BaseService {
     private static readonly ERROR_CODES = {

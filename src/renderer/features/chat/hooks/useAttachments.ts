@@ -204,7 +204,8 @@ function readAudioDurationSeconds(file: File): Promise<number | null> {
 async function buildAttachmentContent(
     file: File,
     mimeType: string,
-    attachmentType: Attachment['type']
+    attachmentType: Attachment['type'],
+    resolveMessage: (key: string, options?: Record<string, string | number>) => string
 ): Promise<{ content: string; preview?: string }> {
     if (attachmentType === 'image') {
         const optimized = await optimizeImageContent(file, mimeType);
@@ -213,16 +214,22 @@ async function buildAttachmentContent(
 
     if (attachmentType === 'video') {
         const preview = await extractVideoFramePreview(file);
-        const content = `[Video attachment: ${file.name} (${mimeType})]\n${preview ? 'Preview frame extracted for multimodal analysis.' : 'Preview frame unavailable.'}`;
+        const header = resolveMessage('attachments.summary.videoHeader', { name: file.name, mimeType });
+        const previewStatus = preview
+            ? resolveMessage('attachments.summary.videoPreviewExtracted')
+            : resolveMessage('attachments.summary.videoPreviewUnavailable');
+        const content = `${header}\n${previewStatus}`;
         return { content, preview };
     }
 
     if (attachmentType === 'audio') {
         const durationSeconds = await readAudioDurationSeconds(file);
         const durationNote = durationSeconds !== null
-            ? `Duration: ${durationSeconds.toFixed(1)} seconds.`
-            : 'Duration unavailable.';
-        const content = `[Audio attachment: ${file.name} (${mimeType})]\n${durationNote}\nTranscription requested: summarize key spoken content when supported.`;
+            ? resolveMessage('attachments.summary.audioDuration', { seconds: durationSeconds.toFixed(1) })
+            : resolveMessage('attachments.summary.audioDurationUnavailable');
+        const header = resolveMessage('attachments.summary.audioHeader', { name: file.name, mimeType });
+        const transcriptionNote = resolveMessage('attachments.summary.audioTranscriptionHint');
+        const content = `${header}\n${durationNote}\n${transcriptionNote}`;
         return { content };
     }
 
@@ -242,19 +249,13 @@ async function buildAttachmentContent(
         return { content: rawText };
     }
 
-    return { content: `[Attached file: ${file.name} (${mimeType})]` };
+    return { content: resolveMessage('attachments.summary.genericFile', { name: file.name, mimeType }) };
 }
 
 export async function validateDroppedFile(
     file: File,
-    resolveMessage?: (key: string, options?: Record<string, string | number>) => string
+    resolveMessage: (key: string, options?: Record<string, string | number>) => string
 ): Promise<DropValidationResult> {
-    const message = (key: string, options: Record<string, string | number>, fallback: string): string => {
-        if (!resolveMessage) {
-            return fallback;
-        }
-        return resolveMessage(key, options);
-    };
     const signatureType = await detectFileType(file);
     const detectedMimeType = signatureType || detectMimeType(file);
 
@@ -262,10 +263,9 @@ export async function validateDroppedFile(
     if (file.size > MAX_FILE_SIZE) {
         return {
             valid: false,
-            error: message(
+            error: resolveMessage(
                 'attachments.validation.maxSizeExceeded',
-                { name: file.name, maxSizeMb: 10 },
-                `File "${file.name}" exceeds maximum size of 10MB`
+                { name: file.name, maxSizeMb: 10 }
             ),
         };
     }
@@ -280,15 +280,12 @@ export async function validateDroppedFile(
         fileType.startsWith('video/');
 
     if (!isAllowedType) {
-        const unknownType = resolveMessage
-            ? resolveMessage('attachments.validation.unknownType')
-            : 'unknown';
+        const unknownType = resolveMessage('attachments.validation.unknownType');
         return {
             valid: false,
-            error: message(
+            error: resolveMessage(
                 'attachments.validation.unsupportedType',
-                { type: file.type || unknownType },
-                `File type "${file.type || 'unknown'}" is not supported`
+                { type: file.type || unknownType }
             ),
         };
     }
@@ -301,10 +298,9 @@ export async function validateDroppedFile(
     if (hasDangerousExtension) {
         return {
             valid: false,
-            error: message(
+            error: resolveMessage(
                 'attachments.validation.unsupportedExtension',
-                { name: file.name },
-                `File "${file.name}" has an unsupported extension`
+                { name: file.name }
             ),
         };
     }
@@ -337,7 +333,7 @@ export const useAttachments = () => {
         setAttachments(prev => [...prev, newAttachment]);
 
         try {
-            const { content, preview } = await buildAttachmentContent(file, mimeType, attachmentType);
+            const { content, preview } = await buildAttachmentContent(file, mimeType, attachmentType, t);
             setAttachments(prev =>
                 prev.map(a =>
                     a.id === id
@@ -346,7 +342,7 @@ export const useAttachments = () => {
                 )
             );
         } catch {
-            const fallbackContent = `[Attached file: ${file.name} (${mimeType})]`;
+            const fallbackContent = t('attachments.summary.genericFile', { name: file.name, mimeType });
             setAttachments(prev =>
                 prev.map(a =>
                     a.id === id

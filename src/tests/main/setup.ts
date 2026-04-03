@@ -1,3 +1,6 @@
+import * as os from 'os';
+import * as path from 'path';
+
 import { vi } from 'vitest';
 
 interface MockWindow {
@@ -197,7 +200,16 @@ vi.mock('@main/utils/ipc-wrapper.util', async (importOriginal) => {
 // Global mocks for Electron
 vi.mock('electron', () => ({
     app: {
-        getPath: vi.fn(() => '/tmp'),
+        getPath: vi.fn((name: string) => {
+            const testRoot = path.join(os.tmpdir(), 'tengra-tests');
+            if (name === 'logs') {
+                return path.join(testRoot, 'logs');
+            }
+            if (name === 'userData') {
+                return path.join(testRoot, 'userData');
+            }
+            return testRoot;
+        }),
         isPackaged: false,
         getVersion: vi.fn(() => '0.0.0-test'),
         quit: vi.fn(),
@@ -260,11 +272,6 @@ vi.mock('fs', async (importOriginal) => {
 // Mock path
 vi.mock('path', async (importOriginal) => {
     const originalModule = await importOriginal<typeof import('path')>();
-    return {
-        ...originalModule,
-        join: (...args: string[]) => args.join('/'),
-        dirname: (p: string) => p.substring(0, p.lastIndexOf('/')),
-        resolve: (...args: string[]) => args.join('/'),
-    };
+    return originalModule;
 });
 

@@ -13,7 +13,11 @@ export function buildFormattedClipboardHtml(selectedText: string): string {
     return `<pre style="font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 13px; background: #1e1e1e; color: #d4d4d4; padding: 8px; border-radius: 4px; overflow-x: auto;">${escaped}</pre>`;
 }
 
-export function summarizePasteText(text: string, hasAnsi: boolean): string {
+export function summarizePasteText(
+    text: string,
+    hasAnsi: boolean,
+    t: (key: string, options?: Record<string, string | number>) => string
+): string {
     const lineCount = text.split(/\r?\n/).length;
     const charCount = text.length;
     const hasSpecialChars = Array.from(text).some(c => {
@@ -23,14 +27,16 @@ export function summarizePasteText(text: string, hasAnsi: boolean): string {
     const preview = text.slice(0, 500);
 
     return [
-        `Paste Test Results:`,
-        `• ${lineCount} line(s)`,
-        `• ${charCount} character(s)`,
-        `• Special characters: ${hasSpecialChars ? 'Yes' : 'No'}`,
-        `• ANSI codes: ${hasAnsi ? 'Yes' : 'No'}`,
+        t('terminal.pasteTestResults'),
+        t('terminal.pasteTestLineCount', { count: lineCount }),
+        t('terminal.pasteTestCharacterCount', { count: charCount }),
+        t('terminal.pasteTestSpecialCharacters', {
+            value: hasSpecialChars ? t('common.yes') : t('common.no')
+        }),
+        t('terminal.pasteTestAnsiCodes', { value: hasAnsi ? t('common.yes') : t('common.no') }),
         '',
-        'Preview:',
-        preview + (text.length > 500 ? '...' : ''),
+        t('common.preview') + ':',
+        preview + (text.length > 500 ? t('common.ellipsis') : ''),
     ].join('\n');
 }
 
@@ -63,50 +69,50 @@ export function validateTerminalAppearanceImport(data: RendererDataValue): {
 } {
     const errors: string[] = [];
     if (!data || typeof data !== 'object') {
-        return { valid: false, errors: ['Invalid theme file: must be a JSON object'] };
+        return { valid: false, errors: ['terminal.importThemeValidation.invalidJsonObject'] };
     }
 
     const theme = data as Partial<TerminalAppearancePreferences> & Record<string, RendererDataValue>;
     if ('themePresetId' in theme && typeof theme.themePresetId !== 'string') {
-        errors.push('themePresetId must be a string');
+        errors.push('terminal.importThemeValidation.themePresetIdString');
     }
     if ('fontPresetId' in theme && typeof theme.fontPresetId !== 'string') {
-        errors.push('fontPresetId must be a string');
+        errors.push('terminal.importThemeValidation.fontPresetIdString');
     }
     if ('ligatures' in theme && typeof theme.ligatures !== 'boolean') {
-        errors.push('ligatures must be a boolean');
+        errors.push('terminal.importThemeValidation.ligaturesBoolean');
     }
     if ('surfaceOpacity' in theme) {
         if (typeof theme.surfaceOpacity !== 'number' || theme.surfaceOpacity < 0.6 || theme.surfaceOpacity > 1) {
-            errors.push('surfaceOpacity must be a number between 0.6 and 1');
+            errors.push('terminal.importThemeValidation.surfaceOpacityRange');
         }
     }
     if ('surfaceBlur' in theme) {
         if (typeof theme.surfaceBlur !== 'number' || theme.surfaceBlur < 0 || theme.surfaceBlur > 24) {
-            errors.push('surfaceBlur must be a number between 0 and 24');
+            errors.push('terminal.importThemeValidation.surfaceBlurRange');
         }
     }
     if ('cursorStyle' in theme) {
         if (!['block', 'underline', 'bar'].includes(theme.cursorStyle as string)) {
-            errors.push('cursorStyle must be one of: block, underline, bar');
+            errors.push('terminal.importThemeValidation.cursorStyleAllowedValues');
         }
     }
     if ('cursorBlink' in theme && typeof theme.cursorBlink !== 'boolean') {
-        errors.push('cursorBlink must be a boolean');
+        errors.push('terminal.importThemeValidation.cursorBlinkBoolean');
     }
     if ('fontSize' in theme) {
         if (typeof theme.fontSize !== 'number' || theme.fontSize < 8 || theme.fontSize > 32) {
-            errors.push('fontSize must be a number between 8 and 32');
+            errors.push('terminal.importThemeValidation.fontSizeRange');
         }
     }
     if ('lineHeight' in theme) {
         if (typeof theme.lineHeight !== 'number' || theme.lineHeight < 1 || theme.lineHeight > 2) {
-            errors.push('lineHeight must be a number between 1 and 2');
+            errors.push('terminal.importThemeValidation.lineHeightRange');
         }
     }
     if ('customTheme' in theme && theme.customTheme !== null) {
         if (typeof theme.customTheme !== 'object') {
-            errors.push('customTheme must be an object or null');
+            errors.push('terminal.importThemeValidation.customThemeObjectOrNull');
         } else {
             const customTheme = theme.customTheme as Record<string, RendererDataValue>;
             const validColorKeys = [
@@ -117,9 +123,9 @@ export function validateTerminalAppearanceImport(data: RendererDataValue): {
             ];
             for (const key of Object.keys(customTheme)) {
                 if (!validColorKeys.includes(key)) {
-                    errors.push(`customTheme has unknown property: ${key}`);
+                    errors.push('terminal.importThemeValidation.customThemeUnknownProperty');
                 } else if (typeof customTheme[key] !== 'string') {
-                    errors.push(`customTheme.${key} must be a string (color value)`);
+                    errors.push('terminal.importThemeValidation.customThemeColorString');
                 }
             }
         }

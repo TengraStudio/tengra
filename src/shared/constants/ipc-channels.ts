@@ -1003,6 +1003,8 @@ export const PROXY_CHANNELS = {
   GET_QUOTA: 'proxy:getQuota',
   /** Save a Claude session */
   SAVE_CLAUDE_SESSION: 'proxy:saveClaudeSession',
+  /** One-click OAuth bridge verification */
+  VERIFY_AUTH_BRIDGE: 'proxy:verifyAuthBridge',
   /** Set rate limit configuration */
   SET_RATE_LIMIT_CONFIG: 'proxy:set-rate-limit-config',
   /** Sync auth files across devices */

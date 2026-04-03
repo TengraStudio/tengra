@@ -69,7 +69,7 @@ const mergeToolCalls = (currentToolCalls: ToolCall[], incomingToolCalls: ToolCal
                 ...existingToolCall.function,
                 ...incomingToolCall.function,
                 name: incomingToolCall.function.name || existingToolCall.function.name,
-                arguments: incomingToolCall.function.arguments || existingToolCall.function.arguments,
+                arguments: (existingToolCall.function.arguments || '') + (incomingToolCall.function.arguments || ''),
             },
         };
     }
@@ -104,10 +104,6 @@ export const getPresetOptions = (appSettings: AppSettings | undefined, modelConf
 
 const handleMetadataChunk = (chunk: StreamChunk): StreamChunkResult => {
     return { updated: true, newSources: chunk.sources ?? [] };
-};
-
-const handleErrorChunk = (chunk: StreamChunk): StreamChunkResult => {
-    return { updated: true, streamError: chunk.content ?? 'Stream error' };
 };
 
 const handleReasoningChunk = (chunk: StreamChunk, current: { content: string, reasoning: string, sources: string[], images?: string[] }): StreamChunkResult => {
@@ -146,7 +142,6 @@ type ChunkHandler = (
 
 const chunkHandlers: Record<string, ChunkHandler> = {
     metadata: handleMetadataChunk,
-    error: handleErrorChunk,
     reasoning: handleReasoningChunk,
     images: handleImagesChunk,
     tool_calls: handleToolCallsChunk,
@@ -156,9 +151,14 @@ const chunkHandlers: Record<string, ChunkHandler> = {
 export const processStreamChunk = (
     chunk: StreamChunk,
     current: { content: string, reasoning: string, sources: string[], images?: string[], toolCalls?: ToolCall[] },
-    streamStartTime: number
+    streamStartTime: number,
+    defaultStreamError: string
 ): StreamChunkResult => {
     const chunkType = chunk.type ?? 'content';
+
+    if (chunkType === 'error') {
+        return { updated: true, streamError: chunk.content ?? defaultStreamError };
+    }
 
     if (chunkType in chunkHandlers) {
         const handler = chunkHandlers[chunkType];

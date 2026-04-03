@@ -1,5 +1,4 @@
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 
 import { DataService } from '@main/services/data/data.service';
@@ -29,7 +28,8 @@ describe('Proxy-Data Integration', () => {
     let proxyService: ProxyService;
 
     beforeEach(() => {
-        tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tengra-integration-test-wiring-'));
+        tempDir = path.join(process.cwd(), 'logs', 'test-fixtures', 'proxy-data-wiring');
+        fs.mkdirSync(tempDir, { recursive: true });
         mockGetPath.mockReturnValue(tempDir);
         dataService = new DataService();
         proxyService = new ProxyService({

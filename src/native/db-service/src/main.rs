@@ -38,7 +38,10 @@ const SERVICE_NAME: &str = "TengraDatabaseService";
 const SERVICE_DISPLAY_NAME: &str = "Tengra Database Service";
 
 /// Get the database path
-fn get_db_path() -> PathBuf {
+fn get_db_path(override_path: Option<PathBuf>) -> PathBuf {
+    if let Some(p) = override_path {
+        return p;
+    }
     if let Ok(appdata) = std::env::var("APPDATA") {
         PathBuf::from(appdata)
             .join("Tengra")
@@ -75,7 +78,7 @@ fn remove_port_file() {
 }
 
 /// Run the database server
-async fn run_server(shutdown_rx: Option<oneshot::Receiver<()>>) -> Result<()> {
+async fn run_server(db_path_override: Option<PathBuf>, shutdown_rx: Option<oneshot::Receiver<()>>) -> Result<()> {
     let logs_dir = resolve_logs_dir();
     let _ = fs::create_dir_all(&logs_dir);
     let file_appender = tracing_appender::rolling::daily(logs_dir, "tengra-db-service.log");
@@ -97,7 +100,7 @@ async fn run_server(shutdown_rx: Option<oneshot::Receiver<()>>) -> Result<()> {
     );
 
     // Initialize database
-    let db_path = get_db_path();
+    let db_path = get_db_path(db_path_override);
     tracing::info!("Database path: {:?}", db_path);
 
     let db = Database::new(&db_path).context("Failed to create database")?;
@@ -206,7 +209,7 @@ fn run_service() -> Result<()> {
 
     // Create runtime and run server
     let rt = tokio::runtime::Runtime::new()?;
-    let result = rt.block_on(run_server(Some(shutdown_rx)));
+    let result = rt.block_on(run_server(None, Some(shutdown_rx)));
 
     // Report stopped status
     status_handle.set_service_status(ServiceStatus {
@@ -238,8 +241,11 @@ fn main() -> Result<()> {
         match args[1].as_str() {
             "--console" | "-c" => {
                 // Run in console mode (for development/debugging)
+                let db_path = args.iter().position(|a| a == "--db-path" || a == "-d")
+                    .and_then(|i| args.get(i + 1))
+                    .map(PathBuf::from);
                 let rt = tokio::runtime::Runtime::new()?;
-                rt.block_on(run_server(None))?;
+                rt.block_on(run_server(db_path, None))?;
                 return Ok(());
             }
             "--install" | "-i" => {
@@ -272,10 +278,11 @@ fn main() -> Result<()> {
                 println!("Usage: Tengra-db-service [OPTIONS]");
                 println!();
                 println!("Options:");
-                println!("  --console, -c     Run in console mode (foreground)");
-                println!("  --install, -i     Install as Windows Service");
-                println!("  --uninstall, -u   Uninstall Windows Service");
-                println!("  --help, -h        Show this help message");
+                println!("  --console, -c          Run in console mode (foreground)");
+                println!("  --db-path, -d <PATH>   Path to the database file (.db)");
+                println!("  --install, -i          Install as Windows Service");
+                println!("  --uninstall, -u        Uninstall Windows Service");
+                println!("  --help, -h             Show this help message");
                 println!();
                 println!(
                     "Without arguments, the service will attempt to run as a Windows Service."
@@ -300,7 +307,7 @@ fn main() -> Result<()> {
     {
         // On non-Windows, just run in console mode
         let rt = tokio::runtime::Runtime::new()?;
-        rt.block_on(run_server(None))?;
+        rt.block_on(run_server(None, None))?;
     }
 
     Ok(())

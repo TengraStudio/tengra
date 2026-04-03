@@ -68,6 +68,24 @@ const EXACT_ERROR_KEY_MAP: Record<string, string> = {
     'Retry operation failed': 'errors.ssh.retryFailed',
     'Settings operation failed': 'errors.settings.operationFailed',
     'IPC bridge is not available': 'errors.ipc.bridgeUnavailable',
+    'useWorkspace must be used within a WorkspaceProvider': 'errors.context.useWorkspaceProvider',
+    'useWorkspaceSelection must be used within a WorkspaceProvider': 'errors.context.useWorkspaceSelectionProvider',
+    'useWorkspaceLibrary must be used within a WorkspaceProvider': 'errors.context.useWorkspaceLibraryProvider',
+    'useWorkspaceTerminal must be used within a WorkspaceProvider': 'errors.context.useWorkspaceTerminalProvider',
+    'useTheme must be used within a ThemeProvider': 'errors.context.useThemeProvider',
+    'useSettings must be used within a SettingsProvider': 'errors.context.useSettingsProvider',
+    'useLanguage must be used within a LanguageProvider': 'errors.context.useLanguageProvider',
+    'useModel must be used within a ModelProvider': 'errors.context.useModelProvider',
+    'useAuth must be used within an AuthProvider': 'errors.context.useAuthProvider',
+    'useAuthLanguage must be used within an AuthProvider': 'errors.context.useAuthLanguageProvider',
+    'useAuthSettingsUi must be used within an AuthProvider': 'errors.context.useAuthSettingsUiProvider',
+    'useChat must be used within a ChatProvider': 'errors.context.useChatProvider',
+    'useChatHeader must be used within a ChatProvider': 'errors.context.useChatHeaderProvider',
+    'useChatShell must be used within a ChatProvider': 'errors.context.useChatShellProvider',
+    'useChatLibrary must be used within a ChatProvider': 'errors.context.useChatLibraryProvider',
+    'useChatComposer must be used within a ChatProvider': 'errors.context.useChatComposerProvider',
+    'useChatWindowCommand must be used within a ChatProvider': 'errors.context.useChatWindowCommandProvider',
+    'useChatListening must be used within a ChatProvider': 'errors.context.useChatListeningProvider',
 };
 
 export function translateErrorMessage(message: string): string {
@@ -89,6 +107,26 @@ export function translateErrorMessage(message: string): string {
         const label = timeoutMatch[1]?.trim() || 'Operation';
         const timeoutMs = Number.parseInt(timeoutMatch[2] ?? '0', 10);
         return resolveTranslatedMessage('errors.auth.operationTimeout', { label, timeoutMs });
+    }
+
+    if (normalizedMessage.startsWith('Incompatible IPC contract:')) {
+        return resolveTranslatedMessage('errors.ipc.contractMismatch');
+    }
+
+    const ipcNegotiationMatch = /^IPC contract negotiation failed: (.+)$/.exec(normalizedMessage);
+    if (ipcNegotiationMatch) {
+        return resolveTranslatedMessage('errors.ipc.negotiationFailed', {
+            reason: ipcNegotiationMatch[1] ?? normalizedMessage,
+        });
+    }
+
+    const ipcFailureMatch = /^IPC (.+) failed after (\d+) attempt\(s\): (.+)$/.exec(normalizedMessage);
+    if (ipcFailureMatch) {
+        return resolveTranslatedMessage('errors.ipc.requestFailedAfterAttempts', {
+            channel: ipcFailureMatch[1] ?? 'unknown',
+            attempts: ipcFailureMatch[2] ?? '0',
+            reason: ipcFailureMatch[3] ?? normalizedMessage,
+        });
     }
 
     const mappedPath = EXACT_ERROR_KEY_MAP[normalizedMessage];

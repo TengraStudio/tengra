@@ -109,11 +109,11 @@ const EditorBehaviorFields: React.FC<SettingsSectionProps> = ({
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="blink">blink</SelectItem>
-                    <SelectItem value="smooth">smooth</SelectItem>
-                    <SelectItem value="phase">phase</SelectItem>
-                    <SelectItem value="expand">expand</SelectItem>
-                    <SelectItem value="solid">solid</SelectItem>
+                    <SelectItem value="blink">{t('settings.editor.cursorBlink.blink')}</SelectItem>
+                    <SelectItem value="smooth">{t('settings.editor.cursorBlink.smooth')}</SelectItem>
+                    <SelectItem value="phase">{t('settings.editor.cursorBlink.phase')}</SelectItem>
+                    <SelectItem value="expand">{t('settings.editor.cursorBlink.expand')}</SelectItem>
+                    <SelectItem value="solid">{t('settings.editor.cursorBlink.solid')}</SelectItem>
                 </SelectContent>
             </Select>
         </div>
@@ -133,10 +133,10 @@ const EditorBehaviorFields: React.FC<SettingsSectionProps> = ({
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="on">on</SelectItem>
-                    <SelectItem value="off">off</SelectItem>
-                    <SelectItem value="relative">relative</SelectItem>
-                    <SelectItem value="interval">interval</SelectItem>
+                    <SelectItem value="on">{t('settings.editor.lineNumbers.on')}</SelectItem>
+                    <SelectItem value="off">{t('settings.editor.lineNumbers.off')}</SelectItem>
+                    <SelectItem value="relative">{t('settings.editor.lineNumbers.relative')}</SelectItem>
+                    <SelectItem value="interval">{t('settings.editor.lineNumbers.interval')}</SelectItem>
                 </SelectContent>
             </Select>
         </div>
@@ -152,7 +152,7 @@ const EditorLayoutFields: React.FC<SettingsSectionProps> = ({
         <Label className="mb-2 block text-muted-foreground">{t('common.layout')}</Label>
         <div className="grid gap-3">
             <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">minimap</span>
+                <span className="text-xs text-muted-foreground">{t('settings.editor.option.minimap')}</span>
                 <Checkbox
                     checked={formData.editorMinimap}
                     onCheckedChange={(checked: CheckedState) =>
@@ -161,7 +161,7 @@ const EditorLayoutFields: React.FC<SettingsSectionProps> = ({
                 />
             </div>
             <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">folding</span>
+                <span className="text-xs text-muted-foreground">{t('settings.editor.option.folding')}</span>
                 <Checkbox
                     checked={formData.editorFolding}
                     onCheckedChange={(checked: CheckedState) =>
@@ -170,7 +170,7 @@ const EditorLayoutFields: React.FC<SettingsSectionProps> = ({
                 />
             </div>
             <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">codeLens</span>
+                <span className="text-xs text-muted-foreground">{t('settings.editor.option.codeLens')}</span>
                 <Checkbox
                     checked={formData.editorCodeLens}
                     onCheckedChange={(checked: CheckedState) =>
@@ -216,14 +216,14 @@ const EditorFormattingFields: React.FC<SettingsSectionProps> = ({
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="off">off</SelectItem>
-                    <SelectItem value="on">on</SelectItem>
-                    <SelectItem value="wordWrapColumn">wordWrapColumn</SelectItem>
-                    <SelectItem value="bounded">bounded</SelectItem>
+                    <SelectItem value="off">{t('settings.editor.wordWrap.off')}</SelectItem>
+                    <SelectItem value="on">{t('settings.editor.wordWrap.on')}</SelectItem>
+                    <SelectItem value="wordWrapColumn">{t('settings.editor.wordWrap.wordWrapColumn')}</SelectItem>
+                    <SelectItem value="bounded">{t('settings.editor.wordWrap.bounded')}</SelectItem>
                 </SelectContent>
             </Select>
             <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">formatOnPaste</span>
+                <span className="text-xs text-muted-foreground">{t('settings.editor.option.formatOnPaste')}</span>
                 <Checkbox
                     checked={formData.editorFormatOnPaste}
                     onCheckedChange={(checked: CheckedState) =>
@@ -232,7 +232,7 @@ const EditorFormattingFields: React.FC<SettingsSectionProps> = ({
                 />
             </div>
             <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">smoothScrolling</span>
+                <span className="text-xs text-muted-foreground">{t('settings.editor.option.smoothScrolling')}</span>
                 <Checkbox
                     checked={formData.editorSmoothScrolling}
                     onCheckedChange={(checked: CheckedState) =>
@@ -284,6 +284,5 @@ export const EditorSection: React.FC<SettingsSectionProps> = props => {
         </section>
     );
 };
-
 
 

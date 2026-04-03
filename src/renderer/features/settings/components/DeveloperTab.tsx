@@ -62,7 +62,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                         <div className="flex items-center gap-2 mt-2">
                             <div className="h-1 w-8 bg-primary rounded-full group-hover:w-12 transition-all duration-700" />
                             <p className="text-[10px] font-bold text-muted-foreground opacity-50">
-                                Core System Diagnostics
+                                {t('developer.coreSystemDiagnostics')}
                             </p>
                         </div>
                     </div>
@@ -94,7 +94,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                 <div className="bg-card rounded-3xl border border-border/40 p-8 space-y-8 shadow-sm group/data hover:border-border/60 transition-all duration-500 overflow-hidden relative">
                     <div className="flex items-center gap-3 px-1 relative z-10">
                         <Database className="w-4 h-4 text-primary" />
-                        <h4 className="text-[10px] font-bold text-muted-foreground/40">Data Protocols</h4>
+                        <h4 className="text-[10px] font-bold text-muted-foreground/40">{t('developer.dataProtocols')}</h4>
                     </div>
 
                     <div className="space-y-4 relative z-10">
@@ -114,7 +114,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                                 onClick={() => { localStorage.clear(); sessionStorage.clear(); setStatusMessage(t('developer.cacheCleared')); setTimeout(() => setStatusMessage(''), 3000); }}
                                 className="h-9 px-4 rounded-xl border-border/40 text-[9px] font-bold hover:bg-red-500 hover:text-white hover:border-red-500 transition-all"
                             >
-                                Execute Clear
+                                {t('developer.executeClear')}
                             </Button>
                         </div>
 
@@ -134,7 +134,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                                 onClick={() => { void (async () => { try { setIsLoading(true); onRefreshModels(true); await loadSettings(); setStatusMessage(t('developer.dataRefreshed')); setTimeout(() => setStatusMessage(''), 3000); } finally { setIsLoading(false); } })(); }}
                                 className="h-9 px-4 rounded-xl border-primary/20 bg-primary/5 text-primary text-[9px] font-bold hover:bg-primary hover:text-primary-foreground transition-all"
                             >
-                                Reload Assets
+                                {t('developer.reloadAssets')}
                             </Button>
                         </div>
 
@@ -142,10 +142,10 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                              <div className="space-y-1">
                                 <div className="text-[10px] font-bold text-foreground flex items-center gap-2">
                                     <Download className="w-3 h-3 text-primary/60" />
-                                    Export Schema
+                                    {t('developer.exportSchema')}
                                 </div>
                                 <div className="text-[8px] font-bold text-muted-foreground/40 max-w-[200px] leading-relaxed">
-                                    Download current engine settings and ui layout
+                                    {t('developer.exportSchemaDesc')}
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -195,7 +195,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                                     {t('developer.importSettings')}
                                 </div>
                                 <div className="text-[8px] font-bold text-muted-foreground/40 max-w-[200px] leading-relaxed">
-                                    Restore configuration from snapshot
+                                    {t('developer.restoreFromSnapshot')}
                                 </div>
                             </div>
                             <Button
@@ -217,19 +217,19 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                 <div className="bg-card rounded-3xl border border-border/40 p-8 space-y-8 shadow-sm group/ux hover:border-border/60 transition-all duration-500 overflow-hidden relative">
                     <div className="flex items-center gap-3 px-1 relative z-10">
                         <Activity className="w-4 h-4 text-primary" />
-                        <h4 className="text-[10px] font-bold text-muted-foreground/40">UX Diagnostics</h4>
+                        <h4 className="text-[10px] font-bold text-muted-foreground/40">{t('developer.uxDiagnostics')}</h4>
                     </div>
 
                     <div className="space-y-6 relative z-10">
                          <div className="p-6 rounded-[2rem] border border-border/40 bg-muted/10 shadow-inner">
-                            <div className="text-[10px] font-bold text-foreground mb-4">Responsive State Matrix</div>
+                            <div className="text-[10px] font-bold text-foreground mb-4">{t('developer.responsiveStateMatrix')}</div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="p-4 rounded-2xl border border-border/10 bg-background/50">
-                                    <div className="text-[8px] font-bold text-muted-foreground/30 mb-1">Active Viewport</div>
+                                    <div className="text-[8px] font-bold text-muted-foreground/30 mb-1">{t('developer.activeViewport')}</div>
                                     <div className="text-xl font-bold text-primary leading-none">{responsiveStats.current}</div>
                                 </div>
                                 <div className="p-4 rounded-2xl border border-border/10 bg-background/50">
-                                    <div className="text-[8px] font-bold text-muted-foreground/30 mb-1">Render Resolution</div>
+                                    <div className="text-[8px] font-bold text-muted-foreground/30 mb-1">{t('developer.renderResolution')}</div>
                                     <div className="text-xl font-bold text-foreground leading-none">{responsiveStats.viewport.width} <span className="text-[10px] opacity-20">X</span> {responsiveStats.viewport.height}</div>
                                 </div>
                             </div>
@@ -244,8 +244,8 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                         <div className="space-y-4">
                             <div className="flex items-center justify-between px-1">
                                 <div className="space-y-0.5">
-                                    <div className="text-[10px] font-bold text-foreground">Motion Engine Debug</div>
-                                    <div className="text-[8px] font-bold text-muted-foreground/40">{animationStats.totals.played} Pulses Registered</div>
+                                    <div className="text-[10px] font-bold text-foreground">{t('developer.motionEngineDebug')}</div>
+                                    <div className="text-[8px] font-bold text-muted-foreground/40">{t('developer.pulsesRegistered', { count: animationStats.totals.played })}</div>
                                 </div>
                                 <div className="flex items-center gap-2">
                                      <Button
@@ -262,7 +262,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                                             animationStats.debugEnabled && "bg-primary/10 text-primary border-primary/20"
                                         )}
                                     >
-                                        {animationStats.debugEnabled ? "Disable" : "Enable"}
+                                        {animationStats.debugEnabled ? t('common.disable') : t('common.enable')}
                                     </Button>
                                     <Button
                                         variant="outline"
@@ -275,7 +275,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                                         }}
                                         className="h-9 px-4 rounded-xl border-border/40 text-[9px] font-bold hover:bg-muted/20 transition-all"
                                     >
-                                        Force Reduced
+                                        {t('developer.forceReduced')}
                                     </Button>
                                 </div>
                             </div>
@@ -288,7 +288,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
             <div className="bg-card rounded-3xl border border-border/40 p-8 space-y-8 shadow-sm group/performance hover:border-border/60 transition-all duration-500 overflow-hidden relative">
                  <div className="flex items-center gap-3 px-1 relative z-10">
                     <Activity className="w-4 h-4 text-primary" />
-                    <h4 className="text-[10px] font-bold text-muted-foreground/40">Performance Overview</h4>
+                    <h4 className="text-[10px] font-bold text-muted-foreground/40">{t('developer.performanceOverview')}</h4>
                 </div>
                 <div className="relative z-10">
                      <PerformanceDashboard />

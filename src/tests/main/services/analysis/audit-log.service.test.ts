@@ -3,6 +3,7 @@
  */
 import { createHash } from 'crypto';
 import * as fs from 'fs';
+import * as path from 'path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -76,7 +77,7 @@ describe('AuditLogService', () => {
     describe('constructor', () => {
         it('should create service with correct name and legacy path', () => {
             expect(service['name']).toBe('AuditLogService');
-            expect(service['legacyLogPath']).toBe('/mock/userData/audit.log');
+            expect(service['legacyLogPath']).toBe(path.join('/mock/userData', 'audit.log'));
             expect(service['lastIntegrityHash']).toBe('');
         });
     });
@@ -100,7 +101,7 @@ describe('AuditLogService', () => {
             expect(mockDbService.addAuditLog).toHaveBeenCalledWith(legacyLogs[0]);
             expect(mockDbService.addAuditLog).toHaveBeenCalledWith(legacyLogs[1]);
             expect(fs.promises.rename).toHaveBeenCalledWith(
-                '/mock/userData/audit.log', '/mock/userData/audit.log.migrated'
+                path.join('/mock/userData', 'audit.log'), path.join('/mock/userData', 'audit.log.migrated')
             );
         });
 
@@ -119,7 +120,7 @@ describe('AuditLogService', () => {
             vi.mocked(fs.promises.readFile).mockRejectedValue(new Error('EACCES'));
             await service.initialize();
             expect(fs.promises.rename).toHaveBeenCalledWith(
-                '/mock/userData/audit.log', '/mock/userData/audit.log.migrated_failed'
+                path.join('/mock/userData', 'audit.log'), path.join('/mock/userData', 'audit.log.migrated_failed')
             );
         });
 

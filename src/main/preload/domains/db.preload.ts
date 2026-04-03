@@ -68,7 +68,7 @@ export interface DbBridge {
         description: string,
         mounts?: import('@shared/types').WorkspaceMount[]
     ) => Promise<Workspace>;
-    updateWorkspace: (id: string, updates: Partial<Workspace>) => Promise<void>;
+    updateWorkspace: (id: string, updates: Partial<Workspace>) => Promise<Workspace | null>;
     deleteWorkspace: (id: string, deleteFiles?: boolean) => Promise<void>;
     archiveWorkspace: (id: string, isArchived: boolean) => Promise<void>;
     bulkDeleteWorkspaces: (ids: string[], deleteFiles?: boolean) => Promise<void>;

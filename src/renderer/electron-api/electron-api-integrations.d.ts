@@ -14,7 +14,9 @@ import type {
     InstallRequest,
     InstallResult,
     MarketplaceRegistry,
+    MarketplaceSkill,
 } from '@shared/types/marketplace';
+import type { ProxySkill, ProxySkillUpsertInput } from '@shared/types/skill';
 import type {
     IpcRendererEvent,
 } from 'electron';
@@ -105,7 +107,7 @@ export interface ElectronApiIntegrationsDomain {
             description: string,
             mounts?: WorkspaceMount[]
         ) => Promise<Workspace>;
-        updateWorkspace: (id: string, updates: Partial<Workspace>) => Promise<void>;
+        updateWorkspace: (id: string, updates: Partial<Workspace>) => Promise<Workspace | null>;
         deleteWorkspace: (id: string, deleteFiles?: boolean) => Promise<void>;
         archiveWorkspace: (id: string, isArchived: boolean) => Promise<void>;
         bulkDeleteWorkspaces: (ids: string[], deleteFiles?: boolean) => Promise<void>;
@@ -807,6 +809,12 @@ export interface ElectronApiIntegrationsDomain {
         checkLimit: (provider: string, model: string) => Promise<{ allowed: boolean; reason?: string }>;
         getUsageCount: (period: 'hourly' | 'daily' | 'weekly', provider?: string, model?: string) => Promise<number>;
         recordUsage: (provider: string, model: string) => Promise<{ success: boolean }>;
+        listSkills: () => Promise<ProxySkill[]>;
+        saveSkill: (input: ProxySkillUpsertInput) => Promise<ProxySkill>;
+        toggleSkill: (skillId: string, enabled: boolean) => Promise<ProxySkill>;
+        deleteSkill: (skillId: string) => Promise<boolean>;
+        listMarketplaceSkills: () => Promise<MarketplaceSkill[]>;
+        installMarketplaceSkill: (skillId: string) => Promise<ProxySkill>;
     };
 
     voice: {

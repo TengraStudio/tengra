@@ -1,8 +1,11 @@
+import { AiIntentClassification } from '@shared/types/ai-runtime';
 import { Dispatch, SetStateAction } from 'react';
 
 import { Chat, ChatError, Message, ToolCall } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
+import { buildAssistantPresentationMetadata } from './ai-runtime-chat.util';
+import { evidenceStore } from './tool-evidence-store.util';
 import { categorizeError, processStreamChunk, StreamChunk, StreamChunkResult } from './utils';
 
 export interface StreamStreamingState {
@@ -111,6 +114,7 @@ interface ChunkIterationParams {
     finalImages: string[];
     finalToolCalls: ToolCall[];
     streamStartTime: number;
+    t: (key: string) => string;
 }
 
 const processChunkIteration = (params: ChunkIterationParams): {
@@ -118,7 +122,7 @@ const processChunkIteration = (params: ChunkIterationParams): {
     result: StreamChunkResult;
     current: { content: string; reasoning: string; sources: string[]; images: string[]; toolCalls: ToolCall[] };
 } => {
-    const { chunk, finalVariants, finalContent, finalReasoning, finalSources, finalImages, finalToolCalls, streamStartTime } = params;
+    const { chunk, finalVariants, finalContent, finalReasoning, finalSources, finalImages, finalToolCalls, streamStartTime, t } = params;
     const index = chunk.index ?? 0;
     finalVariants[index] = finalVariants[index] ?? { content: '', reasoning: '' };
     const current = processStreamChunkUpdates({
@@ -131,7 +135,7 @@ const processChunkIteration = (params: ChunkIterationParams): {
         finalImages,
         finalToolCalls,
     });
-    const result = processStreamChunk(chunk, current, streamStartTime);
+    const result = processStreamChunk(chunk, current, streamStartTime, t('chat.streamError'));
     return { index, result, current };
 };
 
@@ -216,6 +220,8 @@ export interface ProcessStreamOptions {
     stream: AsyncGenerator<StreamChunk, void, RendererDataValue>
     chatId: string
     assistantId: string
+    intentClassification: AiIntentClassification
+    language?: string
     setStreamingStates: Dispatch<SetStateAction<Record<string, StreamStreamingState>>>
     setChats: Dispatch<SetStateAction<Chat[]>>
     streamStartTime: number
@@ -282,9 +288,14 @@ const handleThrottledUpdates = (params: {
     finalContent: string;
     chatId: string;
     assistantId: string;
+    intentClassification: AiIntentClassification;
+    language?: string;
     activeModel: string;
     finalReasoning: string;
     finalVariants: Record<number, { content: string; reasoning: string }>;
+    finalSources: string[];
+    finalImages: string[];
+    finalToolCalls: ToolCall[];
     setChats: Dispatch<SetStateAction<Chat[]>>;
     queueDbSave: (options: SaveToDbOptions) => void;
 }): { lastSaveTime: number; lastDbSaveTime: number } => {
@@ -295,9 +306,14 @@ const handleThrottledUpdates = (params: {
         finalContent,
         chatId,
         assistantId,
+        intentClassification,
+        language,
         activeModel,
         finalReasoning,
         finalVariants,
+        finalSources,
+        finalImages,
+        finalToolCalls,
         setChats,
         queueDbSave,
     } = params;
@@ -307,17 +323,35 @@ const handleThrottledUpdates = (params: {
 
     if (shouldUpdateChatsState(now, lastSaveTime)) {
         updatedLastSaveTime = now;
-        updateChatsState({ setChats, chatId, assistantId, model: activeModel, content: finalContent, reasoning: finalReasoning, variants: finalVariants });
+        updateChatsState({
+            setChats,
+            chatId,
+            assistantId,
+            intentClassification,
+            language,
+            model: activeModel,
+            content: finalContent,
+            reasoning: finalReasoning,
+            variants: finalVariants,
+            sources: finalSources,
+            images: finalImages,
+            toolCalls: finalToolCalls,
+        });
     }
 
     if (shouldSaveToDb(now, lastDbSaveTime, finalContent)) {
         updatedLastDbSaveTime = now;
         queueDbSave({
             assistantId,
+            intentClassification,
+            language,
             model: activeModel,
             content: finalContent,
             reasoning: finalReasoning,
             variants: finalVariants,
+            sources: finalSources,
+            images: finalImages,
+            toolCalls: finalToolCalls,
         });
     }
 
@@ -326,7 +360,7 @@ const handleThrottledUpdates = (params: {
 
 export const processChatStream = async (options: ProcessStreamOptions): Promise<StreamResult> => {
     const {
-        stream, chatId, assistantId, setStreamingStates, setChats, streamStartTime,
+        stream, chatId, assistantId, intentClassification, language, setStreamingStates, setChats, streamStartTime,
         activeModel, selectedProvider, t, autoReadEnabled, handleSpeak
     } = options;
 
@@ -365,7 +399,7 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
     // Process stream chunks
     for await (const chunk of stream) {
         const { index, result } = processChunkIteration({
-            chunk, finalVariants, finalContent, finalReasoning, finalSources, finalImages, finalToolCalls, streamStartTime
+            chunk, finalVariants, finalContent, finalReasoning, finalSources, finalImages, finalToolCalls, streamStartTime, t
         });
 
         // Update state if chunk produced changes
@@ -415,9 +449,14 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
             finalContent,
             chatId,
             assistantId,
+            intentClassification,
+            language,
             activeModel,
             finalReasoning,
             finalVariants,
+            finalSources,
+            finalImages,
+            finalToolCalls,
             setChats,
             queueDbSave,
         });
@@ -433,12 +472,12 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
     // Final updates
     const responseTime = Math.round(performance.now() - streamStartTime);
     const completedMsg = createCompletedMessage({
-        assistantId, provider: selectedProvider, model: activeModel, content: finalContent, reasoning: finalReasoning,
+        assistantId, intentClassification, language, provider: selectedProvider, model: activeModel, content: finalContent, reasoning: finalReasoning,
         sources: finalSources, images: finalImages, variants: finalVariants, responseTime, toolCalls: finalToolCalls
     });
 
     await saveMessageToDb({
-        assistantId, model: activeModel, content: finalContent, reasoning: finalReasoning,
+        assistantId, intentClassification, language, model: activeModel, content: finalContent, reasoning: finalReasoning,
         variants: finalVariants, responseTime, sources: finalSources, images: finalImages, toolCalls: finalToolCalls
     });
 
@@ -463,10 +502,15 @@ interface UpdateChatsStateOptions {
     setChats: Dispatch<SetStateAction<Chat[]>>
     chatId: string
     assistantId: string
+    intentClassification: AiIntentClassification
+    language?: string
     model: string
     content: string
     reasoning: string
     variants: Record<number, { content: string; reasoning: string }>
+    sources?: string[]
+    images?: string[]
+    toolCalls?: ToolCall[]
 }
 
 const updateMessageById = (
@@ -498,7 +542,20 @@ const updateChatById = (
 };
 
 const updateChatsState = (options: UpdateChatsStateOptions): void => {
-    const { setChats, chatId, assistantId, model, content, reasoning, variants } = options;
+    const {
+        setChats,
+        chatId,
+        assistantId,
+        intentClassification,
+        language,
+        model,
+        content,
+        reasoning,
+        variants,
+        sources,
+        images,
+        toolCalls,
+    } = options;
     setChats(prev => updateChatById(prev, chatId, (chat) => {
         const currentVariants = createVariantsArray(assistantId, model, variants);
         return {
@@ -507,6 +564,17 @@ const updateChatsState = (options: UpdateChatsStateOptions): void => {
                 ...message,
                 content,
                 reasoning: reasoning || undefined,
+                metadata: buildAssistantPresentationMetadata({
+                    intent: intentClassification,
+                    content,
+                    reasoning,
+                    sources,
+                    images,
+                    toolCalls,
+                    isStreaming: true,
+                    language,
+                    evidenceSnapshot: evidenceStore.getSnapshot(),
+                }),
                 variants: currentVariants.length > 1 ? currentVariants : undefined
             }))
         };
@@ -515,6 +583,8 @@ const updateChatsState = (options: UpdateChatsStateOptions): void => {
 
 interface SaveToDbOptions {
     assistantId: string
+    intentClassification: AiIntentClassification
+    language?: string
     model: string
     content: string
     reasoning: string
@@ -526,11 +596,22 @@ interface SaveToDbOptions {
 }
 
 const saveMessageToDb = async (options: SaveToDbOptions): Promise<void> => {
-    const { assistantId, model, content, reasoning, variants, responseTime, sources, images, toolCalls } = options;
+    const { assistantId, intentClassification, language, model, content, reasoning, variants, responseTime, sources, images, toolCalls } = options;
     const currentVariants = createVariantsArray(assistantId, model, variants);
     const updates: Partial<Message> = {
         content,
-        reasoning: reasoning || undefined
+        reasoning: reasoning || undefined,
+        metadata: buildAssistantPresentationMetadata({
+            intent: intentClassification,
+            content,
+            reasoning,
+            sources,
+            images,
+            toolCalls,
+            isStreaming: false,
+            language,
+            evidenceSnapshot: evidenceStore.getSnapshot(),
+        }),
     };
     if (responseTime !== undefined) { updates.responseTime = responseTime; }
     if (sources && sources.length > 0) { updates.sources = sources; }
@@ -542,6 +623,8 @@ const saveMessageToDb = async (options: SaveToDbOptions): Promise<void> => {
 
 interface CreateCompletedMessageOptions {
     assistantId: string
+    intentClassification: AiIntentClassification
+    language?: string
     provider: string
     model: string
     content: string
@@ -554,11 +637,21 @@ interface CreateCompletedMessageOptions {
 }
 
 const createCompletedMessage = (options: CreateCompletedMessageOptions): Message => {
-    const { assistantId, provider, model, content, reasoning, sources, images, variants, responseTime, toolCalls } = options;
+    const { assistantId, intentClassification, language, provider, model, content, reasoning, sources, images, variants, responseTime, toolCalls } = options;
     const completedVariants = createVariantsArray(assistantId, model, variants);
     return {
         id: assistantId, role: 'assistant', content, reasoning: reasoning || undefined,
         timestamp: new Date(), provider, model, responseTime, sources,
+        metadata: buildAssistantPresentationMetadata({
+            intent: intentClassification,
+            content,
+            reasoning,
+            sources,
+            images,
+            toolCalls,
+            language,
+            evidenceSnapshot: evidenceStore.getSnapshot(),
+        }),
         images: images.length > 0 ? images : undefined,
         variants: completedVariants.length > 1 ? completedVariants : undefined,
         toolCalls: toolCalls && toolCalls.length > 0 ? toolCalls : undefined

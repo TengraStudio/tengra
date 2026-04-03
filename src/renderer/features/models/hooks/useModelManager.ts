@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { pushNotification } from '@/store/notification-center.store';
@@ -150,8 +150,15 @@ export function useModelManager(
     const [groupedModels, setGroupedModels] = useState<GroupedModels | null>(null);
     const [proxyModels, setProxyModels] = useState<ModelInfo[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [hasScheduledRemoteRetry, setHasScheduledRemoteRetry] = useState(false);
-    // const lifecycleNoticeRef = useRef<Set<string>>(new Set());
+    
+    // Stable refs to prevent render loops while maintaining correct logic
+    const appSettingsRef = useRef(appSettings);
+    const lastSyncedRef = useRef<{ defaultModel?: string; lastProvider?: string }>({});
+    const hasScheduledRemoteRetryRef = useRef(false);
+
+    useEffect(() => {
+        appSettingsRef.current = appSettings;
+    }, [appSettings]);
 
     const selection = useModelSelection(appSettings, setAppSettings);
     const {
@@ -168,7 +175,8 @@ export function useModelManager(
         try {
             const fetched = await fetchModels(bypassCache);
             setModels(previousModels => {
-                const nextModels = mergePreservedProviderModels(previousModels, fetched, appSettings);
+                const currentSettings = appSettingsRef.current;
+                const nextModels = mergePreservedProviderModels(previousModels, fetched, currentSettings);
                 setProxyModels(nextModels.filter(m => m.provider !== 'ollama' && m.provider !== 'local-ai'));
                 setGroupedModels(groupModels(nextModels));
                 return nextModels;
@@ -178,14 +186,14 @@ export function useModelManager(
         } finally {
             setIsLoading(false);
         }
-    }, [appSettings]);
+    }, []);
 
     useEffect(() => {
         void refreshModels();
     }, [refreshModels]);
 
     useEffect(() => {
-        if (hasScheduledRemoteRetry || models.length === 0 || isLoading) {
+        if (hasScheduledRemoteRetryRef.current || models.length === 0 || isLoading) {
             return;
         }
 
@@ -197,21 +205,21 @@ export function useModelManager(
             return;
         }
 
-        setHasScheduledRemoteRetry(true);
+        hasScheduledRemoteRetryRef.current = true;
         appLogger.debug('ModelManager', 'Remote provider coverage incomplete; scheduling proxy refresh retry', {
             expectedRemoteProviders,
             currentModelCount: models.length,
         });
         const retryTimer = window.setTimeout(() => {
             void refreshModels(true);
-            setHasScheduledRemoteRetry(false);
+            hasScheduledRemoteRetryRef.current = false;
         }, MODEL_REFRESH_RETRY_DELAY_MS);
 
         return () => {
             window.clearTimeout(retryTimer);
-            setHasScheduledRemoteRetry(false);
+            hasScheduledRemoteRetryRef.current = false;
         };
-    }, [appSettings, hasScheduledRemoteRetry, isLoading, models, refreshModels]);
+    }, [appSettings, isLoading, models, refreshModels]);
 
     useEffect(() => {
         const hasNvidia = !!appSettings?.nvidia?.apiKey;
@@ -237,9 +245,21 @@ export function useModelManager(
     ]);
 
     useEffect(() => {
-        const defaultModel = appSettings?.general.defaultModel;
-        const locale = appSettings?.general.language ?? 'en';
+        if (!appSettings) { return; }
+        
+        const defaultModel = appSettings.general.defaultModel;
+        const lastProvider = appSettings.general.lastProvider;
+        const locale = appSettings.general.language ?? 'en';
+
+        // Stricter guard using refs to prevent recursive runs within the same render cycle
+        if (lastSyncedRef.current.defaultModel === defaultModel && lastSyncedRef.current.lastProvider === lastProvider) {
+            return;
+        }
+
         const availableModels = models.filter(m => getSelectableProviderId(m) !== '');
+        if (availableModels.length === 0) {
+            return;
+        }
 
         const resolveFallback = (): { provider: string; model: string } | null => {
             const preferred = pickLocalePreferredModel(availableModels, locale);
@@ -253,27 +273,33 @@ export function useModelManager(
             return { provider: getSelectableProviderId(first), model: first.id };
         };
 
-        const persistedProvider = normalizeSelectionProvider(appSettings?.general.lastProvider);
+        const persistedProvider = normalizeSelectionProvider(lastProvider);
         const matchingDefaultModels = availableModels.filter(m => m.id?.toLowerCase() === defaultModel?.toLowerCase());
         const resolvedPersistedProvider = persistedProvider !== ''
             ? persistedProvider
             : (matchingDefaultModels[0] ? getSelectableProviderId(matchingDefaultModels[0]) : '');
+        
         const persistedPairExists = matchingDefaultModels.some(m =>
             getSelectableProviderId(m) === resolvedPersistedProvider
         );
+        
         const syncedSelection = defaultModel && resolvedPersistedProvider
             ? [{ provider: resolvedPersistedProvider, model: defaultModel }]
             : [];
+            
         const isSelectionSynced =
             selectedModel === defaultModel &&
             selectedProvider === resolvedPersistedProvider &&
             areSelectionsEqual(selectedModels, syncedSelection);
 
+        // CASE 1: Default model from settings is missing or invalid in current set
         if (defaultModel && matchingDefaultModels.length === 0) {
             const fallback = resolveFallback();
             if (!fallback) {
                 return;
             }
+
+            // Optimization: Update selection first
             if (
                 selectedModel !== fallback.model ||
                 selectedProvider !== fallback.provider ||
@@ -283,13 +309,13 @@ export function useModelManager(
                 setSelectedProvider(fallback.provider);
                 setSelectedModels([fallback]);
             }
+
+            // Sync settings if different
             if (
-                appSettings &&
-                (
-                    appSettings.general.defaultModel !== fallback.model ||
-                    appSettings.general.lastProvider !== fallback.provider
-                )
+                appSettings.general.defaultModel !== fallback.model ||
+                appSettings.general.lastProvider !== fallback.provider
             ) {
+                lastSyncedRef.current = { defaultModel: fallback.model, lastProvider: fallback.provider };
                 setAppSettings({
                     ...appSettings,
                     general: {
@@ -299,6 +325,7 @@ export function useModelManager(
                     }
                 });
             }
+            
             pushNotification({
                 type: 'warning',
                 title: t('modelsPage.defaultModelSwitchedTitle'),
@@ -308,8 +335,11 @@ export function useModelManager(
             return;
         }
 
+        // CASE 2: Valid pair exists, ensure UI state matches settings
         if (defaultModel && resolvedPersistedProvider && persistedPairExists) {
-            if (appSettings?.general.lastProvider !== resolvedPersistedProvider) {
+            // First ensure lastProvider in settings is normalized
+            if (appSettings.general.lastProvider !== resolvedPersistedProvider) {
+                lastSyncedRef.current = { defaultModel, lastProvider: resolvedPersistedProvider };
                 setAppSettings({
                     ...appSettings,
                     general: {
@@ -317,7 +347,9 @@ export function useModelManager(
                         lastProvider: resolvedPersistedProvider
                     }
                 });
+                return;
             }
+
             if (isSelectionSynced) {
                 return;
             }
@@ -328,8 +360,8 @@ export function useModelManager(
             return;
         }
 
+        // CASE 3: No default model set yet
         if (!defaultModel && availableModels.length > 0) {
-            // Only resolve fallback if NO model is selected whatsoever
             if (selectedModel !== '' || selectedModels.length > 0) {
                 return;
             }
@@ -344,17 +376,9 @@ export function useModelManager(
             return;
         }
     }, [
-        appSettings,
         appSettings?.general.defaultModel,
         appSettings?.general.lastProvider,
         appSettings?.general.language,
-        appSettings?.codex?.connected,
-        appSettings?.copilot?.connected,
-        appSettings?.antigravity?.connected,
-        appSettings?.openai?.apiKey,
-        appSettings?.anthropic?.apiKey,
-        appSettings?.claude?.apiKey,
-        appSettings?.nvidia?.apiKey,
         models,
         selectedModel,
         selectedProvider,
@@ -367,57 +391,70 @@ export function useModelManager(
     ]);
 
     const persistLastSelection = useCallback((provider: string, model: string) => {
-        if (!appSettings) { return; }
+        const currentSettings = appSettingsRef.current;
+        if (!currentSettings) { return; }
+        if (currentSettings.general.defaultModel === model && currentSettings.general.lastProvider === provider) {
+            return;
+        }
+
         setAppSettings({
-            ...appSettings,
+            ...currentSettings,
             general: {
-                ...appSettings.general,
+                ...currentSettings.general,
                 defaultModel: model,
                 lastProvider: provider
             }
         });
-    }, [appSettings, setAppSettings]);
+    }, [setAppSettings]);
 
     const toggleFavorite = useCallback((modelId: string) => {
-        if (!appSettings) { return; }
-        const currentFavorites = appSettings.general.favoriteModels ?? [];
+        const currentSettings = appSettingsRef.current;
+        if (!currentSettings) { return; }
+        const currentFavorites = currentSettings.general.favoriteModels ?? [];
         const isFav = currentFavorites.includes(modelId);
         const newFavorites = isFav
             ? currentFavorites.filter(id => id !== modelId)
             : [...currentFavorites, modelId];
 
         setAppSettings({
-            ...appSettings,
-            general: { ...appSettings.general, favoriteModels: newFavorites }
+            ...currentSettings,
+            general: { ...currentSettings.general, favoriteModels: newFavorites }
         });
-    }, [appSettings, setAppSettings]);
+    }, [setAppSettings]);
 
     const isFavorite = useCallback((modelId: string) => {
-        return appSettings?.general.favoriteModels?.includes(modelId) ?? false;
-    }, [appSettings]);
+        return appSettingsRef.current?.general.favoriteModels?.includes(modelId) ?? false;
+    }, []);
 
     const getModelReasoningLevel = useCallback((modelId: string) => {
-        return appSettings?.modelSettings?.[modelId]?.reasoningLevel;
-    }, [appSettings]);
+        return appSettingsRef.current?.modelSettings?.[modelId]?.reasoningLevel;
+    }, []);
 
     const setModelReasoningLevel = useCallback((modelId: string, reasoningLevel: string) => {
-        if (!appSettings) { return; }
-        const modelSettings = { ...(appSettings.modelSettings ?? {}) };
+        const currentSettings = appSettingsRef.current;
+        if (!currentSettings) { return; }
+
+        const currentLevel = currentSettings.modelSettings?.[modelId]?.reasoningLevel;
+        if (currentLevel === reasoningLevel) { return; }
+
+        const modelSettings = { ...(currentSettings.modelSettings ?? {}) };
         const current = modelSettings[modelId] ?? {};
         modelSettings[modelId] = { ...current, reasoningLevel };
 
         setAppSettings({
-            ...appSettings,
+            ...currentSettings,
             modelSettings
         });
-    }, [appSettings, setAppSettings]);
+    }, [setAppSettings]);
 
     useEffect(() => {
-        if (!appSettings) {
+        const currentSettings = appSettingsRef.current;
+        if (!currentSettings) {
             return;
         }
-        const activeModelId = selectedModel || appSettings.general.defaultModel;
-        const activeProvider = selectedProvider || appSettings.general.lastProvider;
+
+        const activeModelId = selectedModel || currentSettings.general.defaultModel;
+        const activeProvider = selectedProvider || currentSettings.general.lastProvider;
         if (!activeModelId || !activeProvider) {
             return;
         }
@@ -430,7 +467,7 @@ export function useModelManager(
             return;
         }
 
-        const currentReasoningLevel = appSettings.modelSettings?.[activeModelId]?.reasoningLevel;
+        const currentReasoningLevel = currentSettings.modelSettings?.[activeModelId]?.reasoningLevel;
         if (currentReasoningLevel && thinkingLevels.includes(currentReasoningLevel)) {
             return;
         }
@@ -438,13 +475,13 @@ export function useModelManager(
         const defaultReasoningLevel = thinkingLevels.includes('low')
             ? 'low'
             : thinkingLevels[0];
-        if (!defaultReasoningLevel) {
+            
+        if (!defaultReasoningLevel || currentReasoningLevel === defaultReasoningLevel) {
             return;
         }
 
         setModelReasoningLevel(activeModelId, defaultReasoningLevel);
     }, [
-        appSettings,
         models,
         selectedModel,
         selectedProvider,
@@ -469,4 +506,3 @@ export function useModelManager(
         persistLastSelection, toggleFavorite, isFavorite, getModelReasoningLevel, setModelReasoningLevel
     ]);
 }
-

@@ -7,10 +7,6 @@ import * as https from 'https';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
-import {
-    DEFAULT_WORKSPACE_EXPLORER_IGNORE_PATTERNS,
-    getWorkspaceIgnoreMatcher,
-} from '@main/services/workspace/workspace-ignore.util';
 import { JsonObject } from '@shared/types/common';
 import { AISystemType } from '@shared/types/file-diff';
 import { ServiceResponse } from '@shared/types/index';
@@ -43,22 +39,6 @@ export class FileSystemService {
         this.allowedRoots = allowedRoots.map(r => path.resolve(r));
     }
 
-    private resolveContainingRoot(targetPath: string): string | null {
-        const isWin = process.platform === 'win32';
-        const normalizedTargetPath = isWin
-            ? path.resolve(targetPath).toLowerCase()
-            : path.resolve(targetPath);
-        const matchingRoots = this.allowedRoots.filter(root => {
-            const normalizedRootPath = isWin ? path.resolve(root).toLowerCase() : path.resolve(root);
-            const relativePath = path.relative(normalizedRootPath, normalizedTargetPath);
-            return (
-                relativePath === '' ||
-                (!relativePath.startsWith('..') && !path.isAbsolute(relativePath))
-            );
-        }).sort((left, right) => right.length - left.length);
-        return matchingRoots[0] ?? null;
-    }
-
     private isPathAllowed(filePath: string): boolean {
         const isWin = process.platform === 'win32';
         const normalizeForComparison = (candidatePath: string): string => {
@@ -74,8 +54,42 @@ export class FileSystemService {
         });
     }
 
+    /**
+     * Expands Windows environment variables in a path string.
+     * Supports both %VAR% and $VAR syntax.
+     * @example expandEnvVars('%USERPROFILE%/Desktop') → 'C:/Users/john/Desktop'
+     */
+    private expandEnvVars(inputPath: string): string {
+        if (!inputPath) {
+            return inputPath;
+        }
+
+        let result = inputPath;
+
+        // Expand %VAR% syntax (Windows style)
+        result = result.replace(/%([^%]+)%/g, (_match, varName: string) => {
+            const value = process.env[varName] || process.env[varName.toUpperCase()];
+            return value ?? `%${varName}%`;
+        });
+
+        // Expand $VAR syntax (Unix style, also works on Windows)
+        result = result.replace(/\$([A-Za-z_][A-Za-z0-9_]*)/g, (_match, varName: string) => {
+            const value = process.env[varName] || process.env[varName.toUpperCase()];
+            return value ?? `$${varName}`;
+        });
+
+        // Handle common shortcuts
+        if (result.startsWith('~')) {
+            const home = process.env.HOME || process.env.USERPROFILE || '';
+            result = home + result.substring(1);
+        }
+
+        return result;
+    }
+
     private validatePath(filePath: string) {
-        const absolutePath = path.resolve(filePath);
+        const expandedPath = this.expandEnvVars(filePath);
+        const absolutePath = path.resolve(expandedPath);
         if (!this.isPathAllowed(absolutePath)) {
             throw new Error(`Access denied: Path is outside allowed directories. (${filePath})`);
         }
@@ -115,7 +129,6 @@ export class FileSystemService {
         '.git',
         'dist',
         'build',
-        '.tengra',
         '.DS_Store',
     ];
 
@@ -135,8 +148,9 @@ export class FileSystemService {
 
     async readFile(filePath: string): Promise<ServiceResponse<string>> {
         try {
-            this.validatePath(filePath);
-            const absolutePath = path.resolve(filePath);
+            const expandedPath = this.expandEnvVars(filePath);
+            this.validatePath(expandedPath);
+            const absolutePath = path.resolve(expandedPath);
             const stats = await fs.stat(absolutePath);
 
             // 10MB limit
@@ -161,8 +175,9 @@ export class FileSystemService {
 
     async readImage(filePath: string): Promise<ServiceResponse<string>> {
         try {
-            this.validatePath(filePath);
-            const absolutePath = path.resolve(filePath);
+            const expandedPath = this.expandEnvVars(filePath);
+            this.validatePath(expandedPath);
+            const absolutePath = path.resolve(expandedPath);
             const stats = await fs.stat(absolutePath);
             if (stats.size > 20 * 1024 * 1024) {
                 // 20MB limit for images
@@ -195,8 +210,9 @@ export class FileSystemService {
 
     async isBinaryFile(filePath: string): Promise<boolean> {
         try {
-            this.validatePath(filePath);
-            const absolutePath = path.resolve(filePath);
+            const expandedPath = this.expandEnvVars(filePath);
+            this.validatePath(expandedPath);
+            const absolutePath = path.resolve(expandedPath);
             const stats = await fs.stat(absolutePath);
             if (stats.size === 0) {
                 return false;
@@ -217,8 +233,9 @@ export class FileSystemService {
 
     async writeFile(filePath: string, content: string): Promise<ServiceResponse> {
         try {
-            this.validatePath(filePath);
-            const absolutePath = path.resolve(filePath);
+            const expandedPath = this.expandEnvVars(filePath);
+            this.validatePath(expandedPath);
+            const absolutePath = path.resolve(expandedPath);
             const dir = path.dirname(absolutePath);
             await fs.mkdir(dir, { recursive: true });
             await fs.writeFile(absolutePath, content, 'utf-8');
@@ -242,8 +259,9 @@ export class FileSystemService {
         }
     ): Promise<ServiceResponse> {
         try {
-            this.validatePath(filePath);
-            const absolutePath = path.resolve(filePath);
+            const expandedPath = this.expandEnvVars(filePath);
+            this.validatePath(expandedPath);
+            const absolutePath = path.resolve(expandedPath);
 
             // Get current content if file exists
             let beforeContent = '';
@@ -282,24 +300,14 @@ export class FileSystemService {
         >
     > {
         try {
-            this.validatePath(dirPath);
-            const absolutePath = path.resolve(dirPath);
+            const expandedPath = this.expandEnvVars(dirPath);
+            this.validatePath(expandedPath);
+            const absolutePath = path.resolve(expandedPath);
             const entries = await fs.readdir(absolutePath, { withFileTypes: true });
-            const workspaceRoot = this.resolveContainingRoot(absolutePath) ?? absolutePath;
-            const ignoreMatcher = await getWorkspaceIgnoreMatcher(workspaceRoot, {
-                defaultPatterns: DEFAULT_WORKSPACE_EXPLORER_IGNORE_PATTERNS,
-                extraPatterns: this.ignorePatterns,
+            const filteredEntries = entries.filter(entry => {
+                const entryPath = path.join(absolutePath, entry.name);
+                return !this.shouldIgnore(entryPath);
             });
-
-            const filteredEntries = entries.filter(
-                entry => {
-                    const entryPath = path.join(absolutePath, entry.name);
-                    if (ignoreMatcher.ignoresAbsolute(entryPath)) {
-                        return false;
-                    }
-                    return !this.shouldIgnore(entryPath);
-                }
-            );
             const files = filteredEntries.map(entry => ({
                 name: entry.name,
                 isDirectory: entry.isDirectory(),
@@ -312,8 +320,9 @@ export class FileSystemService {
 
     async createDirectory(dirPath: string): Promise<ServiceResponse> {
         try {
-            this.validatePath(dirPath);
-            const absolutePath = path.resolve(dirPath);
+            const expandedPath = this.expandEnvVars(dirPath);
+            this.validatePath(expandedPath);
+            const absolutePath = path.resolve(expandedPath);
             await fs.mkdir(absolutePath, { recursive: true });
             return { success: true };
         } catch (error) {
@@ -323,8 +332,9 @@ export class FileSystemService {
 
     async deleteFile(filePath: string): Promise<ServiceResponse> {
         try {
-            this.validatePath(filePath);
-            await fs.unlink(path.resolve(filePath));
+            const expandedPath = this.expandEnvVars(filePath);
+            this.validatePath(expandedPath);
+            await fs.unlink(path.resolve(expandedPath));
             return { success: true };
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };
@@ -333,8 +343,9 @@ export class FileSystemService {
 
     async deleteDirectory(dirPath: string): Promise<ServiceResponse> {
         try {
-            this.validatePath(dirPath);
-            await fs.rm(path.resolve(dirPath), { recursive: true, force: true });
+            const expandedPath = this.expandEnvVars(dirPath);
+            this.validatePath(expandedPath);
+            await fs.rm(path.resolve(expandedPath), { recursive: true, force: true });
             return { success: true };
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };
@@ -343,8 +354,9 @@ export class FileSystemService {
 
     async fileExists(filePath: string): Promise<{ exists: boolean }> {
         try {
-            this.validatePath(filePath);
-            await fs.access(path.resolve(filePath));
+            const expandedPath = this.expandEnvVars(filePath);
+            this.validatePath(expandedPath);
+            await fs.access(path.resolve(expandedPath));
             return { exists: true };
         } catch {
             return { exists: false };
@@ -363,8 +375,9 @@ export class FileSystemService {
         }>
     > {
         try {
-            this.validatePath(filePath);
-            const absolutePath = path.resolve(filePath);
+            const expandedPath = this.expandEnvVars(filePath);
+            this.validatePath(expandedPath);
+            const absolutePath = path.resolve(expandedPath);
             const stats = await fs.stat(absolutePath);
             return {
                 success: true,
@@ -385,10 +398,12 @@ export class FileSystemService {
 
     async copyFile(source: string, destination: string): Promise<ServiceResponse> {
         try {
-            this.validatePath(source);
-            this.validatePath(destination);
-            const srcPath = path.resolve(source);
-            const destPath = path.resolve(destination);
+            const expandedSource = this.expandEnvVars(source);
+            const expandedDest = this.expandEnvVars(destination);
+            this.validatePath(expandedSource);
+            this.validatePath(expandedDest);
+            const srcPath = path.resolve(expandedSource);
+            const destPath = path.resolve(expandedDest);
             await fs.mkdir(path.dirname(destPath), { recursive: true });
             await fs.copyFile(srcPath, destPath);
             return { success: true };
@@ -399,10 +414,12 @@ export class FileSystemService {
 
     async copyPath(source: string, destination: string): Promise<ServiceResponse> {
         try {
-            this.validatePath(source);
-            this.validatePath(destination);
-            const sourcePath = path.resolve(source);
-            const destinationPath = path.resolve(destination);
+            const expandedSource = this.expandEnvVars(source);
+            const expandedDest = this.expandEnvVars(destination);
+            this.validatePath(expandedSource);
+            this.validatePath(expandedDest);
+            const sourcePath = path.resolve(expandedSource);
+            const destinationPath = path.resolve(expandedDest);
             const sourceStats = await fs.stat(sourcePath);
             await fs.mkdir(path.dirname(destinationPath), { recursive: true });
 
@@ -423,10 +440,12 @@ export class FileSystemService {
 
     async moveFile(source: string, destination: string): Promise<ServiceResponse> {
         try {
-            this.validatePath(source);
-            this.validatePath(destination);
-            const srcPath = path.resolve(source);
-            const destPath = path.resolve(destination);
+            const expandedSource = this.expandEnvVars(source);
+            const expandedDest = this.expandEnvVars(destination);
+            this.validatePath(expandedSource);
+            this.validatePath(expandedDest);
+            const srcPath = path.resolve(expandedSource);
+            const destPath = path.resolve(expandedDest);
             await fs.mkdir(path.dirname(destPath), { recursive: true });
             await fs.rename(srcPath, destPath);
             return { success: true };
@@ -442,8 +461,9 @@ export class FileSystemService {
         minLength: number = 4
     ): Promise<ServiceResponse<{ strings: string[] }>> {
         try {
-            this.validatePath(filePath);
-            const buffer = await fs.readFile(path.resolve(filePath));
+            const expandedPath = this.expandEnvVars(filePath);
+            this.validatePath(expandedPath);
+            const buffer = await fs.readFile(path.resolve(expandedPath));
             const strings: string[] = [];
             let current = '';
             for (let i = 0; i < buffer.length; i++) {
@@ -469,7 +489,8 @@ export class FileSystemService {
         dir: string
     ): Promise<ServiceResponse<{ path: string }>> {
         try {
-            this.validatePath(dir);
+            const expandedDir = this.expandEnvVars(dir);
+            this.validatePath(expandedDir);
             const fileName = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
             const fullPath = path.join(dir, fileName);
             this.validatePath(fullPath);

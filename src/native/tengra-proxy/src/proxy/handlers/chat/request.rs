@@ -205,7 +205,9 @@ fn translate_gemini(payload: &ChatCompletionRequest) -> Value {
         if !function_declarations.is_empty() {
             body.insert(
                 "tools".to_string(),
-                Value::Array(vec![json!({ "functionDeclarations": function_declarations })]),
+                Value::Array(vec![
+                    json!({ "functionDeclarations": function_declarations }),
+                ]),
             );
         }
     }
@@ -461,7 +463,8 @@ fn append_codex_tool_calls(message: &ChatMessage, input: &mut Vec<Value>) {
         .cloned()
         .or_else(|| {
             message.content.as_array().map(|parts| {
-                parts.iter()
+                parts
+                    .iter()
                     .filter(|part| part.get("type").and_then(Value::as_str) == Some("tool_call"))
                     .cloned()
                     .collect::<Vec<_>>()
@@ -482,7 +485,11 @@ fn append_codex_tool_calls(message: &ChatMessage, input: &mut Vec<Value>) {
             .unwrap_or_else(|| {
                 format!(
                     "{}-{}",
-                    if function_name.is_empty() { "tool" } else { function_name },
+                    if function_name.is_empty() {
+                        "tool"
+                    } else {
+                        function_name
+                    },
                     index
                 )
             });
@@ -664,8 +671,9 @@ fn normalize_gemini_tools(tools: &[Value]) -> Vec<Value> {
 
 fn parse_json_string_value(value: Value) -> Value {
     match value {
-        Value::String(text) => serde_json::from_str::<Value>(&text)
-            .unwrap_or_else(|_| Value::String(text)),
+        Value::String(text) => {
+            serde_json::from_str::<Value>(&text).unwrap_or_else(|_| Value::String(text))
+        }
         other => other,
     }
 }
@@ -941,18 +949,29 @@ mod tests {
         let mut payload = sample_request("gemini-3-flash-preview", None);
         payload.metadata = Some(json!({ "project_id": "demo-project" }));
         let body = translate_request("antigravity", &payload);
-        assert_eq!(body.get("model").and_then(Value::as_str), Some("gemini-3-flash"));
-        assert_eq!(body.get("project").and_then(Value::as_str), Some("demo-project"));
-        assert!(body.get("request").and_then(|value| value.get("contents")).is_some());
+        assert_eq!(
+            body.get("model").and_then(Value::as_str),
+            Some("gemini-3-flash")
+        );
+        assert_eq!(
+            body.get("project").and_then(Value::as_str),
+            Some("demo-project")
+        );
+        assert!(body
+            .get("request")
+            .and_then(|value| value.get("contents"))
+            .is_some());
         assert!(body.get("contents").is_none());
         assert!(body.get("requestId").is_some());
-        assert!(body.get("request").and_then(|value| value.get("sessionId")).is_some());
-        assert!(
-            body.get("request")
-                .and_then(|value| value.get("generationConfig"))
-                .and_then(|value| value.get("maxOutputTokens"))
-                .is_none()
-        );
+        assert!(body
+            .get("request")
+            .and_then(|value| value.get("sessionId"))
+            .is_some());
+        assert!(body
+            .get("request")
+            .and_then(|value| value.get("generationConfig"))
+            .and_then(|value| value.get("maxOutputTokens"))
+            .is_none());
     }
 
     #[test]
@@ -1018,12 +1037,11 @@ mod tests {
                 .and_then(Value::as_str),
             Some("list_directory")
         );
-        assert!(
-            body.get("tools")
-                .and_then(Value::as_array)
-                .and_then(|tools| tools.first())
-                .and_then(|tool| tool.get("function"))
-                .is_none()
-        );
+        assert!(body
+            .get("tools")
+            .and_then(Value::as_array)
+            .and_then(|tools| tools.first())
+            .and_then(|tool| tool.get("function"))
+            .is_none());
     }
 }

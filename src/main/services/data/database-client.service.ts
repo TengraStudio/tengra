@@ -13,6 +13,7 @@ import * as net from 'net';
 import * as path from 'path';
 
 import { BaseService } from '@main/services/base.service';
+import { DataService } from '@main/services/data/data.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
@@ -99,7 +100,8 @@ export class DatabaseClientService extends BaseService {
 
     constructor(
         private eventBus: EventBusService,
-        private processManager: ProcessManagerService
+        private processManager: ProcessManagerService,
+        private dataService: DataService
     ) {
         super('DatabaseClientService');
 
@@ -187,10 +189,13 @@ export class DatabaseClientService extends BaseService {
 
         // Start new service
         this.logInfo('Starting db-service...');
+        const dbDir = this.dataService.getPath('db');
+        const dbPath = path.join(dbDir, 'Tengra.db');
+
         await this.processManager.startService({
             name: SERVICE_NAME,
             executable: 'tengra-db-service',
-            args: ['--console'], // Run in console mode, not as Windows Service
+            args: ['--console', '--db-path', dbPath], // Run in console mode with explicit data path
             persistent: true,
         });
 

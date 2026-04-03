@@ -36,7 +36,7 @@ interface UseChatManagerOptions {
     autoReadEnabled: boolean;
     handleSpeak: (id: string, text: string) => void;
     formatChatError: (err: CatchError) => string;
-    t: (key: string) => string;
+    t: (key: string, options?: Record<string, unknown>) => string;
     activeWorkspacePath?: string | undefined;
     workspaceId?: string | undefined;
 }
@@ -67,9 +67,11 @@ function trimChats(chats: Chat[]): Chat[] {
 }
 
 function isWorkspaceAgentChat(chat: Chat): boolean {
+    // Only treat as workspace-agent chat when explicitly marked as that chat type.
+    // Presence of workspaceAgentSession metadata alone is not enough because
+    // permission policy metadata can exist on normal chats.
     return (
-        chat.metadata?.chatType === WORKSPACE_AGENT_CHAT_TYPE ||
-        chat.metadata?.workspaceAgentSession !== undefined
+        chat.metadata?.chatType === WORKSPACE_AGENT_CHAT_TYPE
     );
 }
 
@@ -161,7 +163,10 @@ function toTextContent(content: Message['content']): string {
         .trim();
 }
 
-function buildAttachmentPromptContext(attachments: ReturnType<typeof useAttachments>['attachments']): string {
+function buildAttachmentPromptContext(
+    attachments: ReturnType<typeof useAttachments>['attachments'],
+    attachmentLabelTemplate: string
+): string {
     const nonImageAttachments = attachments.filter(att => att.type !== 'image');
     if (nonImageAttachments.length === 0) {
         return '';
@@ -170,7 +175,8 @@ function buildAttachmentPromptContext(attachments: ReturnType<typeof useAttachme
         .map(att => {
             const summary = (att.content ?? '').trim();
             const safeSummary = summary.length > 5000 ? `${summary.slice(0, 5000)}...` : summary;
-            return `\n[Attachment: ${att.name}]\n${safeSummary}`;
+            const attachmentLabel = attachmentLabelTemplate.replace('{{name}}', att.name);
+            return `\n[${attachmentLabel}]\n${safeSummary}`;
         })
         .join('\n');
 }
@@ -273,13 +279,16 @@ export function useChatManager(options: UseChatManagerOptions) {
             allowedPaths: appSettings.general.agentAllowedPaths ?? []
         };
         
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setPermissionPolicy(prev => {
-            if (JSON.stringify(prev) === JSON.stringify(newPolicy)) {
-                return prev;
-            }
-            return newPolicy;
+        const rafId = requestAnimationFrame(() => {
+            setPermissionPolicy(prev => {
+                if (JSON.stringify(prev) === JSON.stringify(newPolicy)) {
+                    return prev;
+                }
+                return newPolicy;
+            });
         });
+
+        return () => cancelAnimationFrame(rafId);
     }, [appSettings]);
 
     const { prompts, createPrompt, deletePrompt, updatePrompt } = usePromptManager();
@@ -336,24 +345,30 @@ export function useChatManager(options: UseChatManagerOptions) {
         const chat = chats.find(c => c.id === currentChatId);
         const policy = chat ? readChatPermissionPolicy(chat) : null;
         if (policy) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setPermissionPolicy(prev => {
-                if (JSON.stringify(prev) === JSON.stringify(policy)) {
-                    return prev;
-                }
-                return policy;
+            const rafId = requestAnimationFrame(() => {
+                setPermissionPolicy(prev => {
+                    if (JSON.stringify(prev) === JSON.stringify(policy)) {
+                        return prev;
+                    }
+                    return policy;
+                });
             });
-            return;
+            return () => cancelAnimationFrame(rafId);
         }
+        
         if (appSettings) {
-            setPermissionPolicy({
-                commandPolicy: appSettings.general.agentCommandPolicy ?? 'ask-every-time',
-                pathPolicy: appSettings.general.agentPathPolicy ?? 'workspace-root-only',
-                allowedCommands: appSettings.general.agentAllowedCommands ?? [],
-                disallowedCommands: appSettings.general.agentDisallowedCommands ?? [],
-                allowedPaths: appSettings.general.agentAllowedPaths ?? []
+            const rafId = requestAnimationFrame(() => {
+                setPermissionPolicy({
+                    commandPolicy: appSettings.general.agentCommandPolicy ?? 'ask-every-time',
+                    pathPolicy: appSettings.general.agentPathPolicy ?? 'workspace-root-only',
+                    allowedCommands: appSettings.general.agentAllowedCommands ?? [],
+                    disallowedCommands: appSettings.general.agentDisallowedCommands ?? [],
+                    allowedPaths: appSettings.general.agentAllowedPaths ?? []
+                });
             });
+            return () => cancelAnimationFrame(rafId);
         }
+        return undefined;
     }, [currentChatId, chats, appSettings]);
 
     useChatInitialization(loadFolders, setChats);
@@ -444,10 +459,13 @@ export function useChatManager(options: UseChatManagerOptions) {
             }
             return [];
         });
-        const attachmentContext = buildAttachmentPromptContext(readyAttachments);
+        const attachmentContext = buildAttachmentPromptContext(
+            readyAttachments,
+            t('chat.attachmentPrompt.label')
+        );
         const mergedContent = hasInputText
             ? `${content}${attachmentContext}`
-            : `${attachmentContext}\n[Analyze attached media.]`.trim();
+            : `${attachmentContext}\n[${t('chat.attachmentPrompt.analyzeMedia')}]`.trim();
         const userMessage: Message = {
             id: generateId(),
             role: 'user',
@@ -473,7 +491,7 @@ export function useChatManager(options: UseChatManagerOptions) {
         );
         setAttachments([]);
         void generateResponse(chatId, userMessage);
-    }, [input, attachments, selectedModel, isLoading, currentChatId, selectedProvider, generateResponse, imageRequestCount, setChats, setAttachments]);
+    }, [input, attachments, selectedModel, isLoading, currentChatId, selectedProvider, generateResponse, imageRequestCount, setChats, setAttachments, t]);
 
     const regenerateMessage = useCallback(
         async (assistantMessageId: string) => {

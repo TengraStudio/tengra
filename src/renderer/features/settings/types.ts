@@ -6,6 +6,7 @@ export type SettingsCategory =
     | 'appearance'
     | 'system'
     | 'models'
+    | 'skills'
     | 'quotas'
     | 'statistics'
     | 'personas'

@@ -384,6 +384,7 @@ pub struct Workspace {
     pub chat_ids: Vec<String>,
     pub council_config: Option<Value>,
     pub status: String,
+    pub logo: Option<String>,
     pub metadata: Option<Value>,
     pub created_at: i64,
     pub updated_at: i64,
@@ -399,6 +400,7 @@ pub struct CreateWorkspaceRequest {
     #[serde(default)]
     pub mounts: Vec<Value>,
     pub council_config: Option<Value>,
+    pub logo: Option<String>,
     pub metadata: Option<Value>,
 }
 
@@ -411,6 +413,7 @@ pub struct UpdateWorkspaceRequest {
     pub chat_ids: Option<Vec<String>>,
     pub council_config: Option<Value>,
     pub status: Option<String>,
+    pub logo: Option<String>,
     pub metadata: Option<Value>,
 }
 

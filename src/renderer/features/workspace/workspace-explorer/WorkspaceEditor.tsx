@@ -401,7 +401,10 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
     }, [activeTab?.path, flushPendingScrollState]);
 
     useEffect(() => {
-        setWorkspaceResults(null);
+        const rafId = requestAnimationFrame(() => {
+            setWorkspaceResults(null);
+        });
+        return () => cancelAnimationFrame(rafId);
     }, [activeTab?.path]);
 
     const handleEditorChange = useCallback((val?: string) => {

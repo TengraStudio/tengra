@@ -15,9 +15,6 @@ const BUDGETS = {
     idleCpuPercent: 8,
 };
 
-const WORKSPACE_NAVIGATION_LABEL = /çalışma alanları|workspaces?/i;
-const SETTINGS_NAVIGATION_LABEL = /ayarlar|settings/i;
-
 interface PerformanceMemorySnapshot {
     usedJSHeapSize: number;
 }
@@ -72,7 +69,8 @@ test.describe('Performance Regression Guardrails', () => {
             )
         );
         electronEnv.NODE_ENV = 'test';
-        electronEnv.TENGRA_RUNTIME_MANIFEST_URL = 'https://127.0.0.1/runtime-manifest.json';
+        electronEnv.TENGRA_RUNTIME_MANIFEST_URL = process.env.TENGRA_TEST_MANIFEST_URL
+            ?? 'https://localhost/runtime-manifest.json';
 
         delete electronEnv.ELECTRON_RUN_AS_NODE;
         
@@ -176,9 +174,12 @@ test.describe('Performance Regression Guardrails', () => {
     });
 
     test('OPT-008/OPT-012: Idle CPU usage stays within budget', async () => {
-        await page.waitForTimeout(2000);
+        await expect.poll(async () => {
+            const usage = await app.evaluate(() => process.getCPUUsage());
+            return usage.percentCPUUsage;
+        }).toBeLessThan(BUDGETS.idleCpuPercent);
+
         await app.evaluate(() => process.getCPUUsage());
-        await page.waitForTimeout(2000);
         const cpuUsage = await app.evaluate(() => process.getCPUUsage());
         expect(cpuUsage.percentCPUUsage).toBeLessThan(BUDGETS.idleCpuPercent);
     });
@@ -495,7 +496,7 @@ async function waitForPerformanceMark(page: Page, markName: string): Promise<voi
 async function navigateToWorkspaces(page: Page): Promise<void> {
     const sidebar = page.getByTestId('sidebar');
     await expect(sidebar).toBeVisible();
-    const workspacesButton = sidebar.getByRole('button', { name: WORKSPACE_NAVIGATION_LABEL }).first();
+    const workspacesButton = sidebar.getByTestId('sidebar-nav-workspace');
     await expect(workspacesButton).toBeVisible();
     await workspacesButton.click();
 
@@ -507,5 +508,5 @@ async function navigateToWorkspaces(page: Page): Promise<void> {
                 .textContent();
             return currentTitle?.trim() ?? '';
         })
-        .not.toMatch(SETTINGS_NAVIGATION_LABEL);
+        .not.toMatch(/settings/i);
 }

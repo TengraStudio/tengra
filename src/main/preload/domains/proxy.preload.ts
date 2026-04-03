@@ -1,4 +1,7 @@
 import { CodexUsage, CopilotQuota, ProxyModelResponse, QuotaResponse } from '@shared/types';
+import { IpcValue } from '@shared/types/common';
+import { MarketplaceSkill } from '@shared/types/marketplace';
+import { ProxySkill, ProxySkillUpsertInput } from '@shared/types/skill';
 import { IpcRenderer } from 'electron';
 
 export interface ProxyBridge {
@@ -25,6 +28,13 @@ export interface ProxyBridge {
         accountId?: string;
         account_id?: string;
     }>;
+    verifyAuthBridge: (provider?: 'antigravity' | 'claude' | 'codex') => Promise<{
+        status: string;
+        provider: string;
+        readiness?: IpcValue;
+        callback?: IpcValue;
+        error?: string;
+    }>;
     saveClaudeSession: (
         sessionKey: string,
         accountId?: string
@@ -38,6 +48,12 @@ export interface ProxyBridge {
         provider?: string,
         model?: string
     ) => Promise<number>;
+    listSkills: () => Promise<ProxySkill[]>;
+    saveSkill: (input: ProxySkillUpsertInput) => Promise<ProxySkill>;
+    toggleSkill: (skillId: string, enabled: boolean) => Promise<ProxySkill>;
+    deleteSkill: (skillId: string) => Promise<boolean>;
+    listMarketplaceSkills: () => Promise<MarketplaceSkill[]>;
+    installMarketplaceSkill: (skillId: string) => Promise<ProxySkill>;
 }
 
 export function createProxyBridge(ipc: IpcRenderer): ProxyBridge {
@@ -52,10 +68,17 @@ export function createProxyBridge(ipc: IpcRenderer): ProxyBridge {
         claudeLogin: accountId => ipc.invoke('proxy:claudeLogin', accountId),
         cancelAuth: (provider, state, accountId) => ipc.invoke('proxy:cancelAuth', provider, state, accountId),
         getBrowserAuthStatus: (provider, state, accountId) => ipc.invoke('proxy:getAuthStatus', provider, state, accountId),
+        verifyAuthBridge: (provider) => ipc.invoke('proxy:verifyAuthBridge', provider),
         saveClaudeSession: (sessionKey, accountId) =>
             ipc.invoke('proxy:saveClaudeSession', sessionKey, accountId),
         checkUsageLimit: (provider, model) => ipc.invoke('usage:checkLimit', provider, model),
         getUsageCount: (period, provider, model) =>
             ipc.invoke('usage:getUsageCount', period, provider, model),
+        listSkills: () => ipc.invoke('proxy:listSkills'),
+        saveSkill: (input) => ipc.invoke('proxy:saveSkill', input),
+        toggleSkill: (skillId, enabled) => ipc.invoke('proxy:toggleSkill', skillId, enabled),
+        deleteSkill: (skillId) => ipc.invoke('proxy:deleteSkill', skillId),
+        listMarketplaceSkills: () => ipc.invoke('proxy:listMarketplaceSkills'),
+        installMarketplaceSkill: (skillId) => ipc.invoke('proxy:installMarketplaceSkill', skillId),
     };
 }

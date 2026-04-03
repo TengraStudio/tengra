@@ -314,6 +314,42 @@ describe('ProxyService', () => {
     });
 
     describe('getBrowserAuthStatus', () => {
+        it('calls one-click auth verification endpoint', async () => {
+            const mockReq: MockProxyRequest = {
+                on: vi.fn().mockReturnThis(),
+                setHeader: vi.fn().mockReturnThis(),
+                write: vi.fn().mockReturnThis(),
+                end: vi.fn().mockReturnThis(),
+                abort: vi.fn().mockReturnThis()
+            };
+
+            vi.mocked(net.request).mockReturnValue(mockReq as never);
+            mockReq.on.mockImplementation((event: string, cb: ResponseCallback) => {
+                if (event === 'response') {
+                    const response: MockProxyResponse = {
+                        statusCode: 200,
+                        on: vi.fn().mockImplementation((ev: string, evCb: ResponseEventCallback) => {
+                            if (ev === 'data') {
+                                evCb(Buffer.from(JSON.stringify({
+                                    status: 'ok',
+                                    provider: 'codex',
+                                    readiness: { client_id_configured: true },
+                                    callback: { route_healthy: true }
+                                })));
+                            }
+                            if (ev === 'end') { evCb(); }
+                        })
+                    };
+                    cb(response);
+                }
+                return mockReq;
+            });
+
+            const verification = await proxyService.verifyAuthBridge('codex');
+            expect(verification.status).toBe('ok');
+            expect(verification.provider).toBe('codex');
+        });
+
         it('falls back to linked accounts when proxy status request fails', async () => {
             const mockReq: MockProxyRequest = {
                 on: vi.fn().mockReturnThis(),
@@ -361,10 +397,23 @@ describe('ProxyService', () => {
             const pending = proxyService.getCodexAuthUrl();
             const rejection = expect(pending).rejects.toThrow('timed out');
 
-            await vi.advanceTimersByTimeAsync(15000);
+            await vi.advanceTimersByTimeAsync(30000);
 
             await rejection;
             vi.useRealTimers();
+        });
+
+        it('rejects invalid provider OAuth timeout configuration', async () => {
+            vi.mocked(mockSettingsService.getSettings).mockReturnValue({
+                proxy: {
+                    key: 'mock-key',
+                    oauthTimeoutMs: {
+                        codex: 5000,
+                    },
+                },
+            } as never);
+
+            await expect(proxyService.getCodexAuthUrl()).rejects.toThrow('Invalid OAuth timeout');
         });
     });
 });

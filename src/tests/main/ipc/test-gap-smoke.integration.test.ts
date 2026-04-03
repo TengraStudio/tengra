@@ -1,3 +1,5 @@
+import * as path from 'path';
+
 import { registerAdvancedMemoryIpc } from '@main/ipc/advanced-memory';
 import { registerDialogIpc } from '@main/ipc/dialog';
 import { registerFilesIpc } from '@main/ipc/files';
@@ -114,7 +116,7 @@ describe('Missing IPC TODO coverage (behavior)', () => {
 
         expect(result).toMatchObject({ success: true, path: 'C:/workspaces/demo-workspace' });
         expect(fileSystemService.updateAllowedRoots).toHaveBeenCalledTimes(1);
-        expect(Array.from(roots)).toContain('C:/workspaces/demo-workspace');
+        expect(Array.from(roots)).toContain(path.normalize('C:/workspaces/demo-workspace'));
     });
 
 });

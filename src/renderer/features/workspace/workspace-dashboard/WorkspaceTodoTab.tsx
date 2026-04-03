@@ -43,6 +43,7 @@ import {
 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useTranslation } from '@/i18n';
 import { JsonObject, JsonValue, Workspace } from '@/types';
 
 import '@xyflow/react/dist/style.css';
@@ -87,7 +88,7 @@ const STATUS_CLASSES: Record<TodoStatus, string> = {
 const DEFAULT_NODE_DATA: TodoCanvasNodeData = {
     title: '',
     status: 'pending',
-    category: 'General',
+    category: '',
     assignee: '',
     parentId: '',
     links: ''
@@ -127,6 +128,7 @@ const statusIcon = (status: TodoStatus) => {
 };
 
 const TodoNode = ({ data, selected }: NodeProps<Node<TodoCanvasNodeData>>) => {
+    const { t } = useTranslation();
     const title = typeof data.title === 'string' ? data.title : '';
     const status = data.status === 'in_progress' || data.status === 'completed' ? data.status : 'pending';
     const category = typeof data.category === 'string' ? data.category : '';
@@ -140,7 +142,11 @@ const TodoNode = ({ data, selected }: NodeProps<Node<TodoCanvasNodeData>>) => {
                 <div className="flex items-center gap-2 flex-wrap">
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 tw-text-10 ${STATUS_CLASSES[status]}`}>
                         {statusIcon(status)}
-                        {status}
+                        {status === 'completed'
+                            ? t('workspaceDashboard.todoCanvas.completed')
+                            : status === 'in_progress'
+                                ? t('workspaceDashboard.todoCanvas.inProgress')
+                                : t('workspaceDashboard.pending')}
                     </span>
                     {category ? (
                         <span className="inline-flex items-center rounded-full px-2 py-0.5 tw-text-10 bg-primary/15 text-primary">
@@ -172,19 +178,21 @@ function createSnapshot(nodes: Node<TodoCanvasNodeData>[], edges: Edge[]): TodoC
     };
 }
 
-function normalizeNodeData(value: JsonObject | undefined): TodoCanvasNodeData {
+function normalizeNodeData(value: JsonObject | undefined, defaultCategory: string): TodoCanvasNodeData {
     const source = value ?? {};
     return {
         title: typeof source.title === 'string' ? source.title : '',
         status: isTodoStatus(source.status) ? source.status : 'pending',
-        category: typeof source.category === 'string' && source.category.trim().length > 0 ? source.category : 'General',
+        category: typeof source.category === 'string' && source.category.trim().length > 0
+            ? source.category
+            : defaultCategory,
         assignee: typeof source.assignee === 'string' ? source.assignee : '',
         parentId: typeof source.parentId === 'string' ? source.parentId : '',
         links: typeof source.links === 'string' ? source.links : ''
     };
 }
 
-function parseTodoCanvas(metadata: JsonObject | undefined): TodoCanvasSnapshot {
+function parseTodoCanvas(metadata: JsonObject | undefined, defaultCategory: string): TodoCanvasSnapshot {
     const raw = metadata?.[TODO_CANVAS_METADATA_KEY];
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
         return { nodes: [], edges: [] };
@@ -210,7 +218,7 @@ function parseTodoCanvas(metadata: JsonObject | undefined): TodoCanvasSnapshot {
             id,
             type: NODE_TYPE,
             position: { x, y },
-            data: normalizeNodeData(data as JsonObject)
+            data: normalizeNodeData(data as JsonObject, defaultCategory)
         });
     }
 
@@ -320,7 +328,11 @@ const FlowToolbar: React.FC<{
 };
 
 const WorkspaceTodoTabCanvas: React.FC<WorkspaceTodoTabProps> = ({ workspace, onUpdate, t }) => {
-    const initialState = useMemo(() => parseTodoCanvas(workspace.metadata), [workspace.metadata]);
+    const defaultCategory = t('workspaceDashboard.todoCanvas.categoryGeneral');
+    const initialState = useMemo(
+        () => parseTodoCanvas(workspace.metadata, defaultCategory),
+        [defaultCategory, workspace.metadata]
+    );
     const [nodes, setNodes, onNodesChange] = useNodesState<Node<TodoCanvasNodeData>>(initialState.nodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialState.edges);
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -365,7 +377,7 @@ const WorkspaceTodoTabCanvas: React.FC<WorkspaceTodoTabProps> = ({ workspace, on
     }, [syncHistoryFlags]);
 
     useEffect(() => {
-        const nextState = parseTodoCanvas(workspace.metadata);
+        const nextState = parseTodoCanvas(workspace.metadata, defaultCategory);
         suppressHistoryRef.current = true;
         skipNextSaveRef.current = true;
         undoStackRef.current = [];
@@ -379,7 +391,7 @@ const WorkspaceTodoTabCanvas: React.FC<WorkspaceTodoTabProps> = ({ workspace, on
         window.setTimeout(() => {
             suppressHistoryRef.current = false;
         }, 0);
-    }, [workspace.id, workspace.metadata, setEdges, setNodes, syncHistoryFlags]);
+    }, [defaultCategory, workspace.id, workspace.metadata, setEdges, setNodes, syncHistoryFlags]);
 
     useEffect(() => {
         const snapshot = JSON.stringify({ nodes, edges });
@@ -432,12 +444,13 @@ const WorkspaceTodoTabCanvas: React.FC<WorkspaceTodoTabProps> = ({ workspace, on
             position: { x: 120 + (nodes.length % 4) * 80, y: 120 + (nodes.length % 6) * 70 },
             data: {
                 ...DEFAULT_NODE_DATA,
-                title: t('workspaceDashboard.createTodo')
+                title: t('workspaceDashboard.createTodo'),
+                category: defaultCategory,
             }
         };
         setNodes(current => [...current, nextNode]);
         setSelectedNodeId(nextNode.id);
-    }, [nodes.length, setNodes, t]);
+    }, [defaultCategory, nodes.length, setNodes, t]);
 
     const selectedNode = useMemo(
         () => nodes.find(node => node.id === selectedNodeId) ?? null,
@@ -466,11 +479,11 @@ const WorkspaceTodoTabCanvas: React.FC<WorkspaceTodoTabProps> = ({ workspace, on
     }, [selectedNodeId, setEdges, setNodes]);
 
     const applyAutoLayout = useCallback(() => {
-        setNodes(current => layoutNodesByCategory(current, t('workspace.errors.todoCanvas.defaultCategory')));
+        setNodes(current => layoutNodesByCategory(current, defaultCategory));
         window.setTimeout(() => {
             void fitView({ duration: 400 });
         }, 16);
-    }, [fitView, setNodes, t]);
+    }, [defaultCategory, fitView, setNodes]);
 
     const addSubTask = useCallback(() => {
         if (!selectedNode) { return; }
@@ -603,7 +616,7 @@ const WorkspaceTodoTabCanvas: React.FC<WorkspaceTodoTabProps> = ({ workspace, on
                 const metadata: JsonObject = {
                     [TODO_CANVAS_METADATA_KEY]: { version: 2, nodes: importedNodes, edges: importedEdges }
                 };
-                const parsed = parseTodoCanvas(metadata);
+                const parsed = parseTodoCanvas(metadata, '');
                 applySnapshot(parsed);
                 setCanvasError(null);
             } catch (error) {

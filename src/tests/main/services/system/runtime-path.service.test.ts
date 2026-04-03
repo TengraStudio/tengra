@@ -1,3 +1,5 @@
+import * as path from 'path';
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mkdirSync = vi.fn();
@@ -26,18 +28,18 @@ describe('runtime-path.service', () => {
     it('creates and returns the managed runtime directories under appData', async () => {
         const runtimePaths = await import('@main/services/system/runtime-path.service');
 
-        expect(runtimePaths.getManagedRuntimeRoot()).toBe('/mock/appData/Tengra/runtime');
-        expect(runtimePaths.getManagedRuntimeBinDir()).toBe('/mock/appData/Tengra/runtime/bin');
-        expect(runtimePaths.getManagedRuntimeModelsDir()).toBe('/mock/appData/Tengra/runtime/models');
-        expect(runtimePaths.getManagedRuntimeTempDir()).toBe('/mock/appData/Tengra/runtime/temp');
-        expect(runtimePaths.getManagedRuntimeDownloadsDir()).toBe('/mock/appData/Tengra/runtime/downloads');
-        expect(runtimePaths.getManagedRuntimeManifestsDir()).toBe('/mock/appData/Tengra/runtime/manifests');
-        expect(mkdirSync).toHaveBeenCalledWith('/mock/appData/Tengra/runtime', { recursive: true });
-        expect(mkdirSync).toHaveBeenCalledWith('/mock/appData/Tengra/runtime/bin', { recursive: true });
-        expect(mkdirSync).toHaveBeenCalledWith('/mock/appData/Tengra/runtime/models', { recursive: true });
-        expect(mkdirSync).toHaveBeenCalledWith('/mock/appData/Tengra/runtime/temp', { recursive: true });
-        expect(mkdirSync).toHaveBeenCalledWith('/mock/appData/Tengra/runtime/downloads', { recursive: true });
-        expect(mkdirSync).toHaveBeenCalledWith('/mock/appData/Tengra/runtime/manifests', { recursive: true });
+        expect(runtimePaths.getManagedRuntimeRoot()).toBe(path.join('/mock/appData', 'Tengra', 'runtime'));
+        expect(runtimePaths.getManagedRuntimeBinDir()).toBe(path.join('/mock/appData', 'Tengra', 'runtime', 'bin'));
+        expect(runtimePaths.getManagedRuntimeModelsDir()).toBe(path.join('/mock/appData', 'Tengra', 'runtime', 'models'));
+        expect(runtimePaths.getManagedRuntimeTempDir()).toBe(path.join('/mock/appData', 'Tengra', 'runtime', 'temp'));
+        expect(runtimePaths.getManagedRuntimeDownloadsDir()).toBe(path.join('/mock/appData', 'Tengra', 'runtime', 'downloads'));
+        expect(runtimePaths.getManagedRuntimeManifestsDir()).toBe(path.join('/mock/appData', 'Tengra', 'runtime', 'manifests'));
+        expect(mkdirSync).toHaveBeenCalledWith(path.join('/mock/appData', 'Tengra', 'runtime'), { recursive: true });
+        expect(mkdirSync).toHaveBeenCalledWith(path.join('/mock/appData', 'Tengra', 'runtime', 'bin'), { recursive: true });
+        expect(mkdirSync).toHaveBeenCalledWith(path.join('/mock/appData', 'Tengra', 'runtime', 'models'), { recursive: true });
+        expect(mkdirSync).toHaveBeenCalledWith(path.join('/mock/appData', 'Tengra', 'runtime', 'temp'), { recursive: true });
+        expect(mkdirSync).toHaveBeenCalledWith(path.join('/mock/appData', 'Tengra', 'runtime', 'downloads'), { recursive: true });
+        expect(mkdirSync).toHaveBeenCalledWith(path.join('/mock/appData', 'Tengra', 'runtime', 'manifests'), { recursive: true });
     });
 
     it('normalizes the managed runtime binary path for the current OS', async () => {
@@ -45,10 +47,10 @@ describe('runtime-path.service', () => {
         const executablePath = runtimePaths.getManagedRuntimeBinaryPath('llama-server');
 
         if (process.platform === 'win32') {
-            expect(executablePath).toBe('/mock/appData/Tengra/runtime/bin/llama-server.exe');
+            expect(executablePath).toBe(path.join('/mock/appData', 'Tengra', 'runtime', 'bin', 'llama-server.exe'));
             return;
         }
 
-        expect(executablePath).toBe('/mock/appData/Tengra/runtime/bin/llama-server');
+        expect(executablePath).toBe(path.join('/mock/appData', 'Tengra', 'runtime', 'bin', 'llama-server'));
     });
 });

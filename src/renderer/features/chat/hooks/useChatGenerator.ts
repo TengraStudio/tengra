@@ -1,16 +1,32 @@
-import { safeJsonParse } from '@shared/utils/sanitize.util';
+import {
+    classifyAiIntent,
+} from '@shared/utils/ai-runtime.util';
 import { useCallback, useState } from 'react';
 
-import { chatStream } from '@/lib/chat-stream';
-import { getSystemPrompt } from '@/lib/identity';
 import { generateId } from '@/lib/utils';
-import { AppSettings, Chat, ChatError, Message, MessageContentPart, ToolDefinition, ToolResult } from '@/types';
+import { AppSettings, Chat, ChatError, Message, ToolDefinition } from '@/types';
 import { CatchError } from '@/types/common';
 import { appLogger } from '@/utils/renderer-logger';
 
-import { processChatStream, StreamStreamingState } from './process-stream';
-import { categorizeError, formatMessageContent, getPresetOptions } from './utils';
-
+import {
+    buildAssistantPresentationMetadata,
+} from './ai-runtime-chat.util';
+import {
+    createModelToolList,
+    extractImageRequestCount,
+    getMessageTextContent,
+    getReasoningEffort,
+    isExplicitImageRequest,
+    isImageOnlyModel,
+} from './chat-runtime-policy.util';
+import {
+    completeDirectImageMessage,
+} from './message-persistence.util';
+import { prepareMessages } from './message-preparation.util';
+import { generateMultiModelResponse } from './multi-model-chat.util';
+import { StreamStreamingState } from './process-stream';
+import { executeToolTurnLoop } from './tool-turn-loop-execution.util';
+import { categorizeError } from './utils';
 
 interface SelectedModelInfo {
     provider: string;
@@ -27,435 +43,14 @@ interface UseChatGeneratorProps {
     language: string;
     activeWorkspacePath?: string | undefined;
     workspaceId?: string | undefined;
-    t: (key: string) => string;
+    t: (key: string, options?: Record<string, unknown>) => string;
     handleSpeak: (id: string, content: string) => void;
     autoReadEnabled: boolean;
     formatChatError: (err: CatchError) => string;
 }
 
-interface PrepareMessagesOptions {
-    chatId: string;
-    chats: Chat[];
-    userMessage: Message;
-    appSettings: AppSettings | undefined;
-    selectedModel: string;
-    selectedProvider: string;
-    language: string;
-    selectedPersona?:
-    | { id: string; name: string; description: string; prompt: string }
-    | null
-    | undefined;
-    activeWorkspacePath?: string | undefined;
-    systemMode: 'thinking' | 'agent' | 'fast';
-}
-
-interface ModelStreamResult {
-    model: string;
-    provider: string;
-    content: string;
-    reasoning?: string;
-    responseTime?: number;
-    error?: string;
-}
-
-interface ChatStreamChunk {
-    content?: string;
-    reasoning?: string;
-}
-
-const IMAGE_REQUEST_COUNT_MAX = 5;
-const IMAGE_ACTION_PATTERN = /\b(create|draw|generate|make|render|olu[sş]tur|u[̈u]ret|yarat|ciz|[çc]iz)\b/i;
-const IMAGE_SUBJECT_PATTERN = /\b(avatar|drawing|g[oö]rsel|icon|illustration|image|logo|picture|poster|render|resim|sketch|wallpaper|foto(?:g(?:raf)?)?)\b/i;
-const DIRECT_IMAGE_RESULT_KEYS = ['images', 'paths', 'files'] as const;
-const IMAGE_ONLY_MODEL_PATTERNS = [
-    'gemini-3.1-flash-image',
-    'gemini-3.1-flash-image-preview',
-    'gemini-3-pro-image',
-    'gemini-3-pro-image-preview',
-    'gemini-2.5-flash-image',
-    'gemini-2.5-flash-image-preview',
-    'imagen-3.0-generate-001'
-] as const;
-
-const getReasoningEffort = (modelId: string, appSettings: AppSettings | undefined) => {
-    return appSettings?.modelSettings?.[modelId]?.reasoningLevel;
-};
-
-const getMessageTextContent = (message: Message): string => {
-    if (typeof message.content === 'string') {
-        return message.content;
-    }
-    return (message.content as MessageContentPart[])
-        .filter(part => part.type === 'text')
-        .map(part => part.text)
-        .join('\n')
-        .trim();
-};
-
-const isExplicitImageRequest = (message: Message): boolean => {
-    const text = getMessageTextContent(message).toLowerCase();
-    if (text.trim().length === 0) {
-        return false;
-    }
-    const hasImageSubject = IMAGE_SUBJECT_PATTERN.test(text);
-    const hasImageAction = IMAGE_ACTION_PATTERN.test(text);
-    return hasImageSubject && hasImageAction;
-};
-
-const extractImageRequestCount = (message: Message): number => {
-    const metadataCount = message.metadata?.imageRequestCount;
-    if (typeof metadataCount === 'number' && Number.isFinite(metadataCount)) {
-        return Math.max(1, Math.min(metadataCount, IMAGE_REQUEST_COUNT_MAX));
-    }
-    const text = getMessageTextContent(message);
-    const match = text.match(/(\d+)\s*(?:adet|image(?:s)?|photo(?:s)?|picture(?:s)?|tane|g[oö]rsel|resim|foto(?:g(?:raf)?)?)/i);
-    if (!match?.[1]) {
-        return 1;
-    }
-    const parsed = Number.parseInt(match[1], 10);
-    if (!Number.isFinite(parsed)) {
-        return 1;
-    }
-    return Math.max(1, Math.min(parsed, IMAGE_REQUEST_COUNT_MAX));
-};
-
-const isImageOnlyModel = (modelId: string): boolean => {
-    const normalizedModelId = modelId.trim().toLowerCase();
-    return IMAGE_ONLY_MODEL_PATTERNS.some(pattern => normalizedModelId.includes(pattern));
-};
-
-const createModelToolList = (allTools: ToolDefinition[]): ToolDefinition[] => {
-    const excludedToolNames = new Set([
-        'generate_image',
-        'propose_plan',
-        'update_plan_step',
-        'revise_plan',
-    ]);
-    return allTools.filter(toolDefinition => {
-        const toolName = toolDefinition?.function?.name;
-        if (!toolName || excludedToolNames.has(toolName)) {
-            return false;
-        }
-        return true;
-    });
-};
-
-const normalizeToolArgs = (rawArguments: unknown): Record<string, unknown> => {
-    if (rawArguments && typeof rawArguments === 'object' && !Array.isArray(rawArguments)) {
-        return rawArguments as Record<string, unknown>;
-    }
-    return {};
-};
-
-const readToolResultImages = (toolResult: ToolResult): string[] => {
-    if (typeof toolResult.result === 'string') {
-        return [toolResult.result];
-    }
-    if (!toolResult.result || Array.isArray(toolResult.result) || typeof toolResult.result !== 'object') {
-        return [];
-    }
-    const resultObj = toolResult.result as Record<string, unknown>;
-    for (const key of DIRECT_IMAGE_RESULT_KEYS) {
-        const value = resultObj[key];
-        if (!Array.isArray(value)) {
-            continue;
-        }
-        return value.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0);
-    }
-    return [];
-};
-
-const getMessageStringContent = (content: Message['content']): string => {
-    if (typeof content === 'string') {
-        return content;
-    }
-    return (content as MessageContentPart[])
-        .filter(part => part.type === 'text')
-        .map(part => part.text)
-        .join('\n')
-        .trim();
-};
-
-const buildStoredToolResults = (
-    toolCalls: Message['toolCalls'],
-    toolMessages: Message[]
-): ToolResult[] => {
-    if (!toolCalls || toolCalls.length === 0) {
-        return [];
-    }
-
-    return toolCalls.map(toolCall => {
-        const matchingToolMessage = toolMessages.find(message => message.toolCallId === toolCall.id);
-        return {
-            toolCallId: toolCall.id,
-            name: toolCall.function.name,
-            result: matchingToolMessage
-                ? safeJsonParse(getMessageStringContent(matchingToolMessage.content), {})
-                : {},
-            success: true,
-            isImage: toolCall.function.name === 'generate_image',
-        };
-    });
-};
-
-const isExecutableToolCall = (toolCall: NonNullable<Message['toolCalls']>[number]): boolean => {
-    const toolCallId = typeof toolCall.id === 'string' ? toolCall.id.trim() : '';
-    const toolName = typeof toolCall.function?.name === 'string' ? toolCall.function.name.trim() : '';
-    return toolCallId.length > 0 && toolName.length > 0;
-};
-
-const executeToolCall = async (
-    toolCall: NonNullable<Message['toolCalls']>[number],
-    activeWorkspacePath: string | undefined,
-    t: (key: string) => string,
-    chatId?: string
-): Promise<{
-    toolMessage: Message;
-    generatedImages: string[];
-}> => {
-    const toolArgs = typeof toolCall.function.arguments === 'string'
-        ? toolCall.function.arguments.length > 100000
-            ? (() => { throw new Error(t('chat.toolArgumentsTooLarge')); })()
-            : safeJsonParse(toolCall.function.arguments, {})
-        : toolCall.function.arguments;
-
-    const normalizedArgs = normalizeToolArgs(toolArgs);
-    if (
-        toolCall.function.name === 'execute_command' &&
-        typeof normalizedArgs.cwd !== 'string' &&
-        typeof activeWorkspacePath === 'string' &&
-        activeWorkspacePath.trim().length > 0
-    ) {
-        normalizedArgs.cwd = activeWorkspacePath;
-    }
-
-    const toolExecResult = await window.electron.executeTools(
-        toolCall.function.name,
-        normalizedArgs as Record<string, unknown>,
-        toolCall.id,
-        chatId
-    );
-    const generatedImages = toolCall.function.name === 'generate_image'
-        ? readToolResultImages(toolExecResult)
-        : [];
-    return {
-        toolMessage: {
-            id: generateId(),
-            role: 'tool',
-            content: JSON.stringify(toolExecResult.success ? (toolExecResult.result ?? {}) : {
-                success: false,
-                error: toolExecResult.error ?? t('chat.error'),
-                errorType: toolExecResult.errorType ?? 'unknown',
-                tool: toolCall.function.name,
-            }),
-            toolCallId: toolCall.id,
-            timestamp: new Date()
-        },
-        generatedImages,
-    };
-};
-
 const logRendererError = (message: string, error: Error): void => {
     appLogger.error('useChatGenerator', message, error);
-};
-
-const prepareMessages = (options: PrepareMessagesOptions): { allMessages: Message[]; presetOptions: Record<string, RendererDataValue> } => {
-    const {
-        chatId,
-        chats,
-        userMessage,
-        appSettings,
-        selectedModel,
-        selectedProvider,
-        language,
-        selectedPersona,
-        activeWorkspacePath,
-        systemMode,
-    } = options;
-
-    const dbRefChat = chats.find(c => c.id === chatId);
-    const contextMessages = (dbRefChat?.messages ?? []).slice(-15);
-
-    const chatMessages = [...contextMessages, userMessage].map((msg: Message) => ({
-        ...msg,
-        content: formatMessageContent(msg),
-    }));
-
-    const modelSettings = appSettings?.modelSettings ?? {};
-    const modelConfig = modelSettings[selectedModel] ?? {};
-    const systemPrompt =
-        modelConfig.systemPrompt ??
-        getSystemPrompt(
-            language,
-            selectedPersona?.prompt,
-            selectedProvider,
-            selectedModel
-        );
-    const systemMessage: Message = {
-        role: 'system',
-        content: systemPrompt,
-        id: generateId(),
-        timestamp: new Date(),
-    };
-
-    const workspaceHintMessage: Message | null =
-        systemMode === 'agent' &&
-            typeof activeWorkspacePath === 'string' &&
-            activeWorkspacePath.trim().length > 0
-            ? {
-                role: 'system',
-                content: `Current workspace root: ${activeWorkspacePath}. Use this as default cwd for execute_command and resolve relative file paths under this root unless the user explicitly requests another location.`,
-                id: generateId(),
-                timestamp: new Date(),
-            }
-            : null;
-
-    const presetOptions = getPresetOptions(appSettings, modelConfig);
-
-    return { allMessages: [systemMessage, ...(workspaceHintMessage ? [workspaceHintMessage] : []), ...chatMessages], presetOptions };
-};
-
-const buildModelConversation = (
-    messages: Message[],
-    assistantMessage: Message,
-    toolResults: Message[]
-): Message[] => {
-    return [...messages, assistantMessage, ...toolResults];
-};
-
-const persistToolExecutionMetadata = async (options: {
-    chatId: string;
-    assistantId: string;
-    setChats: React.Dispatch<React.SetStateAction<Chat[]>>;
-    toolCalls: NonNullable<Message['toolCalls']>;
-    toolMessages: Message[];
-    selectedProvider: string;
-    activeModel: string;
-}): Promise<void> => {
-    const { chatId, assistantId, setChats, toolCalls, toolMessages, selectedProvider, activeModel } = options;
-    if (toolCalls.length === 0) {
-        return;
-    }
-    const updates: Partial<Message> = {
-        toolCalls,
-        toolResults: buildStoredToolResults(toolCalls, toolMessages),
-    };
-    setChats(prev => prev.map(chat => (
-        chat.id === chatId
-            ? {
-                ...chat,
-                messages: upsertMessageInChat(chat.messages, assistantId, existing => ({
-                    id: assistantId,
-                    role: 'assistant',
-                    content: '',
-                    timestamp: existing?.timestamp ?? new Date(),
-                    ...existing,
-                    ...updates,
-                    provider: selectedProvider,
-                    model: activeModel,
-                })),
-            }
-            : chat
-    )));
-    await persistAssistantMessage(assistantId, chatId, updates);
-};
-
-const upsertMessageInChat = (
-    messages: Message[],
-    messageId: string,
-    buildMessage: (existing?: Message) => Message
-): Message[] => {
-    const messageIndex = messages.findIndex(message => message.id === messageId);
-    if (messageIndex === -1) {
-        return [...messages, buildMessage()];
-    }
-
-    const nextMessages = [...messages];
-    nextMessages[messageIndex] = buildMessage(nextMessages[messageIndex]);
-    return nextMessages;
-};
-
-const persistAssistantMessage = async (
-    assistantId: string,
-    chatId: string,
-    updates: Partial<Message>
-): Promise<void> => {
-    const updateResult = await window.electron.db.updateMessage(assistantId, updates);
-    if (updateResult.success) {
-        return;
-    }
-
-    await window.electron.db.addMessage({
-        id: assistantId,
-        chatId,
-        role: 'assistant',
-        content: typeof updates.content === 'string' ? updates.content : '',
-        timestamp: new Date(),
-        ...updates,
-    });
-};
-
-const completeDirectImageMessage = async (options: {
-    assistantId: string;
-    chatId: string;
-    userMessage: Message;
-    activeModel: string;
-    selectedProvider: string;
-    setChats: React.Dispatch<React.SetStateAction<Chat[]>>;
-    t: (key: string) => string;
-}): Promise<void> => {
-    const { assistantId, chatId, userMessage, activeModel, selectedProvider, setChats, t } = options;
-    const prompt = getMessageTextContent(userMessage);
-    const requestedCount = extractImageRequestCount(userMessage);
-    const startedAt = performance.now();
-    const toolResult = await window.electron.executeTools(
-        'generate_image',
-        { prompt, count: requestedCount },
-        generateId(),
-        chatId
-    );
-
-    if (!toolResult || typeof toolResult !== 'object') {
-        throw new Error(t('chat.error'));
-    }
-
-    if (!toolResult.success) {
-        throw new Error(toolResult.error ?? t('chat.error'));
-    }
-
-    const images = readToolResultImages(toolResult);
-    if (images.length === 0) {
-        throw new Error(t('chat.imageGenerationNoImages'));
-    }
-
-    const responseTime = Math.round(performance.now() - startedAt);
-    const updates: Partial<Message> = {
-        content: '',
-        images,
-        responseTime,
-        toolResults: [toolResult],
-    };
-
-    setChats(prev => prev.map(chat => (
-        chat.id === chatId
-            ? {
-                ...chat,
-                isGenerating: false,
-                messages: upsertMessageInChat(chat.messages, assistantId, existing => ({
-                    id: assistantId,
-                    role: 'assistant',
-                    content: '',
-                    timestamp: existing?.timestamp ?? new Date(),
-                    ...existing,
-                    ...updates,
-                    provider: selectedProvider,
-                    model: activeModel,
-                })),
-            }
-            : chat
-    )));
-
-    await persistAssistantMessage(assistantId, chatId, updates);
 };
 
 export const useChatGenerator = (
@@ -511,6 +106,7 @@ export const useChatGenerator = (
 
         const isMultiModel = modelsToUse.length > 1;
         const shouldUseDirectImageFlow = isImageOnlyModel(activeModel) || isExplicitImageRequest(userMessage);
+        const intentClassification = classifyAiIntent(userMessage, systemMode);
 
         try {
             const allTools: ToolDefinition[] = shouldUseDirectImageFlow
@@ -524,6 +120,11 @@ export const useChatGenerator = (
                 timestamp: new Date(),
                 provider: modelsToUse[0].provider,
                 model: modelsToUse[0].model,
+                metadata: buildAssistantPresentationMetadata({
+                    intent: intentClassification,
+                    isStreaming: true,
+                    language,
+                }),
                 variants: isMultiModel
                     ? modelsToUse.map((m, idx) => ({
                         id: `${assistantId}-v${idx}`,
@@ -545,17 +146,21 @@ export const useChatGenerator = (
                 await completeDirectImageMessage({
                     assistantId,
                     chatId,
-                    userMessage,
+                    prompt: getMessageTextContent(userMessage),
+                    requestedCount: extractImageRequestCount(userMessage),
                     activeModel,
                     selectedProvider,
                     setChats,
                     t,
+                    intentClassification,
+                    language,
                 });
             } else if (isMultiModel) {
                 await generateMultiModelResponse({
                     chatId, assistantId, userMessage, models: modelsToUse, allTools, chats, setChats,
                     appSettings, language, selectedPersona, activeWorkspacePath, workspaceId, setStreamingStates,
-                    autoReadEnabled, handleSpeak, t, formatChatError, systemMode
+                    autoReadEnabled, handleSpeak, t, formatChatError, systemMode, intentClassification,
+                    getReasoningEffort, createModelToolList, prepareMessages
                 });
             } else {
                 const tools = systemMode === 'agent' ? createModelToolList(allTools ?? []) : [];
@@ -573,7 +178,8 @@ export const useChatGenerator = (
                 await executeToolTurnLoop({
                     initialMessages: allMessages,
                     chatId, assistantId, activeModel, selectedProvider, tools, fullOptions, workspaceId,
-                    autoReadEnabled, handleSpeak, t, setStreamingStates, setChats, activeWorkspacePath, systemMode
+                    autoReadEnabled, handleSpeak, t, language, setStreamingStates, setChats, activeWorkspacePath, systemMode,
+                    intentClassification
                 });
             }
         } catch (e) {
@@ -614,423 +220,3 @@ export const useChatGenerator = (
 
     return { streamingStates, lastChatError, clearChatError, generateResponse, stopGeneration };
 };
-
-const executeToolTurnLoop = async (params: {
-    initialMessages: Message[];
-    chatId: string; assistantId: string; activeModel: string; selectedProvider: string; tools: ToolDefinition[];
-    fullOptions: Record<string, RendererDataValue>; workspaceId: string | undefined; autoReadEnabled: boolean;
-    handleSpeak: (id: string, content: string) => void; t: (key: string) => string;
-    setStreamingStates: React.Dispatch<React.SetStateAction<Record<string, StreamStreamingState>>>;
-    setChats: React.Dispatch<React.SetStateAction<Chat[]>>; activeWorkspacePath: string | undefined;
-    systemMode: 'thinking' | 'agent' | 'fast';
-}) => {
-    const {
-        initialMessages, chatId, assistantId, activeModel, selectedProvider, tools, fullOptions, workspaceId,
-        autoReadEnabled, handleSpeak, t, setStreamingStates, setChats, activeWorkspacePath, systemMode
-    } = params;
-
-    const currentAssistantId = assistantId;
-    let toolIterations = 0;
-    const MAX_TOOL_ITERATIONS = 5;
-    let currentMessages: Message[] = initialMessages;
-    const accumulatedToolCallMap = new Map<string, NonNullable<Message['toolCalls']>[number]>();
-    const accumulatedToolMessages: Message[] = [];
-    let repeatedToolSignatureCount = 0;
-    let lastToolSignature = '';
-
-    while (toolIterations < MAX_TOOL_ITERATIONS) {
-        if (currentMessages.length === 0) { break; }
-
-        const stream = chatStream({
-            messages: currentMessages, model: activeModel, tools, provider: selectedProvider,
-            options: { ...fullOptions, workspaceRoot: activeWorkspacePath, systemMode },
-            chatId, workspaceId, systemMode
-        });
-        const streamStartTime = performance.now();
-
-        const result = await processChatStream({
-            stream, chatId, assistantId: currentAssistantId, setStreamingStates, setChats,
-            streamStartTime, activeModel, selectedProvider, t, autoReadEnabled, handleSpeak
-        });
-
-        if (result.finalToolCalls.length > 0) {
-            const executableToolCalls = result.finalToolCalls.filter(isExecutableToolCall);
-            if (executableToolCalls.length === 0) {
-                const assistantContent = getMessageStringContent(result.finalContent);
-                if (assistantContent.length > 0) {
-                    const updates: Partial<Message> = {
-                        content: assistantContent,
-                        reasoning: result.finalReasoning || undefined,
-                    };
-                    setChats(prev => prev.map(chat => (
-                        chat.id === chatId
-                            ? {
-                                ...chat,
-                                isGenerating: false,
-                                messages: upsertMessageInChat(chat.messages, currentAssistantId, existing => ({
-                                    id: currentAssistantId,
-                                    role: 'assistant',
-                                    content: '',
-                                    timestamp: existing?.timestamp ?? new Date(),
-                                    ...existing,
-                                    ...updates,
-                                    provider: selectedProvider,
-                                    model: activeModel,
-                                })),
-                            }
-                            : chat
-                    )));
-                    await persistAssistantMessage(currentAssistantId, chatId, updates);
-                    await persistToolExecutionMetadata({
-                        chatId,
-                        assistantId: currentAssistantId,
-                        setChats,
-                        toolCalls: Array.from(accumulatedToolCallMap.values()),
-                        toolMessages: accumulatedToolMessages,
-                        selectedProvider,
-                        activeModel,
-                    });
-                    break;
-                }
-                appLogger.warn('useChatGenerator', 'Provider returned only malformed tool calls; failing turn');
-                throw new Error(t('chat.error'));
-            }
-            const toolSignature = executableToolCalls
-                .map(toolCall => `${toolCall.function.name}:${toolCall.function.arguments}`)
-                .sort()
-                .join('|');
-            if (toolSignature === lastToolSignature) {
-                repeatedToolSignatureCount += 1;
-            } else {
-                repeatedToolSignatureCount = 1;
-                lastToolSignature = toolSignature;
-            }
-            const assistantMsg: Message = {
-                id: currentAssistantId, role: 'assistant', content: result.finalContent, timestamp: new Date(),
-                provider: selectedProvider, model: activeModel, toolCalls: executableToolCalls
-            };
-            for (const toolCall of executableToolCalls) {
-                accumulatedToolCallMap.set(toolCall.id, toolCall);
-            }
-
-            const toolResults: Message[] = [];
-            const generatedImages: string[] = [];
-            for (const tc of executableToolCalls) {
-                try {
-                    const executedTool = await executeToolCall(tc, activeWorkspacePath, t, chatId);
-                    generatedImages.push(...executedTool.generatedImages);
-                    toolResults.push(executedTool.toolMessage);
-                    accumulatedToolMessages.push(executedTool.toolMessage);
-                } catch (error) {
-                    const errorMsg = error instanceof Error ? error.message : t('chat.error');
-                    appLogger.error('useChatGenerator', `Tool execution error: ${errorMsg}`, error as Error);
-                    const syntheticToolMessage: Message = {
-                        id: generateId(),
-                        role: 'tool',
-                        content: JSON.stringify({
-                            success: false,
-                            error: errorMsg,
-                            tool: tc.function.name,
-                        }),
-                        toolCallId: tc.id,
-                        timestamp: new Date(),
-                    };
-                    toolResults.push(syntheticToolMessage);
-                    accumulatedToolMessages.push(syntheticToolMessage);
-                }
-            }
-
-            if (generatedImages.length > 0) {
-                const assistantContent = getMessageStringContent(result.finalContent);
-                const finalContent = assistantContent.length > 0
-                    ? assistantContent
-                    : '';
-                const updates: Partial<Message> = {
-                    content: finalContent,
-                    images: generatedImages,
-                    toolCalls: executableToolCalls,
-                    toolResults: buildStoredToolResults(executableToolCalls, toolResults),
-                };
-
-                setChats(prev => prev.map(chat => (
-                    chat.id === chatId
-                        ? {
-                            ...chat,
-                            isGenerating: false,
-                            messages: upsertMessageInChat(chat.messages, currentAssistantId, existing => ({
-                                id: currentAssistantId,
-                                role: 'assistant',
-                                content: '',
-                                timestamp: existing?.timestamp ?? new Date(),
-                                ...existing,
-                                ...updates,
-                                provider: selectedProvider,
-                                model: activeModel,
-                            })),
-                        }
-                        : chat
-                )));
-
-                await persistAssistantMessage(currentAssistantId, chatId, updates);
-                break;
-            }
-
-            const messagesWithToolResults = buildModelConversation(
-                currentMessages,
-                assistantMsg,
-                toolResults
-            );
-            currentMessages = messagesWithToolResults;
-            toolIterations++;
-
-            if (repeatedToolSignatureCount >= 3) {
-                appLogger.warn('useChatGenerator', 'Detected repeated tool-call signature; forcing final completion without tools');
-                const forcedFinalStream = chatStream({
-                    messages: currentMessages, model: activeModel, tools: [], provider: selectedProvider,
-                    options: { ...fullOptions, workspaceRoot: activeWorkspacePath, systemMode },
-                    chatId, workspaceId, systemMode
-                });
-                await processChatStream({
-                    stream: forcedFinalStream,
-                    chatId,
-                    assistantId: currentAssistantId,
-                    setStreamingStates,
-                    setChats,
-                    streamStartTime: performance.now(),
-                    activeModel,
-                    selectedProvider,
-                    t,
-                    autoReadEnabled,
-                    handleSpeak
-                });
-                await persistToolExecutionMetadata({
-                    chatId,
-                    assistantId: currentAssistantId,
-                    setChats,
-                    toolCalls: Array.from(accumulatedToolCallMap.values()),
-                    toolMessages: accumulatedToolMessages,
-                    selectedProvider,
-                    activeModel,
-                });
-                break;
-            }
-        } else {
-            await persistToolExecutionMetadata({
-                chatId,
-                assistantId: currentAssistantId,
-                setChats,
-                toolCalls: Array.from(accumulatedToolCallMap.values()),
-                toolMessages: accumulatedToolMessages,
-                selectedProvider,
-                activeModel,
-            });
-            break;
-        }
-    }
-    if (toolIterations >= MAX_TOOL_ITERATIONS) {
-        appLogger.warn('useChatGenerator', `Tool loop reached max iterations (${MAX_TOOL_ITERATIONS}); forcing final answer without tools`);
-        const finalStream = chatStream({
-            messages: currentMessages, model: activeModel, tools: [], provider: selectedProvider,
-            options: { ...fullOptions, workspaceRoot: activeWorkspacePath, systemMode },
-            chatId, workspaceId, systemMode
-        });
-        await processChatStream({
-            stream: finalStream,
-            chatId,
-            assistantId: currentAssistantId,
-            setStreamingStates,
-            setChats,
-            streamStartTime: performance.now(),
-            activeModel,
-            selectedProvider,
-            t,
-            autoReadEnabled,
-            handleSpeak
-        });
-        await persistToolExecutionMetadata({
-            chatId,
-            assistantId: currentAssistantId,
-            setChats,
-            toolCalls: Array.from(accumulatedToolCallMap.values()),
-            toolMessages: accumulatedToolMessages,
-            selectedProvider,
-            activeModel,
-        });
-    }
-    return currentAssistantId;
-};
-
-const generateMultiModelResponse = async (params: {
-    chatId: string; assistantId: string; userMessage: Message; models: SelectedModelInfo[]; allTools: ToolDefinition[];
-    chats: Chat[]; setChats: React.Dispatch<React.SetStateAction<Chat[]>>; appSettings: AppSettings | undefined;
-    language: string; selectedPersona: { id: string; name: string; description: string; prompt: string } | null | undefined;
-    activeWorkspacePath: string | undefined; workspaceId: string | undefined;
-    setStreamingStates: React.Dispatch<React.SetStateAction<Record<string, StreamStreamingState>>>;
-    autoReadEnabled: boolean; handleSpeak: (id: string, content: string) => void; t: (key: string) => string;
-    formatChatError: (err: CatchError) => string; systemMode: 'thinking' | 'agent' | 'fast';
-}) => {
-    const {
-        chatId, assistantId, userMessage, models, allTools, chats, setChats, appSettings, language,
-        selectedPersona, activeWorkspacePath, workspaceId, setStreamingStates, autoReadEnabled, handleSpeak,
-        t, formatChatError, systemMode
-    } = params;
-    const streamStartTime = performance.now();
-    await orchestrationMultiModelStreams({
-        chatId, assistantId, userMessage, models, allTools, chats, setChats, appSettings, language,
-        selectedPersona, activeWorkspacePath, workspaceId, setStreamingStates, streamStartTime,
-        autoReadEnabled, handleSpeak, t, formatChatError, systemMode
-    });
-};
-
-interface OrchestrationParams {
-    chatId: string; assistantId: string; userMessage: Message; models: SelectedModelInfo[]; allTools: ToolDefinition[];
-    chats: Chat[]; setChats: React.Dispatch<React.SetStateAction<Chat[]>>; appSettings: AppSettings | undefined;
-    language: string; selectedPersona: { id: string; name: string; description: string; prompt: string } | null | undefined;
-    activeWorkspacePath: string | undefined; workspaceId: string | undefined;
-    setStreamingStates: React.Dispatch<React.SetStateAction<Record<string, StreamStreamingState>>>;
-    streamStartTime: number; autoReadEnabled: boolean; handleSpeak: (id: string, content: string) => void;
-    t: (key: string) => string; formatChatError: (err: CatchError) => string; systemMode: 'thinking' | 'agent' | 'fast';
-}
-
-async function orchestrationMultiModelStreams(params: OrchestrationParams) {
-    const {
-        chatId, assistantId, userMessage, models, allTools, chats, setChats, appSettings, language,
-        selectedPersona, activeWorkspacePath, workspaceId, setStreamingStates, streamStartTime,
-        autoReadEnabled, handleSpeak, t, formatChatError, systemMode
-    } = params;
-
-    const promises = models.map(async (modelInfo: SelectedModelInfo, index: number) => {
-        const streamId = `${chatId}-model-${index}-${Date.now()}`;
-        try {
-            const { allMessages, presetOptions } = prepareMessages({
-                chatId, chats, userMessage, appSettings, selectedModel: modelInfo.model,
-                selectedProvider: modelInfo.provider, language, selectedPersona, activeWorkspacePath, systemMode
-            });
-            const reasoningEffort = getReasoningEffort(modelInfo.model, appSettings);
-            const tools = systemMode === 'agent' ? createModelToolList(allTools ?? []) : [];
-
-            const stream = chatStream({
-                messages: allMessages, model: modelInfo.model, tools, provider: modelInfo.provider,
-                options: { ...presetOptions, workspaceRoot: activeWorkspacePath, systemMode, thinking: systemMode === 'thinking', agentToolsEnabled: systemMode === 'agent', reasoningEffort },
-                chatId: streamId, workspaceId, systemMode
-            });
-
-            return await handleModelStreamIteration({
-                stream, chatId, assistantId, index, modelInfo, setStreamingStates, setChats, streamStartTime, t, formatChatError
-            });
-        } catch (e) {
-            const errText = `${t('chat.error')}: ${formatChatError(e as CatchError)}`;
-            return { model: modelInfo.model, provider: modelInfo.provider, content: errText, error: errText };
-        }
-    });
-
-    const results = await Promise.all(promises);
-    await finalizeMultiModelResponse({ results, chatId, assistantId, t, setChats, streamStartTime, autoReadEnabled, handleSpeak });
-}
-
-async function handleModelStreamIteration(params: {
-    stream: AsyncIterable<ChatStreamChunk>; chatId: string; assistantId: string; index: number; modelInfo: SelectedModelInfo;
-    setStreamingStates: React.Dispatch<React.SetStateAction<Record<string, StreamStreamingState>>>;
-    setChats: React.Dispatch<React.SetStateAction<Chat[]>>; streamStartTime: number; t: (key: string) => string;
-    formatChatError: (err: CatchError) => string;
-}) {
-    const { stream, chatId, assistantId, index, modelInfo, setStreamingStates, setChats, streamStartTime } = params;
-    let variantContent = '';
-    let variantReasoning = '';
-    let lastUpdate = 0;
-    let lastStreamingStateUpdate = 0;
-
-    for await (const chunk of stream) {
-        if (chunk.content) { variantContent += chunk.content; }
-        if (chunk.reasoning) { variantReasoning += chunk.reasoning; }
-
-        const now = Date.now();
-        const isMain = index === 0;
-        if (now - lastStreamingStateUpdate >= 80 || !chunk.content) {
-            lastStreamingStateUpdate = now;
-            setStreamingStates((prev: Record<string, StreamStreamingState>) => {
-                const state = prev[chatId] ?? { content: '', reasoning: '', speed: null, variants: {} };
-                const variants = { ...state.variants };
-                variants[index] = { content: variantContent, reasoning: variantReasoning };
-                return {
-                    ...prev,
-                    [chatId]: {
-                        ...state,
-                        content: isMain ? variantContent : state.content,
-                        reasoning: isMain ? variantReasoning : state.reasoning,
-                        variants,
-                    },
-                };
-            });
-        }
-        if (now - lastUpdate > 200 || !chunk.content) {
-            lastUpdate = now;
-            setChats((prev: Chat[]) => prev.map(c => {
-                if (c.id !== chatId) { return c; }
-                return {
-                    ...c,
-                    messages: c.messages.map(m => {
-                        if (m.id !== assistantId) { return m; }
-                        const currentVariants = [...(m.variants ?? [])];
-                        if (!currentVariants[index]) {
-                            currentVariants[index] = {
-                                id: `${assistantId}-v${index}`, content: '', model: modelInfo.model, provider: modelInfo.provider,
-                                timestamp: new Date(), label: modelInfo.model, isSelected: isMain
-                            };
-                        }
-                        currentVariants[index] = { ...currentVariants[index], content: variantContent };
-                        return {
-                            ...m,
-                            content: isMain ? variantContent : m.content,
-                            reasoning: isMain ? variantReasoning : m.reasoning,
-                            variants: currentVariants,
-                        };
-                    })
-                };
-            }));
-        }
-    }
-
-    return {
-        model: modelInfo.model, provider: modelInfo.provider, content: variantContent,
-        reasoning: variantReasoning, responseTime: Math.round(performance.now() - streamStartTime)
-    };
-}
-
-async function finalizeMultiModelResponse(params: {
-    results: ModelStreamResult[]; chatId: string; assistantId: string; t: (key: string) => string;
-    setChats: React.Dispatch<React.SetStateAction<Chat[]>>; streamStartTime: number; autoReadEnabled: boolean;
-    handleSpeak: (id: string, content: string) => void;
-}) {
-    const { results, chatId, assistantId, t, setChats, streamStartTime, autoReadEnabled, handleSpeak } = params;
-    const finalResponseTime = Math.round(performance.now() - streamStartTime);
-    const finalVariants = results.map((r, idx) => ({
-        id: `${assistantId}-v${idx}`, content: r.content, model: r.model, provider: r.provider,
-        timestamp: new Date(), label: r.model, isSelected: idx === 0, error: r.error
-    }));
-
-    const finalContent = results[0]?.content ?? '';
-    const finalReasoning = results[0]?.reasoning;
-
-    setChats((prev: Chat[]) => prev.map(c => {
-        if (c.id !== chatId) { return c; }
-        let title = c.title;
-        if (c.messages.length <= 2 && finalContent) {
-            title = finalContent.split('\n')[0].replace(/[#*`]/g, '').trim().slice(0, 50) || t('sidebar.newChat');
-        }
-        return {
-            ...c, title, isGenerating: false,
-            messages: c.messages.map(m => m.id === assistantId ? {
-                ...m, content: finalContent, reasoning: finalReasoning, responseTime: finalResponseTime,
-                variants: finalVariants.length > 1 ? finalVariants : undefined
-            } : m)
-        };
-    }));
-
-    await window.electron.db.updateMessage(assistantId, {
-        content: finalContent, reasoning: finalReasoning, responseTime: finalResponseTime,
-        variants: finalVariants.length > 1 ? finalVariants : undefined
-    });
-
-    if (autoReadEnabled && finalContent) { handleSpeak(assistantId, finalContent); }
-}

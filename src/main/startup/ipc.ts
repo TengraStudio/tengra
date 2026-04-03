@@ -4,6 +4,7 @@ import { registerAuditIpc } from '@main/ipc/audit';
 import { registerAuthIpc } from '@main/ipc/auth';
 import { registerBackupIpc } from '@main/ipc/backup';
 import { registerBrainIpcHandlers } from '@main/ipc/brain';
+import { registerClipboardIpc } from '@main/ipc/clipboard';
 import { registerCodeIntelligenceIpc } from '@main/ipc/code-intelligence';
 import { registerCodeSandboxIpc } from '@main/ipc/code-sandbox';
 import { registerCollaborationIpc } from '@main/ipc/collaboration';
@@ -75,6 +76,7 @@ export function registerIpcHandlers(
     const dockerService = container.resolve<DockerService>('dockerService');
     // Registers
     registerWindowIpc(getMainWindow, allowedFileRoots, services.settingsService);
+    registerClipboardIpc(getMainWindow);
     registerLazyServicesIpc();
     registerContractIpc();
     registerCodeSandboxIpc(getMainWindow);
@@ -116,6 +118,7 @@ export function registerIpcHandlers(
         codeIntelligenceService: services.codeIntelligenceService,
         contextRetrievalService: services.contextRetrievalService,
         databaseService: services.databaseService,
+        localeService: services.localeService,
         chatSessionRegistryService: services.chatSessionRegistryService,
         rateLimitService: services.rateLimitService,
     });

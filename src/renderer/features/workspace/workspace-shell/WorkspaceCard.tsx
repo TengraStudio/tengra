@@ -151,6 +151,11 @@ const WorkspaceCardInfo: React.FC<{ workspace: Workspace }> = ({ workspace }) =>
 
 const WorkspaceCardFooter: React.FC<{ workspace: Workspace }> = ({ workspace }) => {
     const { t } = useWorkspaceCardSurfaceContext();
+    const statusTranslationKey: Record<Workspace['status'], string> = {
+        active: 'workspaces.statusActive',
+        archived: 'workspaces.statusArchived',
+        draft: 'workspaces.statusDraft'
+    };
     return (
         <div className="pt-4 border-t border-border/40 mt-auto flex items-center justify-between text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
@@ -158,7 +163,7 @@ const WorkspaceCardFooter: React.FC<{ workspace: Workspace }> = ({ workspace }) 
                 {new Date(workspace.createdAt).toLocaleDateString()}
             </span>
             <span className={cn("px-2 py-0.5 rounded-full bg-muted/50  text-xxs font-bold ", workspace.status === 'active' ? "text-success" : "")}>
-                {workspace.status === 'active' ? t('common.active') : workspace.status}
+                {t(statusTranslationKey[workspace.status])}
             </span>
         </div>
     );

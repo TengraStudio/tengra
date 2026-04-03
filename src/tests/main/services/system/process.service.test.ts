@@ -1,5 +1,10 @@
+import * as os from 'os';
+import * as path from 'path';
+
 import { ProcessService } from '@main/services/system/process.service';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const TEST_CWD = path.join(os.tmpdir(), 'tengra-tests', 'process-service');
 
 vi.mock('@main/logging/logger', () => ({
     appLogger: { info: vi.fn(), error: vi.fn(), debug: vi.fn(), warn: vi.fn() }
@@ -29,6 +34,12 @@ const mockPtyProcess = {
     write: vi.fn()
 };
 
+interface PseudoExitEvent {
+    exitCode: number;
+}
+
+let latestExitHandler: ((event: PseudoExitEvent) => void) | null = null;
+
 vi.mock('node-pty', () => ({
     spawn: vi.fn(() => mockPtyProcess)
 }));
@@ -53,6 +64,11 @@ describe('ProcessService', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        latestExitHandler = null;
+        mockPtyProcess.onExit.mockImplementation((handler: (event: PseudoExitEvent) => void) => {
+            latestExitHandler = handler;
+            return mockPtyProcess;
+        });
         service = new ProcessService();
     });
 
@@ -62,13 +78,13 @@ describe('ProcessService', () => {
 
     describe('spawn', () => {
         it('should spawn a process and return an id', () => {
-            const id = service.spawn('node', ['--version'], '/tmp');
+            const id = service.spawn('node', ['--version'], TEST_CWD);
             expect(typeof id).toBe('string');
             expect(id.length).toBeGreaterThan(0);
         });
 
         it('should register the process in running tasks', () => {
-            const id = service.spawn('node', [], '/tmp');
+            const id = service.spawn('node', [], TEST_CWD);
             const tasks = service.getRunningTasks();
             expect(tasks.some(t => t.id === id)).toBe(true);
         });
@@ -76,7 +92,7 @@ describe('ProcessService', () => {
 
     describe('kill', () => {
         it('should kill an existing process', () => {
-            const id = service.spawn('node', [], '/tmp');
+            const id = service.spawn('node', [], TEST_CWD);
             const result = service.kill(id);
             expect(result).toBe(true);
             expect(mockPtyProcess.kill).toHaveBeenCalled();
@@ -84,6 +100,27 @@ describe('ProcessService', () => {
 
         it('should return false for unknown process', () => {
             expect(service.kill('nonexistent')).toBe(false);
+        });
+    });
+
+    describe('lifecycle', () => {
+        it('removes task when process exits with success', () => {
+            const id = service.spawn('node', [], TEST_CWD);
+            expect(service.getRunningTasks().some(task => task.id === id)).toBe(true);
+
+            latestExitHandler?.({ exitCode: 0 });
+
+            expect(service.getRunningTasks().some(task => task.id === id)).toBe(false);
+        });
+
+        it('keeps task record when process exits with failure', () => {
+            const id = service.spawn('node', [], TEST_CWD);
+            expect(service.getRunningTasks().some(task => task.id === id)).toBe(true);
+
+            latestExitHandler?.({ exitCode: 1 });
+
+            const failedTask = service.getRunningTasks().find(task => task.id === id);
+            expect(failedTask?.status).toBe('failed');
         });
     });
 
@@ -95,7 +132,7 @@ describe('ProcessService', () => {
 
     describe('resize', () => {
         it('should resize a running process', () => {
-            const id = service.spawn('node', [], '/tmp');
+            const id = service.spawn('node', [], TEST_CWD);
             expect(service.resize(id, 120, 40)).toBe(true);
             expect(mockPtyProcess.resize).toHaveBeenCalledWith(120, 40);
         });
@@ -107,7 +144,7 @@ describe('ProcessService', () => {
 
     describe('write', () => {
         it('should write to a running process', () => {
-            const id = service.spawn('node', [], '/tmp');
+            const id = service.spawn('node', [], TEST_CWD);
             expect(service.write(id, 'hello')).toBe(true);
             expect(mockPtyProcess.write).toHaveBeenCalledWith('hello');
         });

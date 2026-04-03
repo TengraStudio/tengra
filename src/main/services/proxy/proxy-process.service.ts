@@ -16,6 +16,8 @@ import { JsonObject } from '@shared/types/common';
 import { AppErrorCode, getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
+import { validateOAuthTimeoutMs } from './proxy-validation.util';
+
 /**
  * Performance budgets in milliseconds for ProxyProcessManager operations
  */
@@ -40,6 +42,13 @@ interface ProxyRuntimeLaunchConfig {
     proxyApiKey: string;
 }
 
+interface OAuthTimeoutConfig {
+    default?: number;
+    codex?: number;
+    claude?: number;
+    antigravity?: number;
+}
+
 export class ProxyProcessManager {
     private child: ChildProcess | null = null;
     private currentPort: number = 8317;
@@ -60,6 +69,7 @@ export class ProxyProcessManager {
         }
 
         try {
+            await this.ensureBridgePortAvailable(1455);
             // 1. Ensure binary exists (build if needed)
             const binaryPath = await this.ensureBinary();
 
@@ -85,10 +95,13 @@ export class ProxyProcessManager {
         } catch (error) {
             appLogger.error('Proxy', `Failed to start embedded proxy: ${getErrorMessage(error)}`);
             this.stopSync();
+            const errorMessage = getErrorMessage(error);
             return {
                 running: false,
-                error: getErrorMessage(error),
-                errorCode: AppErrorCode.PROXY_START_FAILED
+                error: errorMessage,
+                errorCode: errorMessage.toLowerCase().includes('1455')
+                    ? AppErrorCode.PROXY_PORT_IN_USE
+                    : AppErrorCode.PROXY_START_FAILED
             };
         }
     }
@@ -139,6 +152,7 @@ export class ProxyProcessManager {
         persistent?: boolean
     ): void {
         appLogger.info('Proxy', `Spawning ${binaryPath} with port=${runtimeConfig.port}`);
+        const oauthTimeoutEnv = this.buildOAuthTimeoutEnv();
 
         this.child = spawn(
             binaryPath,
@@ -157,6 +171,7 @@ export class ProxyProcessManager {
                     TENGRA_MASTER_KEY_HEX: this.authService.getRuntimeMasterKeyHex() ?? '',
                     // OS native encryption hint
                     TENGRA_USE_OS_SECURITY: 'true',
+                    ...oauthTimeoutEnv,
                 }
             }
         );
@@ -186,6 +201,41 @@ export class ProxyProcessManager {
         });
     }
 
+    private buildOAuthTimeoutEnv(): Record<string, string> {
+        const settings = this.settingsService.getSettings();
+        const timeoutConfig = settings.proxy?.oauthTimeoutMs as OAuthTimeoutConfig | undefined;
+        if (!timeoutConfig) {
+            return {};
+        }
+
+        const env: Record<string, string> = {};
+        const timeoutEntries: Array<{
+            key: keyof OAuthTimeoutConfig;
+            envKey: string;
+        }> = [
+            { key: 'default', envKey: 'TENGRA_OAUTH_TIMEOUT_SECS' },
+            { key: 'codex', envKey: 'TENGRA_OAUTH_TIMEOUT_CODEX_SECS' },
+            { key: 'claude', envKey: 'TENGRA_OAUTH_TIMEOUT_CLAUDE_SECS' },
+            { key: 'antigravity', envKey: 'TENGRA_OAUTH_TIMEOUT_ANTIGRAVITY_SECS' },
+        ];
+
+        for (const entry of timeoutEntries) {
+            const timeoutMs = timeoutConfig[entry.key];
+            if (timeoutMs === undefined) {
+                continue;
+            }
+
+            const validationError = validateOAuthTimeoutMs(timeoutMs);
+            if (validationError) {
+                throw new Error(`Invalid OAuth timeout for ${entry.key}: ${validationError}`);
+            }
+
+            env[entry.envKey] = Math.round(timeoutMs / 1000).toString();
+        }
+
+        return env;
+    }
+
     private async waitForHealthy(port: number, timeoutMs: number = 20000): Promise<void> {
         const start = Date.now();
         while (Date.now() - start < timeoutMs) {
@@ -204,6 +254,31 @@ export class ProxyProcessManager {
             socket.on('connect', () => {
                 socket.end();
                 resolve(true);
+            });
+            socket.on('error', () => {
+                resolve(false);
+            });
+        });
+    }
+
+    private async ensureBridgePortAvailable(port: number): Promise<void> {
+        const isOpen = await this.isPortAcceptingConnections(port);
+        if (isOpen) {
+            throw new Error(`OAuth bridge callback port ${port} is already occupied`);
+        }
+    }
+
+    private async isPortAcceptingConnections(port: number): Promise<boolean> {
+        return await new Promise((resolve) => {
+            const socket = net.createConnection(port, '127.0.0.1');
+            socket.setTimeout(250);
+            socket.on('connect', () => {
+                socket.destroy();
+                resolve(true);
+            });
+            socket.on('timeout', () => {
+                socket.destroy();
+                resolve(false);
             });
             socket.on('error', () => {
                 resolve(false);
@@ -398,6 +473,12 @@ export class ProxyProcessManager {
             if (jsonContent) {
                 void this.handleAuthUpdateFromProxy(jsonContent);
             }
+            return;
+        }
+        if (line.includes('__TENGRA_AUTH_UPDATE_FAILURE__:')) {
+            const parts = line.split('__TENGRA_AUTH_UPDATE_FAILURE__:');
+            const jsonContent = parts[1]?.trim();
+            appLogger.error('Proxy', `OAuth callback DB write failure: ${jsonContent ?? 'unknown'}`);
             return;
         }
 

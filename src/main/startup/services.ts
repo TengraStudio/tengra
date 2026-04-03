@@ -15,13 +15,14 @@ import { FileChangeTracker } from '@main/services/data/file-change-tracker.servi
 import { FileSystemService } from '@main/services/data/filesystem.service';
 import { ImagePersistenceService } from '@main/services/data/image-persistence.service';
 import { ExportService } from '@main/services/export/export.service';
+import { CronSchedulerService } from '@main/services/external/cron-scheduler.service';
 import { FeatureFlagService } from '@main/services/external/feature-flag.service';
 import { HttpService } from '@main/services/external/http.service';
 import type { LogoService } from '@main/services/external/logo.service';
-import { CronSchedulerService } from '@main/services/external/cron-scheduler.service';
+import { MarketplaceService } from '@main/services/external/marketplace.service';
 import { NotificationDispatcherService } from '@main/services/external/notification-dispatcher.service';
-import { SocialMediaService } from '@main/services/external/social-media.service';
 import { RuleService } from '@main/services/external/rule.service';
+import { SocialMediaService } from '@main/services/external/social-media.service';
 import { WebService } from '@main/services/external/web.service';
 import type { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { AgentService } from '@main/services/llm/agent.service';
@@ -75,6 +76,7 @@ import {
     HealthCheckService,
 } from '@main/services/system/health-check.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
+import { LocaleService } from '@main/services/system/locale.service';
 import { NetworkService } from '@main/services/system/network.service';
 import { PowerManagerService } from '@main/services/system/power-manager.service';
 import { ProcessService } from '@main/services/system/process.service';
@@ -84,7 +86,6 @@ import { RuntimeHealthService } from '@main/services/system/runtime-health.servi
 import { RuntimeManifestService } from '@main/services/system/runtime-manifest.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { SystemService } from '@main/services/system/system.service';
-import { LocaleService } from '@main/services/system/locale.service';
 import type { UpdateService } from '@main/services/system/update.service';
 import { UtilityProcessService } from '@main/services/system/utility-process.service';
 import { DockerBackend } from '@main/services/terminal/backends/docker.backend';
@@ -99,7 +100,6 @@ import type { SSHService } from '@main/services/workspace/ssh.service';
 import { TerminalService } from '@main/services/workspace/terminal.service';
 import { TerminalSmartService } from '@main/services/workspace/terminal-smart.service';
 import type { WorkspaceService } from '@main/services/workspace/workspace.service';
-import { MarketplaceService } from '@main/services/external/marketplace.service';
 import {
     bootstrapCoreData,
     initDeferredServices,
@@ -398,8 +398,8 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
 function registerDataServices() {
     container.register(
         'databaseClientService',
-        (ebs, pm) => new DatabaseClientService(ebs as EventBusService, pm as ProcessManagerService),
-        ['eventBusService', 'processManagerService']
+        (ebs, pm, ds) => new DatabaseClientService(ebs as EventBusService, pm as ProcessManagerService, ds as DataService),
+        ['eventBusService', 'processManagerService', 'dataService']
     );
     container.register(
         'databaseService',

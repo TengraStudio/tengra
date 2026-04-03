@@ -5,6 +5,7 @@ import React, { createContext, ReactNode, useCallback, useContext, useEffect, us
 import { useSettings } from '@/context/SettingsContext';
 import { localeRegistry } from '@/i18n/locale-registry.service';
 import { readCachedSettings } from '@/store/settings.store';
+import { translateErrorMessage } from '@/utils/error-handler.util';
 
 export type BuiltInLanguage = 'en';
 export type Language = string;
@@ -14,6 +15,7 @@ const translations: Partial<Record<BuiltInLanguage, TranslationKeys>> = {
     en: enLocalePack.translations
 };
 const DEFAULT_LANGUAGE = 'en';
+const DEFAULT_TRANSLATION_FALLBACK_KEY = 'common.notAvailable';
 
 const getTranslationNode = (root: JsonValue, path: string): JsonValue | null => {
     const parts = path.split('.');
@@ -33,7 +35,7 @@ const getTranslationNode = (root: JsonValue, path: string): JsonValue | null => 
 
 const interpolateTranslation = (
     text: string,
-    options?: Record<string, string | number>
+    options?: Record<string, unknown>
 ): string => {
     if (!options) {
         return text;
@@ -48,7 +50,7 @@ const selectTranslationText = (
     locale: string,
     translationRoot: JsonValue,
     path: string,
-    options?: Record<string, string | number>
+    options?: Record<string, unknown>
 ): string => {
     let translationValue = getTranslationNode(translationRoot, path);
 
@@ -61,7 +63,17 @@ const selectTranslationText = (
     }
 
     if (typeof translationValue !== 'string') {
-        return path;
+        const defaultFallback = getTranslationNode(translationRoot, DEFAULT_TRANSLATION_FALLBACK_KEY);
+        if (typeof defaultFallback === 'string') {
+            return interpolateTranslation(defaultFallback, options);
+        }
+
+        const englishFallback = getTranslationNode(translations.en as JsonValue, DEFAULT_TRANSLATION_FALLBACK_KEY);
+        if (typeof englishFallback === 'string') {
+            return interpolateTranslation(englishFallback, options);
+        }
+
+        return '';
     }
 
     return interpolateTranslation(translationValue, options);
@@ -70,7 +82,7 @@ const selectTranslationText = (
 interface LanguageContextType {
     language: Language;
     setLanguage: (lang: Language) => Promise<void>;
-    t: (path: string, options?: Record<string, string | number>) => string;
+    t: (path: string, options?: Record<string, unknown>) => string;
     isRTL: boolean;
     formatDate: (date: Date | number, options?: Intl.DateTimeFormatOptions) => string;
     formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string;
@@ -160,7 +172,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
             ?? translations[language as BuiltInLanguage]
             ?? translations.en) as JsonValue;
 
-        return (path: string, options?: Record<string, string | number>): string => {
+        return (path: string, options?: Record<string, unknown>): string => {
             return selectTranslationText(language, activeTranslations, path, options);
         };
     }, [language, localeRegistryVersion]);
@@ -200,7 +212,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 export function useLanguage() {
     const context = useContext(LanguageContext);
     if (!context) {
-        throw new Error('useLanguage must be used within a LanguageProvider');
+        throw new Error(translateErrorMessage('useLanguage must be used within a LanguageProvider'));
     }
     return context;
 }
@@ -217,7 +229,7 @@ export function useTranslation(lang?: Language) {
         const activeTranslations = (localeRegistry.getTranslations(resolvedLanguage)
             ?? translations[resolvedLanguage as BuiltInLanguage]
             ?? translations.en) as JsonValue;
-        const get = (path: string, options?: Record<string, string | number>): string => {
+        const get = (path: string, options?: Record<string, unknown>): string => {
             return selectTranslationText(resolvedLanguage, activeTranslations, path, options);
         };
         return {

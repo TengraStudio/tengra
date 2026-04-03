@@ -203,6 +203,8 @@
     },
     "advanced": {
       "title": "Advanced Engine",
+      "subtitle": "High-Frequency Tuning",
+      "description": "Fine-tune the underlying neural orchestration, service synchronization, and inference parameters.",
       "systemInfo": "System Info",
       "platform": "PLATFORM",
       "orchestration": "Model Orchestration",
@@ -213,6 +215,7 @@
       "tokensPerSec": "Tokens/sec",
       "tokensPerSecShort": "t/s",
       "latency": "Latency",
+      "throughputSnapshot": "Engine Throughput Snapshot",
       "serviceIntervals": "Service Intervals",
       "serviceIntervalsDesc": "Configure how often background services refresh data.",
       "modelUpdateInterval": "Model Update Interval",
@@ -538,6 +541,16 @@
     "attachments": {
       "image": "Image",
       "document": "Document",
+      "summary": {
+        "videoHeader": "[Video attachment: {{name}} ({{mimeType}})]",
+        "videoPreviewExtracted": "Preview frame extracted for multimodal analysis.",
+        "videoPreviewUnavailable": "Preview frame unavailable.",
+        "audioHeader": "[Audio attachment: {{name}} ({{mimeType}})]",
+        "audioDuration": "Duration: {{seconds}} seconds.",
+        "audioDurationUnavailable": "Duration unavailable.",
+        "audioTranscriptionHint": "Transcription requested: summarize key spoken content when supported.",
+        "genericFile": "[Attached file: {{name}} ({{mimeType}})]"
+      },
       "validation": {
         "maxSizeExceeded": "File \"{{name}}\" exceeds maximum size of {{maxSizeMb}}MB",
         "unsupportedType": "File type \"{{type}}\" is not supported",
@@ -587,7 +600,20 @@
       "openGithubToEnter": "Open GitHub to enter the code",
       "waitingForLogin": "Waiting for sign-in...",
       "connectedSuccessfully": "Connected successfully.",
-      "connectionFailedGeneric": "Connection failed."
+      "connectionFailedGeneric": "Connection failed.",
+      "anotherFlowRunning": "Another authentication flow is already running.",
+      "preparingConnection": "Preparing connection...",
+      "connecting": "Connecting...",
+      "connectionCancelled": "Connection cancelled.",
+      "savingSession": "Saving session...",
+      "failedWithReason": "Failed: {{reason}}",
+      "providerSuccess": "{{provider}} success!",
+      "providerFailed": "{{provider}} failed",
+      "providerTimeout": "{{provider}} timeout",
+      "failedUrlForProvider": "Failed URL for {{provider}}",
+      "githubConnectionFailed": "GitHub connection failed.",
+      "copilotConnectionFailed": "Copilot connection failed.",
+      "githubUser": "GitHub User"
     },
     "build": {
       "buildCommandPlaceholder": "npm run build",
@@ -601,8 +627,12 @@
     "chat": {
       "placeholder": "Type a message...",
       "streaming": "Typing...",
+      "streamError": "Stream error",
       "clear": "Clear",
       "error": "Error",
+      "toolLoop": {
+        "limitReachedPreserved": "Tool loop limit reached before a final answer was produced. Previous tool results were preserved for inspection."
+      },
       "quotaExceeded": "Quota or rate limit exceeded. This may be caused by too many requests or exhausted quota. Please wait a few minutes and try again.",
       "rateLimitExceeded": "Rate limit or quota exceeded. Please wait a few minutes and try again.",
       "modelComparison": "Model Comparison",
@@ -719,6 +749,10 @@
       "errorDismiss": "Dismiss",
       "toolArgumentsTooLarge": "Tool arguments exceed the maximum size limit.",
       "imageGenerationNoImages": "Image generation returned no images.",
+      "attachmentPrompt": {
+        "label": "Attachment: {{name}}",
+        "analyzeMedia": "Analyze attached media."
+      },
       "running": "Running"
     },
     "codeSandbox": {
@@ -831,6 +865,7 @@
       "itemsSelected_one": "{{count}} item selected",
       "itemsSelected_other": "{{count}} items selected",
       "unknownError": "An unknown error occurred",
+      "notAvailable": "N/A",
       "operationFailed": "Operation failed.",
       "invalidInput": "Invalid input.",
       "networkError": "Network error.",
@@ -893,7 +928,11 @@
       "saving": "Saving",
       "size": "Size",
       "type": "Type",
-      "version": "Version"
+      "version": "Version",
+      "yes": "Yes",
+      "no": "No",
+      "disable": "Disable",
+      "ellipsis": "..."
     },
     "contextRetrieval": {
       "health": {
@@ -1017,6 +1056,21 @@
     "developer": {
       "title": "Developer Settings",
       "subtitle": "Debug and system tools",
+      "coreSystemDiagnostics": "Core System Diagnostics",
+      "dataProtocols": "Data Protocols",
+      "executeClear": "Execute Clear",
+      "reloadAssets": "Reload Assets",
+      "exportSchema": "Export Schema",
+      "exportSchemaDesc": "Download current engine settings and ui layout",
+      "restoreFromSnapshot": "Restore configuration from snapshot",
+      "uxDiagnostics": "UX Diagnostics",
+      "responsiveStateMatrix": "Responsive State Matrix",
+      "activeViewport": "Active Viewport",
+      "renderResolution": "Render Resolution",
+      "motionEngineDebug": "Motion Engine Debug",
+      "pulsesRegistered": "{{count}} Pulses Registered",
+      "forceReduced": "Force Reduced",
+      "performanceOverview": "Performance Overview",
       "clearCache": "Clear cache",
       "clearCacheDesc": "Clear app cache and session data.",
       "cacheCleared": "Cache cleared successfully.",
@@ -1059,6 +1113,7 @@
       "containers": "Containers",
       "loading": "Loading containers...",
       "failedLoad": "Couldn't load containers.",
+      "logsError": "Error: {{message}}",
       "noContainers": "No containers found.",
       "selectContainer": "Select a container to view details.",
       "notRunning": "Docker isn't running",
@@ -1120,12 +1175,19 @@
     },
     "errors": {
       "unexpected": "Sorry, an error occurred.",
+      "unknown": "Unknown error",
       "somethingWentWrong": "Something went wrong:",
       "unexpectedDescription": "The app encountered an unexpected error.",
       "errorMessageLabel": "Error message",
       "technicalDetails": "Technical Details (Stack Trace)",
       "copyDetails": "Copy details",
       "rootNotFound": "Root element not found",
+      "context": {
+        "useAccessibilityProvider": "useAccessibility must be used within an AccessibilityProvider",
+        "useActivityBarProvider": "useActivityBar must be used within ActivityBarProvider",
+        "usePanelLayoutProvider": "usePanelLayout must be used within PanelLayoutProvider",
+        "useStatusBarProvider": "useStatusBar must be used within StatusBarProvider"
+      },
       "ipcValidation": {
         "hostRequired": "Host is required.",
         "usernameRequired": "Username is required.",
@@ -1289,7 +1351,48 @@
         "path_traversal_detected": "Access denied: path traversal detected",
         "path_must_be_absolute": "Access denied: path must be absolute",
         "path_must_be_within_var_log": "Access denied: path must remain within /var/log",
-        "path_outside_allowed_directories": "Access denied: path must remain inside allowed directories"
+      "path_outside_allowed_directories": "Access denied: path must remain inside allowed directories",
+      "defaultNewFolderName": "new-folder",
+      "uploadSkippedConflict": "Upload skipped due to conflict policy",
+      "transferDirectionUpload": "Upload",
+      "transferDirectionDownload": "Download",
+      "transferStatusQueued": "Queued",
+      "transferStatusRunning": "Running",
+      "transferStatusDone": "Done",
+      "transferStatusFailed": "Failed",
+      "fileSizeKilobytes": "{{size}} KB",
+      "reconnectStateConnected": "Connected",
+      "reconnectStateReconnecting": "Reconnecting",
+      "reconnectStateFailed": "Failed"
+    },
+      "workspace": {
+        "not_ready": "Workspace is not ready.",
+        "validation": {
+          "host_required": "Host is required.",
+          "username_required": "Username is required.",
+          "mount_id_required": "Mount ID is required.",
+          "mount_name_required": "Mount name is required.",
+          "root_path_required": "Root path is required.",
+          "entry_name_required": "Entry name is required.",
+          "entry_path_required": "Entry path is required.",
+          "invalid_parent_path": "Invalid parent path.",
+          "name_required": "Name is required.",
+          "invalid_name": "Invalid name.",
+          "reserved_name_not_allowed": "Reserved name not allowed.",
+          "invalid_path": "Invalid path.",
+          "invalid_mount_configuration": "Invalid mount configuration.",
+          "ssh_host_required": "SSH host is required.",
+          "ssh_username_required": "SSH username is required.",
+          "invalid_entry": "Invalid entry.",
+          "entry_mount_id_mismatch": "Entry mount ID mismatch.",
+          "limit_exceeded": "{{name}} limit exceeded ({{count}}/{{limit}})."
+        }
+      },
+      "git": {
+        "cancel_failed": "Failed to cancel active Git operation.",
+        "invalid_branch_name": "Invalid branch name.",
+        "invalid_branch_names": "Invalid branch names.",
+        "invalid_parameters": "Invalid Git parameters."
       },
       "settings": {
         "operationFailed": "Settings operation failed.",
@@ -1298,7 +1401,30 @@
         "invalid_payload": "Settings payload must be a non-array object"
       },
       "ipc": {
-        "bridgeUnavailable": "IPC bridge is not available."
+        "bridgeUnavailable": "IPC bridge is not available.",
+        "contractMismatch": "IPC contract version mismatch detected. Please restart Tengra to update both processes.",
+        "negotiationFailed": "IPC contract negotiation failed: {{reason}}",
+        "requestFailedAfterAttempts": "IPC request \"{{channel}}\" failed after {{attempts}} attempts: {{reason}}"
+      },
+      "context": {
+        "useWorkspaceProvider": "useWorkspace must be used within a WorkspaceProvider.",
+        "useWorkspaceSelectionProvider": "useWorkspaceSelection must be used within a WorkspaceProvider.",
+        "useWorkspaceLibraryProvider": "useWorkspaceLibrary must be used within a WorkspaceProvider.",
+        "useWorkspaceTerminalProvider": "useWorkspaceTerminal must be used within a WorkspaceProvider.",
+        "useThemeProvider": "useTheme must be used within a ThemeProvider.",
+        "useSettingsProvider": "useSettings must be used within a SettingsProvider.",
+        "useLanguageProvider": "useLanguage must be used within a LanguageProvider.",
+        "useModelProvider": "useModel must be used within a ModelProvider.",
+        "useAuthProvider": "useAuth must be used within an AuthProvider.",
+        "useAuthLanguageProvider": "useAuthLanguage must be used within an AuthProvider.",
+        "useAuthSettingsUiProvider": "useAuthSettingsUi must be used within an AuthProvider.",
+        "useChatProvider": "useChat must be used within a ChatProvider.",
+        "useChatHeaderProvider": "useChatHeader must be used within a ChatProvider.",
+        "useChatShellProvider": "useChatShell must be used within a ChatProvider.",
+        "useChatLibraryProvider": "useChatLibrary must be used within a ChatProvider.",
+        "useChatComposerProvider": "useChatComposer must be used within a ChatProvider.",
+        "useChatWindowCommandProvider": "useChatWindowCommand must be used within a ChatProvider.",
+        "useChatListeningProvider": "useChatListening must be used within a ChatProvider."
       },
       "auth": {
         "operationTimeout": "{{label}} timed out after {{timeoutMs}}ms"
@@ -1502,6 +1628,8 @@
       "inRebase": "In rebase",
       "yes": "Yes",
       "no": "No",
+      "disable": "Disable",
+      "ellipsis": "...",
       "branch": "Branch",
       "na": "N/A",
       "noRebasePlan": "No rebase plan loaded.",
@@ -1814,6 +1942,8 @@
       "loadError": "Marketplace data could not be loaded.",
       "installSuccess": "{{name}} installed successfully.",
       "installFailure": "Installation failed.",
+      "uninstallSuccess": "Uninstalled successfully.",
+      "uninstallFailure": "Uninstall failed.",
       "networkError": "A network error occurred.",
       "syncing": "Syncing Marketplace",
       "authorBy": "by {{author}}",
@@ -1821,14 +1951,19 @@
       "preview": "PREVIEW",
       "tabs": {
         "mcp": "MCP Modules",
+        "skills": "Skills",
         "themes": "Visual Themes",
         "personas": "Agent Personalities",
         "models": "AI Models",
-        "prompts": "Prompt Library"
+        "prompts": "Prompt Library",
+        "languages": "Languages"
       },
       "mcp": {
         "title": "Model Context Protocol",
         "description": "Powerful, secure, and extensible interfaces for your assistant. Connect to your system, network, and tools with precision.",
+        "localLoadError": "Failed to load local MCP modules.",
+        "toggleError": "Failed to toggle MCP.",
+        "uninstallError": "Failed to uninstall MCP.",
         "search": "Search modules...",
         "filters": {
           "all": "All",
@@ -1843,6 +1978,9 @@
           "tools": "Available Tools",
           "modules_found": "Modules Found"
         },
+        "localLoadError": "Failed to load local MCP modules.",
+        "toggleError": "Failed to toggle MCP.",
+        "uninstallError": "Failed to uninstall MCP.",
         "plugins": {
           "filesystem": {
             "description": "File read, write, list, and management tools (including zip, download, etc.)"
@@ -2699,6 +2837,7 @@
         "appearance": "Appearance",
         "system": "System",
         "models": "Models",
+        "skills": "Skills",
         "accounts": "Connected Accounts",
         "personas": "Personas",
         "speech": "Speech",
@@ -2709,7 +2848,28 @@
         "images": "Media",
         "mcpServers": "MCP Servers",
         "accessibility": "Accessibility",
-        "socialMedia": "Social Media"
+      "socialMedia": "Social Media"
+      },
+      "skills": {
+        "description": "Enable, edit, and install reusable skills that are injected into model prompts.",
+        "libraryTitle": "Skill Library",
+        "libraryDescription": "Manage your active skills and quickly switch between them.",
+        "newSkill": "New",
+        "empty": "No skills yet. Create one to get started.",
+        "noDescription": "No description",
+        "editorTitle": "Skill Editor",
+        "editorDescription": "Write instructions that will be appended to chat system prompts.",
+        "marketplaceTitle": "Skill Marketplace",
+        "marketplaceDescription": "Install ready-made skills and customize them after install.",
+        "marketplaceEmpty": "No marketplace skills available.",
+        "fields": {
+          "name": "Name",
+          "provider": "Provider",
+          "providerDescription": "Use \"all\" for all providers, or a specific provider key.",
+          "description": "Description",
+          "content": "Prompt Content",
+          "enabled": "Enabled"
+        }
       },
       "categories": {
         "general": "General",
@@ -2798,6 +2958,14 @@
       "livePreviewDescription": "See the current theme and typography choices together before moving on.",
       "previewHeading": "Readable settings, faster scanning",
       "previewBody": "The new type system reduces visual noise, improves hierarchy, and makes setting groups easier to understand at a glance.",
+      "theme": "Theme",
+      "terminalFontSize": "Terminal size",
+      "terminalPreview": {
+        "command": "tengra workspace status",
+        "workspaceReady": "Workspace ready",
+        "jobsPaused": "2 background jobs paused",
+        "suggestionsEnabled": "Copilot inline suggestions enabled"
+      },
       "currentSelection": "Current selection",
       "voiceInterfaceEnabled": "Enable voice interface",
       "voiceInterfaceEnabledDescription": "Let Tengra react to voice commands and wake-word driven input.",
@@ -2901,6 +3069,25 @@
           "bracketPairColorization": "bracketPairColorization",
           "mouseWheelZoom": "mouseWheelZoom",
           "additionalOptions": "additionalOptions"
+        },
+        "cursorBlink": {
+          "blink": "blink",
+          "smooth": "smooth",
+          "phase": "phase",
+          "expand": "expand",
+          "solid": "solid"
+        },
+        "lineNumbers": {
+          "on": "on",
+          "off": "off",
+          "relative": "relative",
+          "interval": "interval"
+        },
+        "wordWrap": {
+          "off": "off",
+          "on": "on",
+          "wordWrapColumn": "wordWrapColumn",
+          "bounded": "bounded"
         }
       },
       "terminalAppearanceTitle": "Terminal appearance",
@@ -4035,6 +4222,29 @@
       "pastePreview": "Paste preview",
       "pasteTest": "Test paste",
       "pasteHistory": "Paste history",
+      "pasteConfirmLines": "Paste {{count}} lines?\n\n{{preview}}",
+      "pasteTestResults": "Paste Test Results:",
+      "pasteTestLineCount": "• {{count}} line(s)",
+      "pasteTestCharacterCount": "• {{count}} character(s)",
+      "pasteTestSpecialCharacters": "• Special characters: {{value}}",
+      "pasteTestAnsiCodes": "• ANSI codes: {{value}}",
+      "invalidThemeFile": "Invalid theme file:",
+      "importThemeValidation": {
+        "invalidJsonObject": "Invalid theme file: must be a JSON object",
+        "themePresetIdString": "themePresetId must be a string",
+        "fontPresetIdString": "fontPresetId must be a string",
+        "ligaturesBoolean": "ligatures must be a boolean",
+        "surfaceOpacityRange": "surfaceOpacity must be a number between 0.6 and 1",
+        "surfaceBlurRange": "surfaceBlur must be a number between 0 and 24",
+        "cursorStyleAllowedValues": "cursorStyle must be one of: block, underline, bar",
+        "cursorBlinkBoolean": "cursorBlink must be a boolean",
+        "fontSizeRange": "fontSize must be a number between 8 and 32",
+        "lineHeightRange": "lineHeight must be a number between 1 and 2",
+        "customThemeObjectOrNull": "customTheme must be an object or null",
+        "customThemeUnknownProperty": "customTheme has unknown property",
+        "customThemeColorString": "customTheme color values must be strings"
+      },
+      "shortcutShareCodePrompt": "Paste shortcut share code",
       "workspaceIssuesTabTitle": "Workspace issues",
       "workspaceIssuesTitle": "Workspace warnings & errors",
       "workspaceIssuesDescription": "Aggregated warnings and errors detected across the current workspace.",
@@ -4601,6 +4811,7 @@
       "terminalStatusDocker": "Docker",
       "terminalStatusReady": "ready",
       "terminalStatusUnavailable": "unavailable",
+      "todoDefaultTitle": "# Workspace Tasks",
       "todoUndoTitle": "Undo (Ctrl/Cmd+Z)",
       "todoRedoTitle": "Redo (Ctrl/Cmd+Y)",
       "noMatchingTabs": "No matching tabs",
@@ -4697,6 +4908,11 @@
       "permissions": {
         "title": "Agent permission settings",
         "subtitle": "Manage access levels",
+        "error": "Permission denied",
+        "securityBlock": "Action blocked by safety policy",
+        "description": "This action was blocked by the workspace agent's permission policy. You can choose to allow specific commands or paths in the settings.",
+        "configure": "Configure permissions",
+        "requiresApproval": "Action protected",
         "profile": "Agent profile",
         "commands": "Command permission",
         "files": "File access",
@@ -4835,6 +5051,7 @@
       "logsEmpty": "No logs yet. Run your workspace to generate output.",
       "logsClear": "Clear logs",
       "logsFilter": "Filter logs...",
+      "logsTerminalSource": "Terminal",
       "logsAllSources": "All sources",
       "logsStats": {
         "total": "Total",
@@ -4941,6 +5158,7 @@
         "templateRootCauseAnalysis": "Root Cause Analysis",
         "templateFixAndTests": "Fix & Tests",
         "templateRegressionCheck": "Regression Check",
+        "categoryGeneral": "General",
         "categoryPlanning": "planning",
         "categoryDevelopment": "development",
         "categoryQa": "qa",

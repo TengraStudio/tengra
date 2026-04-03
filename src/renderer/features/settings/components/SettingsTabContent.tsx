@@ -16,6 +16,7 @@ const ImageSettingsTab = React.lazy(() => import('@/features/settings/components
 const ModelsTab = React.lazy(() => import('@/features/settings/components/ModelsTab').then(m => ({ default: m.ModelsTab })));
 const ModelUsageLimitsTab = React.lazy(() => import('@/features/settings/components/ModelUsageLimitsTab').then(m => ({ default: m.ModelUsageLimitsTab })));
 const QuotasTab = React.lazy(() => import('@/features/settings/components/QuotasTab').then(m => ({ default: m.QuotasTab })));
+const SkillsTab = React.lazy(() => import('@/features/settings/components/SkillsTab').then(m => ({ default: m.SkillsTab })));
 const PersonasTab = React.lazy(() => import('@/features/settings/components/PersonasTab').then(m => ({ default: m.PersonasTab })));
 const SpeechTab = React.lazy(() => import('@/features/settings/components/SpeechTab').then(m => ({ default: m.SpeechTab })));
 const StatisticsTab = React.lazy(() => import('@/features/settings/components/StatisticsTab').then(m => ({ default: m.StatisticsTab })));
@@ -51,6 +52,7 @@ const SettingsTabRenderer: React.FC<SettingsTabContentProps> = ({
         case 'system': return <SystemTab {...sharedProps} />;
         case 'models': return <ModelsTab {...sharedProps} installedModels={installedModels} proxyModels={proxyModels} onRefreshModels={onRefreshModels} />;
         case 'quotas': return <QuotasTab {...sharedProps} />;
+        case 'skills': return <SkillsTab {...sharedProps} />;
         case 'statistics': return <StatisticsTab {...sharedProps} />;
         case 'personas': return <PersonasTab {...sharedProps} />;
         case 'speech': return <SpeechTab {...sharedProps} />;

@@ -364,7 +364,7 @@ export function useGitAdvancedOperations(
     const deleteBranch = useCallback(
         async (name: string, force: boolean = false) => {
             if (!canRun || !workspacePath || !name.trim()) {
-                return { success: false, error: 'Invalid branch name' };
+                return { success: false, error: 'error.git.invalid_branch_name' };
             }
             return await invokeGit<{ success: boolean; error?: string }>('git:deleteBranch', workspacePath, name, force);
         },
@@ -374,7 +374,7 @@ export function useGitAdvancedOperations(
     const renameBranch = useCallback(
         async (oldName: string, newName: string) => {
             if (!canRun || !workspacePath || !oldName.trim() || !newName.trim()) {
-                return { success: false, error: 'Invalid branch names' };
+                return { success: false, error: 'error.git.invalid_branch_names' };
             }
             return await invokeGit<{ success: boolean; error?: string }>('git:renameBranch', workspacePath, oldName, newName);
         },

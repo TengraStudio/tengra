@@ -1,23 +1,19 @@
-import { _electron as electron, ElectronApplication, expect, Page, test } from '@playwright/test';
+import { ElectronApplication, expect, Page, test } from '@playwright/test';
+
+import { closeElectronApp, launchElectronApp, pressAppShortcut } from './e2e-test-utils';
 
 test.describe('Chat Basic UI Flow E2E', () => {
     let electronApp: ElectronApplication;
     let appWindow: Page;
 
     test.beforeAll(async () => {
-        electronApp = await electron.launch({
-            args: ['dist/main/main.js'],
-            env: { ...process.env, NODE_ENV: 'test' }
-        });
-        appWindow = await electronApp.firstWindow();
-        await appWindow.waitForLoadState('domcontentloaded');
-        await appWindow.waitForTimeout(2000);
+        const launched = await launchElectronApp();
+        electronApp = launched.electronApp;
+        appWindow = launched.appWindow;
     });
 
     test.afterAll(async () => {
-        if (electronApp) {
-            await electronApp.close();
-        }
+        await closeElectronApp(electronApp);
     });
 
     test('should display chat view', async () => {
@@ -34,7 +30,6 @@ test.describe('Chat Basic UI Flow E2E', () => {
         const chatTextarea = appWindow.getByTestId('chat-textarea');
         await chatTextarea.click();
         await chatTextarea.fill('Hello, this is a test message');
-        await appWindow.waitForTimeout(200);
 
         const value = await chatTextarea.inputValue();
         expect(value).toBe('Hello, this is a test message');
@@ -47,7 +42,6 @@ test.describe('Chat Basic UI Flow E2E', () => {
         await chatTextarea.type('Line 1');
         await chatTextarea.press('Shift+Enter');
         await chatTextarea.type('Line 2');
-        await appWindow.waitForTimeout(200);
 
         const value = await chatTextarea.inputValue();
         expect(value).toContain('Line 1');
@@ -57,7 +51,6 @@ test.describe('Chat Basic UI Flow E2E', () => {
     test('should clear textarea content', async () => {
         const chatTextarea = appWindow.getByTestId('chat-textarea');
         await chatTextarea.fill('');
-        await appWindow.waitForTimeout(200);
 
         const value = await chatTextarea.inputValue();
         expect(value).toBe('');
@@ -71,26 +64,24 @@ test.describe('Chat Basic UI Flow E2E', () => {
     test('should create new chat via button', async () => {
         const newChatButton = appWindow.getByTestId('new-chat-button');
         await expect(newChatButton).toBeVisible();
-        await newChatButton.click();
-        await appWindow.waitForTimeout(500);
-
-        // After creating new chat, textarea should be empty and visible
         const chatTextarea = appWindow.getByTestId('chat-textarea');
+        await chatTextarea.fill('Draft to clear');
+        await newChatButton.click();
         await expect(chatTextarea).toBeVisible();
+        await expect(chatTextarea).toHaveValue('');
     });
 
     test('should create new chat via keyboard shortcut', async () => {
         // Type something first
         const chatTextarea = appWindow.getByTestId('chat-textarea');
         await chatTextarea.fill('Draft message');
-        await appWindow.waitForTimeout(200);
 
         // Create new chat with Ctrl+N
-        await appWindow.keyboard.press('Control+n');
-        await appWindow.waitForTimeout(500);
+        await pressAppShortcut(appWindow, 'n');
 
         // Textarea should be present in the new chat
         await expect(chatTextarea).toBeVisible();
+        await expect(chatTextarea).toHaveValue('');
     });
 });
 
@@ -99,23 +90,17 @@ test.describe('Chat Sidebar Interactions E2E', () => {
     let appWindow: Page;
 
     test.beforeAll(async () => {
-        electronApp = await electron.launch({
-            args: ['dist/main/main.js'],
-            env: { ...process.env, NODE_ENV: 'test' }
-        });
-        appWindow = await electronApp.firstWindow();
-        await appWindow.waitForLoadState('domcontentloaded');
-        await appWindow.waitForTimeout(2000);
+        const launched = await launchElectronApp();
+        electronApp = launched.electronApp;
+        appWindow = launched.appWindow;
     });
 
     test.afterAll(async () => {
-        if (electronApp) {
-            await electronApp.close();
-        }
+        await closeElectronApp(electronApp);
     });
 
     test('should display sidebar with chat list', async () => {
-        const sidebar = appWindow.getByTestId('sidebar');
+        const sidebar = appWindow.getByRole('complementary').first();
         await expect(sidebar).toBeVisible();
     });
 
@@ -125,17 +110,17 @@ test.describe('Chat Sidebar Interactions E2E', () => {
     });
 
     test('should have settings button in sidebar', async () => {
-        const settingsButton = appWindow.getByTestId('settings-button');
+        const settingsButton = appWindow.getByRole('button', { name: /settings|ayar/i }).first();
         await expect(settingsButton).toBeVisible();
     });
 
     test('should list chat history items in sidebar', async () => {
-        const sidebar = appWindow.getByTestId('sidebar');
+        const sidebar = appWindow.getByRole('complementary').first();
         const chatItems = sidebar.locator('[class*="chat"], [class*="Chat"], [role="listitem"], [role="button"]');
         const itemCount = await chatItems.count();
 
         // Sidebar should contain at least navigation buttons
-        expect(itemCount).toBeGreaterThanOrEqual(0);
+        expect(itemCount).toBeGreaterThan(0);
     });
 
     test('should handle rapid new chat creation', async () => {
@@ -143,9 +128,7 @@ test.describe('Chat Sidebar Interactions E2E', () => {
 
         // Create multiple chats in quick succession
         await newChatButton.click();
-        await appWindow.waitForTimeout(300);
         await newChatButton.click();
-        await appWindow.waitForTimeout(300);
 
         // App should remain stable
         const chatView = appWindow.getByTestId('chat-view');
@@ -158,19 +141,13 @@ test.describe('Chat Input Attachments E2E', () => {
     let appWindow: Page;
 
     test.beforeAll(async () => {
-        electronApp = await electron.launch({
-            args: ['dist/main/main.js'],
-            env: { ...process.env, NODE_ENV: 'test' }
-        });
-        appWindow = await electronApp.firstWindow();
-        await appWindow.waitForLoadState('domcontentloaded');
-        await appWindow.waitForTimeout(2000);
+        const launched = await launchElectronApp();
+        electronApp = launched.electronApp;
+        appWindow = launched.appWindow;
     });
 
     test.afterAll(async () => {
-        if (electronApp) {
-            await electronApp.close();
-        }
+        await closeElectronApp(electronApp);
     });
 
     test('should display chat input area with action buttons', async () => {
@@ -187,7 +164,6 @@ test.describe('Chat Input Attachments E2E', () => {
     test('should focus textarea on click', async () => {
         const chatTextarea = appWindow.getByTestId('chat-textarea');
         await chatTextarea.click();
-        await appWindow.waitForTimeout(100);
 
         const isFocused = await chatTextarea.evaluate(
             (el) => document.activeElement === el

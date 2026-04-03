@@ -29,7 +29,14 @@ pub fn apply_headers(
                 .header("Authorization", format!("Bearer {}", auth_token))
                 .header("User-Agent", antigravity_user_agent(active_key_row))
                 .header("Connection", "keep-alive")
-                .header("Accept", if is_stream { "text/event-stream" } else { "application/json" });
+                .header(
+                    "Accept",
+                    if is_stream {
+                        "text/event-stream"
+                    } else {
+                        "application/json"
+                    },
+                );
         }
         "copilot" => {
             let final_token = extract_session_token(auth_token, active_key_row);

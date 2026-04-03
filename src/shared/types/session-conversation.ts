@@ -1,11 +1,14 @@
 import type { ChatRequest, ChatStreamRequest, ToolCall } from './chat';
+import type { JsonObject } from './common';
 
 export interface SessionConversationCompleteResult {
     content: string;
+    role: 'assistant';
     toolCalls?: ToolCall[];
     reasoning?: string;
     images?: string[];
     sources?: string[];
+    metadata?: JsonObject;
 }
 
 export interface SessionConversationStreamStartResult {

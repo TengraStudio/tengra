@@ -62,14 +62,376 @@
 - [x] Implement UI for workspace agent permission-denied errors with actionable configuration links in the chat interface.
 - [x] Fix workspace logo rendering by normalizing `safe-file` image URLs in the renderer and whitelisting workspace roots for protocol-backed logo previews.
 - [x] Normalize workspace logo `safe-file` rendering so uploaded/generated logos display immediately on Windows instead of resolving to broken image URLs.
+- [x] Standardize React hook imports and usage across components to resolve "Invalid hook call" runtime errors and achieve a clean build.
 
 ## Provider Follow-up
 - [ ] Research and prototype `groq` provider support, including OAuth flow validation and current API compatibility gaps
 - [ ] Research `cursor` provider support, including reverse-engineering the auth flow and identifying implementation constraints
-- [ ] Research `kimi` provider support, including reverse-engineering the auth flow and identifying implementation constraints
-- [ ] Evaluate whether `gemini` should be added as a distinct Google provider alongside `antigravity`
+- [ ] Research `kimi` provider support, including reverse-engineering the auth flow and identifying implementation constraints 
 - [x] Refined AI Assistant Sidebar UI: reduced composer height (h-11), implemented configurable message footers (timestamp and model only for sidebar), added dynamic context-aware header icons, and suppressed duplicate display of identical model variants.
 - [x] Implemented robust XML tool call detection for Copilot/Codex models, enabling tool execution from `<function_calls>` tags and eliminating visual flickering during streaming.
+- [x] Prevent duplicate agent tool executions by reusing prior same-signature tool results, tightening Windows path guidance around `%USERPROFILE%`, and removing forced repeat-loop finalization for simple file lookup flows.
+- [x] Unify AI system prompt locale handling across renderer and main chat flows so marketplace-installed language packs drive response language, and switch tool-loop recovery to adaptive evidence-aware budgeting instead of stopping early on a brittle fixed limit.
+- [x] Introduce a shared AI runtime contract for intent classification, tool-loop budgeting, normalized assistant presentation metadata, and provider-agnostic reasoning display in chat UI.
+- [x] Split chat orchestration into dedicated runtime policy, tool execution, batch execution, and turn-management helpers while extending normalized AI presentation metadata to session conversation streams and workspace chat surfaces.
+- [x] Decompose `MessageBubble` into shared message presentation modules, centralize permission/recovery cards, and feed main-process prompt injection with runtime locale-pack metadata so all chat surfaces follow the same AI runtime contract.
+- [x] Add shared AI evidence extraction plus deterministic lookup answer composition so low-signal tool loops can fall back to structured evidence instead of generic failure text.
+- [x] Extend session conversation complete/stream flows with shared assistant runtime metadata so main-process persistence, session registry envelopes, and non-stream complete results all use the same AI presentation contract.
+- [x] Introduce a dedicated renderer tool-evidence state helper so turn-local tool call maps, cached signatures, and tool messages stop living as ad-hoc local variables inside `useChatGenerator`.
+- [x] Extract the renderer tool-turn loop into a dedicated orchestration utility and move session IPC prompt/RAG helpers into standalone main-process runtime modules so chat entrypoints stop accumulating provider/runtime policy logic inline.
+- [x] Split session conversation input sanitization, reasoning-option parsing, and renderer-side session stream consumption into dedicated runtime utilities so session chat surfaces follow the same modular orchestration structure as the main chat flow.
+- [x] Move session conversation streamed-assistant persistence, token accounting, and stream chunk transport into standalone runtime helpers so the IPC manager primarily orchestrates request flow instead of owning low-level side effects.
+
+## AI Runtime Refactor Handoff Plan
+
+Bu bölüm özellikle başka bir yapay zeka ajanının devralması için yazıldı. Amaç sadece "ne kaldı" demek değil, sıradaki işi güvenli ve mimari olarak doğru sırayla tarif etmek.
+
+### Mevcut Durum Özeti
+
+- [x] Ortak AI runtime intent sınıflandırması eklendi.
+- [x] Ortak prompt/locale contract büyük ölçüde birleştirildi.
+- [x] Renderer chat orchestration büyük ölçüde parçalara ayrıldı.
+- [x] Session/workspace yüzeyleri ortak presentation metadata akışına bağlandı.
+- [x] Main-process session conversation prompt, RAG, validation, persistence ve stream chunk transport yardımcıları ayrı modüllere taşındı.
+- [x] Tool repeat koruması ve low-signal recovery mantığı ortak runtime politikasına bağlandı.
+
+### Bu Bölümdeki En Önemli Kural
+
+- [ ] Yeni işi devralan ajan `prompt` ile orkestrasyon düzeltmeye çalışmamalı.
+- [ ] Yeni ajan renderer ve main tarafında yeni kopya orchestration mantığı oluşturmamalı.
+- [ ] Yeni ajan `useChatGenerator.ts` veya `session-conversation.ts` içine tekrar büyük gövdeli inline yardımcılar taşımamalı.
+- [ ] Yeni ajan mümkün olduğunca mevcut runtime util katmanlarını genişletmeli.
+
+### Hâlâ Eksik Olan Ana Mimari Katman
+
+- [ ] Gerçek shared `evidence store` hâlâ yok.
+Detay:
+Şu an evidence toplama ve presentation metadata var, fakat tool sonuçları uzun ömürlü, sorgulanabilir, intent-aware bir store içinde normalize edilip tutulmuyor. Bu eksik kalırsa sistem daha temiz olur ama tamamen dayanıklı hale gelmez.
+
+- [ ] Deterministic answer composer hâlâ sınırlı.
+Detay:
+Şu an bazı `single_lookup` akışlarında deterministic answer üretilebiliyor ama bu dar kapsamlı. Hedef, modelin low-signal kaldığı veya gereksiz tekrar ettiği basit lookup akışlarını tamamen runtime tarafında güvenli şekilde sonlandırmak.
+
+- [ ] Main-process orchestration ile renderer orchestration tam parity seviyesinde değil.
+Detay:
+Modüller ayrıldı, ancak decision making hâlâ kısmen farklı yüzeylerde gerçekleşiyor.
+
+### 0. Önce Handoff Kalitesini Sertleştir
+
+- [ ] Her büyük refactor başlığı için açık `bitti sayılması için` kabul kriterisi ekle.
+Detay:
+Bu TODO başka bir yapay zekaya verileceği için her ana başlık altında "bu iş tamamlandı sayılması için hangi gözle görülür sonuçlar olmalı" bölümü bulunmalı.
+Örnek:
+`evidence store tamamlandı` demek için renderer ve main tarafında normalize evidence snapshot üretilebilmeli, duplicate tool sonucu bu store üzerinden reuse edilebilmeli, deterministic composer bu store’dan okuyabilmeli.
+
+- [ ] Her büyük başlık için `dokunulacak ana dosyalar` listesini ekle.
+Detay:
+Başka ajan hangi dosyalardan başlaması gerektiğini hızlı görmeli.
+Her başlık altında 3-8 dosyalık hedef liste ver.
+
+- [ ] Her büyük başlık için `dokunulmaması gereken / tekrar monolit hale getirilmemesi gereken alanlar` notu ekle.
+Detay:
+Örnek:
+`useChatGenerator.ts` içine yeni büyük yardımcı bloklar geri taşınmamalı.
+`session-conversation.ts` içine prompt/RAG/persistence helper’ları geri gömülmemeli.
+
+- [ ] `önerilen uygulama sırası` başlığını ayrıca ekle.
+Detay:
+Başka ajan işi şu sırada yapmalı:
+1. shared types
+2. shared utils
+3. renderer evidence
+4. main evidence
+5. deterministic composer
+6. prompt cleanup
+7. presentation parity
+8. tests
+9. final validation
+
+- [ ] `riskli refactor noktaları` başlığını ayrıca ekle.
+Detay:
+Özellikle şunlar açık yazılmalı:
+session stream chunk formatı,
+tool result persistence formatı,
+metadata.aiPresentation backward compatibility,
+provider-specific streaming farkları,
+workspace/session/chat yüzeyleri arasındaki ortak contract.
+
+### 1. Öncelik: Shared Evidence Store Kur
+
+- [ ] `src/shared/types/ai-runtime.ts` içine evidence store için yeni tipler ekle.
+Detay:
+Şunlar düşünülmeli:
+`AiEvidenceRecord`, `AiEvidenceScope`, `AiEvidenceSatisfaction`, `AiEvidenceStoreSnapshot`, `AiEvidenceSourceSurface`.
+
+- [ ] `src/shared/utils/ai-runtime.util.ts` içine evidence store yardımcıları ekle.
+Detay:
+En az şu yardımcılar olmalı:
+`createEvidenceRecord(...)`
+`mergeEvidenceRecords(...)`
+`dedupeEvidenceRecords(...)`
+`doesEvidenceSatisfyIntent(...)`
+`summarizeEvidenceStore(...)`
+
+- [ ] Renderer için geçici in-memory evidence state oluştur.
+Detay:
+Yeni dosya önerisi:
+`src/renderer/features/chat/hooks/tool-evidence-store.util.ts` genişletilsin veya
+`src/renderer/features/chat/hooks/chat-evidence-store.util.ts` diye yeni dosya açılsın.
+Amaç:
+tool call map, tool messages, cached signatures yanında artık normalize evidence kayıtları da burada yaşasın.
+
+- [ ] Main-process session conversation için de evidence state üret.
+Detay:
+Yeni dosya önerisi:
+`src/main/ipc/session-conversation-evidence.util.ts`
+Bu modül stream ve complete akışlarında üretilen tool/source/content evidence’ı normalize etmeli.
+
+- [ ] Evidence store sadece raw tool result saklamasın.
+Detay:
+Her kayıt mümkünse şu bilgileri taşımalı:
+intent ile ilişkisi, reusable olup olmadığı, hangi tool’dan geldiği, hangi yüzeyde üretildiği, kullanıcıya gösterilebilir kısa özeti, deterministic answer üretmeye katkısı.
+
+- [ ] Bu başlık için `bitti sayılması için` maddeleri ekle.
+Detay:
+Örnek kabul kriterileri:
+renderer tarafında normalized evidence snapshot alınabiliyor olmalı,
+main/session tarafında aynı evidence modeli üretilebilmeli,
+tool tekrar koruması raw message array yerine evidence store üstünden de çalışabilmeli,
+presentation katmanı evidence summary’yi aynı store’dan okuyabilmeli.
+
+### 2. Öncelik: Deterministic Fast-Path Büyüt
+
+- [ ] `single_lookup` intent’i için runtime fast-path matrisi çıkar.
+Detay:
+Şu tip işler modele bırakılmamalı veya en azından answer fallback’ı deterministic olmalı:
+dosya sayısı, klasör sayısı, dosya var mı, yol var mı, basit directory listing summary, sistem kullanıcı adı, platform adı, basit metadata lookup.
+
+- [ ] `composeDeterministicAnswer(...)` fonksiyonunu genişlet.
+Detay:
+Dosya:
+`src/shared/utils/ai-runtime.util.ts`
+Burada sadece `list_directory` ve `file_exists` değil, desteklenen lookup tool’ları için daha net cevap üretimi eklenmeli.
+
+- [ ] Tool executor çıktıları deterministic compose için daha uygun hale getirilmeli.
+Detay:
+Dosyalar:
+`src/main/tools/tool-executor.ts`
+`src/main/tools/tool-definitions.ts`
+Tool sonuçları mümkün olduğunca şu alanları düzenli taşımalı:
+`path`, `complete`, `entryCount`, `fileCount`, `directoryCount`, `pathExists`, `displaySummary`, `resultKind`
+
+- [ ] Final fallback akışlarında önce deterministic answer denenmeli.
+Detay:
+Renderer tarafında:
+`src/renderer/features/chat/hooks/tool-turn-management.util.ts`
+Main/session tarafında:
+`src/main/ipc/session-conversation.ts` veya yeni evidence/composer util’i
+Amaç:
+"Tool loop limit reached" benzeri generic cevapları mümkün olduğunca kaldırmak.
+
+- [ ] `modele bırakılmayacak kesin lookup işleri` alt listesi ekle.
+Detay:
+Başka ajan aşağıdaki işleri ayrı ve net bir liste halinde TODO içinde görmeli:
+dosya sayısı,
+klasör sayısı,
+path existence,
+directory summary,
+basit system info lookup,
+basit tek-tool metadata lookup.
+
+- [ ] Bu başlık için `bitti sayılması için` maddeleri ekle.
+Detay:
+Örnek kabul kriterileri:
+aynı basit lookup için model low-signal kalsa bile deterministic answer üretilebilmeli,
+generic fallback metni yerine structured answer dönmeli,
+aynı davranış chat ve session surface’te korunmalı.
+
+### 3. Öncelik: Main ve Renderer Orchestration Parity
+
+- [ ] Renderer ve main akışlarındaki intent-to-budget eşleşmesini karşılaştır.
+Detay:
+Bakılacak dosyalar:
+`src/shared/utils/ai-runtime.util.ts`
+`src/renderer/features/chat/hooks/tool-turn-loop-execution.util.ts`
+`src/main/ipc/session-conversation.ts`
+Hedef:
+aynı intent aynı budget mantığıyla ele alınmalı.
+
+- [ ] Session conversation complete akışında da evidence-aware finalization yap.
+Detay:
+Şu an metadata düzgün, fakat deterministic final answer ve evidence-satisfaction kararı daha sistematik hale getirilmeli.
+
+- [ ] Workspace surface ile main/session surface arasında tool davranışı farkı kalıp kalmadığını incele.
+Detay:
+Bakılacak dosyalar:
+`src/renderer/features/workspace/hooks/useWorkspaceChatStream.ts`
+`src/renderer/hooks/useSessionConversationStream.ts`
+`src/renderer/lib/chat-stream.ts`
+Amaç:
+workspace chat’in "adapter" olma durumu korunmalı, ayrı davranış motoru oluşmamalı.
+
+- [ ] `parity` kelimesini somut davranışlara çevir.
+Detay:
+TODO içinde açık yaz:
+aynı intent -> aynı budget,
+aynı evidence summary formatı,
+aynı low-signal fallback politikası,
+aynı repeated-tool recovery kararı,
+aynı aiPresentation alanları.
+
+- [ ] Bu başlık için `bitti sayılması için` maddeleri ekle.
+Detay:
+Başka ajan parity tamamlandı dediğinde yukarıdaki 5 davranışın gerçekten eşitlendiği net olmalı.
+
+### 4. Öncelik: Prompt Katmanını Daha da Temizle
+
+- [ ] `src/shared/instructions.ts` içindeki kuralları yeniden sınıflandır.
+Detay:
+Kurallar şu başlıklara net ayrılmalı:
+core identity, locale rules, response contract, anti-loop reminders, provider compatibility.
+
+- [ ] Runtime ile çözülen konuları prompt’tan azalt.
+Detay:
+Özellikle:
+aynı tool’u tekrar çağırma,
+tool sonucu varken "ihtiyacım var" deme,
+low-signal final cevap üretme
+gibi durumlar prompt değil runtime policy ile çözülmeli.
+
+- [ ] Marketplace locale pack metadata akışını gözden geçir.
+Detay:
+Bakılacak dosyalar:
+`src/shared/instructions.ts`
+`src/renderer/lib/identity.ts`
+`src/main/services/system/locale.service.ts`
+`src/main/ipc/session-conversation-prompt.util.ts`
+Amaç:
+bütün yüzeylerde aynı locale metadata map’i kullanılıyor mu, tekrar kontrol et.
+
+- [ ] Prompt bölümüne `runtime ile çözülmesi gerekenler` ve `promptta kalması gerekenler` ayrımı ekle.
+Detay:
+Başka ajan hangi problemi prompttan çözmeye çalışmaması gerektiğini tek bakışta anlamalı.
+
+- [ ] Bu başlık için `bitti sayılması için` maddeleri ekle.
+Detay:
+Örnek:
+prompt dosyası daha kısa ve sınıflandırılmış olmalı,
+runtime ile çözülen anti-loop mantık prompttan çıkarılmış olmalı,
+locale metadata akışı tek haritalama mantığına dayanmalı.
+
+### 5. Öncelik: Presentation Contract Sertleştir
+
+- [ ] `AiPresentationMetadata` şemasını daha güçlü hale getir.
+Detay:
+Dosya:
+`src/shared/types/ai-runtime.ts`
+Bugün yeterli ama ileride reasoning/evidence/answer-mode ayrımı için birkaç alan daha gerekebilir.
+Örnek adaylar:
+`surface`, `responseStyle`, `satisfiedByEvidence`, `deterministicAnswerAvailable`
+
+- [ ] UI tarafında ham provider reasoning’in sızmadığını tekrar denetle.
+Detay:
+Bakılacak dosyalar:
+`src/renderer/features/chat/components/MessageBubble.tsx`
+`src/renderer/features/chat/components/message/message-presentation.util.ts`
+`src/renderer/features/chat/components/message/AiPresentationPanel.tsx`
+
+- [ ] Tüm assistant yüzeylerinde aynı status dili kullanılsın.
+Detay:
+Örnekler:
+"Inceleniyor", "Kanit toplandi", "Yanit hazir" gibi status satırları ortak bir helper’dan üretilmeli.
+
+- [ ] `hangi alanlar zorunlu / hangi alanlar opsiyonel` listesini TODO içine yaz.
+Detay:
+Özellikle `AiPresentationMetadata` için başka ajan şema genişletirken kararsız kalmamalı.
+
+- [ ] Bu başlık için `bitti sayılması için` maddeleri ekle.
+Detay:
+Örnek:
+aynı assistant cevabı farklı provider’dan gelse bile aynı presentation alanlarıyla render edilmeli,
+ham hidden reasoning UI’ye sızmamalı,
+status line helper’ı ortak bir noktadan beslenmeli.
+
+### 6. Öncelik: `useChatGenerator` ve `session-conversation` Son Temizlik
+
+- [ ] `useChatGenerator.ts` içinde kalan büyük karar bloklarını yeniden değerlendir.
+Detay:
+Bu dosya ciddi biçimde küçüldü ama hâlâ koordinasyon, temp message oluşturma, model seçimi, image-direct-flow ve multi-model kararlarını bir arada tutuyor.
+Hedef:
+dosya "runtime entry hook" olarak kalmalı.
+
+- [ ] `session-conversation.ts` içindeki stream handler gövdelerini daha da küçült.
+Detay:
+`handleOpencodeStream` ve `handleProxyStream` artık evidence util kullanıyor ama ileride ortak bir stream orchestration katmanına taşınabilir.
+
+- [ ] Session IPC manager içinde sadece şu tip sorumluluklar bırakılmalı:
+Detay:
+request kabul etme,
+session başlatma,
+doğru runtime helper’ı çağırma,
+başarı/hata/abort session status güncelleme.
+
+- [ ] Bu başlık için `bitti sayılması için` maddeleri ekle.
+Detay:
+Örnek:
+`useChatGenerator.ts` entry hook olarak kalmalı,
+`session-conversation.ts` orchestration shell olarak kalmalı,
+dosya içi yardımcı sınıf veya büyük inline utility geri gelmemeli.
+
+### 7. Öncelik: Test Handoff Hazırlığı
+
+- [ ] Yeni eklenen util’ler için test kapsamını artır.
+Detay:
+Özellikle şu dosyalar:
+`src/main/ipc/session-conversation-prompt.util.ts`
+`src/main/ipc/session-conversation-rag.util.ts`
+`src/main/ipc/session-conversation-persistence.util.ts`
+`src/main/ipc/session-conversation-stream-ipc.util.ts`
+`src/renderer/features/chat/hooks/tool-turn-loop-execution.util.ts`
+`src/renderer/hooks/session-conversation-stream-consumer.util.ts`
+
+- [ ] Testlerde kullanıcı adı, masaüstü yolu veya makineye özgü sabit değer kullanma.
+Detay:
+`agnes`, gerçek user profile path, lokal masaüstü sabitleri kullanılmamalı.
+Her test normalize edilmiş örnek data ile çalışmalı.
+
+- [ ] Önce davranış testi yaz, sonra gerekirse implementation düzelt.
+Detay:
+Özellikle target senaryolar:
+aynı tool tekrar çağrıldığında eski sonuç reuse edilmeli,
+low-signal final içerik varsa evidence tabanlı answer üretilmeli,
+session stream metadata ve chat metadata aynı contract’a oturmalı.
+
+- [ ] `validation komutlarını hangi sırayla çalıştıracağı` alt listesi ekle.
+Detay:
+Başka ajan mimari iş bittikten sonra şu sırayı izlemeli:
+önce hedefli testler,
+sonra type-check,
+sonra build,
+sonra lint,
+en son tam test.
+
+- [ ] Repo sürecine özel final adımları da ekle.
+Detay:
+Örnek:
+gerekirse changelog/TODO/docs senkronizasyonu,
+repo kurallarında istenen final bakım adımları,
+ama bunlar validation tamamlandıktan sonra yazılsın.
+
+### 8. En Son Yapılacaklar
+
+- [ ] Bütün runtime modülleri tamamlandıktan sonra `docs/ai-runtime-architecture.md` yeniden gözden geçir.
+Detay:
+Belge kodu tarif etmeli, geride kalmamalı.
+
+- [ ] Bu refactor bitmeden yeni provider-specific hack ekleme.
+Detay:
+Özellikle tool loop veya response style için provider bazlı yeni istisna eklenirse bu mimari tekrar dağılır.
+
+- [ ] Refactor tamamlanınca ancak o zaman validation komutlarına geç.
+Detay:
+Bu aşamada build/lint/type-check/test henüz özellikle çalıştırılmadı. Sonraki ajan önce mimari işi bitirsin, sonra doğrulama turuna geçsin.
 
 
 ## Tengra Proxy Future TODO (Service Roadmap)
@@ -92,14 +454,13 @@
 - [x] Migrate `token_data` storage in DB from plaintext to AES/Keychain encrypted blobs
 - [x] Optimize sequential `reqwest` DB calls in the proxy auth handlers (lazy caching)
 - [x] Add OpenAI bridge readiness endpoint (`/api/auth/oauth/bridge/readiness`) reporting bind status and target route health.
-- [ ] Add startup integration test that asserts failure when fixed bridge port `1455` is occupied.
+- [x] Add startup integration test that asserts failure when fixed bridge port `1455` is occupied.
 - [ ] Add callback bridge telemetry (redirect count, error count, p50/p95 latency) and expose via `/health` diagnostics payload.
 - [ ] Add authenticated provider info enrichment for OpenAI/Anthropic accounts (avatar/organization metadata where available).
-- [ ] Add provider-level OAuth timeout configuration (currently static) with strict bounds validation.
-- [ ] Add resilient DB retry policy for callback completion write path with explicit failure reporting.
-- [ ] Add one-click auth verification endpoint that runs provider readiness + callback route sanity checks.
-- [ ] Add per-provider benchmark harness in CI for auth start/callback local latency baselines.
-- [ ] Add formal contract tests against `vendor/cliproxyapi` parity cases for OpenAI/Codex parameters and redirect behavior.
+- [x] Add provider-level OAuth timeout configuration (currently static) with strict bounds validation.
+- [x] Add resilient DB retry policy for callback completion write path with explicit failure reporting.
+- [x] Add one-click auth verification endpoint that runs provider readiness + callback route sanity checks.
+- [ ] Add per-provider benchmark harness in CI for auth start/callback local latency baselines. 
 - [ ] Add migration helper to normalize existing OpenAI linked-account metadata generated before bridge rollout.
 - [x] Add cliproxy-style compatibility aliases and native handlers for `/responses`, Claude `/messages`, and `/messages/count_tokens` in `tengra-proxy`
 - [x] Add management compatibility wrappers for auth URL generation and linked-account auth status in `tengra-proxy`

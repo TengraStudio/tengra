@@ -68,11 +68,14 @@ export interface AnthropicMessage {
 }
 
 export interface AnthropicContentBlock {
-    type: 'text' | 'image' | 'tool_use';
+    type: 'text' | 'image' | 'tool_use' | 'tool_result';
     text?: string;
     id?: string;
     name?: string; // for tool_use
     input?: JsonObject; // for tool_use
+    tool_use_id?: string; // for tool_result
+    content?: string | AnthropicContentBlock[]; // for tool_result
+    is_error?: boolean; // for tool_result
     source?: {
         type: 'base64';
         media_type: string;

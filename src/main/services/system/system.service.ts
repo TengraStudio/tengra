@@ -218,6 +218,13 @@ Add-Type -TypeDefinition $code
     }
 
     async getSystemInfo(): Promise<SystemInfo> {
+        const envUsername = process.env.USERNAME?.trim();
+        const envUserProfile = process.env.USERPROFILE?.trim();
+        const profileSegment = envUserProfile
+            ? envUserProfile.split(/[\\/]/).filter(Boolean).pop()
+            : undefined;
+        const osUsername = os.userInfo().username?.trim();
+        const resolvedUsername = envUsername || profileSegment || osUsername || 'unknown';
         return {
             platform: process.platform,
             arch: process.arch,
@@ -227,7 +234,11 @@ Add-Type -TypeDefinition $code
             uptime: os.uptime(),
             hostname: os.hostname(),
             release: os.release(),
-            shell: process.env.SHELL ?? process.env.ComSpec
+            shell: process.env.SHELL ?? process.env.ComSpec,
+            homeDir: os.homedir(),
+            username: resolvedUsername,
+            cwd: process.cwd(),
+            tempDir: os.tmpdir()
         };
     }
 

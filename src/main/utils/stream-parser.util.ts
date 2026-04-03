@@ -11,6 +11,7 @@ export interface StreamChunk {
     images?: Array<string | { image_url: { url: string } }>;
     type?: string;
     tool_calls?: ToolCall[];
+    finish_reason?: string | null;
     usage?: {
         prompt_tokens: number;
         completion_tokens: number;
@@ -30,6 +31,7 @@ type OpenCodeStreamState = {
 
 type XmlParserState = {
     buffer: string;
+    lastUpdateTime: number;
 };
 
 type OpenAIStreamDelta = {
@@ -41,7 +43,11 @@ type OpenAIStreamDelta = {
 };
 
 type OpenAIStreamPayload = {
-    choices?: Array<{ delta?: OpenAIStreamDelta; index?: number }>;
+    choices?: Array<{ 
+        delta?: OpenAIStreamDelta; 
+        index?: number;
+        finish_reason?: string | null;
+    }>;
 };
 
 export class StreamParser {
@@ -54,7 +60,7 @@ export class StreamParser {
         const decoder = new TextDecoder();
         let buffer = '';
         const openCodeState = this.createOpenCodeStreamState();
-        const xmlState: XmlParserState = { buffer: '' };
+        const xmlState: XmlParserState = { buffer: '', lastUpdateTime: Date.now() };
 
         try {
             appLogger.debug('stream-parser.util', `[StreamParser] Starting parse. Input type: ${input.constructor.name}`);
@@ -122,7 +128,7 @@ export class StreamParser {
         openCodeState: OpenCodeStreamState,
         xmlState: XmlParserState
     ) {
-        appLogger.info('stream-parser.util', '[StreamParser] Using AsyncIterable iteration');
+        appLogger.debug('stream-parser.util', '[StreamParser] Using AsyncIterable iteration');
         for await (const value of body) {
             const newContent = decoder.decode(value, { stream: true });
             setBuf(getBuf() + newContent);
@@ -138,14 +144,14 @@ export class StreamParser {
     ): Generator<StreamChunk> {
         const lines = buffer.split('\n');
         const lastLine = lines.pop();
-        appLogger.info('stream-parser.util', `[StreamParser] Processing buffer, lines: ${lines.length}, remaining: ${lastLine?.length ?? 0}`);
+        appLogger.debug('stream-parser.util', `[StreamParser] Processing buffer, lines: ${lines.length}, remaining: ${lastLine?.length ?? 0}`);
         updateBuffer(lastLine ?? '');
 
         for (const line of lines) {
             const data = this.extractDataPayload(line);
             if (!data) { continue; }
             if (data === '[DONE]') {
-                appLogger.info('stream-parser.util', '[StreamParser] Received [DONE] signal');
+                appLogger.debug('stream-parser.util', '[StreamParser] Received [DONE] signal');
                 continue;
             }
 
@@ -159,12 +165,16 @@ export class StreamParser {
     }
 
     private static extractDataPayload(line: string): string | null {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith('data:')) { return null; }
+        const lineWithoutNewline = line.replace(/\r$/, '');
+        const firstNonSpace = lineWithoutNewline.search(/\S/);
+        if (firstNonSpace < 0) { return null; }
+        const withoutIndent = lineWithoutNewline.slice(firstNonSpace);
+        if (!withoutIndent.startsWith('data:')) { return null; }
 
-        let jsonData = trimmed.slice(5).trim();
+        // Keep payload whitespace untouched to avoid collapsing model-emitted spaces.
+        let jsonData = withoutIndent.slice(5);
         while (jsonData.startsWith('data:')) {
-            jsonData = jsonData.slice(5).trim();
+            jsonData = jsonData.slice(5);
         }
         return jsonData;
     }
@@ -188,7 +198,7 @@ export class StreamParser {
 
     private static *handleOpenCodePayload(json: StreamPayload, openCodeState: OpenCodeStreamState): Generator<StreamChunk> {
         const type = json.type;
-        appLogger.info('stream-parser.util', `[StreamParser] OpenCode Event: ${type}`);
+        appLogger.debug('stream-parser.util', `[StreamParser] OpenCode Event: ${type}`);
 
         if (this.isOpenCodeDoneEvent(json)) {
             const contentItems = json.item?.content;
@@ -388,34 +398,68 @@ export class StreamParser {
 
         for (const choice of choices) {
             const delta = choice.delta;
+            const finishReason = choice.finish_reason;
+            
+            // Handle finish_reason even without delta (important for tool_calls signal)
+            if (finishReason && !delta) {
+                yield { 
+                    index: choice.index ?? 0, 
+                    content: '', 
+                    finish_reason: finishReason,
+                    type: finishReason === 'tool_calls' ? 'tool_calls' : undefined
+                };
+                continue;
+            }
+            
             if (!delta) { continue; }
 
-            const chunk = this.extractOpenAIChunk(choice.index ?? 0, delta, json.usage);
+            const chunk = this.extractOpenAIChunk(choice.index ?? 0, delta, json.usage, finishReason);
             if (chunk) { yield chunk; }
         }
     }
 
-    private static extractOpenAIChunk(choiceIdx: number, delta: OpenAIStreamDelta, usage: StreamPayload['usage']): StreamChunk | null {
+    private static extractOpenAIChunk(
+        choiceIdx: number, 
+        delta: OpenAIStreamDelta, 
+        usage: StreamPayload['usage'],
+        finishReason?: string | null
+    ): StreamChunk | null {
         const content = delta.content ?? '';
         const reasoning = delta.reasoning_content ?? delta.reasoning ?? '';
 
-        if (content) { return this.createOpenAIChunk(choiceIdx, content, reasoning, delta, usage); }
-        if (reasoning) { return this.createOpenAIChunk(choiceIdx, content, reasoning, delta, usage); }
-        if ((delta.images && delta.images.length > 0) || delta.tool_calls || usage) {
-            return this.createOpenAIChunk(choiceIdx, content, reasoning, delta, usage);
+        if (content) { return this.createOpenAIChunk(choiceIdx, content, reasoning, delta, usage, finishReason); }
+        if (reasoning) { return this.createOpenAIChunk(choiceIdx, content, reasoning, delta, usage, finishReason); }
+        if ((delta.images && delta.images.length > 0) || delta.tool_calls || usage || finishReason) {
+            return this.createOpenAIChunk(choiceIdx, content, reasoning, delta, usage, finishReason);
         }
 
         return null;
     }
 
-    private static createOpenAIChunk(idx: number, content: string, reasoning: string, delta: OpenAIStreamDelta, usage: StreamPayload['usage']): StreamChunk {
+    private static createOpenAIChunk(
+        idx: number, 
+        content: string, 
+        reasoning: string, 
+        delta: OpenAIStreamDelta, 
+        usage: StreamPayload['usage'],
+        finishReason?: string | null
+    ): StreamChunk {
+        // Determine type based on tool_calls presence or finish_reason
+        let chunkType: string | undefined;
+        if (delta.tool_calls) {
+            chunkType = 'tool_calls';
+        } else if (finishReason === 'tool_calls') {
+            chunkType = 'tool_calls';
+        }
+        
         return {
             index: idx,
             content,
             reasoning,
             images: Array.isArray(delta.images) ? delta.images : [],
-            type: delta.tool_calls ? 'tool_calls' : undefined,
+            type: chunkType,
             tool_calls: delta.tool_calls,
+            finish_reason: finishReason,
             usage
         };
     }
@@ -426,10 +470,29 @@ export class StreamParser {
             return;
         }
 
+        // Buffer timeout protection: if buffer is stale for more than 5 seconds, flush it
+        const XML_BUFFER_TIMEOUT_MS = 5000;
+        const now = Date.now();
+        if (xmlState.buffer.length > 0 && (now - xmlState.lastUpdateTime) > XML_BUFFER_TIMEOUT_MS) {
+            appLogger.warn('StreamParser', `XML buffer timeout, flushing stale buffer (${xmlState.buffer.length} chars)`);
+            const staleContent = xmlState.buffer;
+            xmlState.buffer = '';
+            xmlState.lastUpdateTime = now;
+            if (staleContent) {
+                yield { ...chunk, content: staleContent };
+            }
+        }
 
         xmlState.buffer += chunk.content;
+        xmlState.lastUpdateTime = now;
 
         const { toolCalls, cleanedText } = XmlToolParser.parse(xmlState.buffer);
+
+        // Always update buffer if XML blocks were stripped (even empty ones with no <invoke>)
+        const xmlBlocksWereStripped = cleanedText !== xmlState.buffer;
+        if (xmlBlocksWereStripped) {
+            xmlState.buffer = cleanedText;
+        }
 
         if (toolCalls.length > 0) {
             appLogger.info('StreamParser', `Extracted ${toolCalls.length} XML tool calls`);
@@ -439,7 +502,6 @@ export class StreamParser {
                 type: 'tool_calls',
                 tool_calls: toolCalls
             };
-            xmlState.buffer = cleanedText;
         }
 
         // If we have potential tags, we buffer to avoid flickering

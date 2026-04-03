@@ -2,6 +2,7 @@ import {
     PORT_MAX,
     PORT_MIN,
     validateInterval,
+    validateOAuthTimeoutMs,
     validatePort,
     validateProvider,
     validateProxyUrl,
@@ -158,6 +159,30 @@ describe('proxy-validation.util', () => {
             expect(validateProvider(null)).toContain('required');
             expect(validateProvider(undefined)).toContain('required');
             expect(validateProvider(42)).toContain('string');
+        });
+    });
+
+    describe('validateOAuthTimeoutMs', () => {
+        it('should accept in-range integer timeouts', () => {
+            expect(validateOAuthTimeoutMs(10_000)).toBeUndefined();
+            expect(validateOAuthTimeoutMs(30_000)).toBeUndefined();
+            expect(validateOAuthTimeoutMs(600_000)).toBeUndefined();
+        });
+
+        it('should reject out-of-range timeouts', () => {
+            expect(validateOAuthTimeoutMs(9_999)).toContain('between');
+            expect(validateOAuthTimeoutMs(600_001)).toContain('between');
+        });
+
+        it('should reject non-integer and non-finite values', () => {
+            expect(validateOAuthTimeoutMs(15_000.5)).toContain('integer');
+            expect(validateOAuthTimeoutMs(NaN)).toContain('finite');
+            expect(validateOAuthTimeoutMs(Infinity)).toContain('finite');
+        });
+
+        it('should reject null/undefined', () => {
+            expect(validateOAuthTimeoutMs(null)).toContain('required');
+            expect(validateOAuthTimeoutMs(undefined)).toContain('required');
         });
     });
 });

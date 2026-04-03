@@ -23,6 +23,7 @@ export function resolveProvider(model: string, provider?: string): string {
     const normalizedProvider = provider?.trim().toLowerCase();
     if (normalizedProvider) {
         if (normalizedProvider === 'claude') { return 'anthropic'; }
+        if (normalizedProvider === 'moonshot') { return 'kimi'; }
         return normalizedProvider;
     }
 
@@ -32,6 +33,8 @@ export function resolveProvider(model: string, provider?: string): string {
     }
     if (m.startsWith('claude-') || m.startsWith('anthropic/')) { return 'anthropic'; }
     if (m.startsWith('gemini-') || m.startsWith('google/')) { return 'google'; }
+    if (m.startsWith('kimi-') || m.startsWith('moonshot/')) { return 'kimi'; }
+    if (m.startsWith('cursor/')) { return 'cursor'; }
     if (m.startsWith('ollama/')) { return 'ollama'; }
     return 'openai';
 }
@@ -59,9 +62,11 @@ export function normalizeModelName(model: string, provider?: string): string {
         'claude': ['anthropic/', 'claude/'],
         'openai': ['openai/'],
         'codex': ['codex/', 'openai/'],
+        'kimi': ['kimi/', 'moonshot/'],
         'google': ['google/', 'gemini/'],
         'nvidia': ['nvidia/'],
         'gemini': ['google/', 'gemini/'],
+        'cursor': ['cursor/'],
     };
 
     const providerPrefixes = (prefixes as Record<string, string[] | undefined>)[lowerProvider];
@@ -148,10 +153,30 @@ export async function getRouteConfig(
         return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider, temperature: temp, workspaceRoot };
     }
 
+    if (p.includes('kimi') || p.includes('moonshot')) {
+        return {
+            model,
+            tools,
+            baseUrl: 'https://api.moonshot.ai/v1',
+            apiKey: undefined,
+            provider: 'kimi',
+            temperature: temp,
+            workspaceRoot
+        };
+    }
+
     if (p.includes('copilot') || p.includes('github')) {
         const proxyUrl = buildProxyBaseUrl(deps.proxyService);
         const proxyKey = await deps.proxyService.getProxyKey();
         return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider: 'copilot', temperature: temp, workspaceRoot };
+    }
+
+    if (p.includes('cursor')) {
+        const proxyUrl = buildProxyBaseUrl(deps.proxyService);
+        const proxyKey = await deps.proxyService.getProxyKey();
+        // Compatibility-only integration point.
+        // Cursor-specific private auth protocols are intentionally not reverse-engineered.
+        return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider: 'cursor', temperature: temp, workspaceRoot };
     }
 
     return { model, tools, provider, temperature: temp, workspaceRoot, baseUrl: undefined, apiKey: undefined };

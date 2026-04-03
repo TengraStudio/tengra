@@ -146,7 +146,7 @@ describe('FileSystemService', () => {
             expect(fs.stat).not.toHaveBeenCalled();
         });
 
-        it('filters files ignored by workspace ignore files', async () => {
+        it('does not filter files ignored by workspace ignore files in explorer listing', async () => {
             vi.mocked(fs.readdir).mockResolvedValue([
                 { name: 'src', isDirectory: () => true },
                 { name: 'debug.log', isDirectory: () => false },
@@ -162,7 +162,33 @@ describe('FileSystemService', () => {
 
             expect(result).toEqual({
                 success: true,
-                data: [{ name: 'src', isDirectory: true }],
+                data: [
+                    { name: 'src', isDirectory: true },
+                    { name: 'debug.log', isDirectory: false },
+                ],
+            });
+        });
+
+        it('keeps .tengra visible in explorer listing by default', async () => {
+            vi.mocked(fs.readdir).mockResolvedValue([
+                { name: '.tengra', isDirectory: () => true },
+                { name: 'src', isDirectory: () => true },
+            ] as never);
+            vi.mocked(getWorkspaceIgnoreMatcher).mockResolvedValue({
+                rootPath: allowedRoot,
+                patterns: [],
+                ignoresAbsolute: () => false,
+                ignoresRelative: () => false,
+            });
+
+            const result = await service.listDirectory(allowedRoot);
+
+            expect(result).toEqual({
+                success: true,
+                data: [
+                    { name: '.tengra', isDirectory: true },
+                    { name: 'src', isDirectory: true },
+                ],
             });
         });
     });

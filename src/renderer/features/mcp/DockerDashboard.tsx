@@ -201,7 +201,8 @@ export function DockerDashboard({
                 );
                 setLogs(res.stdout || res.stderr || t('docker.noLogs'));
             } catch (e) {
-                setLogs(`Error: ${e instanceof Error ? e.message : String(e)}`);
+                const message = e instanceof Error ? e.message : String(e);
+                setLogs(t('docker.logsError', { message }));
             }
         },
         [t]

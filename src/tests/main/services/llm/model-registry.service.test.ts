@@ -397,6 +397,24 @@ describe('ModelRegistryService', () => {
             const refreshedModels = await service.getRemoteModels();
             expect(refreshedModels.some(model => model.providerCategory === 'copilot')).toBe(true);
         });
+
+        it('should map kimi and cursor providers from proxy catalog', async () => {
+            vi.mocked(mockProxyService.getRawModelCatalog!).mockResolvedValueOnce({
+                data: [
+                    { id: 'moonshot/kimi-k2.5', name: 'Kimi K2.5', provider: 'moonshot' },
+                    { id: 'cursor/gpt-4.1', name: 'Cursor GPT 4.1', provider: 'cursor' }
+                ]
+            });
+
+            const models = await service.getRemoteModels();
+            const kimiModel = models.find(model => model.id === 'moonshot/kimi-k2.5');
+            const cursorModel = models.find(model => model.id === 'cursor/gpt-4.1');
+
+            expect(kimiModel?.provider).toBe('kimi');
+            expect(kimiModel?.providerCategory).toBe('kimi');
+            expect(cursorModel?.provider).toBe('cursor');
+            expect(cursorModel?.providerCategory).toBe('cursor');
+        });
     });
 
     describe('getInstalledModels', () => {

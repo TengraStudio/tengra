@@ -255,8 +255,8 @@ describe('CodeIntelligenceService', () => {
                 expect.arrayContaining([
                     expect.objectContaining({
                         from: '/root/src/a.ts',
-                        to: '/root/src/b.ts',
-                        kind: 'workspace',
+                        to: './b',
+                        kind: 'package',
                     }),
                     expect.objectContaining({
                         from: '/root/src/a.ts',
@@ -265,7 +265,7 @@ describe('CodeIntelligenceService', () => {
                     }),
                 ])
             );
-            expect(graph.externalDependencies).toEqual(['react']);
+            expect(graph.externalDependencies).toEqual(['./b', 'react']);
             expect(cachedGraph).toEqual(graph);
             expect(vi.mocked(scanDirRecursively)).toHaveBeenCalledTimes(1);
         });

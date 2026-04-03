@@ -49,6 +49,7 @@ interface TerminalPreviewProps {
     fontSize: number;
     lineHeight: number;
     theme: ReturnType<typeof getTerminalTheme>;
+    t: (key: string) => string;
 }
 
 function TerminalPreview({
@@ -57,6 +58,7 @@ function TerminalPreview({
     fontSize,
     lineHeight,
     theme,
+    t,
 }: TerminalPreviewProps): JSX.Element {
     return (
         <div className="relative h-full overflow-hidden rounded-[2rem] border border-border/40 bg-[#0c0c0c] p-1">
@@ -79,24 +81,24 @@ function TerminalPreview({
                     <div className="flex items-center gap-3">
                         <span className="shrink-0 text-primary">➜</span>
                         <span className="shrink-0 text-success/80">~</span>
-                        <span className="truncate opacity-90">tengra workspace status</span>
+                        <span className="truncate opacity-90">{t('settings.terminalPreview.command')}</span>
                     </div>
                     <div className="flex items-center gap-3 pl-6">
                         <div className="h-4 w-1.5 rounded-full bg-success/20" />
                         <span style={{ color: theme.green }} className="text-[0.85em] font-medium">
-                            Workspace ready
+                            {t('settings.terminalPreview.workspaceReady')}
                         </span>
                     </div>
                     <div className="flex items-center gap-3 pl-6">
                         <div className="h-4 w-1.5 rounded-full bg-warning/20" />
                         <span style={{ color: theme.yellow }} className="text-[0.85em] font-medium">
-                            2 background jobs paused
+                            {t('settings.terminalPreview.jobsPaused')}
                         </span>
                     </div>
                     <div className="flex items-center gap-3 pl-6">
                         <div className="h-4 w-1.5 rounded-full bg-blue-500/20" />
                         <span style={{ color: theme.blue }} className="text-[0.85em] font-medium">
-                            Copilot inline suggestions enabled
+                            {t('settings.terminalPreview.suggestionsEnabled')}
                         </span>
                     </div>
                     <div className="flex items-center gap-2 pt-4">
@@ -241,7 +243,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
 
                     <div className="space-y-6">
                         <div className="space-y-2">
-                            <div className="px-1 text-xs font-medium text-muted-foreground">Theme</div>
+                            <div className="px-1 text-xs font-medium text-muted-foreground">{t('settings.theme')}</div>
                             <Select
                                 value={settings?.general.theme ?? 'graphite'}
                                 onValueChange={value => {
@@ -268,7 +270,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
 
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
                             <div className="space-y-2">
-                                <div className="px-1 text-xs font-medium text-muted-foreground">Font size</div>
+                                <div className="px-1 text-xs font-medium text-muted-foreground">{t('settings.baseFontSize')}</div>
                                 <Input
                                     type="number"
                                     min={12}
@@ -283,7 +285,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                                 />
                             </div>
                             <div className="space-y-2">
-                                <div className="px-1 text-xs font-medium text-muted-foreground">Density</div>
+                                <div className="px-1 text-xs font-medium text-muted-foreground">{t('settings.typographyScale')}</div>
                                 <Select
                                     value={settings?.general.typographyScale ?? 'balanced'}
                                     onValueChange={value => {
@@ -311,7 +313,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                 <div className="flex flex-col justify-between rounded-3xl border border-border/20 bg-card p-5 sm:p-6 lg:p-8">
                     <div className="mb-6 flex items-center gap-3 px-1">
                         <Type className="h-4 w-4 text-primary" />
-                        <h4 className="text-sm font-semibold text-foreground">Preview</h4>
+                        <h4 className="text-sm font-semibold text-foreground">{t('settings.livePreview')}</h4>
                     </div>
 
                     <div className="flex-1 space-y-6">
@@ -365,7 +367,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                     <div className="space-y-8">
                         <div className="space-y-6">
                             <div className="space-y-2">
-                                <div className="px-1 text-xs font-medium text-muted-foreground">Terminal theme</div>
+                                <div className="px-1 text-xs font-medium text-muted-foreground">{t('terminal.theme')}</div>
                                 <Select
                                     value={terminalAppearance.themePresetId}
                                     onValueChange={value => {
@@ -390,7 +392,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                             </div>
 
                             <div className="space-y-2">
-                                <div className="px-1 text-xs font-medium text-muted-foreground">Cursor style</div>
+                                <div className="px-1 text-xs font-medium text-muted-foreground">{t('terminal.cursorStyle')}</div>
                                 <Select
                                     value={terminalAppearance.cursorStyle}
                                     onValueChange={value => {
@@ -416,7 +418,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
 
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
-                                    <div className="px-1 text-xs font-medium text-muted-foreground">Terminal size</div>
+                                    <div className="px-1 text-xs font-medium text-muted-foreground">{t('settings.terminalFontSize')}</div>
                                     <Input
                                         type="number"
                                         min={8}
@@ -434,7 +436,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <div className="px-1 text-xs font-medium text-muted-foreground">Line height</div>
+                                    <div className="px-1 text-xs font-medium text-muted-foreground">{t('terminal.lineHeight')}</div>
                                     <Input
                                         type="number"
                                         min={1}
@@ -500,6 +502,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                             fontSize={resolvedTerminalAppearance.fontSize}
                             lineHeight={resolvedTerminalAppearance.lineHeight}
                             theme={resolvedTerminalAppearance.theme}
+                            t={t}
                         />
                     </div>
                 </div>

@@ -93,48 +93,48 @@ describe('processStreamChunk', () => {
 
     it('handles content chunk', () => {
         const chunk: StreamChunk = { type: 'content', content: 'Hello' };
-        const result = processStreamChunk(chunk, baseCurrent, startTime);
+        const result = processStreamChunk(chunk, baseCurrent, startTime, 'Stream error');
         expect(result.updated).toBe(true);
         expect(result.newContent).toBe('Hello');
     });
 
     it('handles error chunk', () => {
         const chunk: StreamChunk = { type: 'error', content: 'Something failed' };
-        const result = processStreamChunk(chunk, baseCurrent, startTime);
+        const result = processStreamChunk(chunk, baseCurrent, startTime, 'Stream error');
         expect(result.updated).toBe(true);
         expect(result.streamError).toBe('Something failed');
     });
 
     it('handles error chunk with no content', () => {
         const chunk: StreamChunk = { type: 'error' };
-        const result = processStreamChunk(chunk, baseCurrent, startTime);
+        const result = processStreamChunk(chunk, baseCurrent, startTime, 'Stream error');
         expect(result.streamError).toBe('Stream error');
     });
 
     it('handles reasoning chunk by appending', () => {
         const current = { ...baseCurrent, reasoning: 'Step 1. ' };
         const chunk: StreamChunk = { type: 'reasoning', content: 'Step 2.' };
-        const result = processStreamChunk(chunk, current, startTime);
+        const result = processStreamChunk(chunk, current, startTime, 'Stream error');
         expect(result.newReasoning).toBe('Step 1. Step 2.');
     });
 
     it('handles metadata chunk', () => {
         const chunk: StreamChunk = { type: 'metadata', sources: ['src1', 'src2'] };
-        const result = processStreamChunk(chunk, baseCurrent, startTime);
+        const result = processStreamChunk(chunk, baseCurrent, startTime, 'Stream error');
         expect(result.newSources).toEqual(['src1', 'src2']);
     });
 
     it('handles images chunk by merging', () => {
         const current = { ...baseCurrent, images: ['img1'] };
         const chunk: StreamChunk = { type: 'images', images: ['img2'] };
-        const result = processStreamChunk(chunk, current, startTime);
+        const result = processStreamChunk(chunk, current, startTime, 'Stream error');
         expect(result.newImages).toEqual(['img1', 'img2']);
     });
 
     it('handles tool_calls chunk', () => {
         const toolCalls = [{ id: 't1', type: 'function' as const, function: { name: 'fn', arguments: '{}' } }];
         const chunk: StreamChunk = { type: 'tool_calls', tool_calls: toolCalls };
-        const result = processStreamChunk(chunk, baseCurrent, startTime);
+        const result = processStreamChunk(chunk, baseCurrent, startTime, 'Stream error');
         expect(result.newToolCalls).toEqual(toolCalls);
     });
 
@@ -148,7 +148,7 @@ describe('processStreamChunk', () => {
                 function: { name: 'list_directory', arguments: '' },
             }],
         };
-        const firstResult = processStreamChunk(firstChunk, baseCurrent, startTime);
+        const firstResult = processStreamChunk(firstChunk, baseCurrent, startTime, 'Stream error');
 
         const secondChunk: StreamChunk = {
             type: 'tool_calls',
@@ -162,7 +162,7 @@ describe('processStreamChunk', () => {
         const secondResult = processStreamChunk(secondChunk, {
             ...baseCurrent,
             toolCalls: firstResult.newToolCalls ?? [],
-        }, startTime);
+        }, startTime, 'Stream error');
 
         expect(secondResult.newToolCalls).toEqual([{
             id: 't1',
@@ -185,7 +185,7 @@ describe('processStreamChunk', () => {
                 function: { name: 'get_system_info', arguments: '' },
             }],
         };
-        const firstResult = processStreamChunk(firstChunk, baseCurrent, startTime);
+        const firstResult = processStreamChunk(firstChunk, baseCurrent, startTime, 'Stream error');
 
         const secondChunk: StreamChunk = {
             type: 'tool_calls',
@@ -199,20 +199,20 @@ describe('processStreamChunk', () => {
         const secondResult = processStreamChunk(secondChunk, {
             ...baseCurrent,
             toolCalls: firstResult.newToolCalls ?? [],
-        }, startTime);
+        }, startTime, 'Stream error');
 
         expect(secondResult.newToolCalls?.[0]?.id).toBe('get_system_info-0');
     });
 
     it('returns updated false for unknown chunk type with no content', () => {
         const chunk: StreamChunk = { type: 'unknown_type' };
-        const result = processStreamChunk(chunk, baseCurrent, startTime);
+        const result = processStreamChunk(chunk, baseCurrent, startTime, 'Stream error');
         expect(result.updated).toBe(false);
     });
 
     it('treats typeless chunk with content as content chunk', () => {
         const chunk: StreamChunk = { content: 'implicit content' };
-        const result = processStreamChunk(chunk, baseCurrent, startTime);
+        const result = processStreamChunk(chunk, baseCurrent, startTime, 'Stream error');
         expect(result.updated).toBe(true);
         expect(result.newContent).toBe('implicit content');
     });
@@ -220,7 +220,7 @@ describe('processStreamChunk', () => {
     it('appends content to existing content', () => {
         const current = { ...baseCurrent, content: 'Hello ' };
         const chunk: StreamChunk = { type: 'content', content: 'world' };
-        const result = processStreamChunk(chunk, current, startTime - 5000);
+        const result = processStreamChunk(chunk, current, startTime - 5000, 'Stream error');
         expect(result.newContent).toBe('Hello world');
         expect(result.speed).toBeTypeOf('number');
     });

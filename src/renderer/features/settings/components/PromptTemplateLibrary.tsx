@@ -294,7 +294,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                                     )}
                                 </div>
                                 <div className="text-xs text-muted-foreground font-medium line-clamp-2 leading-relaxed opacity-80">
-                                    {tp.description || 'No description provided.'}
+                                    {tp.description || t('prompts.library.noDescription')}
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0 self-center">
@@ -347,7 +347,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                                 {t('prompts.library.empty')}
                             </p>
                             <p className="text-xxs font-medium mt-1">
-                                Start by creating your first prompt template.
+                                {t('prompts.library.emptyHint')}
                             </p>
                         </div>
                         <Button
@@ -355,7 +355,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                             onClick={startCreate}
                             className="rounded-full h-10 px-6 border-primary/30 text-primary hover:bg-primary/5 font-bold text-[10px]"
                         >
-                            Create First Prompt
+                            {t('prompts.library.createFirstPrompt')}
                         </Button>
                     </div>
                 )}

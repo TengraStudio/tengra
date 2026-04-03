@@ -1,11 +1,13 @@
 import { Check, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { memo, useMemo, useState } from 'react';
 
+import { Language } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { Message, MessageVariant } from '@/types';
 
 import { AssistantLogo } from './AssistantLogo';
 import { MessageBubbleContent } from './MarkdownContent';
+import { MessageFooter } from './MessageFooter';
 import { useMessageContent, useQuotaDetails } from './MessageUtils';
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
@@ -22,6 +24,8 @@ const MessageVariantCard = memo(
         onStop,
         isSpeaking,
         showRawMarkdown,
+        language,
+        footerConfig,
     }: {
         variant: MessageVariant;
         isSelected: boolean;
@@ -33,6 +37,13 @@ const MessageVariantCard = memo(
         onStop?: () => void;
         isSpeaking?: boolean;
         showRawMarkdown: boolean;
+        language: Language;
+        footerConfig?: {
+            showTimestamp?: boolean;
+            showTokens?: boolean;
+            showModel?: boolean;
+            showResponseTime?: boolean;
+        };
     }) => {
         const { displayContent } = useMessageContent(variant.content, undefined, undefined);
         const is429 = useMemo(
@@ -40,6 +51,7 @@ const MessageVariantCard = memo(
             [displayContent]
         );
         const quota = useQuotaDetails(is429, displayContent, t);
+        const variantInterrupted = variant.status === 'interrupted' || typeof variant.error === 'string';
 
         return (
             <div
@@ -67,11 +79,18 @@ const MessageVariantCard = memo(
                             </span>
                         </div>
                     </div>
-                    {isSelected && (
-                        <div className="bg-primary/10 text-primary p-1 rounded-full">
-                            <Check className="w-3 h-3" />
-                        </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                        {variantInterrupted && (
+                            <span className="rounded-full bg-destructive/10 px-2 py-1 text-xxs font-semibold text-destructive">
+                                {t('tools.failed')}
+                            </span>
+                        )}
+                        {isSelected && (
+                            <div className="bg-primary/10 text-primary p-1 rounded-full">
+                                <Check className="w-3 h-3" />
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <div className="flex-1 min-h-24">
@@ -84,14 +103,26 @@ const MessageVariantCard = memo(
                         onSpeak={onSpeak}
                         onStop={onStop}
                         isSpeaking={isSpeaking}
+                        attachments={[]}
                         t={t}
                         isUser={isUser}
                     />
                 </div>
 
-                <div className="mt-2 text-xxs text-muted-foreground/40 font-medium flex justify-between items-center">
-                    <span>{new Date(variant.timestamp).toLocaleTimeString()}</span>
-                </div>
+                <MessageFooter
+                    message={{
+                        id: variant.id ?? 'v',
+                        content: variant.content,
+                        role: 'assistant',
+                        timestamp: variant.timestamp,
+                        model: variant.model,
+                        provider: variant.provider,
+                    } as Message}
+                    displayContent={displayContent}
+                    language={language}
+                    isStreaming={isStreaming}
+                    config={footerConfig}
+                />
             </div>
         );
     }
@@ -112,6 +143,8 @@ const MessageVariantsGrid = memo(
         onStop,
         isSpeaking,
         showRawMarkdown,
+        language,
+        footerConfig,
     }: {
         variants: MessageVariant[];
         selectedVariantId: string | null;
@@ -124,6 +157,13 @@ const MessageVariantsGrid = memo(
         onStop?: () => void;
         isSpeaking?: boolean;
         showRawMarkdown: boolean;
+        language: Language;
+        footerConfig?: {
+            showTimestamp?: boolean;
+            showTokens?: boolean;
+            showModel?: boolean;
+            showResponseTime?: boolean;
+        };
     }) => (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {variants.map(variant => (
@@ -144,6 +184,8 @@ const MessageVariantsGrid = memo(
                     onStop={onStop}
                     isSpeaking={isSpeaking}
                     showRawMarkdown={showRawMarkdown}
+                    language={language}
+                    footerConfig={footerConfig}
                 />
             ))}
         </div>
@@ -161,16 +203,25 @@ export const VariantsView = memo(
         onStop,
         isSpeaking,
         showRawMarkdown,
+        language,
         t,
+        footerConfig,
     }: {
         message: Message;
         backend?: string;
         isStreaming?: boolean;
+        language: Language;
         onSpeak?: (text: string) => void;
         onStop?: () => void;
         isSpeaking?: boolean;
         showRawMarkdown: boolean;
         t: TranslationFn;
+        footerConfig?: {
+            showTimestamp?: boolean;
+            showTokens?: boolean;
+            showModel?: boolean;
+            showResponseTime?: boolean;
+        };
     }) => {
         const variants = message.variants ?? [];
         const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
@@ -201,6 +252,8 @@ export const VariantsView = memo(
                     onStop={onStop}
                     isSpeaking={isSpeaking}
                     showRawMarkdown={showRawMarkdown}
+                    language={language}
+                    footerConfig={footerConfig}
                 />
             </div>
         );

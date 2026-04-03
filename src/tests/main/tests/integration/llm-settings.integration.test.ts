@@ -1,6 +1,7 @@
 import { OllamaService } from '@main/services/llm/ollama.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import * as path from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock fs to control SettingsService.loadSettings
@@ -25,10 +26,9 @@ vi.mock('fs', () => {
 });
 
 vi.mock('electron', () => ({
-    app: { getPath: () => '/tmp' },
+    app: { getPath: () => path.join(process.cwd(), 'logs', 'test-fixtures', 'llm-settings') },
     ipcMain: { handle: vi.fn(), on: vi.fn() }
 }));
-
 
 describe('LLM-Settings Integration', () => {
     let settingsService: SettingsService;
@@ -38,12 +38,7 @@ describe('LLM-Settings Integration', () => {
     beforeEach(async () => {
         settingsService = new SettingsService();
         await settingsService.initialize();
-        eventBusService = {
-            onCustom: vi.fn(),
-            subscribe: vi.fn(),
-            emit: vi.fn(),
-            emitCustom: vi.fn()
-        } as never as EventBusService;
+        eventBusService = new EventBusService();
         
         // We need to verify OllamaService reads from SettingsService
         ollamaService = new OllamaService(settingsService, eventBusService);

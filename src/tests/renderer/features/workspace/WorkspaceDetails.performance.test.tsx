@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { WorkspaceDetails } from '@/features/workspace/components/WorkspaceDetails';
@@ -87,7 +87,12 @@ const workspaceControllerState = vi.hoisted(() => ({
     onRender: vi.fn(),
 }));
 
-vi.mock('@/features/workspace/components/workspace/WorkspaceToolbar', async () => {
+const workspaceMainHandlers = vi.hoisted(() => ({
+    onUploadLogo: null as (() => void) | null,
+    onGenerateLogo: null as (() => void) | null,
+}));
+
+vi.mock('@renderer/features/workspace/workspace-shell/WorkspaceToolbar', async () => {
     const React = await vi.importActual<typeof import('react')>('react');
 
     return {
@@ -98,7 +103,7 @@ vi.mock('@/features/workspace/components/workspace/WorkspaceToolbar', async () =
     };
 });
 
-vi.mock('@/features/workspace/components/workspace/WorkspaceExplorerPanel', async () => {
+vi.mock('@renderer/features/workspace/workspace-explorer/WorkspaceExplorerPanel', async () => {
     const React = await vi.importActual<typeof import('react')>('react');
 
     return {
@@ -109,7 +114,7 @@ vi.mock('@/features/workspace/components/workspace/WorkspaceExplorerPanel', asyn
     };
 });
 
-vi.mock('@/features/workspace/components/workspace/WorkspaceSidebar', async () => {
+vi.mock('@renderer/features/workspace/workspace-shell/WorkspaceSidebar', async () => {
     const React = await vi.importActual<typeof import('react')>('react');
 
     return {
@@ -129,14 +134,41 @@ vi.mock('@/features/workspace/components/workspace/WorkspaceSidebar', async () =
     };
 });
 
-vi.mock('@/features/workspace/components/workspace/WorkspaceMain', async () => {
+vi.mock('@renderer/features/workspace/workspace-shell/WorkspaceMain', async () => {
     const React = await vi.importActual<typeof import('react')>('react');
     return {
-        WorkspaceMain: () => React.createElement('div', { 'data-testid': 'workspace-main' }),
+        WorkspaceMain: (props: { onUploadLogo: () => void; onGenerateLogo?: () => void }) => {
+            workspaceMainHandlers.onUploadLogo = props.onUploadLogo;
+            workspaceMainHandlers.onGenerateLogo = props.onGenerateLogo ?? null;
+            return React.createElement(
+                'div',
+                { 'data-testid': 'workspace-main' },
+                React.createElement(
+                    'button',
+                    {
+                        type: 'button',
+                        'data-testid': 'workspace-main-upload-logo',
+                        onClick: props.onUploadLogo,
+                    },
+                    'upload-logo'
+                ),
+                React.createElement(
+                    'button',
+                    {
+                        type: 'button',
+                        'data-testid': 'workspace-main-generate-logo',
+                        onClick: () => {
+                            props.onGenerateLogo?.();
+                        },
+                    },
+                    'generate-logo'
+                )
+            );
+        },
     };
 });
 
-vi.mock('@/features/workspace/components/workspace/WorkspaceTerminalLayer', async () => {
+vi.mock('@renderer/features/workspace/workspace-shell/WorkspaceTerminalLayer', async () => {
     const React = await vi.importActual<typeof import('react')>('react');
     return {
         WorkspaceTerminalLayer: () =>
@@ -144,23 +176,23 @@ vi.mock('@/features/workspace/components/workspace/WorkspaceTerminalLayer', asyn
     };
 });
 
-vi.mock('@/features/workspace/components/workspace/WorkspaceDialogs', () => ({
+vi.mock('@renderer/features/workspace/workspace-shell/WorkspaceDialogs', () => ({
     WorkspaceDialogs: () => null,
 }));
 
-vi.mock('@/features/workspace/components/workspace/CommandStrip', () => ({
+vi.mock('@renderer/features/workspace/workspace-shell/CommandStrip', () => ({
     CommandStrip: () => null,
 }));
 
-vi.mock('@/features/workspace/components/workspace/ShortcutHelpOverlay', () => ({
+vi.mock('@renderer/features/workspace/workspace-shell/ShortcutHelpOverlay', () => ({
     ShortcutHelpOverlay: () => null,
 }));
 
-vi.mock('@/features/workspace/components/workspace/WorkspaceNotifications', () => ({
+vi.mock('@renderer/features/workspace/workspace-shell/WorkspaceNotifications', () => ({
     WorkspaceNotifications: () => null,
 }));
 
-vi.mock('@/features/workspace/components/workspace/WorkspaceQuickSwitch', () => ({
+vi.mock('@renderer/features/workspace/workspace-shell/WorkspaceQuickSwitch', () => ({
     WorkspaceQuickSwitch: () => null,
 }));
 
@@ -206,6 +238,15 @@ vi.mock('@/features/workspace/hooks/useWorkspaceBranchState', () => ({
 
 vi.mock('@/features/workspace/hooks/useWorkspaceShortcuts', () => ({
     useWorkspaceShortcuts: () => undefined,
+}));
+
+vi.mock('@/features/workspace/hooks/useWorkspaceTaskRunner', () => ({
+    useWorkspaceTaskRunner: () => ({
+        tasks: [],
+        runningTaskCount: 0,
+        runDefaultTask: vi.fn(),
+        stopTask: vi.fn(),
+    }),
 }));
 
 vi.mock('@/hooks/useRenderTracker', () => ({
@@ -255,6 +296,7 @@ describe('WorkspaceDetails performance boundaries', () => {
                 workspace: {
                     setActive: vi.fn().mockResolvedValue({ rootPath: workspaceFixture.path }),
                     clearActive: vi.fn().mockResolvedValue({ rootPath: null }),
+                    uploadLogo: vi.fn().mockResolvedValue('C:\\workspaces\\performance\\.tengra\\logo.png'),
                 },
             },
             configurable: true,
@@ -263,6 +305,8 @@ describe('WorkspaceDetails performance boundaries', () => {
 
         window.requestAnimationFrame = vi.fn(() => 1);
         window.cancelAnimationFrame = vi.fn();
+        workspaceMainHandlers.onUploadLogo = null;
+        workspaceMainHandlers.onGenerateLogo = null;
     });
 
     it('keeps toolbar and explorer stable during chat-stream-only updates', () => {
@@ -294,5 +338,50 @@ describe('WorkspaceDetails performance boundaries', () => {
         expect(renderCounters.toolbar).toBe(1);
         expect(renderCounters.explorer).toBe(1);
         expect(renderCounters.sidebar).toBe(2);
+    });
+
+    it('uploads logo directly from workspace header flow and updates workspace data', async () => {
+        render(
+            <WorkspaceDetails
+                workspace={workspaceFixture}
+                onBack={vi.fn()}
+                onDeleteWorkspace={vi.fn()}
+                language="en"
+                tabs={[]}
+                activeTabId={null}
+                setTabs={vi.fn()}
+                setActiveTabId={vi.fn()}
+            />
+        );
+
+        fireEvent.click(screen.getByTestId('workspace-main-upload-logo'));
+
+        await waitFor(() => {
+            expect(workspaceControllerState.handleUpdateWorkspace).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    logo: 'C:\\workspaces\\performance\\.tengra\\logo.png',
+                    updatedAt: expect.any(Number),
+                })
+            );
+        });
+    });
+
+    it('keeps generator modal path available from workspace header flow', () => {
+        render(
+            <WorkspaceDetails
+                workspace={workspaceFixture}
+                onBack={vi.fn()}
+                onDeleteWorkspace={vi.fn()}
+                language="en"
+                tabs={[]}
+                activeTabId={null}
+                setTabs={vi.fn()}
+                setActiveTabId={vi.fn()}
+            />
+        );
+
+        fireEvent.click(screen.getByTestId('workspace-main-generate-logo'));
+
+        expect(workspaceControllerState.ps.setShowLogoModal).toHaveBeenCalledWith(true);
     });
 });

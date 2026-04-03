@@ -12,7 +12,7 @@ import { z } from 'zod';
 const SessionJsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
     z.union([z.string(), z.number(), z.boolean(), z.null(), SessionJsonObjectSchema, SessionJsonArraySchema])
 );
-const SessionJsonObjectSchema = z.record(z.string(), SessionJsonValueSchema);
+const SessionJsonObjectSchema = z.record(z.string(), SessionJsonValueSchema.optional());
 const SessionJsonArraySchema = z.array(SessionJsonValueSchema);
 
 export const SessionModeSchema = z.enum(SESSION_MODES);

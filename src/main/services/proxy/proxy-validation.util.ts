@@ -11,6 +11,8 @@ export const PORT_MAX = 65535;
 
 /** Maximum allowed length for API keys and tokens */
 const MAX_TOKEN_LENGTH = 8192;
+const OAUTH_TIMEOUT_MIN_MS = 10_000;
+const OAUTH_TIMEOUT_MAX_MS = 600_000;
 
 /**
  * Validates that a value is a valid TCP/UDP port number.
@@ -114,6 +116,27 @@ export function validateProvider(provider: RuntimeValue): string | undefined {
     }
     if (provider.trim().length === 0) {
         return 'Provider must not be empty';
+    }
+    return undefined;
+}
+
+/**
+ * Validates provider OAuth timeout (milliseconds) with strict bounds.
+ * @param timeoutMs - Timeout value in milliseconds
+ * @returns An error message string if invalid, or undefined if valid
+ */
+export function validateOAuthTimeoutMs(timeoutMs: RuntimeValue): string | undefined {
+    if (timeoutMs === undefined || timeoutMs === null) {
+        return 'OAuth timeout is required';
+    }
+    if (typeof timeoutMs !== 'number' || !Number.isFinite(timeoutMs)) {
+        return 'OAuth timeout must be a finite number';
+    }
+    if (!Number.isInteger(timeoutMs)) {
+        return 'OAuth timeout must be an integer';
+    }
+    if (timeoutMs < OAUTH_TIMEOUT_MIN_MS || timeoutMs > OAUTH_TIMEOUT_MAX_MS) {
+        return `OAuth timeout must be between ${OAUTH_TIMEOUT_MIN_MS} and ${OAUTH_TIMEOUT_MAX_MS} ms`;
     }
     return undefined;
 }

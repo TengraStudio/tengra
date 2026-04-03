@@ -1,7 +1,7 @@
 import { Bookmark, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { memo } from 'react';
 
-import { Language,useTranslation } from '@/i18n';
+import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { Message } from '@/types';
 
@@ -12,6 +12,12 @@ export interface MessageFooterProps {
     isStreaming?: boolean;
     streamingSpeed?: number | null;
     onRate?: (rating: number) => void;
+    config?: {
+        showTimestamp?: boolean;
+        showTokens?: boolean;
+        showModel?: boolean;
+        showResponseTime?: boolean;
+    };
 }
 
 /**
@@ -26,29 +32,39 @@ export interface MessageFooterProps {
  * - Streaming speed
  */
 export const MessageFooter = memo(
-    ({ message, displayContent, language, isStreaming, streamingSpeed, onRate }: MessageFooterProps) => {
+    ({ message, displayContent, language, isStreaming, streamingSpeed, onRate, config }: MessageFooterProps) => {
         const { t } = useTranslation(language);
+        const showTimestamp = config?.showTimestamp ?? true;
+        const showTokens = config?.showTokens ?? true;
+        const showModel = config?.showModel ?? true;
+        const showResponseTime = config?.showResponseTime ?? true;
         return (
             <div className="flex items-center gap-3 mt-2 text-xxs text-muted-foreground/40 font-medium">
-                <span>
-                    {new Date(message.timestamp).toLocaleTimeString(t('common.locale'), {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                    })}
-                </span>
-                <span className="h-1 rounded-full bg-muted-foreground/20" />
-                <span>
-                    {t('messageBubble.tokenEstimate', {
-                        count: Math.ceil(displayContent.length / 4),
-                    })}
-                </span>
-                {message.model && (
+                {showTimestamp && (
+                    <span>
+                        {new Date(message.timestamp).toLocaleTimeString(t('common.locale'), {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                        })}
+                    </span>
+                )}
+                {showTokens && (
+                    <>
+                        <span className="h-1 rounded-full bg-muted-foreground/20" />
+                        <span>
+                            {t('messageBubble.tokenEstimate', {
+                                count: Math.ceil(displayContent.length / 4),
+                            })}
+                        </span>
+                    </>
+                )}
+                {showModel && message.model && (
                     <>
                         <span className="h-1 rounded-full bg-muted-foreground/20" />
                         <span className="truncate max-w-32">{message.model}</span>
                     </>
                 )}
-                {message.responseTime && (
+                {showResponseTime && message.responseTime && (
                     <>
                         <span className="h-1 rounded-full bg-muted-foreground/20" />
                         <span className="text-success/60">

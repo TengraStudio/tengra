@@ -15,12 +15,12 @@ export const DEFAULT_WORKSPACE_EXPLORER_IGNORE_PATTERNS = [
     '.git/',
     'dist/',
     'build/',
-    '.tengra/',
     '.DS_Store',
 ] as const;
 
 export const DEFAULT_WORKSPACE_SCAN_IGNORE_PATTERNS = [
     ...DEFAULT_WORKSPACE_EXPLORER_IGNORE_PATTERNS,
+    '.tengra/',
     '.svn/',
     '.hg/',
     'out/',

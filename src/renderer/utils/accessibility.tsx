@@ -463,9 +463,10 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
 };
 
 export function useAccessibility(): AccessibilityContextValue {
+    const { t } = useTranslation();
     const context = useContext(AccessibilityContext);
     if (!context) {
-        throw new Error('useAccessibility must be used within an AccessibilityProvider');
+        throw new Error(t('errors.context.useAccessibilityProvider'));
     }
     return context;
 }

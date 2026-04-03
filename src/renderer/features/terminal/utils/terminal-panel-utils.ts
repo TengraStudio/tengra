@@ -87,8 +87,7 @@ export function normalizeSshProfiles(raw: RendererDataValue): RemoteSshProfile[]
  * @returns Normalized container or null
  */
 function parseDockerContainerRecord(
-    record: Record<string, RendererDataValue>,
-    index: number
+    record: Record<string, RendererDataValue>
 ): RemoteDockerContainer | null {
     const id =
         toDisplayString(record.id) ||
@@ -103,7 +102,7 @@ function parseDockerContainerRecord(
         toDisplayString(record.status) ||
         toDisplayString(record.Status) ||
         toDisplayString(record.State) ||
-        'unknown';
+        '';
     const shell = toDisplayString(record.shell) || toDisplayString(record.Shell) || '/bin/sh';
 
     if (!id || !name) {
@@ -111,8 +110,8 @@ function parseDockerContainerRecord(
     }
 
     return {
-        id: id || `docker-${index}`,
-        name: name || `Container ${index + 1}`,
+        id,
+        name,
         status,
         shell,
     };
@@ -130,11 +129,11 @@ export function normalizeDockerContainers(raw: RendererDataValue): RemoteDockerC
     }
 
     const containers: RemoteDockerContainer[] = [];
-    raw.forEach((item, index) => {
+    raw.forEach(item => {
         if (!item || typeof item !== 'object') {
             return;
         }
-        const container = parseDockerContainerRecord(item as Record<string, RendererDataValue>, index);
+        const container = parseDockerContainerRecord(item as Record<string, RendererDataValue>);
         if (container) {
             containers.push(container);
         }

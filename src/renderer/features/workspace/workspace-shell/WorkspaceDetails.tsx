@@ -125,6 +125,23 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
         t,
     });
 
+    const handleManualLogoUpload = React.useCallback(async () => {
+        try {
+            const uploadedPath = await window.electron.workspace.uploadLogo(workspace.path);
+            if (!uploadedPath) {
+                return;
+            }
+
+            await handleUpdateWorkspace({
+                logo: uploadedPath,
+                updatedAt: Date.now(),
+            });
+        } catch (error) {
+            appLogger.error('WorkspaceDetails', 'Logo upload failed', error as Error);
+            ps.notify('error', t('workspaceDashboard.updateFailed'));
+        }
+    }, [handleUpdateWorkspace, ps, t, workspace.path]);
+
     useWorkspaceShortcuts({
         wm,
         setShowShortcutHelp: qs.setShowShortcutHelp,
@@ -265,7 +282,9 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                         workspace={workspace}
                         handleUpdateWorkspace={handleUpdateWorkspace}
                         onAddMount={() => ps.setShowMountModal(true)}
-                        onUploadLogo={() => ps.setShowLogoModal(true)}
+                        onUploadLogo={() => {
+                            void handleManualLogoUpload();
+                        }}
                         t={t}
                         language={language}
                         setDashboardTab={wm.setDashboardTab}

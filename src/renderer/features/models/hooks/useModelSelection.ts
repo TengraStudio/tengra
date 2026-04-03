@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { AppSettings } from '@/types';
 
@@ -35,14 +35,21 @@ export function useModelSelection(
             setSelectedModel(normalizedModel);
             setSelectedProvider(provider);
             setSelectedModels([{ provider, model: normalizedModel }]);
-            setAppSettings({
-                ...appSettings,
-                general: {
-                    ...appSettings.general,
-                    defaultModel: normalizedModel,
-                    lastProvider: provider
-                }
-            });
+            
+            // Optimization: Only update settings if they actually differ
+            if (
+                appSettings.general.defaultModel !== normalizedModel ||
+                appSettings.general.lastProvider !== provider
+            ) {
+                setAppSettings({
+                    ...appSettings,
+                    general: {
+                        ...appSettings.general,
+                        defaultModel: normalizedModel,
+                        lastProvider: provider
+                    }
+                });
+            }
             setIsModelMenuOpen(false);
         }
     }, [appSettings, setAppSettings]);
@@ -54,23 +61,27 @@ export function useModelSelection(
                 return prev;
             }
             if (filtered.length > 0) {
-                setSelectedModel(filtered[0].model);
-                setSelectedProvider(filtered[0].provider);
+                const first = filtered[0];
+                setSelectedModel(first.model);
+                setSelectedProvider(first.provider);
             }
             return filtered;
         });
     }, []);
 
     const clearMultiSelection = useCallback(() => {
-        if (selectedModels.length > 0) {
-            const first = selectedModels[0];
-            setSelectedModels([first]);
+        setSelectedModels(prev => {
+            if (prev.length === 0) {
+                return prev;
+            }
+            const first = prev[0];
             setSelectedModel(first.model);
             setSelectedProvider(first.provider);
-        }
-    }, [selectedModels]);
+            return [first];
+        });
+    }, []);
 
-    return {
+    return useMemo(() => ({
         selectedModel,
         setSelectedModel,
         selectedProvider,
@@ -82,5 +93,13 @@ export function useModelSelection(
         handleSelectModel,
         removeSelectedModel,
         clearMultiSelection
-    };
+    }), [
+        selectedModel,
+        selectedProvider,
+        selectedModels,
+        isModelMenuOpen,
+        handleSelectModel,
+        removeSelectedModel,
+        clearMultiSelection
+    ]);
 }

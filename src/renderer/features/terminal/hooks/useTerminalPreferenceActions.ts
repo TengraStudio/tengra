@@ -87,11 +87,14 @@ export function useTerminalPreferenceActions({
                 const parsed = JSON.parse(raw);
                 const validation = validateTerminalAppearanceImport(parsed);
                 if (!validation.valid) {
+                    const validationMessage = validation.errors
+                        .map(errorKey => t(errorKey))
+                        .join(', ');
                     appLogger.error(
                         'TerminalPanel',
-                        `Theme validation failed: ${validation.errors.join(', ')}`
+                        `Theme validation failed: ${validationMessage}`
                     );
-                    alertDialog(`Invalid theme file:\n${validation.errors.join('\n')}`);
+                    alertDialog(t('terminal.invalidThemeFile'));
                     return;
                 }
                 applyAppearancePatch(parsed as Partial<TerminalAppearancePreferences>);
@@ -186,13 +189,13 @@ export function useTerminalPreferenceActions({
     }, [shortcutBindings, shortcutPreset]);
 
     const importShortcutShareCode = useCallback(() => {
-        const raw = promptDialog('Paste shortcut share code');
+        const raw = promptDialog(t('terminal.shortcutShareCodePrompt'));
         if (!raw?.trim()) {
             return;
         }
         const parsed = parseShortcutShareCode(raw);
         applyShortcutPayload(parsed, 'share-code');
-    }, [applyShortcutPayload]);
+    }, [applyShortcutPayload, t]);
 
     return {
         applyAppearancePatch,

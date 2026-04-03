@@ -14,6 +14,14 @@ Tengra is a powerful, open-source AI assistant designed to streamline your devel
 - **Project Management**: Built-in task tracking and `TODO.md` integration.
 - **Offline First**: Optimized for privacy and local-first data storage.
 
+## 🔌 Provider Compatibility Notes (Research)
+
+- **Groq**: Supported through OpenAI-compatible chat completions (`https://api.groq.com/openai/v1/chat/completions`).
+- **Kimi (Moonshot)**: Prototype OpenAI-compatible routing is available via `https://api.moonshot.ai/v1` with provider id `kimi`.
+- **Cursor**: Compatibility route exists as a proxy integration point (`provider: cursor`), but Cursor private auth/session protocols are **not** reverse-engineered in this project.
+  - Only lawful black-box compatibility is in scope.
+  - Users must provide valid credentials/tokens through supported account/proxy flows.
+
 ---
 
 ## 📚 Documentation Index

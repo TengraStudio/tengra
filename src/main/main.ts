@@ -134,9 +134,12 @@ app.whenReady().then(async () => {
         }
     });
 
-    appLogger.setShowDebugLogs(false);
-    appLogger.setLevel(LogLevel.INFO);
+    const debugLogsEnabled = process.env.TENGRA_DEBUG_LOGS !== 'false';
+    const runtimeLogLevel = debugLogsEnabled ? LogLevel.DEBUG : LogLevel.INFO;
+    appLogger.setShowDebugLogs(debugLogsEnabled);
+    appLogger.setLevel(runtimeLogLevel);
     appLogger.installConsoleRedirect();
+    appLogger.info('Main', `Logger configured: level=${LogLevel[runtimeLogLevel]}, debug=${debugLogsEnabled}`);
 
     appLogger.info('Startup', 'Validating environment variables...');
     validateEnvironmentVariables();
@@ -177,25 +180,36 @@ app.whenReady().then(async () => {
     const runtimeStartupDecisions = getRuntimeStartupDecisions(runtimeBootstrapResult);
 
     if (runtimeStartupDecisions.database.shouldStart) {
-        void (async () => {
-            try {
-                await services.databaseService.initialize();
-                const workspaces = await services.databaseService.workspaces.getWorkspaces();
-                for (const workspace of workspaces) {
-                    if (workspace.path) {
-                        allowedFileRoots.add(path.resolve(workspace.path));
-                    }
+        try {
+            await services.databaseService.initialize();
+            const workspaces = await services.databaseService.workspaces.getWorkspaces();
+            for (const workspace of workspaces) {
+                if (workspace.path) {
+                    allowedFileRoots.add(path.resolve(workspace.path));
                 }
-                appLogger.info('Main', `Populated allowedFileRoots with ${workspaces.length} workspace paths`);
-            } catch (error) {
-                appLogger.error('Main', 'Failed to populate allowedFileRoots from workspaces', error as Error);
             }
-        })();
+            appLogger.info('Main', `Populated allowedFileRoots with ${workspaces.length} workspace paths`);
+        } catch (error) {
+            appLogger.error('Main', 'Failed to populate allowedFileRoots from workspaces', error as Error);
+        }
     } else {
         appLogger.warn(
             'Main',
             `Skipping DB init because managed runtime component ${runtimeStartupDecisions.database.componentId} is ${runtimeStartupDecisions.database.status ?? 'missing'}`
         );
+        // Fallback: still try DB init so chat persistence continues even if runtime manifest is stale.
+        try {
+            await services.databaseService.initialize();
+            const workspaces = await services.databaseService.workspaces.getWorkspaces();
+            for (const workspace of workspaces) {
+                if (workspace.path) {
+                    allowedFileRoots.add(path.resolve(workspace.path));
+                }
+            }
+            appLogger.info('Main', `DB fallback init succeeded; loaded ${workspaces.length} workspace paths`);
+        } catch (error) {
+            appLogger.error('Main', 'DB fallback init failed', error as Error);
+        }
     }
     if (runtimeStartupDecisions.embeddedProxy.shouldStart) {
         void services.proxyService.startEmbeddedProxy().catch(e => appLogger.error('Main', `Proxy Init Failed: ${e}`));

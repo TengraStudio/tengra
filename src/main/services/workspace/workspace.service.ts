@@ -1433,7 +1433,7 @@ export class WorkspaceService extends BaseService {
             '.awscache', '.cache-loader', 'build-artifacts', 'cache-loader',
             'minified', 'compiled', 'output', 'reports', 'test-results', 
             '.tox', '.nox', '.pants.d', '.scons_cache', '.bundle', '.pnpm-store',
-            '.vercel', '.netlify', '.docker', '.firebase', '.github', '.gitlab'
+            '.vercel', '.netlify', '.docker', '.firebase', '.gitlab'
         ];
         if (ignoredNames.includes(lowerName)) { return true; }
 

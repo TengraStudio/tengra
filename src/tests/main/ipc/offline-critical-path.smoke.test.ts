@@ -88,6 +88,7 @@ describe('Offline critical path smoke', () => {
             copilotService: { chat: vi.fn(), streamChat: vi.fn() },
             llmService,
             proxyService: { getProxyKey: vi.fn(async () => { throw new Error('network unavailable'); }) },
+            localeService: { getLocalePack: vi.fn(() => ({ locale: 'en' })) },
             codeIntelligenceService: { queryIndexedSymbols: vi.fn(async () => []) },
             contextRetrievalService: { retrieveContext: vi.fn(async () => ({ contextString: '', sources: [] })) },
             databaseService: {

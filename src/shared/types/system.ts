@@ -60,6 +60,10 @@ export interface SystemInfo {
     hostname: string
     release: string
     shell?: string
+    homeDir?: string
+    username?: string
+    cwd?: string
+    tempDir?: string
     [key: string]: string | number | undefined
 }
 

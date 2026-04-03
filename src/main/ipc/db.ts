@@ -95,6 +95,7 @@ const WorkspaceSchema = z.object({
     title: z.string().min(1),
     path: z.string().min(1),
     description: z.string().optional().nullable(),
+    logo: z.string().optional().nullable(),
     mounts: z.union([z.string(), z.array(z.unknown())]).optional(),
     councilConfig: z.unknown().optional(),
     createdAt: z.number().optional(),

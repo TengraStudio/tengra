@@ -5,7 +5,6 @@ import {
     Suspense,
     useEffect,
     useRef,
-    useState,
 } from 'react';
 
 import { LazyWorkspaceEditor, LoadingSpinner } from '@/components/lazy';
@@ -76,15 +75,6 @@ export const WorkspaceMain: FC<WorkspaceMainProps> = ({
     onOpenFile,
 }) => {
     const touchStartRef = useRef<{ x: number; y: number } | null>(null);
-    const [hasActivatedEditor, setHasActivatedEditor] = useState(
-        dashboardTab === 'editor'
-    );
-
-    useEffect(() => {
-        if (dashboardTab === 'editor') {
-            setHasActivatedEditor(true);
-        }
-    }, [dashboardTab]);
 
     useEffect(() => {
         if (!performanceMonitor.hasMark('workspace:shell:ready')) {
@@ -145,26 +135,24 @@ export const WorkspaceMain: FC<WorkspaceMainProps> = ({
             )}
 
             <div className="flex-1 relative overflow-hidden">
-                {hasActivatedEditor && (
-                    <div
-                        className={cn(
-                            'absolute inset-0 z-0',
-                            dashboardTab !== 'editor' && 'pointer-events-none opacity-0'
-                        )}
-                    >
-                        <LazyWorkspaceEditor
-                            activeTab={activeTab}
-                            updateTabContent={updateTabContent}
-                            saveActiveTab={saveActiveTab}
-                            autoSaveEnabled={Boolean(workspace.advancedOptions?.autoSave)}
-                            workspaceKey={workspace.id}
-                            workspacePath={workspace.path}
-                            workspaceEditorSettings={workspace.editor}
-                            onOpenFile={onOpenFile}
-                            emptyState={null}
-                        />
-                    </div>
-                )}
+                <div
+                    className={cn(
+                        'absolute inset-0 z-0',
+                        dashboardTab !== 'editor' && 'pointer-events-none opacity-0'
+                    )}
+                >
+                    <LazyWorkspaceEditor
+                        activeTab={activeTab}
+                        updateTabContent={updateTabContent}
+                        saveActiveTab={saveActiveTab}
+                        autoSaveEnabled={Boolean(workspace.advancedOptions?.autoSave)}
+                        workspaceKey={workspace.id}
+                        workspacePath={workspace.path}
+                        workspaceEditorSettings={workspace.editor}
+                        onOpenFile={onOpenFile}
+                        emptyState={null}
+                    />
+                </div>
 
                 {dashboardTab !== 'editor' && (
                     <Suspense

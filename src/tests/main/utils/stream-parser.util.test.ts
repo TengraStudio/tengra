@@ -20,7 +20,7 @@ describe('StreamParser', () => {
 
         expect(chunks).toHaveLength(2);
         expect(chunks[0]?.content).toBe('Hello');
-        expect(chunks[1]?.content).toBe(' World');
+        expect(chunks[1]?.content).toBe('World');
     });
 
     it('should handle split lines', async () => {

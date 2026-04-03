@@ -5,6 +5,7 @@ import { useWorkspaceManager } from '@/features/workspace/hooks/useWorkspaceMana
 import { useWorkspaceState } from '@/features/workspace/hooks/useWorkspaceState';
 import { Language } from '@/i18n';
 import { Workspace } from '@/types';
+
 import { LogoGeneratorModal } from '../workspace-dashboard/LogoGeneratorModal';
 
 interface WorkspaceDialogsProps {
@@ -57,11 +58,13 @@ export const WorkspaceDialogs: React.FC<WorkspaceDialogsProps> = ({
                 onClose={() => ps.setShowLogoModal(false)}
                 workspace={workspace}
                 onApply={logoPath => {
-                    void handleUpdateWorkspace({
-                        logo: logoPath,
-                        updatedAt: Date.now(),
-                    });
-                    ps.setShowLogoModal(false);
+                    void (async () => {
+                        await handleUpdateWorkspace({
+                            logo: logoPath,
+                            updatedAt: Date.now(),
+                        });
+                        ps.setShowLogoModal(false);
+                    })();
                 }}
                 language={language}
             />

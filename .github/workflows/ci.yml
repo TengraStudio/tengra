@@ -309,6 +309,15 @@ jobs:
             throw "oauth start endpoint returned unsuccessful response"
           }
 
+          # Deterministic per-provider local latency baseline for auth start/callback paths.
+          pwsh -NoLogo -NoProfile -File scripts/testScripts/auth-latency-benchmark.ps1 `
+            -ProxyBaseUrl 'http://127.0.0.1:23234' `
+            -Iterations 6 `
+            -WarmupIterations 1 `
+            -StartP95BudgetMs 1000 `
+            -CallbackP95BudgetMs 1000 `
+            -TimeoutSeconds 4
+
           $apiKeyBody = @{
             provider     = 'antigravity'
             api_key      = 'sk-test-integration'

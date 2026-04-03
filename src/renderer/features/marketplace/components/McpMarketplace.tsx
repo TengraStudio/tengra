@@ -1,6 +1,15 @@
-import type { MarketplaceItem, MarketplaceLanguage, MarketplaceRegistry, MarketplaceTheme } from '@shared/types/marketplace';
+import type {
+    InstallRequest,
+    MarketplaceItem,
+    MarketplaceLanguage,
+    MarketplaceModel,
+    MarketplaceRegistry,
+    MarketplaceTheme,
+} from '@shared/types/marketplace';
 import { compareVersions } from '@shared/utils/extension.util';
 import {
+    ChevronLeft,
+    ChevronRight,
     Download,
     Globe,
     MessageSquare,
@@ -11,7 +20,7 @@ import {
     Sparkles,
     Zap,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useLanguage, useTranslation } from '@/i18n';
 import { localeRegistry } from '@/i18n/locale-registry.service';
@@ -19,11 +28,8 @@ import { pushNotification } from '@/store/notification-center.store';
 
 import { McpCard, type McpPlugin } from './McpCard';
 
-type MarketplaceMode = 'mcp' | 'themes' | 'personas' | 'models' | 'prompts' | 'languages';
-
-function resolveLabel(translated: string, fallback: string): string {
-    return translated === fallback || translated.includes('.') ? fallback : translated;
-}
+type MarketplaceMode = 'mcp' | 'themes' | 'personas' | 'models' | 'prompts' | 'languages' | 'skills';
+const PAGE_SIZE = 24;
 
 export function McpMarketplace({ mode }: { mode: MarketplaceMode }): JSX.Element {
     const { t } = useTranslation();
@@ -33,15 +39,16 @@ export function McpMarketplace({ mode }: { mode: MarketplaceMode }): JSX.Element
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [installingId, setInstallingId] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const fetchRegistry = useCallback(async () => {
         try {
             const data = await window.electron.marketplace.fetch();
             setRegistry(data);
         } catch {
-            pushNotification({ type: 'error', message: 'Marketplace data could not be loaded.' });
+            pushNotification({ type: 'error', message: t('marketplace.loadError') });
         }
-    }, []);
+    }, [t]);
 
     const fetchLocalPlugins = useCallback(async () => {
         if (mode !== 'mcp') {
@@ -52,9 +59,9 @@ export function McpMarketplace({ mode }: { mode: MarketplaceMode }): JSX.Element
             const list = await window.electron.mcp.list();
             setLocalPlugins(list as unknown as McpPlugin[]);
         } catch {
-            pushNotification({ type: 'error', message: 'Failed to load local MCP modules.' });
+            pushNotification({ type: 'error', message: t('marketplace.mcp.localLoadError') });
         }
-    }, [mode]);
+    }, [mode, t]);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -69,14 +76,18 @@ export function McpMarketplace({ mode }: { mode: MarketplaceMode }): JSX.Element
         void fetchData();
     }, [fetchData]);
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [mode, search]);
+
     const handleToggleMcp = useCallback(async (plugin: McpPlugin) => {
         try {
             await window.electron.mcp.toggle(plugin.id ?? plugin.name, !plugin.isEnabled);
             await fetchLocalPlugins();
         } catch {
-            pushNotification({ type: 'error', message: 'Failed to toggle MCP.' });
+            pushNotification({ type: 'error', message: t('marketplace.mcp.toggleError') });
         }
-    }, [fetchLocalPlugins]);
+    }, [fetchLocalPlugins, t]);
 
     const handleUninstallMcp = useCallback(async (plugin: McpPlugin) => {
         try {
@@ -84,34 +95,50 @@ export function McpMarketplace({ mode }: { mode: MarketplaceMode }): JSX.Element
             await fetchLocalPlugins();
             await fetchRegistry();
         } catch {
-            pushNotification({ type: 'error', message: 'Failed to uninstall MCP.' });
+            pushNotification({ type: 'error', message: t('marketplace.mcp.uninstallError') });
         }
-    }, [fetchLocalPlugins, fetchRegistry]);
+    }, [fetchLocalPlugins, fetchRegistry, t]);
 
     const handleInstall = useCallback(async (item: MarketplaceItem) => {
         if (installingId) { return; }
         setInstallingId(item.id);
         try {
-            const result = await window.electron.marketplace.install({
+            const baseRequest: InstallRequest = {
                 id: item.id,
                 type: item.itemType,
                 downloadUrl: item.downloadUrl,
+                name: item.name,
+                description: item.description,
+                author: item.author,
+                version: item.version,
+            };
+            const modelRequest = item.itemType === 'model'
+                ? {
+                    provider: (item as MarketplaceModel).provider,
+                    sourceUrl: (item as MarketplaceModel).sourceUrl,
+                    category: (item as MarketplaceModel).category,
+                    pipelineTag: (item as MarketplaceModel).pipelineTag,
+                }
+                : {};
+            const result = await window.electron.marketplace.install({
+                ...baseRequest,
+                ...modelRequest,
             });
             if (result.success) {
                 if (item.itemType === 'language') {
                     await localeRegistry.reloadLocales();
                 }
-                pushNotification({ type: 'success', message: `${item.name} installed successfully.` });
+                pushNotification({ type: 'success', message: t('marketplace.installSuccess', { name: item.name }) });
                 void fetchData();
             } else {
-                pushNotification({ type: 'error', message: result.message || 'Installation failed.' });
+                pushNotification({ type: 'error', message: t('marketplace.installFailure') });
             }
         } catch {
-            pushNotification({ type: 'error', message: 'A network error occurred.' });
+            pushNotification({ type: 'error', message: t('marketplace.networkError') });
         } finally {
             setInstallingId(null);
         }
-    }, [fetchData, installingId]);
+    }, [fetchData, installingId, t]);
 
     const handleActivateLanguage = useCallback(async (item: MarketplaceLanguage) => {
         if (item.locale === activeLanguage) {
@@ -120,8 +147,6 @@ export function McpMarketplace({ mode }: { mode: MarketplaceMode }): JSX.Element
         await setLanguage(item.locale);
         void fetchData();
     }, [activeLanguage, fetchData, setLanguage]);
-
-    if (loading) { return <Loader />; }
 
     const getStoreItems = () => {
         if (!registry) { return []; }
@@ -158,33 +183,52 @@ export function McpMarketplace({ mode }: { mode: MarketplaceMode }): JSX.Element
         p.description?.toLowerCase().includes(search.toLowerCase())
     );
 
-    const totalCount = filteredStoreItems.length + filteredLocal.length;
+    const combinedItems = useMemo(() => {
+        const localItems = filteredLocal.map((plugin, index) => ({ type: 'local' as const, plugin, key: `local-${plugin.id ?? plugin.name ?? index}` }));
+        const remoteItems = filteredStoreItems.map(item => ({ type: 'store' as const, item, key: `store-${item.itemType}-${item.id}` }));
+        return [...localItems, ...remoteItems];
+    }, [filteredLocal, filteredStoreItems]);
+
+    const totalCount = combinedItems.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+    const effectivePage = Math.min(currentPage, totalPages);
+    const pageStart = (effectivePage - 1) * PAGE_SIZE;
+    const pagedItems = combinedItems.slice(pageStart, pageStart + PAGE_SIZE);
+
+    if (loading) { return <Loader t={t} />; }
 
     return (
         <div className="space-y-6">
             <Toolbar search={search} onSearch={setSearch} count={totalCount} t={t} />
             <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
-                {filteredLocal.map((plugin, index) => (
+                {pagedItems.map(entry => entry.type === 'local' ? (
                     <McpCard
-                        key={`local-${plugin.id ?? plugin.name ?? index}`}
-                        plugin={plugin}
+                        key={entry.key}
+                        plugin={entry.plugin}
                         t={t}
                         onToggle={(p) => void handleToggleMcp(p)}
                         onUninstall={(p) => void handleUninstallMcp(p)}
                     />
-                ))}
-                {filteredStoreItems.map(item => (
+                ) : (
                     <MarketCard 
-                        key={item.id} 
-                        item={item} 
-                        isActive={item.itemType === 'language' && (item as MarketplaceLanguage).locale === activeLanguage}
-                        isInstalling={installingId === item.id} 
+                        key={entry.key} 
+                        item={entry.item} 
+                        isActive={entry.item.itemType === 'language' && (entry.item as MarketplaceLanguage).locale === activeLanguage}
+                        isInstalling={installingId === entry.item.id} 
                         onInstall={(it) => void handleInstall(it)} 
                         onActivateLanguage={(it) => void handleActivateLanguage(it)}
                     />
                 ))}
                 {totalCount === 0 && <EmptyState t={t} mode={mode} />}
             </div>
+            {totalCount > PAGE_SIZE && (
+                <Pagination
+                    currentPage={effectivePage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    t={t}
+                />
+            )}
         </div>
     );
 }
@@ -206,22 +250,23 @@ function MarketCard({ item, isActive, onInstall, onActivateLanguage, isInstallin
         && compareVersions(item.version, installedVersion) > 0
     );
 
-    const Icon = {
+    const Icon = (({
         theme: Palette,
         mcp: Package,
         persona: Sparkles,
         model: Zap,
         prompt: MessageSquare,
         language: Globe,
-    }[item.itemType] || Package;
+        skill: Sparkles,
+    } as Record<string, React.ElementType>)[item.itemType] || Package);
 
     const primaryActionLabel = isInstalling
-        ? resolveLabel(t('marketplace.installing'), 'Installing...')
+        ? t('marketplace.installing')
         : hasUpdate
-            ? resolveLabel(t('common.update'), 'Update')
+            ? t('common.update')
             : item.installed
-                ? resolveLabel(t('modelExplorer.installed'), 'Installed')
-                : resolveLabel(t('marketplace.install'), 'Install');
+                ? t('modelExplorer.installed')
+                : t('marketplace.install');
 
     return (
         <div className="group flex flex-col bg-card border border-border/40 rounded-lg p-5 hover:border-primary/30 transition-all duration-300 shadow-sm hover:shadow-md">
@@ -232,7 +277,7 @@ function MarketCard({ item, isActive, onInstall, onActivateLanguage, isInstallin
                     </div>
                     <div>
                         <h3 className="text-sm font-bold text-foreground leading-none mb-1">{item.name}</h3>
-                        <p className="text-xs text-muted-foreground font-medium">by {item.author}</p>
+                        <p className="text-xs text-muted-foreground font-medium">{t('marketplace.authorBy', { author: item.author })}</p>
                     </div>
                 </div>
                 <button
@@ -255,7 +300,7 @@ function MarketCard({ item, isActive, onInstall, onActivateLanguage, isInstallin
                     </span>
                     {hasUpdate && (
                         <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">
-                            {resolveLabel(t('common.update'), 'Update')}
+                            {t('common.update')}
                         </span>
                     )}
                 </div>
@@ -263,23 +308,23 @@ function MarketCard({ item, isActive, onInstall, onActivateLanguage, isInstallin
             {themeItem?.previewColor && (
                 <div className="mt-4 flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded-full border border-border/20 shadow-sm" style={{ backgroundColor: themeItem.previewColor }} />
-                    <span className="text-xs text-muted-foreground font-bold">PREVIEW</span>
+                    <span className="text-xs text-muted-foreground font-bold">{t('marketplace.preview')}</span>
                 </div>
             )}
             {languageItem && (
                 <div className="mt-4 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
                         <span>{languageItem.nativeName}</span>
-                        {item.installed && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px]">{resolveLabel(t('modelExplorer.installed'), 'Installed')}</span>}
-                        {hasUpdate && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">{resolveLabel(t('common.update'), 'Update')}</span>}
-                        {isActive && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">{resolveLabel(t('common.active'), 'Active')}</span>}
+                        {item.installed && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px]">{t('modelExplorer.installed')}</span>}
+                        {hasUpdate && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">{t('common.update')}</span>}
+                        {isActive && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">{t('common.active')}</span>}
                     </div>
                     {item.installed && !isActive && (
                         <button
                             onClick={() => onActivateLanguage(languageItem)}
                             className="rounded bg-secondary px-3 py-1.5 text-[10px] font-bold text-secondary-foreground transition-colors hover:bg-secondary/80"
                         >
-                            {resolveLabel(t('common.select'), 'Select')}
+                            {t('common.select')}
                         </button>
                     )}
                 </div>
@@ -295,7 +340,7 @@ function Toolbar({ search, onSearch, count, t }: { search: string; onSearch: (v:
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
                 <input 
                     type="text" 
-                    placeholder={resolveLabel(t('marketplace.search'), 'Search...')} 
+                    placeholder={t('marketplace.search')} 
                     value={search} 
                     onChange={(e) => onSearch(e.target.value)} 
                     className="w-full bg-background border border-border/30 rounded px-10 py-2 text-sm focus:outline-none focus:border-primary/40 transition-all font-medium" 
@@ -303,27 +348,81 @@ function Toolbar({ search, onSearch, count, t }: { search: string; onSearch: (v:
             </div>
             <div className="hidden sm:flex items-center gap-2">
                 <div className="px-3 py-1 rounded-full bg-muted/30 text-xs font-bold text-muted-foreground">
-                    {count} {resolveLabel(t('marketplace.results'), 'Results Found')}
+                    {count} {t('marketplace.results')}
                 </div>
             </div>
         </div>
     );
 }
 
-function EmptyState({ t, mode }: { t: (key: string) => string, mode: MarketplaceMode }) {
+function EmptyState({
+    t,
+    mode,
+}: {
+    t: (key: string, options?: Record<string, string | number>) => string;
+    mode: MarketplaceMode;
+}) {
+    const modeKeyByMode: Record<MarketplaceMode, string> = {
+        mcp: 'marketplace.tabs.mcp',
+        themes: 'marketplace.tabs.themes',
+        personas: 'marketplace.tabs.personas',
+        models: 'marketplace.tabs.models',
+        prompts: 'marketplace.tabs.prompts',
+        languages: 'marketplace.tabs.languages',
+        skills: 'marketplace.tabs.skills',
+    };
+
     return (
         <div className="col-span-full py-20 text-center border border-dashed border-border/40 rounded-xl bg-muted/5">
             <Package className="w-10 h-10 text-muted-foreground/20 mx-auto mb-4" />
-            <p className="text-sm text-muted-foreground font-bold">{resolveLabel(t('marketplace.empty'), `No ${mode} found`)}</p>
+            <p className="text-sm text-muted-foreground font-bold">{t('marketplace.emptyState', { mode: t(modeKeyByMode[mode]) })}</p>
         </div>
     );
 }
 
-function Loader() {
+function Loader({ t }: { t: (key: string) => string }) {
     return (
         <div className="flex flex-col items-center justify-center py-32 space-y-5">
             <RefreshCw className="w-8 h-8 text-primary animate-spin opacity-40" />
-            <p className="text-xs font-bold text-muted-foreground animate-pulse">Syncing Marketplace</p>
+            <p className="text-xs font-bold text-muted-foreground animate-pulse">{t('marketplace.syncing')}</p>
+        </div>
+    );
+}
+
+function Pagination({
+    currentPage,
+    totalPages,
+    onPageChange,
+    t,
+}: {
+    currentPage: number;
+    totalPages: number;
+    onPageChange: (nextPage: number) => void;
+    t: (key: string, options?: Record<string, string | number>) => string;
+}) {
+    return (
+        <div className="flex items-center justify-center gap-3 pt-2">
+            <button
+                type="button"
+                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                disabled={currentPage <= 1}
+                className="inline-flex items-center gap-1 rounded-md border border-border/40 px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                {t('common.previous')}
+            </button>
+            <span className="text-xs font-semibold text-muted-foreground">
+                {t('common.pageOf', { current: currentPage, total: totalPages })}
+            </span>
+            <button
+                type="button"
+                onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage >= totalPages}
+                className="inline-flex items-center gap-1 rounded-md border border-border/40 px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            >
+                {t('common.next')}
+                <ChevronRight className="h-3.5 w-3.5" />
+            </button>
         </div>
     );
 }

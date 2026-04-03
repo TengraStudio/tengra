@@ -1,5 +1,5 @@
 import { promises as fs } from 'fs';
-import { join } from 'path';
+import { extname, join } from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { ImagePersistenceService } from '@main/services/data/image-persistence.service';
@@ -947,8 +947,10 @@ ${context}`;
             const tengraDir = join(workspacePath, '.tengra');
             await fs.mkdir(tengraDir, { recursive: true });
 
-            const targetPath = join(tengraDir, 'logo.png');
             const sourcePath = this.resolveLocalImagePath(tempLogoPath);
+            const sourceExtension = extname(sourcePath).toLowerCase();
+            const targetExtension = sourceExtension.length > 0 ? sourceExtension : '.png';
+            const targetPath = join(tengraDir, `logo${targetExtension}`);
             if (sourcePath !== targetPath) {
                 await fs.copyFile(sourcePath, targetPath);
             }

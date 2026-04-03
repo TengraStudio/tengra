@@ -111,7 +111,7 @@ export function useWorkspaceTodoLogic(workspaceRoot: string) {
                 content = await window.electron.files.readFile(targetPath);
                 if (content && !content.endsWith('\n')) { content += '\n'; }
             } else {
-                content = '# Workspace Tasks\n\n';
+                content = `${t('workspace.todoDefaultTitle')}\n\n`;
             }
 
             const newTaskLine = `- [ ] ${text}`;
@@ -124,7 +124,7 @@ export function useWorkspaceTodoLogic(workspaceRoot: string) {
         } catch (e) {
             setError(e instanceof Error ? e.message : String(e));
         }
-    }, [fetchTodos, workspaceRoot, pushUndoSnapshot, todoFiles]);
+    }, [fetchTodos, workspaceRoot, pushUndoSnapshot, t, todoFiles]);
 
     const totalStats = useMemo(() => {
         let total = 0;

@@ -55,6 +55,25 @@ async fn main() -> anyhow::Result<()> {
                     error
                 );
             }
+            match db::normalize_legacy_openai_linked_account_metadata().await {
+                Ok(updated) => {
+                    if updated > 0 {
+                        eprintln!(
+                            "[LOG] Normalized {} legacy OpenAI linked-account metadata records.",
+                            updated
+                        );
+                    }
+                }
+                Err(error) => {
+                    eprintln!(
+                        "[WARN] Failed to normalize legacy OpenAI linked-account metadata: {}",
+                        error
+                    );
+                }
+            }
+            if let Err(error) = proxy::skills::ensure_skill_tables().await {
+                eprintln!("[WARN] Failed to initialize proxy skills tables: {}", error);
+            }
 
             tokio::spawn(async {
                 token::background_refresh_loop().await;
@@ -102,7 +121,7 @@ async fn run_auth_flow(account_id: &str) -> anyhow::Result<()> {
     let pkce = generate_pkce_codes();
 
     // 2. Client oluştur
-    let client = CodexClient::new().await;
+    let client = CodexClient::new().await?;
     let state = generate_oauth_state();
     let auth_url = client.generate_auth_url(&state, &pkce);
 
@@ -207,7 +226,7 @@ async fn run_antigravity_auth_flow(account_id: &str) -> anyhow::Result<()> {
     eprintln!("[LOG] --- Tengra Antigravity Auth Bridge ---");
 
     // 1. Client oluştur
-    let client = auth::antigravity::client::AntigravityClient::new().await;
+    let client = auth::antigravity::client::AntigravityClient::new().await?;
     let state = generate_oauth_state();
     let auth_url = client.generate_auth_url(&state);
 
@@ -305,7 +324,7 @@ async fn run_claude_auth_flow(account_id: &str) -> anyhow::Result<()> {
     let pkce = generate_pkce_codes();
 
     // 2. Client oluştur
-    let client = auth::claude::client::ClaudeClient::new().await;
+    let client = auth::claude::client::ClaudeClient::new().await?;
     let state = generate_oauth_state();
     let auth_url = client.generate_auth_url(&state, &pkce);
 
@@ -367,19 +386,19 @@ async fn run_claude_auth_flow(account_id: &str) -> anyhow::Result<()> {
 }
 
 const VALID_API_KEY_PROVIDERS: &[&str] = &[
-    "openai",       // OpenAI API (sk-...)
-    "claude",       // Anthropic Claude API
-    "gemini",       // Google Gemini API
-    "mistral",      // Mistral AI
-    "groq",         // Groq (fast inference)
-    "together",     // Together AI
-    "perplexity",   // Perplexity AI
-    "cohere",       // Cohere
-    "xai",          // xAI (Grok)
-    "openrouter",   // OpenRouter (multi-model gateway)
-    "deepseek",     // DeepSeek
-    "nvidia",       // NVIDIA NIM
-    "codex",        // Legacy codex alias
+    "openai",     // OpenAI API (sk-...)
+    "claude",     // Anthropic Claude API
+    "gemini",     // Google Gemini API
+    "mistral",    // Mistral AI
+    "groq",       // Groq (fast inference)
+    "together",   // Together AI
+    "perplexity", // Perplexity AI
+    "cohere",     // Cohere
+    "xai",        // xAI (Grok)
+    "openrouter", // OpenRouter (multi-model gateway)
+    "deepseek",   // DeepSeek
+    "nvidia",     // NVIDIA NIM
+    "codex",      // Legacy codex alias
 ];
 
 async fn run_set_key(provider: &str, api_key: &str, account_id: &str) -> anyhow::Result<()> {

@@ -15,6 +15,7 @@ import { ConfigService } from '@main/services/system/config.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { ChatMessage, ContentPart, OpenAIResponse } from '@main/types/llm.types';
 import { sanitizePrompt, validatePromptSafety } from '@main/utils/prompt-sanitizer.util';
+import { buildLocaleReinforcementInstruction } from '@shared/instructions';
 import { Message, MessageContentPart, SystemMode, ToolDefinition } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
 import { OpenAIChatCompletion } from '@shared/types/llm-provider-types';
@@ -98,6 +99,7 @@ export class LLMService {
     private anthropicApiKey: string = '';
     private groqApiKey: string = '';
     private nvidiaApiKey: string = '';
+    private kimiApiKey: string = '';
     private opencodeApiKey: string = '';
     private dispatcher: Agent | null = null;
 
@@ -129,6 +131,7 @@ export class LLMService {
         this.anthropicApiKey = configService.get('ANTHROPIC_API_KEY', '');
         this.groqApiKey = configService.get('GROQ_API_KEY', '');
         this.nvidiaApiKey = configService.get('NVIDIA_API_KEY', '');
+        this.kimiApiKey = configService.get('KIMI_API_KEY', '');
         this.opencodeApiKey = configService.get('OPENCODE_API_KEY', 'public');
 
         this.openaiChat = new LLMOpenAIChatService(
@@ -200,48 +203,7 @@ export class LLMService {
         const lang = settings.general?.language ?? 'en';
 
         if (lang === 'en') { return messages; }
-
-        const localeInstructions: Record<string, { language: string; localeStyle: string; modelPreference: string }> = {
-            tr: {
-                language: 'Respond in Turkish.',
-                localeStyle: 'Use Turkish terminology, metric units, and examples relevant to Turkiye.',
-                modelPreference: 'Prefer model behaviors that provide strong Turkish fluency when equivalent options exist.'
-            },
-            ar: {
-                language: 'Respond in Arabic.',
-                localeStyle: 'Use Modern Standard Arabic with region-neutral phrasing unless the user requests a dialect.',
-                modelPreference: 'Prefer model behaviors that provide strong Arabic fluency when equivalent options exist.'
-            },
-            de: {
-                language: 'Respond in German.',
-                localeStyle: 'Use German formatting conventions and terminology suitable for DACH users.',
-                modelPreference: 'Prefer model behaviors that provide strong German fluency when equivalent options exist.'
-            },
-            es: {
-                language: 'Respond in Spanish.',
-                localeStyle: 'Use neutral Spanish phrasing and locale-aware units/date formats.',
-                modelPreference: 'Prefer model behaviors that provide strong Spanish fluency when equivalent options exist.'
-            },
-            fr: {
-                language: 'Respond in French.',
-                localeStyle: 'Use French terminology and locale-appropriate formatting conventions.',
-                modelPreference: 'Prefer model behaviors that provide strong French fluency when equivalent options exist.'
-            },
-            ja: {
-                language: 'Respond in Japanese.',
-                localeStyle: 'Use natural Japanese register with locale-appropriate honorific-neutral business style by default.',
-                modelPreference: 'Prefer model behaviors that provide strong Japanese fluency when equivalent options exist.'
-            },
-            zh: {
-                language: 'Respond in Chinese.',
-                localeStyle: 'Use Simplified Chinese and locale-aware terminology unless the user requests otherwise.',
-                modelPreference: 'Prefer model behaviors that provide strong Chinese fluency when equivalent options exist.'
-            },
-        };
-
-        const selectedLocale = localeInstructions[lang];
-        if (!selectedLocale) { return messages; }
-        const instruction = `${selectedLocale.language} ${selectedLocale.localeStyle} ${selectedLocale.modelPreference}`;
+        const instruction = buildLocaleReinforcementInstruction(lang);
 
         const result = [...messages];
         const systemMsgIndex = result.findIndex(m => m.role === 'system');
@@ -284,6 +246,10 @@ export class LLMService {
     setNvidiaApiKey(key: string) {
         this.nvidiaApiKey = key;
         this.deps.keyRotationService.initializeProviderKeys('nvidia', key);
+    }
+    setKimiApiKey(key: string) {
+        this.kimiApiKey = key;
+        this.deps.keyRotationService.initializeProviderKeys('kimi', key);
     }
 
     isOpenAIConnected(): boolean {
@@ -610,11 +576,13 @@ export class LLMService {
         if (this.anthropicApiKey || this.deps.keyRotationService.getCurrentKey('anthropic')) { providers.push('anthropic'); }
         if (this.groqApiKey || this.deps.keyRotationService.getCurrentKey('groq')) { providers.push('groq'); }
         if (this.nvidiaApiKey || this.deps.keyRotationService.getCurrentKey('nvidia')) { providers.push('nvidia'); }
+        if (this.kimiApiKey || this.deps.keyRotationService.getCurrentKey('kimi')) { providers.push('kimi'); }
 
         const proxyKey = await this.deps.proxyService.getProxyKey().catch(() => null);
         if (proxyKey) {
             providers.push('antigravity');
             providers.push('codex');
+            providers.push('cursor');
         }
 
         return providers;
@@ -649,9 +617,11 @@ export class LLMService {
             'claude': ['anthropic/', 'claude/'],
             'openai': ['openai/'],
             'codex': ['codex/', 'openai/'],
+            'kimi': ['kimi/', 'moonshot/'],
             'google': ['google/', 'gemini/'],
             'nvidia': ['nvidia/'],
             'gemini': ['google/', 'gemini/'],
+            'cursor': ['cursor/'],
         };
 
         const providerPrefixes = (prefixes as Record<string, string[] | undefined>)[lowerProvider];
@@ -675,6 +645,7 @@ export class LLMService {
         const normalizedProvider = provider?.trim().toLowerCase();
         if (normalizedProvider) {
             if (normalizedProvider === 'claude') { return 'anthropic'; }
+            if (normalizedProvider === 'moonshot') { return 'kimi'; }
             return normalizedProvider;
         }
 
@@ -687,6 +658,12 @@ export class LLMService {
         }
         if (normalizedModel.startsWith('gemini-') || normalizedModel.startsWith('google/')) {
             return 'google';
+        }
+        if (normalizedModel.startsWith('kimi-') || normalizedModel.startsWith('moonshot/')) {
+            return 'kimi';
+        }
+        if (normalizedModel.startsWith('cursor/')) {
+            return 'cursor';
         }
         if (normalizedModel.startsWith('ollama/')) {
             return 'ollama';
@@ -759,10 +736,32 @@ export class LLMService {
             return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider, temperature: temp, workspaceRoot };
         }
 
+        if (p.includes('kimi') || p.includes('moonshot')) {
+            const apiKey = this.deps.keyRotationService.getCurrentKey('kimi') ?? this.kimiApiKey;
+            return {
+                model,
+                tools,
+                baseUrl: 'https://api.moonshot.ai/v1',
+                apiKey,
+                provider: 'kimi',
+                temperature: temp,
+                workspaceRoot
+            };
+        }
+
         if (p.includes('copilot') || p.includes('github')) {
             const proxyUrl = buildProxyBaseUrl();
             const proxyKey = await this.deps.proxyService.getProxyKey();
             return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider: 'copilot', temperature: temp, workspaceRoot };
+        }
+
+        if (p.includes('cursor')) {
+            const proxyUrl = buildProxyBaseUrl();
+            const proxyKey = await this.deps.proxyService.getProxyKey();
+            // Compatibility-only integration point:
+            // Cursor auth and private APIs are intentionally not reverse-engineered in this project.
+            // We only route explicit "cursor" provider traffic through the local proxy path.
+            return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider: 'cursor', temperature: temp, workspaceRoot };
         }
 
         return { model, tools, provider, temperature: temp, workspaceRoot, baseUrl: undefined, apiKey: undefined };

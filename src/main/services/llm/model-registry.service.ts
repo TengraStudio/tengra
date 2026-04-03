@@ -24,6 +24,8 @@ export type ModelProviderId =
     | 'codex'
     | 'claude'
     | 'copilot'
+    | 'cursor'
+    | 'kimi'
     | 'nvidia'
     | 'openai'
     | 'huggingface'
@@ -132,6 +134,9 @@ export class ModelRegistryService extends BaseService {
         'codex',
         'claude',
         'copilot',
+        'cursor',
+        'kimi',
+        'moonshot',
         'nvidia',
         'openai',
         'huggingface',
@@ -435,6 +440,10 @@ export class ModelRegistryService extends BaseService {
                 return ['claude', 'anthropic'];
             case 'copilot':
                 return ['copilot', 'github'];
+            case 'cursor':
+                return ['cursor'];
+            case 'kimi':
+                return ['kimi', 'moonshot'];
             case 'nvidia':
                 return ['nvidia'];
             default:
@@ -546,6 +555,10 @@ export class ModelRegistryService extends BaseService {
             requestedProvider = 'claude';
         } else if (normalizedRawProvider === 'copilot' || normalizedRawProvider === 'github') {
             requestedProvider = 'copilot';
+        } else if (normalizedRawProvider === 'cursor') {
+            requestedProvider = 'cursor';
+        } else if (normalizedRawProvider === 'kimi' || normalizedRawProvider === 'moonshot') {
+            requestedProvider = 'kimi';
         } else if (normalizedRawProvider === 'nvidia' || normalizedRawProvider === 'nim' || normalizedRawProvider === 'nim_openai') {
             requestedProvider = 'nvidia';
         } else if (normalizedRawProvider === 'openai') {
@@ -650,6 +663,12 @@ export class ModelRegistryService extends BaseService {
         if (p === 'copilot' || p === 'github') {
             return 'copilot';
         }
+        if (p === 'cursor') {
+            return 'cursor';
+        }
+        if (p === 'kimi' || p === 'moonshot') {
+            return 'kimi';
+        }
         if (p === 'antigravity' || p === 'google' || p === 'gemini') {
             return 'antigravity';
         }
@@ -667,6 +686,9 @@ export class ModelRegistryService extends BaseService {
 
         if (raw === 'github') {
             return 'copilot';
+        }
+        if (raw === 'moonshot') {
+            return 'kimi';
         }
         if (raw === 'google' || raw === 'gemini') {
             return 'antigravity';
@@ -1087,6 +1109,12 @@ export class ModelRegistryService extends BaseService {
         }
         if (lowerId.includes('copilot') || lowerId.includes('github')) {
             return 'copilot';
+        }
+        if (lowerId.includes('cursor')) {
+            return 'cursor';
+        }
+        if (lowerId.includes('kimi') || lowerId.includes('moonshot')) {
+            return 'kimi';
         }
         return 'antigravity';
     }

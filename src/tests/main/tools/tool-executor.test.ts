@@ -59,7 +59,16 @@ describe('ToolExecutor', () => {
 
         expect(result).toEqual({
             success: true,
-            result: [{ name: 'src', isDirectory: true }]
+            result: {
+                path: 'C:/repo',
+                complete: true,
+                pathExists: true,
+                entryCount: 1,
+                fileCount: 0,
+                directoryCount: 1,
+                entries: [{ name: 'src', isDirectory: true }],
+                _toolHint: expect.stringContaining('directory listing is complete'),
+            }
         });
         expect(fileSystem.listDirectory).toHaveBeenCalledWith('C:/repo');
     });

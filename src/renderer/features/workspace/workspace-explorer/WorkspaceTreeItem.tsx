@@ -208,6 +208,9 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
     const isSelected = Boolean(
         selectedEntries?.some(e => e.mountId === mount.id && e.path === node.path)
     );
+    const ignoredEntryClassName = node.isGitIgnored === true
+        ? 'opacity-55 text-amber-300/80 hover:text-amber-200/90'
+        : '';
 
     const gitBadgeClass =
         node.gitStatus === 'M'
@@ -249,7 +252,8 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
                         : 'hover:bg-muted/20 text-muted-foreground/80 hover:text-foreground focus:bg-muted/30',
                     isOver &&
                     'bg-primary/20 border-dashed border-primary ring-2 ring-primary/20 ring-offset-1 ring-offset-background',
-                    isDragging && 'opacity-20 cursor-grabbing bg-muted/40'
+                    isDragging && 'opacity-20 cursor-grabbing bg-muted/40',
+                    ignoredEntryClassName
                 )}
                 style={{ ...style, paddingLeft: `${level * 12 + 8}px` }}
                 onClick={handleClick}

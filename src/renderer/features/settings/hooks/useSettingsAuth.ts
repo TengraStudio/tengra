@@ -14,6 +14,7 @@ export function useSettingsAuth(
     settings: AppSettings | null,
     updateSettings: (s: AppSettings, save: boolean) => Promise<void>,
     linkedAccounts: UseLinkedAccountsResult,
+    t: (key: string, options?: Record<string, string | number>) => string,
     onRefreshModels?: (bypassCache?: boolean) => void
 ) {
     const [authMessage, setAuthMessage] = useState('');
@@ -35,13 +36,14 @@ export function useSettingsAuth(
         connectCopilot,
         closeDeviceCodeModal,
         cancelDeviceAuth
-    } = useDeviceAuth(
+    } = useDeviceAuth({
         settings,
         updateSettings,
         setAuthBusy,
         setAuthNotice,
+        t,
         onRefreshModels
-    );
+    });
 
     const {
         isOllamaRunning,
@@ -66,6 +68,7 @@ export function useSettingsAuth(
         authBusy,
         setAuthBusy,
         setAuthNotice,
+        t,
         onRefreshModels,
         onShowManualSession: (accountId, email) => {
             setManualSessionModal({ isOpen: true, accountId, email });

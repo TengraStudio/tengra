@@ -51,6 +51,10 @@ export class LocaleService extends BaseService {
         return Array.from(this.installedLocales.values());
     }
 
+    getLocalePack(locale: string): LocalePack | undefined {
+        return this.installedLocales.get(locale);
+    }
+
     async getInstalledLocaleIds(): Promise<Set<string>> {
         return new Set(Array.from(this.installedLocales.keys()));
     }

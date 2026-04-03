@@ -16,6 +16,7 @@ import {
     useWorkspaceExplorerStore,
 } from '@/store/workspace-explorer.store';
 import { WorkspaceEntry } from '@/types';
+import { translateErrorMessage } from '@/utils/error-handler.util';
 import { appLogger } from '@/utils/renderer-logger';
 
 export function useWorkspaceState(workspaceId: string) {
@@ -121,9 +122,10 @@ export function useWorkspaceState(workspaceId: string) {
     }, [terminalFloating, terminalMaximized, workspaceId]);
 
     const notify = useCallback((type: 'success' | 'error' | 'info', message: string) => {
+        const resolvedMessage = type === 'error' ? translateErrorMessage(message) : message;
         pushNotification({
             type,
-            message,
+            message: resolvedMessage,
             source: 'workspace',
         });
     }, []);

@@ -1,3 +1,5 @@
+import * as path from 'path';
+
 import { RuntimeBootstrapService } from '@main/services/system/runtime-bootstrap.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -170,28 +172,28 @@ describe('RuntimeBootstrapService', () => {
         const service = new RuntimeBootstrapService();
         await service.initialize();
 
-        expect(runtimeMocks.rm).toHaveBeenCalledWith('/mock/appData/blob_storage', {
+        expect(runtimeMocks.rm).toHaveBeenCalledWith(path.join('/mock/appData', 'blob_storage'), {
             force: true,
             recursive: true,
         });
-        expect(runtimeMocks.rm).not.toHaveBeenCalledWith('/mock/appData/Shared Dictionary', {
+        expect(runtimeMocks.rm).not.toHaveBeenCalledWith(path.join('/mock/appData', 'Shared Dictionary'), {
             force: true,
             recursive: true,
         });
-        expect(runtimeMocks.rm).not.toHaveBeenCalledWith('/mock/appData/DIPS', {
+        expect(runtimeMocks.rm).not.toHaveBeenCalledWith(path.join('/mock/appData', 'DIPS'), {
             force: true,
             recursive: true,
         });
-        expect(runtimeMocks.rm).not.toHaveBeenCalledWith('/mock/appData/DIPS-wal', {
+        expect(runtimeMocks.rm).not.toHaveBeenCalledWith(path.join('/mock/appData', 'DIPS-wal'), {
             force: true,
             recursive: true,
         });
-        expect(runtimeMocks.rm).toHaveBeenCalledWith('/mock/appData/services/token-service.log', {
+        expect(runtimeMocks.rm).toHaveBeenCalledWith(path.join('/mock/appData', 'services', 'token-service.log'), {
             force: true,
             recursive: true,
         });
-        expect(runtimeMocks.unlink).toHaveBeenCalledWith('/mock/appData/terminal-logs/old-session.log');
-        expect(runtimeMocks.unlink).not.toHaveBeenCalledWith('/mock/appData/terminal-logs/recent-session.log');
+        expect(runtimeMocks.unlink).toHaveBeenCalledWith(path.join('/mock/appData', 'terminal-logs', 'old-session.log'));
+        expect(runtimeMocks.unlink).not.toHaveBeenCalledWith(path.join('/mock/appData', 'terminal-logs', 'recent-session.log'));
     });
 
     it('builds a platform-aware runtime install plan', () => {
@@ -218,13 +220,13 @@ describe('RuntimeBootstrapService', () => {
             componentId: 'tengra-proxy',
             status: 'ready',
             reason: 'file-present',
-            installPath: '/mock/appData/Tengra/runtime/bin/tengra-proxy.exe',
+            installPath: path.join('/mock/appData', 'Tengra', 'runtime', 'bin', 'tengra-proxy.exe'),
         });
         expect(llamaEntry).toMatchObject({
             componentId: 'llama-server',
             status: 'install',
             reason: 'missing-file',
-            installPath: '/mock/appData/Tengra/runtime/bin/llama-server.exe',
+            installPath: path.join('/mock/appData', 'Tengra', 'runtime', 'bin', 'llama-server.exe'),
         });
         expect(ollamaEntry).toMatchObject({
             componentId: 'ollama',
@@ -312,14 +314,10 @@ describe('RuntimeBootstrapService', () => {
         expect(result.summary.installed).toBe(1);
         expect(result.summary.installRequired).toBe(0);
         expect(result.summary.blockingFailures).toBe(0);
-        expect(runtimeMocks.writeFile).toHaveBeenCalledWith(
-            '/mock/appData/Tengra/runtime/downloads/llama-server-win32-x64.exe',
-            expect.any(Buffer)
-        );
-        expect(runtimeMocks.copyFile).toHaveBeenCalledWith(
-            '/mock/appData/Tengra/runtime/downloads/llama-server-win32-x64.exe',
-            '/mock/appData/Tengra/runtime/bin/llama-server.exe'
-        );
+        const downloadedPath = path.join('/mock/appData', 'Tengra', 'runtime', 'downloads', 'llama-server-win32-x64.exe');
+        const targetPath = path.join('/mock/appData', 'Tengra', 'runtime', 'bin', 'llama-server.exe');
+        expect(runtimeMocks.writeFile).toHaveBeenCalledWith(downloadedPath, expect.any(Buffer));
+        expect(runtimeMocks.copyFile).toHaveBeenCalledWith(downloadedPath, targetPath);
     });
 
     it('falls back to the cached runtime manifest when network fetch fails', async () => {
@@ -367,7 +365,7 @@ describe('RuntimeBootstrapService', () => {
         expect(result.summary.ready).toBe(1);
         expect(result.summary.installRequired).toBe(0);
         expect(runtimeMocks.readFile).toHaveBeenCalledWith(
-            '/mock/appData/Tengra/runtime/manifests/runtime-manifest.json',
+            path.join('/mock/appData', 'Tengra', 'runtime', 'manifests', 'runtime-manifest.json'),
             'utf8'
         );
     });

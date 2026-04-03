@@ -408,7 +408,7 @@ interface EntryModalProps {
     submitEntryModal: () => void;
     entryBusy: boolean;
     selectedCount: number;
-    t: (key: string) => string;
+    t: (key: string, options?: Record<string, unknown>) => string;
 }
 
 const EntryModal: React.FC<EntryModalProps> = ({
@@ -460,7 +460,7 @@ const EntryModal: React.FC<EntryModalProps> = ({
                             }}
                             className="w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
                             placeholder={t('workspace.placeholders.name')}
-                            aria-label={`${entryModal.type} name`}
+                            aria-label={t('workspaceModals.inputAriaLabel', { type: entryModal.type })}
                         />
                     )}
                     {entryModal.type === 'delete' && (
@@ -489,7 +489,7 @@ const EntryModal: React.FC<EntryModalProps> = ({
                             disabled={entryBusy}
                             className="px-3 py-2 rounded-lg text-xs font-semibold bg-success text-background hover:bg-success disabled:opacity-50"
                         >
-                            {entryBusy ? '...' : t('workspaceModals.confirm')}
+                            {entryBusy ? t('common.ellipsis') : t('workspaceModals.confirm')}
                         </button>
                     </div>
                 </div>

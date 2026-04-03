@@ -3,8 +3,8 @@ use crate::proxy::antigravity::{
 };
 use crate::proxy::model_catalog::find_model;
 use crate::security::{decrypt_token, load_master_key};
-use crate::{auth::copilot::CopilotClient, db};
 use crate::token::refresh::{execute_refresh, AuthToken};
+use crate::{auth::copilot::CopilotClient, db};
 use reqwest::{Client, StatusCode};
 use serde::Deserialize;
 use serde_json::{Map, Value};
@@ -112,46 +112,75 @@ async fn fetch_provider_models(
         // OAuth-based Claude (browser session)
         "claude" => map_provider_models(claude_models()),
         // API key providers
-        "openai" => fetch_openai_style_models(client, rows, "https://api.openai.com/v1/models", "openai")
-            .await
-            .ok()
-            .filter(|models| !models.is_empty())
-            .unwrap_or_default(),
-        "groq" => fetch_openai_style_models(client, rows, "https://api.groq.com/openai/v1/models", "groq")
-            .await
-            .ok()
-            .filter(|models| !models.is_empty())
-            .unwrap_or_default(),
-        "together" => fetch_openai_style_models(client, rows, "https://api.together.xyz/v1/models", "together")
-            .await
-            .ok()
-            .filter(|models| !models.is_empty())
-            .unwrap_or_default(),
-        "deepseek" => fetch_openai_style_models(client, rows, "https://api.deepseek.com/v1/models", "deepseek")
-            .await
-            .ok()
-            .filter(|models| !models.is_empty())
-            .unwrap_or_default(),
+        "openai" => {
+            fetch_openai_style_models(client, rows, "https://api.openai.com/v1/models", "openai")
+                .await
+                .ok()
+                .filter(|models| !models.is_empty())
+                .unwrap_or_default()
+        }
+        "groq" => fetch_openai_style_models(
+            client,
+            rows,
+            "https://api.groq.com/openai/v1/models",
+            "groq",
+        )
+        .await
+        .ok()
+        .filter(|models| !models.is_empty())
+        .unwrap_or_default(),
+        "together" => fetch_openai_style_models(
+            client,
+            rows,
+            "https://api.together.xyz/v1/models",
+            "together",
+        )
+        .await
+        .ok()
+        .filter(|models| !models.is_empty())
+        .unwrap_or_default(),
+        "deepseek" => fetch_openai_style_models(
+            client,
+            rows,
+            "https://api.deepseek.com/v1/models",
+            "deepseek",
+        )
+        .await
+        .ok()
+        .filter(|models| !models.is_empty())
+        .unwrap_or_default(),
         "xai" => fetch_openai_style_models(client, rows, "https://api.x.ai/v1/models", "xai")
             .await
             .ok()
             .filter(|models| !models.is_empty())
             .unwrap_or_default(),
-        "mistral" => fetch_openai_style_models(client, rows, "https://api.mistral.ai/v1/models", "mistral")
-            .await
-            .ok()
-            .filter(|models| !models.is_empty())
-            .unwrap_or_default(),
-        "perplexity" => fetch_openai_style_models(client, rows, "https://api.perplexity.ai/models", "perplexity")
-            .await
-            .ok()
-            .filter(|models| !models.is_empty())
-            .unwrap_or_default(),
-        "openrouter" => fetch_openai_style_models(client, rows, "https://openrouter.ai/api/v1/models", "openrouter")
-            .await
-            .ok()
-            .filter(|models| !models.is_empty())
-            .unwrap_or_default(),
+        "mistral" => {
+            fetch_openai_style_models(client, rows, "https://api.mistral.ai/v1/models", "mistral")
+                .await
+                .ok()
+                .filter(|models| !models.is_empty())
+                .unwrap_or_default()
+        }
+        "perplexity" => fetch_openai_style_models(
+            client,
+            rows,
+            "https://api.perplexity.ai/models",
+            "perplexity",
+        )
+        .await
+        .ok()
+        .filter(|models| !models.is_empty())
+        .unwrap_or_default(),
+        "openrouter" => fetch_openai_style_models(
+            client,
+            rows,
+            "https://openrouter.ai/api/v1/models",
+            "openrouter",
+        )
+        .await
+        .ok()
+        .filter(|models| !models.is_empty())
+        .unwrap_or_default(),
         "anthropic" => fetch_anthropic_models(client, rows)
             .await
             .ok()
@@ -207,7 +236,10 @@ async fn fetch_openai_style_models(
     Ok(Vec::new())
 }
 
-async fn fetch_anthropic_models(client: &Client, rows: &[Value]) -> Result<Vec<ServedModel>, String> {
+async fn fetch_anthropic_models(
+    client: &Client,
+    rows: &[Value],
+) -> Result<Vec<ServedModel>, String> {
     for row in prioritized_rows(rows) {
         let Some(token) = token_value_from_row(row, "access_token") else {
             continue;
@@ -244,7 +276,10 @@ async fn fetch_gemini_models(client: &Client, rows: &[Value]) -> Result<Vec<Serv
         let Some(token) = token_value_from_row(row, "access_token") else {
             continue;
         };
-        let url = format!("https://generativelanguage.googleapis.com/v1beta/models?key={}", token);
+        let url = format!(
+            "https://generativelanguage.googleapis.com/v1beta/models?key={}",
+            token
+        );
         let response = match client
             .get(url)
             .header("Accept", "application/json")
@@ -586,8 +621,13 @@ async fn fetch_copilot_models(client: &Client, row: &Value) -> Result<Vec<Provid
 
     if session_token.is_none() {
         session_token = Some(
-            hydrate_copilot_session_token(account_id.as_str(), provider.as_str(), github_token.as_str(), &mut plan)
-                .await?,
+            hydrate_copilot_session_token(
+                account_id.as_str(),
+                provider.as_str(),
+                github_token.as_str(),
+                &mut plan,
+            )
+            .await?,
         );
     }
     let token = session_token.ok_or_else(|| "No Copilot session token available".to_string())?;
@@ -852,7 +892,9 @@ async fn refresh_antigravity_access_token(
     )
     .await;
     if !response.success {
-        return Err(response.error.unwrap_or_else(|| "Refresh failed".to_string()));
+        return Err(response
+            .error
+            .unwrap_or_else(|| "Refresh failed".to_string()));
     }
 
     let Some(token) = response.token else {
@@ -875,7 +917,8 @@ fn token_value_from_row(row: &Value, key: &str) -> Option<String> {
 fn metadata_token_string(row: &Value, key: &str) -> Option<String> {
     let metadata = parse_metadata_object(row);
     let token = metadata.get("token")?.as_object()?;
-    token.get(key)
+    token
+        .get(key)
         .and_then(|value| value.as_str())
         .map(str::trim)
         .filter(|value| !value.is_empty())
@@ -1091,8 +1134,8 @@ mod tests {
         claude_models, dedupe_models, normalize_nvidia_model_id, normalize_provider,
         parse_provider_models_from_payload,
     };
-    use crate::proxy::handlers::models::ServedModel;
     use crate::proxy::antigravity::normalize_discovered_model_id;
+    use crate::proxy::model_service::ServedModel;
     use serde_json::json;
 
     #[test]
@@ -1125,7 +1168,10 @@ mod tests {
     #[test]
     fn includes_current_claude_code_models() {
         let models = claude_models();
-        let ids = models.iter().map(|model| model.id.as_str()).collect::<Vec<_>>();
+        let ids = models
+            .iter()
+            .map(|model| model.id.as_str())
+            .collect::<Vec<_>>();
 
         assert!(ids.contains(&"claude-opus-4-6"));
         assert!(ids.contains(&"claude-sonnet-4-6"));
@@ -1157,7 +1203,10 @@ mod tests {
         });
 
         let models = parse_provider_models_from_payload(&payload, "openai", &["id"]);
-        let ids = models.iter().map(|model| model.id.as_str()).collect::<Vec<_>>();
+        let ids = models
+            .iter()
+            .map(|model| model.id.as_str())
+            .collect::<Vec<_>>();
 
         assert_eq!(ids, vec!["gpt-4o", "gpt-4.1-mini", "missing-id-for-openai"]);
         assert!(models.iter().all(|model| model.provider == "openai"));
@@ -1176,7 +1225,10 @@ mod tests {
         });
 
         let models = parse_provider_models_from_payload(&payload, "anthropic", &["id"]);
-        let ids = models.iter().map(|model| model.id.as_str()).collect::<Vec<_>>();
+        let ids = models
+            .iter()
+            .map(|model| model.id.as_str())
+            .collect::<Vec<_>>();
 
         assert_eq!(
             ids,
@@ -1202,7 +1254,10 @@ mod tests {
         });
 
         let models = parse_provider_models_from_payload(&payload, "gemini", &["name", "id"]);
-        let ids = models.iter().map(|model| model.id.as_str()).collect::<Vec<_>>();
+        let ids = models
+            .iter()
+            .map(|model| model.id.as_str())
+            .collect::<Vec<_>>();
 
         assert_eq!(
             ids,
@@ -1228,8 +1283,10 @@ mod tests {
             ]
         });
 
-        let from_models = parse_provider_models_from_payload(&models_payload, "cohere", &["name", "id"]);
-        let from_data = parse_provider_models_from_payload(&data_payload, "cohere", &["name", "id"]);
+        let from_models =
+            parse_provider_models_from_payload(&models_payload, "cohere", &["name", "id"]);
+        let from_data =
+            parse_provider_models_from_payload(&data_payload, "cohere", &["name", "id"]);
 
         assert_eq!(
             from_models

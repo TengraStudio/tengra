@@ -14,9 +14,9 @@ export const WorkspaceMountTypeSchema = z.enum(['local', 'ssh']);
  * Schema for validating SSH configuration
  */
 export const WorkspaceSshConfigSchema = z.object({
-    host: z.string().min(1, 'Host is required'),
+    host: z.string().min(1, 'error.workspace.validation.host_required'),
     port: z.number().int().min(1).max(65535).optional(),
-    username: z.string().min(1, 'Username is required'),
+    username: z.string().min(1, 'error.workspace.validation.username_required'),
     authType: z.enum(['password', 'key']).optional(),
     password: z.string().optional(),
     privateKey: z.string().optional(),
@@ -27,10 +27,10 @@ export const WorkspaceSshConfigSchema = z.object({
  * Schema for validating a workspace mount
  */
 export const WorkspaceMountSchema = z.object({
-    id: z.string().min(1, 'Mount ID is required'),
-    name: z.string().min(1, 'Mount name is required'),
+    id: z.string().min(1, 'error.workspace.validation.mount_id_required'),
+    name: z.string().min(1, 'error.workspace.validation.mount_name_required'),
     type: WorkspaceMountTypeSchema,
-    rootPath: z.string().min(1, 'Root path is required'),
+    rootPath: z.string().min(1, 'error.workspace.validation.root_path_required'),
     ssh: WorkspaceSshConfigSchema.optional(),
 });
 
@@ -38,10 +38,10 @@ export const WorkspaceMountSchema = z.object({
  * Schema for validating a workspace entry (base without children for recursion)
  */
 const WorkspaceEntryBaseSchema = z.object({
-    name: z.string().min(1, 'Entry name is required'),
-    path: z.string().min(1, 'Entry path is required'),
+    name: z.string().min(1, 'error.workspace.validation.entry_name_required'),
+    path: z.string().min(1, 'error.workspace.validation.entry_path_required'),
     isDirectory: z.boolean(),
-    mountId: z.string().min(1, 'Mount ID is required'),
+    mountId: z.string().min(1, 'error.workspace.validation.mount_id_required'),
     size: z.number().int().nonnegative().optional(),
     lastModified: z.date().optional(),
     initialLine: z.number().int().nonnegative().optional(),
@@ -184,24 +184,24 @@ export function validateNewEntry(
 ): { success: boolean; error?: string; path?: string } {
     // Validate parent path
     if (!parentPath || typeof parentPath !== 'string') {
-        return { success: false, error: 'Invalid parent path' };
+        return { success: false, error: 'error.workspace.validation.invalid_parent_path' };
     }
 
     // Validate name
     if (!name || typeof name !== 'string') {
-        return { success: false, error: 'Name is required' };
+        return { success: false, error: 'error.workspace.validation.name_required' };
     }
 
     // Sanitize name
     const sanitizedName = sanitizeFileName(name);
     if (sanitizedName.length === 0) {
-        return { success: false, error: 'Invalid name' };
+        return { success: false, error: 'error.workspace.validation.invalid_name' };
     }
 
     // Check for reserved names
     const reservedNames = ['.', '..', 'CON', 'PRN', 'AUX', 'NUL'];
     if (reservedNames.includes(sanitizedName.toUpperCase())) {
-        return { success: false, error: 'Reserved name not allowed' };
+        return { success: false, error: 'error.workspace.validation.reserved_name_not_allowed' };
     }
 
     // Build full path
@@ -210,7 +210,7 @@ export function validateNewEntry(
 
     // Validate the resulting path
     if (!isPathSafe(fullPath)) {
-        return { success: false, error: 'Invalid path' };
+        return { success: false, error: 'error.workspace.validation.invalid_path' };
     }
 
     return { success: true, path: fullPath };
@@ -261,7 +261,7 @@ export function validateMountConnection(
         return {
             success: false,
             error: new WorkspaceExplorerError(
-                'Invalid mount configuration',
+                'error.workspace.validation.invalid_mount_configuration',
                 WorkspaceExplorerErrorCodes.VALIDATION_ERROR,
                 { issues: result.error.issues }
             ),
@@ -274,7 +274,7 @@ export function validateMountConnection(
             return {
                 success: false,
                 error: new WorkspaceExplorerError(
-                    'SSH host is required',
+                    'error.workspace.validation.ssh_host_required',
                     WorkspaceExplorerErrorCodes.VALIDATION_ERROR
                 ),
             };
@@ -284,7 +284,7 @@ export function validateMountConnection(
             return {
                 success: false,
                 error: new WorkspaceExplorerError(
-                    'SSH username is required',
+                    'error.workspace.validation.ssh_username_required',
                     WorkspaceExplorerErrorCodes.VALIDATION_ERROR
                 ),
             };
@@ -310,7 +310,7 @@ export function validateEntrySelection(
         return {
             success: false,
             error: new WorkspaceExplorerError(
-                'Invalid entry',
+                'error.workspace.validation.invalid_entry',
                 WorkspaceExplorerErrorCodes.VALIDATION_ERROR,
                 { issues: result.error.issues }
             ),
@@ -322,7 +322,7 @@ export function validateEntrySelection(
         return {
             success: false,
             error: new WorkspaceExplorerError(
-                'Entry mount ID mismatch',
+                'error.workspace.validation.entry_mount_id_mismatch',
                 WorkspaceExplorerErrorCodes.VALIDATION_ERROR,
                 { expected: mountId, actual: result.data.mountId }
             ),
@@ -357,7 +357,7 @@ export function checkLimit(
 ): WorkspaceExplorerError | undefined {
     if (count > limit) {
         return new WorkspaceExplorerError(
-            `${name} limit exceeded (${count}/${limit})`,
+            'error.workspace.validation.limit_exceeded',
             WorkspaceExplorerErrorCodes.VALIDATION_ERROR,
             { count, limit, name }
         );

@@ -1,21 +1,20 @@
-import { _electron as electron, ElectronApplication, expect, Page, test } from '@playwright/test';
+import { ElectronApplication, expect, Page, test } from '@playwright/test';
+
+import { closeElectronApp, launchElectronApp, settleVisualState } from './e2e-test-utils';
 
 test.describe('Sidebar Visual Regression', () => {
     let electronApp: ElectronApplication;
     let window: Page;
 
     test.beforeAll(async () => {
-        electronApp = await electron.launch({
-            args: ['dist/main/main.js'],
-            env: { ...process.env, NODE_ENV: 'test' }
-        });
-        window = await electronApp.firstWindow();
-        await window.waitForLoadState('domcontentloaded');
-        await window.waitForTimeout(1000);
+        const launched = await launchElectronApp();
+        electronApp = launched.electronApp;
+        window = launched.appWindow;
+        await settleVisualState(window);
     });
 
     test.afterAll(async () => {
-        await electronApp?.close();
+        await closeElectronApp(electronApp);
     });
 
     test('sidebar expanded default state', async () => {
@@ -45,9 +44,9 @@ test.describe('Sidebar Visual Regression', () => {
     test('sidebar after creating a new chat entry', async () => {
         const newChatButton = window.getByTestId('new-chat-button');
         await newChatButton.click();
-        await window.waitForTimeout(500);
 
         const sidebar = window.getByTestId('sidebar');
+        await expect(sidebar).toBeVisible();
         await expect(sidebar).toHaveScreenshot('sidebar-after-new-chat.png', {
             maxDiffPixels: 250
         });

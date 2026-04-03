@@ -1,11 +1,13 @@
-import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
+import { buildAssistantPresentationMetadata } from '@renderer/features/chat/hooks/ai-runtime-chat.util';
+import { classifyAiIntent } from '@shared/utils/ai-runtime.util';
 import { useCallback, useRef, useState } from 'react';
 
-import { chatStream } from '@/lib/chat-stream';
-import { getSystemPrompt } from '@/lib/identity';
-import { generateId } from '@/lib/utils';
-import { ChatError, Message, ToolDefinition } from '@/types';
+import { ChatError, Message } from '@/types';
 
+import {
+    prepareConversationMessages,
+} from './session-conversation-stream.util';
+import { consumeConversationStream } from './session-conversation-stream-consumer.util';
 import { useSessionState } from './useSessionState';
 
 export interface SessionConversationStreamOptions {
@@ -24,200 +26,6 @@ export interface SessionConversationStreamState {
     stopStreaming: () => void;
     clearError: () => void;
     retry: () => void;
-}
-
-interface PreparedConversationMessages {
-    assistantId: string;
-    assistantMessage: Message;
-    sessionId: string;
-    systemMessage: Message;
-    userMessage: Message;
-}
-
-interface ConsumeConversationStreamOptions {
-    assistantId: string;
-    model: string;
-    provider: string;
-    sessionId: string;
-    setError: Dispatch<SetStateAction<ChatError | null>>;
-    setIsStreaming: Dispatch<SetStateAction<boolean>>;
-    setMessages: Dispatch<SetStateAction<Message[]>>;
-    streamMessages: Message[];
-    workspaceId?: string;
-    abortedRef: MutableRefObject<boolean>;
-}
-
-function buildToolListForAllProviders(tools: ToolDefinition[]): ToolDefinition[] {
-    return tools.filter(tool => tool?.function?.name && tool.function.name !== 'generate_image');
-}
-
-function categorizeConversationError(message: string, model: string | null): ChatError {
-    const lower = message.toLowerCase();
-
-    if (
-        lower.includes('quota')
-        || lower.includes('rate limit')
-        || lower.includes('429')
-        || lower.includes('exceeded')
-    ) {
-        return { kind: 'quota_exhausted', message, model };
-    }
-    if (
-        lower.includes('timeout')
-        || lower.includes('timed out')
-        || lower.includes('econnaborted')
-    ) {
-        return { kind: 'timeout', message, model };
-    }
-    if (
-        lower.includes('econnrefused')
-        || lower.includes('enotfound')
-        || lower.includes('unavailable')
-        || lower.includes('503')
-        || lower.includes('network')
-        || lower.includes('connect')
-    ) {
-        return { kind: 'provider_unavailable', message, model };
-    }
-    return { kind: 'generic', message, model };
-}
-
-function patchAssistantMessage(messages: Message[], assistantId: string, content: string): Message[] {
-    return messages.map(message => {
-        if (message.id !== assistantId) {
-            return message;
-        }
-        return {
-            ...message,
-            content,
-        };
-    });
-}
-
-function toTextContent(content: Message['content']): string {
-    if (typeof content === 'string') {
-        return content;
-    }
-
-    return content
-        .map(part => (part.type === 'text' ? part.text : part.image_url.url))
-        .join('\n');
-}
-
-function buildSystemMessage(provider: string, model: string, language: string): Message {
-    return {
-        id: generateId(),
-        role: 'system',
-        content: getSystemPrompt(language, undefined, provider, model),
-        timestamp: new Date(),
-    };
-}
-
-function prepareConversationMessages(
-    content: string,
-    provider: string,
-    model: string,
-    language: string
-): PreparedConversationMessages {
-    const userMessage: Message = {
-        id: generateId(),
-        role: 'user',
-        content,
-        timestamp: new Date(),
-    };
-    const assistantId = generateId();
-    return {
-        assistantId,
-        assistantMessage: {
-            id: assistantId,
-            role: 'assistant',
-            content: '',
-            timestamp: new Date(),
-            provider,
-            model,
-        },
-        sessionId: generateId(),
-        systemMessage: buildSystemMessage(provider, model, language),
-        userMessage,
-    };
-}
-
-function formatStreamErrorContent(existingContent: string, errorMessage: string): string {
-    return existingContent
-        ? `${existingContent}\n\n[${errorMessage}]`
-        : errorMessage;
-}
-
-async function consumeConversationStream(
-    options: ConsumeConversationStreamOptions
-): Promise<void> {
-    const {
-        assistantId,
-        model,
-        provider,
-        sessionId,
-        setError,
-        setIsStreaming,
-        setMessages,
-        streamMessages,
-        workspaceId,
-        abortedRef,
-    } = options;
-    const getToolDefinitions = window.electron.getToolDefinitions;
-    const allTools = typeof getToolDefinitions === 'function'
-        ? await getToolDefinitions().catch(() => [])
-        : [];
-    const stream = chatStream({
-        messages: streamMessages,
-        model,
-        provider,
-        tools: buildToolListForAllProviders(allTools ?? []),
-        chatId: sessionId,
-        workspaceId,
-        options: {},
-    });
-    let accumulated = '';
-    const MAX_CHUNKS = 100000;
-    let chunkCount = 0;
-
-    try {
-        for await (const chunk of stream) {
-            if (abortedRef.current || chunkCount >= MAX_CHUNKS) {
-                break;
-            }
-            chunkCount++;
-
-            if (chunk.type === 'content' && chunk.content) {
-                accumulated += chunk.content;
-                setMessages(previous => patchAssistantMessage(previous, assistantId, accumulated));
-            }
-
-            if (chunk.type === 'error') {
-                const errorMessage = chunk.error ?? 'unknown';
-                const errorText = accumulated
-                    ? `${accumulated}\n\n[Error: ${errorMessage}]`
-                    : `Error: ${errorMessage}`;
-                setMessages(previous => patchAssistantMessage(previous, assistantId, errorText));
-                setError(categorizeConversationError(errorMessage, model));
-                break;
-            }
-        }
-    } catch (streamError) {
-        const errorMessage = streamError instanceof Error ? streamError.message : 'Stream failed';
-        setMessages(previous => {
-            const existingContent = toTextContent(
-                previous.find(message => message.id === assistantId)?.content ?? ''
-            );
-            return patchAssistantMessage(
-                previous,
-                assistantId,
-                formatStreamErrorContent(existingContent, errorMessage)
-            );
-        });
-        setError(categorizeConversationError(errorMessage, model));
-    } finally {
-        setIsStreaming(false);
-    }
 }
 
 export function useSessionConversationStream(
@@ -256,10 +64,22 @@ export function useSessionConversationStream(
         }
 
         const preparedMessages = prepareConversationMessages(content, provider, model, language);
+        const intentClassification = classifyAiIntent(preparedMessages.userMessage, 'agent');
 
         setError(null);
         setMessages(previous => {
-            return [...previous, preparedMessages.userMessage, preparedMessages.assistantMessage];
+            return [
+                ...previous,
+                preparedMessages.userMessage,
+                {
+                    ...preparedMessages.assistantMessage,
+                    metadata: buildAssistantPresentationMetadata({
+                        intent: intentClassification,
+                        isStreaming: true,
+                        language,
+                    }),
+                },
+            ];
         });
         setIsStreaming(true);
         setActiveSessionId(preparedMessages.sessionId);
@@ -268,6 +88,9 @@ export function useSessionConversationStream(
 
         void consumeConversationStream({
             assistantId: preparedMessages.assistantId,
+            assistantTimestamp: preparedMessages.assistantMessage.timestamp,
+            intentClassification,
+            language,
             model,
             provider,
             sessionId: preparedMessages.sessionId,

@@ -1,3 +1,6 @@
+import * as os from 'os';
+import * as path from 'path';
+
 import { getHealthCheckService } from '@main/services/system/health-check.service';
 import {
     bootstrapCoreData,
@@ -7,10 +10,12 @@ import {
 } from '@main/startup/service-lifecycle';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const TEST_LOGS_PATH = path.join(os.tmpdir(), 'tengra-tests', 'logs');
+
 vi.mock('@main/services/data/data.service', () => ({
     DataService: class {
         migrate = vi.fn(async () => undefined);
-        getPath = vi.fn(() => '/tmp/logs');
+        getPath = vi.fn(() => TEST_LOGS_PATH);
     }
 }));
 
@@ -45,7 +50,7 @@ describe('startup service lifecycle integration', () => {
     });
 
     it('boots core data and resolves DataService from container', async () => {
-        const dataService = { migrate: vi.fn(async () => undefined), getPath: vi.fn(() => '/tmp/logs') };
+        const dataService = { migrate: vi.fn(async () => undefined), getPath: vi.fn(() => TEST_LOGS_PATH) };
         const container = {
             register: vi.fn(),
             resolve: vi.fn(() => dataService),

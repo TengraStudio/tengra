@@ -179,6 +179,7 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
         activeTabIdRef, terminalInstancesRef,
         writeInputToTargetSessions: inputBroadcast.writeInputToTargetSessions,
         setTerminalContextMenu, setPasteHistory,
+        t,
     });
 
     const aiActions = useTerminalAiActions({
