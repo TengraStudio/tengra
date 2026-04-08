@@ -657,14 +657,14 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
         }
         lastToolFamily = currentTurnFamily;
 
-        // Hard ceiling: same tool family called 3+ consecutive turns OR monotonous signature pattern
+        // Hard ceiling: same tool family called 3+ consecutive turns OR monotonous signature pattern WITH NO PROGRESS
         const TOOL_FAMILY_MONOTONY_THRESHOLD = 3;
         const isMonotonous = isMonotonousToolFamily(recentToolSignatures, TOOL_FAMILY_MONOTONY_THRESHOLD);
-        if (isMonotonous || consecutiveSameFamilyTurns >= TOOL_FAMILY_MONOTONY_THRESHOLD) {
+        if (noProgressToolTurnCount >= 2 && (isMonotonous || consecutiveSameFamilyTurns >= TOOL_FAMILY_MONOTONY_THRESHOLD)) {
             const familyNames = currentTurnFamilies;
             appLogger.warn(
                 'useChatGenerator',
-                `Semantic tool-family loop detected: family=${familyNames.join(',')}, consecutiveSameFamily=${consecutiveSameFamilyTurns}, isMonotonous=${String(isMonotonous)}, noProgress=${noProgressToolTurnCount}`
+                `Semantic tool-family loop detected without progress: family=${familyNames.join(',')}, consecutiveSameFamily=${consecutiveSameFamilyTurns}, isMonotonous=${String(isMonotonous)}, noProgress=${noProgressToolTurnCount}`
             );
             const assistantMsgForFamily = buildAssistantMessage({
                 id: currentAssistantId,

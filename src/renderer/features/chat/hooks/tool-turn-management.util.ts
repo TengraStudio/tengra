@@ -335,12 +335,12 @@ export function evaluateLoopSafety(
         return { action: 'break', nextMessages: params.currentMessages };
     }
 
-    // Semantic: all recent signatures use the same tool family — always break, no noProgress required
+    // Semantic: all recent signatures use the same tool family — break if it's coupled with no real progress
     const MONOTONOUS_FAMILY_WINDOW = 3;
-    if (isMonotonousToolFamily(params.recentToolSignatures, MONOTONOUS_FAMILY_WINDOW)) {
+    if (params.noProgressToolTurnCount >= 2 && isMonotonousToolFamily(params.recentToolSignatures, MONOTONOUS_FAMILY_WINDOW)) {
         appLogger.info(
             'useChatGenerator',
-            `Breaking tool loop: monotonous tool family detected across ${MONOTONOUS_FAMILY_WINDOW} recent signatures. noProgress=${params.noProgressToolTurnCount}`
+            `Breaking tool loop: monotonous tool family detected without progress across ${MONOTONOUS_FAMILY_WINDOW} recent signatures. noProgress=${params.noProgressToolTurnCount}`
         );
         return { action: 'break', nextMessages: params.currentMessages };
     }

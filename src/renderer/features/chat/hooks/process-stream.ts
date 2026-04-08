@@ -38,7 +38,7 @@ export function extractReasoning(
     }
 
     // Extract from <think> tags
-    const thinkStart = content.toLowerCase().indexOf('<think>');
+    const thinkStart = content.toLowerCase().lastIndexOf('<think>');
     if (thinkStart !== -1) {
         const contentAfterStart = content.substring(thinkStart + 7);
         const thinkEnd = contentAfterStart.toLowerCase().indexOf('</think>');
@@ -50,7 +50,7 @@ export function extractReasoning(
     }
 
     // fallback to variants like <thinking>
-    const thinkingStart = content.toLowerCase().indexOf('<thinking>');
+    const thinkingStart = content.toLowerCase().lastIndexOf('<thinking>');
     if (thinkingStart !== -1) {
         const contentAfterStart = content.substring(thinkingStart + 10);
         const thinkingEnd = contentAfterStart.toLowerCase().indexOf('</thinking>');
