@@ -185,7 +185,7 @@ function useHistorySync(
 
 export function ChatProvider({ children }: { children: ReactNode }) {
     const { appSettings, language } = useAuth();
-    const { selectedModel, selectedProvider, selectedModels } = useModel();
+    const { selectedModel, selectedProvider, selectedModels, models } = useModel();
     const { t } = useTranslation();
     const { workspaces: workspaces, selectedWorkspace: selectedWorkspace, setSelectedWorkspace: setSelectedWorkspace, loadWorkspaces: loadWorkspaces } = useWorkspace();
     const { speak: handleSpeak, stop: handleStopSpeak, isSpeaking, speakingMessageId } = useTextToSpeech();
@@ -205,7 +205,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         formatChatError: (e: CatchError) => handleChatError(e, t),
         t,
         workspaceId: selectedWorkspace?.id,
-        activeWorkspacePath: selectedWorkspace?.path
+        activeWorkspacePath: selectedWorkspace?.path,
+        models
     });
 
     const handlers = useMemo(() => ({

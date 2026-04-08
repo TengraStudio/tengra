@@ -261,8 +261,7 @@ export class RuntimeBootstrapService extends BaseService {
     ): Promise<RuntimeManifest> {
         try {
             this.logWarn(
-                `Falling back to cached runtime manifest at ${cachedManifestPath}`,
-                originalError instanceof Error ? originalError : undefined
+                `Falling back to cached runtime manifest at ${cachedManifestPath}; reason=${this.describeManifestLoadError(originalError)}`
             );
             const cachedManifestText = await fsPromises.readFile(cachedManifestPath, 'utf8');
             return this.runtimeManifestService.parseManifest(
@@ -278,6 +277,23 @@ export class RuntimeBootstrapService extends BaseService {
             );
             return this.createEmptyManifest();
         }
+    }
+
+    private describeManifestLoadError(error: unknown): string {
+        if (!(error instanceof Error)) {
+            return 'unknown';
+        }
+
+        const namedError = error as Error & { code?: string };
+        const code = typeof namedError.code === 'string' ? namedError.code : '';
+        const message = namedError.message?.trim() ?? '';
+        if (code.length > 0 && message.length > 0) {
+            return `${code}:${message}`;
+        }
+        if (code.length > 0) {
+            return code;
+        }
+        return message.length > 0 ? message : 'error';
     }
 
     private createEmptyManifest(): RuntimeManifest {

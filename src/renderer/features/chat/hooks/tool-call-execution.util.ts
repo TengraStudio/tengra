@@ -2,8 +2,126 @@ import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 import { generateId } from '@/lib/utils';
 import { Message } from '@/types';
+import { JsonValue } from '@/types/common';
 
 import { normalizeToolArgs } from './chat-runtime-policy.util';
+
+interface ToolExecutionResponse {
+    success: boolean;
+    result?: JsonValue;
+    data?: JsonValue;
+    error?: string;
+    errorType?: string;
+}
+
+const NON_EMPTY_STRING_REQUIRED_ARGUMENTS = new Map<string, string[]>([
+    ['resolve_path', ['path']],
+    ['write_file', ['path', 'content']],
+    ['patch_file', ['path']],
+    ['search_files', ['rootPath', 'pattern']],
+    ['create_directory', ['path']],
+    ['delete_file', ['path']],
+    ['file_exists', ['path']],
+    ['get_file_info', ['path']],
+    ['list_directory', ['path']],
+    ['list_dir', ['path']],
+    ['read_file', ['path']],
+    ['move_file', ['source', 'destination']],
+    ['copy_file', ['source', 'destination']],
+    ['execute_command', ['command']],
+    ['terminal_session_write', ['sessionId', 'input']],
+    ['terminal_session_read', ['sessionId']],
+    ['terminal_session_wait', ['sessionId']],
+    ['terminal_session_signal', ['sessionId']],
+    ['terminal_session_stop', ['sessionId']],
+    ['terminal_session_snapshot', ['sessionId']],
+]);
+
+function buildValidationFailure(
+    toolName: string,
+    missingArgument: string,
+    details?: Record<string, unknown>
+): ToolExecutionResponse {
+    return {
+        success: false,
+        error: `Tool '${toolName}' requires a valid '${missingArgument}' argument. Do not retry the same incomplete call; infer or resolve the missing value first.`,
+        errorType: 'invalid_args',
+        result: {
+            success: false,
+            resultKind: 'tool_argument_validation',
+            tool: toolName,
+            missingArgument,
+            complete: false,
+            retrySameCall: false,
+            ...(details ?? {}),
+        },
+    };
+}
+
+function buildToolMessage(
+    toolCall: NonNullable<Message['toolCalls']>[number],
+    content: JsonValue
+): Message {
+    return {
+        id: generateId(),
+        role: 'tool',
+        content: JSON.stringify(content),
+        toolCallId: toolCall.id,
+        timestamp: new Date(),
+    };
+}
+
+function validateToolArguments(
+    toolName: string,
+    args: Record<string, unknown>
+): ToolExecutionResponse | null {
+    const requiredStringArguments = NON_EMPTY_STRING_REQUIRED_ARGUMENTS.get(toolName) ?? [];
+    for (const argumentName of requiredStringArguments) {
+        const value = args[argumentName];
+        if (typeof value !== 'string' || value.trim().length === 0) {
+            return buildValidationFailure(toolName, argumentName);
+        }
+    }
+
+    if (toolName === 'write_files') {
+        const files = args.files;
+        if (!Array.isArray(files) || files.length === 0) {
+            return buildValidationFailure(toolName, 'files');
+        }
+        const invalidFileIndex = files.findIndex(file =>
+            !file
+            || typeof file !== 'object'
+            || Array.isArray(file)
+            || typeof (file as Record<string, unknown>).path !== 'string'
+            || ((file as Record<string, unknown>).path as string).trim().length === 0
+            || typeof (file as Record<string, unknown>).content !== 'string'
+        );
+        if (invalidFileIndex !== -1) {
+            return buildValidationFailure(toolName, 'files', { invalidItemIndex: invalidFileIndex });
+        }
+    }
+
+    if (toolName === 'read_many_files') {
+        const paths = args.paths;
+        if (!Array.isArray(paths) || paths.length === 0) {
+            return buildValidationFailure(toolName, 'paths');
+        }
+        const invalidPathIndex = paths.findIndex(path => typeof path !== 'string' || path.trim().length === 0);
+        if (invalidPathIndex !== -1) {
+            return buildValidationFailure(toolName, 'paths', { invalidItemIndex: invalidPathIndex });
+        }
+    }
+
+    if (toolName === 'patch_file') {
+        const hasEdits = Array.isArray(args.edits) && args.edits.length > 0;
+        const hasSearchReplace = typeof args.search === 'string' && args.search.length > 0 && typeof args.replace === 'string';
+        if (!hasEdits && !hasSearchReplace) {
+            return buildValidationFailure(toolName, 'edits', { alternativeAccepted: 'search+replace' });
+        }
+    }
+
+    return null;
+}
 
 export async function executeToolCall(
     toolCall: NonNullable<Message['toolCalls']>[number],
@@ -22,6 +140,19 @@ export async function executeToolCall(
         : toolCall.function.arguments;
 
     const normalizedArgs = normalizeToolArgs(toolArgs);
+    const validationFailure = validateToolArguments(toolCall.function.name, normalizedArgs);
+    if (validationFailure) {
+        return {
+            toolMessage: buildToolMessage(toolCall, {
+                success: false,
+                error: validationFailure.error ?? t('chat.error'),
+                errorType: validationFailure.errorType ?? 'invalid_args',
+                tool: toolCall.function.name,
+                details: validationFailure.result,
+            }),
+            generatedImages: [],
+        };
+    }
     if (
         (toolCall.function.name === 'execute_command' || toolCall.function.name === 'command_execute') &&
         typeof normalizedArgs.cwd !== 'string' &&
@@ -36,7 +167,7 @@ export async function executeToolCall(
         normalizedArgs as Record<string, unknown>,
         toolCall.id,
         chatId
-    );
+    ) as ToolExecutionResponse;
 
     const generatedImages = toolCall.function.name === 'generate_image'
         ? readToolResultImages(toolExecResult)
@@ -44,38 +175,21 @@ export async function executeToolCall(
     const toolResultContent = toolExecResult.success
         ? (
             toolExecResult.result
-            || (Array.isArray(toolExecResult.data) ? toolExecResult.data : toolExecResult.data)
-            || {}
+            ?? toolExecResult.data
+            ?? {}
         )
         : {
             success: false,
             error: toolExecResult.error ?? t('chat.error'),
             errorType: toolExecResult.errorType ?? 'unknown',
             tool: toolCall.function.name,
+            details: toolExecResult.result ?? toolExecResult.data,
         };
 
-    let finalContent = JSON.stringify(toolResultContent);
-    if (toolExecResult.success) {
-        const isActuallyEmpty =
-            (Array.isArray(toolResultContent) && toolResultContent.length === 0) ||
-            (typeof toolResultContent === 'object' && Object.keys(toolResultContent as object).length === 0);
-
-        if (isActuallyEmpty) {
-            finalContent = JSON.stringify({
-                ...(Array.isArray(toolResultContent) ? { items: [] } : {}),
-                _hint: 'The result is empty. The directory may be empty or the file might be blank. Do NOT hallucinate content that is not present in this result.',
-            });
-        }
-    }
+    const finalContent = JSON.stringify(toolResultContent);
 
     return {
-        toolMessage: {
-            id: generateId(),
-            role: 'tool',
-            content: finalContent,
-            toolCallId: toolCall.id,
-            timestamp: new Date(),
-        },
+        toolMessage: buildToolMessage(toolCall, safeJsonParse<JsonValue>(finalContent, toolResultContent)),
         generatedImages,
     };
 }

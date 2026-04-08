@@ -16,6 +16,7 @@ import { en } from '../../../../renderer/i18n/locales';
 
 interface MockHuggingFaceService {
     searchModels: ReturnType<typeof vi.fn>;
+    listInstalledModels: ReturnType<typeof vi.fn>;
 }
 
 vi.mock('@main/logging/logger', () => ({
@@ -92,7 +93,8 @@ describe('ModelRegistryService', () => {
             searchModels: vi.fn().mockResolvedValue({
                 models: [{ id: 'TheBloke/Llama-7B-GGUF', name: 'Llama-7B-GGUF', description: 'GGUF', tags: [], downloads: 5000, likes: 10, author: 'TheBloke', lastModified: 'today' }],
                 total: 1
-            })
+            }),
+            listInstalledModels: vi.fn().mockResolvedValue([])
         };
 
         service = new ModelRegistryService({
@@ -426,6 +428,27 @@ describe('ModelRegistryService', () => {
             expect(installed[0]!.provider).toBe('ollama');
         });
 
+        it('should include locally downloaded Hugging Face models', async () => {
+            vi.mocked(mockHuggingFaceService.listInstalledModels).mockResolvedValueOnce([
+                {
+                    modelId: 'lmstudio-community/gemma-4-E4B-it-GGUF',
+                    path: 'C:\\Users\\agnes\\AppData\\Roaming\\tengra\\models\\gemma-4-E4B-it-Q4_K_M.gguf',
+                    createdAt: Date.now(),
+                    contextLength: 8192,
+                    architecture: 'gemma4',
+                }
+            ]);
+
+            const installed = await service.getInstalledModels();
+            const hfModel = installed.find(model => model.provider === 'huggingface');
+
+            expect(hfModel).toBeDefined();
+            expect(hfModel?.id).toBe('lmstudio-community/gemma-4-E4B-it-GGUF');
+            expect(hfModel?.name).toBe('gemma-4-E4B-it-GGUF');
+            expect(hfModel?.contextWindow).toBe(8192);
+            expect(hfModel?.backend).toBe('llama.cpp');
+        });
+
         it('should return empty array if error', async () => {
             vi.mocked(mockOllamaService.getModels!).mockResolvedValue([]);
 
@@ -504,6 +527,14 @@ describe('ModelRegistryService', () => {
                 'telemetry:model-registry',
                 expect.objectContaining({ name: 'model-registry.provider.fetch.failed', provider: 'ollama' })
             );
+        });
+
+        it('should keep ollama results when installed Hugging Face lookup fails', async () => {
+            vi.mocked(mockHuggingFaceService.listInstalledModels).mockRejectedValueOnce(new Error('hf unavailable'));
+
+            const installed = await service.getInstalledModels();
+
+            expect(installed.some(model => model.provider === 'ollama')).toBe(true);
         });
 
         it('should expose performance budget, normalized ui state and i18n keys in health metrics', async () => {

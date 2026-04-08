@@ -61,7 +61,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                         </h3>
                         <div className="flex items-center gap-2 mt-2">
                             <div className="h-1 w-8 bg-primary rounded-full group-hover:w-12 transition-all duration-700" />
-                            <p className="text-[10px] font-bold text-muted-foreground opacity-50">
+                            <p className="typo-body font-bold text-muted-foreground opacity-50">
                                 {t('developer.coreSystemDiagnostics')}
                             </p>
                         </div>
@@ -74,7 +74,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
 
             {/* Core Runtime Status */}
             <div className="grid grid-cols-1 gap-8">
-                 <ManagedRuntimeStatusPanel
+                <ManagedRuntimeStatusPanel
                     status={runtimeStatus}
                     isLoading={runtimeIsLoading}
                     isRepairing={runtimeIsRepairing}
@@ -94,17 +94,17 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                 <div className="bg-card rounded-3xl border border-border/40 p-8 space-y-8 shadow-sm group/data hover:border-border/60 transition-all duration-500 overflow-hidden relative">
                     <div className="flex items-center gap-3 px-1 relative z-10">
                         <Database className="w-4 h-4 text-primary" />
-                        <h4 className="text-[10px] font-bold text-muted-foreground/40">{t('developer.dataProtocols')}</h4>
+                        <h4 className="typo-body font-bold text-muted-foreground/40">{t('developer.dataProtocols')}</h4>
                     </div>
 
                     <div className="space-y-4 relative z-10">
                         <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/5 group/row hover:bg-muted/10 border border-border/10 transition-all">
-                             <div className="space-y-1">
-                                <div className="text-[10px] font-bold text-foreground flex items-center gap-2">
+                            <div className="space-y-1">
+                                <div className="typo-body font-bold text-foreground flex items-center gap-2">
                                     <Trash2 className="w-3 h-3 text-red-500/60" />
                                     {t('developer.clearCache')}
                                 </div>
-                                <div className="text-[8px] font-bold text-muted-foreground/40 max-w-[200px] leading-relaxed">
+                                <div className="typo-body font-bold text-muted-foreground/40 max-w-[200px] leading-relaxed">
                                     {t('developer.clearCacheDesc')}
                                 </div>
                             </div>
@@ -112,19 +112,19 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                                 variant="outline"
                                 size="sm"
                                 onClick={() => { localStorage.clear(); sessionStorage.clear(); setStatusMessage(t('developer.cacheCleared')); setTimeout(() => setStatusMessage(''), 3000); }}
-                                className="h-9 px-4 rounded-xl border-border/40 text-[9px] font-bold hover:bg-red-500 hover:text-white hover:border-red-500 transition-all"
+                                className="h-9 px-4 rounded-xl border-border/40 typo-body font-bold hover:bg-red-500 hover:text-white hover:border-red-500 transition-all"
                             >
                                 {t('developer.executeClear')}
                             </Button>
                         </div>
 
                         <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/5 group/row hover:bg-muted/10 border border-border/10 transition-all">
-                             <div className="space-y-1">
-                                <div className="text-[10px] font-bold text-foreground flex items-center gap-2">
+                            <div className="space-y-1">
+                                <div className="typo-body font-bold text-foreground flex items-center gap-2">
                                     <RefreshCw className="w-3 h-3 text-primary/60" />
                                     {t('developer.refreshData')}
                                 </div>
-                                <div className="text-[8px] font-bold text-muted-foreground/40 max-w-[200px] leading-relaxed">
+                                <div className="typo-body font-bold text-muted-foreground/40 max-w-[200px] leading-relaxed">
                                     {t('developer.refreshDataDesc')}
                                 </div>
                             </div>
@@ -132,19 +132,19 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                                 variant="outline"
                                 size="sm"
                                 onClick={() => { void (async () => { try { setIsLoading(true); onRefreshModels(true); await loadSettings(); setStatusMessage(t('developer.dataRefreshed')); setTimeout(() => setStatusMessage(''), 3000); } finally { setIsLoading(false); } })(); }}
-                                className="h-9 px-4 rounded-xl border-primary/20 bg-primary/5 text-primary text-[9px] font-bold hover:bg-primary hover:text-primary-foreground transition-all"
+                                className="h-9 px-4 rounded-xl border-primary/20 bg-primary/5 text-primary typo-body font-bold hover:bg-primary hover:text-primary-foreground transition-all"
                             >
                                 {t('developer.reloadAssets')}
                             </Button>
                         </div>
 
                         <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/5 group/row hover:bg-muted/10 border border-border/10 transition-all">
-                             <div className="space-y-1">
-                                <div className="text-[10px] font-bold text-foreground flex items-center gap-2">
+                            <div className="space-y-1">
+                                <div className="typo-body font-bold text-foreground flex items-center gap-2">
                                     <Download className="w-3 h-3 text-primary/60" />
                                     {t('developer.exportSchema')}
                                 </div>
-                                <div className="text-[8px] font-bold text-muted-foreground/40 max-w-[200px] leading-relaxed">
+                                <div className="typo-body font-bold text-muted-foreground/40 max-w-[200px] leading-relaxed">
                                     {t('developer.exportSchemaDesc')}
                                 </div>
                             </div>
@@ -188,13 +188,13 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                             </div>
                         </div>
 
-                         <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/5 group/row hover:bg-muted/10 border border-border/10 transition-all">
-                             <div className="space-y-1">
-                                <div className="text-[10px] font-bold text-foreground flex items-center gap-2">
+                        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/5 group/row hover:bg-muted/10 border border-border/10 transition-all">
+                            <div className="space-y-1">
+                                <div className="typo-body font-bold text-foreground flex items-center gap-2">
                                     <FileUp className="w-3 h-3 text-primary/60" />
                                     {t('developer.importSettings')}
                                 </div>
-                                <div className="text-[8px] font-bold text-muted-foreground/40 max-w-[200px] leading-relaxed">
+                                <div className="typo-body font-bold text-muted-foreground/40 max-w-[200px] leading-relaxed">
                                     {t('developer.restoreFromSnapshot')}
                                 </div>
                             </div>
@@ -202,7 +202,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                                 variant="outline"
                                 size="sm"
                                 asChild
-                                className="h-9 px-4 rounded-xl border-primary/20 bg-primary/5 text-primary text-[9px] font-bold hover:bg-primary hover:text-primary-foreground transition-all"
+                                className="h-9 px-4 rounded-xl border-primary/20 bg-primary/5 text-primary typo-body font-bold hover:bg-primary hover:text-primary-foreground transition-all"
                             >
                                 <label className="cursor-pointer">
                                     {t('developer.import')}
@@ -217,38 +217,38 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                 <div className="bg-card rounded-3xl border border-border/40 p-8 space-y-8 shadow-sm group/ux hover:border-border/60 transition-all duration-500 overflow-hidden relative">
                     <div className="flex items-center gap-3 px-1 relative z-10">
                         <Activity className="w-4 h-4 text-primary" />
-                        <h4 className="text-[10px] font-bold text-muted-foreground/40">{t('developer.uxDiagnostics')}</h4>
+                        <h4 className="typo-body font-bold text-muted-foreground/40">{t('developer.uxDiagnostics')}</h4>
                     </div>
 
                     <div className="space-y-6 relative z-10">
-                         <div className="p-6 rounded-[2rem] border border-border/40 bg-muted/10 shadow-inner">
-                            <div className="text-[10px] font-bold text-foreground mb-4">{t('developer.responsiveStateMatrix')}</div>
+                        <div className="p-6 rounded-[2rem] border border-border/40 bg-muted/10 shadow-inner">
+                            <div className="typo-body font-bold text-foreground mb-4">{t('developer.responsiveStateMatrix')}</div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="p-4 rounded-2xl border border-border/10 bg-background/50">
-                                    <div className="text-[8px] font-bold text-muted-foreground/30 mb-1">{t('developer.activeViewport')}</div>
+                                    <div className="typo-body font-bold text-muted-foreground/30 mb-1">{t('developer.activeViewport')}</div>
                                     <div className="text-xl font-bold text-primary leading-none">{responsiveStats.current}</div>
                                 </div>
                                 <div className="p-4 rounded-2xl border border-border/10 bg-background/50">
-                                    <div className="text-[8px] font-bold text-muted-foreground/30 mb-1">{t('developer.renderResolution')}</div>
-                                    <div className="text-xl font-bold text-foreground leading-none">{responsiveStats.viewport.width} <span className="text-[10px] opacity-20">X</span> {responsiveStats.viewport.height}</div>
+                                    <div className="typo-body font-bold text-muted-foreground/30 mb-1">{t('developer.renderResolution')}</div>
+                                    <div className="text-xl font-bold text-foreground leading-none">{responsiveStats.viewport.width} <span className="typo-body opacity-20">X</span> {responsiveStats.viewport.height}</div>
                                 </div>
                             </div>
                             <div className="mt-4 flex items-center gap-2 px-1">
-                                <Badge variant="outline" className="h-4 text-[7px] px-1 font-bold border-border/20 opacity-40">M:{responsiveStats.counters.mobile}</Badge>
-                                <Badge variant="outline" className="h-4 text-[7px] px-1 font-bold border-border/20 opacity-40">T:{responsiveStats.counters.tablet}</Badge>
-                                <Badge variant="outline" className="h-4 text-[7px] px-1 font-bold border-border/20 opacity-40">D:{responsiveStats.counters.desktop}</Badge>
-                                <Badge variant="outline" className="h-4 text-[7px] px-1 font-bold border-border/20 opacity-40">W:{responsiveStats.counters.wide}</Badge>
+                                <Badge variant="outline" className="h-4 typo-body px-1 font-bold border-border/20 opacity-40">M:{responsiveStats.counters.mobile}</Badge>
+                                <Badge variant="outline" className="h-4 typo-body px-1 font-bold border-border/20 opacity-40">T:{responsiveStats.counters.tablet}</Badge>
+                                <Badge variant="outline" className="h-4 typo-body px-1 font-bold border-border/20 opacity-40">D:{responsiveStats.counters.desktop}</Badge>
+                                <Badge variant="outline" className="h-4 typo-body px-1 font-bold border-border/20 opacity-40">W:{responsiveStats.counters.wide}</Badge>
                             </div>
                         </div>
 
                         <div className="space-y-4">
                             <div className="flex items-center justify-between px-1">
                                 <div className="space-y-0.5">
-                                    <div className="text-[10px] font-bold text-foreground">{t('developer.motionEngineDebug')}</div>
-                                    <div className="text-[8px] font-bold text-muted-foreground/40">{t('developer.pulsesRegistered', { count: animationStats.totals.played })}</div>
+                                    <div className="typo-body font-bold text-foreground">{t('developer.motionEngineDebug')}</div>
+                                    <div className="typo-body font-bold text-muted-foreground/40">{t('developer.pulsesRegistered', { count: animationStats.totals.played })}</div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                     <Button
+                                    <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={() => {
@@ -258,7 +258,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                                             setTimeout(() => setStatusMessage(''), 3000);
                                         }}
                                         className={cn(
-                                            "h-9 px-4 rounded-xl border-border/40 text-[9px] font-bold    transition-all",
+                                            "h-9 px-4 rounded-xl border-border/40 typo-body font-bold    transition-all",
                                             animationStats.debugEnabled && "bg-primary/10 text-primary border-primary/20"
                                         )}
                                     >
@@ -273,7 +273,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                                             setStatusMessage(!current ? t('developer.forcedReducedMotionEnabled') : t('developer.forcedReducedMotionDisabled'));
                                             setTimeout(() => setStatusMessage(''), 3000);
                                         }}
-                                        className="h-9 px-4 rounded-xl border-border/40 text-[9px] font-bold hover:bg-muted/20 transition-all"
+                                        className="h-9 px-4 rounded-xl border-border/40 typo-body font-bold hover:bg-muted/20 transition-all"
                                     >
                                         {t('developer.forceReduced')}
                                     </Button>
@@ -286,12 +286,12 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
 
             {/* Performance Dashboard */}
             <div className="bg-card rounded-3xl border border-border/40 p-8 space-y-8 shadow-sm group/performance hover:border-border/60 transition-all duration-500 overflow-hidden relative">
-                 <div className="flex items-center gap-3 px-1 relative z-10">
+                <div className="flex items-center gap-3 px-1 relative z-10">
                     <Activity className="w-4 h-4 text-primary" />
-                    <h4 className="text-[10px] font-bold text-muted-foreground/40">{t('developer.performanceOverview')}</h4>
+                    <h4 className="typo-body font-bold text-muted-foreground/40">{t('developer.performanceOverview')}</h4>
                 </div>
                 <div className="relative z-10">
-                     <PerformanceDashboard />
+                    <PerformanceDashboard />
                 </div>
             </div>
         </div>

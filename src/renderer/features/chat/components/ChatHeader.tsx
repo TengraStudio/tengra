@@ -1,4 +1,4 @@
-import { Download,Search, X } from 'lucide-react';
+import { Download, Eraser, Search, X } from 'lucide-react';
 import { memo, useEffect } from 'react';
 
 import { useDebounce } from '@/hooks/useDebounce';
@@ -6,7 +6,10 @@ import { useDebounce } from '@/hooks/useDebounce';
 interface ChatHeaderProps {
     searchTerm: string;
     setSearchTerm: (value: string) => void;
+    onClearMessages: () => void;
     onSearchChange?: (debouncedTerm: string) => void;
+    contextTokens: number;
+    contextWindow: number;
     t: (key: string) => string;
     onExport?: () => void;
 }
@@ -20,11 +23,17 @@ interface ChatHeaderProps {
 export const ChatHeader = memo(({
     searchTerm,
     setSearchTerm,
+    onClearMessages,
     onSearchChange,
+    contextTokens,
+    contextWindow,
     t,
     onExport
 }: ChatHeaderProps) => {
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
+    const normalizedUsedTokens = Math.max(0, contextTokens);
+    const normalizedWindow = Math.max(1, contextWindow);
+    const usagePercent = Math.min(100, Math.round((normalizedUsedTokens / normalizedWindow) * 100));
 
     useEffect(() => {
         if (onSearchChange) {
@@ -33,9 +42,45 @@ export const ChatHeader = memo(({
     }, [debouncedSearchTerm, onSearchChange]);
 
     return (
-        <div className="h-14 border-b border-border/50 flex items-center justify-between px-6 bg-background/30 backdrop-blur-md shrink-0">
-            <div className="flex items-center gap-4 flex-1">
-                <div className="relative flex-1 max-w-md">
+        <div className="border-b border-border/50 bg-background/30 px-6 py-3 backdrop-blur-md shrink-0">
+            <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                    <div className="min-w-0 flex-1">
+                        <div className="mb-1 flex items-center justify-between gap-3">
+                            <span className="truncate typo-body font-semibold text-muted-foreground/80">
+                                Context Window
+                            </span>
+                            <span className="typo-body font-bold text-foreground/80">
+                                {normalizedUsedTokens.toLocaleString()} / {normalizedWindow.toLocaleString()}
+                            </span>
+                        </div>
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/45">
+                            <div
+                                className="h-full rounded-full bg-primary/80 transition-all duration-300"
+                                style={{ width: `${usagePercent}%` }}
+                            />
+                        </div>
+                    </div>
+                    <button
+                        onClick={onClearMessages}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border/40 px-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                        title={t('chat.clear')}
+                        aria-label={t('chat.clear')}
+                    >
+                        <Eraser className="h-3.5 w-3.5" />
+                        <span>{t('chat.clear')}</span>
+                    </button>
+                    {onExport && (
+                        <button
+                            onClick={onExport}
+                            className="text-muted-foreground/50 hover:text-foreground transition-colors p-2"
+                            title={t('chat.exportChat')}
+                        >
+                            <Download className="w-5 h-5" />
+                        </button>
+                    )}
+                </div>
+                <div className="relative w-full">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
                     <input
                         type="text"
@@ -55,15 +100,6 @@ export const ChatHeader = memo(({
                         </button>
                     )}
                 </div>
-                {onExport && (
-                    <button
-                        onClick={onExport}
-                        className="text-muted-foreground/50 hover:text-foreground transition-colors p-2"
-                        title={t('chat.exportChat')}
-                    >
-                        <Download className="w-5 h-5" />
-                    </button>
-                )}
             </div>
         </div>
     );

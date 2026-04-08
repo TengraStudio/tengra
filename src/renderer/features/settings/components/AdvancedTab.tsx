@@ -1,4 +1,5 @@
 import { Button } from '@renderer/components/ui/button';
+import { Input } from '@renderer/components/ui/input';
 import {
     Select,
     SelectContent,
@@ -95,23 +96,23 @@ const IntervalSelect: React.FC<IntervalSelectProps> = ({
 }) => (
     <div className="p-6 rounded-[2rem] bg-muted/10 border border-border/40 space-y-4 group/interval hover:bg-muted/20 transition-all duration-500">
         <div className="flex items-center gap-3">
-             <div className="p-2 rounded-xl bg-background shadow-sm group-hover/interval:scale-110 transition-transform duration-500">
+            <div className="p-2 rounded-xl bg-background shadow-sm group-hover/interval:scale-110 transition-transform duration-500">
                 {icon}
-             </div>
-             <div className="text-[10px] font-bold text-foreground">
+            </div>
+            <div className="typo-body font-bold text-foreground">
                 {label}
             </div>
         </div>
-        <p className="text-[8px] font-bold text-muted-foreground/40 leading-relaxed">
+        <p className="typo-body font-bold text-muted-foreground/40 leading-relaxed">
             {description}
         </p>
         <Select value={value.toString()} onValueChange={(val: string) => onChange(parseInt(val))}>
-            <SelectTrigger className="h-10 px-4 rounded-xl bg-background border-border/40 text-[9px] font-bold focus:ring-primary/20 transition-all">
+            <SelectTrigger className="h-10 px-4 rounded-xl bg-background border-border/40 typo-body font-bold focus:ring-primary/20 transition-all">
                 <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
                 {options.map(opt => (
-                    <SelectItem key={opt.value} value={opt.value.toString()} className="text-[10px] font-bold">
+                    <SelectItem key={opt.value} value={opt.value.toString()} className="typo-body font-bold">
                         {opt.count} {t(opt.labelKey)}
                     </SelectItem>
                 ))}
@@ -132,7 +133,7 @@ const BenchmarkResults: React.FC<BenchmarkResultsProps> = ({ result, t }) => (
             <div className="text-3xl font-bold text-foreground leading-none">
                 {result.tokensPerSec}
             </div>
-            <div className="text-[8px] text-primary font-bold">
+            <div className="typo-body text-primary font-bold">
                 {t('advanced.tokensPerSecShort')}
             </div>
         </div>
@@ -141,7 +142,7 @@ const BenchmarkResults: React.FC<BenchmarkResultsProps> = ({ result, t }) => (
             <div className="text-3xl font-bold text-foreground leading-none">
                 {result.latency}ms
             </div>
-            <div className="text-[8px] text-success font-bold">
+            <div className="typo-body text-success font-bold">
                 {t('advanced.latency')}
             </div>
         </div>
@@ -177,8 +178,8 @@ const PresetButton: React.FC<{
         )}
     >
         <div className="flex-1">
-            <div className="text-[10px] font-bold mb-1">{preset.name}</div>
-            <div className="text-[8px] font-bold opacity-40">
+            <div className="typo-body font-bold mb-1">{preset.name}</div>
+            <div className="typo-body font-bold opacity-40">
                 T: {preset.temperature} <span className="mx-1">•</span> P: {preset.topP}
             </div>
         </div>
@@ -199,24 +200,24 @@ const ModelConfigSection: React.FC<ModelConfigSectionProps> = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1 relative z-10">
             <div className="flex items-center gap-4">
                 <div className="p-3 rounded-2xl bg-primary/10 text-primary shadow-lg shadow-primary/5 group-hover/config:scale-110 transition-transform duration-500">
-                     <Brain className="w-6 h-6" />
+                    <Brain className="w-6 h-6" />
                 </div>
                 <div>
                     <h3 className="text-lg font-bold text-foreground">
                         {t('advancedTab.modelConfiguration')}
                     </h3>
-                    <p className="text-[10px] text-muted-foreground mt-1 font-bold opacity-40">
+                    <p className="typo-body text-muted-foreground mt-1 font-bold opacity-40">
                         Neural Parameter tuning
                     </p>
                 </div>
             </div>
             <Select value={currentModelId} onValueChange={(val: string) => setSelectedConfigModel(val)}>
-                <SelectTrigger className="h-10 px-4 w-56 rounded-xl bg-muted/20 border-border/40 text-[9px] font-bold focus:ring-primary/20">
+                <SelectTrigger className="h-10 px-4 w-56 rounded-xl bg-muted/20 border-border/40 typo-body font-bold focus:ring-primary/20">
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl max-h-[300px]">
                     {modelOptions.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value} className="text-[10px] font-bold">
+                        <SelectItem key={opt.value} value={opt.value} className="typo-body font-bold">
                             {opt.label}
                         </SelectItem>
                     ))}
@@ -228,7 +229,7 @@ const ModelConfigSection: React.FC<ModelConfigSectionProps> = ({
             <div className="space-y-4">
                 <div className="flex items-center gap-3 px-1">
                     <FileCode className="w-4 h-4 text-primary" />
-                    <span className="text-[10px] font-bold text-foreground">
+                    <span className="typo-body font-bold text-foreground">
                         System Logic Template
                     </span>
                 </div>
@@ -240,14 +241,14 @@ const ModelConfigSection: React.FC<ModelConfigSectionProps> = ({
                             updateModelSetting({ systemPrompt: e.target.value })
                         }
                         placeholder={t('advancedTab.systemPromptPlaceholder')}
-                        className="relative w-full h-48 px-6 py-6 rounded-[2rem] bg-muted/20 border-border/40 text-[11px] leading-relaxed font-medium focus-visible:ring-primary/20 transition-all shadow-inner"
+                        className="relative w-full h-48 px-6 py-6 rounded-[2rem] bg-muted/20 border-border/40 typo-body leading-relaxed font-medium focus-visible:ring-primary/20 transition-all shadow-inner"
                     />
                 </div>
             </div>
             <div className="space-y-4">
                 <div className="flex items-center gap-3 px-1">
                     <Sliders className="w-4 h-4 text-success" />
-                    <span className="text-[10px] font-bold text-foreground">
+                    <span className="typo-body font-bold text-foreground">
                         Inference Strategy
                     </span>
                 </div>
@@ -261,6 +262,31 @@ const ModelConfigSection: React.FC<ModelConfigSectionProps> = ({
                         />
                     ))}
                 </div>
+
+                {currentModelId.includes('ollama') && (
+                    <div className="mt-8 space-y-4 animate-in fade-in slide-in-from-top-2 duration-500">
+                        <div className="flex items-center gap-3 px-1">
+                            <Activity className="w-4 h-4 text-primary" />
+                            <span className="typo-body font-bold text-foreground">
+                                Context Window (Override)
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <Input
+                                type="number"
+                                value={modelSettings.numCtx ?? ''}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                    updateModelSetting({ numCtx: e.target.value ? parseInt(e.target.value) : undefined })
+                                }
+                                placeholder="Auto"
+                                className="h-10 rounded-xl bg-muted/20 border-border/40 typo-body font-medium focus-visible:ring-primary/20"
+                            />
+                            <div className="typo-body font-bold text-muted-foreground/40 leading-tight">
+                                Overrides global Ollama context for this model. Leave empty for Auto.
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
         <div className="absolute -right-20 -top-20 w-80 h-80 bg-primary/5 rounded-full blur-[100px] opacity-30 pointer-events-none" />
@@ -283,21 +309,21 @@ const OrchestrationSection: React.FC<OrchestrationSectionProps> = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1 relative z-10">
             <div className="flex items-center gap-4">
                 <div className="p-3 rounded-2xl bg-primary/10 text-primary shadow-lg shadow-primary/5 group-hover/orch:scale-110 transition-transform duration-500">
-                     <Layers className="w-6 h-6" />
+                    <Layers className="w-6 h-6" />
                 </div>
                 <div>
-                     <h3 className="text-lg font-bold text-foreground">{t('advanced.orchestration')}</h3>
-                     <p className="text-[10px] text-muted-foreground mt-1 font-bold opacity-40">{t('advanced.orchestrationDesc')}</p>
+                    <h3 className="text-lg font-bold text-foreground">{t('advanced.orchestration')}</h3>
+                    <p className="typo-body text-muted-foreground mt-1 font-bold opacity-40">{t('advanced.orchestrationDesc')}</p>
                 </div>
             </div>
             <Select value={orchestrationPolicy} onValueChange={(val: string) => updateOrchestrationPolicy(val)}>
-                <SelectTrigger className="h-10 px-4 w-48 rounded-xl bg-muted/20 border-border/40 text-[9px] font-bold focus:ring-primary/20">
+                <SelectTrigger className="h-10 px-4 w-48 rounded-xl bg-muted/20 border-border/40 typo-body font-bold focus:ring-primary/20">
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
-                    <SelectItem value="auto" className="text-[10px] font-bold">{t('advanced.orchestrationAuto')}</SelectItem>
-                    <SelectItem value="fifo" className="text-[10px] font-bold">{t('advanced.orchestrationFIFO')}</SelectItem>
-                    <SelectItem value="parallel" className="text-[10px] font-bold">{t('advanced.orchestrationParallel')}</SelectItem>
+                    <SelectItem value="auto" className="typo-body font-bold">{t('advanced.orchestrationAuto')}</SelectItem>
+                    <SelectItem value="fifo" className="typo-body font-bold">{t('advanced.orchestrationFIFO')}</SelectItem>
+                    <SelectItem value="parallel" className="typo-body font-bold">{t('advanced.orchestrationParallel')}</SelectItem>
                 </SelectContent>
             </Select>
         </div>
@@ -323,13 +349,13 @@ const ServiceIntervalsSection: React.FC<ServiceIntervalsSectionProps> = ({
     <div className="bg-card rounded-3xl border border-border/40 p-8 space-y-10 shadow-sm group/intervals hover:border-border/60 transition-all duration-500 overflow-hidden relative">
         <div className="flex items-center gap-4 relative z-10 px-1">
             <div className="p-3.5 rounded-2xl bg-primary/10 text-primary shadow-lg shadow-primary/5 group-hover/intervals:scale-110 transition-transform duration-500">
-                 <Timer className="w-6 h-6" />
+                <Timer className="w-6 h-6" />
             </div>
             <div>
                 <h3 className="text-lg font-bold text-foreground">
                     {t('advanced.serviceIntervals')}
                 </h3>
-                <p className="text-[10px] text-muted-foreground mt-1 font-bold opacity-40">
+                <p className="typo-body text-muted-foreground mt-1 font-bold opacity-40">
                     Cycle Synchronization frequency
                 </p>
             </div>
@@ -540,7 +566,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
 
     return (
         <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000 ease-out pb-20">
-             {/* Page Header */}
+            {/* Page Header */}
             <div className="relative group px-1">
                 <div className="flex items-center gap-4 mb-3">
                     <div className="p-3.5 rounded-2xl bg-primary/10 text-primary shadow-2xl shadow-primary/10 group-hover:scale-110 transition-transform duration-700 ring-1 ring-primary/20">
@@ -552,7 +578,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                         </h3>
                         <div className="flex items-center gap-2 mt-2">
                             <div className="h-1 w-8 bg-primary rounded-full group-hover:w-12 transition-all duration-700" />
-                            <p className="text-[10px] font-bold text-muted-foreground opacity-50">
+                            <p className="typo-body font-bold text-muted-foreground opacity-50">
                                 {t('advanced.subtitle')}
                             </p>
                         </div>
@@ -564,7 +590,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
             </div>
 
             <div className="grid grid-cols-1 gap-8">
-                 <ModelConfigSection
+                <ModelConfigSection
                     currentModelId={currentModelId}
                     modelOptions={modelOptions}
                     setSelectedConfigModel={setSelectedConfigModel}
@@ -573,7 +599,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                     updateModelSetting={updateModelSetting}
                     t={t}
                 />
-                
+
                 <OrchestrationSection
                     orchestrationPolicy={orchestrationPolicy}
                     updateOrchestrationPolicy={updateOrchestrationPolicy}
@@ -582,14 +608,14 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
 
                 {benchmarkResult && (
                     <div className="bg-card rounded-3xl border border-border/40 p-10 space-y-8 shadow-sm group/benchmark hover:border-border/60 transition-all duration-500 overflow-hidden relative">
-                         <div className="flex items-center gap-3 px-1 relative z-10">
+                        <div className="flex items-center gap-3 px-1 relative z-10">
                             <Gauge className="w-4 h-4 text-primary" />
-                            <h4 className="text-[10px] font-bold text-muted-foreground/40">{t('advanced.throughputSnapshot')}</h4>
+                            <h4 className="typo-body font-bold text-muted-foreground/40">{t('advanced.throughputSnapshot')}</h4>
                         </div>
                         <div className="relative z-10">
                             <BenchmarkResults result={benchmarkResult} t={t} />
                         </div>
-                         <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-primary/5 rounded-full blur-[100px] opacity-30 pointer-events-none" />
+                        <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-primary/5 rounded-full blur-[100px] opacity-30 pointer-events-none" />
                     </div>
                 )}
 

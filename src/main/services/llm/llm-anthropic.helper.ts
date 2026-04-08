@@ -5,9 +5,7 @@ import { MessageNormalizer } from '@main/utils/message-normalizer.util';
 import { Message } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
 import { ApiError, AuthenticationError, NetworkError } from '@shared/utils/error.util';
-
-import { validateLLMContent } from './llm-openai.helper';
-
+ 
 /**
  * Builds the Anthropic API request body.
  */
@@ -44,8 +42,7 @@ export async function handleAnthropicApiResponse(
         );
     }
     const content = data['content'] as Array<{ text: string }> | undefined;
-    const validatedContent = validateLLMContent(content?.[0]?.text ?? '');
-    return { content: validatedContent, role: 'assistant' };
+    return { content: content?.[0]?.text ?? '', role: 'assistant' };
 }
 
 /**

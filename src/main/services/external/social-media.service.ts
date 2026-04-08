@@ -159,7 +159,10 @@ export class SocialMediaService extends BaseService {
                 },
             ];
 
-            const result = await this.llmService!.chat(messages, model, undefined, provider);
+            const result = await this.llmService?.chat(messages, model, undefined, provider);
+            if (!result) {
+                throw new Error('No result from LLM');
+            }
             const responseText = this.truncateResponse(result.content);
 
             await message.reply(responseText);

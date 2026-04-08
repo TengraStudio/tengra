@@ -5,14 +5,13 @@ export function buildWorkspaceServers(deps: McpDeps): McpService[] {
     return [
         {
             name: 'docker',
-            description: 'Docker utilities',
             actions: buildActions([
-                { name: 'listContainers', description: 'List docker containers', handler: () => deps.docker.listContainers() },
-                { name: 'stats', description: 'Docker stats (no stream)', handler: () => deps.docker.getStats() },
-                { name: 'listImages', description: 'List docker images', handler: () => deps.docker.listImages() }
+                { name: 'listContainers', handler: () => deps.docker.listContainers() },
+                { name: 'stats', handler: () => deps.docker.getStats() },
+                { name: 'listImages', handler: () => deps.docker.listImages() }
             ], 'docker', deps.auditLog)
         }
     ];
 }
 
-/** @deprecated Use buildWorkspaceServers instead */
+/** @deprecated Use buildWorkspaceServers instead */

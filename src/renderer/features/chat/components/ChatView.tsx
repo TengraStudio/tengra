@@ -43,7 +43,7 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
         displayMessages, searchTerm, setSearchTerm, setInput,
         streamingReasoning, streamingSpeed, isLoading,
         speakingMessageId, handleSpeak, handleStopSpeak, regenerateMessage,
-        chatError, clearChatError, chats, currentChatId, handleSend
+        chatError, clearChatError, chats, currentChatId, handleSend, clearMessages, contextTokens, contextWindow
     } = useChat();
 
     const { language } = useAuth();
@@ -63,6 +63,10 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
         }
     }, [clearChatError, displayMessages, handleSend]);
 
+    const handleSwitchModel = useCallback(() => {
+        window.dispatchEvent(new CustomEvent('tengra:open-model-selector'));
+    }, []);
+
     // ... existing scroll handler ...
     const handleScrollToBottom = () => {
         virtuosoRef.current?.scrollToIndex({
@@ -81,6 +85,9 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
                 <ChatHeader
                     searchTerm={searchTerm}
                     setSearchTerm={setSearchTerm}
+                    onClearMessages={() => void clearMessages()}
+                    contextTokens={contextTokens}
+                    contextWindow={contextWindow}
                     t={t}
                     onExport={() => setShowExportModal(true)}
                 />
@@ -121,6 +128,7 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
                     <ChatErrorState
                         error={chatError}
                         onRetry={handleErrorRetry}
+                        onSwitchModel={handleSwitchModel}
                         onDismiss={clearChatError}
                     />
                 )}

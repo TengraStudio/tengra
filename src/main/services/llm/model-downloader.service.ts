@@ -45,6 +45,8 @@ export interface ModelDownloadProgress {
     modelRef: string;
     received?: number;
     total?: number;
+    speed?: number; // bytes per second
+    eta?: number; // seconds remaining
     outputPath?: string;
     message?: string;
 }
@@ -56,6 +58,24 @@ export interface ModelDownloadResult {
     modelRef: string;
     outputPath?: string;
     error?: string;
+}
+
+export interface ModelDownloadHistoryEntry {
+    id: string;
+    downloadId: string;
+    provider: DownloadProvider;
+    modelRef: string;
+    status: ModelDownloadProgress['status'];
+    message?: string;
+    outputPath?: string;
+    received?: number;
+    total?: number;
+    speed?: number;
+    eta?: number;
+    startedAt: number;
+    updatedAt: number;
+    endedAt?: number;
+    retryRequest?: ModelDownloadRequest;
 }
 
 interface ModelDownloaderDeps {
@@ -93,6 +113,13 @@ interface PersistedDownloadTask {
     state: 'queued' | 'paused' | 'running';
 }
 
+interface DownloadProgressStats {
+    lastReceived: number;
+    lastTime: number;
+    startTime: number;
+    startReceived: number;
+}
+
 function sanitizeFileSegment(value: string): string {
     return value.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
@@ -124,9 +151,20 @@ export class ModelDownloaderService extends BaseService {
     private runningCount = 0;
     private readonly globalListeners = new Set<DownloadEmitter>();
     private isRestoring = false;
+    private readonly history = new Map<string, ModelDownloadHistoryEntry>();
+    private readonly historyOrder: string[] = [];
+    private readonly MAX_HISTORY_ENTRIES = 500;
+    private readonly taskStats = new Map<string, DownloadProgressStats>();
+    private historyPersistTimer: NodeJS.Timeout | null = null;
+    private historyPersistDirty = false;
+    private historyPersistInFlight = false;
 
     private getPersistencePath(): string {
         return path.join(app.getPath('userData'), 'model-download-queue.json');
+    }
+
+    private getHistoryPersistencePath(): string {
+        return path.join(app.getPath('userData'), 'model-download-history.json');
     }
 
     constructor(private readonly deps: ModelDownloaderDeps) {
@@ -311,6 +349,32 @@ export class ModelDownloaderService extends BaseService {
         };
     }
 
+    getHistory(limit = 100): ModelDownloadHistoryEntry[] {
+        const safeLimit = Math.max(1, Math.min(this.MAX_HISTORY_ENTRIES, limit));
+        const items: ModelDownloadHistoryEntry[] = [];
+        for (let i = this.historyOrder.length - 1; i >= 0 && items.length < safeLimit; i--) {
+            const id = this.historyOrder[i];
+            const entry = this.history.get(id);
+            if (entry) {
+                items.push({ ...entry });
+            }
+        }
+        return items;
+    }
+
+    retryFromHistory(historyId: string): ModelDownloadResult {
+        const entry = this.history.get(historyId);
+        if (!entry?.retryRequest) {
+            return {
+                success: false,
+                provider: 'ollama',
+                modelRef: '',
+                error: 'Retry request not found',
+            };
+        }
+        return this.startDownload(entry.retryRequest);
+    }
+
     async restorePersistedQueue(): Promise<void> {
         if (this.isRestoring) {
             return;
@@ -340,7 +404,7 @@ export class ModelDownloaderService extends BaseService {
                     provider: request.provider,
                     modelRef,
                     request,
-                    state: item.state === 'paused' ? 'paused' : 'queued',
+                    state: 'paused',
                     emitter: () => undefined,
                     abortController: request.provider === 'huggingface' ? new AbortController() : undefined,
                     occupiesSlot: false,
@@ -350,13 +414,14 @@ export class ModelDownloaderService extends BaseService {
                 this.emitProgress(task, {
                     downloadId: task.downloadId,
                     provider: task.provider,
-                    status: task.state === 'paused' ? 'paused' : 'queued',
+                    status: 'paused',
                     modelRef: task.modelRef,
-                    message: task.state === 'paused' ? 'Restored paused download' : 'Restored queued download',
+                    message: item.state === 'paused' ? 'Restored paused download' : 'Stopped during app shutdown - paused',
                 });
             }
             this.scheduleDownloads();
             appLogger.info(this.name, `Restored ${tasks.length} persisted download task(s)`);
+            await this.restorePersistedHistory();
         } catch (error) {
             const message = getErrorMessage(error as Error);
             if (!message.toLowerCase().includes('enoent')) {
@@ -388,10 +453,95 @@ export class ModelDownloaderService extends BaseService {
     }
 
     private emitProgress(task: ActiveDownloadTask, progress: ModelDownloadProgress): void {
+        // Calculate speed and ETA if downloading
+        if (progress.status === 'downloading' && progress.received !== undefined && progress.total !== undefined) {
+            const now = Date.now();
+            let stats = this.taskStats.get(task.downloadId);
+            
+            if (!stats) {
+                stats = {
+                    lastReceived: progress.received,
+                    lastTime: now,
+                    startTime: now,
+                    startReceived: progress.received
+                };
+                this.taskStats.set(task.downloadId, stats);
+            }
+
+            const timeDiff = (now - stats.lastTime) / 1000; // seconds
+            if (timeDiff >= 0.5) { // Update speed every 500ms
+                const bytesDiff = progress.received - stats.lastReceived;
+                const speed = bytesDiff / timeDiff; // bps
+                
+                // Average speed since start for smoother ETA
+                const totalTime = (now - stats.startTime) / 1000;
+                const totalBytes = progress.received - stats.startReceived;
+                const avgSpeed = totalTime > 0 ? totalBytes / totalTime : speed;
+
+                progress.speed = speed;
+                if (avgSpeed > 0) {
+                    progress.eta = Math.max(0, (progress.total - progress.received) / avgSpeed);
+                }
+
+                stats.lastReceived = progress.received;
+                stats.lastTime = now;
+            } else {
+                // Keep previous values if diff is too small
+                const lastHistory = Array.from(this.history.values())
+                    .find(h => h.downloadId === task.downloadId);
+                if (lastHistory) {
+                    progress.speed = lastHistory.speed;
+                    progress.eta = lastHistory.eta;
+                }
+            }
+        } else if (['completed', 'error', 'cancelled'].includes(progress.status)) {
+            this.taskStats.delete(task.downloadId);
+        }
+
+        this.trackHistory(task, progress);
         task.emitter(progress);
         for (const listener of this.globalListeners) {
             listener(progress);
         }
+    }
+
+    private trackHistory(task: ActiveDownloadTask, progress: ModelDownloadProgress): void {
+        const existingId = this.historyOrder.find(
+            id => this.history.get(id)?.downloadId === task.downloadId
+        );
+        const now = Date.now();
+        const historyId = existingId ?? `${task.downloadId}:${now}`;
+        const previous = existingId ? this.history.get(historyId) : undefined;
+        const entry: ModelDownloadHistoryEntry = {
+            id: historyId,
+            downloadId: task.downloadId,
+            provider: progress.provider,
+            modelRef: progress.modelRef,
+            status: progress.status,
+            message: progress.message,
+            outputPath: progress.outputPath ?? previous?.outputPath,
+            received: progress.received,
+            total: progress.total,
+            speed: progress.speed,
+            eta: progress.eta,
+            startedAt: previous?.startedAt ?? now,
+            updatedAt: now,
+            endedAt: ['completed', 'cancelled', 'error'].includes(progress.status) ? now : previous?.endedAt,
+            retryRequest: ['completed', 'cancelled', 'error'].includes(progress.status)
+                ? task.request
+                : previous?.retryRequest,
+        };
+        this.history.set(historyId, entry);
+        if (!existingId) {
+            this.historyOrder.push(historyId);
+            while (this.historyOrder.length > this.MAX_HISTORY_ENTRIES) {
+                const removed = this.historyOrder.shift();
+                if (removed) {
+                    this.history.delete(removed);
+                }
+            }
+        }
+        this.scheduleHistoryPersistence();
     }
 
     private async persistQueue(): Promise<void> {
@@ -415,6 +565,90 @@ export class ModelDownloaderService extends BaseService {
         } catch (error) {
             appLogger.warn(this.name, `Failed to persist queue: ${getErrorMessage(error as Error)}`);
         }
+    }
+
+    private scheduleHistoryPersistence(): void {
+        this.historyPersistDirty = true;
+        if (this.historyPersistTimer) {
+            return;
+        }
+        this.historyPersistTimer = setTimeout(() => {
+            this.historyPersistTimer = null;
+            void this.flushHistoryPersistence();
+        }, 500);
+    }
+
+    private async flushHistoryPersistence(): Promise<void> {
+        if (this.historyPersistInFlight) {
+            this.scheduleHistoryPersistence();
+            return;
+        }
+        if (!this.historyPersistDirty) {
+            return;
+        }
+        this.historyPersistDirty = false;
+        this.historyPersistInFlight = true;
+        const items = this.historyOrder
+            .map(id => this.history.get(id))
+            .filter((entry): entry is ModelDownloadHistoryEntry => Boolean(entry));
+        try {
+            await fs.writeFile(
+                this.getHistoryPersistencePath(),
+                JSON.stringify({ items }, null, 2),
+                'utf8'
+            );
+        } catch (error) {
+            appLogger.warn(this.name, `Failed to persist history: ${getErrorMessage(error as Error)}`);
+        } finally {
+            this.historyPersistInFlight = false;
+            if (this.historyPersistDirty) {
+                this.scheduleHistoryPersistence();
+            }
+        }
+    }
+
+    private async restorePersistedHistory(): Promise<void> {
+        try {
+            const raw = await fs.readFile(this.getHistoryPersistencePath(), 'utf8');
+            const parsed = JSON.parse(raw) as { items?: ModelDownloadHistoryEntry[] };
+            const items = Array.isArray(parsed.items) ? parsed.items : [];
+            for (const item of items.slice(-this.MAX_HISTORY_ENTRIES)) {
+                if (!item?.id || !item.downloadId || !item.modelRef) {
+                    continue;
+                }
+
+                // Check for stale "active" statuses from previous sessions
+                const isActive = ['queued', 'starting', 'downloading', 'installing'].includes(item.status);
+                if (isActive && !this.tasks.has(item.downloadId)) {
+                    item.status = 'cancelled';
+                    item.message = 'System restarted - task abandoned';
+                    item.updatedAt = Date.now();
+                }
+
+                this.history.set(item.id, item);
+                this.historyOrder.push(item.id);
+            }
+        } catch (error) {
+            const message = getErrorMessage(error as Error);
+            if (!message.toLowerCase().includes('enoent')) {
+                appLogger.warn(this.name, `Failed to restore persisted history: ${message}`);
+            }
+        }
+    }
+
+    override async cleanup(): Promise<void> {
+        if (this.historyPersistTimer) {
+            clearTimeout(this.historyPersistTimer);
+            this.historyPersistTimer = null;
+        }
+        this.historyPersistDirty = false;
+        this.tasks.clear();
+        this.modelRefToDownloadId.clear();
+        this.globalListeners.clear();
+        this.taskStats.clear();
+        this.history.clear();
+        this.historyOrder.length = 0;
+        this.logInfo('Model downloader cleaned up');
     }
 
     private canStart(provider: DownloadProvider): boolean {

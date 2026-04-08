@@ -38,7 +38,7 @@ function createLogicMock(overrides: Partial<ReturnType<typeof useSettingsLogic>>
         authBusy: null,
         authMessage: '',
         isOllamaRunning: false,
-        authStatus: { codex: false, claude: false, antigravity: false, copilot: false },
+        authStatus: { codex: false, claude: false, antigravity: false, ollama: false, copilot: false },
         updateGeneral: vi.fn().mockResolvedValue(undefined),
         updateEditor: vi.fn().mockResolvedValue(undefined),
         updateSpeech: vi.fn().mockResolvedValue(undefined),

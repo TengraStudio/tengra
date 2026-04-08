@@ -38,7 +38,7 @@ export class InternalMcpPlugin implements IMcpPlugin {
     constructor(private service: McpService) { }
 
     get name() { return this.service.name; }
-    get description() { return this.service.description; }
+    get description() { return this.service.description ?? this.service.name; }
 
     async initialize(): Promise<void> {
         // Internal services are already "running" in the main process
@@ -51,7 +51,7 @@ export class InternalMcpPlugin implements IMcpPlugin {
     async getActions() {
         return this.service.actions.map(a => ({
             name: a.name,
-            description: a.description
+            description: a.description ?? a.name
         }));
     }
 

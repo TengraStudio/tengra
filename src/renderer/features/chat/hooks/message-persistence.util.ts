@@ -54,6 +54,7 @@ export async function persistToolExecutionMetadata(options: {
     activeModel: string;
     intentClassification: AiIntentClassification;
     language?: string;
+    reasonings?: string[];
 }): Promise<void> {
     const {
         chatId,
@@ -65,6 +66,7 @@ export async function persistToolExecutionMetadata(options: {
         activeModel,
         intentClassification,
         language,
+        reasonings,
     } = options;
     if (toolCalls.length === 0) {
         return;
@@ -74,11 +76,13 @@ export async function persistToolExecutionMetadata(options: {
     const updates: Partial<Message> = {
         toolCalls,
         toolResults: storedToolResults,
+        reasonings,
         metadata: buildAssistantPresentationMetadata({
             intent: intentClassification,
             toolCalls,
             toolResults: storedToolResults,
             language,
+            reasonings,
         }),
     };
 

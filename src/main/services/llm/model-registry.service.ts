@@ -110,20 +110,18 @@ export class ModelRegistryService extends BaseService {
             { match: /kimi[\s-_]?k2(?!\.5)/i, input: 0.40, output: 2.50 },
             { match: /qwen3[\s-_]?coder[\s-_]?480b/i, input: 0.45, output: 1.50 },
             { match: /gemini[\s-_]?3(\.1)?[\s-_]?pro/i, input: 2.00, output: 12.00 },
-            { match: /gemini[\s-_]?3[\s-_]?flash/i, input: 0.50, output: 3.00 },
-            { match: /gpt[\s-_]?5\.4/i, input: 2.50, output: 15.00 },
-            { match: /gpt[\s-_]?5\.3[\s-_]?codex/i, input: 1.75, output: 14.00 },
-            { match: /gpt[\s-_]?5\.2([\s-_]?codex)?/i, input: 1.75, output: 14.00 },
-            { match: /gpt[\s-_]?5\.1[\s-_]?codex[\s-_]?mini/i, input: 0.25, output: 2.00 },
-            { match: /gpt[\s-_]?5\.1[\s-_]?codex[\s-_]?max/i, input: 1.25, output: 10.00 },
-            { match: /gpt[\s-_]?5\.1([\s-_]?codex)?/i, input: 1.07, output: 8.50 },
-            { match: /gpt[\s-_]?5([\s-_]?codex)?/i, input: 1.07, output: 8.50 },
+            { match: /gemini[\s-_]?3(\.1)?[\s-_]?flash/i, input: 0.50, output: 3.00 },
+            { match: /gemini[\s-_]?3\.1[\s-_]?flash[\s-_]?lite/i, input: 0.25, output: 1.50 },
+            { match: /gpt[\s-_]?5\.4[\s-_]?mini/i, input: 0.15, output: 0.60 },
+            { match: /gpt[\s-_]?5\.4/i, input: 2.50, output: 10.00 },
+            { match: /gpt[\s-_]?5\.2([\s-_]?codex)?[\s-_]?pro/i, input: 1.50, output: 7.50 },
+            { match: /gpt[\s-_]?5\.2([\s-_]?codex)?/i, input: 0.50, output: 2.50 },
+            { match: /gpt[\s-_]?5([\s-_]?codex)?[\s-_]?pro/i, input: 1.00, output: 5.00 },
+            { match: /gpt[\s-_]?5([\s-_]?codex)?[\s-_]?mini/i, input: 0.10, output: 0.50 },
+            { match: /gpt[\s-_]?5([\s-_]?codex)?[\s-_]?nano/i, input: 0.05, output: 0.25 },
+            { match: /gpt[\s-_]?5([\s-_]?codex)?/i, input: 0.25, output: 1.25 },
             { match: /claude[\s-_]?opus[\s-_]?4\.6/i, input: 5.00, output: 25.00 },
-            { match: /claude[\s-_]?opus[\s-_]?4\.5/i, input: 5.00, output: 25.00 },
-            { match: /claude[\s-_]?opus[\s-_]?4\.1/i, input: 15.00, output: 75.00 },
             { match: /claude[\s-_]?sonnet[\s-_]?4\.6/i, input: 3.00, output: 15.00 },
-            { match: /claude[\s-_]?sonnet[\s-_]?4\.5/i, input: 3.00, output: 15.00 },
-            { match: /claude[\s-_]?sonnet[\s-_]?4(?![\d.])/i, input: 3.00, output: 15.00 },
             { match: /claude[\s-_]?haiku[\s-_]?4\.5/i, input: 1.00, output: 5.00 },
             { match: /claude[\s-_]?haiku[\s-_]?3\.5/i, input: 0.80, output: 4.00 },
         ];
@@ -920,6 +918,14 @@ export class ModelRegistryService extends BaseService {
      * Get locally installed models
      */
     async getInstalledModels(): Promise<ModelProviderInfo[]> {
+        const [ollamaModels, huggingFaceModels] = await Promise.all([
+            this.getInstalledOllamaModels(),
+            this.getInstalledHuggingFaceModels(),
+        ]);
+        return [...ollamaModels, ...huggingFaceModels];
+    }
+
+    private async getInstalledOllamaModels(): Promise<ModelProviderInfo[]> {
         try {
             const models = await this.deps.ollamaService.getModels();
             return models
@@ -942,6 +948,40 @@ export class ModelRegistryService extends BaseService {
             );
             return [];
         }
+    }
+
+    private async getInstalledHuggingFaceModels(): Promise<ModelProviderInfo[]> {
+        try {
+            const installed = await this.deps.huggingFaceService.listInstalledModels();
+            return installed.map(model => this.enrichModelMetadata({
+                id: model.modelId,
+                name: this.resolveHuggingFaceModelName(model.modelId),
+                provider: 'huggingface',
+                sourceProvider: 'huggingface',
+                contextWindow: model.contextLength,
+                capabilities: { text_generation: true },
+                backend: 'llama.cpp',
+                localPath: model.path,
+            }));
+        } catch (error) {
+            this.telemetry.providerFetchFailures += 1;
+            this.trackTelemetry('model-registry.provider.fetch.failed', { provider: 'huggingface' });
+            appLogger.debug(
+                'ModelRegistry',
+                `[${ModelRegistryService.ERROR_CODES.FETCH_FAILED}] Failed to fetch installed Hugging Face models: ${getErrorMessage(error as Error)}`
+            );
+            return [];
+        }
+    }
+
+    private resolveHuggingFaceModelName(modelId: string): string {
+        const trimmed = modelId.trim();
+        if (trimmed === '') {
+            return 'Hugging Face Model';
+        }
+        const parts = trimmed.split('/');
+        const candidate = parts[parts.length - 1];
+        return candidate && candidate.trim() !== '' ? candidate : trimmed;
     }
 
     private resolveOllamaContextWindow(modelName: string): number | undefined {

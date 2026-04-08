@@ -1,5 +1,5 @@
 import { Badge } from '@renderer/components/ui/badge';
-import { Activity,Layers } from 'lucide-react';
+import { Activity, Layers } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
 import { appLogger } from '@/utils/renderer-logger';
@@ -66,7 +66,7 @@ export const QuotasTab: React.FC<QuotasTabProps> = ({
                         <Activity className="w-4 h-4 text-primary" />
                         <h4 className="text-xs font-medium text-foreground">{t('statistics.connectedServices')}</h4>
                     </div>
-                    <Badge variant="outline" className="h-6 w-fit border-border/20 px-2 text-[10px] text-muted-foreground">
+                    <Badge variant="outline" className="h-6 w-fit border-border/20 px-2 typo-body text-muted-foreground">
                         {t('statistics.live')}
                     </Badge>
                 </div>

@@ -8,14 +8,14 @@ import {
     SelectValue,
 } from '@renderer/components/ui/select';
 import { Slider } from '@renderer/components/ui/slider';
-import { 
+import {
     Headphones,
-    Mic, 
+    Mic,
     Music,
-    Play, 
-    Radio, 
-    Volume2, 
-    Waves, 
+    Play,
+    Radio,
+    Volume2,
+    Waves,
     Zap
 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -117,7 +117,7 @@ const VoiceSection: React.FC<VoiceSectionProps> = ({
 }) => (
     <div className="space-y-10">
         <div className="px-1">
-            <label className="text-[10px] font-bold text-foreground flex items-center gap-2 mb-3">
+            <label className="typo-body font-bold text-foreground flex items-center gap-2 mb-3">
                 <Music className="w-3 h-3 text-primary/60" />
                 {t('speech.voiceSelection')}
             </label>
@@ -125,13 +125,13 @@ const VoiceSection: React.FC<VoiceSectionProps> = ({
                 value={settings?.speech?.voiceURI ?? ''}
                 onValueChange={val => updateSpeech({ voiceURI: val })}
             >
-                <SelectTrigger className="h-12 px-6 rounded-2xl bg-muted/5 border-border/40 text-[10px] font-bold focus:ring-primary/20 transition-all">
+                <SelectTrigger className="h-12 px-6 rounded-2xl bg-muted/5 border-border/40 typo-body font-bold focus:ring-primary/20 transition-all">
                     <SelectValue placeholder={t('speech.systemDefault')} />
                 </SelectTrigger>
                 <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl max-h-[300px]">
-                    <SelectItem value="system-default" className="text-[10px] font-bold">{t('speech.systemDefault')}</SelectItem>
+                    <SelectItem value="system-default" className="typo-body font-bold">{t('speech.systemDefault')}</SelectItem>
                     {voices.map(v => (
-                        <SelectItem key={v.voiceURI} value={v.voiceURI} className="text-[10px] font-bold">
+                        <SelectItem key={v.voiceURI} value={v.voiceURI} className="typo-body font-bold">
                             {v.name} ({v.lang})
                         </SelectItem>
                     ))}
@@ -140,11 +140,11 @@ const VoiceSection: React.FC<VoiceSectionProps> = ({
         </div>
         <div className="px-1">
             <div className="flex justify-between items-center mb-4">
-                <label className="text-[10px] font-bold text-foreground flex items-center gap-2">
+                <label className="typo-body font-bold text-foreground flex items-center gap-2">
                     <Zap className="w-3 h-3 text-primary/60" />
                     {t('speech.speed')}
                 </label>
-                <Badge variant="outline" className="h-5 text-[8px] px-2 font-bold border-primary/20 text-primary tabular-nums">
+                <Badge variant="outline" className="h-5 typo-body px-2 font-bold border-primary/20 text-primary tabular-nums">
                     {settings?.speech?.rate ?? 1}x
                 </Badge>
             </div>
@@ -157,7 +157,7 @@ const VoiceSection: React.FC<VoiceSectionProps> = ({
                     onValueChange={([val]) => updateSpeech({ rate: val })}
                     className="w-full"
                 />
-                <div className="flex justify-between mt-3 text-[7px] font-bold text-muted-foreground/30">
+                <div className="flex justify-between mt-3 typo-body font-bold text-muted-foreground/30">
                     <span>{t('speech.rateHalf')}</span>
                     <span>{t('speech.rateNormal')}</span>
                     <span>{t('speech.rateDouble')}</span>
@@ -184,7 +184,7 @@ const DeviceSection: React.FC<DeviceSectionProps> = ({
 }) => (
     <div className="space-y-8">
         <div className="px-1">
-            <label className="text-[10px] font-bold text-foreground flex items-center gap-2 mb-3">
+            <label className="typo-body font-bold text-foreground flex items-center gap-2 mb-3">
                 <Mic className="w-3 h-3 text-primary/60" />
                 {t('speech.microphone')}
             </label>
@@ -192,13 +192,13 @@ const DeviceSection: React.FC<DeviceSectionProps> = ({
                 value={settings?.speech?.audioInputDeviceId ?? 'default'}
                 onValueChange={val => updateSpeech({ audioInputDeviceId: val })}
             >
-                <SelectTrigger className="h-12 px-6 rounded-2xl bg-muted/5 border-border/40 text-[10px] font-bold focus:ring-primary/20 transition-all">
+                <SelectTrigger className="h-12 px-6 rounded-2xl bg-muted/5 border-border/40 typo-body font-bold focus:ring-primary/20 transition-all">
                     <SelectValue placeholder={t('speech.systemDefault')} />
                 </SelectTrigger>
                 <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
-                    <SelectItem value="default" className="text-[10px] font-bold">{t('speech.systemDefault')}</SelectItem>
+                    <SelectItem value="default" className="typo-body font-bold">{t('speech.systemDefault')}</SelectItem>
                     {inputDevices.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value} className="text-[10px] font-bold">
+                        <SelectItem key={opt.value} value={opt.value} className="typo-body font-bold">
                             {opt.label}
                         </SelectItem>
                     ))}
@@ -206,7 +206,7 @@ const DeviceSection: React.FC<DeviceSectionProps> = ({
             </Select>
         </div>
         <div className="px-1">
-            <label className="text-[10px] font-bold text-foreground flex items-center gap-2 mb-3">
+            <label className="typo-body font-bold text-foreground flex items-center gap-2 mb-3">
                 <Headphones className="w-3 h-3 text-primary/60" />
                 {t('speech.speakerSelection')}
             </label>
@@ -214,13 +214,13 @@ const DeviceSection: React.FC<DeviceSectionProps> = ({
                 value={settings?.speech?.audioOutputDeviceId ?? 'default'}
                 onValueChange={val => updateSpeech({ audioOutputDeviceId: val })}
             >
-                <SelectTrigger className="h-12 px-6 rounded-2xl bg-muted/5 border-border/40 text-[10px] font-bold focus:ring-primary/20 transition-all">
+                <SelectTrigger className="h-12 px-6 rounded-2xl bg-muted/5 border-border/40 typo-body font-bold focus:ring-primary/20 transition-all">
                     <SelectValue placeholder={t('speech.systemDefault')} />
                 </SelectTrigger>
                 <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
-                    <SelectItem value="default" className="text-[10px] font-bold">{t('speech.systemDefault')}</SelectItem>
+                    <SelectItem value="default" className="typo-body font-bold">{t('speech.systemDefault')}</SelectItem>
                     {outputDevices.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value} className="text-[10px] font-bold">
+                        <SelectItem key={opt.value} value={opt.value} className="typo-body font-bold">
                             {opt.label}
                         </SelectItem>
                     ))}
@@ -260,8 +260,8 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({
                             {t('speech.title')}
                         </h3>
                         <div className="flex items-center gap-2 mt-2">
-                             <div className="h-1 w-8 bg-primary rounded-full group-hover:w-12 transition-all duration-700" />
-                            <p className="text-[10px] font-bold text-muted-foreground opacity-50">
+                            <div className="h-1 w-8 bg-primary rounded-full group-hover:w-12 transition-all duration-700" />
+                            <p className="typo-body font-bold text-muted-foreground opacity-50">
                                 {t('speech.sonicInterface')}
                             </p>
                         </div>
@@ -274,10 +274,10 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({
 
             {/* Voice & Config Section */}
             <div className="bg-card rounded-[2.5rem] border border-border/40 p-8 pt-10 space-y-10 shadow-sm relative overflow-hidden group/voice hover:border-border/60 transition-all duration-500">
-                    <div className="flex items-center gap-3 px-1 relative z-10">
-                        <Radio className="w-4 h-4 text-primary" />
-                        <h4 className="text-[10px] font-bold text-muted-foreground/40">{t('speech.synthesizerMatrix')}</h4>
-                    </div>
+                <div className="flex items-center gap-3 px-1 relative z-10">
+                    <Radio className="w-4 h-4 text-primary" />
+                    <h4 className="typo-body font-bold text-muted-foreground/40">{t('speech.synthesizerMatrix')}</h4>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12 relative z-10">
                     <VoiceSection
@@ -305,7 +305,7 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({
                                         <Volume2 className="w-4 h-4" />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-bold text-muted-foreground/40 mb-2">{t('speech.auralPreview')}</p>
+                                        <p className="typo-body font-bold text-muted-foreground/40 mb-2">{t('speech.auralPreview')}</p>
                                         <p className="text-xs leading-relaxed text-foreground font-medium opacity-80">
                                             "{t('speech.previewText')}"
                                         </p>
@@ -317,7 +317,7 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({
                         <Button
                             onClick={handleTest}
                             variant="outline"
-                            className="h-14 rounded-2xl bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 hover:border-primary/30 transition-all duration-500 font-bold text-[10px] shadow-lg shadow-primary/5 group/btn"
+                            className="h-14 rounded-2xl bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 hover:border-primary/30 transition-all duration-500 font-bold typo-body shadow-lg shadow-primary/5 group/btn"
                         >
                             <Play className="w-3.5 h-3.5 mr-3 group-hover:scale-125 transition-transform" />
                             {t('speech.test')}

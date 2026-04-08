@@ -42,10 +42,11 @@ describe('MCP registry', () => {
         serviceNames = new Set(services.map(s => s.name));
     });
 
-    it('contains new specialized servers', () => {
-        expect(serviceNames.has('docker')).toBe(true);
-        expect(serviceNames.has('ssh')).toBe(true);
-        expect(serviceNames.has('weather')).toBe(true);
+    it('keeps only bundled core services in the internal registry', () => {
+        expect(serviceNames.has('filesystem')).toBe(true);
+        expect(serviceNames.has('command')).toBe(true);
+        expect(serviceNames.has('system')).toBe(true);
+        expect(serviceNames.has('ollama')).toBe(true);
     });
 
     describe('server builder registration', () => {
@@ -54,8 +55,11 @@ describe('MCP registry', () => {
         });
 
         it('should include core server categories', () => {
-            expect(serviceNames.has('git')).toBe(true);
-            expect(serviceNames.has('web')).toBe(true);
+            expect(serviceNames.has('docker')).toBe(false);
+            expect(serviceNames.has('ssh')).toBe(false);
+            expect(serviceNames.has('weather')).toBe(false);
+            expect(serviceNames.has('git')).toBe(false);
+            expect(serviceNames.has('web')).toBe(false);
         });
 
         it('should have unique service names (no duplicates)', () => {
@@ -100,9 +104,9 @@ describe('MCP registry', () => {
 
     describe('server lookup', () => {
         it('should find a service by name', () => {
-            const gitService = services.find(s => s.name === 'git');
-            expect(gitService).toBeDefined();
-            expect(gitService?.name).toBe('git');
+            const filesystemService = services.find(s => s.name === 'filesystem');
+            expect(filesystemService).toBeDefined();
+            expect(filesystemService?.name).toBe('filesystem');
         });
 
         it('should return undefined for nonexistent service name', () => {

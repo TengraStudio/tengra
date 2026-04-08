@@ -18,12 +18,10 @@ const WEB_ERROR_MESSAGE = {
 
 export function buildWebServer(deps: McpDeps): McpService {
     return {
-        name: 'web',
-        description: 'Web search and content retrieval',
+        name: 'web', 
         actions: buildActions([
             {
-                name: 'search',
-                description: 'Search the web',
+                name: 'search', 
                 handler: ({ query, count }) => {
                     // SEC-008-4: Validate parameters
                     if (typeof query !== 'string' || query.length === 0) {
@@ -45,8 +43,7 @@ export function buildWebServer(deps: McpDeps): McpService {
                 }
             },
             {
-                name: 'read_page',
-                description: 'Read web page content',
+                name: 'read_page', 
                 handler: ({ url }) => {
                     // SEC-008-4: Validate URL
                     if (typeof url !== 'string' || url.length === 0) {
@@ -76,8 +73,7 @@ export function buildWebServer(deps: McpDeps): McpService {
                 }
             },
             {
-                name: 'fetch_json',
-                description: 'Fetch JSON from URL',
+                name: 'fetch_json', 
                 handler: ({ url }) => {
                     // SEC-008-4: Validate URL
                     if (typeof url !== 'string' || url.length === 0) {

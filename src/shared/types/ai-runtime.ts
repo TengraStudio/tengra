@@ -29,7 +29,7 @@ export type AiAnswerMode =
 
 export interface AiEvidenceEntry {
     kind: AiEvidenceKind;
-    summary: string;
+    summary?: string;
     toolName?: string;
     reused?: boolean;
     path?: string;
@@ -73,13 +73,13 @@ export interface AiPresentationMetadata extends JsonObject {
     isStreaming: boolean;
     hasReasoning: boolean;
     reasoningSummary?: string;
+    reasoningSegments?: string[];
     toolCallCount: number;
     toolResultCount: number;
     reusedToolResultCount: number;
     sourceCount: number;
     imageCount: number;
     evidenceCount: number;
-    evidenceSummary?: string;
     activeToolNames?: string[];
     // New fields for refactor
     surface?: string;
@@ -92,6 +92,7 @@ export interface AiPresentationContext {
     intent: AiIntentClassification | AiIntentType;
     content: string;
     reasoning?: string;
+    reasonings?: string[];
     toolCalls?: ToolCall[];
     toolResults?: ToolResult[];
     sources?: string[];

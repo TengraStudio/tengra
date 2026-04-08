@@ -18,6 +18,7 @@ export interface PrepareMessagesOptions {
     | undefined;
     activeWorkspacePath?: string | undefined;
     systemMode: 'thinking' | 'agent' | 'fast';
+    toolingEnabled?: boolean | undefined;
 }
 
 export function prepareMessages(options: PrepareMessagesOptions): {
@@ -35,6 +36,7 @@ export function prepareMessages(options: PrepareMessagesOptions): {
         selectedPersona,
         activeWorkspacePath,
         systemMode,
+        toolingEnabled = systemMode === 'agent',
     } = options;
 
     const dbRefChat = chats.find(chat => chat.id === chatId);
@@ -64,12 +66,12 @@ export function prepareMessages(options: PrepareMessagesOptions): {
     };
 
     const workspaceHintMessage: Message | null =
-        systemMode === 'agent' &&
+        toolingEnabled &&
             typeof activeWorkspacePath === 'string' &&
             activeWorkspacePath.trim().length > 0
             ? {
                 role: 'system',
-                content: `Current workspace root: ${activeWorkspacePath}. Use this as default cwd for execute_command and resolve relative file paths under this root unless the user explicitly requests another location.`,
+                content: `Current workspace root: ${activeWorkspacePath}. Use this as default cwd for terminal_session_start, execute_command, and relative file paths unless the user explicitly requests another location. Prefer persistent terminal sessions for multi-step shell work and dev servers. When creating a new codebase, create a single top-level project folder once and keep all subsequent files/commands inside that same folder unless the user asks for multiple folders.`,
                 id: generateId(),
                 timestamp: new Date(),
             }

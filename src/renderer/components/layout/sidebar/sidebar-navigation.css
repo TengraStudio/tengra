@@ -8,3 +8,119 @@
     flex-direction: column;
     gap: var(--sidebar-navigation-gap);
 }
+
+.tengra-sidebar-downloads {
+    position: relative;
+}
+
+.tengra-sidebar-downloads__panel {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(4px);
+    transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease;
+    position: absolute;
+    top: 0;
+    left: calc(100% + 0.5rem);
+    width: 22rem;
+    max-height: 24rem;
+    overflow-y: auto;
+    border: 1px solid hsl(var(--border) / 50%);
+    background: hsl(var(--card));
+    border-radius: 0.75rem;
+    box-shadow: 0 12px 28px hsl(var(--foreground) / 12%);
+    padding: 0.75rem;
+    z-index: 30;
+}
+
+.tengra-sidebar-downloads:hover .tengra-sidebar-downloads__panel {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.tengra-sidebar-downloads__hover-bridge {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    width: 0.5rem;
+    height: 100%;
+}
+
+.tengra-sidebar-downloads__section {
+    margin-bottom: 0.75rem;
+}
+
+.tengra-sidebar-downloads__title {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground));
+    margin-bottom: 0.4rem;
+    font-weight: 700;
+}
+
+.tengra-sidebar-downloads__empty {
+    font-size: 0.75rem;
+    color: hsl(var(--muted-foreground));
+}
+
+.tengra-sidebar-downloads__row,
+.tengra-sidebar-downloads__history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.45rem;
+    border-radius: 0.5rem;
+}
+
+.tengra-sidebar-downloads__row:hover,
+.tengra-sidebar-downloads__history-item:hover {
+    background: hsl(var(--muted) / 35%);
+}
+
+.tengra-sidebar-downloads__meta {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.tengra-sidebar-downloads__name {
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tengra-sidebar-downloads__status {
+    font-size: 0.68rem;
+    color: hsl(var(--muted-foreground));
+}
+
+
+.tengra-sidebar-downloads__retry {
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.45rem;
+    background: transparent;
+    width: 1.45rem;
+    height: 1.45rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: hsl(var(--foreground));
+}
+
+.tengra-sidebar-downloads__active-task {
+    padding: 0.75rem;
+    border: 1px solid hsl(var(--border) / 40%);
+    border-radius: 0.6rem;
+    background: hsl(var(--muted) / 15%);
+    transition: background 120ms ease, border-color 120ms ease;
+}
+
+.tengra-sidebar-downloads__active-task:hover {
+    background: hsl(var(--muted) / 25%);
+    border-color: hsl(var(--border) / 80%);
+}

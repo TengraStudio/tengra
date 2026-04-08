@@ -62,12 +62,10 @@ const validateFilePath = (file: RuntimeValue): string => {
 
 export function buildGitServer(deps: McpDeps): McpService {
     return {
-        name: 'git',
-        description: 'Git version control operations',
+        name: 'git', 
         actions: buildActions([
             {
-                name: 'status',
-                description: 'Get git status',
+                name: 'status', 
                 handler: ({ cwd }) => withRateLimit(
                     deps,
                     'git',
@@ -78,8 +76,7 @@ export function buildGitServer(deps: McpDeps): McpService {
                 )
             },
             {
-                name: 'diff',
-                description: 'Get file diff',
+                name: 'diff', 
                 handler: ({ cwd, file, staged }) => withRateLimit(
                     deps,
                     'git',
@@ -94,8 +91,7 @@ export function buildGitServer(deps: McpDeps): McpService {
                 )
             },
             {
-                name: 'log',
-                description: 'Get commit log (max 100 commits)',
+                name: 'log', 
                 handler: ({ cwd, count }) => {
                     const validCount = count !== undefined
                         ? validateNumber(count, 1, 100)
@@ -112,8 +108,7 @@ export function buildGitServer(deps: McpDeps): McpService {
                 }
             },
             {
-                name: 'commit',
-                description: 'Commit changes with validated message',
+                name: 'commit', 
                 handler: ({ cwd, message }) => withRateLimit(
                     deps,
                     'git',
@@ -127,8 +122,7 @@ export function buildGitServer(deps: McpDeps): McpService {
                 )
             },
             {
-                name: 'add',
-                description: 'Add files to stage',
+                name: 'add', 
                 handler: ({ cwd, files }) => {
                     const filesToAdd = files
                         ? validateFilePath(files)
@@ -145,8 +139,7 @@ export function buildGitServer(deps: McpDeps): McpService {
                 }
             },
             {
-                name: 'push',
-                description: 'Push changes to remote',
+                name: 'push', 
                 handler: ({ cwd, remote, branch }) => {
                     const validRemote = remote
                         ? validateString(remote, 100)
@@ -170,8 +163,7 @@ export function buildGitServer(deps: McpDeps): McpService {
                 }
             },
             {
-                name: 'pull',
-                description: 'Pull changes from remote',
+                name: 'pull', 
                 handler: ({ cwd }) => withRateLimit(
                     deps,
                     'git',
@@ -182,8 +174,7 @@ export function buildGitServer(deps: McpDeps): McpService {
                 )
             },
             {
-                name: 'checkout',
-                description: 'Checkout branch with validation',
+                name: 'checkout', 
                 handler: ({ cwd, branch }) => withRateLimit(
                     deps,
                     'git',
@@ -197,8 +188,7 @@ export function buildGitServer(deps: McpDeps): McpService {
                 )
             },
             {
-                name: 'branches',
-                description: 'List git branches',
+                name: 'branches', 
                 handler: ({ cwd }) => withRateLimit(
                     deps,
                     'git',

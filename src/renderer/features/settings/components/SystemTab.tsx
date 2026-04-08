@@ -1,5 +1,5 @@
 import { Button } from '@renderer/components/ui/button';
-import { CloudDownload, Cpu, Power, Settings, ShieldCheck,Terminal, Zap } from 'lucide-react';
+import { CloudDownload, Cpu, Power, Settings, ShieldCheck, Terminal, Zap } from 'lucide-react';
 import React from 'react';
 
 import { Switch } from '@/components/ui/switch';
@@ -67,7 +67,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                         </h3>
                         <div className="flex items-center gap-2 mt-2">
                             <div className="h-1 w-8 rounded-full bg-primary" />
-                            <p className="text-[10px] font-medium text-muted-foreground opacity-60">
+                            <p className="typo-body font-medium text-muted-foreground opacity-60">
                                 OS Orchestration Hub
                             </p>
                         </div>
@@ -78,11 +78,11 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                 </p>
             </div>
 
-             <div className="overflow-hidden rounded-3xl border border-border/30 bg-card p-6 sm:p-8">
+            <div className="overflow-hidden rounded-3xl border border-border/30 bg-card p-6 sm:p-8">
                 <div className="relative z-10 flex flex-col gap-6 px-1 md:flex-row md:items-center md:justify-between">
                     <div className="flex items-center gap-4">
                         <div className="rounded-2xl bg-primary/10 p-3 text-primary">
-                             <CloudDownload className="w-6 h-6" />
+                            <CloudDownload className="w-6 h-6" />
                         </div>
                         <div>
                             <h3 className="text-lg font-semibold text-foreground">
@@ -98,7 +98,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                         onClick={() => {
                             void window.electron.update.checkForUpdates();
                         }}
-                        className="h-10 rounded-xl border-primary/20 bg-primary/5 px-5 text-[10px] font-medium text-primary hover:bg-primary hover:text-primary-foreground"
+                        className="h-10 rounded-xl border-primary/20 bg-primary/5 px-5 typo-body font-medium text-primary hover:bg-primary hover:text-primary-foreground"
                     >
                         {t('general.checkForUpdates')}
                     </Button>
@@ -107,8 +107,8 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                 <div className="relative z-10 mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div className="flex flex-col gap-4 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-colors sm:flex-row sm:items-center sm:justify-between">
                         <div className="space-y-1">
-                            <div className="text-[10px] font-medium text-foreground">{t('general.autoUpdate')}</div>
-                            <div className="max-w-[240px] text-[10px] leading-relaxed text-muted-foreground/70">
+                            <div className="typo-body font-medium text-foreground">{t('general.autoUpdate')}</div>
+                            <div className="max-w-[240px] typo-body leading-relaxed text-muted-foreground/70">
                                 {t('general.autoUpdateDesc')}
                             </div>
                         </div>
@@ -120,8 +120,8 @@ export const SystemTab: React.FC<SystemTabProps> = ({
 
                     <div className="flex flex-col gap-4 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-colors sm:flex-row sm:items-center sm:justify-between">
                         <div className="space-y-1">
-                            <div className="text-[10px] font-medium text-foreground">{t('general.checkOnStartup')}</div>
-                            <div className="max-w-[240px] text-[10px] leading-relaxed text-muted-foreground/70">
+                            <div className="typo-body font-medium text-foreground">{t('general.checkOnStartup')}</div>
+                            <div className="max-w-[240px] typo-body leading-relaxed text-muted-foreground/70">
                                 {t('general.checkOnStartupDesc')}
                             </div>
                         </div>
@@ -133,8 +133,8 @@ export const SystemTab: React.FC<SystemTabProps> = ({
 
                     <div className="flex flex-col gap-4 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-colors md:col-span-2 sm:flex-row sm:items-center sm:justify-between">
                         <div className="space-y-1">
-                            <div className="text-[10px] font-medium text-foreground">{t('settings.downloadUpdatesAutomatically')}</div>
-                            <div className="max-w-[420px] text-[10px] leading-relaxed text-muted-foreground/70">
+                            <div className="typo-body font-medium text-foreground">{t('settings.downloadUpdatesAutomatically')}</div>
+                            <div className="max-w-[420px] typo-body leading-relaxed text-muted-foreground/70">
                                 {t('settings.downloadUpdatesAutomaticallyDescription')}
                             </div>
                         </div>
@@ -149,7 +149,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
             <div className="overflow-hidden rounded-3xl border border-border/30 bg-card p-6 sm:p-8">
                 <div className="relative z-10 flex items-center gap-4 px-1">
                     <div className="rounded-2xl bg-primary/10 p-3.5 text-primary">
-                         <Cpu className="w-6 h-6" />
+                        <Cpu className="w-6 h-6" />
                     </div>
                     <div>
                         <h3 className="text-lg font-semibold text-foreground">
@@ -164,11 +164,11 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                 <div className="relative z-10 mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div className="flex flex-col gap-4 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-colors sm:flex-row sm:items-center sm:justify-between">
                         <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-[10px] font-medium text-foreground">
+                            <div className="flex items-center gap-2 typo-body font-medium text-foreground">
                                 <Power className="w-3.5 h-3.5 text-primary opacity-40" />
                                 {t('general.startOnStartup')}
                             </div>
-                            <div className="text-[10px] leading-relaxed text-muted-foreground/70">
+                            <div className="typo-body leading-relaxed text-muted-foreground/70">
                                 {t('general.startOnStartupDesc')}
                             </div>
                         </div>
@@ -180,11 +180,11 @@ export const SystemTab: React.FC<SystemTabProps> = ({
 
                     <div className="flex flex-col gap-4 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-colors sm:flex-row sm:items-center sm:justify-between">
                         <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-[10px] font-medium text-foreground">
+                            <div className="flex items-center gap-2 typo-body font-medium text-foreground">
                                 <Terminal className="w-3.5 h-3.5 text-primary opacity-40" />
                                 {t('general.workAtBackground')}
                             </div>
-                            <div className="text-[10px] leading-relaxed text-muted-foreground/70">
+                            <div className="typo-body leading-relaxed text-muted-foreground/70">
                                 {t('general.workAtBackgroundDesc')}
                             </div>
                         </div>
@@ -196,11 +196,11 @@ export const SystemTab: React.FC<SystemTabProps> = ({
 
                     <div className="flex flex-col gap-4 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-colors sm:flex-row sm:items-center sm:justify-between">
                         <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-[10px] font-medium text-foreground">
+                            <div className="flex items-center gap-2 typo-body font-medium text-foreground">
                                 <Zap className="w-3.5 h-3.5 text-primary opacity-40" />
                                 {t('settings.lowPowerMode')}
                             </div>
-                            <div className="text-[10px] leading-relaxed text-muted-foreground/70">
+                            <div className="typo-body leading-relaxed text-muted-foreground/70">
                                 {t('settings.lowPowerModeDescription')}
                             </div>
                         </div>
@@ -212,11 +212,11 @@ export const SystemTab: React.FC<SystemTabProps> = ({
 
                     <div className="flex flex-col gap-4 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-colors sm:flex-row sm:items-center sm:justify-between">
                         <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-[10px] font-medium text-foreground">
+                            <div className="flex items-center gap-2 typo-body font-medium text-foreground">
                                 <ShieldCheck className="w-3.5 h-3.5 text-primary opacity-40" />
                                 {t('settings.autoHibernation')}
                             </div>
-                            <div className="text-[10px] leading-relaxed text-muted-foreground/70">
+                            <div className="typo-body leading-relaxed text-muted-foreground/70">
                                 {t('settings.autoHibernationDescription')}
                             </div>
                         </div>

@@ -2,6 +2,7 @@ import { CircuitBreaker } from '@main/core/circuit-breaker';
 import { appLogger } from '@main/logging/logger';
 import { HttpService } from '@main/services/external/http.service';
 import { HuggingFaceService } from '@main/services/llm/huggingface.service';
+import { LlamaService } from '@main/services/llm/llama.service';
 import { LLMAltProvidersService } from '@main/services/llm/llm-alt-providers.service';
 import { LLMEmbeddingsService } from '@main/services/llm/llm-embeddings.service';
 import { LLMOpenAIChatService, OpenAIStreamYield } from '@main/services/llm/llm-openai-chat.service';
@@ -74,6 +75,7 @@ export interface LLMServiceDependencies {
     proxyService: ProxyService;
     tokenService?: TokenService;
     huggingFaceService: HuggingFaceService;
+    llamaService?: LlamaService;
     fallbackService: ModelFallbackService;
     cacheService: ResponseCacheService;
 }
@@ -617,6 +619,7 @@ export class LLMService {
             'claude': ['anthropic/', 'claude/'],
             'openai': ['openai/'],
             'codex': ['codex/', 'openai/'],
+            'huggingface': ['huggingface/'],
             'kimi': ['kimi/', 'moonshot/'],
             'google': ['google/', 'gemini/'],
             'nvidia': ['nvidia/'],
@@ -639,6 +642,45 @@ export class LLMService {
         }
 
         return target;
+    }
+
+    private normalizeHuggingFaceLocalModelId(model: string): string {
+        const trimmed = model.trim();
+        if (trimmed.toLowerCase().startsWith('huggingface/')) {
+            return trimmed.slice('huggingface/'.length);
+        }
+        return trimmed;
+    }
+
+    private async resolveHuggingFaceInstalledPath(model: string): Promise<string> {
+        const modelId = this.normalizeHuggingFaceLocalModelId(model);
+        const versions = await this.deps.huggingFaceService.getModelVersions(modelId);
+        const latest = versions[0];
+        if (!latest?.path) {
+            throw new ValidationError(`Installed Hugging Face model not found: ${modelId}`);
+        }
+        return latest.path;
+    }
+
+    private async ensureLlamaRoute(modelPath: string): Promise<string> {
+        const llamaService = this.deps.llamaService;
+        if (!llamaService) {
+            throw new ValidationError('Llama service is unavailable for local Hugging Face models');
+        }
+
+        const loadedModel = llamaService.getLoadedModel();
+        const isRunning = await llamaService.isServerRunning();
+        if (loadedModel !== modelPath || !isRunning) {
+            const result = await llamaService.loadModel(modelPath);
+            if (!result.success) {
+                throw new ValidationError(result.error ?? `Failed to load local Hugging Face model: ${modelPath}`);
+            }
+        }
+
+        const config = llamaService.getConfig();
+        const host = typeof config.host === 'string' && config.host.trim() !== '' ? config.host.trim() : '127.0.0.1';
+        const port = typeof config.port === 'number' && Number.isFinite(config.port) ? config.port : 8080;
+        return `http://${host}:${port}/v1`;
     }
 
     private resolveProvider(model: string, provider?: string): string {
@@ -728,6 +770,21 @@ export class LLMService {
             const ollamaUrl = (settings['ollama'] as JsonObject | undefined)?.url ?? 'http://localhost:11434';
             const ollamaBaseUrl = `${(ollamaUrl as string).replace(/\/$/, '')}/v1`;
             return { model, tools, baseUrl: ollamaBaseUrl, apiKey: 'ollama', provider, temperature: temp, workspaceRoot };
+        }
+
+        if (p.includes('huggingface')) {
+            const normalizedModelId = this.normalizeHuggingFaceLocalModelId(model);
+            const modelPath = await this.resolveHuggingFaceInstalledPath(normalizedModelId);
+            const llamaBaseUrl = await this.ensureLlamaRoute(modelPath);
+            return {
+                model: normalizedModelId,
+                tools,
+                baseUrl: llamaBaseUrl,
+                apiKey: 'llama-cpp',
+                provider: 'huggingface',
+                temperature: temp,
+                workspaceRoot
+            };
         }
 
         if (p.includes('codex') || p.includes('openai')) {

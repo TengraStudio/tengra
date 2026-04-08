@@ -21,12 +21,22 @@ use tokio::time::{sleep, Duration};
 
 static UPSTREAM_HTTP_CLIENT: OnceLock<Client> = OnceLock::new();
 static COPILOT_RATE_LIMITER: OnceLock<Mutex<CopilotRateLimitState>> = OnceLock::new();
+static ANTIGRAVITY_RATE_LIMITER: OnceLock<Mutex<AntigravityRateLimitState>> = OnceLock::new();
 
 const COPILOT_MIN_API_INTERVAL_MS: i64 = 1000;
 const COPILOT_MAX_QUEUED_REQUESTS: usize = 30;
 
+const ANTIGRAVITY_MIN_API_INTERVAL_MS: i64 = 2000;
+const ANTIGRAVITY_MAX_QUEUED_REQUESTS: usize = 12;
+
 #[derive(Default)]
 struct CopilotRateLimitState {
+    last_api_call_at_ms: i64,
+    pending_requests: usize,
+}
+
+#[derive(Default)]
+struct AntigravityRateLimitState {
     last_api_call_at_ms: i64,
     pending_requests: usize,
 }
@@ -99,7 +109,53 @@ pub async fn execute_chat_completion_payload(
         return execute_copilot_rate_limited(payload, &provider, &auth_token, active_key_row).await;
     }
 
+    if provider == "antigravity" {
+        return execute_antigravity_rate_limited(payload, &provider, &auth_token, active_key_row)
+            .await;
+    }
+
     execute_upstream_request(payload, &provider, &auth_token, active_key_row).await
+}
+
+async fn execute_antigravity_rate_limited(
+    payload: ChatCompletionRequest,
+    provider: &str,
+    auth_token: &str,
+    active_key_row: &serde_json::Value,
+) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
+    let wait_ms = {
+        let limiter = antigravity_rate_limiter();
+        let mut state = limiter.lock().await;
+
+        if state.pending_requests >= ANTIGRAVITY_MAX_QUEUED_REQUESTS {
+            return Err((
+                StatusCode::TOO_MANY_REQUESTS,
+                Json(json!({
+                    "error": "Antigravity request queue full"
+                })),
+            ));
+        }
+
+        state.pending_requests += 1;
+        let now = chrono::Utc::now().timestamp_millis();
+        let wait_ms = (state.last_api_call_at_ms + ANTIGRAVITY_MIN_API_INTERVAL_MS - now).max(0);
+        state.last_api_call_at_ms = now + wait_ms;
+        wait_ms
+    };
+
+    if wait_ms > 0 {
+        sleep(Duration::from_millis(wait_ms as u64)).await;
+    }
+
+    let result = execute_upstream_request(payload, provider, auth_token, active_key_row).await;
+
+    {
+        let limiter = antigravity_rate_limiter();
+        let mut state = limiter.lock().await;
+        state.pending_requests = state.pending_requests.saturating_sub(1);
+    }
+
+    result
 }
 
 async fn execute_copilot_rate_limited(
@@ -213,7 +269,7 @@ async fn execute_antigravity_request(
     let mut last_error = None;
 
     for candidate in fallback_base_urls(base_url.as_deref()) {
-        match send_upstream_request(
+        let res = send_upstream_request(
             provider,
             auth_token,
             active_key_row,
@@ -221,9 +277,55 @@ async fn execute_antigravity_request(
             request_body,
             Some(candidate.as_str()),
         )
-        .await
-        {
-            Ok(response) => return Ok(response),
+        .await;
+
+        match res {
+            Ok(response) => {
+                if response.status() == StatusCode::TOO_MANY_REQUESTS {
+                    // Upstream rate limit. Wait 2.2s and retry once.
+                    sleep(Duration::from_millis(2200)).await;
+                    let retry_res = send_upstream_request(
+                        provider,
+                        auth_token,
+                        active_key_row,
+                        payload,
+                        request_body,
+                        Some(candidate.as_str()),
+                    )
+                    .await;
+                    if let Ok(retry_response) = retry_res {
+                        if retry_response.status().is_success() {
+                            return Ok(retry_response);
+                        }
+                        last_error = Some((
+                            retry_response.status(),
+                            Json(json!({"error": retry_response.text().await.unwrap_or_default()})),
+                        ));
+                    }
+                } else if response.status().is_success() {
+                    return Ok(response);
+                } else if response.status() == StatusCode::UNAUTHORIZED {
+                    if let Some(retry_response) = retry_antigravity_after_refresh(
+                        active_key_row,
+                        payload,
+                        request_body,
+                        &candidate,
+                    )
+                    .await?
+                    {
+                        return Ok(retry_response);
+                    }
+                    last_error = Some((
+                        response.status(),
+                        Json(json!({"error": response.text().await.unwrap_or_default()})),
+                    ));
+                } else {
+                    last_error = Some((
+                        response.status(),
+                        Json(json!({"error": response.text().await.unwrap_or_default()})),
+                    ));
+                }
+            }
             Err(error) => {
                 last_error = Some(error);
             }
@@ -236,6 +338,33 @@ async fn execute_antigravity_request(
             Json(json!({"error": "No Antigravity upstream endpoint succeeded"})),
         )
     }))
+}
+
+async fn retry_antigravity_after_refresh(
+    active_key_row: &Value,
+    payload: &ChatCompletionRequest,
+    request_body: &Value,
+    candidate: &str,
+) -> Result<Option<reqwest::Response>, (StatusCode, Json<serde_json::Value>)> {
+    let refreshed = crate::token::refresh_account_token(active_key_row)
+        .await
+        .map_err(|error| (StatusCode::BAD_GATEWAY, Json(json!({"error": error}))))?;
+    let Some(token) = refreshed.and_then(|value| value.access_token) else {
+        return Ok(None);
+    };
+    let response = send_upstream_request(
+        "antigravity",
+        token.as_str(),
+        active_key_row,
+        payload,
+        request_body,
+        Some(candidate),
+    )
+    .await?;
+    if response.status().is_success() {
+        return Ok(Some(response));
+    }
+    Ok(None)
 }
 
 async fn send_upstream_request(
@@ -375,6 +504,10 @@ fn parse_metadata_map(value: &Value) -> Option<Map<String, Value>> {
 
 fn copilot_rate_limiter() -> &'static Mutex<CopilotRateLimitState> {
     COPILOT_RATE_LIMITER.get_or_init(|| Mutex::new(CopilotRateLimitState::default()))
+}
+
+fn antigravity_rate_limiter() -> &'static Mutex<AntigravityRateLimitState> {
+    ANTIGRAVITY_RATE_LIMITER.get_or_init(|| Mutex::new(AntigravityRateLimitState::default()))
 }
 
 fn decrypt_if_needed(token: &str) -> Result<String, (StatusCode, Json<serde_json::Value>)> {

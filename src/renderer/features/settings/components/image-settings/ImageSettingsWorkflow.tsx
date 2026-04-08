@@ -1,6 +1,6 @@
 import { Button } from '@renderer/components/ui/button';
 import { Input } from '@renderer/components/ui/input';
-import { Download,Plus, Share2, Trash2, Workflow, Zap } from 'lucide-react';
+import { Download, Plus, Share2, Trash2, Workflow, Zap } from 'lucide-react';
 import React from 'react';
 
 import { ImageWorkflowTemplateEntry } from '../../types';
@@ -45,7 +45,7 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
                         <h3 className="text-lg font-bold text-foreground group-hover/workflow:text-primary transition-colors">
                             {t('settings.images.workflowTitle')}
                         </h3>
-                        <p className="text-[10px] text-muted-foreground mt-1 font-bold opacity-60">
+                        <p className="typo-body text-muted-foreground mt-1 font-bold opacity-60">
                             {workflowTemplates.length} {t('settings.images.activeTemplates')}
                         </p>
                     </div>
@@ -54,7 +54,7 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
 
             <div className="space-y-6 relative z-10">
                 <div className="space-y-2">
-                    <div className="text-[9px] font-bold text-muted-foreground/40 px-1">Template Name</div>
+                    <div className="typo-body font-bold text-muted-foreground/40 px-1">Template Name</div>
                     <Input
                         value={workflowTemplateName}
                         onChange={event => setWorkflowTemplateName(event.target.value)}
@@ -63,17 +63,17 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
                     />
                 </div>
                 <div className="space-y-2">
-                    <div className="text-[9px] font-bold text-muted-foreground/40 px-1">Workflow Definition (JSON)</div>
+                    <div className="typo-body font-bold text-muted-foreground/40 px-1">Workflow Definition (JSON)</div>
                     <textarea
                         value={workflowTemplateJson}
                         onChange={event => setWorkflowTemplateJson(event.target.value)}
                         placeholder={t('settings.images.workflowTemplateJson')}
-                        className="tw-min-h-56 w-full rounded-2xl border border-border/40 bg-muted/20 p-6 font-mono text-[9px] text-muted-foreground leading-relaxed shadow-inner focus:ring-1 focus:ring-primary/20 outline-none transition-all custom-scrollbar"
+                        className="tw-min-h-56 w-full rounded-2xl border border-border/40 bg-muted/20 p-6 font-mono typo-body text-muted-foreground leading-relaxed shadow-inner focus:ring-1 focus:ring-primary/20 outline-none transition-all custom-scrollbar"
                     />
                 </div>
                 <Button
                     onClick={() => { void handleSaveWorkflowTemplate(); }}
-                    className="h-12 px-8 rounded-2xl bg-foreground text-background hover:bg-primary hover:text-primary-foreground text-[10px] font-bold transition-all active:scale-95 shadow-xl shadow-black/10 flex items-center gap-3 w-full sm:w-auto"
+                    className="h-12 px-8 rounded-2xl bg-foreground text-background hover:bg-primary hover:text-primary-foreground typo-body font-bold transition-all active:scale-95 shadow-xl shadow-black/10 flex items-center gap-3 w-full sm:w-auto"
                 >
                     <Plus className="w-4 h-4" />
                     {t('settings.images.saveWorkflowTemplate')}
@@ -83,7 +83,7 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
             <div className="space-y-3 relative z-10">
                 {workflowTemplates.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-10 text-center bg-muted/5 border-2 border-dashed border-border/20 rounded-2xl opacity-40">
-                         <p className="text-[10px] font-bold text-muted-foreground px-6">
+                        <p className="typo-body font-bold text-muted-foreground px-6">
                             {t('settings.images.noWorkflowTemplates')}
                         </p>
                     </div>
@@ -99,7 +99,7 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
                                     className="flex items-center gap-4 min-w-0"
                                 >
                                     <div className="h-2 w-2 rounded-full bg-primary/40 group-hover/item:bg-primary group-hover/item:scale-125 transition-all" />
-                                    <span className="text-[10px] font-bold text-foreground truncate group-hover/item:text-primary transition-colors text-left">{template.name}</span>
+                                    <span className="typo-body font-bold text-foreground truncate group-hover/item:text-primary transition-colors text-left">{template.name}</span>
                                 </button>
                                 <div className="flex items-center gap-2">
                                     <Button
@@ -128,17 +128,17 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
             <div className="bg-muted/20 border border-border/20 rounded-3xl p-6 space-y-4 relative z-10 group/share">
                 <div className="flex items-center gap-3 px-1">
                     <Zap className="w-3.5 h-3.5 text-primary" />
-                    <div className="text-[10px] font-bold text-muted-foreground/40">{t('settings.images.workflowShareCode')}</div>
+                    <div className="typo-body font-bold text-muted-foreground/40">{t('settings.images.workflowShareCode')}</div>
                 </div>
                 <textarea
                     value={workflowShareCode}
                     onChange={event => setWorkflowShareCode(event.target.value)}
                     placeholder={t('settings.images.workflowShareCodePlaceholder')}
-                    className="tw-min-h-32 w-full rounded-2xl border border-border/40 bg-background/40 p-6 font-mono text-[9px] text-muted-foreground leading-relaxed shadow-inner focus:ring-1 focus:ring-primary/20 outline-none transition-all custom-scrollbar"
+                    className="tw-min-h-32 w-full rounded-2xl border border-border/40 bg-background/40 p-6 font-mono typo-body text-muted-foreground leading-relaxed shadow-inner focus:ring-1 focus:ring-primary/20 outline-none transition-all custom-scrollbar"
                 />
                 <Button
                     onClick={() => { void handleImportWorkflowTemplateShare(); }}
-                    className="h-10 px-6 rounded-xl border-border/40 bg-muted/40 text-[9px] font-bold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all active:scale-95 shadow-sm flex items-center gap-2 w-full"
+                    className="h-10 px-6 rounded-xl border-border/40 bg-muted/40 typo-body font-bold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all active:scale-95 shadow-sm flex items-center gap-2 w-full"
                 >
                     <Download className="w-3.5 h-3.5" />
                     {t('settings.images.importWorkflowTemplateShare')}

@@ -11,9 +11,13 @@ vi.mock('@main/utils/command-validator.util', () => ({
 
 const mockExecCallback = vi.fn();
 const mockSpawn = vi.fn();
+let lastExecCommand = '';
+let lastExecOptions: TestValue | undefined;
 
 vi.mock('child_process', () => ({
-    exec: vi.fn((_cmd: string, _opts: TestValue, cb?: (...args: TestValue[]) => void) => {
+    exec: vi.fn((cmd: string, opts: TestValue, cb?: (...args: TestValue[]) => void) => {
+        lastExecCommand = cmd;
+        lastExecOptions = opts;
         if (cb) {
             mockExecCallback(cb);
         }
@@ -37,6 +41,8 @@ describe('CommandService', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        lastExecCommand = '';
+        lastExecOptions = undefined;
         service = new CommandService();
     });
 
@@ -70,6 +76,29 @@ describe('CommandService', () => {
             const result = await service.executeCommand('bad');
             expect(result.success).toBe(false);
             expect(result.error).toBe('Command blocked by safety policy');
+        });
+
+        it('normalizes common cmd-style Windows commands for PowerShell execution', async () => {
+            const pending = service.executeCommand(
+                'if not exist "%USERPROFILE%\\Desktop\\projects" mkdir "%USERPROFILE%\\Desktop\\projects" && dir "%USERPROFILE%\\Desktop\\projects"',
+                { id: 'tracked-normalize' }
+            );
+
+            const callback = mockExecCallback.mock.calls.at(-1)?.[0] as
+                | ((error: Error | null, stdout: string, stderr: string) => void)
+                | undefined;
+            callback?.(null, 'ok', '');
+            const result = await pending;
+
+            expect(result.success).toBe(true);
+            if (process.platform === 'win32') {
+                expect(lastExecCommand).toContain('$env:USERPROFILE');
+                expect(lastExecCommand).toContain('Test-Path');
+                expect(lastExecCommand).toContain('New-Item -ItemType Directory');
+            } else {
+                expect(lastExecCommand).toContain('if not exist');
+            }
+            expect(lastExecOptions).toBeDefined();
         });
     });
 

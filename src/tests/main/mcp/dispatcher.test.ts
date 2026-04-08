@@ -245,9 +245,14 @@ describe('McpDispatcher', () => {
             });
 
             expect(result.success).toBe(true);
-            expect(pluginService.registerPlugin).toHaveBeenCalledWith(
-                'my-plugin', 'A plugin', 'node', ['index.js'], { API_KEY: '123' }
-            );
+            expect(pluginService.registerPlugin).toHaveBeenCalledWith({
+                id: 'my-plugin',
+                name: 'my-plugin',
+                description: 'A plugin',
+                command: 'node',
+                args: ['index.js'],
+                env: { API_KEY: '123' }
+            });
         });
 
         it('should handle registration errors', async () => {

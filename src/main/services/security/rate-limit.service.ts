@@ -166,7 +166,7 @@ export class RateLimitService extends BaseService {
         this.setLimit('anthropic', { requestsPerMinute: 50, maxBurst: 5 });
         this.setLimit('gemini', { requestsPerMinute: 60, maxBurst: 10 });
         this.setLimit('ssh:execute', { requestsPerMinute: 120, maxBurst: 20 });
-        this.setLimit(SESSION_CONVERSATION_CHANNELS.STREAM, { requestsPerMinute: 60, maxBurst: 5 }); // 1 per sec roughly
+        this.setLimit(SESSION_CONVERSATION_CHANNELS.STREAM, { requestsPerMinute: 600, maxBurst: 50 }); // keep stream IPC non-blocking
         this.setLimit('files:search', { requestsPerMinute: 20, maxBurst: 2 }); // Expensive op
         this.setLimit('files:read', { requestsPerMinute: 300, maxBurst: 50 }); // High frequency allowed
         this.setLimit('files:write', { requestsPerMinute: 100, maxBurst: 10 }); // More restricted

@@ -38,8 +38,6 @@ interface ModelDefinition {
     [key: string]: JsonValue | undefined;
 }
 
-
-
 /**
  * Validates a model name
  */
@@ -491,4 +489,18 @@ export function registerOllamaIpc(options: {
             });
         });
     }
+
+    ipcMain.handle('ollama:deleteModel', createSafeIpcHandler('ollama:deleteModel',
+        async (event: IpcMainInvokeEvent, modelNameRaw: RuntimeValue) => {
+            validateSender(event);
+            const modelName = validateModel(modelNameRaw);
+            if (!modelName) {
+                throw new Error('Invalid model name');
+            }
+            if (ollamaService) {
+                return await ollamaService.deleteModel(modelName);
+            }
+            return { success: false, error: 'Ollama service unavailable' };
+        }, { success: false, error: 'delete failed' }
+    ));
 }

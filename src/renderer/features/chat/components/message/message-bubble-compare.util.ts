@@ -23,6 +23,8 @@ const MESSAGE_FIELD_KEYS: (keyof Message)[] = [
     'rating',
 ];
 
+const areJsonEqual = (left: unknown, right: unknown): boolean => JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
+
 const areStringArraysEqual = (left: string[] | undefined, right: string[] | undefined): boolean => {
     if (left === right) {
         return true;
@@ -140,7 +142,17 @@ export const areMessagePropsEqual = (prev: MessageProps, next: MessageProps): bo
     if (
         !areStringArraysEqual(previousMessage.images, nextMessage.images) ||
         !areStringArraysEqual(previousMessage.sources, nextMessage.sources) ||
-        !areStringArraysEqual(previousMessage.reactions, nextMessage.reactions)
+        !areStringArraysEqual(previousMessage.reactions, nextMessage.reactions) ||
+        !areStringArraysEqual(previousMessage.reasonings, nextMessage.reasonings)
+    ) {
+        return false;
+    }
+
+    if (
+        previousMessage.reasoning !== nextMessage.reasoning
+        || !areJsonEqual(previousMessage.toolCalls, nextMessage.toolCalls)
+        || !areJsonEqual(previousMessage.toolResults, nextMessage.toolResults)
+        || !areJsonEqual(previousMessage.usage, nextMessage.usage)
     ) {
         return false;
     }

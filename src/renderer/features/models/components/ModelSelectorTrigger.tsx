@@ -65,13 +65,13 @@ const shouldRenderContextBar = (tokens: number): boolean => tokens > 0;
 
 const shouldRenderImageTypeIcon = (modelType?: string): boolean => modelType === 'image';
 
-const ModelLabelInfo: React.FC<ModelLabelInfoProps> = ({ 
-    currentCatName, 
-    selectedModelsCount, 
-    modelLabel, 
-    modelType, 
-    contextTokens, 
-    contextUsagePercent 
+const ModelLabelInfo: React.FC<ModelLabelInfoProps> = ({
+    currentCatName,
+    selectedModelsCount,
+    modelLabel,
+    modelType,
+    contextTokens,
+    contextUsagePercent
 }) => (
     <div className="flex flex-col items-start leading-none overflow-hidden flex-1 text-left">
         <div className="flex items-center justify-between w-full pr-1">
@@ -149,7 +149,7 @@ const TriggerContent: React.FC<TriggerContentProps> = ({
     chatMode = 'instant'
 }) => {
     const ModeIcon = chatMode === 'thinking' ? Brain : chatMode === 'agent' ? Bot : Zap;
-    
+
     return (
         <>
             <div className="flex items-center gap-2.5 overflow-hidden flex-1">
@@ -174,11 +174,11 @@ const TriggerContent: React.FC<TriggerContentProps> = ({
                             t={t}
                         />
                         <div className={cn(
-                            "hidden xl:flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold shrink-0",
-                            chatMode === 'thinking' 
-                                ? "bg-accent/10 text-accent border-accent/20" 
-                                : chatMode === 'agent' 
-                                    ? "bg-info/10 text-info border-info/20" 
+                            "hidden xl:flex items-center gap-1.5 px-2 py-0.5 rounded-full border typo-body font-bold shrink-0",
+                            chatMode === 'thinking'
+                                ? "bg-accent/10 text-accent border-accent/20"
+                                : chatMode === 'agent'
+                                    ? "bg-info/10 text-info border-info/20"
                                     : "bg-warning/10 text-warning border-warning/20"
                         )}>
                             <ModeIcon className="w-2.5 h-2.5" />

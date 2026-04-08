@@ -157,6 +157,7 @@ export const buildActions = (
 ): McpAction[] =>
     actions.map(a => ({
         ...a,
+        description: a.description ?? a.name,
         handler: wrap(a.handler, serviceName ?? 'unknown', a.name, auditLog),
     }));
 

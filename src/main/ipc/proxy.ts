@@ -77,6 +77,28 @@ export function registerProxyIpc(
         return await proxyService.getAntigravityAuthUrl(accountId);
     }, { url: '', state: '', accountId: '' }));
 
+    ipcMain.handle('proxy:ollamaLogin', createValidatedIpcHandler('proxy:ollamaLogin', async (_event, accountId?: string) => {
+        return await proxyService.getOllamaAuthUrl(accountId);
+    }, {
+        argsSchema: z.tuple([proxyAccountIdSchema]),
+        responseSchema: z.object({
+            url: z.string().min(1),
+            state: z.string().min(1),
+            accountId: z.string().min(1)
+        })
+    }));
+
+    ipcMain.handle('proxy:ollamaSignout', createValidatedIpcHandler('proxy:ollamaSignout', async (_event, accountId?: string) => {
+        return await proxyService.ollamaSignout(accountId);
+    }, {
+        argsSchema: z.tuple([proxyAccountIdSchema]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            alreadySignedOut: z.boolean().optional(),
+            error: z.string().optional()
+        })
+    }));
+
     ipcMain.handle('proxy:claudeLogin', createSafeIpcHandler('proxy:claudeLogin', async (_event, accountId?: string) => {
         // Try to get OAuth URL (same as anthropicLogin)
         // This will open the browser for OAuth flow
@@ -118,16 +140,16 @@ export function registerProxyIpc(
 
     ipcMain.handle('proxy:getAuthStatus', createSafeIpcHandler('proxy:getAuthStatus', async (_event, provider: string, state: string, accountId: string) => {
         appLogger.info('ProxyIPC', `proxy:getAuthStatus requested for ${provider}:${accountId}`);
-        return await proxyService.getBrowserAuthStatus(provider as 'antigravity' | 'claude' | 'codex', state, accountId);
+        return await proxyService.getBrowserAuthStatus(provider as 'antigravity' | 'claude' | 'codex' | 'ollama', state, accountId);
     }, { status: 'error', error: 'Failed to fetch auth status', accountId: '' }));
 
     ipcMain.handle('proxy:verifyAuthBridge', createSafeIpcHandler('proxy:verifyAuthBridge', async (_event, provider?: string) => {
-        return await proxyService.verifyAuthBridge(provider as 'antigravity' | 'claude' | 'codex' | undefined);
+        return await proxyService.verifyAuthBridge(provider as 'antigravity' | 'claude' | 'codex' | 'ollama' | undefined);
     }, { status: 'failed', provider: 'codex' }));
 
     ipcMain.handle('proxy:cancelAuth', createSafeIpcHandler('proxy:cancelAuth', async (_event, provider: string, state: string, accountId: string) => {
         appLogger.info('ProxyIPC', `proxy:cancelAuth requested for ${provider}:${accountId}`);
-        return await proxyService.cancelBrowserAuth(provider as 'antigravity' | 'claude' | 'codex', state, accountId);
+        return await proxyService.cancelBrowserAuth(provider as 'antigravity' | 'claude' | 'codex' | 'ollama', state, accountId);
     }, false));
 
     ipcMain.handle('proxy:getModels', createSafeIpcHandler('proxy:getModels', async () => {

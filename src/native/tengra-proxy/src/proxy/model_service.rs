@@ -927,15 +927,19 @@ fn metadata_token_string(row: &Value, key: &str) -> Option<String> {
 
 fn antigravity_thinking_levels(id: &str) -> Option<Vec<String>> {
     match id {
-        "gemini-3-pro-preview" | "gemini-3-pro-high" => {
+        "gemini-3.1-pro-preview" | "gemini-3-pro-preview" | "gemini-3-pro-high" => {
             Some(vec!["low".to_string(), "high".to_string()])
         }
-        "gemini-3-flash-preview" | "gemini-3-flash" => Some(vec![
+        "gemini-3.1-flash-preview"
+        | "gemini-3.1-flash"
+        | "gemini-3-flash-preview"
+        | "gemini-3-flash" => Some(vec![
             "minimal".to_string(),
             "low".to_string(),
             "medium".to_string(),
             "high".to_string(),
         ]),
+        "gemini-3.1-flash-lite" => Some(vec!["minimal".to_string(), "low".to_string()]),
         "gemini-2.5-pro"
         | "gemini-2.5-flash"
         | "gemini-2.5-flash-lite"
@@ -1018,9 +1022,9 @@ fn build_nvidia_model(model_id: String) -> ProviderModel {
 
 fn codex_models() -> Vec<ProviderModel> {
     vec![
-        static_model("gpt-5.3-codex", "GPT 5.3 Codex", "codex", Some("Stable version of GPT 5.3 Codex"), Some(vec!["low", "medium", "high", "xhigh"])),
         static_model("gpt-5.4", "GPT 5.4", "codex", Some("Stable version of GPT 5.4"), Some(vec!["low", "medium", "high", "xhigh"])),
-        static_model("gpt-5.4-mini", "GPT 5.4 Mini", "codex", Some("Compact GPT 5.4 Codex variant tuned for faster, lower-cost coding tasks."), Some(vec!["low", "medium", "high"])),
+        static_model("gpt-5.4-mini", "GPT 5.4 Mini", "codex", Some("Compact GPT 5.4 variant tuned for faster, lower-cost coding tasks."), Some(vec!["low", "medium", "high"])),
+        static_model("gpt-5.3-codex", "GPT 5.3 Codex", "codex", Some("Stable version of GPT 5.3 Codex"), Some(vec!["low", "medium", "high", "xhigh"])),
         static_model("gpt-5.2-codex", "GPT 5.2 Codex", "codex", Some("Stable version of GPT 5.2 Codex, the best model for coding and agentic tasks across domains."), Some(vec!["low", "medium", "high", "xhigh"])),
         static_model("gpt-5.1-codex-max", "GPT 5.1 Codex Max", "codex", Some("Stable version of GPT 5.1 Codex Max"), Some(vec!["low", "medium", "high", "xhigh"])),
         static_model("gpt-5.2", "GPT 5.2", "codex", Some("Stable version of GPT 5.2"), Some(vec!["low", "medium", "high", "xhigh"])),
@@ -1045,7 +1049,7 @@ fn claude_models() -> Vec<ProviderModel> {
             Some(vec!["low", "medium", "high"]),
         ),
         static_model(
-            "claude-haiku-4-5-20251001",
+            "claude-haiku-4-5",
             "Claude Haiku 4.5",
             "claude",
             None,
@@ -1175,7 +1179,7 @@ mod tests {
 
         assert!(ids.contains(&"claude-opus-4-6"));
         assert!(ids.contains(&"claude-sonnet-4-6"));
-        assert!(ids.contains(&"claude-haiku-4-5-20251001"));
+        assert!(ids.contains(&"claude-haiku-4-5"));
     }
 
     #[test]

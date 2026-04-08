@@ -50,7 +50,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                         <h3 className="text-lg font-bold text-foreground group-hover/schedules:text-primary transition-colors">
                             {t('settings.images.schedulesTitle')}
                         </h3>
-                        <p className="text-[10px] text-muted-foreground mt-1 font-bold opacity-60">
+                        <p className="typo-body text-muted-foreground mt-1 font-bold opacity-60">
                             {scheduleEntries.length} {t('settings.images.activeSchedules')}
                         </p>
                     </div>
@@ -60,7 +60,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
             <div className="space-y-6 relative z-10">
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div className="space-y-2">
-                        <div className="text-[9px] font-bold text-muted-foreground/40 px-1">Prompt</div>
+                        <div className="typo-body font-bold text-muted-foreground/40 px-1">Prompt</div>
                         <Input
                             value={schedulePrompt}
                             onChange={event => setSchedulePrompt(event.target.value)}
@@ -69,7 +69,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                         />
                     </div>
                     <div className="space-y-2">
-                        <div className="text-[9px] font-bold text-muted-foreground/40 px-1">Scheduled Time</div>
+                        <div className="typo-body font-bold text-muted-foreground/40 px-1">Scheduled Time</div>
                         <Input
                             type="datetime-local"
                             value={scheduleAt}
@@ -78,7 +78,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                         />
                     </div>
                     <div className="space-y-2">
-                        <div className="text-[9px] font-bold text-muted-foreground/40 px-1">Priority</div>
+                        <div className="typo-body font-bold text-muted-foreground/40 px-1">Priority</div>
                         <Select
                             value={schedulePriority}
                             onValueChange={(value: 'low' | 'normal' | 'high') => setSchedulePriority(value)}
@@ -87,14 +87,14 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
-                                <SelectItem value="low" className="text-[10px] font-bold">{t('settings.images.priorityLow')}</SelectItem>
-                                <SelectItem value="normal" className="text-[10px] font-bold">{t('settings.images.priorityNormal')}</SelectItem>
-                                <SelectItem value="high" className="text-[10px] font-bold text-primary">{t('settings.images.priorityHigh')}</SelectItem>
+                                <SelectItem value="low" className="typo-body font-bold">{t('settings.images.priorityLow')}</SelectItem>
+                                <SelectItem value="normal" className="typo-body font-bold">{t('settings.images.priorityNormal')}</SelectItem>
+                                <SelectItem value="high" className="typo-body font-bold text-primary">{t('settings.images.priorityHigh')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <div className="text-[9px] font-bold text-muted-foreground/40 px-1">Resource Profile</div>
+                        <div className="typo-body font-bold text-muted-foreground/40 px-1">Resource Profile</div>
                         <Select
                             value={scheduleResourceProfile}
                             onValueChange={(value: 'balanced' | 'quality' | 'speed') => setScheduleResourceProfile(value)}
@@ -103,16 +103,16 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
-                                <SelectItem value="balanced" className="text-[10px] font-bold">{t('settings.images.resourceBalanced')}</SelectItem>
-                                <SelectItem value="quality" className="text-[10px] font-bold text-primary">{t('settings.images.resourceQuality')}</SelectItem>
-                                <SelectItem value="speed" className="text-[10px] font-bold text-success">{t('settings.images.resourceSpeed')}</SelectItem>
+                                <SelectItem value="balanced" className="typo-body font-bold">{t('settings.images.resourceBalanced')}</SelectItem>
+                                <SelectItem value="quality" className="typo-body font-bold text-primary">{t('settings.images.resourceQuality')}</SelectItem>
+                                <SelectItem value="speed" className="typo-body font-bold text-success">{t('settings.images.resourceSpeed')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                 </div>
                 <Button
                     onClick={() => { void handleCreateSchedule(); }}
-                    className="h-12 px-8 rounded-2xl bg-foreground text-background hover:bg-primary hover:text-primary-foreground text-[10px] font-bold transition-all active:scale-95 shadow-xl shadow-black/10 flex items-center gap-3 w-full sm:w-auto"
+                    className="h-12 px-8 rounded-2xl bg-foreground text-background hover:bg-primary hover:text-primary-foreground typo-body font-bold transition-all active:scale-95 shadow-xl shadow-black/10 flex items-center gap-3 w-full sm:w-auto"
                 >
                     <Plus className="w-4 h-4" />
                     {t('settings.images.scheduleCreate')}
@@ -129,8 +129,8 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                             <Zap className="w-4 h-4" />
                         </div>
                         <div>
-                            <div className="text-[10px] font-bold text-foreground">{t('settings.images.queueTitle')}</div>
-                            <div className="text-[9px] font-bold text-muted-foreground/40 mt-0.5">
+                            <div className="typo-body font-bold text-foreground">{t('settings.images.queueTitle')}</div>
+                            <div className="typo-body font-bold text-muted-foreground/40 mt-0.5">
                                 {queueStats.running ? t('settings.images.queueRunning') : t('settings.images.queueIdle')}
                             </div>
                         </div>
@@ -139,7 +139,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                         <div className="text-2xl font-bold text-foreground tabular-nums group-hover/queue:text-primary transition-colors">
                             {queueStats.queued}
                         </div>
-                        <div className="text-[9px] font-bold text-muted-foreground/40">{t('common.pending')}</div>
+                        <div className="typo-body font-bold text-muted-foreground/40">{t('common.pending')}</div>
                     </div>
                 </div>
 
@@ -147,7 +147,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                     <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border/10">
                         {['high', 'normal', 'low'].map(p => (
                             <div key={p} className="space-y-1">
-                                <div className="text-[8px] font-bold text-muted-foreground/30 text-center">{p}</div>
+                                <div className="typo-body font-bold text-muted-foreground/30 text-center">{p}</div>
                                 <div className={cn(
                                     "text-sm font-bold text-center  tabular-nums",
                                     p === 'high' ? "text-primary" : "text-foreground"
@@ -163,7 +163,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
             <div className="space-y-3 relative z-10">
                 {scheduleEntries.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-10 text-center bg-muted/5 border-2 border-dashed border-border/20 rounded-2xl opacity-40">
-                         <p className="text-[10px] font-bold text-muted-foreground px-6">
+                        <p className="typo-body font-bold text-muted-foreground px-6">
                             {t('settings.images.noSchedules')}
                         </p>
                     </div>
@@ -178,12 +178,12 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                                         </div>
                                         <div className="flex flex-wrap items-center gap-3">
                                             <Badge variant="outline" className={cn(
-                                                "h-5 text-[8px] px-2 font-bold   border-border/40 rounded-md",
+                                                "h-5 typo-body px-2 font-bold   border-border/40 rounded-md",
                                                 entry.status === 'scheduled' ? "text-primary bg-primary/5" : "text-muted-foreground/60 bg-muted/20"
                                             )}>
                                                 {entry.status}
                                             </Badge>
-                                            <span className="text-[9px] font-bold text-muted-foreground/30">
+                                            <span className="typo-body font-bold text-muted-foreground/30">
                                                 {new Date(entry.runAt).toLocaleString(t('common.locale'))}
                                             </span>
                                         </div>
@@ -193,7 +193,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                                             variant="outline"
                                             size="sm"
                                             onClick={() => { void handleCancelSchedule(entry.id); }}
-                                            className="h-8 px-4 rounded-lg text-[9px] font-bold border-destructive/20 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all active:scale-95 shadow-sm shrink-0"
+                                            className="h-8 px-4 rounded-lg typo-body font-bold border-destructive/20 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all active:scale-95 shadow-sm shrink-0"
                                         >
                                             {t('settings.images.scheduleCancel')}
                                         </Button>
@@ -201,12 +201,12 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                                 </div>
                                 <div className="flex items-center gap-4 pt-2 border-t border-border/10">
                                     <div className="flex items-center gap-2">
-                                        <div className="text-[8px] font-bold text-muted-foreground/40">Priority</div>
-                                        <Badge variant="outline" className="h-4 text-[7px] px-1.5 font-bold border-border/20">{entry.priority}</Badge>
+                                        <div className="typo-body font-bold text-muted-foreground/40">Priority</div>
+                                        <Badge variant="outline" className="h-4 typo-body px-1.5 font-bold border-border/20">{entry.priority}</Badge>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <div className="text-[8px] font-bold text-muted-foreground/40">Profile</div>
-                                        <Badge variant="outline" className="h-4 text-[7px] px-1.5 font-bold border-border/20">{entry.resourceProfile}</Badge>
+                                        <div className="typo-body font-bold text-muted-foreground/40">Profile</div>
+                                        <Badge variant="outline" className="h-4 typo-body px-1.5 font-bold border-border/20">{entry.resourceProfile}</Badge>
                                     </div>
                                 </div>
                             </div>

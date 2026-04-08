@@ -4,12 +4,10 @@ import { McpService } from '@main/mcp/types';
 export function buildInternetServers(deps: McpDeps): McpService[] {
     return [
         {
-            name: 'weather',
-            description: 'Weather information',
+            name: 'weather', 
             actions: buildActions([
                 {
-                    name: 'forecast',
-                    description: 'Get weather forecast from wttr.in',
+                    name: 'forecast', 
                     handler: async ({ location }) => {
                         const loc = location
                             ? encodeURIComponent(validateString(location, 100))

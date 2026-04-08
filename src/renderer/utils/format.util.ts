@@ -71,6 +71,36 @@ export function formatRelativeTime(date: Date, locale: string): string {
       return rtf.format(Math.round(diffSeconds / divisor), unit);
     }
   }
+  return rtf.format(0, 'second');
+}
 
-  return rtf.format(Math.round(diffSeconds / SECONDS_PER_YEAR), 'year');
+
+/**
+ * Formats a byte value into a human-readable string (e.g. "1.5 GB").
+ * @param bytes - The number of bytes to format.
+ * @param decimals - The number of decimal places to include.
+ * @returns A formatted string or "0 B" if bytes is zero.
+ */
+export function formatBytes(bytes: number, decimals: number = 2): string {
+    if (bytes === 0) {return '0 B';}
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+/**
+ * Formats a duration in seconds into a human-readable string (e.g. "2m 15s").
+ * @param seconds - The duration in seconds.
+ * @returns A formatted duration string.
+ */
+export function formatDuration(seconds: number): string {
+    if (seconds < 60) {return `${Math.round(seconds)}s`;}
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.round(seconds % 60);
+    if (mins < 60) {return `${mins}m ${secs}s`;}
+    const hours = Math.floor(mins / 60);
+    const remMins = mins % 60;
+    return `${hours}h ${remMins}m`;
 }

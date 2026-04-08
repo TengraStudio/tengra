@@ -11,19 +11,22 @@ const MAX_PORT = 65535;
 /**
  * Validates proxy start options
  */
-function validateStartOptions(value: RuntimeValue): { port?: number } | undefined {
+function validateStartOptions(value: RuntimeValue): { port?: number; persistent?: boolean } | undefined {
     if (!value || typeof value !== 'object') {
         return undefined;
     }
 
     const raw = value as Record<string, RuntimeValue>;
-    const result: { port?: number } = {};
+    const result: { port?: number; persistent?: boolean } = {};
 
     if (typeof raw.port === 'number') {
         const port = Math.floor(raw.port);
         if (port >= MIN_PORT && port <= MAX_PORT) {
             result.port = port;
         }
+    }
+    if (typeof raw.persistent === 'boolean') {
+        result.persistent = raw.persistent;
     }
 
     return Object.keys(result).length > 0 ? result : undefined;

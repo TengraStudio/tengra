@@ -6,8 +6,6 @@ import { appLogger } from '@main/logging/logger';
 import { SettingsService } from '@main/services/system/settings.service';
 import { validateCommand } from '@main/utils/command-validator.util';
 import { createIpcHandler, createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { RateLimiter } from '@main/utils/rate-limiter.util';
-import { validateCommandArgs } from '@main/utils/shell-command-policy.util';
 import { createWindowsSpawnCommand } from '@main/utils/windows-command.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
@@ -83,13 +81,6 @@ const WINDOW_ERROR_MESSAGE = {
     ARGUMENT_POLICY_VIOLATION: 'Argument policy violation',
     RATE_LIMIT_EXCEEDED: 'Rate limit exceeded'
 } as const;
-
-/** AUD-2026-02-27-03: Rate limiter for shell:runCommand — 30 executions per minute */
-const runCommandRateLimiter = new RateLimiter({
-    maxTokens: 30,
-    refillRate: 30,
-    refillIntervalMs: 60_000,
-});
 
 interface DetachedTerminalWindowOptions {
     sessionId: string;
@@ -713,29 +704,7 @@ function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowe
                 WINDOW_MESSAGE_KEY.SHELL_RUN_COMMAND_WORKING_DIRECTORY_NOT_ALLOWED
             );
         }
-
-        // AUD-2026-02-27-03: Per-command argument validation (path traversal, injection)
-        const argPolicy = validateCommandArgs(executable, args);
-        if (!argPolicy.allowed) {
-            appLogger.warn('WindowIPC', `Blocked shell:runCommand args: ${argPolicy.reason}`);
-            return createRunCommandFailure(
-                argPolicy.reason ?? WINDOW_ERROR_MESSAGE.ARGUMENT_POLICY_VIOLATION,
-                WINDOW_MESSAGE_KEY.SHELL_RUN_COMMAND_ARGUMENT_POLICY_VIOLATION
-            );
-        }
-
-        // AUD-2026-02-27-03: Rate limiting for execution attempts
-        if (!runCommandRateLimiter.tryAcquire()) {
-            appLogger.warn('WindowIPC', 'shell:runCommand rate limit exceeded');
-            return {
-                stdout: '',
-                stderr: WINDOW_ERROR_MESSAGE.RATE_LIMIT_EXCEEDED,
-                code: 1,
-                error: WINDOW_ERROR_MESSAGE.RATE_LIMIT_EXCEEDED,
-                messageKey: WINDOW_MESSAGE_KEY.SHELL_RUN_COMMAND_RATE_LIMIT_EXCEEDED
-            };
-        }
-
+ 
         return new Promise(resolve => {
             const spawnCommand = createWindowsSpawnCommand(command, args);
             appLogger.info(

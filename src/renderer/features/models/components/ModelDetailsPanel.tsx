@@ -387,9 +387,11 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                     <div className="rounded-lg border border-border/30 p-3">
                         <div className="text-muted-foreground">{t('modelExplorer.diskRam')}</div>
                         <div className="font-bold">
-                            {preview?.requirements?.diskGB
-                                ? `${preview.requirements.diskGB}GB`
-                                : t('common.notAvailable')}
+                            {hfModel?.totalSize
+                                ? hfModel.totalSize
+                                : preview?.requirements?.diskGB
+                                    ? `${preview.requirements.diskGB}GB`
+                                    : t('common.notAvailable')}
                         </div>
                     </div>
                 </div>
@@ -398,10 +400,17 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {isHF ? (
                     <>
-                        {'longDescriptionMarkdown' in selectedModel && selectedModel.longDescriptionMarkdown && (
+                        {isHF && (hfModel?.longDescriptionHtml || hfModel?.longDescriptionMarkdown) && (
                             <div className="rounded-xl border border-border/40 bg-muted/10 p-4">
                                 <h3 className="text-xxs font-bold text-muted-foreground mb-2">{t('common.details')}</h3>
-                                <div className="text-sm whitespace-pre-wrap leading-relaxed">{selectedModel.longDescriptionMarkdown}</div>
+                                {hfModel.longDescriptionHtml ? (
+                                    <div
+                                        className="text-sm rich-text overflow-hidden"
+                                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(hfModel.longDescriptionHtml) }}
+                                    />
+                                ) : (
+                                    <div className="text-sm whitespace-pre-wrap leading-relaxed">{hfModel.longDescriptionMarkdown}</div>
+                                )}
                             </div>
                         )}
 

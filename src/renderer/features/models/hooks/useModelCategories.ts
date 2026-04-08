@@ -57,6 +57,7 @@ function createBaseCategories(t: (k: string) => string): ModelCategory[] {
         { id: 'codex', name: 'Codex', icon: Code2, color: 'text-info', bg: 'bg-info/10', providerId: 'codex', models: [] },
         { id: 'opencode', name: t('modelSelector.openCode'), icon: Code2, color: 'text-info', bg: 'bg-info/10', providerId: 'opencode', models: [] },
         { id: 'ollama', name: t('providerLabels.ollama'), icon: Server, color: 'text-warning', bg: 'bg-warning/10', providerId: 'ollama', models: [] },
+        { id: 'huggingface', name: t('marketplace.tabs.huggingface'), icon: Box, color: 'text-info', bg: 'bg-info/10', providerId: 'huggingface', models: [] },
         { id: 'nvidia', name: 'NVIDIA', icon: Zap, color: 'text-success', bg: 'bg-success/10', providerId: 'nvidia', models: [] },
         { id: 'custom', name: t('modelSelector.proxyCustom'), icon: Box, color: 'text-muted-foreground', bg: 'bg-muted/10', providerId: 'openai', models: [] }
     ];
@@ -88,7 +89,7 @@ function populateCategories(props: PopulateProps) {
         local: 'ollama',
         'local-ai': 'ollama',
         'lm_studio': 'ollama',
-        huggingface: 'custom',
+        huggingface: 'huggingface',
         'sd-cpp': 'custom',
         custom: 'custom'
     };
@@ -150,7 +151,7 @@ function mapModelToItem(
     const description = typeof m.description === 'string' ? m.description : undefined;
 
     const disabled = ctx.isModelDisabled(id, provider);
-    const isLocalProvider = provider === 'ollama' || provider === 'local' || provider === 'lm_studio';
+    const isLocalProvider = provider === 'ollama' || provider === 'local' || provider === 'lm_studio' || provider === 'huggingface';
     const pricing = extractPricing(m.pricing);
     const hasPricing = !!(pricing?.input || pricing?.output);
     const isFree = !hasPricing && ((typeof m.label === 'string' && m.label.toLowerCase().includes('free')) ||

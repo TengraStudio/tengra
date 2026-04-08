@@ -7,14 +7,28 @@ describe('command-validator.util', () => {
         expect(result.allowed).toBe(false);
     });
 
-    it('blocks shell control operators', () => {
+    it('allows basic command chaining', () => {
         const result = validateCommand('echo hello && whoami');
-        expect(result.allowed).toBe(false);
+        expect(result.allowed).toBe(true);
+    });
+
+    it('allows bounded multi-line PowerShell scripts', () => {
+        const result = validateCommand('$path = "$env:USERPROFILE\\Desktop"\nif (-not (Test-Path $path)) { New-Item -ItemType Directory -Path $path }');
+        expect(result.allowed).toBe(true);
     });
 
     it('allows safe commands', () => {
         const result = validateCommand('echo hello');
         expect(result.allowed).toBe(true);
     });
-});
 
+    it('blocks shell expansion operators', () => {
+        const result = validateCommand('echo $(whoami)');
+        expect(result.allowed).toBe(false);
+    });
+
+    it('blocks commands ending with separator', () => {
+        const result = validateCommand('git status &&');
+        expect(result.allowed).toBe(false);
+    });
+});

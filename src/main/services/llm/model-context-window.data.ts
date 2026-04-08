@@ -11,12 +11,16 @@ const EXACT_CONTEXT_WINDOWS: Readonly<Record<string, number>> = {
     'gpt-5.1-codex-max': 400000,
     'gpt-5.2': 400000,
     'gpt-5.2-codex': 400000,
-    'gpt-5.4': 400000,
+    'gpt-5.4': 1050000,
     'gpt-5.4-mini': 400000,
+    'gpt-5.4-nano': 400000,
     'gpt-5.2-pro': 400000,
     'gpt-5-pro': 400000,
-    'gpt-4.1': 1047576,
-    'gpt-4.1-mini': 1047576,
+    'gpt-5-mini': 400000,
+    'gpt-5-nano': 400000,
+    'gpt-4.1': 1050000,
+    'gpt-4.1-mini': 1050000,
+    'gpt-4.1-nano': 1050000,
     'gpt-4o': 128000,
     'gpt-4o-mini': 128000,
     'o1': 200000,
@@ -25,8 +29,12 @@ const EXACT_CONTEXT_WINDOWS: Readonly<Record<string, number>> = {
     'o3': 200000,
     'o3-mini': 200000,
     'o3-pro': 200000,
+    'o4-mini': 200000,
 
     // Anthropic Claude family (current docs table is 200K default)
+    'claude-opus-4.6': 1000000,
+    'claude-sonnet-4-6': 1000000,
+    'claude-haiku-4-5': 200000,
     'claude-3-opus-20240229': 200000,
     'claude-3-haiku-20240307': 200000,
     'claude-3-5-haiku-20241022': 200000,
@@ -37,13 +45,19 @@ const EXACT_CONTEXT_WINDOWS: Readonly<Record<string, number>> = {
     'claude-opus-4-1-20250805': 200000,
 
     // Gemini official model page
-    'gemini-2.5-pro': 1048576,
+    'gemini-2.5-pro': 2097152,
+    'gemini-2.5-flash': 1048576,
+    'gemini-3.1-pro-preview': 1048576,
+    'gemini-3.1-flash-preview': 1048576,
+    'gemini-3.1-flash-lite': 1048576,
+    'gemini-3.1-flash-image': 65536,
+    'gemini-3-pro-image': 65536,
 };
 
 const CONTEXT_PATTERNS: ReadonlyArray<{ pattern: RegExp; size: number }> = [
     // OpenAI
     { pattern: /^gpt-5/i, size: 400000 },
-    { pattern: /^gpt-4\.1/i, size: 1047576 },
+    { pattern: /^gpt-4\.1/i, size: 1050000 },
     { pattern: /^gpt-4o/i, size: 128000 },
     { pattern: /^o[134]\b/i, size: 200000 },
 
@@ -51,7 +65,7 @@ const CONTEXT_PATTERNS: ReadonlyArray<{ pattern: RegExp; size: number }> = [
     { pattern: /^claude/i, size: 200000 },
 
     // Gemini
-    { pattern: /^gemini-2\.5-pro/i, size: 1048576 },
+    { pattern: /^gemini-2\.5-pro/i, size: 2097152 },
     { pattern: /^gemini-(2\.5|3)/i, size: 1048576 },
 
     // Llama families

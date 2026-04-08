@@ -35,6 +35,7 @@ interface PersistConversationAssistantMessageParams {
     model: string;
     provider: string;
     systemMode?: SystemMode;
+    assistantId?: string;
 }
 
 export async function recordConversationTokens(
@@ -83,6 +84,7 @@ export async function persistConversationAssistantMessage(
         model,
         provider,
         systemMode,
+        assistantId,
     } = params;
     const assistantMetadata = buildConversationAssistantMetadata({
         messages,
@@ -106,6 +108,7 @@ export async function persistConversationAssistantMessage(
         model,
         provider,
         timestamp: Date.now(),
+        assistantId,
     }));
 
     await chatSessionRegistryService.appendMessage(

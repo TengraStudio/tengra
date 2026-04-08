@@ -10,7 +10,8 @@ export function readAiPresentationMetadata(
     message: Message,
     displayContent: string,
     streamingReasoning?: string,
-    language?: string
+    language?: string,
+    isStreaming?: boolean
 ): AiPresentationMetadata | null {
     const rawPresentation = message.metadata?.aiPresentation;
     if (rawPresentation && typeof rawPresentation === 'object' && !Array.isArray(rawPresentation)) {
@@ -31,11 +32,12 @@ export function readAiPresentationMetadata(
         }),
         content: displayContent,
         reasoning: streamingReasoning ?? message.reasoning,
+        reasonings: message.reasonings,
         sources: message.sources,
         images: message.images,
         toolCalls: message.toolCalls,
         toolResults: Array.isArray(message.toolResults) ? message.toolResults : undefined,
-        isStreaming: false,
+        isStreaming: isStreaming ?? false,
         language,
     });
 }

@@ -188,7 +188,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-muted-foreground/70 ml-1">
+                            <label className="typo-body font-bold text-muted-foreground/70 ml-1">
                                 {t('prompts.library.namePlaceholder')}
                             </label>
                             <Input
@@ -202,7 +202,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-muted-foreground/70 ml-1">
+                            <label className="typo-body font-bold text-muted-foreground/70 ml-1">
                                 {t('prompts.library.categoryPlaceholder')}
                             </label>
                             <Input
@@ -217,7 +217,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-muted-foreground/70 ml-1">
+                        <label className="typo-body font-bold text-muted-foreground/70 ml-1">
                             {t('prompts.library.descriptionPlaceholder')}
                         </label>
                         <Input
@@ -231,7 +231,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-muted-foreground/70 ml-1">
+                        <label className="typo-body font-bold text-muted-foreground/70 ml-1">
                             {t('prompts.library.templatePlaceholder')}
                         </label>
                         <Textarea
@@ -286,7 +286,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                                     {tp.category && (
                                         <Badge
                                             variant="secondary"
-                                            className="px-2 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/10 text-[9px] font-bold whitespace-nowrap"
+                                            className="px-2 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/10 typo-body font-bold whitespace-nowrap"
                                         >
                                             <Tag className="w-2 h-2 mr-1" />
                                             {tp.category}
@@ -326,7 +326,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                             <div className="mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
                                 <div className="relative group/code">
                                     <div className="absolute top-3 right-3 flex items-center gap-2 opacity-0 group-hover/code:opacity-100 transition-opacity">
-                                        <div className="px-2 py-1 rounded bg-background/80 border border-border/50 text-[8px] font-bold text-muted-foreground backdrop-blur-sm">
+                                        <div className="px-2 py-1 rounded bg-background/80 border border-border/50 typo-body font-bold text-muted-foreground backdrop-blur-sm">
                                             MONO
                                         </div>
                                     </div>
@@ -353,7 +353,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                         <Button
                             variant="outline"
                             onClick={startCreate}
-                            className="rounded-full h-10 px-6 border-primary/30 text-primary hover:bg-primary/5 font-bold text-[10px]"
+                            className="rounded-full h-10 px-6 border-primary/30 text-primary hover:bg-primary/5 font-bold typo-body"
                         >
                             {t('prompts.library.createFirstPrompt')}
                         </Button>

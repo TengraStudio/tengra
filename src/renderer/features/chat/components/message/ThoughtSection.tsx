@@ -1,5 +1,5 @@
 import { Brain, Sparkles } from 'lucide-react';
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 
@@ -7,8 +7,9 @@ type TranslationFn = (key: string, options?: Record<string, string | number>) =>
 
 export interface ThoughtSectionProps {
     thought: string | null;
-    isThoughtExpanded: boolean;
-    setIsThoughtExpanded: (expanded: boolean) => void;
+    initiallyExpanded?: boolean;
+    segmentIndex?: number;
+    isStreaming?: boolean;
     t: TranslationFn;
 }
 
@@ -21,10 +22,27 @@ export interface ThoughtSectionProps {
 export const ThoughtSection = memo(
     ({
         thought,
-        isThoughtExpanded,
-        setIsThoughtExpanded,
+        initiallyExpanded = false,
+        segmentIndex,
+        isStreaming = false,
         t,
     }: ThoughtSectionProps) => {
+        const [isThoughtExpanded, setIsThoughtExpanded] = useState(initiallyExpanded);
+        const title = typeof segmentIndex === 'number'
+            ? t('workspaceAgent.thoughtStep', { index: segmentIndex + 1 })
+            : t('messageBubble.showThought');
+
+        // Auto-expand if the prop changes to true (e.g. during streaming)
+        useEffect(() => {
+            if (initiallyExpanded) {
+                const rafId = requestAnimationFrame(() => {
+                    setIsThoughtExpanded(true);
+                });
+                return () => cancelAnimationFrame(rafId);
+            }
+            return undefined;
+        }, [initiallyExpanded]);
+
         if (!thought) {
             return null;
         }
@@ -58,15 +76,11 @@ export const ThoughtSection = memo(
                                 )}
                             />
                         </div>
-                        <span className="text-xxs font-bold">
-                            {isThoughtExpanded
-                                ? t('messageBubble.TengraThinking')
-                                : t('messageBubble.showThought')}
-                        </span>
+                        <span className="text-xxs font-bold">{title}</span>
                         <Sparkles
                             className={cn(
                                 'w-3 h-3 transition-opacity duration-300',
-                                isThoughtExpanded ? 'opacity-100' : 'opacity-0'
+                                isStreaming || isThoughtExpanded ? 'opacity-100' : 'opacity-0'
                             )}
                         />
                         <span

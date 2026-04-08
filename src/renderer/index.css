@@ -733,7 +733,7 @@
 
     /* Code Blocks */
     .markdown-body pre {
-        @apply my-4 overflow-hidden rounded-xl border border-border/50 bg-card/70;
+        @apply bg-muted/70;
     }
 
     .markdown-body table {

@@ -2,7 +2,7 @@ import { Badge } from '@renderer/components/ui/badge';
 import { Button } from '@renderer/components/ui/button';
 import { Input } from '@renderer/components/ui/input';
 import { cn } from '@renderer/lib/utils';
-import { Check, Download, History, RefreshCw,Search, Sparkles, Zap } from 'lucide-react';
+import { Check, Download, History, RefreshCw, Search, Sparkles, Zap } from 'lucide-react';
 import React from 'react';
 
 import { ImageComparisonResult, ImageHistoryEntry } from '../../types';
@@ -59,7 +59,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                         <h3 className="text-lg font-bold text-foreground group-hover/history:text-primary transition-colors">
                             {t('settings.images.historyTitle')}
                         </h3>
-                        <p className="text-[10px] text-muted-foreground mt-1 font-bold opacity-60">
+                        <p className="typo-body text-muted-foreground mt-1 font-bold opacity-60">
                             {historyEntries.length} {t('settings.images.historyEntries')}
                         </p>
                     </div>
@@ -68,7 +68,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={() => { void handleExportHistory(); }}
-                    className="h-10 px-6 rounded-xl border-border/40 bg-muted/20 text-[10px] font-bold text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all active:scale-95 flex items-center gap-3 shadow-sm"
+                    className="h-10 px-6 rounded-xl border-border/40 bg-muted/20 typo-body font-bold text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all active:scale-95 flex items-center gap-3 shadow-sm"
                 >
                     <Download className="w-3.5 h-3.5" />
                     {t('settings.images.exportHistory')}
@@ -88,7 +88,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
             {historyEntries.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/5 border-2 border-dashed border-border/20 rounded-2xl opacity-40 group-hover/history:border-primary/20 transition-all duration-500 relative z-10">
                     <History className="w-8 h-8 mb-4 text-muted-foreground" />
-                    <p className="text-[10px] font-bold text-muted-foreground px-6">
+                    <p className="typo-body font-bold text-muted-foreground px-6">
                         {t('settings.images.noHistory')}
                     </p>
                 </div>
@@ -102,13 +102,13 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                                         {entry.prompt}
                                     </div>
                                     <div className="flex flex-wrap items-center gap-3">
-                                        <Badge variant="outline" className="h-5 text-[8px] px-2 font-bold border-border/40 text-muted-foreground/60 rounded-md">
+                                        <Badge variant="outline" className="h-5 typo-body px-2 font-bold border-border/40 text-muted-foreground/60 rounded-md">
                                             {entry.provider}
                                         </Badge>
-                                        <Badge variant="outline" className="h-5 text-[8px] px-2 font-bold border-border/40 text-muted-foreground/60 rounded-md bg-muted/20">
+                                        <Badge variant="outline" className="h-5 typo-body px-2 font-bold border-border/40 text-muted-foreground/60 rounded-md bg-muted/20">
                                             {entry.width}x{entry.height}
                                         </Badge>
-                                        <span className="text-[9px] font-bold text-muted-foreground/30">
+                                        <span className="typo-body font-bold text-muted-foreground/30">
                                             {new Date(entry.createdAt).toLocaleString(t('common.locale'))}
                                         </span>
                                     </div>
@@ -117,7 +117,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                                     variant="outline"
                                     size="sm"
                                     onClick={() => { void handleRegenerate(entry.id); }}
-                                    className="h-8 px-4 rounded-lg text-[9px] font-bold bg-primary/5 text-primary border-primary/20 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all active:scale-95 shadow-sm shrink-0"
+                                    className="h-8 px-4 rounded-lg typo-body font-bold bg-primary/5 text-primary border-primary/20 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all active:scale-95 shadow-sm shrink-0"
                                 >
                                     <RefreshCw className="w-3 h-3 mr-2" />
                                     {t('settings.images.regenerate')}
@@ -127,14 +127,14 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                                 <div className="flex items-center gap-2 group/check cursor-pointer" onClick={() => toggleCompareSelection(entry.id)}>
                                     <div className={cn(
                                         "h-5 w-5 rounded-md border transition-all flex items-center justify-center",
-                                        selectedCompareIds.includes(entry.id) 
-                                            ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20" 
+                                        selectedCompareIds.includes(entry.id)
+                                            ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20"
                                             : "border-border/40 bg-muted/20 text-transparent group-hover/check:border-primary/40"
                                     )}>
                                         <Check className="w-3.5 h-3.5" />
                                     </div>
                                     <span className={cn(
-                                        "text-[9px] font-bold   transition-colors",
+                                        "typo-body font-bold   transition-colors",
                                         selectedCompareIds.includes(entry.id) ? "text-primary" : "text-muted-foreground"
                                     )}>
                                         {t('common.select')}
@@ -150,7 +150,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                 <Button
                     onClick={() => { void handleRunComparison(); }}
                     disabled={selectedCompareIds.length < 2}
-                    className="h-12 px-8 rounded-2xl bg-foreground text-background hover:bg-primary hover:text-primary-foreground text-[10px] font-bold transition-all active:scale-95 disabled:opacity-40 disabled:scale-100 shadow-xl shadow-black/10 flex items-center gap-3"
+                    className="h-12 px-8 rounded-2xl bg-foreground text-background hover:bg-primary hover:text-primary-foreground typo-body font-bold transition-all active:scale-95 disabled:opacity-40 disabled:scale-100 shadow-xl shadow-black/10 flex items-center gap-3"
                 >
                     <Zap className="w-4 h-4" />
                     {t('settings.images.compareRun')}
@@ -160,7 +160,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                         variant="outline"
                         size="sm"
                         onClick={() => setSelectedCompareIds([])}
-                        className="h-10 px-6 rounded-xl border-border/40 text-[9px] font-bold text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all active:scale-95 shadow-sm"
+                        className="h-10 px-6 rounded-xl border-border/40 typo-body font-bold text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all active:scale-95 shadow-sm"
                     >
                         {t('settings.images.compareClear')}
                     </Button>
@@ -168,7 +168,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                         variant="outline"
                         size="sm"
                         onClick={() => { void handleExportComparison(); }}
-                        className="h-10 px-6 rounded-xl border-border/40 text-[9px] font-bold text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all active:scale-95 shadow-sm"
+                        className="h-10 px-6 rounded-xl border-border/40 typo-body font-bold text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all active:scale-95 shadow-sm"
                     >
                         {t('settings.images.compareExport')}
                     </Button>
@@ -176,7 +176,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                         variant="outline"
                         size="sm"
                         onClick={() => { void handleShareComparison(); }}
-                        className="h-10 px-6 rounded-xl border-border/40 text-[9px] font-bold text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all active:scale-95 shadow-sm"
+                        className="h-10 px-6 rounded-xl border-border/40 typo-body font-bold text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all active:scale-95 shadow-sm"
                     >
                         {t('settings.images.compareShare')}
                     </Button>
@@ -188,20 +188,20 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                     <div className="p-2 rounded-xl bg-primary/10 text-primary group-hover/analytics:rotate-12 transition-transform">
                         <Sparkles className="w-4 h-4" />
                     </div>
-                    <div className="text-[10px] font-bold text-foreground">{t('settings.images.analyticsTitle')}</div>
+                    <div className="typo-body font-bold text-foreground">{t('settings.images.analyticsTitle')}</div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                     <div className="space-y-1">
-                        <div className="text-[9px] font-bold text-muted-foreground/40">{t('settings.images.analyticsTotal')}</div>
+                        <div className="typo-body font-bold text-muted-foreground/40">{t('settings.images.analyticsTotal')}</div>
                         <div className="text-2xl font-bold text-foreground tabular-nums group-hover/analytics:text-primary transition-colors">{imageAnalytics.totalGenerated}</div>
                     </div>
                     <div className="space-y-1">
-                        <div className="text-[9px] font-bold text-muted-foreground/40">{t('settings.images.analyticsAverageSteps')}</div>
+                        <div className="typo-body font-bold text-muted-foreground/40">{t('settings.images.analyticsAverageSteps')}</div>
                         <div className="text-2xl font-bold text-foreground tabular-nums group-hover/analytics:text-primary transition-colors">{imageAnalytics.averageSteps}</div>
                     </div>
                     {typeof imageAnalytics.averageDurationMs === 'number' && (
-                         <div className="space-y-1">
-                            <div className="text-[9px] font-bold text-muted-foreground/40">{t('settings.images.analyticsAverageDuration')}</div>
+                        <div className="space-y-1">
+                            <div className="typo-body font-bold text-muted-foreground/40">{t('settings.images.analyticsAverageDuration')}</div>
                             <div className="text-2xl font-bold text-foreground tabular-nums group-hover/analytics:text-primary transition-colors">
                                 {Math.round(imageAnalytics.averageDurationMs / 1000)}<span className="text-xs ml-1">s</span>
                             </div>
@@ -218,15 +218,15 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                                 <Zap className="w-4 h-4" />
                             </div>
                             <div>
-                                <div className="text-[10px] font-bold text-foreground">{t('settings.images.compareTitle')}</div>
-                                <div className="text-[9px] font-bold text-primary">{comparisonResult.ids.length} Models Analyzed</div>
+                                <div className="typo-body font-bold text-foreground">{t('settings.images.compareTitle')}</div>
+                                <div className="typo-body font-bold text-primary">{comparisonResult.ids.length} Models Analyzed</div>
                             </div>
                         </div>
                         <div className="text-right">
                             <div className="text-xl font-bold text-foreground">
                                 {Math.round(comparisonResult.summary.averageFileSizeBytes / 1024)} <span className="text-xs font-bold text-muted-foreground/40">kb</span>
                             </div>
-                            <div className="text-[9px] font-bold text-muted-foreground/40 mt-1">Average Size</div>
+                            <div className="typo-body font-bold text-muted-foreground/40 mt-1">Average Size</div>
                         </div>
                     </div>
 
@@ -234,17 +234,17 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {comparisonResult.entries.map(entry => (
                                 <div key={entry.id} className="bg-background/80 border border-primary/10 rounded-xl p-4 space-y-3 shadow-inner hover:border-primary/40 transition-all duration-500">
-                                    <div className="text-[10px] font-bold text-foreground truncate border-b border-primary/5 pb-2">
+                                    <div className="typo-body font-bold text-foreground truncate border-b border-primary/5 pb-2">
                                         {entry.prompt}
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
-                                            <div className="text-[8px] font-bold text-muted-foreground/40">Resolution</div>
-                                            <div className="text-[10px] font-bold">{entry.width}x{entry.height}</div>
+                                            <div className="typo-body font-bold text-muted-foreground/40">Resolution</div>
+                                            <div className="typo-body font-bold">{entry.width}x{entry.height}</div>
                                         </div>
                                         <div>
-                                            <div className="text-[8px] font-bold text-muted-foreground/40">Efficiency</div>
-                                            <div className="text-[10px] font-bold">{entry.bytesPerPixel} <span className="text-[8px] opacity-40">bpp</span></div>
+                                            <div className="typo-body font-bold text-muted-foreground/40">Efficiency</div>
+                                            <div className="typo-body font-bold">{entry.bytesPerPixel} <span className="typo-body opacity-40">bpp</span></div>
                                         </div>
                                     </div>
                                 </div>
@@ -256,11 +256,11 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
 
             {comparisonShareCode && (
                 <div className="space-y-3 relative z-10 animate-in slide-in-from-bottom-4 duration-700">
-                     <div className="text-[10px] font-bold text-muted-foreground/40 px-1 px-1">Comparison Logic Hash</div>
-                     <textarea
+                    <div className="typo-body font-bold text-muted-foreground/40 px-1 px-1">Comparison Logic Hash</div>
+                    <textarea
                         value={comparisonShareCode}
                         readOnly
-                        className="tw-min-h-32 w-full rounded-2xl border border-border/40 bg-muted/40 p-6 font-mono text-[9px] text-muted-foreground leading-relaxed shadow-inner focus:ring-1 focus:ring-primary/20 outline-none transition-all custom-scrollbar"
+                        className="tw-min-h-32 w-full rounded-2xl border border-border/40 bg-muted/40 p-6 font-mono typo-body text-muted-foreground leading-relaxed shadow-inner focus:ring-1 focus:ring-primary/20 outline-none transition-all custom-scrollbar"
                     />
                 </div>
             )}

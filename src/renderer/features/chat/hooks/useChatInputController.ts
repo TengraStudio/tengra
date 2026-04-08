@@ -7,6 +7,7 @@ import { useChat } from '@/context/ChatContext';
 import { useModel } from '@/context/ModelContext';
 import { useTranslation } from '@/i18n';
 import { recordChatHealthEvent } from '@/store/chat-health.store';
+import { updateSettings } from '@/store/settings.store';
 import { Prompt } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -333,6 +334,27 @@ export function useChatInputController() {
         if (files.length > 0) { void processFile(files[0]); }
     }, [processFile]);
 
+    const updatePermissionPolicy = useCallback((next: WorkspaceAgentPermissionPolicy | ((prev: WorkspaceAgentPermissionPolicy) => WorkspaceAgentPermissionPolicy)) => {
+        setPermissionPolicy(prev => {
+            const resolved = typeof next === 'function' ? next(prev) : next;
+            if (appSettings) {
+                void updateSettings({
+                    ...appSettings,
+                    general: {
+                        ...appSettings.general,
+                        agentCommandPolicy: resolved.commandPolicy,
+                        agentPathPolicy: resolved.pathPolicy,
+                        agentAllowedCommands: resolved.allowedCommands,
+                        agentDisallowedCommands: resolved.disallowedCommands,
+                        agentAllowedPaths: resolved.allowedPaths,
+                    }
+                });
+            }
+            return resolved;
+        });
+    }, [appSettings]);
+
+
     return {
         input, setInput: updateInput, attachments, removeAttachment, processFile,
         isLoading, sendMessage, sendMessageWithTelemetry, stopGeneration, isListening, startListening, stopListening,
@@ -342,7 +364,7 @@ export function useChatInputController() {
         language, t, isDragging, setIsDragging, isEnhancing, handleEnhancePrompt, onDrop,
         lastError, clearLastError,
         systemMode, setSystemMode,
-        permissionPolicy, setPermissionPolicy,
+        permissionPolicy, setPermissionPolicy: updatePermissionPolicy,
         chatInputMaxLength: CHAT_INPUT_MAX_LENGTH,
         isImageOnlyModel,
         imageRequestCount,

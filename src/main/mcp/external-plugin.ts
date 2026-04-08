@@ -83,6 +83,7 @@ export class ExternalMcpPlugin implements IMcpPlugin {
             args: string[];
             env?: Record<string, string>;
             isRemote?: boolean;
+            tools?: Array<{ name: string; description?: string }>;
         }
     ) {
         this.source = config.isRemote ? 'remote' : 'user';
@@ -286,9 +287,11 @@ export class ExternalMcpPlugin implements IMcpPlugin {
 
     async getActions(): Promise<Array<{ name: string; description: string }>> {
         // In a real MCP implementation, we would call 'tools/list'
-        // For now, we rely on the discovery phase to provide tool names
-        // or we implement a full MCP client handshake here.
-        return [];
+        // For now, use the manifest-provided tool list until handshake support is added.
+        return (this.config.tools ?? []).map(tool => ({
+            name: tool.name,
+            description: tool.description ?? tool.name,
+        }));
     }
 
     async dispatch(actionName: string, args: JsonObject): Promise<McpDispatchResult> {

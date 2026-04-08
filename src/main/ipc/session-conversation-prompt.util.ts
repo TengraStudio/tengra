@@ -7,15 +7,26 @@ import { sanitizeObject } from '@shared/utils/sanitize.util';
 
 import { getConversationLanguage } from './session-conversation-runtime.util';
 
-export function injectConversationSystemPrompt(
-    messages: Message[],
-    provider: string,
-    model: string,
-    settingsService: SettingsService,
-    localeService: LocaleService,
-    permissionPolicy?: string,
-    evidenceContext?: string
-): Message[] {
+export interface ConversationPromptOptions {
+    messages: Message[];
+    provider: string;
+    model: string;
+    settingsService: SettingsService;
+    localeService: LocaleService;
+    permissionPolicy?: string;
+    evidenceContext?: string;
+}
+
+export function injectConversationSystemPrompt(options: ConversationPromptOptions): Message[] {
+    const {
+        messages,
+        provider,
+        model,
+        settingsService,
+        localeService,
+        permissionPolicy,
+        evidenceContext,
+    } = options;
     const settings = settingsService.getSettings();
     const configuredLanguage = getConversationLanguage(settingsService);
     const localePack = localeService.getLocalePack(configuredLanguage);

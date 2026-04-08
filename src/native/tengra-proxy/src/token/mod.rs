@@ -17,115 +17,144 @@ pub async fn background_refresh_loop() {
     let client = reqwest::Client::new();
 
     loop {
+        if let Err(error) = refresh_due_tokens_once(&client).await {
+            eprintln!("[ERROR] Token loop: {}", error);
+        }
         sleep(Duration::from_secs(REFRESH_SCAN_INTERVAL_SECS)).await;
+    }
+}
 
-        let mut tokens_to_refresh = Vec::new();
+pub async fn refresh_account_token(
+    account: &serde_json::Value,
+) -> Result<Option<AuthToken>, String> {
+    let Some((account_id, provider, token)) = refresh_candidate_for_account(account) else {
+        return Ok(None);
+    };
+    let client = reqwest::Client::new();
+    refresh_token_with_retries(&client, &account_id, &provider, token).await
+}
 
-        match db::get_all_linked_accounts().await {
-            Ok(accounts) => {
-                let now = chrono::Utc::now().timestamp_millis();
+async fn refresh_due_tokens_once(client: &reqwest::Client) -> Result<(), String> {
+    let accounts = db::get_all_linked_accounts()
+        .await
+        .map_err(|error| format!("DB'den hesap çekilemedi: {}", error))?;
+    let mut tokens_to_refresh = Vec::new();
+    let now = chrono::Utc::now().timestamp_millis();
 
-                for account in accounts {
-                    let id = account
-                        .get("id")
-                        .and_then(|value| value.as_str())
-                        .unwrap_or_default()
-                        .to_string();
-                    let provider = account
-                        .get("provider")
-                        .and_then(|value| value.as_str())
-                        .unwrap_or_default()
-                        .to_string();
-
-                    if id.is_empty() || provider.is_empty() {
-                        continue;
-                    }
-
-                    if !provider_supports_background_refresh(&provider) {
-                        continue;
-                    }
-
-                    if let Some(mut auth_token) = build_refresh_candidate(&account, &id, &provider)
-                    {
-                        let expires_at = auth_token.expires_at.unwrap_or_default();
-                        let ttl = expires_at - now;
-
-                        if ttl < refresh_threshold_ms(&provider) {
-                            auth_token.id = id.clone();
-                            auth_token.provider = provider.clone();
-                            tokens_to_refresh.push((id, provider, auth_token));
-                        }
-                    }
-                }
-            }
-            Err(e) => {
-                eprintln!("[ERROR] Token loop: DB'den hesap çekilemedi: {}", e);
-                continue;
-            }
-        }
-
-        if tokens_to_refresh.is_empty() {
+    for account in accounts {
+        let Some((account_id, provider, token)) = refresh_candidate_for_account(&account) else {
             continue;
-        }
-
-        eprintln!("[DEBUG] Tokens to refresh: {}", tokens_to_refresh.len());
-
-        for (account_id, provider, token) in tokens_to_refresh {
-            eprintln!("[DEBUG] Refreshing token for {} ({})", account_id, provider);
-
-            let (client_id, client_secret_opt) = load_provider_client_config(&provider).await;
-            let mut success = false;
-            let mut retry_count = 0;
-
-            while !success && retry_count < REFRESH_MAX_RETRIES {
-                let response = execute_refresh(
-                    &client,
-                    token.clone(),
-                    client_id.clone(),
-                    client_secret_opt.clone(),
-                )
-                .await;
-
-                if response.success {
-                    if let Some(new_token) = response.token {
-                        if let Ok(json_val) = serde_json::to_value(&new_token) {
-                            if let Err(e) =
-                                db::update_token_data(&account_id, &provider, json_val).await
-                            {
-                                eprintln!("[ERROR] Refresh DB save failed: {}", e);
-                            } else {
-                                eprintln!(
-                                    "[DEBUG] Refresh successful for {} ({})",
-                                    account_id, provider
-                                );
-                                success = true;
-                            }
-                        }
-                    }
-                } else {
-                    retry_count += 1;
-                    eprintln!(
-                        "[WARN] Failed to refresh {} ({}, attempt {}/{}): {:?}",
-                        account_id, provider, retry_count, REFRESH_MAX_RETRIES, response.error
-                    );
-                    if response.invalidate_account {
-                        if let Err(error) = db::clear_account_tokens(&account_id, &provider).await {
-                            eprintln!(
-                                "[ERROR] Failed to invalidate {} ({}): {}",
-                                account_id, provider, error
-                            );
-                        } else {
-                            eprintln!("[WARN] Invalidated stored tokens for {} ({}) after refresh auth failure", account_id, provider);
-                        }
-                        break;
-                    }
-                    if retry_count < REFRESH_MAX_RETRIES {
-                        sleep(Duration::from_secs(5 * retry_count as u64)).await;
-                    }
-                }
-            }
+        };
+        let ttl = token.expires_at.unwrap_or_default() - now;
+        if ttl < refresh_threshold_ms(&provider) {
+            tokens_to_refresh.push((account_id, provider, token));
         }
     }
+
+    if !tokens_to_refresh.is_empty() {
+        eprintln!("[DEBUG] Tokens to refresh: {}", tokens_to_refresh.len());
+    }
+
+    for (account_id, provider, token) in tokens_to_refresh {
+        let _ = refresh_token_with_retries(client, &account_id, &provider, token).await?;
+    }
+
+    Ok(())
+}
+
+fn refresh_candidate_for_account(
+    account: &serde_json::Value,
+) -> Option<(String, String, AuthToken)> {
+    let id = account
+        .get("id")
+        .and_then(|value| value.as_str())?
+        .to_string();
+    let provider = account
+        .get("provider")
+        .and_then(|value| value.as_str())?
+        .to_string();
+    if id.is_empty() || provider.is_empty() || !provider_supports_background_refresh(&provider) {
+        return None;
+    }
+    let token = build_refresh_candidate(account, &id, &provider)?;
+    Some((id, provider, token))
+}
+
+async fn refresh_token_with_retries(
+    client: &reqwest::Client,
+    account_id: &str,
+    provider: &str,
+    token: AuthToken,
+) -> Result<Option<AuthToken>, String> {
+    eprintln!("[DEBUG] Refreshing token for {} ({})", account_id, provider);
+    let (client_id, client_secret_opt) = load_provider_client_config(provider).await;
+
+    for attempt in 1..=REFRESH_MAX_RETRIES {
+        let response = execute_refresh(
+            client,
+            token.clone(),
+            client_id.clone(),
+            client_secret_opt.clone(),
+        )
+        .await;
+        if response.success {
+            return persist_refresh_response(account_id, provider, response.token).await;
+        }
+        handle_refresh_failure(account_id, provider, attempt, &response).await?;
+    }
+
+    Ok(None)
+}
+
+async fn persist_refresh_response(
+    account_id: &str,
+    provider: &str,
+    token: Option<AuthToken>,
+) -> Result<Option<AuthToken>, String> {
+    let Some(new_token) = token else {
+        return Ok(None);
+    };
+    let json_val = serde_json::to_value(&new_token)
+        .map_err(|error| format!("Refresh token serialization failed: {}", error))?;
+    db::update_token_data(account_id, provider, json_val)
+        .await
+        .map_err(|error| format!("Refresh DB save failed: {}", error))?;
+    eprintln!(
+        "[DEBUG] Refresh successful for {} ({})",
+        account_id, provider
+    );
+    Ok(Some(new_token))
+}
+
+async fn handle_refresh_failure(
+    account_id: &str,
+    provider: &str,
+    attempt: usize,
+    response: &refresh::RefreshResponse,
+) -> Result<(), String> {
+    eprintln!(
+        "[WARN] Failed to refresh {} ({}, attempt {}/{}): {:?}",
+        account_id, provider, attempt, REFRESH_MAX_RETRIES, response.error
+    );
+    if response.invalidate_account {
+        db::clear_account_tokens(account_id, provider)
+            .await
+            .map_err(|error| {
+                format!(
+                    "Failed to invalidate {} ({}): {}",
+                    account_id, provider, error
+                )
+            })?;
+        eprintln!(
+            "[WARN] Invalidated stored tokens for {} ({}) after refresh auth failure",
+            account_id, provider
+        );
+        return Err("Stored OAuth token was invalidated".to_string());
+    }
+    if attempt < REFRESH_MAX_RETRIES {
+        sleep(Duration::from_secs(5 * attempt as u64)).await;
+    }
+    Ok(())
 }
 
 fn provider_supports_background_refresh(provider: &str) -> bool {

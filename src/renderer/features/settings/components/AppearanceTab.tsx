@@ -85,19 +85,19 @@ function TerminalPreview({
                     </div>
                     <div className="flex items-center gap-3 pl-6">
                         <div className="h-4 w-1.5 rounded-full bg-success/20" />
-                        <span style={{ color: theme.green }} className="text-[0.85em] font-medium">
+                        <span style={{ color: theme.green }} className="typo-body font-medium">
                             {t('settings.terminalPreview.workspaceReady')}
                         </span>
                     </div>
                     <div className="flex items-center gap-3 pl-6">
                         <div className="h-4 w-1.5 rounded-full bg-warning/20" />
-                        <span style={{ color: theme.yellow }} className="text-[0.85em] font-medium">
+                        <span style={{ color: theme.yellow }} className="typo-body font-medium">
                             {t('settings.terminalPreview.jobsPaused')}
                         </span>
                     </div>
                     <div className="flex items-center gap-3 pl-6">
                         <div className="h-4 w-1.5 rounded-full bg-blue-500/20" />
-                        <span style={{ color: theme.blue }} className="text-[0.85em] font-medium">
+                        <span style={{ color: theme.blue }} className="typo-body font-medium">
                             {t('settings.terminalPreview.suggestionsEnabled')}
                         </span>
                     </div>
@@ -258,7 +258,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                                         <SelectItem key={opt.value} value={opt.value} className="text-sm">
                                             <div className="flex items-center gap-3">
                                                 <span>{opt.label}</span>
-                                                <Badge variant="outline" className="h-5 border-border/20 px-2 text-[10px] opacity-60">
+                                                <Badge variant="outline" className="h-5 border-border/20 px-2 typo-body opacity-60">
                                                     {opt.type}
                                                 </Badge>
                                             </div>
@@ -341,7 +341,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                             <div className="h-1 w-1 rounded-full bg-border/40" />
                             <div className="text-xs text-muted-foreground/60">{resolvedAppFont.label}</div>
                         </div>
-                        <Badge variant="outline" className="h-6 border-border/40 bg-muted/20 px-3 text-[10px] text-muted-foreground/60">
+                        <Badge variant="outline" className="h-6 border-border/40 bg-muted/20 px-3 typo-body text-muted-foreground/60">
                             {settings?.general.fontSize}px
                         </Badge>
                     </div>

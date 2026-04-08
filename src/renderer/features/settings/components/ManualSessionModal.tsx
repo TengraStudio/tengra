@@ -50,9 +50,9 @@ const InstructionsSection: React.FC<{ t: (key: string) => string }> = ({ t }) =>
             {[1, 2, 3, 4, 5].map(step => (
                 <li
                     key={step}
-                    className="flex items-start gap-3 p-3 rounded-xl bg-muted/20 border border-border/10 text-[11px] text-muted-foreground font-medium leading-relaxed transition-all hover:bg-muted/30"
+                    className="flex items-start gap-3 p-3 rounded-xl bg-muted/20 border border-border/10 typo-body text-muted-foreground font-medium leading-relaxed transition-all hover:bg-muted/30"
                 >
-                    <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-[9px] border border-primary/20">
+                    <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-primary/10 text-primary font-bold typo-body border border-primary/20">
                         {step}
                     </span>
                     <span>{t(`auth.sessionKeyInstructions.step${step}`)}</span>
@@ -235,7 +235,7 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
                         variant="ghost"
                         onClick={onClose}
                         disabled={isSaving || success}
-                        className="w-full sm:flex-1 h-12 rounded-2xl text-[11px] font-bold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all disabled:opacity-50 border border-border/40"
+                        className="w-full sm:flex-1 h-12 rounded-2xl typo-body font-bold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all disabled:opacity-50 border border-border/40"
                     >
                         {t('common.cancel')}
                     </Button>
@@ -244,7 +244,7 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
                         onClick={() => void handleSave()}
                         disabled={isSaving || success || !sessionKey.startsWith('sk-ant-sid')}
                         className={cn(
-                            'w-full sm:tw-flex-2 h-12 rounded-2xl text-[11px] font-bold   flex items-center justify-center gap-3 transition-all shadow-xl',
+                            'w-full sm:tw-flex-2 h-12 rounded-2xl typo-body font-bold   flex items-center justify-center gap-3 transition-all shadow-xl',
                             success
                                 ? 'bg-success hover:bg-success text-foreground shadow-emerald-500/20'
                                 : 'bg-primary text-primary-foreground shadow-primary/20 hover:scale-[1.02] active:scale-95 disabled:scale-100 disabled:opacity-40 disabled:grayscale'

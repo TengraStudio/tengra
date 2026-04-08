@@ -48,7 +48,7 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
                     </div>
                 </div>
                 <div className="flex items-center gap-3 px-2 py-1 rounded-full bg-background/50 border border-border/50">
-                    <span className="text-[10px] font-bold text-muted-foreground/80">
+                    <span className="typo-body font-bold text-muted-foreground/80">
                         {t('settings.usageLimits.enable')}
                     </span>
                     <Switch
@@ -128,7 +128,7 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
                             </div>
                         </div>
                         {periodLimit.type === 'percentage' && (
-                            <div className="text-[10px] text-muted-foreground/70 mt-1.5 px-1 font-medium bg-muted/30 py-1.5 rounded-md border border-border/20">
+                            <div className="typo-body text-muted-foreground/70 mt-1.5 px-1 font-medium bg-muted/30 py-1.5 rounded-md border border-border/20">
                                 ✨{' '}
                                 {t('settings.usageLimits.percentHint', {
                                     count: Math.round(copilotRemaining * (periodLimit.value / 100)),

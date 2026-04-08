@@ -167,7 +167,7 @@ export function WorkspaceStatsCards({ stats, analysis, t, formatBytes }: Workspa
                 <div className="text-2xl font-bold text-foreground">{stats ? formatBytes(stats.totalSize) : '0 B'}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-[10px) font-bold text-muted-foreground mb-1">{t('workspaceDashboard.modules')}</div>
+                <div className="typo-body font-bold text-muted-foreground mb-1">{t('workspaceDashboard.modules')}</div>
                 <div className="text-2xl font-bold text-foreground">{analysis.monorepo?.packages.length ?? Object.keys(analysis.dependencies).length}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">

@@ -287,7 +287,7 @@ export function SettingsPage({
                         <section className="settings-shell-card px-5 py-5 lg:px-7"> 
                             <div className="mt-3 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                                 <div className="space-y-2">
-                                    <h2 className="text-[1.8rem] font-semibold text-foreground sm:text-[2rem]">
+                                    <h2 className="typo-body font-semibold text-foreground">
                                         {activeNavigationItem?.label ?? t('settings.title')}
                                     </h2>
                                     <p className="max-w-2xl text-sm leading-6 text-muted-foreground/90">

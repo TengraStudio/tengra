@@ -15,7 +15,11 @@ interface ChatErrorBannerProps {
 const ERROR_MESSAGE_KEYS: Record<ChatErrorKind, string> = {
     provider_unavailable: 'chat.errorProviderUnavailable',
     quota_exhausted: 'chat.errorQuotaExhausted',
+    capacity_exhausted: 'chat.errorCapacityExhausted',
+    rate_limited: 'chat.errorRateLimited',
     timeout: 'chat.errorTimeout',
+    auth: 'chat.errorAuth',
+    permission_denied: 'chat.errorPermissionDenied',
     generic: 'chat.errorGeneric',
 };
 
@@ -23,7 +27,11 @@ const ERROR_MESSAGE_KEYS: Record<ChatErrorKind, string> = {
 const ERROR_COLORS: Record<ChatErrorKind, string> = {
     provider_unavailable: 'border-warning/50 bg-warning/10',
     quota_exhausted: 'border-destructive/50 bg-destructive/10',
+    capacity_exhausted: 'border-warning/50 bg-warning/10',
+    rate_limited: 'border-warning/50 bg-warning/10',
     timeout: 'border-warning/50 bg-warning/10',
+    auth: 'border-destructive/50 bg-destructive/10',
+    permission_denied: 'border-destructive/50 bg-destructive/10',
     generic: 'border-destructive/50 bg-destructive/10',
 };
 
@@ -40,7 +48,9 @@ export const ChatErrorBanner: React.FC<ChatErrorBannerProps> = ({
     const { t } = useTranslation();
 
     const showSwitchModel =
-        errorKind === 'provider_unavailable' || errorKind === 'quota_exhausted';
+        errorKind === 'provider_unavailable'
+        || errorKind === 'quota_exhausted'
+        || errorKind === 'capacity_exhausted';
 
     return (
         <div

@@ -123,7 +123,7 @@ export const PermissionSelector: React.FC<PermissionSelectorProps> = ({
                     >
                         <SelectTrigger className="h-8 min-w-[148px] gap-1.5 rounded-lg border-none bg-muted/30 pl-2 pr-2 transition-all hover:bg-muted/50 focus:ring-0">
                             <PresetIcon preset={preset} />
-                            <span className="truncate text-[10px] font-bold opacity-80">
+                            <span className="truncate typo-body font-bold opacity-80">
                                 {getPresetLabel(preset, t)}
                             </span>
                         </SelectTrigger>
@@ -131,7 +131,7 @@ export const PermissionSelector: React.FC<PermissionSelectorProps> = ({
                             align="end"
                             className="min-w-[180px] rounded-xl border-border/40 bg-background/95 shadow-none"
                         >
-                            <SelectItem value="high" className="py-2 text-[10px] font-bold">
+                            <SelectItem value="high" className="py-2 typo-body font-bold">
                                 <div className="flex items-center gap-2">
                                     <ShieldCheck className="h-3 w-3 text-primary" />
                                     {t('workspaceAgent.permissions.policy.blocked')}
@@ -139,14 +139,14 @@ export const PermissionSelector: React.FC<PermissionSelectorProps> = ({
                             </SelectItem>
                             <SelectItem
                                 value="standard"
-                                className="py-2 text-[10px] font-bold"
+                                className="py-2 typo-body font-bold"
                             >
                                 <div className="flex items-center gap-2">
                                     <Shield className="h-3 w-3 text-warning" />
                                     {t('workspaceAgent.permissions.policy.ask-every-time')}
                                 </div>
                             </SelectItem>
-                            <SelectItem value="full" className="py-2 text-[10px] font-bold">
+                            <SelectItem value="full" className="py-2 typo-body font-bold">
                                 <div className="flex items-center gap-2 text-destructive">
                                     <ShieldAlert className="h-3 w-3" />
                                     {t('workspaceAgent.permissions.policy.full-access')}

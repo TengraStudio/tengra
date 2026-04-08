@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { McpDispatcher } from '@main/mcp/dispatcher';
@@ -17,7 +18,10 @@ import { SystemService } from '@main/services/system/system.service';
 import { DockerService } from '@main/services/workspace/docker.service';
 import { GitService } from '@main/services/workspace/git.service';
 import { SSHService } from '@main/services/workspace/ssh.service';
+import { TerminalService } from '@main/services/workspace/terminal.service';
+import { validateCommand } from '@main/utils/command-validator.util';
 import { SESSION_RUNTIME_EVENTS } from '@shared/constants/session-runtime-events';
+import { ToolDefinition } from '@shared/types/chat';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { WorkspaceStep, WorkspaceStepStatus } from '@shared/types/council';
 
@@ -45,6 +49,7 @@ export interface ToolExecutorOptions {
     security: SecurityService;
     mcp: McpDispatcher;
     llm: LLMService;
+    terminal: TerminalService;
 }
 
 export interface ToolExecutionContext {
@@ -55,22 +60,38 @@ export interface ToolExecutionContext {
 
 export class ToolExecutor {
     private static readonly DEFAULT_TIMEOUT_MS = 30000;
+    private static readonly MAX_BATCH_WRITE_FILES = 50;
+    private static readonly MAX_BATCH_READ_FILES = 20;
+    private static readonly MAX_PATCH_EDITS = 20;
+    private static readonly MAX_SEARCH_RESULTS = 200;
+    private static readonly MAX_TERMINAL_WRITE_SIZE = 20000;
+    private static readonly MAX_TERMINAL_READ_BYTES = 60000;
+    private static readonly MAX_TERMINAL_WAIT_MS = 120000;
+    private static readonly TERMINAL_POLL_INTERVAL_MS = 250;
+    private static readonly MAX_TOOL_CACHE_ENTRIES = 200;
+    private static readonly TOOL_DEFINITIONS_CACHE_TTL_MS = 5000;
     private static readonly TOOL_TIMEOUT_MS: Partial<Record<string, number>> = {
+        execute_command: 180000,
         generate_image: 120000,
+        terminal_session_wait: 125000,
     };
-    private static readonly LIST_DIRECTORY_RESULT_HINT = 'This directory listing is complete for the requested path. For listing or count questions, answer directly from entryCount, fileCount, directoryCount, and entries. Do not call file_exists or get_system_info for the same path unless the user explicitly needs different evidence.';
 
     private idempotentTools = new Set([
         'read_file',
+        'read_many_files',
+        'resolve_path',
+        'search_files',
         'list_directory',
         'list_dir',
         'file_exists',
         'get_file_info',
+        'create_directory',
         'get_system_info',
         'search_web'
     ]);
 
     private toolCache = new Map<string, { result: InternalToolResult; timestamp: number }>();
+    private toolDefinitionsCache: { definitions: ToolDefinition[]; timestamp: number } | null = null;
     private readonly CACHE_TTL = 30000; // 30 seconds
 
     constructor(private options: ToolExecutorOptions) { }
@@ -96,15 +117,26 @@ export class ToolExecutor {
     }
 
     async getToolDefinitions() {
+        if (
+            this.toolDefinitionsCache &&
+            Date.now() - this.toolDefinitionsCache.timestamp < ToolExecutor.TOOL_DEFINITIONS_CACHE_TTL_MS
+        ) {
+            return this.toolDefinitionsCache.definitions;
+        }
+
         const { toolDefinitions } = await import('./tool-definitions');
 
         // Add MCP tools if available
+        let definitions: ToolDefinition[];
         if (this.options.mcp) {
             const mcpTools = await this.options.mcp.getToolDefinitions();
-            return [...toolDefinitions, ...mcpTools];
+            definitions = [...toolDefinitions, ...mcpTools];
+        } else {
+            definitions = toolDefinitions;
         }
 
-        return toolDefinitions;
+        this.toolDefinitionsCache = { definitions, timestamp: Date.now() };
+        return definitions;
     }
 
     async execute(name: string, args: JsonObject, context?: ToolExecutionContext): Promise<InternalToolResult> {
@@ -143,7 +175,11 @@ export class ToolExecutor {
                 { args }
             );
 
-            const executionPromise = this.routeToolCall(name, args, context);
+            const executionContext: ToolExecutionContext = {
+                ...context,
+                timeoutMs,
+            };
+            const executionPromise = this.routeToolCall(name, args, executionContext);
 
             if (timeoutMs <= 0) {
                 return await executionPromise;
@@ -157,12 +193,21 @@ export class ToolExecutor {
 
             appLogger.info(
                 'ToolExecutor',
-                `Tool execution completed (id=${executionId}, name=${name}, success=${result.success}, durationMs=${Date.now() - startedAt}, errorType=${result.errorType ?? 'none'})`
+                `Tool execution completed (id=${executionId}, name=${name}, success=${result.success}, durationMs=${Date.now() - startedAt}, errorType=${result.errorType ?? 'none'})`,
+                result.success
+                    ? undefined
+                    : { error: result.error ?? 'Tool returned failure without an error message', result: result.result }
             );
 
             // AGT-10: Update cache for idempotent tools
             if (result.success && this.idempotentTools.has(name)) {
                 const cacheKey = `${name}:${JSON.stringify(args)}`;
+                if (this.toolCache.size >= ToolExecutor.MAX_TOOL_CACHE_ENTRIES) {
+                    const oldestKey = this.toolCache.keys().next().value;
+                    if (typeof oldestKey === 'string') {
+                        this.toolCache.delete(oldestKey);
+                    }
+                }
                 this.toolCache.set(cacheKey, { result, timestamp: Date.now() });
             }
 
@@ -196,8 +241,13 @@ export class ToolExecutor {
             }
 
             const handlers: Partial<Record<string, (toolArgs: JsonObject) => Promise<InternalToolResult>>> = {
+                resolve_path: (toolArgs) => this.handleResolvePath(toolArgs),
                 read_file: (toolArgs) => this.handleFileRead(toolArgs),
+                read_many_files: (toolArgs) => this.handleReadManyFiles(toolArgs),
                 write_file: (toolArgs) => this.handleFileWrite(toolArgs),
+                write_files: (toolArgs) => this.handleWriteFiles(toolArgs),
+                patch_file: (toolArgs) => this.handlePatchFile(toolArgs),
+                search_files: (toolArgs) => this.handleSearchFiles(toolArgs),
                 list_directory: (toolArgs) => this.handleListDir(toolArgs),
                 list_dir: (toolArgs) => this.handleListDir(toolArgs),
                 file_exists: (toolArgs) => this.handleFileExists(toolArgs),
@@ -206,7 +256,15 @@ export class ToolExecutor {
                 delete_file: (toolArgs) => this.handleDeleteFile(toolArgs),
                 copy_file: (toolArgs) => this.handleCopyFile(toolArgs),
                 move_file: (toolArgs) => this.handleMoveFile(toolArgs),
-                execute_command: (toolArgs) => this.handleCommand(toolArgs),
+                execute_command: (toolArgs) => this.handleCommand(toolArgs, context),
+                terminal_session_start: (toolArgs) => this.handleTerminalSessionStart(toolArgs, context),
+                terminal_session_write: (toolArgs) => this.handleTerminalSessionWrite(toolArgs),
+                terminal_session_read: (toolArgs) => this.handleTerminalSessionRead(toolArgs),
+                terminal_session_wait: (toolArgs) => this.handleTerminalSessionWait(toolArgs),
+                terminal_session_signal: (toolArgs) => this.handleTerminalSessionSignal(toolArgs),
+                terminal_session_stop: (toolArgs) => this.handleTerminalSessionStop(toolArgs),
+                terminal_session_list: () => this.handleTerminalSessionList(),
+                terminal_session_snapshot: (toolArgs) => this.handleTerminalSessionSnapshot(toolArgs),
                 search_web: (toolArgs) => this.handleWebSearch(toolArgs),
                 get_system_info: () => this.handleSystemInfo(),
                 generate_image: (toolArgs) => this.handleGenerateImage(toolArgs),
@@ -239,7 +297,14 @@ export class ToolExecutor {
 
     private categorizeError(message: string): InternalToolResult['errorType'] {
         const msg = message.toLowerCase();
-        if (msg.includes('permission') || msg.includes('access denied') || msg.includes('eacces')) {
+        if (
+            msg.includes('permission') ||
+            msg.includes('access denied') ||
+            msg.includes('eacces') ||
+            msg.includes('blocked by safety policy') ||
+            msg.includes('blocked operation') ||
+            msg.includes('invalid null control character')
+        ) {
             return 'permission';
         }
         if (msg.includes('not found') || msg.includes('enoent') || msg.includes('does not exist')) {
@@ -368,6 +433,76 @@ export class ToolExecutor {
         return normalized;
     }
 
+    private expandPathInput(inputPath: string): string {
+        let expandedPath = inputPath.trim();
+        expandedPath = expandedPath.replace(/%([^%]+)%/g, (_match, varName: string) => {
+            return process.env[varName] ?? process.env[varName.toUpperCase()] ?? `%${varName}%`;
+        });
+        expandedPath = expandedPath.replace(/\$env:([A-Za-z_][A-Za-z0-9_]*)/giu, (_match, varName: string) => {
+            return process.env[varName] ?? process.env[varName.toUpperCase()] ?? `$env:${varName}`;
+        });
+        expandedPath = expandedPath.replace(/\$([A-Za-z_][A-Za-z0-9_]*)/gu, (_match, varName: string) => {
+            return process.env[varName] ?? process.env[varName.toUpperCase()] ?? `$${varName}`;
+        });
+        if (expandedPath === '~' || expandedPath.startsWith('~/') || expandedPath.startsWith('~\\')) {
+            const homePath = process.env.USERPROFILE ?? process.env.HOME ?? '';
+            if (homePath.length > 0) {
+                expandedPath = path.join(homePath, expandedPath.slice(2));
+            }
+        }
+        return expandedPath;
+    }
+
+    private resolveUserPath(inputPath: string, basePath?: string): string {
+        const expandedPath = this.expandPathInput(inputPath);
+        if (path.isAbsolute(expandedPath)) {
+            return path.resolve(expandedPath);
+        }
+
+        const firstSegment = expandedPath.split(/[\\/]/u)[0]?.toLowerCase() ?? '';
+        const homeRelativeFolders = new Set(['desktop', 'documents', 'downloads', 'projects']);
+        const homePath = process.env.USERPROFILE ?? process.env.HOME ?? '';
+        if (homePath.length > 0 && homeRelativeFolders.has(firstSegment)) {
+            return path.resolve(homePath, expandedPath);
+        }
+
+        if (typeof basePath === 'string' && basePath.trim().length > 0) {
+            return path.resolve(this.expandPathInput(basePath), expandedPath);
+        }
+
+        return path.resolve(expandedPath);
+    }
+
+    private async handleResolvePath(args: JsonObject): Promise<InternalToolResult> {
+        if (typeof args['path'] !== 'string') { return { success: false, error: "Missing 'path' argument" }; }
+        const inputPath = args['path'];
+        const basePath = typeof args['basePath'] === 'string' ? args['basePath'] : undefined;
+        const resolvedPath = this.resolveUserPath(inputPath, basePath);
+        const parentPath = path.dirname(resolvedPath);
+        const [existsResult, parentExistsResult] = await Promise.all([
+            this.options.fileSystem.fileExists(resolvedPath),
+            this.options.fileSystem.fileExists(parentPath),
+        ]);
+
+        return {
+            success: true,
+            result: {
+                success: true,
+                resultKind: 'path_resolution',
+                inputPath,
+                basePath: basePath ?? null,
+                path: resolvedPath,
+                parentPath,
+                pathExists: existsResult.exists,
+                parentExists: parentExistsResult.exists,
+                complete: true,
+                displaySummary: parentExistsResult.exists
+                    ? `Resolved path: ${resolvedPath}`
+                    : `Resolved path but parent does not exist: ${resolvedPath}`,
+            },
+        };
+    }
+
     private async handleFileRead(args: JsonObject): Promise<InternalToolResult> {
         if (typeof args['path'] !== 'string') { return { success: false, error: "Missing 'path' argument" }; }
         const path = args['path'];
@@ -382,6 +517,44 @@ export class ToolExecutor {
         }
     }
 
+    private async handleReadManyFiles(args: JsonObject): Promise<InternalToolResult> {
+        if (!Array.isArray(args['paths'])) { return { success: false, error: "Missing 'paths' argument" }; }
+        const paths = args['paths'].filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+        if (paths.length === 0) {
+            return { success: false, error: 'At least one path is required' };
+        }
+        if (paths.length > ToolExecutor.MAX_BATCH_READ_FILES) {
+            return { success: false, error: `Too many files requested (max ${ToolExecutor.MAX_BATCH_READ_FILES})`, errorType: 'limit' };
+        }
+
+        const files = await Promise.all(paths.map(async (filePath): Promise<JsonObject> => {
+            const response = await this.options.fileSystem.readFile(filePath);
+            return {
+                path: filePath,
+                success: response.success,
+                content: response.success ? response.data ?? '' : null,
+                error: response.success ? null : response.error ?? 'Failed to read file',
+            };
+        }));
+        const failedCount = files.filter(file => file['success'] !== true).length;
+        return {
+            success: failedCount === 0,
+            result: {
+                success: failedCount === 0,
+                resultKind: 'multi_file_read',
+                complete: true,
+                requestedCount: paths.length,
+                readCount: files.length - failedCount,
+                failedCount,
+                files,
+                displaySummary: failedCount === 0
+                    ? `Read ${files.length} files`
+                    : `Read ${files.length - failedCount} of ${files.length} files; ${failedCount} failed`,
+            },
+            error: failedCount === 0 ? undefined : `${failedCount} file(s) failed to read`,
+        };
+    }
+
     private async handleFileWrite(args: JsonObject): Promise<InternalToolResult> {
         if (typeof args['path'] !== 'string') { return { success: false, error: "Missing 'path' argument" }; }
         if (typeof args['content'] !== 'string') { return { success: false, error: "Missing 'content' argument" }; }
@@ -389,10 +562,185 @@ export class ToolExecutor {
         const content = args['content'];
         try {
             await this.options.fileSystem.writeFile(path, content);
-            return { success: true };
+            const bytesWritten = Buffer.byteLength(content, 'utf8');
+            return {
+                success: true,
+                result: {
+                    success: true,
+                    resultKind: 'file_write',
+                    path,
+                    bytesWritten,
+                    complete: true,
+                    displaySummary: `Wrote ${bytesWritten} bytes to ${path}`,
+                },
+            };
         } catch (e) {
             return { success: false, error: String(e) };
         }
+    }
+
+    private async handleWriteFiles(args: JsonObject): Promise<InternalToolResult> {
+        if (!Array.isArray(args['files'])) { return { success: false, error: "Missing 'files' argument" }; }
+        if (args['files'].length === 0) {
+            return { success: false, error: 'At least one file is required' };
+        }
+        if (args['files'].length > ToolExecutor.MAX_BATCH_WRITE_FILES) {
+            return { success: false, error: `Too many files requested (max ${ToolExecutor.MAX_BATCH_WRITE_FILES})`, errorType: 'limit' };
+        }
+
+        const files = await Promise.all(args['files'].map(async (entry): Promise<JsonObject> => {
+            if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+                return { success: false, path: null, bytesWritten: 0, error: 'Invalid file entry' };
+            }
+            const record = entry as Record<string, JsonValue>;
+            const filePath = record['path'];
+            const content = record['content'];
+            if (typeof filePath !== 'string' || typeof content !== 'string') {
+                return { success: false, path: typeof filePath === 'string' ? filePath : null, bytesWritten: 0, error: 'Invalid path or content' };
+            }
+            const response = await this.options.fileSystem.writeFile(filePath, content);
+            const bytesWritten = response.success ? Buffer.byteLength(content, 'utf8') : 0;
+            return {
+                success: response.success,
+                path: filePath,
+                bytesWritten,
+                error: response.success ? null : response.error ?? 'Failed to write file',
+            };
+        }));
+
+        const failedCount = files.filter(file => file['success'] !== true).length;
+        const bytesWritten = files.reduce((total, file) => {
+            const count = typeof file['bytesWritten'] === 'number' ? file['bytesWritten'] : 0;
+            return total + count;
+        }, 0);
+        return {
+            success: failedCount === 0,
+            result: {
+                success: failedCount === 0,
+                resultKind: 'multi_file_write',
+                complete: true,
+                requestedCount: args['files'].length,
+                writtenCount: files.length - failedCount,
+                failedCount,
+                bytesWritten,
+                files,
+                displaySummary: failedCount === 0
+                    ? `Wrote ${files.length} files (${bytesWritten} bytes)`
+                    : `Wrote ${files.length - failedCount} of ${files.length} files; ${failedCount} failed`,
+            },
+            error: failedCount === 0 ? undefined : `${failedCount} file(s) failed to write`,
+        };
+    }
+
+    private parseLineEdits(value: JsonValue): Array<{ startLine: number; endLine: number; replacement: string }> | null {
+        if (!Array.isArray(value)) {
+            return null;
+        }
+        if (value.length === 0 || value.length > ToolExecutor.MAX_PATCH_EDITS) {
+            return null;
+        }
+        const edits: Array<{ startLine: number; endLine: number; replacement: string }> = [];
+        for (const item of value) {
+            if (!item || typeof item !== 'object' || Array.isArray(item)) {
+                return null;
+            }
+            const edit = item as Record<string, JsonValue>;
+            const startLine = edit['startLine'];
+            const endLine = edit['endLine'];
+            const replacement = edit['replacement'];
+            if (
+                typeof startLine !== 'number' ||
+                typeof endLine !== 'number' ||
+                !Number.isInteger(startLine) ||
+                !Number.isInteger(endLine) ||
+                typeof replacement !== 'string'
+            ) {
+                return null;
+            }
+            edits.push({ startLine, endLine, replacement });
+        }
+        return edits;
+    }
+
+    private async handlePatchFile(args: JsonObject): Promise<InternalToolResult> {
+        if (typeof args['path'] !== 'string') { return { success: false, error: "Missing 'path' argument" }; }
+        const filePath = args['path'];
+        const edits = this.parseLineEdits(args['edits'] ?? null);
+
+        if (edits) {
+            const response = await this.options.fileSystem.applyEdits(filePath, edits);
+            if (!response.success) {
+                return { success: false, error: response.error ?? 'Failed to apply edits' };
+            }
+            return {
+                success: true,
+                result: {
+                    success: true,
+                    resultKind: 'file_patch',
+                    path: filePath,
+                    editCount: edits.length,
+                    complete: true,
+                    displaySummary: `Applied ${edits.length} line edit(s) to ${filePath}`,
+                },
+            };
+        }
+
+        if (typeof args['search'] !== 'string' || typeof args['replace'] !== 'string') {
+            return { success: false, error: "Provide either 'edits' or both 'search' and 'replace'" };
+        }
+        const readResponse = await this.options.fileSystem.readFile(filePath);
+        if (!readResponse.success || typeof readResponse.data !== 'string') {
+            return { success: false, error: readResponse.error ?? 'Failed to read file before patching' };
+        }
+        if (!readResponse.data.includes(args['search'])) {
+            return { success: false, error: 'Search text was not found in file', errorType: 'notFound' };
+        }
+        const nextContent = readResponse.data.replace(args['search'], args['replace']);
+        const writeResponse = await this.options.fileSystem.writeFile(filePath, nextContent);
+        if (!writeResponse.success) {
+            return { success: false, error: writeResponse.error ?? 'Failed to write patched file' };
+        }
+        return {
+            success: true,
+            result: {
+                success: true,
+                resultKind: 'file_patch',
+                path: filePath,
+                editCount: 1,
+                complete: true,
+                displaySummary: `Applied exact-text patch to ${filePath}`,
+            },
+        };
+    }
+
+    private async handleSearchFiles(args: JsonObject): Promise<InternalToolResult> {
+        if (typeof args['rootPath'] !== 'string') { return { success: false, error: "Missing 'rootPath' argument" }; }
+        if (typeof args['pattern'] !== 'string' || args['pattern'].trim().length === 0) {
+            return { success: false, error: "Missing 'pattern' argument" };
+        }
+        const requestedLimit = typeof args['maxResults'] === 'number' && Number.isFinite(args['maxResults'])
+            ? Math.floor(args['maxResults'])
+            : 50;
+        const maxResults = Math.max(1, Math.min(requestedLimit, ToolExecutor.MAX_SEARCH_RESULTS));
+        const response = await this.options.fileSystem.searchFiles(args['rootPath'], args['pattern'], maxResults);
+        if (!response.success || !Array.isArray(response.data)) {
+            return { success: false, error: response.error ?? 'Failed to search files' };
+        }
+        const results = response.data.slice(0, maxResults);
+        return {
+            success: true,
+            result: {
+                success: true,
+                resultKind: 'file_search',
+                rootPath: args['rootPath'],
+                pattern: args['pattern'],
+                resultCount: results.length,
+                truncated: response.data.length > results.length,
+                results,
+                complete: true,
+                displaySummary: `Found ${results.length}${response.data.length > results.length ? ` of ${response.data.length}` : ''} file(s) matching '${args['pattern']}'`,
+            },
+        };
     }
 
     private async handleListDir(args: JsonObject): Promise<InternalToolResult> {
@@ -416,7 +764,6 @@ export class ToolExecutor {
                     fileCount,
                     directoryCount,
                     entries,
-                    _toolHint: ToolExecutor.LIST_DIRECTORY_RESULT_HINT,
                 },
             };
         } catch (e) {
@@ -450,11 +797,55 @@ export class ToolExecutor {
     }
 
     private async handleCreateDirectory(args: JsonObject): Promise<InternalToolResult> {
-        if (typeof args['path'] !== 'string') { return { success: false, error: "Missing 'path' argument" }; }
-        const path = args['path'];
+        if (typeof args['path'] !== 'string' || args['path'].trim().length === 0) {
+            return {
+                success: false,
+                result: {
+                    success: false,
+                    resultKind: 'directory_create',
+                    path: null,
+                    complete: false,
+                    retrySameCall: false,
+                    displaySummary: "Cannot create directory without a non-empty 'path' argument",
+                },
+                error: "Missing non-empty 'path' argument",
+                errorType: 'unknown',
+            };
+        }
+        const path = args['path'].trim();
         try {
+            const existedBefore = (await this.options.fileSystem.fileExists(path)).exists;
             const response = await this.options.fileSystem.createDirectory(path);
-            return { success: response.success, error: response.error ?? undefined };
+            if (!response.success) {
+                return {
+                    success: false,
+                    result: {
+                        success: false,
+                        resultKind: 'directory_create',
+                        path,
+                        pathExists: existedBefore,
+                        complete: false,
+                        displaySummary: `Failed to create directory: ${path}`,
+                    },
+                    error: response.error ?? 'Failed to create directory',
+                    errorType: response.error ? this.categorizeError(response.error) : 'unknown',
+                };
+            }
+            return {
+                success: true,
+                result: {
+                    success: true,
+                    resultKind: 'directory_create',
+                    path,
+                    pathExists: true,
+                    existedBefore,
+                    created: !existedBefore,
+                    complete: true,
+                    displaySummary: existedBefore
+                        ? `Directory already existed: ${path}`
+                        : `Created directory: ${path}`,
+                },
+            };
         } catch (e) {
             return { success: false, error: String(e) };
         }
@@ -495,16 +886,306 @@ export class ToolExecutor {
         }
     }
 
-    private async handleCommand(args: JsonObject): Promise<InternalToolResult> {
+    private getTailBytes(args: JsonObject, defaultBytes: number): number {
+        const requested = typeof args['tailBytes'] === 'number' && Number.isFinite(args['tailBytes'])
+            ? Math.floor(args['tailBytes'])
+            : defaultBytes;
+        return Math.max(1, Math.min(requested, ToolExecutor.MAX_TERMINAL_READ_BYTES));
+    }
+
+    private tailTerminalOutput(output: string, tailBytes: number): { output: string; bytes: number; truncated: boolean } {
+        const bytes = Buffer.byteLength(output, 'utf-8');
+        if (bytes <= tailBytes) {
+            return { output, bytes, truncated: false };
+        }
+        return {
+            output: Buffer.from(output, 'utf-8').subarray(bytes - tailBytes).toString('utf-8'),
+            bytes,
+            truncated: true,
+        };
+    }
+
+    private async wait(ms: number): Promise<void> {
+        await new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    private async handleTerminalSessionStart(args: JsonObject, context?: ToolExecutionContext): Promise<InternalToolResult> {
+        const sessionId = typeof args['sessionId'] === 'string' && args['sessionId'].trim().length > 0
+            ? args['sessionId'].trim()
+            : `agent-term-${randomUUID().slice(0, 8)}`;
+        const cwd = typeof args['cwd'] === 'string' && args['cwd'].trim().length > 0 ? args['cwd'] : undefined;
+        const shell = typeof args['shell'] === 'string' && args['shell'].trim().length > 0 ? args['shell'] : undefined;
+        const backendId = typeof args['backendId'] === 'string' && args['backendId'].trim().length > 0 ? args['backendId'] : undefined;
+        const title = typeof args['title'] === 'string' && args['title'].trim().length > 0 ? args['title'] : 'Agent Terminal';
+        const cols = typeof args['cols'] === 'number' && Number.isFinite(args['cols']) ? Math.max(20, Math.min(Math.floor(args['cols']), 300)) : 120;
+        const rows = typeof args['rows'] === 'number' && Number.isFinite(args['rows']) ? Math.max(8, Math.min(Math.floor(args['rows']), 100)) : 30;
+
+        const created = await this.options.terminal.createSession({
+            id: sessionId,
+            cwd,
+            shell,
+            backendId,
+            cols,
+            rows,
+            title,
+            workspaceId: context?.workspaceId,
+            metadata: { owner: 'agent', toolManaged: true },
+            onData: () => undefined,
+            onExit: () => undefined,
+        });
+
+        if (!created) {
+            return { success: false, error: `Failed to create terminal session '${sessionId}'` };
+        }
+
+        return {
+            success: true,
+            result: {
+                success: true,
+                resultKind: 'terminal_session',
+                sessionId,
+                cwd: cwd ?? null,
+                shell: shell ?? null,
+                title,
+                cols,
+                rows,
+                complete: true,
+                displaySummary: `Started terminal session ${sessionId}`,
+            },
+        };
+    }
+
+    private async handleTerminalSessionWrite(args: JsonObject): Promise<InternalToolResult> {
+        if (typeof args['sessionId'] !== 'string') { return { success: false, error: "Missing 'sessionId' argument" }; }
+        if (typeof args['input'] !== 'string') { return { success: false, error: "Missing 'input' argument" }; }
+
+        const sessionId = args['sessionId'];
+        const input = args['input'];
+        if (input.length > ToolExecutor.MAX_TERMINAL_WRITE_SIZE) {
+            return { success: false, error: 'Terminal input is too long', errorType: 'limit' };
+        }
+
+        const inputKind = args['inputKind'] === 'input' ? 'input' : 'command';
+        if (inputKind === 'command') {
+            const validation = validateCommand(input);
+            if (!validation.allowed) {
+                return { success: false, error: validation.reason ?? 'Command blocked by safety policy', errorType: 'permission' };
+            }
+        }
+
+        const submit = args['submit'] !== false;
+        const payload = submit && !input.endsWith('\r') && !input.endsWith('\n') ? `${input}\r` : input;
+        const written = this.options.terminal.write(sessionId, payload);
+        if (!written) {
+            return { success: false, error: `Terminal session '${sessionId}' was not found`, errorType: 'notFound' };
+        }
+
+        return {
+            success: true,
+            result: {
+                success: true,
+                resultKind: 'terminal_write',
+                sessionId,
+                inputKind,
+                submitted: submit,
+                bytesWritten: Buffer.byteLength(payload, 'utf-8'),
+                complete: true,
+                displaySummary: `Wrote ${inputKind} input to terminal session ${sessionId}`,
+            },
+        };
+    }
+
+    private async handleTerminalSessionRead(args: JsonObject): Promise<InternalToolResult> {
+        if (typeof args['sessionId'] !== 'string') { return { success: false, error: "Missing 'sessionId' argument" }; }
+        const sessionId = args['sessionId'];
+        if (!this.options.terminal.getActiveSessions().includes(sessionId)) {
+            return { success: false, error: `Terminal session '${sessionId}' was not found`, errorType: 'notFound' };
+        }
+
+        const buffer = await this.options.terminal.getSessionBuffer(sessionId);
+        const tail = this.tailTerminalOutput(buffer, this.getTailBytes(args, 20000));
+        return {
+            success: true,
+            result: {
+                success: true,
+                resultKind: 'terminal_read',
+                sessionId,
+                output: tail.output,
+                totalBytes: tail.bytes,
+                truncated: tail.truncated,
+                complete: true,
+                displaySummary: `Read terminal session ${sessionId}`,
+            },
+        };
+    }
+
+    private async handleTerminalSessionWait(args: JsonObject): Promise<InternalToolResult> {
+        if (typeof args['sessionId'] !== 'string') { return { success: false, error: "Missing 'sessionId' argument" }; }
+        const sessionId = args['sessionId'];
+        if (!this.options.terminal.getActiveSessions().includes(sessionId)) {
+            return { success: false, error: `Terminal session '${sessionId}' was not found`, errorType: 'notFound' };
+        }
+
+        const pattern = typeof args['pattern'] === 'string' && args['pattern'].length > 0 ? args['pattern'] : undefined;
+        const requestedTimeout = typeof args['timeoutMs'] === 'number' && Number.isFinite(args['timeoutMs'])
+            ? Math.floor(args['timeoutMs'])
+            : 30000;
+        const timeoutMs = Math.max(250, Math.min(requestedTimeout, ToolExecutor.MAX_TERMINAL_WAIT_MS));
+        const requestedIdle = typeof args['idleMs'] === 'number' && Number.isFinite(args['idleMs'])
+            ? Math.floor(args['idleMs'])
+            : 1000;
+        const idleMs = Math.max(250, Math.min(requestedIdle, 10000));
+        const startedAt = Date.now();
+        const maxPolls = Math.ceil(timeoutMs / ToolExecutor.TERMINAL_POLL_INTERVAL_MS);
+        let lastOutput = await this.options.terminal.getSessionBuffer(sessionId);
+        let lastChangeAt = Date.now();
+        let matched = pattern ? lastOutput.includes(pattern) : false;
+        let idle = false;
+
+        for (let poll = 0; poll < maxPolls && !matched && !idle; poll += 1) {
+            await this.wait(ToolExecutor.TERMINAL_POLL_INTERVAL_MS);
+            const nextOutput = await this.options.terminal.getSessionBuffer(sessionId);
+            if (nextOutput !== lastOutput) {
+                lastOutput = nextOutput;
+                lastChangeAt = Date.now();
+            }
+            matched = pattern ? nextOutput.includes(pattern) : false;
+            idle = Date.now() - lastChangeAt >= idleMs;
+        }
+
+        const elapsedMs = Date.now() - startedAt;
+        const timedOut = elapsedMs >= timeoutMs && !matched && !idle;
+        const tail = this.tailTerminalOutput(lastOutput, this.getTailBytes(args, 20000));
+        return {
+            success: true,
+            result: {
+                success: true,
+                resultKind: 'terminal_wait',
+                sessionId,
+                pattern: pattern ?? null,
+                matched,
+                idle,
+                timedOut,
+                elapsedMs,
+                output: tail.output,
+                totalBytes: tail.bytes,
+                truncated: tail.truncated,
+                complete: matched || idle,
+                displaySummary: matched
+                    ? `Terminal session ${sessionId} matched the requested pattern`
+                    : idle
+                      ? `Terminal session ${sessionId} became idle`
+                      : `Terminal session ${sessionId} wait timed out`,
+            },
+        };
+    }
+
+    private async handleTerminalSessionSignal(args: JsonObject): Promise<InternalToolResult> {
+        if (typeof args['sessionId'] !== 'string') { return { success: false, error: "Missing 'sessionId' argument" }; }
+        const sessionId = args['sessionId'];
+        const signal = typeof args['signal'] === 'string' ? args['signal'] : 'interrupt';
+        const payloads: Record<string, string> = {
+            interrupt: '\x03',
+            eof: '\x04',
+            enter: '\r',
+        };
+        const payload = payloads[signal];
+        if (!payload) {
+            return { success: false, error: "Invalid 'signal' argument. Use interrupt, eof, or enter." };
+        }
+        const written = this.options.terminal.write(sessionId, payload);
+        if (!written) {
+            return { success: false, error: `Terminal session '${sessionId}' was not found`, errorType: 'notFound' };
+        }
+        return { success: true, result: { resultKind: 'terminal_signal', sessionId, signal, complete: true } };
+    }
+
+    private async handleTerminalSessionStop(args: JsonObject): Promise<InternalToolResult> {
+        if (typeof args['sessionId'] !== 'string') { return { success: false, error: "Missing 'sessionId' argument" }; }
+        const stopped = this.options.terminal.kill(args['sessionId']);
+        if (!stopped) {
+            return { success: false, error: `Terminal session '${args['sessionId']}' was not found`, errorType: 'notFound' };
+        }
+        return { success: true, result: { resultKind: 'terminal_stop', sessionId: args['sessionId'], complete: true } };
+    }
+
+    private async handleTerminalSessionList(): Promise<InternalToolResult> {
+        const sessions = this.options.terminal.getActiveSessions();
+        return { success: true, result: { resultKind: 'terminal_sessions', sessions, count: sessions.length, complete: true } };
+    }
+
+    private async handleTerminalSessionSnapshot(args: JsonObject): Promise<InternalToolResult> {
+        if (typeof args['sessionId'] !== 'string') { return { success: false, error: "Missing 'sessionId' argument" }; }
+        const sessionId = args['sessionId'];
+        if (!this.options.terminal.getActiveSessions().includes(sessionId)) {
+            return { success: false, error: `Terminal session '${sessionId}' was not found`, errorType: 'notFound' };
+        }
+
+        const [buffer, analytics] = await Promise.all([
+            this.options.terminal.getSessionBuffer(sessionId),
+            this.options.terminal.getSessionAnalytics(sessionId),
+        ]);
+        const tail = this.tailTerminalOutput(buffer, this.getTailBytes(args, 30000));
+        const analyticsPayload: JsonObject = {
+            sessionId: analytics.sessionId,
+            bytes: analytics.bytes,
+            lineCount: analytics.lineCount,
+            commandCount: analytics.commandCount,
+            updatedAt: analytics.updatedAt,
+        };
+        return {
+            success: true,
+            result: {
+                resultKind: 'terminal_snapshot',
+                sessionId,
+                output: tail.output,
+                totalBytes: tail.bytes,
+                truncated: tail.truncated,
+                analytics: analyticsPayload,
+                complete: true,
+            },
+        };
+    }
+
+    private async handleCommand(args: JsonObject, context?: ToolExecutionContext): Promise<InternalToolResult> {
         if (typeof args['command'] !== 'string') { return { success: false, error: "Missing 'command' argument" }; }
         const command = args['command'];
         const cwd = (typeof args['cwd'] === 'string') ? args['cwd'] : undefined;
+        const timeout = typeof context?.timeoutMs === 'number' && Number.isFinite(context.timeoutMs)
+            ? Math.max(1000, context.timeoutMs - 1000)
+            : undefined;
         try {
-            const result = await this.options.command.executeCommand(command, { cwd });
+            const result = await this.options.command.executeCommand(command, { cwd, timeout });
+            const commandSuccess = result.success === true;
+            const commandPayload: JsonObject = {
+                success: commandSuccess,
+                resultKind: 'command_execution',
+                command,
+                cwd: cwd ?? null,
+                stdout: result.stdout ?? '',
+                stderr: result.stderr ?? '',
+                exitCode: typeof result.exitCode === 'number' ? result.exitCode : null,
+                complete: commandSuccess,
+                displaySummary: commandSuccess
+                    ? `Command completed with exit code ${typeof result.exitCode === 'number' ? result.exitCode : 0}`
+                    : 'Command failed before completing',
+            };
+
+            if (commandSuccess) {
+                return {
+                    success: true,
+                    result: commandPayload,
+                    error: undefined,
+                };
+            }
+
+            const commandError = result.error ?? result.stderr ?? 'Command execution failed';
+            commandPayload.displaySummary = `Command failed: ${commandError}`;
             return {
-                success: result.success,
-                result: result.stdout ?? '',
-                error: (result.stderr ?? result.error) ?? undefined
+                success: false,
+                result: commandPayload,
+                error: commandError,
+                errorType: this.categorizeError(commandError),
             };
         } catch (e) {
             return { success: false, error: String(e) };
@@ -560,7 +1241,11 @@ export class ToolExecutor {
             let server = 'default';
             let tool = name;
 
-            if (name.includes(':')) {
+            if (name.startsWith('mcp__')) {
+                const [, serviceName, ...toolParts] = name.split('__');
+                server = serviceName ?? 'default';
+                tool = toolParts.join('__') || name;
+            } else if (name.includes(':')) {
                 const parts = name.split(':');
                 server = parts[0] ?? 'default';
                 tool = parts[1] ?? name;

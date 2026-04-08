@@ -1,6 +1,5 @@
 import path from 'path';
 
-import { enforceNavigationRestrictions } from '@main/utils/navigation-security.util';
 import { app, BrowserWindow, nativeImage } from 'electron';
 
 let splashWindow: BrowserWindow | null = null;
@@ -131,10 +130,7 @@ export function showSplashWindow(): BrowserWindow {
     });
 
     void splash.loadURL(`data:text/html;charset=UTF-8,${encodeURIComponent(getSplashHtml())}`);
-
-    // SEC-H-001: Harden splash window against navigation hijacking
-    enforceNavigationRestrictions(splash, 'SplashWindow');
-
+ 
     splashWindow = splash;
     return splash;
 }

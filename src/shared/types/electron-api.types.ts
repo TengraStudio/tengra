@@ -155,9 +155,11 @@ export interface ElectronAPI {
         error?: string;
     }>;
     antigravityLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
+    ollamaLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
+    ollamaSignout?: (accountId?: string) => Promise<{ success: boolean; alreadySignedOut?: boolean; error?: string }>;
     codexLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
     claudeLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
-    cancelAuth: (provider: 'antigravity' | 'claude' | 'codex', state: string, accountId: string) => Promise<boolean>;
+    cancelAuth: (provider: 'antigravity' | 'claude' | 'codex' | 'ollama', state: string, accountId: string) => Promise<boolean>;
 
     saveClaudeSession: (
         sessionKey: string,

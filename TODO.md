@@ -63,6 +63,9 @@
 - [x] Fix workspace logo rendering by normalizing `safe-file` image URLs in the renderer and whitelisting workspace roots for protocol-backed logo previews.
 - [x] Normalize workspace logo `safe-file` rendering so uploaded/generated logos display immediately on Windows instead of resolving to broken image URLs.
 - [x] Standardize React hook imports and usage across components to resolve "Invalid hook call" runtime errors and achieve a clean build.
+- [x] Hardened GPU initialization with ANGLE D3D11 for Windows (Resolves EGL context creation errors)
+- [x] Fix Marketplace model recommendations to be hardware-aware (Prevents 70B models on low-VRAM hardware)
+- [x] Fix Sidebar download progress tracking (Percentage and progress bar visibility)
 
 ## Provider Follow-up
 - [ ] Research and prototype `groq` provider support, including OAuth flow validation and current API compatibility gaps
@@ -82,6 +85,14 @@
 - [x] Move session conversation streamed-assistant persistence, token accounting, and stream chunk transport into standalone runtime helpers so the IPC manager primarily orchestrates request flow instead of owning low-level side effects.
 - [x] Stabilize AI runtime session state and IPC contracts: resolved SessionJsonValueSchema circularity, aligned assistant envelope creation with strict schemas, and standardized i18n t() signatures for interpolation.
 - [x] Resolved renderer tool-turn loop execution type errors and addressed React hook cascading render warnings in useChatManager to achieve a clean, production-ready build.
+- [x] Infinite Tool-Loop Resilience: Implemented stubborn agent detection in `evaluateLoopSafety`, expanded `composeDeterministicAnswer` for all intents, and ensured evidence-aware finalization (forced termination) across all orchestration paths.
+- [x] Hardened AI tool execution after two-day log review: enabled local project/file requests to use tools outside Agent mode, allowed bounded multiline PowerShell commands, added structured tool result evidence, improved deterministic fallback answers, and normalized repeated command signatures to avoid blind retry loops.
+- [x] Added core file/project tools (`resolve_path`, `write_files`, `patch_file`, `search_files`, `read_many_files`) and moved optional MCP categories toward external plugin installation while keeping Ollama and image generation internal.
+- [x] Made optional MCP categories installable as runnable marketplace plugins with downloaded Node entrypoints, manifest-driven tool exposure, safe disabled-by-default registration, and registry entries for weather, web, network, Docker, Git, memory, screenshot, and SSH.
+- [x] Added persistent agent terminal tools (`terminal_session_start`, `terminal_session_write`, `terminal_session_read`, `terminal_session_wait`, `terminal_session_signal`, `terminal_session_stop`, `terminal_session_list`, `terminal_session_snapshot`) on top of the existing TerminalService so multi-step shell work can preserve cwd/env/output state.
+- [x] Optimized core tool execution by parallelizing bounded multi-file reads/writes, capping tool result cache growth, short-caching tool definitions, applying workspace path normalization to batch file arguments, and making file search stop as soon as the requested result limit is reached.
+- [x] Hardened tengra-proxy lifecycle and OAuth refresh readiness by preserving background proxy processes across app shutdown, reusing existing healthy proxy daemons on startup, running token refresh immediately on proxy boot, retrying Antigravity chat requests after 401-triggered refresh, and redacting sensitive HTTP headers from debug logs.
+- [x] Hardened chat reasoning/tool-loop rendering by segmenting streamed reasoning into persistent accordion blocks, rejecting empty `create_directory` path calls before filesystem access, treating failed tool calls as no-progress for loop safety, clamping oversized streamed/session content before IPC schema validation, and removing hot-path stream parser debug spam.
 
 ## AI Runtime Refactor Handoff Plan
 
@@ -544,4 +555,29 @@ Bu aşamada build/lint/type-check/test henüz özellikle çalıştırılmadı. S
 - [ ] Implement proactive notifications (finished task alerts via bot)
 - [ ] WhatsApp Integration (QR or API - Next Priority)
 
-*Updated on 2026-04-01*
+## AI Chat Interface & Reasoning Update
+- [x] Modernize AI chat interface with per-message collapsible reasoning blocks.
+- [x] Support multiple reasoning segments per message by transitioning to an array-based reasoning structure.
+- [x] Decouple tool execution displays, rendering each tool individually for improved transparency and consistent styling.
+- [x] Clean up AI runtime orchestration by removing hardcoded `isTurkish` checks and transitioning to a locale-agnostic i18n system.
+- [x] Standardize tool result summarization using i18n keys and unified presentation metadata.
+- [x] Transition to reasoning-first feedback by removing redundant tool result summaries and evidence-based text generation.
+- [x] Update chat streaming and persistence layers to handle accumulated reasoning segments.
+- [x] Clean up AI runtime orchestration and resolved type-check/lint regressions after refactor.
+
+- [x] Eliminate AI message duplication during session re-hydration by implementing database-level `UPSERT` and enforcing consistent `assistantId` propagation from renderer to main process across all chat flows (Standard, Multi-Model, and Tool-Loop).
+- [x] Optimized code rendering by migrating `CodeBlock` to `MonacoBlock` in the chat interface, resolving and standardizing TypeScript interfaces for better components and props.
+- [x] Resolved word and sentence merging in AI messages by disabling default whitespace trimming in the sanitization layer, preserving intentional spaces in multi-part content while maintaining strict trimming for system identifiers (chatId, model, provider).
+- [x] Optimized Ollama model context window by implementing dynamic `numCtx` resolution (supporting Model Registry defaults and per-model overrides in Settings), while stabilizing real-time reasoning extraction from `<think>` tags during streaming and ensuring unclosed tags are correctly stripped from the display content.
+
+- [x] Enhanced Marketplace model metadata extraction (pull counts, READMEs, submodels), integrated 9,000+ models into the unified `registry.json`, and implemented advanced filtering/sorting by author, category, and popularity.
+- [x] Decoupled Marketplace model tabs (Ollama, Hugging Face, Community), implemented full localization for tab labels and popularity metrics, and unified the type system to achieve a stable, production-ready build.
+
+- [x] Modernized the Marketplace model management: implemented pagination for Ollama model versions (10 per page), refined installation logic to prioritize direct background downloads by bypassing redundant metadata file creation, and updated "installed" status tracking to be inclusive of sub-models and accurate for Hugging Face repositories.
+- [x] Enhanced model detail presentation in the Marketplace: integrated the information panel into a responsive side-panel, added secure HTML/Markdown rendering for READMEs (XSS protected), and synchronized the "Installed" filter with the live runtime state for real-time accuracy.
+
+- [x] Marketplace Hardening: Implemented hardware-aware model recommendations (VRAM-optimized heuristics), fixed sidebar download progress tracking (state sync from history + percentage visibility), and enabled automatic local model list refresh upon successful marketplace installations.
+- [x] Hardened GPU initialization for Windows with --disable-gpu-sandbox and --disable-gpu-driver-bug-workarounds to resolve persistent EGL context errors.
+- [x] Corrected VRAM unit mismatches (MB vs Bytes) and parameter count normalization, fixing unrealistic (7000+) vs degraded (6) TPS estimates.
+
+*Updated on 2026-04-08*

@@ -133,7 +133,7 @@ const ModelActions: React.FC<{
             </div>
         )}
         {isSelected && modelIndex !== undefined && modelIndex >= 0 && (
-            <span className="text-[10px] font-bold text-primary bg-primary/20 px-2 py-0.5 rounded-full border border-primary/20 leading-none shadow-sm">
+            <span className="typo-body font-bold text-primary bg-primary/20 px-2 py-0.5 rounded-full border border-primary/20 leading-none shadow-sm">
                 {modelIndex + 1}
             </span>
         )}
@@ -209,7 +209,7 @@ export const ModelSelectorItem: React.FC<ModelSelectorItemProps> = ({
                         {model.label}
                         {model.type === 'image' && <ImageIcon className="w-3.5 h-3.5 text-success/80" />}
                         {(model.contextWindow ?? 0) > 0 && (
-                            <span className="text-[10px] font-bold text-muted-foreground/80 bg-muted/50 px-1.5 py-0.5 rounded-md border border-border/40 shadow-sm">
+                            <span className="typo-body font-bold text-muted-foreground/80 bg-muted/50 px-1.5 py-0.5 rounded-md border border-border/40 shadow-sm">
                                 {(model.contextWindow ?? 0) >= 1000000 ? `${(model.contextWindow ?? 0) / 1000000}M` : `${(model.contextWindow ?? 0) / 1000}K`}
                             </span>
                         )}

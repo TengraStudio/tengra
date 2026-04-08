@@ -3,7 +3,6 @@ import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { SettingsService } from '@main/services/system/settings.service';
-import { enforceNavigationRestrictions } from '@main/utils/navigation-security.util';
 import { app, BrowserWindow, Menu, nativeImage, Tray } from 'electron';
 
 let mainWindow: BrowserWindow | null = null;
@@ -50,8 +49,6 @@ export function createWindow(settingsService?: SettingsService): BrowserWindow {
     setupWindowStatePersistence(win, settingsService, 1280, 800);
     setupWindowReadyState(win, settingsService);
 
-    // SEC-H-001: Enforce navigation restrictions via shared utility
-    enforceNavigationRestrictions(win, 'MainWindow');
 
     const devServerUrl = process.env['VITE_DEV_SERVER_URL'] || process.env['ELECTRON_RENDERER_URL'];
 

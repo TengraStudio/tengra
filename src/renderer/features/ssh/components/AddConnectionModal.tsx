@@ -176,7 +176,7 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                                 setNewConnection({ ...newConnection, privateKey: e.target.value })
                             }
                             placeholder={t('ssh.placeholders.privateKey')}
-                            className="min-h-24 text-[0.8em] font-mono"
+                            className="min-h-24 typo-body font-mono"
                         />
                     </div>
                     <div className="space-y-1">

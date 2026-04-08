@@ -5,7 +5,9 @@ import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { ISystemService } from '@main/types/services';
 import { ServiceResponse, SystemInfo } from '@shared/types';
+import type { MarketplaceGpuDevice } from '@shared/types/marketplace';
 import { getErrorMessage } from '@shared/utils/error.util';
+import { app } from 'electron';
 
 export class SystemService extends BaseService implements ISystemService {
     private systemInfo?: SystemInfo;
@@ -110,6 +112,40 @@ export class SystemService extends BaseService implements ISystemService {
         } catch (e) {
             this.logError(`Failed to get disk space`, e);
             return { success: false, error: e instanceof Error ? e.message : String(e) };
+        }
+    }
+
+    /**
+     * Get storage statistics for a path.
+     */
+    async getStorageStats(targetPath?: string): Promise<ServiceResponse<{
+        total: number;
+        free: number;
+        used: number;
+        percent: number;
+        mountPath: string;
+    }>> {
+        try {
+            const fs = await import('fs/promises');
+            const mountPath = targetPath?.trim() || process.cwd();
+            const stats = await fs.statfs(mountPath);
+            const total = stats.blocks * stats.bsize;
+            const free = stats.bavail * stats.bsize;
+            const used = Math.max(0, total - free);
+            const percent = total > 0 ? (used / total) * 100 : 0;
+            return {
+                success: true,
+                data: {
+                    total,
+                    free,
+                    used,
+                    percent,
+                    mountPath,
+                },
+            };
+        } catch (e) {
+            this.logError('Failed to get storage stats', e);
+            return { success: false, error: getErrorMessage(e as Error) };
         }
     }
 
@@ -242,6 +278,28 @@ Add-Type -TypeDefinition $code
         };
     }
 
+    async getGpuInfo(): Promise<ServiceResponse<{
+        available: boolean;
+        source: 'electron' | 'none';
+        name?: string;
+        backends: string[];
+        devices: MarketplaceGpuDevice[];
+        totalVramBytes?: number;
+        totalVramUsedBytes?: number;
+    }>> {
+        try {
+            const [gpuInfo, featureStatus] = await Promise.all([
+                app.getGPUInfo('complete'),
+                Promise.resolve(app.getGPUFeatureStatus()),
+            ]);
+            const parsed = this.parseGpuInfo(gpuInfo, featureStatus);
+            return { success: true, data: parsed };
+        } catch (error) {
+            this.logError('Failed to get GPU info', error);
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
     async getProcessList(): Promise<ServiceResponse<{ output: string }>> {
         try {
             const command = process.platform === 'win32' ? 'tasklist' : 'ps';
@@ -281,6 +339,128 @@ Add-Type -TypeDefinition $code
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };
         }
+    }
+
+    private parseGpuInfo(gpuInfo: unknown, featureStatus: unknown): {
+        available: boolean;
+        source: 'electron' | 'none';
+        name?: string;
+        backends: string[];
+        devices: MarketplaceGpuDevice[];
+        totalVramBytes?: number;
+        totalVramUsedBytes?: number;
+    } {
+        const devices = this.extractGpuDevices(gpuInfo);
+        const backends = Array.from(new Set(devices.map(device => device.backend).filter((backend): backend is string => Boolean(backend))));
+        const totalVramBytes = devices.reduce((sum, device) => sum + (device.memoryBytes ?? 0), 0) || undefined;
+        const totalVramUsedBytes = devices.reduce((sum, device) => sum + (device.memoryUsedBytes ?? 0), 0) || undefined;
+        return {
+            available: devices.length > 0,
+            source: devices.length > 0 ? 'electron' : 'none',
+            name: this.resolveGpuDisplayName(devices),
+            backends: backends.length > 0 ? backends : this.extractBackendsFromFeatureStatus(featureStatus),
+            devices,
+            totalVramBytes,
+            totalVramUsedBytes,
+        };
+    }
+
+    private extractGpuDevices(gpuInfo: unknown): MarketplaceGpuDevice[] {
+        if (!gpuInfo || typeof gpuInfo !== 'object') {
+            return [];
+        }
+        const root = gpuInfo as Record<string, unknown>;
+        const gpuDevices = Array.isArray(root.gpuDevice) ? root.gpuDevice : Array.isArray(root.gpu_devices) ? root.gpu_devices : [];
+        return gpuDevices.map((device, index) => this.mapGpuDevice(device, index)).filter((device): device is MarketplaceGpuDevice => Boolean(device));
+    }
+
+    private mapGpuDevice(device: unknown, index: number): MarketplaceGpuDevice | null {
+        if (!device || typeof device !== 'object') {
+            return null;
+        }
+        const record = device as Record<string, unknown>;
+        const name = this.extractString(record.deviceString) || this.extractString(record.name) || this.extractString(record.vendorString) || `GPU ${index + 1}`;
+        return {
+            index,
+            name,
+            vendorId: this.extractNumber(record.vendorId) ?? undefined,
+            deviceId: this.extractNumber(record.deviceId) ?? undefined,
+            vendorString: this.extractString(record.vendorString) || undefined,
+            deviceString: this.extractString(record.deviceString) || undefined,
+            driverVendor: this.extractString(record.driverVendor) || undefined,
+            driverVersion: this.extractString(record.driverVersion) || undefined,
+            active: this.extractBoolean(record.active) ?? undefined,
+            backend: this.resolveGpuBackend(record),
+            // Electron sometimes returns Megabytes for videoMemory/memorySize.
+            // We normalize everything to bytes.
+            memoryBytes: this.normalizeVideoMemory(
+                this.extractNumber(record.videoMemory) ?? 
+                this.extractNumber(record.memorySize) ?? 
+                this.extractNumber(record.vramBytes)
+            ) ?? undefined,
+            memoryUsedBytes: this.extractNumber(record.memoryUsedBytes) ?? undefined,
+        };
+    }
+
+    /**
+     * Normalizes video memory values from Electron.
+     * Electron/D3D often reports VRAM in MB instead of bytes.
+     */
+    private normalizeVideoMemory(value: number | null): number | null {
+        if (value === null) {return null;}
+        
+        // If the value is strictly less than 1,000,000, it's almost certainly in MB or GB.
+        // Modern GPUs have at least 1GB (1024 MB or 1e9 bytes).
+        // If it's e.g. 12288, it's 12GB in MB.
+        if (value > 0 && value < 1024 * 1024) {
+            return value * 1024 * 1024; // Convert MB to Bytes
+        }
+        
+        return value;
+    }
+
+    private resolveGpuBackend(record: Record<string, unknown>): string | undefined {
+        const backend = this.extractString(record.glRenderer) || this.extractString(record.backend);
+        if (backend) {
+            return backend;
+        }
+        const combined = [this.extractString(record.vendorString), this.extractString(record.deviceString)].filter(Boolean).join(' ').toLowerCase();
+        if (combined.includes('nvidia')) { return 'cuda'; }
+        if (combined.includes('amd') || combined.includes('radeon')) { return 'vulkan'; }
+        if (combined.includes('intel')) { return 'integrated'; }
+        return undefined;
+    }
+
+    private extractBackendsFromFeatureStatus(featureStatus: unknown): string[] {
+        if (!featureStatus || typeof featureStatus !== 'object') {
+            return [];
+        }
+        return Object.entries(featureStatus as Record<string, unknown>)
+            .filter(([, value]) => value === 'enabled')
+            .map(([key]) => key)
+            .slice(0, 8);
+    }
+
+    private resolveGpuDisplayName(devices: MarketplaceGpuDevice[]): string | undefined {
+        if (devices.length === 0) {
+            return undefined;
+        }
+        if (devices.length === 1) {
+            return devices[0]?.name;
+        }
+        return `${devices.length} GPUs`;
+    }
+
+    private extractString(value: unknown): string {
+        return typeof value === 'string' ? value.trim() : '';
+    }
+
+    private extractNumber(value: unknown): number | null {
+        return typeof value === 'number' && Number.isFinite(value) ? value : null;
+    }
+
+    private extractBoolean(value: unknown): boolean | null {
+        return typeof value === 'boolean' ? value : null;
     }
 
     async getSystemMonitor(): Promise<ServiceResponse<{ output: string }>> {

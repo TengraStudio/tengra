@@ -681,6 +681,30 @@ pub async fn delete_api_key(provider: &str, account_id: &str) -> Result<()> {
     }
 }
 
+pub async fn delete_provider_accounts_except(provider: &str, account_id: &str) -> Result<()> {
+    let canonical_id = canonical_account_id(provider, account_id);
+    let sql = "DELETE FROM linked_accounts WHERE provider = $1 AND id != $2";
+    let payload = QueryRequest {
+        sql: sql.to_string(),
+        params: vec![
+            serde_json::Value::String(provider.to_string()),
+            serde_json::Value::String(canonical_id),
+        ],
+    };
+
+    let res = execute_query(&payload).await?;
+
+    if res.status().is_success() {
+        invalidate_linked_accounts_cache().await;
+        Ok(())
+    } else {
+        Err(anyhow!(
+            "Failed to delete duplicate provider accounts: {}",
+            res.status()
+        ))
+    }
+}
+
 pub async fn update_token_data(
     account_id: &str,
     provider: &str,
@@ -954,8 +978,9 @@ async fn merge_legacy_browser_account(
 #[cfg(test)]
 mod tests {
     use super::{
-        callback_retry_backoff_ms, canonical_account_id, generate_browser_account_id, normalize_openai_metadata_map,
-        normalize_provider, parse_metadata_object, provider_matches, resolved_email,
+        callback_retry_backoff_ms, canonical_account_id, generate_browser_account_id,
+        normalize_openai_metadata_map, normalize_provider, parse_metadata_object, provider_matches,
+        resolved_email,
     };
     use serde_json::{json, Value};
 

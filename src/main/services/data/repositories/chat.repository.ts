@@ -152,6 +152,13 @@ export class ChatRepository extends BaseRepository {
             await this.adapter.prepare(`
                 INSERT INTO messages(id, chat_id, role, content, timestamp, provider, model, metadata, vector)
                 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    content = EXCLUDED.content,
+                    timestamp = EXCLUDED.timestamp,
+                    metadata = EXCLUDED.metadata,
+                    vector = EXCLUDED.vector,
+                    provider = EXCLUDED.provider,
+                    model = EXCLUDED.model
             `).run(
                 msgId, msg.chatId as string, msg.role as string, msg.content as string, (msg.timestamp as number | undefined) ?? Date.now(),
                 (msg.provider as string | undefined) ?? null, (msg.model as string | undefined) ?? null, JSON.stringify(metadata), vec
@@ -326,6 +333,7 @@ export class ChatRepository extends BaseRepository {
     private mapRowToMessage(row: JsonObject): JsonObject {
         const metadata = this.parseJsonField<JsonObject>(row.metadata as string | null, {});
         const reasoning = typeof metadata.reasoning === 'string' ? metadata.reasoning : undefined;
+        const reasonings = this.readStringArray(metadata.reasonings);
         const toolCalls = Array.isArray(metadata.toolCalls) ? metadata.toolCalls : undefined;
         const toolResults = Array.isArray(metadata.toolResults) || typeof metadata.toolResults === 'string'
             ? metadata.toolResults
@@ -349,6 +357,7 @@ export class ChatRepository extends BaseRepository {
             model: row.model as string | undefined,
             metadata,
             reasoning,
+            ...(reasonings.length > 0 ? { reasonings } : {}),
             toolCalls,
             toolResults,
             responseTime,
@@ -372,6 +381,7 @@ export class ChatRepository extends BaseRepository {
         const nextMetadata: JsonObject = { ...currentMetadata, ...explicitMetadata };
 
         this.assignMessageMetadataField(nextMetadata, 'reasoning', updates.reasoning);
+        this.assignMessageMetadataField(nextMetadata, 'reasonings', updates.reasonings);
         this.assignMessageMetadataField(nextMetadata, 'toolCalls', updates.toolCalls);
         this.assignMessageMetadataField(nextMetadata, 'toolResults', updates.toolResults);
         this.assignMessageMetadataField(nextMetadata, 'responseTime', updates.responseTime);

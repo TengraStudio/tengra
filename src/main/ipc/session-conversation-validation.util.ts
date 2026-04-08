@@ -12,6 +12,7 @@ interface ConversationRequestParams {
     workspaceId?: string;
     systemMode?: SystemMode;
     chatId?: string;
+    assistantId?: string;
 }
 
 interface ConversationStreamParams extends ConversationRequestParams {
@@ -26,8 +27,9 @@ export function sanitizeConversationRequestParams(params: ConversationRequestPar
     tools?: ToolDefinition[];
     systemMode?: SystemMode;
     chatId?: string;
+    assistantId?: string;
 } {
-    const { messages, model, provider, tools, workspaceId, systemMode, chatId } = params;
+    const { messages, model, provider, tools, workspaceId, systemMode, chatId, assistantId } = params;
     if (!Array.isArray(messages) || messages.length === 0) {
         throw new Error('error.chat.invalid_messages');
     }
@@ -40,15 +42,18 @@ export function sanitizeConversationRequestParams(params: ConversationRequestPar
 
     return {
         messages: messages.map(sanitizeConversationMessage),
-        model: sanitizeString(model, { maxLength: 200, allowNewlines: false }),
-        provider: sanitizeString(provider, { maxLength: 50, allowNewlines: false }),
+        model: sanitizeString(model, { maxLength: 200, allowNewlines: false, trimWhitespace: true }),
+        provider: sanitizeString(provider, { maxLength: 50, allowNewlines: false, trimWhitespace: true }),
         workspaceId: workspaceId
-            ? sanitizeString(workspaceId, { maxLength: 100, allowNewlines: false })
+            ? sanitizeString(workspaceId, { maxLength: 100, allowNewlines: false, trimWhitespace: true })
             : undefined,
         tools: sanitizeConversationTools(tools),
         systemMode,
         chatId: chatId
-            ? sanitizeString(chatId, { maxLength: 100, allowNewlines: false })
+            ? sanitizeString(chatId, { maxLength: 100, allowNewlines: false, trimWhitespace: true })
+            : undefined,
+        assistantId: assistantId
+            ? sanitizeString(assistantId, { maxLength: 100, allowNewlines: false, trimWhitespace: true })
             : undefined,
     };
 }
@@ -61,6 +66,7 @@ export function sanitizeConversationStreamInputs(params: ConversationStreamParam
     tools?: ToolDefinition[];
     systemMode?: SystemMode;
     chatId: string;
+    assistantId?: string;
 } {
     const { chatId } = params;
     if (!chatId) {
@@ -69,7 +75,7 @@ export function sanitizeConversationStreamInputs(params: ConversationStreamParam
 
     return {
         ...sanitizeConversationRequestParams(params),
-        chatId: sanitizeString(chatId, { maxLength: 100, allowNewlines: false }),
+        chatId: sanitizeString(chatId, { maxLength: 100, allowNewlines: false, trimWhitespace: true }),
     };
 }
 

@@ -64,6 +64,24 @@ const MODEL_PRICING: Record<string, ModelPricingInfo> = {
         inputPricePerMillionTokens: 0.25,
         outputPricePerMillionTokens: 1.25,
     },
+    'claude-opus-4.6': {
+        provider: 'anthropic',
+        model: 'claude-opus-4.6',
+        inputPricePerMillionTokens: 5.0,
+        outputPricePerMillionTokens: 25.0,
+    },
+    'claude-sonnet-4-6': {
+        provider: 'anthropic',
+        model: 'claude-sonnet-4-6',
+        inputPricePerMillionTokens: 3.0,
+        outputPricePerMillionTokens: 15.0,
+    },
+    'claude-haiku-4-5': {
+        provider: 'anthropic',
+        model: 'claude-haiku-4-5',
+        inputPricePerMillionTokens: 1.0,
+        outputPricePerMillionTokens: 5.0,
+    },
 
     // OpenAI Models
     'gpt-4o': {
@@ -120,6 +138,90 @@ const MODEL_PRICING: Record<string, ModelPricingInfo> = {
         inputPricePerMillionTokens: 1.1,
         outputPricePerMillionTokens: 4.4,
     },
+    'o3': {
+        provider: 'openai',
+        model: 'o3',
+        inputPricePerMillionTokens: 1.0,
+        outputPricePerMillionTokens: 5.0,
+    },
+    'o4-mini': {
+        provider: 'openai',
+        model: 'o4-mini',
+        inputPricePerMillionTokens: 0.15,
+        outputPricePerMillionTokens: 0.6,
+    },
+    'gpt-5.4': {
+        provider: 'openai',
+        model: 'gpt-5.4',
+        inputPricePerMillionTokens: 2.50,
+        outputPricePerMillionTokens: 10.0,
+    },
+    'gpt-5.4-mini': {
+        provider: 'openai',
+        model: 'gpt-5.4-mini',
+        inputPricePerMillionTokens: 0.15,
+        outputPricePerMillionTokens: 0.6,
+    },
+    'gpt-5.4-nano': {
+        provider: 'openai',
+        model: 'gpt-5.4-nano',
+        inputPricePerMillionTokens: 0.10,
+        outputPricePerMillionTokens: 0.4,
+    },
+    'gpt-5.2-pro': {
+        provider: 'openai',
+        model: 'gpt-5.2-pro',
+        inputPricePerMillionTokens: 1.50,
+        outputPricePerMillionTokens: 7.50,
+    },
+    'gpt-5.2': {
+        provider: 'openai',
+        model: 'gpt-5.2',
+        inputPricePerMillionTokens: 0.50,
+        outputPricePerMillionTokens: 2.50,
+    },
+    'gpt-5-pro': {
+        provider: 'openai',
+        model: 'gpt-5-pro',
+        inputPricePerMillionTokens: 1.0,
+        outputPricePerMillionTokens: 5.0,
+    },
+    'gpt-5': {
+        provider: 'openai',
+        model: 'gpt-5',
+        inputPricePerMillionTokens: 0.25,
+        outputPricePerMillionTokens: 1.25,
+    },
+    'gpt-5-mini': {
+        provider: 'openai',
+        model: 'gpt-5-mini',
+        inputPricePerMillionTokens: 0.10,
+        outputPricePerMillionTokens: 0.50,
+    },
+    'gpt-5-nano': {
+        provider: 'openai',
+        model: 'gpt-5-nano',
+        inputPricePerMillionTokens: 0.05,
+        outputPricePerMillionTokens: 0.25,
+    },
+    'gpt-4.1': {
+        provider: 'openai',
+        model: 'gpt-4.1',
+        inputPricePerMillionTokens: 1.0,
+        outputPricePerMillionTokens: 5.0,
+    },
+    'gpt-4.1-mini': {
+        provider: 'openai',
+        model: 'gpt-4.1-mini',
+        inputPricePerMillionTokens: 0.15,
+        outputPricePerMillionTokens: 0.6,
+    },
+    'gpt-4.1-nano': {
+        provider: 'openai',
+        model: 'gpt-4.1-nano',
+        inputPricePerMillionTokens: 0.10,
+        outputPricePerMillionTokens: 0.4,
+    },
 
     // Google Gemini Models
     'gemini-2.0-flash': {
@@ -145,6 +247,36 @@ const MODEL_PRICING: Record<string, ModelPricingInfo> = {
         model: 'gemini-pro',
         inputPricePerMillionTokens: 0.5,
         outputPricePerMillionTokens: 1.5,
+    },
+    'gemini-3.1-pro-preview': {
+        provider: 'google',
+        model: 'gemini-3.1-pro-preview',
+        inputPricePerMillionTokens: 2.0,
+        outputPricePerMillionTokens: 12.0,
+    },
+    'gemini-3.1-flash-preview': {
+        provider: 'google',
+        model: 'gemini-3.1-flash-preview',
+        inputPricePerMillionTokens: 0.50,
+        outputPricePerMillionTokens: 3.0,
+    },
+    'gemini-3.1-flash-lite': {
+        provider: 'google',
+        model: 'gemini-3.1-flash-lite',
+        inputPricePerMillionTokens: 0.25,
+        outputPricePerMillionTokens: 1.50,
+    },
+    'gemini-3.1-flash-image': {
+        provider: 'google',
+        model: 'gemini-3.1-flash-image',
+        inputPricePerMillionTokens: 0.25,
+        outputPricePerMillionTokens: 30.0,
+    },
+    'gemini-3-pro-image': {
+        provider: 'google',
+        model: 'gemini-3-pro-image',
+        inputPricePerMillionTokens: 2.0,
+        outputPricePerMillionTokens: 30.0,
     },
 
     // Meta Llama Models (via various providers)

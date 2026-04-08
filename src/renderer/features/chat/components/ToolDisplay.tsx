@@ -1,16 +1,25 @@
+import { JsonObject, JsonValue } from '@shared/types/common';
+import {
+    CheckCircle2,
+    ChevronDown,
+    CircleAlert,
+    Loader2,
+    Search,
+    TerminalSquare,
+    Wrench,
+} from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import { ToolOutputVirtualizer } from '@/components/shared/ToolOutputVirtualizer';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { ToolResult } from '@/types';
-import { JsonObject, JsonValue } from '@/types/common';
 
 import { TerminalView } from './TerminalView';
-
-import '@renderer/features/chat/components/ToolDisplay.css';
 
 interface CommandExecutionResult {
     stdout?: string;
@@ -25,33 +34,13 @@ interface ToolCallType {
 }
 
 interface ToolDisplayProps {
-    toolCall: ToolCallType
-    result?: ToolResult
-    isExecuting?: boolean
-    language?: Language
+    toolCall: ToolCallType;
+    result?: ToolResult;
+    isExecuting?: boolean;
+    language?: Language;
 }
 
-interface ExpandedToolContentProps {
-    toolName: string;
-    args: JsonObject;
-    result: ToolResult | undefined;
-    t: (key: string) => string;
-}
-
-const ExpandedToolContent: React.FC<ExpandedToolContentProps> = ({ toolName, args, result, t }) => (
-    <div className="mt-2 ml-2 border-l-2 border-border/50 pl-3 py-1 space-y-3 animate-in slide-in-from-top-1 duration-200">
-        <div className="space-y-1">
-            <div className="text-sm text-muted-foreground font-bold opacity-50">{t('tools.input')}</div>
-            <ToolArguments name={toolName} args={args} t={t} />
-        </div>
-        {result && (
-            <div className="space-y-1">
-                <div className="text-sm text-muted-foreground font-semibold opacity-70">{t('tools.output')}</div>
-                <ToolOutput name={toolName} result={result.result} t={t} />
-            </div>
-        )}
-    </div>
-);
+type ToolStatus = 'running' | 'completed' | 'failed';
 
 function getStatusText(toolName: string, isExecuting: boolean, hasError: boolean, t: (key: string) => string): string {
     if (!isExecuting) {
@@ -64,41 +53,43 @@ function getStatusText(toolName: string, isExecuting: boolean, hasError: boolean
     return t('tools.usingTool');
 }
 
-const ExecutingSpinner: React.FC<{ statusText: string }> = ({ statusText }) => (
-    <div className="flex items-center gap-3 py-2 px-1 animate-pulse">
-        <div className="w-4 h-4 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-        <span className="text-sm text-foreground/70 font-medium">{statusText}</span>
-    </div>
-);
-
-interface ToolStatusButtonProps {
-    hasError: boolean
-    toolName: string
-    statusText: string
-    expanded: boolean
-    onToggle: () => void
+function getStatusVariant(status: ToolStatus): 'warning' | 'success' | 'destructive' {
+    if (status === 'running') {
+        return 'warning';
+    }
+    if (status === 'failed') {
+        return 'destructive';
+    }
+    return 'success';
 }
 
-const ToolStatusButton: React.FC<ToolStatusButtonProps> = ({ hasError, toolName, statusText, expanded, onToggle }) => (
-    <button
-        onClick={onToggle}
-        className={cn(
-            "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all w-full text-left",
-            hasError
-                ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
-                : "bg-muted/20 text-muted-foreground hover:bg-muted/30 hover:text-foreground"
-        )}
-    >
-        <div>{hasError ? '❌' : '✅'}</div>
-        <div className="flex-1 truncate font-mono opacity-80">
-            <span className="opacity-70 mr-2">{toolName}</span>
-            <span className="opacity-50">({statusText})</span>
-        </div>
-        <div className="transition-transform duration-200 opacity-50" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-            ▼
-        </div>
-    </button>
-);
+function getToolIcon(toolName: string): React.ReactNode {
+    if (toolName === 'execute_command') {
+        return <TerminalSquare className="h-4 w-4" />;
+    }
+    if (toolName.includes('search')) {
+        return <Search className="h-4 w-4" />;
+    }
+    return <Wrench className="h-4 w-4" />;
+}
+
+function readToolError(result?: ToolResult): string | undefined {
+    if (!result) {
+        return undefined;
+    }
+    if (typeof result.error === 'string' && result.error.trim().length > 0) {
+        return result.error;
+    }
+    const payload = result.result;
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        return undefined;
+    }
+    const errorValue = (payload as JsonObject).error;
+    if (typeof errorValue === 'string' && errorValue.trim().length > 0) {
+        return errorValue;
+    }
+    return undefined;
+}
 
 function useAutoExpandCommand(
     toolName: string,
@@ -108,23 +99,159 @@ function useAutoExpandCommand(
     setExpanded: React.Dispatch<React.SetStateAction<boolean>>
 ): void {
     useEffect(() => {
-        if (toolName !== 'execute_command') { return; }
+        if (toolName !== 'execute_command') {
+            return;
+        }
         const shouldExpand = Boolean(isExecuting) || Boolean(execError) || Boolean(execStderr);
-        if (!shouldExpand) { return; }
-
+        if (!shouldExpand) {
+            return;
+        }
         const timer = setTimeout(() => setExpanded(true), 0);
         return () => clearTimeout(timer);
     }, [toolName, isExecuting, execError, execStderr, setExpanded]);
 }
 
+function ToolArguments({ name, args, t }: { name: string; args: JsonObject; t: (key: string) => string }) {
+    if (name === 'read_file' || name === 'write_file') {
+        const pathValue = typeof args.path === 'string'
+            ? args.path
+            : (typeof args.file === 'string' ? args.file : '');
+        return (
+            <div className="inline-flex rounded-md border border-primary/20 bg-primary/10 px-2 py-1 font-mono text-xs text-primary">
+                {t('tools.path')} {pathValue}
+            </div>
+        );
+    }
+    return (
+        <pre className="max-h-48 overflow-x-auto overflow-y-auto rounded-md border border-border/40 bg-muted/40 p-2 font-mono text-xs text-muted-foreground">
+            {JSON.stringify(args, null, 2)}
+        </pre>
+    );
+}
+
+function extractStringContent(result: JsonValue): string {
+    if (typeof result === 'string') {
+        return result;
+    }
+    if (result && typeof result === 'object' && !Array.isArray(result)) {
+        const content = (result as JsonObject).content;
+        if (typeof content === 'string') {
+            return content;
+        }
+    }
+    return '';
+}
+
+function extractSearchResults(result: JsonValue): JsonObject[] {
+    if (!result || typeof result !== 'object' || Array.isArray(result)) {
+        return [];
+    }
+    const resultsValue = (result as JsonObject).results;
+    if (!Array.isArray(resultsValue)) {
+        return [];
+    }
+    return resultsValue.filter((item): item is JsonObject => !!item && typeof item === 'object' && !Array.isArray(item));
+}
+
+function extractImageUrl(result: JsonValue): string | null {
+    if (typeof result === 'string') {
+        return result;
+    }
+    if (result && typeof result === 'object' && !Array.isArray(result)) {
+        const img = (result as JsonObject).image;
+        if (typeof img === 'string') {
+            return img;
+        }
+    }
+    return null;
+}
+
+function FilePreview({ content, t }: { content: string; t: (key: string) => string }) {
+    if (content.length > 1000) {
+        return <ToolOutputVirtualizer content={content} maxHeight="320px" isDark={false} />;
+    }
+    return (
+        <div className="space-y-2">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+                {t('tools.filePreview')}
+            </span>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{`\`\`\`\n${content}\n\`\`\``}</ReactMarkdown>
+        </div>
+    );
+}
+
+function JsonOutput({ value }: { value: JsonValue }) {
+    const displayStr = (() => {
+        try {
+            return JSON.stringify(value, null, 2);
+        } catch {
+            return String(value);
+        }
+    })();
+    return (
+        <pre className="max-h-52 overflow-x-auto overflow-y-auto rounded-md border border-border/40 bg-muted/40 p-2 font-mono text-xs text-muted-foreground">
+            {displayStr}
+        </pre>
+    );
+}
+
+function ToolOutput({ name, result, t }: { name: string; result: JsonValue; t: (key: string) => string }) {
+    if (name === 'read_file') {
+        return <FilePreview content={extractStringContent(result)} t={t} />;
+    }
+
+    if (name === 'search_web') {
+        const searchResults = extractSearchResults(result);
+        if (searchResults.length > 0) {
+            return (
+                <div className="grid gap-2">
+                    {searchResults.map((item, index) => (
+                        <a
+                            key={`${index}-${String(item.url ?? '')}`}
+                            href={typeof item.url === 'string' ? item.url : ''}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded-md border border-border/50 bg-background/70 p-2 text-xs transition-colors hover:border-primary/40"
+                        >
+                            <div className="truncate font-medium text-primary">
+                                {typeof item.title === 'string' ? item.title : ''}
+                            </div>
+                            <div className="mt-1 line-clamp-2 text-muted-foreground">
+                                {(typeof item.content === 'string' ? item.content : '') || (typeof item.snippet === 'string' ? item.snippet : '')}
+                            </div>
+                        </a>
+                    ))}
+                </div>
+            );
+        }
+    }
+
+    if (name === 'capture_screenshot') {
+        const imageUrl = extractImageUrl(result);
+        if (imageUrl) {
+            return <img src={imageUrl} alt={t('chat.screenshotAlt')} className="max-w-full rounded-md border border-border/40" />;
+        }
+    }
+
+    if (typeof result === 'string') {
+        return <ReactMarkdown remarkPlugins={[remarkGfm]}>{result}</ReactMarkdown>;
+    }
+
+    return <JsonOutput value={result} />;
+}
+
 export const ToolDisplay = React.memo(({ toolCall, result, isExecuting, language = 'en' }: ToolDisplayProps) => {
     const { t } = useTranslation(language);
-    const hasError = !!result?.error;
+    const toolError = readToolError(result);
+    const hasError = Boolean(toolError);
     const resultData = result?.result as CommandExecutionResult | undefined;
     const [commandExpanded, setCommandExpanded] = useState(false);
-    const [userExpanded, setUserExpanded] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(Boolean(isExecuting));
 
     useAutoExpandCommand(toolCall.name, isExecuting, resultData?.error, resultData?.stderr, setCommandExpanded);
+    const status: ToolStatus = isExecuting ? 'running' : (hasError ? 'failed' : 'completed');
+    const statusText = getStatusText(toolCall.name, Boolean(isExecuting), hasError, t);
+    const expanded = Boolean(isExecuting) || isExpanded;
 
     if (toolCall.name === 'execute_command') {
         return (
@@ -134,143 +261,89 @@ export const ToolDisplay = React.memo(({ toolCall, result, isExecuting, language
                 result={result}
                 isExecuting={isExecuting}
                 expanded={commandExpanded}
-                onToggleExpand={() => setCommandExpanded(!commandExpanded)}
+                onToggleExpand={() => setCommandExpanded(prev => !prev)}
             />
         );
     }
 
-    const statusText = getStatusText(toolCall.name, !!isExecuting, hasError, t);
-
-    if (isExecuting) {
-        return <ExecutingSpinner statusText={statusText} />;
-    }
-
     return (
-        <div className="my-2 group">
-            <ToolStatusButton
-                hasError={hasError}
-                toolName={toolCall.name}
-                statusText={statusText}
-                expanded={userExpanded}
-                onToggle={() => setUserExpanded(!userExpanded)}
-            />
-            {userExpanded && <ExpandedToolContent toolName={toolCall.name} args={toolCall.arguments} result={result} t={t} />}
-        </div>
+        <Card
+            className={cn(
+                'my-2 overflow-hidden border-border/40 bg-card/70 backdrop-blur-sm',
+                status === 'failed' && 'border-destructive/35'
+            )}
+        >
+            <button
+                type="button"
+                onClick={() => {
+                    if (isExecuting) {
+                        setIsExpanded(true);
+                        return;
+                    }
+                    setIsExpanded(prev => !prev);
+                }}
+                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/25"
+                aria-label={expanded ? t('chat.collapse') : t('chat.expand')}
+            >
+                <div className="flex min-w-0 items-center gap-3">
+                    <div className="rounded-md border border-border/50 bg-background/70 p-1.5 text-muted-foreground">
+                        {getToolIcon(toolCall.name)}
+                    </div>
+                    <div className="min-w-0">
+                        <div className="truncate font-mono text-xs font-semibold text-foreground/90">
+                            {toolCall.name}
+                        </div>
+                        <div className="mt-0.5 flex items-center gap-1.5 text-xxs text-muted-foreground">
+                            {status === 'running' && <Loader2 className="h-3 w-3 animate-spin" />}
+                            {status === 'completed' && <CheckCircle2 className="h-3 w-3 text-success" />}
+                            {status === 'failed' && <CircleAlert className="h-3 w-3 text-destructive" />}
+                            <span>{statusText}</span>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Badge variant={getStatusVariant(status)} className="text-xxs">
+                                {status === 'running'
+                                    ? t('tools.running')
+                                    : status === 'failed'
+                                        ? t('tools.failed')
+                                        : t('tools.completed')}
+                    </Badge>
+                    <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', expanded && 'rotate-180')} />
+                </div>
+            </button>
+
+            {expanded && (
+                <CardContent className="space-y-3 px-4 pb-4 pt-0">
+                    <div className="rounded-lg border border-border/40 bg-background/50 p-3">
+                        <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+                            {t('tools.input')}
+                        </div>
+                        <ToolArguments name={toolCall.name} args={toolCall.arguments} t={t} />
+                    </div>
+
+                    {isExecuting && !result && (
+                        <div className="flex items-center gap-2 rounded-lg border border-border/40 bg-muted/25 p-3 text-xs text-muted-foreground">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            <span>{statusText}</span>
+                        </div>
+                    )}
+
+                    {result && (
+                        <div className="rounded-lg border border-border/40 bg-background/50 p-3">
+                            <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+                                {t('tools.output')}
+                            </div>
+                            <ToolOutput name={toolCall.name} result={result.result ?? {}} t={t} />
+                            {typeof toolError === 'string' && toolError.trim().length > 0 && (
+                                <div className="mt-3 rounded-md border border-destructive/35 bg-destructive/10 px-2 py-1.5 font-mono text-xs text-destructive">
+                                    {toolError}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </CardContent>
+            )}
+        </Card>
     );
 });
-
-function ToolArguments({ name, args, t }: { name: string; args: JsonObject; t: (key: string) => string }) {
-    if (name === 'read_file' || name === 'write_file') {
-        const pathValue = typeof args.path === 'string'
-            ? args.path
-            : (typeof args.file === 'string' ? args.file : '');
-        return <div className="font-mono text-primary bg-primary/10 px-2 py-1 rounded inline-block">{t('tools.path')}: {pathValue}</div>;
-    }
-    return <pre className="font-mono text-muted-foreground bg-muted/50 p-2 rounded overflow-x-auto">{JSON.stringify(args, null, 2)}</pre>;
-}
-
-function extractStringContent(result: JsonValue): string {
-    if (typeof result === 'string') { return result; }
-    if (result && typeof result === 'object' && !Array.isArray(result)) {
-        const content = (result as JsonObject).content;
-        if (typeof content === 'string') { return content; }
-    }
-    return '';
-}
-
-function extractSearchResults(result: JsonValue): JsonObject[] {
-    if (!result || typeof result !== 'object' || Array.isArray(result)) { return []; }
-    const resultsValue = (result as JsonObject).results;
-    if (!Array.isArray(resultsValue)) { return []; }
-    return resultsValue.filter((item): item is JsonObject => !!item && typeof item === 'object' && !Array.isArray(item));
-}
-
-function extractImageUrl(result: JsonValue): string | null {
-    if (typeof result === 'string') { return result; }
-    if (result && typeof result === 'object' && !Array.isArray(result)) {
-        const img = (result as JsonObject).image;
-        if (typeof img === 'string') { return img; }
-    }
-    return null;
-}
-
-const FilePreview: React.FC<{ content: string; t: (key: string) => string }> = ({ content, t }) => (
-    <div className="relative group">
-        <div className="absolute right-2 top-2 text-sm text-muted-foreground opacity-50 z-10">{t('tools.filePreview')}</div>
-        {content.length > 1000 ? (
-            <ToolOutputVirtualizer content={content} maxHeight="400px" isDark={false} className="mt-6" />
-        ) : (
-            <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{ code({ className, children, ...props }) { return <code className={className} {...props}>{children}</code>; } }}
-            >
-                {`\`\`\`\n${content}\n\`\`\``}
-            </ReactMarkdown>
-        )}
-    </div>
-);
-
-interface SearchResultItemProps {
-    url: string
-    title: string
-    snippet: string
-    content: string
-}
-
-const SearchResultItem: React.FC<SearchResultItemProps> = ({ url, title, snippet, content }) => (
-    <a href={url} target="_blank" rel="noopener noreferrer" className="block p-2 bg-card border border-border rounded hover:border-primary/50 transition-colors group">
-        <div className="font-medium text-primary group-hover:underline truncate">{title}</div>
-        <div className="text-muted-foreground line-clamp-2 mt-1">{content || snippet}</div>
-    </a>
-);
-
-const SearchResults: React.FC<{ results: JsonObject[] }> = ({ results }) => (
-    <div className="flex flex-col gap-2">
-        {results.map((r, i) => (
-            <SearchResultItem
-                key={i}
-                url={typeof r.url === 'string' ? r.url : ''}
-                title={typeof r.title === 'string' ? r.title : ''}
-                snippet={typeof r.snippet === 'string' ? r.snippet : ''}
-                content={typeof r.content === 'string' ? r.content : ''}
-            />
-        ))}
-    </div>
-);
-
-const ImageOutput: React.FC<{ imgUrl: string; alt: string }> = ({ imgUrl, alt }) => (
-    <img src={imgUrl} className="max-w-full rounded-md border border-border shadow-sm" alt={alt} />
-);
-
-const MarkdownOutput: React.FC<{ content: string }> = ({ content }) => (
-    <div className="markdown-body">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-    </div>
-);
-
-const JsonOutput: React.FC<{ value: JsonValue }> = ({ value }) => {
-    const displayStr = (() => { try { return JSON.stringify(value, null, 2); } catch { return String(value); } })();
-    return <pre className="font-mono text-muted-foreground bg-muted/50 p-2 rounded overflow-x-auto max-h-60">{displayStr}</pre>;
-};
-
-function ToolOutput({ name, result, t }: { name: string; result: JsonValue; t: (key: string) => string }) {
-    if (name === 'read_file') {
-        return <FilePreview content={extractStringContent(result)} t={t} />;
-    }
-
-    if (name === 'search_web') {
-        const results = extractSearchResults(result);
-        if (results.length > 0) { return <SearchResults results={results} />; }
-    }
-
-    if (name === 'capture_screenshot') {
-        const imgUrl = extractImageUrl(result);
-        if (imgUrl) { return <ImageOutput imgUrl={imgUrl} alt={t('chat.screenshotAlt')} />; }
-    }
-
-    if (typeof result === 'string') {
-        return <MarkdownOutput content={result} />;
-    }
-
-    return <JsonOutput value={result} />;
-}

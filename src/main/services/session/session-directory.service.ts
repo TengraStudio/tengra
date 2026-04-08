@@ -8,6 +8,8 @@ import { SessionRegistryReader } from './session-registry.contract';
 
 const MAX_SESSION_RECOVERY_HINT_LENGTH = 1000;
 const MAX_SESSION_LAST_ERROR_LENGTH = 5000;
+const MAX_SESSION_MESSAGE_CONTENT_LENGTH = 200000;
+const SESSION_MESSAGE_TRUNCATION_NOTICE = '\n\n[Session content truncated by Tengra.]';
 
 const clampSessionText = (value: string | undefined, maxLength: number): string | undefined => {
     if (!value) {
@@ -20,11 +22,30 @@ const clampSessionText = (value: string | undefined, maxLength: number): string 
 const sanitizeSessionState = (snapshot: SessionState): SessionState => ({
     ...snapshot,
     lastError: clampSessionText(snapshot.lastError, MAX_SESSION_LAST_ERROR_LENGTH),
+    messages: snapshot.messages.map(message => ({
+        ...message,
+        content: clampSessionMessageContent(message.content),
+        metadata: message.content.length > MAX_SESSION_MESSAGE_CONTENT_LENGTH
+            ? { ...message.metadata, truncatedForIpc: true }
+            : message.metadata,
+    })),
     recovery: {
         ...snapshot.recovery,
         hint: clampSessionText(snapshot.recovery.hint, MAX_SESSION_RECOVERY_HINT_LENGTH),
     },
 });
+
+function clampSessionMessageContent(value: string): string {
+    if (value.length <= MAX_SESSION_MESSAGE_CONTENT_LENGTH) {
+        return value;
+    }
+
+    const availableLength = Math.max(
+        0,
+        MAX_SESSION_MESSAGE_CONTENT_LENGTH - SESSION_MESSAGE_TRUNCATION_NOTICE.length
+    );
+    return `${value.slice(0, availableLength)}${SESSION_MESSAGE_TRUNCATION_NOTICE}`;
+}
 
 export class SessionDirectoryService extends BaseService {
     private readonly registries = new Map<string, SessionRegistryReader>();

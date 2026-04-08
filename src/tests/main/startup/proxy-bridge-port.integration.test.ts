@@ -8,10 +8,17 @@ import { describe, expect, it, vi } from 'vitest';
 
 describe('startup proxy bridge port integration', () => {
     it('fails startup when fixed OAuth bridge port 1455 is occupied', async () => {
-        const listener = net.createServer();
+        let listener: net.Server | undefined = net.createServer();
         await new Promise<void>((resolve, reject) => {
-            listener.once('error', reject);
-            listener.listen(1455, '127.0.0.1', () => resolve());
+            listener?.once('error', (error: NodeJS.ErrnoException) => {
+                if (error.code === 'EADDRINUSE') {
+                    listener = undefined;
+                    resolve();
+                    return;
+                }
+                reject(error);
+            });
+            listener?.listen(1455, '127.0.0.1', () => resolve());
         });
 
         const service = new ProxyProcessManager(
@@ -26,9 +33,12 @@ describe('startup proxy bridge port integration', () => {
                 exec: vi.fn(),
             } as never as DatabaseService
         );
+        Object.defineProperty(service, 'isExistingProxyHealthy', {
+            value: vi.fn().mockResolvedValue(false),
+        });
 
         const status = await service.start({ port: 8317 });
-        listener.close();
+        listener?.close();
 
         expect(status.running).toBe(false);
         expect(status.errorCode).toBe('PROXY_PORT_IN_USE');

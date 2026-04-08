@@ -54,6 +54,8 @@ export interface HFModel {
     category?: 'coding' | 'chat' | 'multimodal' | 'embedding' | 'reasoning' | 'general'
     recommendationScore?: number
     longDescriptionMarkdown?: string
+    longDescriptionHtml?: string
+    totalSize?: string
     provider: 'huggingface'
 }
 
@@ -88,4 +90,3 @@ export interface HFFile {
         estimatedVramGB: number
     }
 }
-

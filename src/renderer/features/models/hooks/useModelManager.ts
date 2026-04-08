@@ -21,7 +21,7 @@ const MIN_HEALTHY_NVIDIA_MODEL_COUNT = 2;
 function hasRemoteModels(models: ModelInfo[]): boolean {
     return models.some(model => {
         const provider = getSelectableProviderId(model);
-        return provider !== '' && provider !== 'ollama' && provider !== 'local-ai';
+        return provider !== '' && provider !== 'ollama' && provider !== 'local-ai' && provider !== 'huggingface';
     });
 }
 
@@ -61,7 +61,7 @@ function hasExpectedRemoteCoverage(models: ModelInfo[], expectedProviders: strin
     const availableProviders = new Set(
         models
             .map(model => getSelectableProviderId(model))
-            .filter(provider => provider !== '' && provider !== 'ollama' && provider !== 'local-ai')
+            .filter(provider => provider !== '' && provider !== 'ollama' && provider !== 'local-ai' && provider !== 'huggingface')
     );
 
     return expectedProviders.every(provider => availableProviders.has(provider));
@@ -177,7 +177,7 @@ export function useModelManager(
             setModels(previousModels => {
                 const currentSettings = appSettingsRef.current;
                 const nextModels = mergePreservedProviderModels(previousModels, fetched, currentSettings);
-                setProxyModels(nextModels.filter(m => m.provider !== 'ollama' && m.provider !== 'local-ai'));
+                setProxyModels(nextModels.filter(m => m.provider !== 'ollama' && m.provider !== 'local-ai' && m.provider !== 'huggingface'));
                 setGroupedModels(groupModels(nextModels));
                 return nextModels;
             });
@@ -187,6 +187,16 @@ export function useModelManager(
             setIsLoading(false);
         }
     }, []);
+
+    useEffect(() => {
+        const unsubscribe = window.electron.on('model-downloader:progress', (_event, raw) => {
+            const progress = raw as { status?: string };
+            if (progress.status === 'completed') {
+                void refreshModels(true);
+            }
+        });
+        return () => unsubscribe();
+    }, [refreshModels]);
 
     useEffect(() => {
         void refreshModels();
@@ -376,6 +386,7 @@ export function useModelManager(
             return;
         }
     }, [
+        appSettings,
         appSettings?.general.defaultModel,
         appSettings?.general.lastProvider,
         appSettings?.general.language,

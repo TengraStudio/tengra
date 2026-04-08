@@ -50,7 +50,7 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                         <h3 className="text-lg font-bold text-foreground group-hover/edit:text-primary transition-colors">
                             {t('settings.images.editTitle')}
                         </h3>
-                        <p className="text-[10px] text-muted-foreground mt-1 font-bold opacity-60">
+                        <p className="typo-body text-muted-foreground mt-1 font-bold opacity-60">
                             {t('settings.images.batchProcessing')}
                         </p>
                     </div>
@@ -59,16 +59,16 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
 
             <div className="space-y-6 relative z-10">
                 <div className="space-y-3">
-                    <div className="text-[9px] font-bold text-muted-foreground/40 px-1">Batch Prompts (Line per prompt)</div>
+                    <div className="typo-body font-bold text-muted-foreground/40 px-1">Batch Prompts (Line per prompt)</div>
                     <textarea
                         value={batchPrompts}
                         onChange={event => setBatchPrompts(event.target.value)}
                         placeholder={t('settings.images.batchPrompts')}
-                        className="tw-min-h-32 w-full rounded-2xl border border-border/40 bg-muted/20 p-6 font-mono text-[9px] text-muted-foreground leading-relaxed shadow-inner focus:ring-1 focus:ring-primary/20 outline-none transition-all custom-scrollbar"
+                        className="tw-min-h-32 w-full rounded-2xl border border-border/40 bg-muted/20 p-6 font-mono typo-body text-muted-foreground leading-relaxed shadow-inner focus:ring-1 focus:ring-primary/20 outline-none transition-all custom-scrollbar"
                     />
                     <Button
                         onClick={() => { void handleRunBatch(); }}
-                        className="h-12 px-8 rounded-2xl bg-foreground text-background hover:bg-primary hover:text-primary-foreground text-[10px] font-bold transition-all active:scale-95 shadow-xl shadow-black/10 flex items-center gap-3 w-full sm:w-auto"
+                        className="h-12 px-8 rounded-2xl bg-foreground text-background hover:bg-primary hover:text-primary-foreground typo-body font-bold transition-all active:scale-95 shadow-xl shadow-black/10 flex items-center gap-3 w-full sm:w-auto"
                     >
                         <Play className="w-4 h-4" />
                         {t('settings.images.batchRun')}
@@ -78,12 +78,12 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                 <div className="pt-8 border-t border-border/10 space-y-8">
                     <div className="flex items-center gap-3 px-1">
                         <Sparkles className="w-3.5 h-3.5 text-primary" />
-                        <div className="text-[10px] font-bold text-muted-foreground/40">Transformation Settings</div>
+                        <div className="typo-body font-bold text-muted-foreground/40">Transformation Settings</div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         <div className="space-y-2">
-                            <div className="text-[9px] font-bold text-muted-foreground/40 px-1">Source Image ID</div>
+                            <div className="typo-body font-bold text-muted-foreground/40 px-1">Source Image ID</div>
                             <Input
                                 value={editSource}
                                 onChange={event => setEditSource(event.target.value)}
@@ -92,7 +92,7 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                             />
                         </div>
                         <div className="space-y-2">
-                            <div className="text-[9px] font-bold text-muted-foreground/40 px-1">Refinement Prompt</div>
+                            <div className="typo-body font-bold text-muted-foreground/40 px-1">Refinement Prompt</div>
                             <Input
                                 value={editPrompt}
                                 onChange={event => setEditPrompt(event.target.value)}
@@ -101,7 +101,7 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                             />
                         </div>
                         <div className="space-y-2">
-                            <div className="text-[9px] font-bold text-muted-foreground/40 px-1">Preset Efficiency</div>
+                            <div className="typo-body font-bold text-muted-foreground/40 px-1">Preset Efficiency</div>
                             <Select
                                 value={editPresetId}
                                 onValueChange={(value: 'balanced' | 'detail' | 'stylize') => handleApplyEditPreset(value)}
@@ -110,14 +110,14 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
-                                    <SelectItem value="balanced" className="text-[10px] font-bold">{t('settings.images.editPresetBalanced')}</SelectItem>
-                                    <SelectItem value="detail" className="text-[10px] font-bold text-primary">{t('settings.images.editPresetDetail')}</SelectItem>
-                                    <SelectItem value="stylize" className="text-[10px] font-bold text-success">{t('settings.images.editPresetStylize')}</SelectItem>
+                                    <SelectItem value="balanced" className="typo-body font-bold">{t('settings.images.editPresetBalanced')}</SelectItem>
+                                    <SelectItem value="detail" className="typo-body font-bold text-primary">{t('settings.images.editPresetDetail')}</SelectItem>
+                                    <SelectItem value="stylize" className="typo-body font-bold text-success">{t('settings.images.editPresetStylize')}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <div className="text-[9px] font-bold text-muted-foreground/40 px-1">Edit Mode</div>
+                            <div className="typo-body font-bold text-muted-foreground/40 px-1">Edit Mode</div>
                             <Select
                                 value={editMode}
                                 onValueChange={(value: 'img2img' | 'inpaint' | 'outpaint' | 'style-transfer') => setEditMode(value)}
@@ -126,10 +126,10 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
-                                    <SelectItem value="img2img" className="text-[10px] font-bold text-primary">{t('settings.images.editModeImg2Img')}</SelectItem>
-                                    <SelectItem value="inpaint" className="text-[10px] font-bold">{t('settings.images.editModeInpaint')}</SelectItem>
-                                    <SelectItem value="outpaint" className="text-[10px] font-bold">{t('settings.images.editModeOutpaint')}</SelectItem>
-                                    <SelectItem value="style-transfer" className="text-[10px] font-bold text-success">{t('settings.images.editModeStyleTransfer')}</SelectItem>
+                                    <SelectItem value="img2img" className="typo-body font-bold text-primary">{t('settings.images.editModeImg2Img')}</SelectItem>
+                                    <SelectItem value="inpaint" className="typo-body font-bold">{t('settings.images.editModeInpaint')}</SelectItem>
+                                    <SelectItem value="outpaint" className="typo-body font-bold">{t('settings.images.editModeOutpaint')}</SelectItem>
+                                    <SelectItem value="style-transfer" className="typo-body font-bold text-success">{t('settings.images.editModeStyleTransfer')}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -137,10 +137,10 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
 
                     <div className="space-y-3">
                         <div className="flex items-center justify-between px-1">
-                            <div className="text-[9px] font-bold text-muted-foreground/40">Strength Correlation</div>
+                            <div className="typo-body font-bold text-muted-foreground/40">Strength Correlation</div>
                             <div className="text-sm font-bold text-primary tabular-nums">{Math.round(editStrength * 100)}%</div>
                         </div>
-                       <div className="h-3 w-full bg-muted/20 rounded-full border border-border/10 p-0.5 relative group/slider">
+                        <div className="h-3 w-full bg-muted/20 rounded-full border border-border/10 p-0.5 relative group/slider">
                             <input
                                 type="range"
                                 min={0}
@@ -150,13 +150,13 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                                 onChange={event => setEditStrength(Number(event.target.value))}
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                             />
-                            <div 
+                            <div
                                 className="h-full bg-primary rounded-full transition-all duration-300 relative shadow-lg shadow-primary/20"
                                 style={{ width: `${editStrength * 100}%` }}
                             >
                                 <div className="absolute top-1/2 right-0 -translate-y-1/2 w-4 h-4 bg-background border-2 border-primary rounded-full shadow-lg group-hover/slider:scale-125 transition-transform" />
                             </div>
-                       </div>
+                        </div>
                     </div>
 
                     <Button

@@ -1,355 +1,602 @@
-import type {
-    InstallRequest,
-    MarketplaceItem,
-    MarketplaceLanguage,
-    MarketplaceModel,
-    MarketplaceRegistry,
-    MarketplaceTheme,
-} from '@shared/types/marketplace';
-import { compareVersions } from '@shared/utils/extension.util';
-import {
-    ChevronLeft,
-    ChevronRight,
-    Download,
-    Globe,
-    MessageSquare,
-    Package,
-    Palette,
-    RefreshCw,
-    Search,
-    Sparkles,
-    Zap,
-} from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { formatBytes } from '@renderer/utils/format.util';
+import type { InstallRequest, MarketplaceItem, MarketplaceLanguage, MarketplaceMcp, MarketplaceModel, MarketplaceRegistry, MarketplaceRuntimeProfile } from '@shared/types/marketplace';
+import { Package, RefreshCw } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useModel } from '@/context/ModelContext';
 import { useLanguage, useTranslation } from '@/i18n';
-import { localeRegistry } from '@/i18n/locale-registry.service';
 import { pushNotification } from '@/store/notification-center.store';
+import type { ModelInfo } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
-import { McpCard, type McpPlugin } from './McpCard';
+import { useMarketplaceItems } from '../hooks/useMarketplaceItems';
+import { type MarketplaceQueryState, type MarketplaceTab as MarketplaceMode } from '../marketplace-query.types';
+import { extractParametersFromName } from '../utils/marketplace-performance.util';
 
-type MarketplaceMode = 'mcp' | 'themes' | 'personas' | 'models' | 'prompts' | 'languages' | 'skills';
-const PAGE_SIZE = 24;
+import { MarketCard } from './MarketCard';
+import { type MarketplaceInfoItem, MarketplaceInfoPanel } from './MarketplaceInfoPanel';
+import { MarketplaceToolbar } from './MarketplaceToolbar';
+import { McpCard } from './McpCard';
 
-export function McpMarketplace({ mode }: { mode: MarketplaceMode }): JSX.Element {
+export interface McpPlugin {
+    id: string;
+    name: string;
+    description: string;
+    isEnabled: boolean;
+    isAlive: boolean;
+    source: 'core' | 'user' | 'remote';
+    actions: Array<{ name: string; description: string }>;
+}
+
+interface McpMarketplaceProps {
+    mode: MarketplaceMode;
+    registry: MarketplaceRegistry | null;
+    localPlugins: McpPlugin[];
+    installedModels?: ModelInfo[];
+    runtimeProfile?: MarketplaceRuntimeProfile | null;
+    loading: boolean;
+    onRefreshRegistry: () => Promise<void>;
+    onRefreshMcpPlugins: () => Promise<void>;
+    query: MarketplaceQueryState;
+    onQueryChange: (updater: (prev: MarketplaceQueryState) => MarketplaceQueryState) => void;
+}
+
+interface HFPreviewData {
+    model?: { id: string };
+    requirements?: {
+        diskGB?: number;
+        minRamGB?: number;
+        minVramGB?: number;
+    };
+    benchmark?: {
+        speed?: number;
+    };
+    readme?: string;
+}
+
+const BYTES_IN_GB = 1024 ** 3;
+
+function isMissingSizeLabel(value?: string): boolean {
+    if (!value) {
+        return true;
+    }
+    const normalized = value.replace(/\s+/g, '').toLowerCase();
+    return normalized === '0kb' || normalized === '0b' || normalized === '0gb' || normalized === '0.0gb';
+}
+
+function toBytes(value?: number): number | undefined {
+    if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+        return undefined;
+    }
+    return Math.round(value * BYTES_IN_GB);
+}
+
+function mergePerformanceWithPreview(
+    performance: MarketplaceModel['performance'],
+    hfPreview: HFPreviewData | null | undefined
+): MarketplaceModel['performance'] {
+    if (!performance || !hfPreview?.requirements) {
+        return performance;
+    }
+    const diskBytes = toBytes(hfPreview.requirements.diskGB);
+    const ramBytes = toBytes(hfPreview.requirements.minRamGB);
+    const vramBytes = toBytes(hfPreview.requirements.minVramGB);
+    return {
+        ...performance,
+        estimatedDiskBytes: diskBytes ?? performance.estimatedDiskBytes,
+        estimatedMemoryBytes: ramBytes ?? performance.estimatedMemoryBytes,
+        estimatedVramBytes: vramBytes ?? performance.estimatedVramBytes,
+    };
+}
+
+export type MarketplaceEntry =
+    | { type: 'local'; plugin: McpPlugin; key: string }
+    | { type: 'store'; item: MarketplaceItem; key: string };
+
+function readObject(value: unknown): Record<string, unknown> | null {
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+        return null;
+    }
+    return value as Record<string, unknown>;
+}
+
+function readString(value: unknown): string {
+    return typeof value === 'string' ? value.trim() : '';
+}
+
+function readNumber(value: unknown): number | null {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+        return null;
+    }
+    return value;
+}
+
+function readStringArray(value: unknown): string[] {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+    return value
+        .filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0)
+        .map(entry => entry.trim());
+}
+
+function buildHfMarketplaceReadme(preview: unknown): string | null {
+    const root = readObject(preview);
+    if (!root) {
+        return null;
+    }
+    const model = readObject(root.model);
+    const card = readObject(root.card);
+    const requirements = readObject(root.requirements);
+    const benchmark = readObject(root.benchmark);
+    const modelId = readString(model?.id);
+    const summary = readString(card?.summary);
+    const highlights = readStringArray(card?.highlights);
+    const diskGb = readNumber(requirements?.diskGB);
+    const minRamGb = readNumber(requirements?.minRamGB);
+    const recRamGb = readNumber(requirements?.recommendedRamGB);
+    const minVramGb = readNumber(requirements?.minVramGB);
+    const quality = readNumber(benchmark?.quality);
+    const speed = readNumber(benchmark?.speed);
+    const memoryEfficiency = readNumber(benchmark?.memoryEfficiency);
+
+    const sections: string[] = [];
+    if (modelId.length > 0) {
+        sections.push(`# ${modelId}`);
+    }
+    if (summary.length > 0) {
+        sections.push(summary);
+    }
+    if (highlights.length > 0) {
+        sections.push('## Highlights');
+        sections.push(...highlights.map(item => `- ${item}`));
+    }
+    const requirementRows: string[] = [];
+    if (minRamGb !== null) {
+        requirementRows.push(`- Min RAM: ${minRamGb} GB`);
+    }
+    if (recRamGb !== null) {
+        requirementRows.push(`- Recommended RAM: ${recRamGb} GB`);
+    }
+    if (minVramGb !== null) {
+        requirementRows.push(`- Min VRAM: ${minVramGb} GB`);
+    }
+    if (diskGb !== null) {
+        requirementRows.push(`- Disk: ${diskGb} GB`);
+    }
+    if (requirementRows.length > 0) {
+        sections.push('## Requirements');
+        sections.push(...requirementRows);
+    }
+    const benchmarkRows: string[] = [];
+    if (quality !== null) {
+        benchmarkRows.push(`- Quality: ${quality}`);
+    }
+    if (speed !== null) {
+        benchmarkRows.push(`- Speed: ${speed}`);
+    }
+    if (memoryEfficiency !== null) {
+        benchmarkRows.push(`- Memory efficiency: ${memoryEfficiency}`);
+    }
+    if (benchmarkRows.length > 0) {
+        sections.push('## Benchmark');
+        sections.push(...benchmarkRows);
+    }
+
+    const markdown = sections.join('\n\n').trim();
+    return markdown.length > 0 ? markdown : null;
+}
+
+export function McpMarketplace({
+    mode,
+    registry,
+    localPlugins,
+    installedModels = [],
+    runtimeProfile = null,
+    loading,
+    onRefreshRegistry,
+    onRefreshMcpPlugins,
+    query,
+    onQueryChange,
+}: McpMarketplaceProps): JSX.Element {
     const { t } = useTranslation();
     const { language: activeLanguage, setLanguage } = useLanguage();
-    const [registry, setRegistry] = useState<MarketplaceRegistry | null>(null);
-    const [localPlugins, setLocalPlugins] = useState<McpPlugin[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useState('');
+    const { refreshModels } = useModel();
     const [installingId, setInstallingId] = useState<string | null>(null);
-    const [currentPage, setCurrentPage] = useState(1);
+    const [hfReadmeByModelId, setHfReadmeByModelId] = useState<Record<string, string>>({});
+    const [hfPreviewByModelId, setHfPreviewByModelId] = useState<Record<string, HFPreviewData>>({});
+    const [hfPreviewLoadingId, setHfPreviewLoadingId] = useState<string | null>(null);
+    const fetchedHfIdsRef = useRef<Set<string>>(new Set());
+    const fetchingHfIdsRef = useRef<Set<string>>(new Set());
 
-    const fetchRegistry = useCallback(async () => {
-        try {
-            const data = await window.electron.marketplace.fetch();
-            setRegistry(data);
-        } catch {
-            pushNotification({ type: 'error', message: t('marketplace.loadError') });
+    const {
+        categories,
+        authors,
+        totalCount,
+        totalPages,
+        effectivePage,
+        pagedItems,
+        combinedItems
+    } = useMarketplaceItems({ mode, registry, localPlugins, query, installedModels, runtimeProfile });
+
+    const selectedItemId = query.selectedItemId;
+    const setSelectedItemId = (id: string | null) => {
+        onQueryChange(prev => ({ ...prev, selectedItemId: id }));
+    };
+
+    const selectedEntry = useMemo<MarketplaceEntry | null>(() => {
+        if (!selectedItemId) {
+            return null;
         }
-    }, [t]);
+        return combinedItems.find(
+            entry => (entry.type === 'local' ? entry.plugin.id : entry.item.id) === selectedItemId
+        ) ?? null;
+    }, [combinedItems, selectedItemId]);
 
-    const fetchLocalPlugins = useCallback(async () => {
-        if (mode !== 'mcp') {
-            setLocalPlugins([]);
-            return;
+    const selectedStoreItem = useMemo<MarketplaceItem | null>(() => {
+        if (selectedEntry?.type !== 'store') {
+            return null;
         }
-        try {
-            const list = await window.electron.mcp.list();
-            setLocalPlugins(list as unknown as McpPlugin[]);
-        } catch {
-            pushNotification({ type: 'error', message: t('marketplace.mcp.localLoadError') });
+        return selectedEntry.item;
+    }, [selectedEntry]);
+
+    const selectedStoreModel = useMemo<MarketplaceModel | null>(() => {
+        if (selectedStoreItem?.itemType !== 'model') {
+            return null;
         }
-    }, [mode, t]);
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        try {
-            await Promise.all([fetchRegistry(), fetchLocalPlugins()]);
-        } finally {
-            setLoading(false);
-        }
-    }, [fetchRegistry, fetchLocalPlugins]);
-
-    useEffect(() => {
-        void fetchData();
-    }, [fetchData]);
-
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [mode, search]);
+        return selectedStoreItem as MarketplaceModel;
+    }, [selectedStoreItem]);
 
     const handleToggleMcp = useCallback(async (plugin: McpPlugin) => {
         try {
             await window.electron.mcp.toggle(plugin.id ?? plugin.name, !plugin.isEnabled);
-            await fetchLocalPlugins();
+            await onRefreshMcpPlugins();
         } catch {
-            pushNotification({ type: 'error', message: t('marketplace.mcp.toggleError') });
+            pushNotification({ type: 'error', message: t('mcp.toggleFailed') });
         }
-    }, [fetchLocalPlugins, t]);
+    }, [onRefreshMcpPlugins, t]);
 
     const handleUninstallMcp = useCallback(async (plugin: McpPlugin) => {
         try {
             await window.electron.mcp.uninstall(plugin.id ?? plugin.name);
-            await fetchLocalPlugins();
-            await fetchRegistry();
+            await onRefreshMcpPlugins();
+            pushNotification({ type: 'success', message: t('mcp.uninstallSuccess') });
         } catch {
-            pushNotification({ type: 'error', message: t('marketplace.mcp.uninstallError') });
+            pushNotification({ type: 'error', message: t('mcp.uninstallFailed') });
         }
-    }, [fetchLocalPlugins, fetchRegistry, t]);
+    }, [onRefreshMcpPlugins, t]);
 
     const handleInstall = useCallback(async (item: MarketplaceItem) => {
         if (installingId) { return; }
         setInstallingId(item.id);
+        const modelItem = item.itemType === 'model' ? (item as MarketplaceModel) : null;
         try {
-            const baseRequest: InstallRequest = {
+            const installResult = await window.electron.marketplace.install({
+                type: item.itemType as InstallRequest['type'],
                 id: item.id,
-                type: item.itemType,
                 downloadUrl: item.downloadUrl,
-                name: item.name,
-                description: item.description,
-                author: item.author,
-                version: item.version,
-            };
-            const modelRequest = item.itemType === 'model'
-                ? {
-                    provider: (item as MarketplaceModel).provider,
-                    sourceUrl: (item as MarketplaceModel).sourceUrl,
-                    category: (item as MarketplaceModel).category,
-                    pipelineTag: (item as MarketplaceModel).pipelineTag,
-                }
-                : {};
-            const result = await window.electron.marketplace.install({
-                ...baseRequest,
-                ...modelRequest,
+                sourceUrl: modelItem?.sourceUrl,
+                provider: modelItem?.provider
             });
-            if (result.success) {
-                if (item.itemType === 'language') {
-                    await localeRegistry.reloadLocales();
-                }
-                pushNotification({ type: 'success', message: t('marketplace.installSuccess', { name: item.name }) });
-                void fetchData();
-            } else {
-                pushNotification({ type: 'error', message: t('marketplace.installFailure') });
+            if (!installResult.success) {
+                throw new Error(installResult.message || t('marketplace.installFailed', { name: item.name }));
             }
-        } catch {
-            pushNotification({ type: 'error', message: t('marketplace.networkError') });
+            if (item.itemType === 'mcp') {
+                const mcpItem = item as MarketplaceMcp;
+                const mcpConfig = installResult.mcpConfig ?? {
+                    id: mcpItem.id,
+                    name: mcpItem.id,
+                    description: mcpItem.description,
+                    command: mcpItem.command,
+                    args: mcpItem.args,
+                    env: mcpItem.env,
+                    enabled: false,
+                    permissionProfile: mcpItem.permissionProfile,
+                    tools: mcpItem.tools,
+                    category: mcpItem.category,
+                    publisher: mcpItem.author,
+                    version: mcpItem.version,
+                    extensionType: 'mcp_server',
+                    isOfficial: true,
+                    capabilities: mcpItem.capabilities,
+                    storage: mcpItem.storage,
+                };
+                await window.electron.mcp.install(mcpConfig);
+                await onRefreshMcpPlugins();
+            }
+            await onRefreshRegistry();
+            void refreshModels(); // Background refresh of local models
+            pushNotification({ type: 'success', message: t('marketplace.installSuccess', { name: item.name }) });
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : t('marketplace.installFailed', { name: item.name });
+            pushNotification({ type: 'error', message });
         } finally {
             setInstallingId(null);
         }
-    }, [fetchData, installingId, t]);
+    }, [installingId, onRefreshMcpPlugins, onRefreshRegistry, refreshModels, t]);
+
+    useEffect(() => {
+        const fetchBulkHuggingFaceMetadata = async (): Promise<void> => {
+            const hfModels = pagedItems
+                .filter((entry): entry is { type: 'store'; item: MarketplaceItem; key: string } => entry.type === 'store')
+                .map(entry => entry.item)
+                .filter((item): item is MarketplaceModel =>
+                    item.itemType === 'model' &&
+                    (item as MarketplaceModel).provider === 'huggingface'
+                )
+                .filter(model => !fetchedHfIdsRef.current.has(model.id) && !fetchingHfIdsRef.current.has(model.id));
+
+            if (hfModels.length === 0) {
+                return;
+            }
+
+            try {
+                const modelIds = hfModels.map(m => m.id);
+                modelIds.forEach(id => fetchingHfIdsRef.current.add(id));
+
+                const results = await window.electron.huggingface.getBulkModelPreviews(modelIds);
+                for (const modelId of modelIds) {
+                    fetchingHfIdsRef.current.delete(modelId);
+                    if (results[modelId]) {
+                        fetchedHfIdsRef.current.add(modelId);
+                    }
+                }
+
+                setHfPreviewByModelId(prev => ({
+                    ...prev,
+                    ...results
+                }));
+            } catch (error) {
+                hfModels.forEach(model => fetchingHfIdsRef.current.delete(model.id));
+                appLogger.error('McpMarketplace', 'Bulk fetch failed', error as Error);
+            }
+        };
+
+        void fetchBulkHuggingFaceMetadata();
+    }, [pagedItems]);
 
     const handleActivateLanguage = useCallback(async (item: MarketplaceLanguage) => {
-        if (item.locale === activeLanguage) {
+        if (item.locale === activeLanguage) { return; }
+        await setLanguage(item.locale);
+        await onRefreshRegistry();
+    }, [activeLanguage, onRefreshRegistry, setLanguage]);
+
+    useEffect(() => {
+        if (selectedStoreModel?.provider !== 'huggingface') {
             return;
         }
-        await setLanguage(item.locale);
-        void fetchData();
-    }, [activeLanguage, fetchData, setLanguage]);
-
-    const getStoreItems = () => {
-        if (!registry) { return []; }
-        switch (mode) {
-            case 'mcp': return registry.mcp || [];
-            case 'themes': return registry.themes || [];
-            case 'personas': return registry.personas || [];
-            case 'prompts': return registry.prompts || [];
-            case 'models': return registry.models || [];
-            case 'languages': return registry.languages || [];
-            default: return [];
+        if (hfPreviewByModelId[selectedStoreModel.id]) {
+            return;
         }
-    };
 
-    const storeItems = getStoreItems();
-    const filteredStoreItems = storeItems.filter(i => {
-        const matchesSearch = i.name.toLowerCase().includes(search.toLowerCase()) || 
-                              i.description.toLowerCase().includes(search.toLowerCase());
-        if (!matchesSearch) {
-            return false;
+        let active = true;
+        const modelId = selectedStoreModel.id;
+        setHfPreviewLoadingId(modelId);
+        void window.electron.huggingface.getModelPreview(modelId)
+            .then((preview) => {
+                if (!active) {
+                    return;
+                }
+                setHfPreviewByModelId(prev => ({
+                    ...prev,
+                    [modelId]: preview
+                }));
+                const hasExistingReadme = (selectedStoreModel.readme ?? '').trim().length > 0
+                    || (hfReadmeByModelId[modelId] ?? '').trim().length > 0;
+                const fallbackReadme = !hasExistingReadme ? buildHfMarketplaceReadme(preview) : null;
+                if (fallbackReadme && fallbackReadme.trim().length > 0) {
+                    setHfReadmeByModelId(prev => ({
+                        ...prev,
+                        [modelId]: fallbackReadme
+                    }));
+                }
+            })
+            .catch((error: Error | string) => {
+                const message = typeof error === 'string' ? error : error.message;
+                appLogger.warn('McpMarketplace', `Failed to load HF preview for ${modelId}: ${message}`);
+            })
+            .finally(() => {
+                if (!active) {
+                    return;
+                }
+                setHfPreviewLoadingId(current => (current === modelId ? null : current));
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [hfPreviewByModelId, hfReadmeByModelId, selectedStoreModel]);
+
+    const selectedItem = useMemo<MarketplaceInfoItem | null>(() => {
+        const entry = selectedEntry;
+        if (!entry) { return null; }
+        if (entry.type === 'local') {
+            return {
+                id: entry.plugin.id,
+                name: entry.plugin.name,
+                description: entry.plugin.description,
+                author: 'System',
+                version: '1.0.0',
+                installed: true,
+                itemType: 'mcp',
+            };
         }
-        
-        if (mode === 'mcp' && i.installed) {
-            const installedVersion = typeof i.installedVersion === 'string' ? i.installedVersion : null;
-            const hasUpd = Boolean(installedVersion && compareVersions(i.version, installedVersion) > 0);
-            return hasUpd;
+        const { item } = entry;
+        const modelItem = item.itemType === 'model' ? (item as MarketplaceModel) : null;
+        const resolvedReadme = modelItem?.provider === 'huggingface'
+            ? (modelItem.readme ?? hfReadmeByModelId[modelItem.id])
+            : modelItem?.readme;
+        const hfPreview = (modelItem?.id ? hfPreviewByModelId[modelItem.id] : null) as HFPreviewData | null;
+        const performance = mergePerformanceWithPreview(modelItem?.performance, hfPreview);
+
+        const isHf = modelItem?.provider === 'huggingface';
+        let displaySize = modelItem?.totalSize;
+
+        if (performance?.estimatedDiskBytes && isMissingSizeLabel(displaySize)) {
+            displaySize = formatBytes(performance.estimatedDiskBytes);
         }
-        
-        return true;
-    });
 
-    const filteredLocal = localPlugins.filter(p => 
-        p.name.toLowerCase().includes(search.toLowerCase()) || 
-        p.description?.toLowerCase().includes(search.toLowerCase())
-    );
+        // Final fallback for display size from name if it is still missing
+        if (!displaySize && modelItem?.name) {
+            const params = extractParametersFromName(modelItem.name);
+            if (params) {
+                 // Guestimate Q4 size if absolutely nothing else known
+                 displaySize = `~${(params * 0.6 / 1024 ** 3).toFixed(1)} GB`;
+            }
+        }
 
-    const combinedItems = useMemo(() => {
-        const localItems = filteredLocal.map((plugin, index) => ({ type: 'local' as const, plugin, key: `local-${plugin.id ?? plugin.name ?? index}` }));
-        const remoteItems = filteredStoreItems.map(item => ({ type: 'store' as const, item, key: `store-${item.itemType}-${item.id}` }));
-        return [...localItems, ...remoteItems];
-    }, [filteredLocal, filteredStoreItems]);
+        return {
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            author: item.author,
+            version: item.version,
+            installed: Boolean(item.installed),
+            itemType: item.itemType,
+            readme: resolvedReadme,
+            totalSize: displaySize,
+            downloads: modelItem?.downloads,
+            pullCount: modelItem?.pullCount,
+            likes: modelItem?.likes,
+            submodels: modelItem?.submodels,
+            performance,
+            provider: modelItem?.provider,
+            isReadmeLoading: isHf
+                && !resolvedReadme
+                && hfPreviewLoadingId === modelItem.id,
+        };
+    }, [hfPreviewLoadingId, hfReadmeByModelId, hfPreviewByModelId, selectedEntry]);
 
-    const totalCount = combinedItems.length;
-    const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-    const effectivePage = Math.min(currentPage, totalPages);
-    const pageStart = (effectivePage - 1) * PAGE_SIZE;
-    const pagedItems = combinedItems.slice(pageStart, pageStart + PAGE_SIZE);
+    const enrichedPagedItems = useMemo(() => {
+        return pagedItems.map(entry => {
+            if (entry.type !== 'store' || entry.item.itemType !== 'model') {
+                return entry;
+            }
+
+            const modelItem = entry.item as MarketplaceModel;
+            if (modelItem.provider !== 'huggingface') {
+                return entry;
+            }
+
+            const hfPreview = hfPreviewByModelId[modelItem.id];
+            if (!hfPreview) {
+                return entry;
+            }
+
+            const performance = mergePerformanceWithPreview(modelItem.performance, hfPreview);
+
+            let totalSize = modelItem.totalSize;
+            if (performance?.estimatedDiskBytes && isMissingSizeLabel(totalSize)) {
+                totalSize = formatBytes(performance.estimatedDiskBytes);
+            }
+
+            return {
+                ...entry,
+                item: {
+                    ...entry.item,
+                    performance,
+                    totalSize,
+                }
+            };
+        });
+    }, [pagedItems, hfPreviewByModelId]);
 
     if (loading) { return <Loader t={t} />; }
 
     return (
         <div className="space-y-6">
-            <Toolbar search={search} onSearch={setSearch} count={totalCount} t={t} />
-            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
-                {pagedItems.map(entry => entry.type === 'local' ? (
-                    <McpCard
-                        key={entry.key}
-                        plugin={entry.plugin}
-                        t={t}
-                        onToggle={(p) => void handleToggleMcp(p)}
-                        onUninstall={(p) => void handleUninstallMcp(p)}
-                    />
-                ) : (
-                    <MarketCard 
-                        key={entry.key} 
-                        item={entry.item} 
-                        isActive={entry.item.itemType === 'language' && (entry.item as MarketplaceLanguage).locale === activeLanguage}
-                        isInstalling={installingId === entry.item.id} 
-                        onInstall={(it) => void handleInstall(it)} 
-                        onActivateLanguage={(it) => void handleActivateLanguage(it)}
-                    />
-                ))}
-                {totalCount === 0 && <EmptyState t={t} mode={mode} />}
-            </div>
-            {totalCount > PAGE_SIZE && (
-                <Pagination
-                    currentPage={effectivePage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                    t={t}
-                />
-            )}
-        </div>
-    );
-}
-
-function MarketCard({ item, isActive, onInstall, onActivateLanguage, isInstalling }: {
-    item: MarketplaceItem;
-    isActive: boolean;
-    onInstall: (item: MarketplaceItem) => void;
-    onActivateLanguage: (item: MarketplaceLanguage) => void;
-    isInstalling: boolean;
-}) {
-    const { t } = useTranslation();
-    const themeItem = item.itemType === 'theme' ? (item as MarketplaceTheme) : null;
-    const languageItem = item.itemType === 'language' ? item as MarketplaceLanguage : null;
-    const installedVersion = typeof item.installedVersion === 'string' ? item.installedVersion : null;
-    const hasUpdate = Boolean(
-        item.installed
-        && installedVersion
-        && compareVersions(item.version, installedVersion) > 0
-    );
-
-    const Icon = (({
-        theme: Palette,
-        mcp: Package,
-        persona: Sparkles,
-        model: Zap,
-        prompt: MessageSquare,
-        language: Globe,
-        skill: Sparkles,
-    } as Record<string, React.ElementType>)[item.itemType] || Package);
-
-    const primaryActionLabel = isInstalling
-        ? t('marketplace.installing')
-        : hasUpdate
-            ? t('common.update')
-            : item.installed
-                ? t('modelExplorer.installed')
-                : t('marketplace.install');
-
-    return (
-        <div className="group flex flex-col bg-card border border-border/40 rounded-lg p-5 hover:border-primary/30 transition-all duration-300 shadow-sm hover:shadow-md">
-            <div className="flex items-start justify-between gap-4 mb-4">
-                <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded bg-muted/40 text-muted-foreground group-hover:text-primary transition-colors">
-                        <Icon className="w-4.5 h-4.5" />
-                    </div>
-                    <div>
-                        <h3 className="text-sm font-bold text-foreground leading-none mb-1">{item.name}</h3>
-                        <p className="text-xs text-muted-foreground font-medium">{t('marketplace.authorBy', { author: item.author })}</p>
-                    </div>
-                </div>
-                <button
-                    onClick={() => onInstall(item)}
-                    disabled={isInstalling || (Boolean(item.installed) && !hasUpdate)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded bg-primary/10 text-primary hover:bg-primary text-xs font-bold transition-all hover:text-primary-foreground group/btn disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {isInstalling || hasUpdate
-                        ? <RefreshCw className={`w-3.5 h-3.5 ${isInstalling ? 'animate-spin' : ''}`} />
-                        : <Download className="w-3.5 h-3.5" />}
-                    {primaryActionLabel}
-                </button>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">{item.description}</p>
-            {installedVersion && (
-                <div className="mt-4 flex items-center gap-2 text-[10px] font-semibold text-muted-foreground">
-                    <span>{item.version}</span>
-                    <span className="rounded-full bg-muted px-2 py-0.5 normal-case tracking-normal">
-                        {`v${installedVersion}`}
-                    </span>
-                    {hasUpdate && (
-                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">
-                            {t('common.update')}
-                        </span>
-                    )}
-                </div>
-            )}
-            {themeItem?.previewColor && (
-                <div className="mt-4 flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded-full border border-border/20 shadow-sm" style={{ backgroundColor: themeItem.previewColor }} />
-                    <span className="text-xs text-muted-foreground font-bold">{t('marketplace.preview')}</span>
-                </div>
-            )}
-            {languageItem && (
-                <div className="mt-4 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                        <span>{languageItem.nativeName}</span>
-                        {item.installed && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px]">{t('modelExplorer.installed')}</span>}
-                        {hasUpdate && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">{t('common.update')}</span>}
-                        {isActive && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">{t('common.active')}</span>}
-                    </div>
-                    {item.installed && !isActive && (
+            {mode === 'models' && (
+                <div className="flex items-center gap-2 border-b border-border/20 pb-4">
+                    {(['ollama', 'huggingface', 'community'] as const).map(tab => (
                         <button
-                            onClick={() => onActivateLanguage(languageItem)}
-                            className="rounded bg-secondary px-3 py-1.5 text-[10px] font-bold text-secondary-foreground transition-colors hover:bg-secondary/80"
+                            key={tab}
+                            onClick={() => onQueryChange(prev => ({ ...prev, modelTab: tab, page: 1, selectedItemId: null }))}
+                            className={`px-4 py-1.5 rounded-full typo-body font-bold transition-all ${query.modelTab === tab
+                                ? 'bg-primary text-primary-foreground shadow-md'
+                                : 'bg-muted/30 text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                                }`}
                         >
-                            {t('common.select')}
+                            {t(`marketplace.tabs.${tab}`)}
                         </button>
-                    )}
+                    ))}
                 </div>
             )}
-        </div>
-    );
-}
 
-function Toolbar({ search, onSearch, count, t }: { search: string; onSearch: (v: string) => void; count: number; t: (key: string) => string }) {
-    return (
-        <div className="flex items-center justify-between gap-4 bg-muted/10 p-3 rounded-xl border border-border/40">
-            <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
-                <input 
-                    type="text" 
-                    placeholder={t('marketplace.search')} 
-                    value={search} 
-                    onChange={(e) => onSearch(e.target.value)} 
-                    className="w-full bg-background border border-border/30 rounded px-10 py-2 text-sm focus:outline-none focus:border-primary/40 transition-all font-medium" 
-                />
-            </div>
-            <div className="hidden sm:flex items-center gap-2">
-                <div className="px-3 py-1 rounded-full bg-muted/30 text-xs font-bold text-muted-foreground">
-                    {count} {t('marketplace.results')}
+            <MarketplaceToolbar
+                mode={mode}
+                query={query}
+                onQueryChange={onQueryChange}
+                totalCount={totalCount}
+                authors={authors}
+                categories={categories}
+                mcpView={query.mcpView}
+            />
+
+            <div className={`grid grid-cols-1 gap-6 transition-all duration-300 ${selectedItem ? 'xl:grid-cols-[minmax(0,1fr)_460px]' : 'xl:grid-cols-1'}`}>
+                <div className="space-y-6">
+                    <div className={`grid grid-cols-1 gap-6 ${selectedItem ? 'md:grid-cols-1 lg:grid-cols-1 2xl:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-3'}`}>
+                        {enrichedPagedItems.map(entry => (
+                            <div
+                                key={entry.key}
+                                onClick={() => setSelectedItemId(entry.type === 'local' ? entry.plugin.id : entry.item.id)}
+                                className={`cursor-pointer transition-all duration-200 active:scale-[0.98] ${selectedItemId === (entry.type === 'local' ? entry.plugin.id : entry.item.id) ? 'ring-2 ring-primary ring-offset-2 ring-offset-background rounded-xl' : ''}`}
+                            >
+                                {entry.type === 'local' ? (
+                                    <McpCard
+                                        plugin={entry.plugin}
+                                        t={t}
+                                        onToggle={(p) => void handleToggleMcp(p)}
+                                        onUninstall={(p) => void handleUninstallMcp(p)}
+                                    />
+                                ) : (
+                                    <MarketCard
+                                        item={entry.item}
+                                        isActive={entry.item.itemType === 'language' && (entry.item as MarketplaceLanguage).locale === activeLanguage}
+                                        isInstalling={installingId === entry.item.id}
+                                        onInstall={(it) => void handleInstall(it)}
+                                        onActivateLanguage={(it) => void handleActivateLanguage(it)}
+                                    />
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    {totalCount === 0 && <EmptyState t={t} mode={mode} />}
+
+                    {totalCount > 24 && (
+                        <Pagination
+                            currentPage={effectivePage}
+                            totalPages={totalPages}
+                            onPageChange={nextPage => onQueryChange(prev => ({ ...prev, page: nextPage }))}
+                            t={t}
+                        />
+                    )}
                 </div>
+
+                {selectedItem && (
+                    <div className="relative">
+                        <MarketplaceInfoPanel
+                            item={selectedItem}
+                            t={t}
+                            onClose={() => setSelectedItemId(null)}
+                            onInstall={(override) => {
+                                if (!selectedStoreItem) {
+                                    return;
+                                }
+                                if (override) {
+                                    void handleInstall({
+                                        ...selectedStoreItem,
+                                        id: override.id || selectedStoreItem.id,
+                                        name: override.name || selectedStoreItem.name,
+                                        downloadUrl: override.downloadUrl || selectedStoreItem.downloadUrl
+                                    });
+                                } else {
+                                    void handleInstall(selectedStoreItem);
+                                }
+                            }}
+                        />
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -357,21 +604,20 @@ function Toolbar({ search, onSearch, count, t }: { search: string; onSearch: (v:
 
 function EmptyState({
     t,
-    mode,
+    mode
 }: {
     t: (key: string, options?: Record<string, string | number>) => string;
-    mode: MarketplaceMode;
+    mode: MarketplaceMode
 }) {
     const modeKeyByMode: Record<MarketplaceMode, string> = {
         mcp: 'marketplace.tabs.mcp',
+        skills: 'marketplace.tabs.skills',
         themes: 'marketplace.tabs.themes',
         personas: 'marketplace.tabs.personas',
         models: 'marketplace.tabs.models',
         prompts: 'marketplace.tabs.prompts',
         languages: 'marketplace.tabs.languages',
-        skills: 'marketplace.tabs.skills',
     };
-
     return (
         <div className="col-span-full py-20 text-center border border-dashed border-border/40 rounded-xl bg-muted/5">
             <Package className="w-10 h-10 text-muted-foreground/20 mx-auto mb-4" />
@@ -379,6 +625,7 @@ function EmptyState({
         </div>
     );
 }
+
 
 function Loader({ t }: { t: (key: string) => string }) {
     return (
@@ -389,11 +636,12 @@ function Loader({ t }: { t: (key: string) => string }) {
     );
 }
 
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 function Pagination({
     currentPage,
     totalPages,
     onPageChange,
-    t,
+    t
 }: {
     currentPage: number;
     totalPages: number;
@@ -401,7 +649,7 @@ function Pagination({
     t: (key: string, options?: Record<string, string | number>) => string;
 }) {
     return (
-        <div className="flex items-center justify-center gap-3 pt-2">
+        <div className="flex items-center justify-center gap-3 pt-6 border-t border-border/20">
             <button
                 type="button"
                 onClick={() => onPageChange(Math.max(1, currentPage - 1))}

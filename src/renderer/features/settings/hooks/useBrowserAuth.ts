@@ -11,6 +11,12 @@ type ProviderType = BrowserOAuthProvider | 'copilot';
 const BROWSER_AUTH_ACCOUNT_LOAD_TIMEOUT_MS = 10_000;
 const BROWSER_AUTH_LOGIN_INIT_TIMEOUT_MS = 15_000;
 const BROWSER_AUTH_STATUS_TIMEOUT_MS = 10_000;
+const BROWSER_AUTH_FLOW_TIMEOUT_MS = 30_000;
+const BROWSER_AUTH_MAX_POLL_ATTEMPTS = 10;
+
+function extractErrorMessage(error: Error | string): string {
+    return typeof error === 'string' ? error : error.message;
+}
 
 interface BrowserAuthPollStatus {
     status: string
@@ -61,7 +67,8 @@ interface BrowserAuthOptions {
 const PROVIDER_ACCOUNT_ALIASES: Record<BrowserOAuthProvider, string[]> = {
     codex: ['codex', 'openai'],
     claude: ['claude', 'anthropic'],
-    antigravity: ['antigravity', 'google', 'gemini']
+    antigravity: ['antigravity', 'google', 'gemini'],
+    ollama: ['ollama']
 };
 
 const PROVIDER_SETTINGS_UPDATERS: Record<ProviderType, (settings: AppSettings) => AppSettings> = {
@@ -79,11 +86,15 @@ const PROVIDER_SETTINGS_UPDATERS: Record<ProviderType, (settings: AppSettings) =
     antigravity: settings => ({
         ...settings,
         antigravity: { ...(settings.antigravity ?? { connected: false }), connected: false }
+    }),
+    ollama: settings => ({
+        ...settings,
+        ollama: { ...settings.ollama }
     })
 };
 
 function isBrowserOAuthProvider(provider: string | null | undefined): provider is BrowserOAuthProvider {
-    return provider === 'codex' || provider === 'claude' || provider === 'antigravity';
+    return provider === 'codex' || provider === 'claude' || provider === 'antigravity' || provider === 'ollama';
 }
 
 function toBrowserAuthRequest(authBusy: AuthBusyState | null): BrowserAuthRequest | null {
@@ -122,6 +133,7 @@ function buildAuthStatus(accounts: UseLinkedAccountsResult['accounts']): AuthSta
         codex: hasProvider(PROVIDER_ACCOUNT_ALIASES.codex),
         claude: hasProvider(PROVIDER_ACCOUNT_ALIASES.claude),
         antigravity: hasProvider(PROVIDER_ACCOUNT_ALIASES.antigravity),
+        ollama: hasProvider(PROVIDER_ACCOUNT_ALIASES.ollama),
         copilot: hasProvider(['copilot', 'copilot_token'])
     };
 }
@@ -379,6 +391,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
     const pollConnection = useCallback((request: BrowserAuthRequest) => {
         const requestId = activeRequestRef.current;
         let attempts = 0;
+        const hasAuthTimedOut = () => Date.now() - request.startedAt >= BROWSER_AUTH_FLOW_TIMEOUT_MS;
 
         const scheduleNextPoll = () => {
             pollTimeoutRef.current = setTimeout(() => {
@@ -390,9 +403,20 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
             if (!mountedRef.current || requestId !== activeRequestRef.current) {
                 return;
             }
+            if (hasAuthTimedOut()) {
+                await cancelBrowserAuthAttempt(request);
+                resetBrowserAuthState(t('auth.providerTimeout', { provider: request.provider }));
+                return;
+            }
 
             attempts += 1;
             try {
+                const remainingFlowMs = BROWSER_AUTH_FLOW_TIMEOUT_MS - (Date.now() - request.startedAt);
+                if (remainingFlowMs <= 0) {
+                    await cancelBrowserAuthAttempt(request);
+                    resetBrowserAuthState(t('auth.providerTimeout', { provider: request.provider }));
+                    return;
+                }
                 const boundedAuthState = await withTimeout(
                     window.electron.ipcRenderer.invoke(
                         'proxy:getAuthStatus',
@@ -400,7 +424,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                         request.state,
                         request.accountId
                     ) as Promise<BrowserAuthPollStatus>,
-                    BROWSER_AUTH_STATUS_TIMEOUT_MS,
+                    Math.min(BROWSER_AUTH_STATUS_TIMEOUT_MS, remainingFlowMs),
                     `${request.provider} auth status`
                 );
 
@@ -443,7 +467,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                     return;
                 }
 
-                if (attempts < 30) {
+                if (attempts < BROWSER_AUTH_MAX_POLL_ATTEMPTS && !hasAuthTimedOut()) {
                     scheduleNextPoll();
                     return;
                 }
@@ -462,7 +486,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                     return;
                 }
 
-                if (attempts < 30) {
+                if (attempts < BROWSER_AUTH_MAX_POLL_ATTEMPTS && !hasAuthTimedOut()) {
                     scheduleNextPoll();
                     return;
                 }
@@ -504,7 +528,9 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                 ? window.electron.codexLogin()
                 : provider === 'claude'
                     ? window.electron.claudeLogin()
-                    : window.electron.antigravityLogin();
+                    : provider === 'antigravity'
+                        ? window.electron.antigravityLogin()
+                        : window.electron.ollamaLogin();
             const response = await withTimeout(
                 loginRequest,
                 BROWSER_AUTH_LOGIN_INIT_TIMEOUT_MS,
@@ -543,7 +569,12 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
             pollConnection(request);
         } catch (error) {
             appLogger.error('BrowserAuth', `Connection failure for ${provider}`, error as Error);
-            resetBrowserAuthState(t('auth.connectionFailedGeneric'));
+            const reason = extractErrorMessage(error as Error | string).trim();
+            resetBrowserAuthState(
+                reason.length > 0
+                    ? t('auth.failedWithReason', { reason })
+                    : t('auth.connectionFailedGeneric')
+            );
         }
     }, [authBusy, cancelBrowserAuthAttempt, clearPollTimeout, pendingBrowserAuth, pollConnection, resetBrowserAuthState, setAuthBusy, setAuthNotice, t]);
 
@@ -594,6 +625,19 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
         }
 
         const updatedSettings = PROVIDER_SETTINGS_UPDATERS[provider](settings);
+        if (provider === 'ollama' && window.electron.ollamaSignout) {
+            const ollamaAccountId = linkedAccounts.accounts.find(account =>
+                PROVIDER_ACCOUNT_ALIASES.ollama.includes(account.provider.toLowerCase())
+            )?.id;
+            try {
+                const result = await window.electron.ollamaSignout(ollamaAccountId);
+                if (!result.success && !result.alreadySignedOut) {
+                    appLogger.warn('BrowserAuth', `Ollama signout failed: ${result.error ?? 'unknown error'}`);
+                }
+            } catch (error) {
+                appLogger.warn('BrowserAuth', 'Ollama signout request failed', error as Error);
+            }
+        }
         try {
             await window.electron.unlinkProvider(provider);
         } catch (error) {

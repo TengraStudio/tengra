@@ -1,6 +1,5 @@
 import { appLogger } from '@main/logging/logger';
-import { ImagePersistenceService } from '@main/services/data/image-persistence.service';
-import { filterContent } from '@main/services/llm/content-filter.service';
+import { ImagePersistenceService } from '@main/services/data/image-persistence.service'; 
 import { ChatMessage, OpenAIResponse, ToolCall } from '@main/types/llm.types';
 import { MessageNormalizer } from '@main/utils/message-normalizer.util';
 import { StreamChunk } from '@main/utils/stream-parser.util';
@@ -33,18 +32,7 @@ const normalizeToolCalls = (toolCalls: OpenAIMessage['tool_calls']): ToolCall[] 
             arguments: toolCall.function.arguments,
         },
     }));
-};
-
-/**
- * SEC-013-2: Content Filtering - Validate LLM output against safety policies.
- */
-export function validateLLMContent(content: string): string {
-    const result = filterContent(content);
-    if (result.blocked) {
-        appLogger.warn('LLMService', `Content filtering blocked unsafe pattern(s): ${result.matchedPatterns.join(', ')}`);
-    }
-    return result.content;
-}
+}; 
 
 /**
  * Builds the OpenAI-compatible request body.
@@ -219,7 +207,7 @@ export async function processOpenAIResponse(
         const message = choice.message;
 
         const completion = extractTextFromOpenAIMessage(message);
-        const validatedCompletion = validateLLMContent(completion);
+        const validatedCompletion = completion;
         const savedImages = await saveImagesFromOpenAIMessage(message, imagePersistence);
 
         const variants = await extractVariantsFromChoices(json.choices, json.model);

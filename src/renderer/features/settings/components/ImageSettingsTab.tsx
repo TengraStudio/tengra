@@ -40,7 +40,7 @@ export const ImageSettingsTab: React.FC<SettingsSharedProps> = ({ settings, hand
                         </h3>
                         <div className="flex items-center gap-2 mt-2">
                             <div className="h-1 w-8 bg-primary rounded-full group-hover:w-12 transition-all duration-700" />
-                            <p className="text-[10px] font-bold text-muted-foreground opacity-50">
+                            <p className="typo-body font-bold text-muted-foreground opacity-50">
                                 Visual Studio Engine
                             </p>
                         </div>
@@ -73,19 +73,19 @@ export const ImageSettingsTab: React.FC<SettingsSharedProps> = ({ settings, hand
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1">
                     <div className="flex items-center gap-4">
                         <div className="p-3 rounded-2xl bg-primary/10 text-primary shadow-lg shadow-primary/5 group-hover/gallery:scale-110 transition-transform duration-500">
-                             <Layers className="w-6 h-6" />
+                            <Layers className="w-6 h-6" />
                         </div>
                         <div>
                             <h3 className="text-lg font-bold text-foreground">
                                 {t('settings.images.libraryTitle')}
                             </h3>
-                            <p className="text-[10px] text-muted-foreground mt-1 font-bold opacity-40">
+                            <p className="typo-body text-muted-foreground mt-1 font-bold opacity-40">
                                 Global Generation Cloud
                             </p>
                         </div>
                     </div>
                 </div>
-                
+
                 <div className="rounded-3xl border border-border/20 bg-muted/20 overflow-hidden shadow-sm group-hover/gallery:border-border/40 transition-all duration-500">
                     <div className="h-[60vh] min-h-[500px]">
                         <GalleryView language={language} />
@@ -105,7 +105,7 @@ export const ImageSettingsTab: React.FC<SettingsSharedProps> = ({ settings, hand
                         variant="outline"
                         size="sm"
                         onClick={() => { void h.refreshImageData(); }}
-                        className="h-10 px-6 rounded-xl border-border/40 bg-muted/20 text-[10px] font-bold text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all active:scale-95 flex items-center gap-3 shadow-sm"
+                        className="h-10 px-6 rounded-xl border-border/40 bg-muted/20 typo-body font-bold text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all active:scale-95 flex items-center gap-3 shadow-sm"
                     >
                         <RefreshCw className={cn('h-3.5 w-3.5', h.isDataRefreshing && 'animate-spin')} />
                         {t('settings.images.refreshData')}

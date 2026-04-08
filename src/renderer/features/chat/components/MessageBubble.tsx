@@ -4,7 +4,6 @@ import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 import { areMessagePropsEqual } from './message/message-bubble-compare.util';
-import { readAiPresentationMetadata } from './message/message-presentation.util';
 import { MessageProps } from './message/MessageBubble.types';
 import {
     ActionsContext,
@@ -12,7 +11,7 @@ import {
     buildMessageContentProps,
     ContentRenderContext,
 } from './message/MessageBubbleContent.util';
-import { useMessageContent, useQuotaDetails } from './message/MessageUtils';
+import { useChatMessageError, useMessageContent, useQuotaDetails } from './message/MessageUtils';
 import { VariantsView } from './message/MessageVariants';
 import { SingleMessageViewContent } from './message/SingleMessageViewContent';
 
@@ -64,11 +63,8 @@ const SingleMessageView = memo(
             message.reasoning,
             streamingReasoning
         );
-        const aiPresentation = useMemo(
-            () => readAiPresentationMetadata(message, displayContent, streamingReasoning, _language),
-            [displayContent, message, streamingReasoning, _language]
-        );
-        const normalizedThought = aiPresentation ? null : thought;
+        // Always use thought for completed messages
+        const normalizedThought = thought;
         const interruptedToolNames = useMemo(() => {
             const recovery = message.metadata?.recovery;
             if (!recovery || typeof recovery !== 'object' || Array.isArray(recovery)) {
@@ -97,18 +93,10 @@ const SingleMessageView = memo(
                 }, 0);
                 autoExpandDone.current = true;
             }
-        }, [isLast, normalizedThought, displayContent, isThoughtExpanded]);
+        }, [isLast, normalizedThought, displayContent, isThoughtExpanded, setIsThoughtExpanded]);
 
-        // PERF-002-2: Memoize expensive computations
-        const is429 = useMemo(
-            () =>
-                displayContent.includes('429') ||
-                displayContent.includes('RESOURCE_EXHAUSTED') ||
-                displayContent.includes('Rate limit') ||
-                displayContent.includes('quota'),
-            [displayContent]
-        );
-        const quota = useQuotaDetails(is429, displayContent, t);
+        const messageError = useChatMessageError(displayContent, message.model ?? null);
+        const quota = useQuotaDetails(messageError, t);
         const images = useMemo(
             () => (message.images ?? []).filter((img): img is string => typeof img === 'string'),
             [message.images]
@@ -148,11 +136,11 @@ const SingleMessageView = memo(
                 isUser={isUser}
                 isStreaming={isStreaming}
                 interruptedToolNames={interruptedToolNames}
-                aiPresentation={aiPresentation}
                 isThoughtExpanded={isThoughtExpanded}
                 setIsThoughtExpanded={setIsThoughtExpanded}
                 plan={plan}
                 thought={normalizedThought}
+                streamingReasoning={streamingReasoning}
                 isLast={isLast}
                 onApprovePlan={onApprovePlan}
                 displayContent={displayContent}

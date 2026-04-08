@@ -24,6 +24,8 @@ export {
     buildNormalizedQuotaSnapshot,
     recommendCouncilParticipants,
 };
+import { appLogger } from '@/utils/renderer-logger';
+
 import type { SessionCouncilRuntime, SessionCouncilState, WorkspaceAgentSessionMetadata } from '../types/workspace-agent-session-local';
 
 export const WORKSPACE_AGENT_METADATA_KEY = 'workspaceAgentSession';
@@ -560,7 +562,14 @@ export async function sendWorkspaceAgentMessage(options: {
         messages: [...chat.messages, userMessage],
     }));
     options.setComposerValue('');
-    void options.generateResponse(targetSession.id, userMessage);
+    
+    // We start generation but wrap it to refresh telemetry when finished
+    options.generateResponse(targetSession.id, userMessage).then(async () => {
+        await options.refreshTelemetry(targetSession.id);
+        await options.loadWorkspaceSessions();
+    }).catch(err => {
+        appLogger.error('WorkspaceAgentSessionUtils', 'Failed to refresh telemetry after generation', err);
+    });
 
     const targetModes = target.modes;
     if (targetModes.plan || targetModes.council) {
@@ -571,6 +580,7 @@ export async function sendWorkspaceAgentMessage(options: {
         await options.refreshCouncilState(targetSession.id);
     }
 
+    // Immediate refresh for UI responsiveness (message count etc)
     await options.refreshTelemetry(targetSession.id);
     await options.loadWorkspaceSessions();
 }

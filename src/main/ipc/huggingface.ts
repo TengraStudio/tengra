@@ -257,6 +257,18 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
         null
     ));
 
+    ipcMain.handle('hf:get-bulk-model-previews', createSafeIpcHandler(
+        'hf:get-bulk-model-previews',
+        async (_event: IpcMainInvokeEvent, modelIdsRaw: RuntimeValue) => {
+            const modelIds = Array.isArray(modelIdsRaw) ? modelIdsRaw.filter((id): id is string => typeof id === 'string').map(id => validateModelId(id)).filter(Boolean) as string[] : [];
+            if (modelIds.length === 0) {
+                return {};
+            }
+            return await withRateLimit('huggingface', async () => hfService.getBulkModelPreviews(modelIds));
+        },
+        {}
+    ));
+
     ipcMain.handle('hf:compare-models', createSafeIpcHandler(
         'hf:compare-models',
         async (_event: IpcMainInvokeEvent, modelIdsRaw: RuntimeValue) => {
@@ -578,5 +590,16 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
             return await hfService.exportFineTunedModel(jobId, exportPath);
         },
         { success: false, error: 'export failed' }
+    ));
+
+    ipcMain.handle('hf:delete-model', createSafeIpcHandler('hf:delete-model',
+        async (_event: IpcMainInvokeEvent, modelIdRaw: RuntimeValue) => {
+            const modelId = validateModelId(modelIdRaw);
+            if (!modelId) {
+                throw new Error('Invalid model ID');
+            }
+            return await hfService.deleteModel(modelId);
+        },
+        { success: false, error: 'delete failed' }
     ));
 }

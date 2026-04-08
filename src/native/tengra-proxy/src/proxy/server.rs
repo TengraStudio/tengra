@@ -113,6 +113,14 @@ pub async fn start_proxy_server(port: u16) -> anyhow::Result<()> {
             get(crate::proxy::handlers::management::handle_antigravity_auth_url),
         )
         .route(
+            "/v0/management/ollama-auth-url",
+            get(crate::proxy::handlers::management::handle_ollama_auth_url),
+        )
+        .route(
+            "/v0/management/ollama-signout",
+            post(crate::proxy::handlers::management::handle_ollama_signout),
+        )
+        .route(
             "/v0/management/get-auth-status",
             get(crate::proxy::handlers::management::handle_get_auth_status),
         )
@@ -209,23 +217,36 @@ async fn oauth_bridge_verify(
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     let provider = query.provider.as_deref().unwrap_or("codex");
     let readiness = oauth_provider_readiness(provider)?;
-    let route_health = crate::auth::session::verify_callback_route(provider)
-        .await
-        .map_err(|_| StatusCode::BAD_REQUEST)?;
-    let status = if readiness.client_configured && route_health.route_healthy {
+    let route_health = if readiness.requires_callback_route {
+        Some(
+            crate::auth::session::verify_callback_route(provider)
+                .await
+                .map_err(|_| StatusCode::BAD_REQUEST)?,
+        )
+    } else {
+        None
+    };
+    let callback_ready = route_health
+        .as_ref()
+        .map(|health| health.route_healthy)
+        .unwrap_or(true);
+    let status = if readiness.client_configured && callback_ready {
         "ok"
     } else {
         "failed"
     };
-    Ok(Json(json!({
+    let mut payload = json!({
         "status": status,
         "provider": readiness.provider,
         "readiness": {
             "client_id_configured": readiness.client_configured,
             "client_secret_configured": readiness.client_secret_configured
-        },
-        "callback": route_health
-    })))
+        }
+    });
+    if let Some(route_health) = route_health {
+        payload["callback"] = json!(route_health);
+    }
+    Ok(Json(payload))
 }
 
 async fn codex_client_id_configured() -> bool {
@@ -236,6 +257,7 @@ struct OAuthProviderReadiness {
     provider: &'static str,
     client_configured: bool,
     client_secret_configured: bool,
+    requires_callback_route: bool,
 }
 
 fn oauth_provider_readiness(provider: &str) -> Result<OAuthProviderReadiness, StatusCode> {
@@ -243,8 +265,17 @@ fn oauth_provider_readiness(provider: &str) -> Result<OAuthProviderReadiness, St
         "openai" => "codex",
         "anthropic" => "claude",
         "google" => "antigravity",
+        "ollama-local" => "ollama",
         value => value,
     };
+    if normalized == "ollama" {
+        return Ok(OAuthProviderReadiness {
+            provider: "ollama",
+            client_configured: true,
+            client_secret_configured: true,
+            requires_callback_route: false,
+        });
+    }
     let client_id = static_config::oauth_client_id(normalized).ok_or(StatusCode::BAD_REQUEST)?;
     let client_secret = static_config::oauth_client_secret(normalized);
     Ok(OAuthProviderReadiness {
@@ -258,6 +289,7 @@ fn oauth_provider_readiness(provider: &str) -> Result<OAuthProviderReadiness, St
         client_secret_configured: client_secret
             .map(|value| !value.trim().is_empty())
             .unwrap_or(true),
+        requires_callback_route: true,
     })
 }
 
@@ -503,6 +535,14 @@ mod tests {
         let readiness = oauth_provider_readiness("openai").expect("readiness");
         assert_eq!(readiness.provider, "codex");
         assert!(readiness.client_configured);
+    }
+
+    #[test]
+    fn resolves_oauth_provider_readiness_for_ollama_without_callback() {
+        let readiness = oauth_provider_readiness("ollama").expect("readiness");
+        assert_eq!(readiness.provider, "ollama");
+        assert!(readiness.client_configured);
+        assert!(!readiness.requires_callback_route);
     }
 
     #[tokio::test]

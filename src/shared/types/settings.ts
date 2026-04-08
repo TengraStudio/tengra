@@ -98,7 +98,7 @@ export interface AppSettings {
         dismissedRuntimeInstallPrompts?: string[];
         completedRuntimeInstalls?: string[];
         agentCommandPolicy?: 'blocked' | 'ask-every-time' | 'allowlist' | 'full-access';
-        agentPathPolicy?: 'workspace-root-only' | 'allowlist' | 'restricted-off-dangerous';
+        agentPathPolicy?: 'workspace-root-only' | 'allowlist' | 'restricted-off-dangerous' | 'full-access';
         agentAllowedCommands?: string[];
         agentDisallowedCommands?: string[];
         agentAllowedPaths?: string[];
@@ -198,6 +198,7 @@ export interface AppSettings {
             codex?: number;
             claude?: number;
             antigravity?: number;
+            ollama?: number;
         };
     };
     speech?: {
@@ -237,6 +238,7 @@ export interface AppSettings {
             systemPrompt?: string;
             presetId?: string;
             reasoningLevel?: string;
+            numCtx?: number;
         }
     >;
     presets?: Array<{

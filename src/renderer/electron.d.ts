@@ -223,11 +223,13 @@ export interface ElectronAPI {
      * @returns Promise resolving to OAuth URL and state
      */
     antigravityLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
+    ollamaLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
+    ollamaSignout?: (accountId?: string) => Promise<{ success: boolean; alreadySignedOut?: boolean; error?: string }>;
     claudeLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
     claudeBrowserLogin: () => Promise<{ sessionKey?: string; status?: string; error?: string }>;
     anthropicLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
     codexLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
-    cancelAuth: (provider: 'antigravity' | 'claude' | 'codex', state: string, accountId: string) => Promise<boolean>;
+    cancelAuth: (provider: 'antigravity' | 'claude' | 'codex' | 'ollama', state: string, accountId: string) => Promise<boolean>;
     getBrowserAuthStatus: (provider: string, state: string, accountId: string) => Promise<{
         status: string;
         error?: string;
@@ -237,7 +239,7 @@ export interface ElectronAPI {
         account_id?: string;
         account?: Record<string, IpcValue>;
     }>;
-    verifyAuthBridge: (provider?: 'antigravity' | 'claude' | 'codex') => Promise<{
+    verifyAuthBridge: (provider?: 'antigravity' | 'claude' | 'codex' | 'ollama') => Promise<{
         status: string;
         provider: string;
         readiness?: IpcValue;

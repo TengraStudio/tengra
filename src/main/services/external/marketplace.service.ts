@@ -1,11 +1,27 @@
 import path from 'path';
 
 import { appLogger } from '@main/logging/logger';
+import { PerformanceService } from '@main/services/analysis/performance.service';
 import { BaseService } from '@main/services/base.service';
+import { HuggingFaceService } from '@main/services/llm/huggingface.service';
+import { LlamaService } from '@main/services/llm/llama.service';
+import {
+    ModelDownloaderService,
+    ModelDownloadResult} from '@main/services/llm/model-downloader.service';
+import { OllamaService } from '@main/services/llm/ollama.service';
 import { LocaleService } from '@main/services/system/locale.service';
+import { SystemService } from '@main/services/system/system.service';
 import { localePackSchema } from '@shared/schemas/locale.schema';
 import { marketplaceRegistrySchema } from '@shared/schemas/marketplace.schema';
-import { MarketplaceItem, MarketplaceModel, MarketplaceRegistry } from '@shared/types/marketplace';
+import {
+    InstallResult,
+    MarketplaceItem,
+    MarketplaceMcp,
+    MarketplaceModel,
+    MarketplaceRegistry,
+    MarketplaceRuntimeProfile,
+} from '@shared/types/marketplace';
+import { MCPServerConfig } from '@shared/types/settings';
 import axios from 'axios';
 import { app } from 'electron';
 import fs from 'fs-extra';
@@ -33,11 +49,18 @@ const remoteModelRecordSchema = z.object({
     downloadUrl: z.string().max(2048).optional(),
     category: z.string().max(256).optional(),
     pipelineTag: z.string().max(256).optional(),
+    readme: z.string().optional(),
+    parameters: z.string().optional(),
+    totalSize: z.string().optional(),
+    pullCount: z.number().optional(),
+    downloads: z.number().optional(),
+    likes: z.number().optional(),
+    submodels: z.array(z.any()).optional(),
 });
 
 const remoteModelSourceSchema = z.object({
     source: z.enum(['ollama', 'huggingface', 'custom']).optional(),
-    models: z.array(z.object({}).passthrough()),
+    models: z.array(z.any()),
 });
 
 export class MarketplaceService extends BaseService {
@@ -56,7 +79,15 @@ export class MarketplaceService extends BaseService {
     private readonly USER_LOCALES_PATH = path.join(app.getPath('userData'), 'runtime', 'locales');
     private readonly USER_SKILLS_PATH = path.join(app.getPath('userData'), 'runtime', 'skills');
 
-    constructor(private readonly localeService?: LocaleService) {
+    constructor(
+        private readonly localeService?: LocaleService,
+        private readonly modelDownloaderService?: ModelDownloaderService,
+        private readonly huggingFaceService?: HuggingFaceService,
+        private readonly ollamaService?: OllamaService,
+        private readonly systemService?: SystemService,
+        private readonly performanceService?: PerformanceService,
+        private readonly llamaService?: LlamaService
+    ) {
         super('MarketplaceService');
     }
 
@@ -81,7 +112,7 @@ export class MarketplaceService extends BaseService {
                 axios.get<MarketplaceRegistry>(this.REGISTRY_URL),
                 this.fetchMergedModels(),
             ]);
-            const baseRegistry = marketplaceRegistrySchema.parse(response.data);
+            const baseRegistry = this.normalizeRegistryBeforeValidation(response.data);
             const registry = marketplaceRegistrySchema.parse({
                 ...baseRegistry,
                 models: mergedModels,
@@ -94,12 +125,32 @@ export class MarketplaceService extends BaseService {
     }
 
     /**
+     * Collects a device runtime profile used for marketplace compatibility estimates.
+     */
+    async getRuntimeProfile(): Promise<MarketplaceRuntimeProfile> {
+        const [systemInfo, storageStats, usageStats, dashboard, gpuInfo, llamaGpu, ollamaGpu] = await Promise.all([
+            this.getSystemInfoSafe(),
+            this.getStorageStatsSafe(),
+            this.getUsageStatsSafe(),
+            this.getDashboardSafe(),
+            this.getGpuInfoSafe(),
+            this.getLlamaGpuSafe(),
+            this.getOllamaGpuSafe(),
+        ]);
+        return {
+            system: this.buildSystemProfile(systemInfo, storageStats, usageStats),
+            gpu: this.buildGpuProfile(gpuInfo, llamaGpu, ollamaGpu),
+            performance: this.buildPerformanceProfile(dashboard),
+        };
+    }
+
+    /**
      * Bir itemı (tema, mcp, persona, model, prompt) GitHub'dan indirip yerel klasöre kaydeder.
      */
-    async installItem(item: MarketplaceItem): Promise<{ success: boolean; path: string }> {
+    async installItem(item: MarketplaceItem): Promise<InstallResult> {
         try {
             appLogger.info('MarketplaceService', `Downloading ${item.itemType}: ${item.name}`);
-            
+
             let targetPath = '';
             let fileName = '';
             let payload: RuntimeValue | null = null;
@@ -149,19 +200,102 @@ export class MarketplaceService extends BaseService {
                 throw new Error(`Marketplace payload could not be resolved for item: ${item.id}`);
             }
 
+            if (item.itemType === 'model') {
+                const modelPayload = payload as MarketplaceModel;
+                const queued = await this.queueModelDownload(modelPayload);
+
+                // For Ollama and HuggingFace, we don't need a .model.json marker file anymore
+                // as we can detect them via their respective services directly.
+                if (modelPayload.provider !== 'ollama' && modelPayload.provider !== 'huggingface') {
+                    const filePath = path.join(targetPath, fileName);
+                    await fs.writeJson(filePath, payload, { spaces: 2 });
+                }
+
+                appLogger.info('MarketplaceService', `${item.itemType} processed and queued download(s)`, {
+                    provider: modelPayload.provider,
+                    queuedDownloads: queued.queuedDownloads,
+                });
+
+                return {
+                    success: true,
+                    path: targetPath, // Return the directory for models
+                    code: queued.queuedDownloads > 0 ? 'DOWNLOAD_QUEUED' : 'ALREADY_DOWNLOADED',
+                    message: queued.queuedDownloads > 0 ? 'Model download initiated.' : 'Model is already being processed.',
+                    queuedDownloads: queued.queuedDownloads,
+                    downloadIds: queued.downloadIds,
+                };
+            }
+
+            if (item.itemType === 'mcp') {
+                const mcpPayload = payload as MarketplaceMcp;
+                const mcpConfig = await this.prepareMcpInstallConfig(mcpPayload, targetPath, sanitizedId);
+                const filePath = path.join(targetPath, fileName);
+                await fs.writeJson(filePath, { ...mcpPayload, ...mcpConfig }, { spaces: 2 });
+
+                appLogger.info('MarketplaceService', `${item.itemType} installed successfully at: ${filePath}`);
+                return { success: true, path: filePath, mcpConfig };
+            }
+
             const filePath = path.join(targetPath, fileName);
             await fs.writeJson(filePath, payload, { spaces: 2 });
-            
+
             appLogger.info('MarketplaceService', `${item.itemType} installed successfully at: ${filePath}`);
             return { success: true, path: filePath };
         } catch (error) {
             appLogger.error('MarketplaceService', `Failed to install item: ${item.name}`, error as Error);
-            throw new Error(`Could not install item: ${item.name}`);
+            const installError = this.classifyInstallError(error as Error | z.ZodError | RuntimeValue);
+            throw new Error(`${installError.code}:${installError.message}`);
         }
     }
 
     async dispose(): Promise<void> {
         appLogger.info('MarketplaceService', 'Disposing Marketplace service...');
+    }
+
+    private sanitizeMcpFileName(fileName?: string): string {
+        const candidate = fileName?.trim() || 'server.mjs';
+        const baseName = path.basename(candidate).replace(/[^a-zA-Z0-9._-]/g, '-');
+        if (!baseName.endsWith('.mjs') && !baseName.endsWith('.js') && !baseName.endsWith('.cjs')) {
+            throw new Error('MCP entrypoint must be a JavaScript file.');
+        }
+        return baseName;
+    }
+
+    private async prepareMcpInstallConfig(
+        item: MarketplaceMcp,
+        targetPath: string,
+        sanitizedId: string
+    ): Promise<MCPServerConfig> {
+        let command = item.command;
+        let args = item.args;
+        if (item.entrypointUrl) {
+            const pluginDirectory = path.join(targetPath, sanitizedId);
+            const entrypointFileName = this.sanitizeMcpFileName(item.entrypointFile);
+            const entrypointPath = path.join(pluginDirectory, entrypointFileName);
+            await fs.ensureDir(pluginDirectory);
+            const response = await axios.get<string>(item.entrypointUrl, { responseType: 'text' });
+            await fs.writeFile(entrypointPath, response.data, 'utf8');
+            command = 'node';
+            args = [entrypointPath];
+        }
+        return {
+            id: item.id,
+            name: item.id,
+            description: item.description,
+            command,
+            args,
+            env: item.env,
+            enabled: false,
+            permissionProfile: item.permissionProfile,
+            tools: item.tools,
+            category: item.category,
+            publisher: item.author,
+            version: item.version,
+            extensionType: 'mcp_server',
+            isOfficial: true,
+            capabilities: item.capabilities,
+            storage: item.storage,
+        };
     }
 
     private async fetchMergedModels(): Promise<MarketplaceModel[]> {
@@ -256,6 +390,13 @@ export class MarketplaceService extends BaseService {
                 sourceUrl: this.cleanOptionalUrl(model.sourceUrl),
                 category: cleanedCategory ? this.fitToLength(cleanedCategory, 64) : undefined,
                 pipelineTag: cleanedPipelineTag ? this.fitToLength(cleanedPipelineTag, 64) : undefined,
+                readme: model.readme,
+                parameters: model.parameters,
+                totalSize: this.cleanOptionalText(model.totalSize)?.slice(0, 64),
+                pullCount: model.pullCount,
+                downloads: model.downloads,
+                likes: model.likes,
+                submodels: model.submodels,
             });
         }
         return mapped;
@@ -312,9 +453,37 @@ export class MarketplaceService extends BaseService {
         model: z.infer<typeof remoteModelRecordSchema>,
         provider: MarketplaceModel['provider']
     ): string {
+        // Hugging Face repo IDs are case-sensitive and require slashes.
+        // We attempt to extract the original repo ID from URLs to avoid hyphenated/corrupted IDs.
+        if (provider === 'huggingface') {
+            const urls = [model.sourceUrl, model.downloadUrl, model.id, model.slug]
+                .filter((v): v is string => typeof v === 'string' && v.length > 0);
+
+            for (const url of urls) {
+                if (url.includes('huggingface.co/')) {
+                    const match = url.match(/huggingface\.co\/([^/]+\/[^/]+)/);
+                    if (match) {
+                        return this.fitToLength(match[1], 128);
+                    }
+                }
+                if (url.includes('/')) {
+                    return this.fitToLength(url.trim(), 128);
+                }
+            }
+
+            const candidate = this.cleanOptionalText(model.slug) ?? this.cleanOptionalText(model.id);
+            if (candidate) {
+                // If it starts with hf- and has no slash, it's likely a corrupted ID from an old registry
+                let san = candidate;
+                if (san.startsWith('hf-')) { san = san.substring(3); }
+                return this.fitToLength(san, 128);
+            }
+        }
+
         const candidate = this.cleanOptionalText(model.slug)
             ?? this.cleanOptionalText(model.id)
             ?? `${provider}-model`;
+
         const safe = candidate
             .toLowerCase()
             .replace(/[^a-z0-9._-]+/g, '-')
@@ -358,6 +527,44 @@ export class MarketplaceService extends BaseService {
         }
         const trimmed = value.trim();
         return trimmed.length > 0 ? trimmed : undefined;
+    }
+
+    private normalizeRegistryBeforeValidation(rawRegistry: unknown): MarketplaceRegistry {
+        const registryRecord = rawRegistry && typeof rawRegistry === 'object' && !Array.isArray(rawRegistry)
+            ? (rawRegistry as Record<string, unknown>)
+            : {};
+
+        const normalizedModels = Array.isArray(registryRecord.models)
+            ? registryRecord.models.map((rawModel): unknown => {
+                if (!rawModel || typeof rawModel !== 'object' || Array.isArray(rawModel)) {
+                    return rawModel;
+                }
+                const modelRecord = { ...(rawModel as Record<string, unknown>) };
+                if (typeof modelRecord.pipelineTag === 'string' && modelRecord.pipelineTag.trim().length === 0) {
+                    delete modelRecord.pipelineTag;
+                }
+                return modelRecord;
+            })
+            : undefined;
+
+        const parsed = marketplaceRegistrySchema.safeParse({
+            ...registryRecord,
+            ...(normalizedModels ? { models: normalizedModels } : {}),
+        });
+        if (!parsed.success) {
+            appLogger.warn('MarketplaceService', 'Registry validation issues encountered; continuing with filtered models', {
+                issues: parsed.error.issues.slice(0, 10).map(issue => issue.path.join('.')),
+            });
+            const withoutModelsParse = marketplaceRegistrySchema.safeParse({
+                ...registryRecord,
+                models: [],
+            });
+            if (withoutModelsParse.success) {
+                return withoutModelsParse.data;
+            }
+            throw parsed.error;
+        }
+        return parsed.data;
     }
 
     private fitToLength(value: string, maxLength: number): string {
@@ -418,19 +625,420 @@ export class MarketplaceService extends BaseService {
             sourceUrl,
             category: this.cleanOptionalText(modelItem.category)?.slice(0, 64),
             pipelineTag: this.cleanOptionalText(modelItem.pipelineTag)?.slice(0, 64),
+            submodels: modelItem.submodels?.map(submodel => ({
+                id: this.fitToLength(submodel.id.trim(), 128),
+                name: this.fitToLength(submodel.name.trim(), 128),
+                size: this.cleanOptionalText(submodel.size)?.slice(0, 32),
+                contextWindow: this.cleanOptionalText(submodel.contextWindow)?.slice(0, 32),
+                inputType: this.cleanOptionalText(submodel.inputType)?.slice(0, 64),
+                modelSize: this.cleanOptionalText(submodel.modelSize)?.slice(0, 32),
+                tensorType: this.cleanOptionalText(submodel.tensorType)?.slice(0, 32),
+                downloadUrl: this.cleanOptionalUrl(submodel.downloadUrl),
+                installed: submodel.installed,
+            })),
             installed: item.installed,
             installedVersion: item.installedVersion,
         };
     }
 
+    private async queueModelDownload(model: MarketplaceModel): Promise<{ queuedDownloads: number; downloadIds: string[] }> {
+        if (!this.modelDownloaderService) {
+            return { queuedDownloads: 0, downloadIds: [] };
+        }
+
+        if (model.provider === 'ollama') {
+            const modelName = this.resolveOllamaModelName(model);
+            const result = this.modelDownloaderService.startDownload({
+                provider: 'ollama',
+                modelName,
+                tag: 'latest',
+            });
+            return this.collectDownloadResults([result]);
+        }
+
+        if (model.provider === 'huggingface') {
+            const modelId = this.resolveHuggingFaceModelId(model);
+            if (!modelId || !this.huggingFaceService) {
+                appLogger.warn('MarketplaceService', `Unable to resolve HuggingFace model id for ${model.id}`);
+                return { queuedDownloads: 0, downloadIds: [] };
+            }
+            const files = await this.huggingFaceService.getModelFiles(modelId);
+            const ggufFiles = files
+                .filter(file => file.path.toLowerCase().endsWith('.gguf'))
+                .sort((left, right) => left.path.localeCompare(right.path))
+                .filter(file => Boolean(file.oid));
+
+            const selectedFile = this.selectHuggingFaceDownloadFile(model, ggufFiles);
+            if (!selectedFile) {
+                appLogger.warn('MarketplaceService', `No downloadable GGUF file with checksum found for ${modelId}`);
+                return { queuedDownloads: 0, downloadIds: [] };
+            }
+
+            const results: ModelDownloadResult[] = [this.modelDownloaderService.startDownload({
+                provider: 'huggingface',
+                modelId,
+                file: {
+                    path: selectedFile.path,
+                    size: selectedFile.size,
+                    oid: selectedFile.oid,
+                    quantization: selectedFile.quantization,
+                },
+            })];
+            return this.collectDownloadResults(results);
+        }
+
+        return { queuedDownloads: 0, downloadIds: [] };
+    }
+
+    private collectDownloadResults(results: ModelDownloadResult[]): { queuedDownloads: number; downloadIds: string[] } {
+        const downloadIds: string[] = [];
+        for (const result of results) {
+            if (result.success && result.downloadId) {
+                downloadIds.push(result.downloadId);
+            }
+        }
+        return {
+            queuedDownloads: downloadIds.length,
+            downloadIds,
+        };
+    }
+
+    private selectHuggingFaceDownloadFile(
+        model: MarketplaceModel,
+        files: { path: string; size: number; oid?: string; quantization: string }[]
+    ): { path: string; size: number; oid: string; quantization: string } | null {
+        if (files.length === 0) {
+            return null;
+        }
+        const desiredQuantization = this.extractQuantizationHint(model.pipelineTag ?? '') ?? 'Q4_K_M';
+        const quantizationPriority = ['Q4_K_M', 'Q5_K_M', 'Q6_K', 'Q8_0', 'F16'];
+        const desiredIndex = quantizationPriority.indexOf(desiredQuantization);
+        const normalizedDesiredIndex = desiredIndex >= 0 ? desiredIndex : 0;
+        const ranked = [...files].sort((left, right) => {
+            const leftQuant = left.quantization.toUpperCase();
+            const rightQuant = right.quantization.toUpperCase();
+            const leftIndex = this.getQuantizationPriorityIndex(leftQuant, quantizationPriority, normalizedDesiredIndex);
+            const rightIndex = this.getQuantizationPriorityIndex(rightQuant, quantizationPriority, normalizedDesiredIndex);
+            if (leftIndex !== rightIndex) {
+                return leftIndex - rightIndex;
+            }
+            if (left.size !== right.size) {
+                return left.size - right.size;
+            }
+            return left.path.localeCompare(right.path);
+        });
+        return ranked[0] ? {
+            path: ranked[0].path,
+            size: ranked[0].size,
+            oid: ranked[0].oid ?? '',
+            quantization: ranked[0].quantization,
+        } : null;
+    }
+
+    private extractQuantizationHint(value: string): string | null {
+        const match = value.toUpperCase().match(/Q[0-9]_[A-Z0-9_]+|F16|F32/);
+        return match ? match[0] : null;
+    }
+
+    private getQuantizationPriorityIndex(value: string, priority: string[], desiredIndex: number): number {
+        const index = priority.indexOf(value);
+        if (index >= 0) {
+            return Math.abs(index - desiredIndex);
+        }
+        return priority.length + 1;
+    }
+
+    private buildSystemProfile(
+        systemInfo: Awaited<ReturnType<SystemService['getSystemInfo']>> | null,
+        storageStats: Awaited<ReturnType<SystemService['getStorageStats']>> | null,
+        usageStats: Awaited<ReturnType<SystemService['getUsage']>> | null
+    ): MarketplaceRuntimeProfile['system'] {
+        const totalMemoryBytes = systemInfo?.totalMemory ?? 0;
+        const freeMemoryBytes = systemInfo?.freeMemory ?? 0;
+        const storage = storageStats?.success ? storageStats.data : undefined;
+        const cpuLoadPercent = usageStats?.success && systemInfo
+            ? Math.max(0, Math.min(100, (usageStats.result?.cpu ?? 0) / Math.max(1, systemInfo.cpus) * 100))
+            : 0;
+        return {
+            platform: systemInfo?.platform ?? process.platform,
+            arch: systemInfo?.arch ?? process.arch,
+            cpuCores: systemInfo?.cpus ?? 1,
+            cpuLoadPercent,
+            totalMemoryBytes,
+            freeMemoryBytes,
+            storageTotalBytes: storage?.total ?? 0,
+            storageFreeBytes: storage?.free ?? 0,
+            storageUsedBytes: storage?.used ?? 0,
+            storageUsagePercent: storage?.percent ?? 0,
+        };
+    }
+
+    private buildGpuProfile(
+        electronGpu: Awaited<ReturnType<SystemService['getGpuInfo']>> | null,
+        llamaGpu: Awaited<ReturnType<LlamaService['getGpuInfo']>> | null,
+        ollamaGpu: Awaited<ReturnType<OllamaService['getGPUInfo']>> | null
+    ): MarketplaceRuntimeProfile['gpu'] {
+        const electronData = electronGpu?.success ? electronGpu.data : undefined;
+        if (electronData?.devices.length) {
+            return {
+                available: true,
+                source: 'electron',
+                name: electronData.name,
+                backends: electronData.backends,
+                devices: electronData.devices,
+                totalVramBytes: electronData.totalVramBytes,
+                totalVramUsedBytes: electronData.totalVramUsedBytes,
+                vramBytes: electronData.totalVramBytes,
+                vramUsedBytes: electronData.totalVramUsedBytes,
+            };
+        }
+        const backends = new Set<string>();
+        if (llamaGpu?.available) {
+            for (const backend of llamaGpu.backends) {
+                backends.add(backend);
+            }
+        }
+        const activeOllamaGpu = ollamaGpu?.available ? ollamaGpu.gpus[0] : undefined;
+        const name = llamaGpu?.name ?? activeOllamaGpu?.name;
+        const available = Boolean(llamaGpu?.available || ollamaGpu?.available);
+        if (!available) {
+            return { available: false, source: 'none', backends: [], devices: [] };
+        }
+        if (activeOllamaGpu) {
+            backends.add('ollama');
+        }
+        return {
+            available: true,
+            source: llamaGpu?.available && ollamaGpu?.available ? 'combined' : (llamaGpu?.available ? 'llama' : 'ollama'),
+            name,
+            backends: Array.from(backends),
+            devices: [],
+            vramBytes: activeOllamaGpu?.memoryTotal,
+            vramUsedBytes: activeOllamaGpu?.memoryUsed,
+            totalVramBytes: activeOllamaGpu?.memoryTotal,
+            totalVramUsedBytes: activeOllamaGpu?.memoryUsed,
+        };
+    }
+
+    private buildPerformanceProfile(
+        dashboard: Awaited<ReturnType<PerformanceService['getDashboard']>> | null
+    ): MarketplaceRuntimeProfile['performance'] {
+        const safeData = dashboard?.success && dashboard.data ? dashboard.data : undefined;
+        const safeProcesses = safeData?.processes ?? [];
+        const safeMemory = safeData?.memory ?? { latestRss: 0, latestHeapUsed: 0 };
+        const alerts = safeData?.alerts ?? [];
+        return {
+            rssBytes: safeMemory.latestRss ?? 0,
+            heapUsedBytes: safeMemory.latestHeapUsed ?? 0,
+            processCount: safeProcesses.length,
+            alertCount: alerts.length,
+        };
+    }
+
+    private async getSystemInfoSafe(): Promise<Awaited<ReturnType<SystemService['getSystemInfo']>> | null> {
+        if (!this.systemService) {
+            return null;
+        }
+        try {
+            return await this.systemService.getSystemInfo();
+        } catch (error) {
+            appLogger.warn('MarketplaceService', 'Failed to read system info for runtime profile', error as Error);
+            return null;
+        }
+    }
+
+    private async getStorageStatsSafe(): Promise<Awaited<ReturnType<SystemService['getStorageStats']>> | null> {
+        if (!this.systemService) {
+            return null;
+        }
+        try {
+            return await this.systemService.getStorageStats(this.USER_MODELS_PATH);
+        } catch (error) {
+            appLogger.warn('MarketplaceService', 'Failed to read storage stats for runtime profile', error as Error);
+            return null;
+        }
+    }
+
+    private async getGpuInfoSafe(): Promise<Awaited<ReturnType<SystemService['getGpuInfo']>> | null> {
+        if (!this.systemService) {
+            return null;
+        }
+        try {
+            return await this.systemService.getGpuInfo();
+        } catch (error) {
+            appLogger.warn('MarketplaceService', 'Failed to read GPU info for runtime profile', error as Error);
+            return null;
+        }
+    }
+
+    private async getUsageStatsSafe(): Promise<Awaited<ReturnType<SystemService['getUsage']>> | null> {
+        if (!this.systemService) {
+            return null;
+        }
+        try {
+            return await this.systemService.getUsage();
+        } catch (error) {
+            appLogger.warn('MarketplaceService', 'Failed to read usage stats for runtime profile', error as Error);
+            return null;
+        }
+    }
+
+    private async getDashboardSafe(): Promise<Awaited<ReturnType<PerformanceService['getDashboard']>> | null> {
+        if (!this.performanceService) {
+            return null;
+        }
+        try {
+            return this.performanceService.getDashboard();
+        } catch (error) {
+            appLogger.warn('MarketplaceService', 'Failed to read performance dashboard for runtime profile', error as Error);
+            return null;
+        }
+    }
+
+    private async getLlamaGpuSafe(): Promise<Awaited<ReturnType<LlamaService['getGpuInfo']>> | null> {
+        if (!this.llamaService) {
+            return null;
+        }
+        try {
+            return await this.llamaService.getGpuInfo();
+        } catch (error) {
+            appLogger.warn('MarketplaceService', 'Failed to read llama GPU info for runtime profile', error as Error);
+            return null;
+        }
+    }
+
+    private async getOllamaGpuSafe(): Promise<Awaited<ReturnType<OllamaService['getGPUInfo']>> | null> {
+        if (!this.ollamaService) {
+            return null;
+        }
+        try {
+            return await this.ollamaService.getGPUInfo();
+        } catch (error) {
+            appLogger.warn('MarketplaceService', 'Failed to read ollama GPU info for runtime profile', error as Error);
+            return null;
+        }
+    }
+
+    private resolveOllamaModelName(model: MarketplaceModel): string {
+        const source = this.cleanOptionalUrl(model.sourceUrl) ?? this.cleanOptionalUrl(model.downloadUrl);
+        if (source) {
+            try {
+                const parsed = new URL(source);
+                const segments = parsed.pathname.split('/').filter(Boolean);
+                const libraryIndex = segments.findIndex(segment => segment.toLowerCase() === 'library');
+                if (libraryIndex >= 0 && segments[libraryIndex + 1]) {
+                    return decodeURIComponent(segments[libraryIndex + 1]);
+                }
+                if (segments.length > 0) {
+                    return decodeURIComponent(segments[segments.length - 1]);
+                }
+            } catch {
+                // ignore URL parsing failures and fallback to id/name
+            }
+        }
+        const candidate = this.cleanOptionalText(model.id) ?? this.cleanOptionalText(model.name) ?? 'llama3';
+        return candidate;
+    }
+
+    private resolveHuggingFaceModelId(model: MarketplaceModel): string | null {
+        const source = this.cleanOptionalUrl(model.sourceUrl) ?? this.cleanOptionalUrl(model.downloadUrl);
+        if (source) {
+            try {
+                const parsed = new URL(source);
+                if (!parsed.hostname.toLowerCase().includes('huggingface.co')) {
+                    return null;
+                }
+                const segments = parsed.pathname.split('/').filter(Boolean);
+                if (segments.length >= 2) {
+                    return `${decodeURIComponent(segments[0])}/${decodeURIComponent(segments[1])}`;
+                }
+            } catch {
+                // ignore and fallback
+            }
+        }
+        const candidate = this.cleanOptionalText(model.id);
+        if (!candidate) {
+            return null;
+        }
+
+        let san = candidate;
+        if (san.startsWith('hf-')) {
+            san = san.substring(3);
+        }
+
+        if (!san.includes('/')) {
+            return null;
+        }
+        return san;
+    }
+
+    private classifyInstallError(error: Error | z.ZodError | RuntimeValue): { code: string; message: string } {
+        if (axios.isAxiosError(error)) {
+            if (error.response?.status === 404) {
+                return { code: 'NOT_FOUND', message: 'Marketplace item source was not found.' };
+            }
+            if (error.code === 'ECONNABORTED') {
+                return { code: 'TIMEOUT', message: 'Marketplace request timed out.' };
+            }
+            return { code: 'NETWORK', message: 'Marketplace network request failed.' };
+        }
+        if (error instanceof z.ZodError) {
+            return { code: 'INVALID_PACKAGE', message: 'Marketplace package format is invalid.' };
+        }
+        if (error instanceof Error && error.message.toLowerCase().includes('eacces')) {
+            return { code: 'PERMISSION', message: 'No permission to write marketplace files.' };
+        }
+        if (error instanceof Error && error.message.toLowerCase().includes('enospc')) {
+            return { code: 'NO_SPACE', message: 'Insufficient disk space for installation.' };
+        }
+        return { code: 'INSTALL_FAILED', message: 'Marketplace installation failed.' };
+    }
+
     private async applyInstalledState(registry: MarketplaceRegistry): Promise<MarketplaceRegistry> {
-        const installedVersions = await this.readInstalledVersions();
+        const [installedVersions, ollamaModels] = await Promise.all([
+            this.readInstalledVersions(),
+            this.ollamaService?.getModels() ?? Promise.resolve([]),
+        ]);
+
+        const ollamaModelNames = new Set(ollamaModels.map(m => m.name.toLowerCase()));
+        const hfInstalledIds = this.huggingFaceService ? await this.huggingFaceService.getInstalledModelIds() : new Set<string>();
+
+        const annotatedModels = (registry.models ?? []).map(model => {
+            const isInstalled = installedVersions.model.has(model.id);
+            const ollamaName = this.resolveOllamaModelName(model).toLowerCase();
+
+            // Also check submodels
+            const annotatedSubmodels = model.submodels?.map(sub => {
+                const subName = sub.id?.includes(':') ? sub.id.split(':')[1] : sub.name;
+                const fullOllamaName = `${ollamaName}:${subName}`.toLowerCase();
+                const isSubInstalled = ollamaModelNames.has(fullOllamaName) || ollamaModelNames.has(ollamaName);
+                return {
+                    ...sub,
+                    installed: isSubInstalled,
+                };
+            });
+
+            // Treat as installed if we have local metadata OR if it's in Ollama's local list
+            // OR if ANY submodel is installed (New request)
+            const anySubInstalled = annotatedSubmodels?.some(sub => sub.installed) ?? false;
+            const finalInstalled = isInstalled ||
+                (model.provider === 'ollama' && (ollamaModelNames.has(ollamaName) || anySubInstalled)) ||
+                (model.provider === 'huggingface' && hfInstalledIds.has(model.id));
+
+            return {
+                ...model,
+                installed: finalInstalled,
+                installedVersion: installedVersions.model.get(model.id),
+                submodels: annotatedSubmodels,
+            };
+        });
+
         return {
             ...registry,
             themes: this.annotateInstalledItems(registry.themes, installedVersions.theme),
             mcp: this.annotateInstalledItems(registry.mcp, installedVersions.mcp),
             personas: this.annotateInstalledItems(registry.personas ?? [], installedVersions.persona),
-            models: this.annotateInstalledItems(registry.models ?? [], installedVersions.model),
+            models: annotatedModels,
             prompts: this.annotateInstalledItems(registry.prompts ?? [], installedVersions.prompt),
             languages: this.annotateInstalledItems(registry.languages ?? [], installedVersions.language),
             skills: this.annotateInstalledItems(registry.skills ?? [], installedVersions.skill),
@@ -498,7 +1106,6 @@ export class MarketplaceService extends BaseService {
                 });
             }
         }
-
         return versions;
     }
 }

@@ -27,6 +27,7 @@ const CODEX_CALLBACK_PORT: u16 = 1455;
 const CLAUDE_CALLBACK_PORT: u16 = 54545;
 const ANTIGRAVITY_CALLBACK_PORT: u16 = 51121;
 const CALLBACK_LATENCY_SAMPLE_LIMIT: usize = 512;
+const OLLAMA_SINGLE_ACCOUNT_ID: &str = "ollama_default";
 
 static OAUTH_SESSIONS: OnceLock<RwLock<HashMap<String, OAuthSession>>> = OnceLock::new();
 static CALLBACK_SERVERS: OnceLock<RwLock<HashSet<&'static str>>> = OnceLock::new();
@@ -134,11 +135,7 @@ pub async fn create_session(
 ) -> Result<(String, String, Option<String>)> {
     let state = generate_state();
     let verifier = needs_pkce.then(|| generate_pkce_codes().code_verifier);
-    let resolved_account_id = account_id
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .map(str::to_string)
-        .unwrap_or_else(|| generate_account_id(provider));
+    let resolved_account_id = resolve_session_account_id(provider, account_id);
     let now = now_ts();
     let session = OAuthSession {
         state: state.clone(),
@@ -153,6 +150,18 @@ pub async fn create_session(
 
     sessions().write().await.insert(state.clone(), session);
     Ok((state, resolved_account_id, verifier))
+}
+
+fn resolve_session_account_id(provider: &str, account_id: Option<&str>) -> String {
+    if provider.eq_ignore_ascii_case("ollama") {
+        return OLLAMA_SINGLE_ACCOUNT_ID.to_string();
+    }
+
+    account_id
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
+        .unwrap_or_else(|| generate_account_id(provider))
 }
 
 pub async fn get_session_status_for(
@@ -239,6 +248,18 @@ pub async fn handle_manual_callback_request(payload: ManualOAuthCallback) -> Res
     .await;
     record_callback_bridge_event(false, result.is_err(), elapsed_ms(started_at)).await;
     result
+}
+
+pub async fn complete_external_session(
+    provider: &str,
+    state: &str,
+    account_id: &str,
+) -> Result<SessionStatus> {
+    let session = load_session(provider, state).await?;
+    if session.account_id != account_id {
+        return Err(anyhow!("OAuth session account mismatch"));
+    }
+    mark_session_complete(&session.state).await
 }
 
 async fn handle_callback(
@@ -677,10 +698,10 @@ async fn reset_callback_bridge_telemetry_for_tests() {
 #[cfg(test)]
 mod tests {
     use super::{
-        callback_bridge_telemetry_snapshot, callback_config, cancel_session, create_session,
-        extract_codex_profile_claims, get_session_status_for, normalize_error,
-        record_callback_bridge_event, reset_callback_bridge_telemetry_for_tests,
-        ManualOAuthCallback,
+        callback_bridge_telemetry_snapshot, callback_config, cancel_session,
+        complete_external_session, create_session, extract_codex_profile_claims,
+        get_session_status_for, normalize_error, record_callback_bridge_event,
+        reset_callback_bridge_telemetry_for_tests, ManualOAuthCallback,
     };
     use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 
@@ -724,6 +745,31 @@ mod tests {
         assert!(get_session_status_for("antigravity", &state, &account_id)
             .await
             .is_none());
+    }
+
+    #[tokio::test]
+    async fn completes_external_session_without_callback() {
+        let (state, account_id, _) = create_session("ollama", Some("ollama_test"), false)
+            .await
+            .expect("session");
+        let status = complete_external_session("ollama", &state, &account_id)
+            .await
+            .expect("status");
+        assert_eq!(status.status, "ok");
+        assert_eq!(status.provider, "ollama");
+    }
+
+    #[tokio::test]
+    async fn enforces_single_ollama_account_id() {
+        let (_state_a, account_a, _) = create_session("ollama", None, false)
+            .await
+            .expect("ollama session without account id");
+        let (_state_b, account_b, _) = create_session("ollama", Some("ollama_custom"), false)
+            .await
+            .expect("ollama session with custom account id");
+
+        assert_eq!(account_a, "ollama_default");
+        assert_eq!(account_b, "ollama_default");
     }
 
     #[test]

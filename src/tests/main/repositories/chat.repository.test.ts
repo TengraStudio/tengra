@@ -242,4 +242,35 @@ describe('ChatRepository recovery', () => {
         expect(recovered.metadata?.recovery?.interruptedToolNames).toEqual(['search_web']);
         expect(adapter.getChats()[0]?.is_Generating).toBe(0);
     });
+
+    it('persists and restores reasonings metadata', async () => {
+        adapter = new InMemoryAdapter(
+            [{
+                id: 'chat-3',
+                title: 'Reasoning chat',
+                is_Generating: 0,
+                created_at: 1,
+                updated_at: 2,
+            }],
+            [{
+                id: 'assistant-3',
+                chat_id: 'chat-3',
+                role: 'assistant',
+                content: 'answer',
+                timestamp: 10,
+                metadata: JSON.stringify({ reasoning: 'ilk adim' }),
+            }]
+        );
+        repository = new ChatRepository(adapter);
+
+        const reasonings = ['ilk adim', 'ikinci adim'];
+        const updateResult = await repository.updateMessage('assistant-3', { reasonings });
+        const messages = await repository.getMessages('chat-3');
+        const storedMetadata = JSON.parse(adapter.getMessagesState()[0]?.metadata ?? '{}') as { reasonings?: string[] };
+        const restored = messages[0] as { reasonings?: string[] };
+
+        expect(updateResult.success).toBe(true);
+        expect(storedMetadata.reasonings).toEqual(reasonings);
+        expect(restored.reasonings).toEqual(reasonings);
+    });
 });

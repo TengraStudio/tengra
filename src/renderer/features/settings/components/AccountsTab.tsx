@@ -12,7 +12,7 @@ import { LinkedAccountInfo } from '@renderer/electron.d';
 import { DeviceCodeModal, DeviceCodeModalState } from '@renderer/features/settings/components/DeviceCodeModal';
 import { UseLinkedAccountsResult } from '@renderer/features/settings/hooks/useLinkedAccounts';
 import { cn } from '@renderer/lib/utils';
-import { Bot, ChevronDown, Cpu, ExternalLink, Globe, Info,Key, Plus, RefreshCw, Shield, Sparkles, Terminal, Trash2, UserPlus, Zap } from 'lucide-react';
+import { Bot, ChevronDown, Cpu, ExternalLink, Globe, Info, Key, Plus, RefreshCw, Shield, Sparkles, Terminal, Trash2, UserPlus, Zap } from 'lucide-react';
 import React, { useState } from 'react';
 
 import { AppSettings } from '@/types';
@@ -36,6 +36,7 @@ const PROVIDERS: ProviderConfig[] = [
     { id: 'claude', name: 'accounts.providers.claude.name', description: 'accounts.providers.claude.description', logo: claudeLogo, category: 'ai' },
     { id: 'codex', name: 'accounts.providers.codex.name', description: 'accounts.providers.codex.description', logo: chatgptLogo, category: 'ai' },
     { id: 'antigravity', name: 'accounts.providers.antigravity.name', description: 'accounts.providers.antigravity.description', logo: antigravityLogo, category: 'ai' },
+    { id: 'ollama', name: 'accounts.providers.ollama.name', description: 'accounts.providers.ollama.description', logo: ollamaLogo, category: 'ai' },
     // Developer Tools
     { id: 'github', name: 'accounts.providers.github.name', description: 'accounts.providers.github.description', logo: copilotLogo, category: 'developer' },
     { id: 'copilot', name: 'accounts.providers.copilot.name', description: 'accounts.providers.copilot.description', logo: copilotLogo, category: 'developer' },
@@ -45,6 +46,7 @@ const PROVIDER_ACCOUNT_ALIASES: Record<string, string[]> = {
     claude: ['claude', 'anthropic'],
     codex: ['codex', 'openai'],
     antigravity: ['antigravity', 'google', 'gemini'],
+    ollama: ['ollama'],
     github: ['github'],
     copilot: ['copilot', 'copilot_token']
 };
@@ -128,7 +130,7 @@ interface AccountsTabProps {
     refreshAuthStatus: () => void
     connectGitHubProfile: () => void
     connectCopilot: () => void
-    connectBrowserProvider: (p: 'codex' | 'claude' | 'antigravity') => void
+    connectBrowserProvider: (p: 'codex' | 'claude' | 'antigravity' | 'ollama') => void
     cancelAuthFlow: () => void
     startOllama: () => void
     checkOllama: () => void
@@ -185,7 +187,7 @@ const ProviderCard = React.memo<ProviderCardProps>(({
                 <div className="flex flex-wrap items-center gap-3 sm:justify-end">
                     {hasAccounts ? (
                         <>
-                            <Badge variant="secondary" className="h-6 border-success/20 bg-success/10 px-2.5 text-[10px] font-medium text-success">
+                            <Badge variant="secondary" className="h-6 border-success/20 bg-success/10 px-2.5 typo-body font-medium text-success">
                                 {accountCount} {t('accounts.accountCount').replace('{{count}}', '').trim()}
                             </Badge>
                             <div className={cn(
@@ -205,7 +207,7 @@ const ProviderCard = React.memo<ProviderCardProps>(({
                                 onConnect(provider.id);
                             }}
                             disabled={isBusy}
-                            className="h-10 rounded-xl border-primary/25 bg-primary/5 px-4 text-[10px] font-medium text-primary hover:bg-primary hover:text-primary-foreground"
+                            className="h-10 rounded-xl border-primary/25 bg-primary/5 px-4 typo-body font-medium text-primary hover:bg-primary hover:text-primary-foreground"
                         >
                             <UserPlus className="h-4 w-4 mr-2" />
                             {t('accounts.connect')}
@@ -241,7 +243,7 @@ const ProviderCard = React.memo<ProviderCardProps>(({
                                 onConnect(provider.id);
                             }}
                             disabled={isBusy}
-                            className="group/btn flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/40 text-[10px] font-medium text-muted-foreground hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+                            className="group/btn flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/40 typo-body font-medium text-muted-foreground hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
                         >
                             <Plus className="h-3.5 w-3.5" />
                             {t('accounts.addAnotherAccount')}
@@ -357,7 +359,7 @@ const ApiKeyProviderCard = React.memo(({
                 <div className="flex flex-wrap items-center gap-3 sm:justify-end">
                     {hasKeys ? (
                         <>
-                            <Badge variant="outline" className="h-6 border-success/20 bg-success/10 px-2.5 text-[10px] font-medium text-success">
+                            <Badge variant="outline" className="h-6 border-success/20 bg-success/10 px-2.5 typo-body font-medium text-success">
                                 {apiKeys.length} {t('accounts.apiKey')}
                             </Badge>
                             <div className={cn(
@@ -376,7 +378,7 @@ const ApiKeyProviderCard = React.memo(({
                                 e.stopPropagation();
                                 setExpanded(true);
                             }}
-                            className="h-10 rounded-xl border-primary/25 bg-primary/5 px-4 text-[10px] font-medium text-primary hover:bg-primary hover:text-primary-foreground"
+                            className="h-10 rounded-xl border-primary/25 bg-primary/5 px-4 typo-body font-medium text-primary hover:bg-primary hover:text-primary-foreground"
                         >
                             <Plus className="h-4 w-4 mr-2" />
                             {t('accounts.addApiKey')}
@@ -391,7 +393,7 @@ const ApiKeyProviderCard = React.memo(({
                     <div className="space-y-3">
                         {apiKeys.map((key, index) => (
                             <div key={index} className="group/key animate-in fade-in slide-in-from-left-2 flex flex-col gap-3 duration-300 sm:flex-row sm:items-center" style={{ animationDelay: `${index * 50}ms` }}>
-                                <div className="flex flex-1 items-center gap-3 rounded-xl border border-border/40 bg-background px-4 py-2.5 font-mono text-[11px] text-muted-foreground">
+                                <div className="flex flex-1 items-center gap-3 rounded-xl border border-border/40 bg-background px-4 py-2.5 font-mono typo-body text-muted-foreground">
                                     <Shield className="w-3 h-3 opacity-30" />
                                     <span className="opacity-80">{maskKey(key)}</span>
                                 </div>
@@ -446,7 +448,7 @@ const ApiKeyProviderCard = React.memo(({
                                 variant="link"
                                 size="sm"
                                 asChild
-                                className="group/docs flex h-auto items-center gap-2 p-0 text-[10px] font-medium text-muted-foreground/60 hover:text-primary"
+                                className="group/docs flex h-auto items-center gap-2 p-0 typo-body font-medium text-muted-foreground/60 hover:text-primary"
                             >
                                 <a href={provider.docsUrl} target="_blank" rel="noopener noreferrer">
                                     <Globe className="h-3 w-3" />
@@ -597,7 +599,7 @@ const OllamaSection = React.memo(({
                         <div className="mt-1 text-xs text-muted-foreground">{t('accounts.providers.ollama.description')}</div>
                     </div>
                     <Badge className={cn(
-                        'h-7 rounded-lg px-3 text-[10px] font-medium',
+                        'h-7 rounded-lg px-3 typo-body font-medium',
                         isRunning
                             ? 'border-success/20 bg-success/10 text-success'
                             : 'border-transparent bg-muted text-muted-foreground'
@@ -609,7 +611,7 @@ const OllamaSection = React.memo(({
                 <div className="border-t border-border/20 bg-muted/[0.02] p-5 space-y-5">
                     <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                         <div className="space-y-2">
-                            <Label className="pl-1 text-[10px] font-medium text-muted-foreground">{t('accounts.serverAddress')}</Label>
+                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('accounts.serverAddress')}</Label>
                             <Input
                                 type="text"
                                 value={settings.ollama.url}
@@ -631,7 +633,7 @@ const OllamaSection = React.memo(({
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label className="pl-1 text-[10px] font-medium text-muted-foreground">{t('accounts.contextLimit')}</Label>
+                            <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('accounts.contextLimit')}</Label>
                             <Input
                                 type="number"
                                 value={settings.ollama.numCtx ?? 16384}
@@ -668,7 +670,7 @@ const OllamaSection = React.memo(({
                                 e.stopPropagation();
                                 checkOllama();
                             }}
-                            className="h-9 rounded-xl border-border/30 bg-background px-5 text-[10px] font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                            className="h-9 rounded-xl border-border/30 bg-background px-5 typo-body font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground"
                         >
                             <RefreshCw className={cn("h-3 w-3 mr-2", !isRunning && "animate-spin")} />
                             {t('accounts.check')}
@@ -682,7 +684,7 @@ const OllamaSection = React.memo(({
                                     e.stopPropagation();
                                     startOllama();
                                 }}
-                                className="h-9 rounded-xl border-primary/25 bg-primary/5 px-5 text-[10px] font-medium text-primary hover:bg-primary hover:text-primary-foreground"
+                                className="h-9 rounded-xl border-primary/25 bg-primary/5 px-5 typo-body font-medium text-primary hover:bg-primary hover:text-primary-foreground"
                             >
                                 <Zap className="h-3.5 w-3.5 mr-2" />
                                 {t('accounts.start')}
@@ -710,6 +712,7 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
             case 'codex': connectBrowserProvider('codex'); break;
             case 'claude': connectBrowserProvider('claude'); break;
             case 'antigravity': connectBrowserProvider('antigravity'); break;
+            case 'ollama': connectBrowserProvider('ollama'); break;
         }
     }, [connectGitHubProfile, connectCopilot, connectBrowserProvider]);
 
@@ -749,7 +752,7 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
                         e.stopPropagation();
                         handleRefresh();
                     }}
-                    className="group flex h-10 items-center gap-3 rounded-xl border-border/30 bg-background px-5 text-[10px] font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                    className="group flex h-10 items-center gap-3 rounded-xl border-border/30 bg-background px-5 typo-body font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground"
                 >
                     <RefreshCw className={cn("h-3.5 w-3.5 transition-transform duration-500", linkedAccounts.loading ? "animate-spin" : "group-hover:rotate-180")} />
                     {t('common.refresh')}
@@ -772,7 +775,7 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
                                     e.stopPropagation();
                                     cancelAuthFlow();
                                 }}
-                                className="h-8 rounded-lg border-border/30 bg-background px-4 text-[10px] font-medium text-muted-foreground hover:border-destructive/20 hover:bg-destructive/5 hover:text-destructive"
+                                className="h-8 rounded-lg border-border/30 bg-background px-4 typo-body font-medium text-muted-foreground hover:border-destructive/20 hover:bg-destructive/5 hover:text-destructive"
                             >
                                 {t('common.cancel')}
                             </Button>

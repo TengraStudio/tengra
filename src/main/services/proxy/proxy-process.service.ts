@@ -1,6 +1,7 @@
-import { ChildProcess, exec, spawn } from 'child_process';
+import { exec, spawn } from 'child_process';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
+import * as http from 'http';
 import * as net from 'net';
 import * as path from 'path';
 import { promisify } from 'util';
@@ -15,6 +16,7 @@ import { getMainWindow } from '@main/startup/window';
 import { JsonObject } from '@shared/types/common';
 import { AppErrorCode, getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
+import type { ChildProcess } from 'child_process';
 
 import { validateOAuthTimeoutMs } from './proxy-validation.util';
 
@@ -32,6 +34,7 @@ export interface ProxyEmbedStatus {
     pid?: number;
     port?: number;
     binaryPath?: string;
+    attached?: boolean;
     error?: string;
     errorCode?: string;
 }
@@ -47,6 +50,7 @@ interface OAuthTimeoutConfig {
     codex?: number;
     claude?: number;
     antigravity?: number;
+    ollama?: number;
 }
 
 export class ProxyProcessManager {
@@ -69,20 +73,24 @@ export class ProxyProcessManager {
         }
 
         try {
-            await this.ensureBridgePortAvailable(1455);
-            // 1. Ensure binary exists (build if needed)
-            const binaryPath = await this.ensureBinary();
-
-            // 2. Prepare config
             this.currentPort = options?.port ?? 8317;
 
+            if (await this.isExistingProxyHealthy(this.currentPort)) {
+                this.isProxyRunning = true;
+                appLogger.info('Proxy', `Reusing existing tengra-proxy on port ${this.currentPort}`);
+                return {
+                    running: true,
+                    port: this.currentPort,
+                    attached: true,
+                };
+            }
+
+            await this.ensureBridgePortAvailable(1455);
+            const binaryPath = await this.ensureBinary();
             const runtimeConfig = await this.generateConfig(this.currentPort);
 
-            // 3. Spawn process
-            await this.killExistingProxyProcesses();
             this.spawnProxyProcess(binaryPath, runtimeConfig, options?.persistent);
 
-            // Wait for healthy startup
             await this.waitForHealthy(this.currentPort);
 
             appLogger.info('Proxy', `Embedded proxy started successfully on port ${this.currentPort} in ${Math.round(performance.now() - startTime)}ms`);
@@ -108,6 +116,7 @@ export class ProxyProcessManager {
 
     async stop(): Promise<void> {
         if (!this.child) {
+            this.isProxyRunning = false;
             return;
         }
 
@@ -153,6 +162,7 @@ export class ProxyProcessManager {
     ): void {
         appLogger.info('Proxy', `Spawning ${binaryPath} with port=${runtimeConfig.port}`);
         const oauthTimeoutEnv = this.buildOAuthTimeoutEnv();
+        const ollamaBaseUrlEnv = this.buildOllamaBaseUrlEnv();
 
         this.child = spawn(
             binaryPath,
@@ -164,6 +174,7 @@ export class ProxyProcessManager {
                 cwd: path.dirname(binaryPath),
                 stdio: ['ignore', 'pipe', 'pipe'],
                 windowsHide: true,
+                detached: persistent === true,
                 env: {
                     ...process.env,
                     TENGRA_PROXY_PERSISTENT: persistent ? 'true' : 'false',
@@ -172,9 +183,14 @@ export class ProxyProcessManager {
                     // OS native encryption hint
                     TENGRA_USE_OS_SECURITY: 'true',
                     ...oauthTimeoutEnv,
+                    ...ollamaBaseUrlEnv,
                 }
             }
         );
+
+        if (persistent) {
+            this.child.unref();
+        }
 
         this.child.stdout?.on('data', (chunk) => {
             this.stdoutBuffer = this.logProxyChunk(this.stdoutBuffer, chunk.toString(), 'info');
@@ -217,6 +233,7 @@ export class ProxyProcessManager {
             { key: 'codex', envKey: 'TENGRA_OAUTH_TIMEOUT_CODEX_SECS' },
             { key: 'claude', envKey: 'TENGRA_OAUTH_TIMEOUT_CLAUDE_SECS' },
             { key: 'antigravity', envKey: 'TENGRA_OAUTH_TIMEOUT_ANTIGRAVITY_SECS' },
+            { key: 'ollama', envKey: 'TENGRA_OAUTH_TIMEOUT_OLLAMA_SECS' },
         ];
 
         for (const entry of timeoutEntries) {
@@ -236,10 +253,22 @@ export class ProxyProcessManager {
         return env;
     }
 
+    private buildOllamaBaseUrlEnv(): Record<string, string> {
+        const settings = this.settingsService.getSettings();
+        const configuredUrl = settings.ollama?.url?.trim();
+        if (!configuredUrl) {
+            return {};
+        }
+
+        return {
+            TENGRA_OLLAMA_BASE_URL: configuredUrl,
+        };
+    }
+
     private async waitForHealthy(port: number, timeoutMs: number = 20000): Promise<void> {
         const start = Date.now();
         while (Date.now() - start < timeoutMs) {
-            const isHealthy = await this.pinger(port);
+            const isHealthy = await this.isExistingProxyHealthy(port);
             if (isHealthy) {
                 return;
             }
@@ -248,14 +277,23 @@ export class ProxyProcessManager {
         throw new Error(`Timeout waiting for proxy health at port ${port}`);
     }
 
-    private async pinger(port: number): Promise<boolean> {
-        return new Promise((resolve) => {
-            const socket = net.createConnection(port, '127.0.0.1');
-            socket.on('connect', () => {
-                socket.end();
-                resolve(true);
-            });
-            socket.on('error', () => {
+    private async isExistingProxyHealthy(port: number): Promise<boolean> {
+        return await new Promise((resolve) => {
+            const request = http.get(
+                {
+                    host: '127.0.0.1',
+                    path: '/health',
+                    port,
+                    timeout: 750,
+                },
+                response => {
+                    response.resume();
+                    resolve(response.statusCode === 200);
+                }
+            );
+            request.on('error', () => resolve(false));
+            request.on('timeout', () => {
+                request.destroy();
                 resolve(false);
             });
         });
@@ -284,30 +322,6 @@ export class ProxyProcessManager {
                 resolve(false);
             });
         });
-    }
-
-    private async killExistingProxyProcesses(): Promise<void> {
-        const execAsync = promisify(exec);
-        const proxyName = process.platform === 'win32' ? 'tengra-proxy.exe' : 'tengra-proxy';
-        try {
-            if (process.platform === 'win32') {
-                appLogger.info('Proxy', `Killing existing ${proxyName} instances...`);
-                // Use both taskkill by name AND force flag
-                // We use cmd /c to ensure 2>nul works in all environments
-                await execAsync(`cmd /c "taskkill /F /IM ${proxyName} /T 2>nul"`).catch(() => {
-                    // Ignore errors - process may not exist
-                });
-            } else {
-                await execAsync(`pkill -9 -f ${proxyName}`).catch(() => {
-                    // Ignore errors
-                });
-            }
-        } catch (e) {
-            appLogger.debug(
-                'Proxy',
-                `Clean kill failed (expected if none running): ${getErrorMessage(e)}`
-            );
-        }
     }
 
     getStatus(): ProxyEmbedStatus {

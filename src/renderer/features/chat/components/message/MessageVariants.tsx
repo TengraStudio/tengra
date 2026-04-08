@@ -1,5 +1,5 @@
 import { Check, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
-import { memo, useMemo, useState } from 'react';
+import { memo, useState } from 'react';
 
 import { Language } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -8,7 +8,7 @@ import { Message, MessageVariant } from '@/types';
 import { AssistantLogo } from './AssistantLogo';
 import { MessageBubbleContent } from './MarkdownContent';
 import { MessageFooter } from './MessageFooter';
-import { useMessageContent, useQuotaDetails } from './MessageUtils';
+import { useChatMessageError, useMessageContent, useQuotaDetails } from './MessageUtils';
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
 
@@ -46,11 +46,8 @@ const MessageVariantCard = memo(
         };
     }) => {
         const { displayContent } = useMessageContent(variant.content, undefined, undefined);
-        const is429 = useMemo(
-            () => displayContent.includes('429') || displayContent.includes('RESOURCE_EXHAUSTED'),
-            [displayContent]
-        );
-        const quota = useQuotaDetails(is429, displayContent, t);
+        const messageError = useChatMessageError(displayContent, variant.model ?? null);
+        const quota = useQuotaDetails(messageError, t);
         const variantInterrupted = variant.status === 'interrupted' || typeof variant.error === 'string';
 
         return (

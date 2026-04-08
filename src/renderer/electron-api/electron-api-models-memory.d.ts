@@ -21,6 +21,8 @@ export interface ElectronApiModelsMemoryDomain {
         pause: (downloadId: string) => Promise<IpcValue>;
         resume: (downloadId: string) => Promise<IpcValue>;
         cancel: (downloadId: string) => Promise<IpcValue>;
+        history: (limit?: number) => Promise<IpcValue>;
+        retry: (historyId: string) => Promise<IpcValue>;
     };
 
     // llama.cpp
@@ -228,6 +230,7 @@ export interface ElectronApiModelsMemoryDomain {
             modelId: string
         ) => Promise<{ path: string; size: number; oid: string; quantization: string }[]>;
         getModelPreview: (modelId: string) => Promise<IpcValue>;
+        getBulkModelPreviews: (modelIds: string[]) => Promise<Record<string, IpcValue>>;
         compareModels: (modelIds: string[]) => Promise<IpcValue>;
         validateCompatibility: (
             file: { path: string; size: number; oid?: string; quantization: string },

@@ -1,3 +1,4 @@
+import { normalizeChatError } from '@/features/chat/utils/chat-error-normalizer.util';
 import { AppSettings, ChatError, Message, ToolCall } from '@/types';
 
 export interface StreamChunk {
@@ -8,7 +9,12 @@ export interface StreamChunk {
     sources?: string[]
     images?: string[]
     tool_calls?: ToolCall[]
-    usage?: { prompt_tokens: number, completion_tokens: number, total_tokens: number }
+    usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
+}
+
+export interface MergeToolCallOptions {
+    fallbackIdPrefix?: string;
+    allowIndexMatch?: boolean;
 }
 
 export interface StreamChunkResult {
@@ -20,36 +26,49 @@ export interface StreamChunkResult {
     newToolCalls?: ToolCall[]
     streamError?: string
     speed?: number | null
+    usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
 }
 
-const buildFallbackToolCallId = (toolCall: ToolCall): string => {
+const buildFallbackToolCallId = (toolCall: ToolCall, options?: MergeToolCallOptions): string => {
+    const fallbackPrefix = typeof options?.fallbackIdPrefix === 'string' && options.fallbackIdPrefix.trim().length > 0
+        ? options.fallbackIdPrefix.trim()
+        : null;
     const functionName = typeof toolCall.function?.name === 'string' && toolCall.function.name.trim().length > 0
         ? toolCall.function.name.trim()
         : 'tool';
     const indexPart = typeof toolCall.index === 'number' ? toolCall.index : 0;
+    if (fallbackPrefix) {
+        return `${fallbackPrefix}-${indexPart}`;
+    }
     return `${functionName}-${indexPart}`;
 };
 
-const normalizeToolCallIdentity = (toolCall: ToolCall): ToolCall => {
+const normalizeToolCallIdentity = (toolCall: ToolCall, options?: MergeToolCallOptions): ToolCall => {
     const normalizedId = typeof toolCall.id === 'string' && toolCall.id.trim().length > 0
         ? toolCall.id
-        : buildFallbackToolCallId(toolCall);
+        : buildFallbackToolCallId(toolCall, options);
     return {
         ...toolCall,
         id: normalizedId,
     };
 };
 
-const mergeToolCalls = (currentToolCalls: ToolCall[], incomingToolCalls: ToolCall[]): ToolCall[] => {
+export const mergeToolCalls = (
+    currentToolCalls: ToolCall[],
+    incomingToolCalls: ToolCall[],
+    options: MergeToolCallOptions = {}
+): ToolCall[] => {
     const mergedToolCalls = [...currentToolCalls];
+    const allowIndexMatch = options.allowIndexMatch ?? true;
 
     for (const rawIncomingToolCall of incomingToolCalls) {
         const incomingHadExplicitId = typeof rawIncomingToolCall.id === 'string' && rawIncomingToolCall.id.trim().length > 0;
-        const incomingToolCall = normalizeToolCallIdentity(rawIncomingToolCall);
+        const incomingToolCall = normalizeToolCallIdentity(rawIncomingToolCall, options);
         const existingIndex = mergedToolCalls.findIndex(toolCall =>
             toolCall.id === incomingToolCall.id
             || (
-                incomingToolCall.index !== undefined
+                allowIndexMatch
+                && incomingToolCall.index !== undefined
                 && toolCall.index !== undefined
                 && toolCall.index === incomingToolCall.index
             )
@@ -60,7 +79,7 @@ const mergeToolCalls = (currentToolCalls: ToolCall[], incomingToolCalls: ToolCal
             continue;
         }
 
-        const existingToolCall = normalizeToolCallIdentity(mergedToolCalls[existingIndex]);
+        const existingToolCall = normalizeToolCallIdentity(mergedToolCalls[existingIndex], options);
         mergedToolCalls[existingIndex] = {
             ...existingToolCall,
             ...incomingToolCall,
@@ -72,6 +91,40 @@ const mergeToolCalls = (currentToolCalls: ToolCall[], incomingToolCalls: ToolCal
                 arguments: (existingToolCall.function.arguments || '') + (incomingToolCall.function.arguments || ''),
             },
         };
+    }
+
+    return mergedToolCalls;
+};
+
+const createUniqueToolCallId = (baseId: string, usedIds: Set<string>): string => {
+    if (!usedIds.has(baseId)) {
+        return baseId;
+    }
+    let suffix = 1;
+    let candidate = `${baseId}~${suffix}`;
+    while (usedIds.has(candidate)) {
+        suffix += 1;
+        candidate = `${baseId}~${suffix}`;
+    }
+    return candidate;
+};
+
+export const mergeToolCallHistory = (historyToolCalls: ToolCall[], incomingToolCalls: ToolCall[]): ToolCall[] => {
+    const mergedToolCalls = [...historyToolCalls];
+    const usedIds = new Set(
+        mergedToolCalls
+            .map(toolCall => toolCall.id)
+            .filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
+    );
+
+    for (const incomingToolCall of incomingToolCalls) {
+        const normalizedIncoming = normalizeToolCallIdentity(incomingToolCall);
+        const uniqueId = createUniqueToolCallId(normalizedIncoming.id, usedIds);
+        usedIds.add(uniqueId);
+        mergedToolCalls.push({
+            ...normalizedIncoming,
+            id: uniqueId,
+        });
     }
 
     return mergedToolCalls;
@@ -106,8 +159,10 @@ const handleMetadataChunk = (chunk: StreamChunk): StreamChunkResult => {
     return { updated: true, newSources: chunk.sources ?? [] };
 };
 
-const handleReasoningChunk = (chunk: StreamChunk, current: { content: string, reasoning: string, sources: string[], images?: string[] }): StreamChunkResult => {
-    return { updated: true, newReasoning: current.reasoning + (chunk.content ?? '') };
+const handleReasoningChunk = (chunk: StreamChunk, current: { content: string, reasoning: string, sources: string[], images?: string[] }, _streamStartTime: number): StreamChunkResult => {
+    // Use chunk.reasoning if available, fallback to chunk.content for backwards compatibility
+    const reasoningContent = chunk.reasoning ?? chunk.content ?? '';
+    return { updated: true, newReasoning: current.reasoning + reasoningContent };
 };
 
 const handleImagesChunk = (chunk: StreamChunk, current: { content: string, reasoning: string, sources: string[], images?: string[] }): StreamChunkResult => {
@@ -118,12 +173,17 @@ const handleImagesChunk = (chunk: StreamChunk, current: { content: string, reaso
 
 const handleToolCallsChunk = (
     chunk: StreamChunk,
-    current: { content: string, reasoning: string, sources: string[], images?: string[], toolCalls?: ToolCall[] }
+    current: { content: string, reasoning: string, sources: string[], images?: string[], toolCalls?: ToolCall[] },
+    _streamStartTime: number,
+    toolCallFallbackPrefix?: string
 ): StreamChunkResult => {
     const incomingToolCalls = chunk.tool_calls ?? [];
     return {
         updated: true,
-        newToolCalls: mergeToolCalls(current.toolCalls ?? [], incomingToolCalls),
+        newToolCalls: mergeToolCalls(current.toolCalls ?? [], incomingToolCalls, {
+            fallbackIdPrefix: toolCallFallbackPrefix,
+            allowIndexMatch: true,
+        }),
     };
 };
 
@@ -134,10 +194,15 @@ const handleContentChunk = (chunk: StreamChunk, current: { content: string, reas
     return { updated: true, newContent, speed };
 };
 
+const handleUsageChunk = (chunk: StreamChunk): StreamChunkResult => {
+    return { updated: true, usage: chunk.usage };
+};
+
 type ChunkHandler = (
     chunk: StreamChunk,
     current: { content: string, reasoning: string, sources: string[], images?: string[], toolCalls?: ToolCall[] },
-    streamStartTime: number
+    streamStartTime: number,
+    toolCallFallbackPrefix?: string
 ) => StreamChunkResult;
 
 const chunkHandlers: Record<string, ChunkHandler> = {
@@ -146,27 +211,36 @@ const chunkHandlers: Record<string, ChunkHandler> = {
     images: handleImagesChunk,
     tool_calls: handleToolCallsChunk,
     content: handleContentChunk,
+    usage: handleUsageChunk,
 };
 
 export const processStreamChunk = (
     chunk: StreamChunk,
     current: { content: string, reasoning: string, sources: string[], images?: string[], toolCalls?: ToolCall[] },
     streamStartTime: number,
-    defaultStreamError: string
+    defaultStreamError: string,
+    toolCallFallbackPrefix?: string
 ): StreamChunkResult => {
-    const chunkType = chunk.type ?? 'content';
+    const chunkType = chunk.type;
 
     if (chunkType === 'error') {
         return { updated: true, streamError: chunk.content ?? defaultStreamError };
     }
 
-    if (chunkType in chunkHandlers) {
+    // Handle explicit type if present
+    if (chunkType && chunkType in chunkHandlers) {
         const handler = chunkHandlers[chunkType];
-        return handler(chunk, current, streamStartTime);
+        return handler(chunk, current, streamStartTime, toolCallFallbackPrefix);
+    }
+
+    // Handle chunks that have reasoning property but no explicit type (or type is undefined)
+    // This handles OpenAI/OpenCode reasoning streams that send reasoning without a type field
+    if (chunk.reasoning) {
+        return handleReasoningChunk(chunk, current, streamStartTime);
     }
 
     // Default case: treat as content if there's content to append
-    if (!chunk.type && chunk.content) {
+    if (chunk.content) {
         return handleContentChunk(chunk, current, streamStartTime);
     }
 
@@ -175,20 +249,5 @@ export const processStreamChunk = (
 
 /** Categorize an error message into a known error kind */
 export function categorizeError(message: string, model: string | null): ChatError {
-    const lower = message.toLowerCase();
-
-    if (lower.includes('quota') || lower.includes('rate limit') || lower.includes('429') || lower.includes('exceeded')) {
-        return { kind: 'quota_exhausted', message, model };
-    }
-    if (lower.includes('timeout') || lower.includes('timed out') || lower.includes('econnaborted')) {
-        return { kind: 'timeout', message, model };
-    }
-    if (
-        lower.includes('econnrefused') || lower.includes('enotfound')
-        || lower.includes('unavailable') || lower.includes('503')
-        || lower.includes('network') || lower.includes('connect')
-    ) {
-        return { kind: 'provider_unavailable', message, model };
-    }
-    return { kind: 'generic', message, model };
+    return normalizeChatError(message, model);
 }

@@ -7,6 +7,7 @@ const PROVIDER_ALIASES: Record<string, string[]> = {
     codex: ['codex', 'openai'],
     claude: ['claude', 'anthropic'],
     antigravity: ['antigravity', 'google', 'gemini'],
+    ollama: ['ollama'],
     copilot: ['copilot', 'copilot_token'],
     github: ['github']
 };

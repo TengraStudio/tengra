@@ -85,6 +85,7 @@ export interface Message {
     timestamp: Date
     images?: string[] | undefined
     reasoning?: string | undefined
+    reasonings?: string[] | undefined // Multiple reasoning segments
     toolCalls?: ToolCall[] | undefined
     toolCallId?: string | undefined
     toolResults?: ToolResult[] | string | undefined // Can be string in DB
@@ -98,7 +99,8 @@ export interface Message {
     sources?: string[] | undefined
     variants?: MessageVariant[] | undefined // Alternative responses
     attachments?: Attachment[] | undefined
-    metadata?: JsonObject | undefined
+    usage?: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined;
+    metadata?: JsonObject | undefined;
 }
 
 export interface Chat {
@@ -154,13 +156,25 @@ export interface ChatRequest {
 
 export interface ChatStreamRequest extends ChatRequest {
     chatId?: string
+    assistantId?: string
 }
 
-export type ChatErrorKind = 'provider_unavailable' | 'quota_exhausted' | 'timeout' | 'generic';
+export type ChatErrorKind =
+    | 'provider_unavailable'
+    | 'quota_exhausted'
+    | 'capacity_exhausted'
+    | 'rate_limited'
+    | 'timeout'
+    | 'auth'
+    | 'permission_denied'
+    | 'generic';
 
 export interface ChatError {
     kind: ChatErrorKind;
     message: string;
     resetsAt?: number | null;
     model?: string | null;
+    code?: number | null;
+    reason?: string | null;
+    retryable?: boolean;
 }

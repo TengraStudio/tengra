@@ -70,6 +70,7 @@ export const sessionConversationCompleteRequestSchema = z.object({
 export const sessionConversationStreamRequestSchema =
     sessionConversationCompleteRequestSchema.extend({
         chatId: z.string(),
+        assistantId: z.string().optional(),
         optionsJson: z.record(z.string(), z.unknown()).optional(),
     });
 

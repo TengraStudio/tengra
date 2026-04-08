@@ -29,7 +29,14 @@ const mockRateLimitService = {
     waitForToken: vi.fn().mockResolvedValue(undefined)
 };
 const mockHuggingFaceService = {
-    searchModels: vi.fn()
+    searchModels: vi.fn(),
+    getModelVersions: vi.fn(),
+};
+const mockLlamaService = {
+    getLoadedModel: vi.fn().mockReturnValue(null),
+    isServerRunning: vi.fn().mockResolvedValue(false),
+    loadModel: vi.fn().mockResolvedValue({ success: true }),
+    getConfig: vi.fn().mockReturnValue({ host: '127.0.0.1', port: 8080 }),
 };
 const mockTokenService = {
     ensureFreshToken: vi.fn().mockResolvedValue(undefined),
@@ -45,6 +52,10 @@ describe('LLMService', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        mockLlamaService.getLoadedModel.mockReturnValue(null);
+        mockLlamaService.isServerRunning.mockResolvedValue(false);
+        mockLlamaService.loadModel.mockResolvedValue({ success: true });
+        mockLlamaService.getConfig.mockReturnValue({ host: '127.0.0.1', port: 8080 });
         type LlmDeps = ConstructorParameters<typeof LLMService>[0];
         service = new LLMService({
             httpService: mockHttpService as never as LlmDeps['httpService'],
@@ -55,6 +66,7 @@ describe('LLMService', () => {
             proxyService: { getEmbeddedProxyStatus: vi.fn().mockReturnValue({}), getProxyKey: vi.fn().mockResolvedValue('test-key') } as never as LlmDeps['proxyService'],
             tokenService: mockTokenService as never as LlmDeps['tokenService'],
             huggingFaceService: mockHuggingFaceService as never as LlmDeps['huggingFaceService'],
+            llamaService: mockLlamaService as never as LlmDeps['llamaService'],
             fallbackService: { route: vi.fn(), getChain: vi.fn().mockReturnValue([]) } as never as LlmDeps['fallbackService'],
             cacheService: mockCacheService as never as LlmDeps['cacheService']
         });
@@ -255,6 +267,51 @@ describe('LLMService', () => {
 
             expect(response.content).toBe('Fresh response');
             expect(mockCacheService.set).toHaveBeenCalledTimes(1);
+        });
+
+        it('should route locally installed Hugging Face models via llama.cpp', async () => {
+            mockCacheService.get.mockResolvedValueOnce(null);
+            mockHuggingFaceService.getModelVersions.mockResolvedValueOnce([
+                {
+                    versionId: 'v1',
+                    modelId: 'lmstudio-community/gemma-4-E4B-it-GGUF',
+                    path: 'C:\\models\\gemma-4-E4B-it-Q4_K_M.gguf',
+                    createdAt: Date.now(),
+                }
+            ]);
+            mockLlamaService.getLoadedModel.mockReturnValueOnce(null);
+            mockLlamaService.isServerRunning.mockResolvedValueOnce(false);
+            mockLlamaService.loadModel.mockResolvedValueOnce({ success: true });
+            mockHttpService.fetch.mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    choices: [{ message: { content: 'Local HF response', role: 'assistant' } }],
+                    usage: { completion_tokens: 9 }
+                })
+            });
+
+            const response = await service.chat(
+                [{ role: 'user', content: 'Hi' }],
+                'lmstudio-community/gemma-4-E4B-it-GGUF',
+                undefined,
+                'huggingface'
+            );
+
+            expect(response.content).toBe('Local HF response');
+            expect(mockHuggingFaceService.getModelVersions).toHaveBeenCalledWith('lmstudio-community/gemma-4-E4B-it-GGUF');
+            expect(mockLlamaService.loadModel).toHaveBeenCalledWith('C:\\models\\gemma-4-E4B-it-Q4_K_M.gguf');
+            expect(mockHttpService.fetch).toHaveBeenCalledWith(
+                'http://127.0.0.1:8080/v1/chat/completions',
+                expect.objectContaining({
+                    body: expect.stringContaining('"provider":"huggingface"'),
+                })
+            );
+            expect(mockHttpService.fetch).toHaveBeenCalledWith(
+                'http://127.0.0.1:8080/v1/chat/completions',
+                expect.objectContaining({
+                    body: expect.stringContaining('"max_tokens":512'),
+                })
+            );
         });
     });
 

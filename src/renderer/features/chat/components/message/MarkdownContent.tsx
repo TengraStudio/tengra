@@ -7,9 +7,9 @@ import { cn } from '@/lib/utils';
 import { Attachment } from '@/types';
 
 import { AttachmentList } from '../input/AttachmentList';
+import { MonacoBlock } from '../MonacoBlock';
 import { TypingIndicator } from '../TypingIndicator';
 
-import { CodeBlock } from './CodeBlock';
 import { MarkdownImage } from './MarkdownImage';
 import { PermissionErrorCard } from './PermissionErrorCard';
 import { QuotaErrorCard } from './QuotaErrorCard';
@@ -17,6 +17,16 @@ import { QuotaErrorCard } from './QuotaErrorCard';
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
 
 const LazyReactMarkdown = lazy(() => import('react-markdown'));
+
+const flattenNodeText = (node: React.ReactNode): string => {
+    if (typeof node === 'string' || typeof node === 'number') {
+        return String(node);
+    }
+    if (Array.isArray(node)) {
+        return node.map(flattenNodeText).join('');
+    }
+    return '';
+};
 
 export interface MarkdownContentProps {
     content: string;
@@ -33,7 +43,7 @@ export interface MarkdownContentProps {
  * Renders markdown strings using react-markdown with Support for:
  * - GFM (GitHub Flavored Markdown)
  * - Math (KaTeX)
- * - Syntax highlighting (CodeBlock)
+ * - Syntax highlighting (MonacoBlock)
  * - Customized link handling
  * - Custom list and checkbox rendering
  */
@@ -52,15 +62,32 @@ export const MarkdownContent = memo(
                     remarkPlugins={[remarkGfm, remarkMath]}
                     rehypePlugins={[rehypeKatex]}
                     components={{
-                        code: props => (
-                            <CodeBlock
-                                {...props}
-                                isSpeaking={isSpeaking}
-                                onStop={onStop}
-                                onSpeak={onSpeak}
-                                t={t}
-                            />
-                        ),
+                        pre: ({ children }) => <>{children}</>,
+                        code: props => {
+                            const className = typeof props.className === 'string' ? props.className : undefined;
+                            const codeText = flattenNodeText(props.children);
+                            const shouldUseMonaco = (
+                                (typeof className === 'string' && className.includes('language-'))
+                                || codeText.includes('\n')
+                            );
+                            if (shouldUseMonaco && codeText.trim().length > 0) {
+                                return (
+                                    <MonacoBlock
+                                        className={className}
+                                        code={codeText}
+                                        isSpeaking={isSpeaking}
+                                        onStop={onStop}
+                                        onSpeak={onSpeak}
+                                        t={t}
+                                    />
+                                );
+                            }
+                            return (
+                                <code className={className}>
+                                    {props.children}
+                                </code>
+                            );
+                        },
                         img: props => <MarkdownImage {...props} onCodeConvert={onCodeConvert} t={t} />,
                         a: ({ href, children }) => (
                             <a
@@ -202,7 +229,7 @@ export const MessageBubbleContent = memo(
             return (
                 <div className="flex flex-col gap-2">
                     <AttachmentList attachments={attachments ?? []} onRemove={() => {}} t={t} />
-                    <div className="whitespace-pre-wrap font-mono text-sm bg-accent/20 rounded-lg p-3 border border-border/30 overflow-x-auto text-foreground/90 leading-relaxed">
+                    <div className="whitespace-pre-wrap font-mono text-sm rounded-lg px-4 py-2 border border-border/30 overflow-x-auto text-foreground/90 leading-relaxed">
                         {displayContent}
                     </div>
                 </div>

@@ -75,6 +75,29 @@ function getPathCandidates(args: JsonObject): string[] {
         }
     }
 
+    const files = args.files;
+    if (Array.isArray(files)) {
+        for (const entry of files) {
+            if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+                continue;
+            }
+            const candidate = normalizePathCandidate(entry.path);
+            if (candidate) {
+                candidates.push(candidate);
+            }
+        }
+    }
+
+    const paths = args.paths;
+    if (Array.isArray(paths)) {
+        for (const entry of paths) {
+            const candidate = normalizePathCandidate(entry);
+            if (candidate) {
+                candidates.push(candidate);
+            }
+        }
+    }
+
     return candidates;
 }
 
@@ -166,8 +189,12 @@ async function guardWorkspaceAgentToolExecution(options: {
     const { permissionPolicy, workspacePath } = permissionContext;
     const pathCandidates = getPathCandidates(options.args);
 
-    if (options.toolName === 'execute_command') {
-        const command = typeof options.args.command === 'string' ? options.args.command : '';
+    if (options.toolName === 'execute_command' || options.toolName === 'terminal_session_write') {
+        const command = typeof options.args.command === 'string'
+            ? options.args.command
+            : typeof options.args.input === 'string' && options.args.inputKind !== 'input'
+                ? options.args.input
+                : '';
         const commandBase = getCommandBase(command);
         if (
             permissionPolicy.disallowedCommands.some(disallowedCommand =>
@@ -223,6 +250,29 @@ async function guardWorkspaceAgentToolExecution(options: {
     return null;
 }
 
+function normalizeWorkspaceBatchPaths(args: JsonObject, workspacePath: string): void {
+    const files = args.files;
+    if (Array.isArray(files)) {
+        for (const entry of files) {
+            if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+                continue;
+            }
+            if (typeof entry.path === 'string' && entry.path.trim().length > 0 && !path.isAbsolute(entry.path)) {
+                entry.path = path.join(workspacePath, entry.path);
+            }
+        }
+    }
+
+    const paths = args.paths;
+    if (Array.isArray(paths)) {
+        args.paths = paths.map(entry =>
+            typeof entry === 'string' && entry.trim().length > 0 && !path.isAbsolute(entry)
+                ? path.join(workspacePath, entry)
+                : entry
+        );
+    }
+}
+
 export function registerToolsIpc(
     getMainWindow: () => BrowserWindow | null,
     toolExecutor: ToolExecutor,
@@ -249,13 +299,15 @@ export function registerToolsIpc(
             if (permissionContext) {
                 const { workspacePath } = permissionContext;
                 const pathKeys = ['path', 'cwd', 'dirPath', 'filePath', 'source', 'destination'];
-                
+
                 for (const key of pathKeys) {
                     const argValue = payload.args[key];
                     if (typeof argValue === 'string' && argValue.trim().length > 0 && !path.isAbsolute(argValue)) {
                         payload.args[key] = path.join(workspacePath, argValue);
                     }
                 }
+
+                normalizeWorkspaceBatchPaths(payload.args, workspacePath);
             }
         }
 

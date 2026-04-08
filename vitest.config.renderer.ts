@@ -4,6 +4,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
     test: {
+        name: 'renderer',
         globals: true,
         environment: 'jsdom',
         include: ['src/tests/renderer/**/*.test.ts', 'src/tests/renderer/**/*.test.tsx'],

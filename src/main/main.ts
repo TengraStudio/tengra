@@ -105,6 +105,18 @@ app.commandLine.appendSwitch('disable-renderer-backgrounding', 'false');
 app.commandLine.appendSwitch('enable-low-end-device-mode');
 app.commandLine.appendSwitch('process-per-site');
 
+// Graphics: Fix for EGL/OpenGL initialization errors on Windows
+if (process.platform === 'win32') {
+    app.commandLine.appendSwitch('use-gl', 'angle');
+    app.commandLine.appendSwitch('use-angle', 'd3d11');
+    app.commandLine.appendSwitch('ignore-gpu-blocklist');
+    app.commandLine.appendSwitch('disable-gpu-driver-bug-workarounds');
+    app.commandLine.appendSwitch('disable-gpu-sandbox');
+    app.commandLine.appendSwitch('disable-features', 'Vulkan');
+    app.commandLine.appendSwitch('disable-es3-gl-context');
+    app.commandLine.appendSwitch('disable-gpu-memory-buffer-video-frames');
+}
+
 // Performance: Hardware acceleration selection
 if (process.env.TENGRA_LOW_RESOURCE_MODE === 'true' || process.env.TENGRA_DISABLE_GPU === 'true') {
     app.disableHardwareAcceleration();
@@ -243,11 +255,12 @@ app.whenReady().then(async () => {
         system: services.systemService,
         network: services.networkService,
         file: services.fileManagementService,
-        git: services.gitService,
-        security: services.securityService,
-        mcp: mcpDispatcher,
-        llm: services.llmService,
-    });
+            git: services.gitService,
+            security: services.securityService,
+            mcp: mcpDispatcher,
+            llm: services.llmService,
+            terminal: services.terminalService,
+        });
 
     // Initialize Local API Server
     const proxyProcessManager = services.proxyService['processManager'] as ProxyProcessManager;

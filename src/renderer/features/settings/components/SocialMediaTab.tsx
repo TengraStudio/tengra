@@ -267,7 +267,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
                                             <span className="text-sm font-medium truncate">{job.label}</span>
-                                            <code className="text-[11px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">
+                                            <code className="typo-body px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">
                                                 {job.cronExpression}
                                             </code>
                                         </div>
@@ -276,7 +276,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                                         </p>
                                         <div className="flex gap-1 mt-1">
                                             {job.platforms.map((p) => (
-                                                <span key={p} className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                                                <span key={p} className="typo-body px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
                                                     {p}
                                                 </span>
                                             ))}
@@ -414,7 +414,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                     )}
 
                     {/* Cron expression help */}
-                    <div className="flex items-start gap-2 rounded-xl bg-muted/40 p-3 text-[11px] text-muted-foreground">
+                    <div className="flex items-start gap-2 rounded-xl bg-muted/40 p-3 typo-body text-muted-foreground">
                         <Clock className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                         <div>
                             <p className="font-medium mb-1">{t('settings.socialMedia.cronJobs.helpTitle')}</p>

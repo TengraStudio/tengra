@@ -210,7 +210,7 @@ const ModelSelectorReasoningPanel: React.FC<ModelSelectorReasoningPanelProps> = 
 
     return (
         <div className="p-6">
-            <div className="mb-3 text-[11px] font-bold text-muted-foreground/60 uppercase tracking-wider flex items-center gap-2">
+            <div className="mb-3 typo-body font-bold text-muted-foreground/60 uppercase tracking-wider flex items-center gap-2">
                 <Brain className="w-3.5 h-3.5" />
                 {t('modelSelector.reasoning')} {'•'} {currentModelInfo?.label ?? selectedModel}
             </div>
@@ -740,7 +740,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                             );
                                         }}
                                         className={cn(
-                                            'px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all duration-200',
+                                            'px-3.5 py-1.5 rounded-full typo-body font-bold uppercase tracking-wider border transition-all duration-200',
                                             active
                                                 ? 'bg-primary/20 text-primary border-primary/30 shadow-sm scale-105'
                                                 : 'bg-background/40 text-muted-foreground/60 border-border/40 hover:text-foreground hover:bg-background/60 shadow-sm'

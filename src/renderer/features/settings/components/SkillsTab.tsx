@@ -85,7 +85,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
                                                 {skill.description || normalizeTranslation(t('settings.skills.noDescription'), 'No description')}
                                             </p>
                                         </div>
-                                        <Badge variant="outline" className="text-[10px] uppercase">
+                                        <Badge variant="outline" className="typo-body uppercase">
                                             {skill.provider}
                                         </Badge>
                                     </div>

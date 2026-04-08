@@ -35,52 +35,72 @@ export function registerMarketplaceIpc(
         }
     ));
 
+    ipcMain.handle('marketplace:getRuntimeProfile', createIpcHandler('marketplace:getRuntimeProfile',
+        async () => {
+            return await marketplaceService.getRuntimeProfile();
+        }
+    ));
+
     // Tema veya eklenti yükle
     ipcMain.handle('marketplace:install', createIpcHandler('marketplace:install',
         async (_event: IpcMainInvokeEvent, request: InstallRequest) => {
-            const validatedRequest = marketplaceInstallRequestSchema.parse(request);
-            const baseInstallItem = {
-                id: validatedRequest.id,
-                name: validatedRequest.name ?? validatedRequest.id,
-                description: validatedRequest.description ?? `${validatedRequest.type} item installed from marketplace.`,
-                author: validatedRequest.author ?? 'Marketplace',
-                version: validatedRequest.version ?? 'latest',
-                itemType: validatedRequest.type,
-                downloadUrl: validatedRequest.downloadUrl,
-            } satisfies MarketplaceItem;
+            try {
+                const validatedRequest = marketplaceInstallRequestSchema.parse(request);
+                const baseInstallItem = {
+                    id: validatedRequest.id,
+                    name: validatedRequest.name ?? validatedRequest.id,
+                    description: validatedRequest.description ?? `${validatedRequest.type} item installed from marketplace.`,
+                    author: validatedRequest.author ?? 'Marketplace',
+                    version: validatedRequest.version ?? 'latest',
+                    itemType: validatedRequest.type,
+                    downloadUrl: validatedRequest.downloadUrl,
+                } satisfies MarketplaceItem;
 
-            // Installation logic via service
-            const itemToInstall = validatedRequest.type === 'model'
-                ? {
-                    ...baseInstallItem,
-                    provider: validatedRequest.provider ?? 'custom',
-                    source: validatedRequest.provider ?? 'custom',
-                    sourceUrl: validatedRequest.sourceUrl,
-                    category: validatedRequest.category,
-                    pipelineTag: validatedRequest.pipelineTag,
-                } satisfies MarketplaceModel
-                : baseInstallItem;
-            const result = await marketplaceService.installItem(itemToInstall);
+                // Installation logic via service
+                const itemToInstall = validatedRequest.type === 'model'
+                    ? {
+                        ...baseInstallItem,
+                        provider: validatedRequest.provider ?? 'custom',
+                        source: validatedRequest.provider ?? 'custom',
+                        sourceUrl: validatedRequest.sourceUrl,
+                        category: validatedRequest.category,
+                        pipelineTag: validatedRequest.pipelineTag,
+                    } satisfies MarketplaceModel
+                    : baseInstallItem;
+                const result = await marketplaceService.installItem(itemToInstall);
 
-            if (result.success) {
-                const mainWindow = getMainWindow();
-                if (validatedRequest.type === 'theme') {
-                    appLogger.info('MarketplaceIPC', 'Theme installed, triggering reload...');
-                    await themeService.initialize();
-                    if (mainWindow) {
-                        mainWindow.webContents.send('theme:runtime:updated');
+                if (result.success) {
+                    const mainWindow = getMainWindow();
+                    if (validatedRequest.type === 'theme') {
+                        appLogger.info('MarketplaceIPC', 'Theme installed, triggering reload...');
+                        await themeService.initialize();
+                        if (mainWindow) {
+                            mainWindow.webContents.send('theme:runtime:updated');
+                        }
+                    }
+                    if (validatedRequest.type === 'language') {
+                        appLogger.info('MarketplaceIPC', 'Language pack installed, triggering reload...');
+                        await localeService.reload();
+                        if (mainWindow) {
+                            mainWindow.webContents.send('locale:runtime:updated');
+                        }
                     }
                 }
-                if (validatedRequest.type === 'language') {
-                    appLogger.info('MarketplaceIPC', 'Language pack installed, triggering reload...');
-                    await localeService.reload();
-                    if (mainWindow) {
-                        mainWindow.webContents.send('locale:runtime:updated');
-                    }
-                }
+                return result;
+            } catch (error) {
+                const message = error instanceof Error ? error.message : 'Installation failed';
+                const [code, humanMessage] = message.includes(':')
+                    ? [message.split(':', 1)[0], message.slice(message.indexOf(':') + 1).trim()]
+                    : ['INSTALL_FAILED', message];
+                return {
+                    success: false,
+                    code,
+                    message: humanMessage,
+                    path: '',
+                    queuedDownloads: 0,
+                    downloadIds: [],
+                };
             }
-            
-            return result;
         }
     ));
 }

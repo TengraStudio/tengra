@@ -219,14 +219,14 @@ describe('ProxyService edge cases', () => {
     });
 
     describe('cleanup', () => {
-        it('should force stop proxy on cleanup', async () => {
+        it('should leave background proxy running on cleanup', async () => {
             const { proxyService, mockProcessManager } = createProxyService();
             await proxyService.initialize();
             await proxyService.cleanup();
-            expect(mockProcessManager.stop).toHaveBeenCalled();
+            expect(mockProcessManager.stop).not.toHaveBeenCalled();
         });
 
-        it('should not throw when cleanup stop fails', async () => {
+        it('should not throw when cleanup runs after stop failures elsewhere', async () => {
             const { proxyService, mockProcessManager } = createProxyService();
             vi.mocked(mockProcessManager.stop).mockRejectedValue(new Error('cleanup fail'));
             await proxyService.initialize();

@@ -27,6 +27,7 @@ interface ConversationAssistantRecordParams extends ConversationAssistantMetadat
     model: string;
     provider: string;
     timestamp?: number;
+    assistantId?: string;
 }
 
 interface ConversationCompleteResultParams extends ConversationAssistantMetadataParams {
@@ -107,9 +108,11 @@ export function createConversationAssistantRecord(
         sources,
         images,
         timestamp,
+        assistantId,
     } = params;
 
     return {
+        id: assistantId,
         chatId,
         role: 'assistant',
         content,

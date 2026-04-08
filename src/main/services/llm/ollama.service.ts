@@ -3,6 +3,7 @@ import { EventEmitter } from 'events';
 import * as http from 'http';
 
 import { appLogger } from '@main/logging/logger';
+import { resolveContextWindowForModel } from '@main/services/llm/model-context-window.data.ts';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { withRetry } from '@main/utils/retry.util';
@@ -298,7 +299,33 @@ export class OllamaService {
         }
     }
 
+    private getEffectiveNumCtx(model: string): number {
+        const settings = this.settingsService.getSettings();
+        
+        // 1. Check for per-model override
+        const modelKey = `ollama/${model}`;
+        if (settings.modelSettings?.[modelKey]?.numCtx) {
+            return settings.modelSettings[modelKey].numCtx!;
+        }
+
+        // 2. Resolve based on known model limits if global is set to default or a low value
+        const resolved = resolveContextWindowForModel({
+            id: modelKey,
+            name: model,
+            provider: 'ollama'
+        });
+
+        // If the model is a known large-context model, use that instead of the 16k/32k default
+        // We consider 16384 as the "legacy" default that we want to override if known better
+        if (resolved && (settings.ollama.numCtx === undefined || settings.ollama.numCtx <= 16384)) {
+            return Math.max(resolved, 32768); // Minimum 32k for agentic models
+        }
+
+        return settings.ollama.numCtx || 32768; // Default to 32k instead of 16k
+    }
+
     async chat(messages: OllamaMessage[], model: string): Promise<OllamaResponse> {
+
         try {
             const response = await this.httpRequest({
                 method: 'POST',
@@ -308,7 +335,7 @@ export class OllamaService {
                     messages,
                     stream: false,
                     options: {
-                        num_ctx: this.settingsService.getSettings().ollama.numCtx ?? 16384,
+                        num_ctx: this.getEffectiveNumCtx(model),
                     },
                 })
             });
@@ -351,7 +378,7 @@ export class OllamaService {
                     stream: true,
                     tools: tools && tools.length > 0 ? tools : undefined,
                     options: {
-                        num_ctx: this.settingsService.getSettings().ollama.numCtx ?? 16384,
+                        num_ctx: this.getEffectiveNumCtx(model),
                     },
                 }),
                 onData: (chunk) => {

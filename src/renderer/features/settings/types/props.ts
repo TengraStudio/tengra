@@ -31,9 +31,9 @@ export interface SettingsSharedProps {
     refreshAuthStatus: () => Promise<void>
     connectGitHubProfile: () => Promise<void>
     connectCopilot: () => Promise<void>
-    connectBrowserProvider: (provider: 'codex' | 'claude' | 'antigravity') => Promise<void>
+    connectBrowserProvider: (provider: 'codex' | 'claude' | 'antigravity' | 'ollama') => Promise<void>
     cancelAuthFlow: () => void
-    disconnectProvider: (provider: 'copilot' | 'codex' | 'claude' | 'antigravity') => Promise<void>
+    disconnectProvider: (provider: 'copilot' | 'codex' | 'claude' | 'antigravity' | 'ollama') => Promise<void>
     statsLoading: boolean
     statsPeriod: 'daily' | 'weekly' | 'monthly' | 'yearly'
     setStatsPeriod: (p: 'daily' | 'weekly' | 'monthly' | 'yearly') => void

@@ -1,6 +1,7 @@
 import { appLogger } from '@main/logging/logger';
 import {
     ModelDownloaderService,
+    ModelDownloadHistoryEntry,
     type ModelDownloadProgress,
     ModelDownloadRequest} from '@main/services/llm/model-downloader.service';
 import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
@@ -63,6 +64,31 @@ export function registerModelDownloaderIpc(modelDownloaderService: ModelDownload
                 return modelDownloaderService.resumeDownload(downloadId);
             },
             { success: false, provider: 'ollama', modelRef: '', error: 'Invalid request' }
+        )
+    );
+
+    ipcMain.handle(
+        'model-downloader:history',
+        createSafeIpcHandler(
+            'model-downloader:history',
+            async (_event: IpcMainInvokeEvent, limitRaw: RuntimeValue) => {
+                const limit = typeof limitRaw === 'number' ? limitRaw : 100;
+                const items: ModelDownloadHistoryEntry[] = modelDownloaderService.getHistory(limit);
+                return { success: true, items };
+            },
+            { success: false, items: [] }
+        )
+    );
+
+    ipcMain.handle(
+        'model-downloader:retry',
+        createSafeIpcHandler(
+            'model-downloader:retry',
+            async (_event: IpcMainInvokeEvent, historyIdRaw: RuntimeValue) => {
+                const historyId = typeof historyIdRaw === 'string' ? historyIdRaw : '';
+                return modelDownloaderService.retryFromHistory(historyId);
+            },
+            { success: false, provider: 'ollama', modelRef: '', error: 'Invalid history id' }
         )
     );
 

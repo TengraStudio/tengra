@@ -2,7 +2,7 @@ import { Badge } from '@renderer/components/ui/badge';
 import { Button } from '@renderer/components/ui/button';
 import { Input } from '@renderer/components/ui/input';
 import { cn } from '@renderer/lib/utils';
-import { Bot,Eye, EyeOff, Search, Star } from 'lucide-react';
+import { Bot, Eye, EyeOff, Search, Star, Trash2 } from 'lucide-react';
 import React from 'react';
 
 import type { ModelInfo } from '@/types';
@@ -24,6 +24,7 @@ interface InstalledModelsListProps {
     defaultProvider: string;
     setDefault: (id: string, provider: string) => void;
     updateHidden: (id: string, hide: boolean) => void;
+    onDelete?: (id: string, provider: string) => void;
     t: (key: string) => string;
 }
 
@@ -38,6 +39,7 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
     defaultProvider,
     setDefault,
     updateHidden,
+    onDelete,
     t,
 }) => {
     return (
@@ -57,7 +59,7 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={() => setShowHiddenModels(prev => !prev)}
-                    className="flex h-11 items-center gap-3 rounded-2xl border-border/30 bg-background px-5 text-[10px] font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                    className="flex h-11 items-center gap-3 rounded-2xl border-border/30 bg-background px-5 typo-body font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground"
                 >
                     {showHiddenModels ? (
                         <>
@@ -77,6 +79,7 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                 {filtered.map(model => {
                     const isDefault = defaultModel === model.id && defaultProvider === model.provider;
                     const isHidden = hiddenModels.includes(model.id);
+                    const installedAt = model.details?.installedAt as number | undefined;
 
                     return (
                         <div
@@ -102,14 +105,22 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                                                 <div className="truncate text-sm font-semibold text-foreground">
                                                     {model.details?.name ?? model.id}
                                                 </div>
-                                                <div className="mt-0.5 truncate text-[10px] text-muted-foreground/60">
-                                                    {model.id}
+                                                <div className="mt-0.5 flex items-center gap-2 truncate typo-body text-muted-foreground/60">
+                                                    <span className="truncate">{model.id}</span>
+                                                    {installedAt && (
+                                                        <>
+                                                            <span className="h-1 w-1 shrink-0 rounded-full bg-muted-foreground/20" />
+                                                            <span className="truncate typo-body">
+                                                                {new Date(installedAt).toLocaleDateString()}
+                                                            </span>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     {isDefault && (
-                                        <Badge className="rounded-lg border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium text-primary">
+                                        <Badge className="rounded-lg border-primary/20 bg-primary/10 px-2.5 py-0.5 typo-body font-medium text-primary">
                                             <Star className="w-2.5 h-2.5 mr-1.5 fill-current" />
                                             {t('workspaces.default')}
                                         </Badge>
@@ -119,7 +130,7 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                                 <div className="flex flex-wrap items-center gap-2">
                                     <Badge
                                         variant="secondary"
-                                        className="h-6 rounded-lg border border-border/20 bg-muted/30 px-3 text-[10px] font-medium text-muted-foreground/70"
+                                        className="h-6 rounded-lg border border-border/20 bg-muted/30 px-3 typo-body font-medium text-muted-foreground/70"
                                     >
                                         {model.provider}
                                     </Badge>
@@ -128,7 +139,7 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                                             <Badge
                                                 key={source}
                                                 variant="outline"
-                                                className="h-6 rounded-lg border-border/20 px-3 text-[10px] font-medium text-muted-foreground/50"
+                                                className="h-6 rounded-lg border-border/20 px-3 typo-body font-medium text-muted-foreground/50"
                                             >
                                                 {source}
                                             </Badge>
@@ -142,36 +153,49 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                                             variant="outline"
                                             size="sm"
                                             onClick={() => setDefault(model.id, model.provider)}
-                                            className="h-9 flex-1 rounded-xl border-primary/20 bg-primary/5 px-4 text-[10px] font-medium text-primary hover:bg-primary hover:text-primary-foreground"
+                                            className="h-9 flex-1 rounded-xl border-primary/20 bg-primary/5 px-4 typo-body font-medium text-primary hover:bg-primary hover:text-primary-foreground"
                                         >
                                             {t('workspaces.makeDefault')}
                                         </Button>
                                     ) : (
                                         <div className="flex-1" />
                                     )}
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => updateHidden(model.id, !isHidden)}
-                                        className={cn(
-                                            'flex h-9 items-center gap-2 rounded-xl px-4 text-[10px] font-medium transition-colors',
-                                            isHidden
-                                                ? 'border-success/25 bg-success/10 text-success hover:bg-success hover:text-success-foreground'
-                                                : 'border-border/30 bg-background text-muted-foreground hover:bg-muted/40 hover:text-foreground'
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => updateHidden(model.id, !isHidden)}
+                                            className={cn(
+                                                'flex h-9 items-center gap-2 rounded-xl px-4 typo-body font-medium transition-colors',
+                                                isHidden
+                                                    ? 'border-success/25 bg-success/10 text-success hover:bg-success hover:text-success-foreground'
+                                                    : 'border-border/30 bg-background text-muted-foreground hover:bg-muted/40 hover:text-foreground'
+                                            )}
+                                        >
+                                            {isHidden ? (
+                                                <>
+                                                    <Eye className="w-3.5 h-3.5" />
+                                                    {t('workspaces.show')}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <EyeOff className="w-3.5 h-3.5" />
+                                                    {t('workspaces.hide')}
+                                                </>
+                                            )}
+                                        </Button>
+                                        {(model.provider === 'ollama' || model.provider === 'huggingface') && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => onDelete?.(model.id, model.provider)}
+                                                className="flex h-9 w-9 items-center justify-center rounded-xl border-destructive/20 bg-destructive/5 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                                                title={t('common.delete')}
+                                            >
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                            </Button>
                                         )}
-                                    >
-                                        {isHidden ? (
-                                            <>
-                                                <Eye className="w-3.5 h-3.5" />
-                                                {t('workspaces.show')}
-                                            </>
-                                        ) : (
-                                            <>
-                                                <EyeOff className="w-3.5 h-3.5" />
-                                                {t('workspaces.hide')}
-                                            </>
-                                        )}
-                                    </Button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

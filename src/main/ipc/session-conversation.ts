@@ -4,7 +4,6 @@ import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import {
     createSessionEvidenceState,
     recordContentAsEvidence,
-    sessionEvidenceStore,
 } from '@main/ipc/session-conversation-evidence.util';
 import {
     persistConversationAssistantMessage,
@@ -57,7 +56,6 @@ import {
 import { Message, SystemMode, ToolCall, ToolDefinition, ToolResult } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
 import { SessionCapability, SessionMessageEnvelope, SessionStartOptions } from '@shared/types/session-engine';
-import { summarizeEvidenceStore } from '@shared/utils/ai-runtime.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { sanitizeString } from '@shared/utils/sanitize.util';
 import { estimateTokens } from '@shared/utils/token.util';
@@ -85,6 +83,7 @@ interface ConversationStreamParams {
     provider: string; 
     optionsJson: JsonObject | undefined; 
     chatId: string; 
+    assistantId?: string;
     workspaceId?: string; 
     systemMode?: SystemMode; 
 }
@@ -132,15 +131,15 @@ class SessionConversationIpcManager {
         }
 
         const permissionPolicy = await this.getPermissionPolicy(params.chatId);
-        const finalMessages = injectConversationSystemPrompt(
-            sanitized.messages, 
-            sanitized.provider, 
-            sanitized.model, 
-            this.options.settingsService,
-            this.options.localeService,
+        const finalMessages = injectConversationSystemPrompt({
+            messages: sanitized.messages,
+            provider: sanitized.provider,
+            model: sanitized.model,
+            settingsService: this.options.settingsService,
+            localeService: this.options.localeService,
             permissionPolicy,
-            summarizeEvidenceStore(sessionEvidenceStore.getSnapshot())
-        );
+            evidenceContext: '',
+        });
 
         try {
             const result = await this.executeGeneralChat(sanitized, finalMessages, sources);
@@ -240,7 +239,7 @@ class SessionConversationIpcManager {
         });
     }
 
-    async handleChatStream(event: IpcMainInvokeEvent, params: { messages: Message[], model: string, tools?: ToolDefinition[], provider: string, optionsJson: JsonObject | undefined, chatId: string, workspaceId?: string, systemMode?: SystemMode }) {
+    async handleChatStream(event: IpcMainInvokeEvent, params: ConversationStreamParams) {
         if (this.options.rateLimitService) {
             try {
                 await this.options.rateLimitService.waitForToken(SESSION_CONVERSATION_CHANNELS.STREAM);
@@ -284,15 +283,15 @@ class SessionConversationIpcManager {
             sanitized.provider,
             event
         );
-        finalMessages = injectConversationSystemPrompt(
-            finalMessages,
-            sanitized.provider,
-            sanitized.model,
-            this.options.settingsService,
-            this.options.localeService,
-            undefined, // No permission policy in stream yet
-            summarizeEvidenceStore(sessionEvidenceStore.getSnapshot())
-        );
+        finalMessages = injectConversationSystemPrompt({
+            messages: finalMessages,
+            provider: sanitized.provider,
+            model: sanitized.model,
+            settingsService: this.options.settingsService,
+            localeService: this.options.localeService,
+            permissionPolicy: undefined, // No permission policy in stream yet
+            evidenceContext: '',
+        });
 
         const controller = new AbortController();
         const { signal } = controller;
@@ -319,6 +318,7 @@ class SessionConversationIpcManager {
                     event,
                     signal,
                     systemMode: sanitized.systemMode,
+                    assistantId: sanitized.assistantId,
                 });
             } else {
                 await this.handleProxyStream({
@@ -333,6 +333,7 @@ class SessionConversationIpcManager {
                     workspaceId: sanitized.workspaceId,
                     signal,
                     reasoningEffort,
+                    assistantId: sanitized.assistantId,
                 });
             }
         } catch (error) {
@@ -406,6 +407,7 @@ class SessionConversationIpcManager {
         model: string;
         provider: string;
         systemMode?: SystemMode;
+        assistantId?: string;
     }): Promise<void> {
         const {
             chatId,
@@ -417,6 +419,7 @@ class SessionConversationIpcManager {
             model,
             provider,
             systemMode,
+            assistantId,
         } = params;
 
         await persistConversationAssistantMessage({
@@ -432,6 +435,7 @@ class SessionConversationIpcManager {
             model,
             provider,
             systemMode,
+            assistantId,
         });
     }
 
@@ -480,8 +484,9 @@ class SessionConversationIpcManager {
         event: IpcMainInvokeEvent,
         signal?: AbortSignal,
         systemMode?: SystemMode,
+        assistantId?: string,
     }) {
-        const { messages, originalMessages, model, tools, chatId, event, signal, systemMode } = params;
+        const { messages, originalMessages, model, tools, chatId, event, signal, systemMode, assistantId } = params;
         const evidence = createSessionStreamEvidenceState();
 
         try {
@@ -503,6 +508,7 @@ class SessionConversationIpcManager {
                     toolResults: undefined, // Tools not yet executed in stream finally
                     model,
                     provider: 'opencode',
+                    assistantId,
                 });
             }
 
@@ -537,8 +543,9 @@ class SessionConversationIpcManager {
         workspaceId?: string,
         signal?: AbortSignal,
         reasoningEffort?: string,
+        assistantId?: string,
     }) {
-        const { messages, originalMessages, model, tools: providedTools, provider, chatId, event, systemMode, workspaceId, signal, reasoningEffort } = params;
+        const { messages, originalMessages, model, tools: providedTools, provider, chatId, event, systemMode, workspaceId, signal, reasoningEffort, assistantId } = params;
 
         let runtimeWorkspaceRoot: string | undefined;
         if (!workspaceId) {
@@ -571,6 +578,7 @@ class SessionConversationIpcManager {
                     toolResults: undefined, // Tools not yet executed in stream finally
                     model,
                     provider,
+                    assistantId,
                 });
             }
 

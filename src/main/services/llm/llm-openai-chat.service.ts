@@ -2,7 +2,6 @@ import { CircuitBreaker } from '@main/core/circuit-breaker';
 import { appLogger } from '@main/logging/logger';
 import { ImagePersistenceService } from '@main/services/data/image-persistence.service';
 import { HttpRequestOptions, HttpService } from '@main/services/external/http.service';
-import { filterContent } from '@main/services/llm/content-filter.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
 import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { TokenService } from '@main/services/security/token.service';
@@ -56,6 +55,12 @@ export interface OpenAIRequestContext {
 const OPENAI_RETRY_POLICY = {
     requestRetryCount: 2,
 } as const;
+
+const PROVIDER_DEFAULT_MAX_TOKENS: Record<string, number> = {
+    nvidia: 4096,
+    huggingface: 512,
+    'local-ai': 512,
+};
 
 const ERROR_CODES = {
     OPENAI_HTTP_FAILURE: 'LLM_OPENAI_HTTP_FAILURE',
@@ -135,6 +140,17 @@ export class LLMOpenAIChatService {
             } as HttpRequestOptions)
         );
 
+        if (response.status === 429) {
+            const errorText = await response.clone().text();
+            const resetMatch = errorText.match(/reset after (\d+)s/i);
+            const waitTime = resetMatch ? parseInt(resetMatch[1], 10) * 1000 : 2000;
+            
+            appLogger.warn('LLMOpenAIChatService', `Rate limited (429). Retrying after ${waitTime}ms...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            
+            return this.executeChat(messages, options, requestContext);
+        }
+
         if (!response.ok) {
             await this.handleOpenAIError(response);
         }
@@ -171,6 +187,18 @@ export class LLMOpenAIChatService {
             retryCount: OPENAI_RETRY_POLICY.requestRetryCount,
             timeoutMs: 300000
         });
+
+        if (response.status === 429) {
+            const errorText = await response.clone().text();
+            const resetMatch = errorText.match(/reset after (\d+)s/i);
+            const waitTime = resetMatch ? parseInt(resetMatch[1], 10) * 1000 : 1000;
+            
+            appLogger.warn('LLMOpenAIChatService', `Rate limited (429) in stream. Retrying after ${waitTime}ms...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            
+            yield* this.executeChatStream(messages, options, requestContext);
+            return;
+        }
 
         if (!response.ok) {
             await this.handleOpenAIStreamError(response, options.model, provider);
@@ -256,7 +284,7 @@ export class LLMOpenAIChatService {
                 completion = parsed.cleanedText;
             }
 
-            const validatedCompletion = this.validateContent(completion);
+            const validatedCompletion = completion;
             const savedImages = await this.saveImagesFromOpenAIMessage(message);
 
             const result: OpenAIResponse = {
@@ -362,8 +390,12 @@ export class LLMOpenAIChatService {
         if (n > 1) {
             body.n = n;
         }
-        if (provider === 'nvidia' && !body.max_tokens) {
-            body.max_tokens = 4096;
+        const normalizedProvider = (provider ?? '').toLowerCase();
+        if (body.max_tokens === undefined) {
+            const providerDefault = PROVIDER_DEFAULT_MAX_TOKENS[normalizedProvider];
+            if (providerDefault !== undefined) {
+                body.max_tokens = providerDefault;
+            }
         }
     }
 
@@ -396,9 +428,6 @@ export class LLMOpenAIChatService {
         try {
             for await (const chunk of StreamParser.parseChatStream(response)) {
                 const processedChunk = await this.processStreamChunk(chunk);
-                if (processedChunk.content) {
-                    processedChunk.content = this.validateContent(processedChunk.content);
-                }
                 yield processedChunk;
             }
         } catch (e) {
@@ -407,13 +436,6 @@ export class LLMOpenAIChatService {
         }
     }
 
-    private validateContent(content: string): string {
-        const result = filterContent(content);
-        if (result.blocked) {
-            appLogger.warn('LLMOpenAIChatService', `Content filtering blocked: ${result.matchedPatterns.join(', ')}`);
-        }
-        return result.content;
-    }
 
     private extractTextFromOpenAIMessage(message: OpenAIMessage): string {
         if (typeof message.content === 'string') {

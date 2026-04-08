@@ -10,13 +10,13 @@ export interface McpResult {
 
 export interface McpAction {
     name: string
-    description: string
+    description?: string
     handler: (args: JsonObject) => Promise<McpResult>
 }
 
 export interface McpService {
     name: string
-    description: string
+    description?: string
     source?: 'core' | 'user'
     actions: McpAction[]
 }

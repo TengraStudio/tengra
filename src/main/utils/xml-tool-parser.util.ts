@@ -13,9 +13,10 @@ export class XmlToolParser {
     /**
      * Extracts tool calls from a block of text and returns the cleaned text.
      */
-    static parse(text: string): { toolCalls: ToolCall[]; cleanedText: string } {
+    static parse(text: string, options: { trim?: boolean } = {}): { toolCalls: ToolCall[]; cleanedText: string } {
         const toolCalls: ToolCall[] = [];
         let cleanedText = text;
+        const shouldTrim = options.trim ?? true;
 
         // 1. Find all <function_calls> blocks
         const blocks = [...text.matchAll(this.XML_TOOL_REGEX)];
@@ -51,7 +52,10 @@ export class XmlToolParser {
             }
             
             // 4. Remove the XML block from the cleaned text
-            cleanedText = cleanedText.replace(blockFullContent, '').trim();
+            cleanedText = cleanedText.replace(blockFullContent, '');
+            if (shouldTrim) {
+                cleanedText = cleanedText.trim();
+            }
         }
 
         // 5. Also look for orphaned <invoke> blocks if they aren't wrapped in <function_calls>
@@ -82,7 +86,7 @@ export class XmlToolParser {
             cleanedText = cleanedText.replace(blockFullContent, '');
         }
 
-        return { toolCalls, cleanedText: cleanedText.trim() };
+        return { toolCalls, cleanedText: shouldTrim ? cleanedText.trim() : cleanedText };
     }
 
     /**

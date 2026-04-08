@@ -71,7 +71,7 @@ export const ModelSelectorModeTabs: React.FC<ModelSelectorModeTabsProps> = ({
 }) => (
     <div className="px-4 py-3.5 border-b border-border/40 flex flex-wrap items-center gap-6 bg-muted/5">
         <div className="flex items-center gap-3">
-            <span className="text-[11px] text-muted-foreground/80 font-bold uppercase tracking-wider">{modeLabel}</span>
+            <span className="typo-body text-muted-foreground/80 font-bold uppercase tracking-wider">{modeLabel}</span>
             <div className="flex gap-1 bg-background/50 backdrop-blur-sm rounded-xl p-1 border border-border/40 shadow-sm">
                 {(Object.keys(MODE_CONFIG) as SelectorChatMode[]).map(mode => {
                     const config = MODE_CONFIG[mode];
@@ -264,7 +264,7 @@ function renderProviderQuota(categoryId: string, options: {
             ),
             progress: (
                 <div className="px-4 pb-3.5 bg-muted/5">
-                    <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground/60 mb-1.5">
+                    <div className="flex items-center justify-between typo-body font-bold text-muted-foreground/60 mb-1.5">
                         <span className="uppercase tracking-tight">{t('statistics.usageStatus')}</span>
                         <span className="text-foreground/70">{creditsPercent}%</span>
                     </div>
@@ -333,7 +333,7 @@ const ModelSection: React.FC<ModelSectionProps> = ({
     t,
 }) => (
     <div className="border-b border-border/30">
-        <div className="px-4 py-2.5 text-[11px] font-bold text-muted-foreground/70 uppercase tracking-wider flex items-center gap-2 bg-muted/20">
+        <div className="px-4 py-2.5 typo-body font-bold text-muted-foreground/70 uppercase tracking-wider flex items-center gap-2 bg-muted/20">
             {icon}
             <span>{title}</span>
         </div>
@@ -405,52 +405,52 @@ const CategoryRow: React.FC<{
     });
 
     return (
-    <div className="border-b border-border/30 last:border-b-0">
-        <button
-            type="button"
-            onClick={() => onToggleCollapse(category.id)}
-            className="sticky top-0 z-10 w-full px-4 py-3.5 text-[10px] font-bold text-muted-foreground/60 flex items-center gap-2 bg-popover/95 backdrop-blur-md hover:text-foreground transition-all group/cat relative overflow-hidden uppercase tracking-wider"
-            aria-expanded={!collapsed}
-            aria-label={`${category.name} ${t('modelSelector.categoryLabelSuffix')}`}
-        >
-            <div className={cn(
-                "w-1.5 h-1.5 rounded-full shrink-0 animate-pulse shadow-[0_0_8px_rgba(0,0,0,0.2)]",
-                category.color.replace('text-', 'bg-')
-            )} />
-            <span className="truncate">{category.name}</span>
-            {providerQuota?.badges && (
-                <div className="ml-2 flex items-center gap-1.5 shrink-0">
-                    {providerQuota.badges}
+        <div className="border-b border-border/30 last:border-b-0">
+            <button
+                type="button"
+                onClick={() => onToggleCollapse(category.id)}
+                className="sticky top-0 z-10 w-full px-4 py-3.5 typo-body font-bold text-muted-foreground/60 flex items-center gap-2 bg-popover/95 backdrop-blur-md hover:text-foreground transition-all group/cat relative overflow-hidden uppercase tracking-wider"
+                aria-expanded={!collapsed}
+                aria-label={`${category.name} ${t('modelSelector.categoryLabelSuffix')}`}
+            >
+                <div className={cn(
+                    "w-1.5 h-1.5 rounded-full shrink-0 animate-pulse shadow-[0_0_8px_rgba(0,0,0,0.2)]",
+                    category.color.replace('text-', 'bg-')
+                )} />
+                <span className="truncate">{category.name}</span>
+                {providerQuota?.badges && (
+                    <div className="ml-2 flex items-center gap-1.5 shrink-0">
+                        {providerQuota.badges}
+                    </div>
+                )}
+                <span className="text-muted-foreground/30 font-normal ml-1 normal-case">({category.models.length})</span>
+                <span className="ml-auto opacity-0 group-hover/cat:opacity-100 transition-opacity">
+                    {collapsed ? <Zap className="w-3.5 h-3.5 text-muted-foreground/40" /> : <Box className="w-3.5 h-3.5 text-muted-foreground/40" />}
+                </span>
+            </button>
+            {providerQuota?.progress}
+            {!collapsed && (
+                <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {category.models.map(model => (
+                        <ModelSelectorItem
+                            key={`${category.id}-${model.provider}-${model.id}`}
+                            model={model}
+                            isSelected={selectedModels.some(
+                                m => m.provider === model.provider && m.model === model.id
+                            )}
+                            isPrimary={selectedModel === model.id && selectedProvider === model.provider}
+                            onSelect={onSelect}
+                            toggleFavorite={toggleFavorite}
+                            t={t}
+                            modelIndex={selectedModels.findIndex(
+                                m => m.provider === model.provider && m.model === model.id
+                            )}
+                            activeAntigravityQuota={activeAntigravityQuota}
+                        />
+                    ))}
                 </div>
             )}
-            <span className="text-muted-foreground/30 font-normal ml-1 normal-case">({category.models.length})</span>
-            <span className="ml-auto opacity-0 group-hover/cat:opacity-100 transition-opacity">
-                {collapsed ? <Zap className="w-3.5 h-3.5 text-muted-foreground/40" /> : <Box className="w-3.5 h-3.5 text-muted-foreground/40" />}
-            </span>
-        </button>
-        {providerQuota?.progress}
-        {!collapsed && (
-            <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {category.models.map(model => (
-                    <ModelSelectorItem
-                        key={`${category.id}-${model.provider}-${model.id}`}
-                        model={model}
-                        isSelected={selectedModels.some(
-                            m => m.provider === model.provider && m.model === model.id
-                        )}
-                        isPrimary={selectedModel === model.id && selectedProvider === model.provider}
-                        onSelect={onSelect}
-                        toggleFavorite={toggleFavorite}
-                        t={t}
-                        modelIndex={selectedModels.findIndex(
-                            m => m.provider === model.provider && m.model === model.id
-                        )}
-                        activeAntigravityQuota={activeAntigravityQuota}
-                    />
-                ))}
-            </div>
-        )}
-    </div>
+        </div>
     );
 };
 
@@ -561,7 +561,7 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
             )}
 
             {showCuratedSections && (
-                <div className="px-4 py-2.5 text-[11px] font-bold text-muted-foreground/60 bg-muted/20 border-b border-border/30 uppercase tracking-wider">
+                <div className="px-4 py-2.5 typo-body font-bold text-muted-foreground/60 bg-muted/20 border-b border-border/30 uppercase tracking-wider">
                     {t('modelSelector.allModels')}
                 </div>
             )}
@@ -577,13 +577,13 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
                         style={{ height: '100%' }}
                         data={modeFilteredCategories}
                         itemContent={(_, category) => (
-                        <CategoryRow
-                            category={category}
-                            collapsed={collapsedCategoryIds.has(category.id)}
-                            onToggleCollapse={toggleCategoryCollapse}
-                            selectedModels={selectedModels}
-                            selectedModel={selectedModel}
-                            selectedProvider={selectedProvider}
+                            <CategoryRow
+                                category={category}
+                                collapsed={collapsedCategoryIds.has(category.id)}
+                                onToggleCollapse={toggleCategoryCollapse}
+                                selectedModels={selectedModels}
+                                selectedModel={selectedModel}
+                                selectedProvider={selectedProvider}
                                 onSelect={onSelect}
                                 toggleFavorite={toggleFavorite}
                                 copilotQuota={copilotQuota}

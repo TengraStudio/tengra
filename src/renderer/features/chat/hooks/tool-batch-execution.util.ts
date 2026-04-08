@@ -1,12 +1,12 @@
 import { generateId } from '@/lib/utils';
 import { Message } from '@/types';
 
-export async function executeBatchToolCalls(
-    toolCalls: NonNullable<Message['toolCalls']>,
-    workspacePath: string | undefined,
-    t: (key: string) => string,
-    chatId: string | undefined,
-    accumulatedMessages: Message[],
+export interface ExecuteBatchToolCallsParams {
+    toolCalls: NonNullable<Message['toolCalls']>;
+    workspacePath: string | undefined;
+    t: (key: string) => string;
+    chatId: string | undefined;
+    accumulatedMessages: Message[];
     executeToolCall: (
         toolCall: NonNullable<Message['toolCalls']>[number],
         activeWorkspacePath: string | undefined,
@@ -15,8 +15,22 @@ export async function executeBatchToolCalls(
     ) => Promise<{
         toolMessage: Message;
         generatedImages: string[];
-    }>
+    }>;
+    onToolProgress?: (toolResults: Message[]) => void;
+}
+
+export async function executeBatchToolCalls(
+    params: ExecuteBatchToolCallsParams
 ): Promise<{ toolResults: Message[]; generatedImages: string[] }> {
+    const {
+        toolCalls,
+        workspacePath,
+        t,
+        chatId,
+        accumulatedMessages,
+        executeToolCall,
+        onToolProgress,
+    } = params;
     const toolResults: Message[] = [];
     const generatedImages: string[] = [];
 
@@ -26,6 +40,7 @@ export async function executeBatchToolCalls(
             generatedImages.push(...executedTool.generatedImages);
             toolResults.push(executedTool.toolMessage);
             accumulatedMessages.push(executedTool.toolMessage);
+            onToolProgress?.([...toolResults]);
         } catch (error) {
             const syntheticToolMessage: Message = {
                 id: generateId(),
@@ -40,6 +55,7 @@ export async function executeBatchToolCalls(
             };
             toolResults.push(syntheticToolMessage);
             accumulatedMessages.push(syntheticToolMessage);
+            onToolProgress?.([...toolResults]);
         }
     }
 

@@ -18,7 +18,7 @@ export const SettingsPanel: React.FC<{
                     <h3 className="text-xl font-semibold text-foreground">{title}</h3>
                 </div>
                 {description && (
-                    <p className="flex max-w-2xl items-center gap-2 text-[11px] leading-relaxed text-muted-foreground opacity-70">
+                    <p className="flex max-w-2xl items-center gap-2 typo-body leading-relaxed text-muted-foreground opacity-70">
                         <Info className="w-3 h-3 shrink-0" />
                         {description}
                     </p>
@@ -40,11 +40,11 @@ export const SettingsField: React.FC<{
     id?: string
 }> = ({ label, description, children, className, id }) => (
     <div className={cn('grid gap-2.5', className)}>
-        <label htmlFor={id} className="text-[10px] font-bold text-muted-foreground/80 pl-1 select-none">
+        <label htmlFor={id} className="typo-body font-bold text-muted-foreground/80 pl-1 select-none">
             {label}
         </label>
         {description && (
-            <p className="text-[10px] leading-relaxed text-muted-foreground/60 px-1">
+            <p className="typo-body leading-relaxed text-muted-foreground/60 px-1">
                 {description}
             </p>
         )}
@@ -67,8 +67,8 @@ export const SettingsToggleRow: React.FC<{
         <div className="flex gap-4">
             {Icon && <Icon className="w-5 h-5 text-primary/40 group-hover/toggle:text-primary transition-colors mt-0.5" />}
             <div className="space-y-1.5">
-                <div className="text-[11px] font-semibold text-foreground group-hover/toggle:text-primary transition-colors">{title}</div>
-                <div className="max-w-xl text-[10px] leading-relaxed text-muted-foreground opacity-75 group-hover/toggle:opacity-100 transition-opacity">{description}</div>
+                <div className="typo-body font-semibold text-foreground group-hover/toggle:text-primary transition-colors">{title}</div>
+                <div className="max-w-xl typo-body leading-relaxed text-muted-foreground opacity-75 group-hover/toggle:opacity-100 transition-opacity">{description}</div>
             </div>
         </div>
         <div className="flex min-h-[40px] items-center justify-start pt-0.5 sm:shrink-0 sm:justify-center">

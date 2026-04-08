@@ -17,9 +17,11 @@ export interface ProxyBridge {
     }>;
     getClaudeQuota: () => Promise<{ accounts: Array<import('@shared/types/quota').ClaudeQuota> }>;
     antigravityLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
+    ollamaLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
+    ollamaSignout: (accountId?: string) => Promise<{ success: boolean; alreadySignedOut?: boolean; error?: string }>;
     codexLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
     claudeLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
-    cancelAuth: (provider: 'antigravity' | 'claude' | 'codex', state: string, accountId: string) => Promise<boolean>;
+    cancelAuth: (provider: 'antigravity' | 'claude' | 'codex' | 'ollama', state: string, accountId: string) => Promise<boolean>;
     getBrowserAuthStatus: (provider: string, state: string, accountId: string) => Promise<{
         status: string;
         error?: string;
@@ -28,7 +30,7 @@ export interface ProxyBridge {
         accountId?: string;
         account_id?: string;
     }>;
-    verifyAuthBridge: (provider?: 'antigravity' | 'claude' | 'codex') => Promise<{
+    verifyAuthBridge: (provider?: 'antigravity' | 'claude' | 'codex' | 'ollama') => Promise<{
         status: string;
         provider: string;
         readiness?: IpcValue;
@@ -64,6 +66,8 @@ export function createProxyBridge(ipc: IpcRenderer): ProxyBridge {
         getCodexUsage: () => ipc.invoke('proxy:getCodexUsage'),
         getClaudeQuota: () => ipc.invoke('proxy:getClaudeQuota'),
         antigravityLogin: accountId => ipc.invoke('proxy:antigravityLogin', accountId),
+        ollamaLogin: accountId => ipc.invoke('proxy:ollamaLogin', accountId),
+        ollamaSignout: accountId => ipc.invoke('proxy:ollamaSignout', accountId),
         codexLogin: accountId => ipc.invoke('proxy:codexLogin', accountId),
         claudeLogin: accountId => ipc.invoke('proxy:claudeLogin', accountId),
         cancelAuth: (provider, state, accountId) => ipc.invoke('proxy:cancelAuth', provider, state, accountId),

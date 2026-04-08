@@ -1,5 +1,6 @@
 import { ProcessMetric, ServiceResponse,StartupMetrics, SystemInfo } from '@shared/types';
 import { JsonObject } from '@shared/types/common';
+import type { MarketplaceGpuDevice } from '@shared/types/marketplace';
 
 export interface ISecurityService {
     generatePassword(length: number, numbers: boolean, symbols: boolean): ServiceResponse<{ password: string }>;
@@ -12,11 +13,27 @@ export interface ISystemService {
     setVolume(percent: number): Promise<ServiceResponse>;
     setBrightness(percent: number): Promise<ServiceResponse<{ brightness: number }>>;
     getDiskSpace(): Promise<ServiceResponse<{ output: string }>>;
+    getStorageStats(targetPath?: string): Promise<ServiceResponse<{
+        total: number;
+        free: number;
+        used: number;
+        percent: number;
+        mountPath: string;
+    }>>;
     getProcessOnPort(port: number): Promise<ServiceResponse<{ output: string }>>;
     setWallpaper(imagePath: string): Promise<ServiceResponse>;
     mediaControl(action: string): Promise<ServiceResponse<{ action: string }>>;
     launchApp(appName: string): Promise<ServiceResponse>;
     getSystemInfo(): Promise<SystemInfo>;
+    getGpuInfo(): Promise<ServiceResponse<{
+        available: boolean;
+        source: 'electron' | 'none';
+        name?: string;
+        backends: string[];
+        devices: MarketplaceGpuDevice[];
+        totalVramBytes?: number;
+        totalVramUsedBytes?: number;
+    }>>;
     getProcessList(): Promise<ServiceResponse<{ output: string }>>;
     getUsage(): Promise<ServiceResponse<{ cpu: number; memory: number }>>;
     getSystemMonitor(): Promise<ServiceResponse<{ output: string }>>;

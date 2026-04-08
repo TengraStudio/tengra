@@ -98,3 +98,43 @@ export function isExecutableToolCall(
     const toolName = typeof toolCall.function?.name === 'string' ? toolCall.function.name.trim() : '';
     return toolCallId.length > 0 && toolName.length > 0;
 }
+
+/**
+ * Extracts unique tool family names from a single signature string.
+ * Signature format: "toolName:args|toolName:args"
+ */
+export function extractToolFamilyNamesFromSignature(signature: string): string[] {
+    if (signature.length === 0) {
+        return [];
+    }
+    const segments = signature.split('|');
+    const names = new Set<string>();
+    for (const segment of segments) {
+        const colonIndex = segment.indexOf(':');
+        const name = colonIndex >= 0 ? segment.slice(0, colonIndex).trim() : segment.trim();
+        if (name.length > 0) {
+            names.add(name);
+        }
+    }
+    return Array.from(names);
+}
+
+/**
+ * Checks whether all recent tool signatures use the same tool family,
+ * indicating semantic repetition with argument variation.
+ */
+export function isMonotonousToolFamily(
+    recentSignatures: string[],
+    minSignatures: number
+): boolean {
+    if (recentSignatures.length < minSignatures) {
+        return false;
+    }
+    const targetSignatures = recentSignatures.slice(-minSignatures);
+    const allFamilies = targetSignatures.flatMap(extractToolFamilyNamesFromSignature);
+    if (allFamilies.length === 0) {
+        return false;
+    }
+    const uniqueFamilies = new Set(allFamilies);
+    return uniqueFamilies.size === 1;
+}

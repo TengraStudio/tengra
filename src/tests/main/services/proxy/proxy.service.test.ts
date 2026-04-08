@@ -350,6 +350,42 @@ describe('ProxyService', () => {
             expect(verification.provider).toBe('codex');
         });
 
+        it('supports ollama bridge verification responses without callback payload', async () => {
+            const mockReq: MockProxyRequest = {
+                on: vi.fn().mockReturnThis(),
+                setHeader: vi.fn().mockReturnThis(),
+                write: vi.fn().mockReturnThis(),
+                end: vi.fn().mockReturnThis(),
+                abort: vi.fn().mockReturnThis()
+            };
+
+            vi.mocked(net.request).mockReturnValue(mockReq as never);
+            mockReq.on.mockImplementation((event: string, cb: ResponseCallback) => {
+                if (event === 'response') {
+                    const response: MockProxyResponse = {
+                        statusCode: 200,
+                        on: vi.fn().mockImplementation((ev: string, evCb: ResponseEventCallback) => {
+                            if (ev === 'data') {
+                                evCb(Buffer.from(JSON.stringify({
+                                    status: 'ok',
+                                    provider: 'ollama',
+                                    readiness: { client_id_configured: true }
+                                })));
+                            }
+                            if (ev === 'end') { evCb(); }
+                        })
+                    };
+                    cb(response);
+                }
+                return mockReq;
+            });
+
+            const verification = await proxyService.verifyAuthBridge('ollama');
+            expect(verification.status).toBe('ok');
+            expect(verification.provider).toBe('ollama');
+            expect(verification.callback).toBeUndefined();
+        });
+
         it('falls back to linked accounts when proxy status request fails', async () => {
             const mockReq: MockProxyRequest = {
                 on: vi.fn().mockReturnThis(),
@@ -380,6 +416,108 @@ describe('ProxyService', () => {
             const status = await proxyService.getBrowserAuthStatus('codex', 'state-1', 'codex_default');
             expect(status.status).toBe('ok');
             expect(status.account).toMatchObject({ id: 'codex_default' });
+        });
+
+        it('does not surface a local linked account for ollama fallback status', async () => {
+            const mockReq: MockProxyRequest = {
+                on: vi.fn().mockReturnThis(),
+                setHeader: vi.fn().mockReturnThis(),
+                write: vi.fn().mockReturnThis(),
+                end: vi.fn().mockReturnThis(),
+                abort: vi.fn().mockReturnThis()
+            };
+
+            vi.mocked(net.request).mockReturnValue(mockReq as never);
+            mockReq.on.mockImplementation((event: string, cb: ((error: Error) => void) | ResponseCallback) => {
+                if (event === 'error') {
+                    (cb as (error: Error) => void)(new Error('connect ECONNREFUSED'));
+                }
+                return mockReq;
+            });
+
+            vi.mocked(mockDatabaseService.getLinkedAccounts).mockResolvedValue([
+                {
+                    id: 'ollama_default',
+                    provider: 'ollama',
+                    email: 'wrong@example.com',
+                    isActive: true,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                }
+            ] as never);
+
+            const status = await proxyService.getBrowserAuthStatus('ollama', 'state-ollama', 'ollama_default');
+            expect(status.status).toBe('wait');
+            expect(status.account).toBeUndefined();
+        });
+
+        it('returns ollama signout success payload and preserves alreadySignedOut flag', async () => {
+            const mockReq: MockProxyRequest = {
+                on: vi.fn().mockReturnThis(),
+                setHeader: vi.fn().mockReturnThis(),
+                write: vi.fn().mockReturnThis(),
+                end: vi.fn().mockReturnThis(),
+                abort: vi.fn().mockReturnThis()
+            };
+
+            vi.mocked(net.request).mockReturnValue(mockReq as never);
+            mockReq.on.mockImplementation((event: string, cb: ResponseCallback) => {
+                if (event === 'response') {
+                    const response: MockProxyResponse = {
+                        statusCode: 200,
+                        on: vi.fn().mockImplementation((ev: string, evCb: ResponseEventCallback) => {
+                            if (ev === 'data') {
+                                evCb(Buffer.from(JSON.stringify({
+                                    success: true,
+                                    already_signed_out: true
+                                })));
+                            }
+                            if (ev === 'end') { evCb(); }
+                        })
+                    };
+                    cb(response);
+                }
+                return mockReq;
+            });
+
+            const result = await proxyService.ollamaSignout('ollama_default');
+            expect(result.success).toBe(true);
+            expect(result.alreadySignedOut).toBe(true);
+            expect(mockReq.write).toHaveBeenCalledWith(expect.stringContaining('"account_id":"ollama_default"'));
+        });
+
+        it('returns ollama signout error response as failed result', async () => {
+            const mockReq: MockProxyRequest = {
+                on: vi.fn().mockReturnThis(),
+                setHeader: vi.fn().mockReturnThis(),
+                write: vi.fn().mockReturnThis(),
+                end: vi.fn().mockReturnThis(),
+                abort: vi.fn().mockReturnThis()
+            };
+
+            vi.mocked(net.request).mockReturnValue(mockReq as never);
+            mockReq.on.mockImplementation((event: string, cb: ResponseCallback) => {
+                if (event === 'response') {
+                    const response: MockProxyResponse = {
+                        statusCode: 500,
+                        on: vi.fn().mockImplementation((ev: string, evCb: ResponseEventCallback) => {
+                            if (ev === 'data') {
+                                evCb(Buffer.from(JSON.stringify({
+                                    success: false,
+                                    error: 'signout failed'
+                                })));
+                            }
+                            if (ev === 'end') { evCb(); }
+                        })
+                    };
+                    cb(response);
+                }
+                return mockReq;
+            });
+
+            const result = await proxyService.ollamaSignout('ollama_default');
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('signout failed');
         });
 
         it('times out stalled auth url requests instead of hanging forever', async () => {

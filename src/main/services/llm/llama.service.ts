@@ -9,6 +9,7 @@ import * as path from 'path';
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
+import { RuntimeBootstrapService } from '@main/services/system/runtime-bootstrap.service';
 import { getManagedRuntimeBinDir, getManagedRuntimeModelsDir } from '@main/services/system/runtime-path.service';
 import { OPERATION_TIMEOUTS } from '@shared/constants/timeouts';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -41,10 +42,13 @@ interface ModelInfo {
 }
 
 export class LlamaService extends BaseService {
+    private static readonly WINDOWS_DLL_NOT_FOUND = 0xC0000135;
     private serverProcess: ChildProcess | null = null;
     private modelsDir: string;
     private binDir: string;
     private currentModelPath: string | null = null;
+    private lastServerExitCode: number | null = null;
+    private runtimeBootstrapAttempted = false;
     private serverPort: number = 8080;
     private serverHost: string = '127.0.0.1';
     private config: LlamaConfig = {
@@ -60,7 +64,11 @@ export class LlamaService extends BaseService {
         backend: 'auto'
     };
 
-    constructor(dataService?: DataService, private localImageService?: LocalImageService) {
+    constructor(
+        dataService?: DataService,
+        private runtimeBootstrapService?: RuntimeBootstrapService,
+        private localImageService?: LocalImageService
+    ) {
         super('LlamaService');
         // Get paths
         try {
@@ -102,6 +110,77 @@ export class LlamaService extends BaseService {
         return path.join(this.binDir, binaryName);
     }
 
+    private hasCudaBackendLibrary(): boolean {
+        return fs.existsSync(path.join(this.binDir, 'ggml-cuda.dll'));
+    }
+
+    private getBundledServerCandidates(binaryName: string): string[] {
+        const candidates = [
+            process.resourcesPath ? path.join(process.resourcesPath, 'bin', binaryName) : '',
+            path.resolve(process.cwd(), 'resources', 'bin', binaryName),
+            path.resolve(path.dirname(process.execPath), 'resources', 'bin', binaryName),
+        ]
+            .filter(candidate => candidate !== '');
+
+        return [...new Set(candidates)];
+    }
+
+    private stageBundledServerBinary(serverPath: string): boolean {
+        const binaryName = path.basename(serverPath);
+        const candidates = this.getBundledServerCandidates(binaryName);
+
+        for (const candidate of candidates) {
+            try {
+                if (!fs.existsSync(candidate)) {
+                    continue;
+                }
+                fs.copyFileSync(candidate, serverPath);
+                if (process.platform !== 'win32') {
+                    fs.chmodSync(serverPath, 0o755);
+                }
+                this.logInfo(`Staged llama-server binary from: ${candidate}`);
+                return true;
+            } catch (error) {
+                this.logWarn(`Failed to stage llama-server from ${candidate}: ${getErrorMessage(error as Error)}`);
+            }
+        }
+
+        return false;
+    }
+
+    private async ensureManagedRuntimeReady(force: boolean = false): Promise<void> {
+        if (!this.runtimeBootstrapService) {
+            return;
+        }
+        if (this.runtimeBootstrapAttempted && !force) {
+            return;
+        }
+
+        this.runtimeBootstrapAttempted = true;
+        this.logInfo('Ensuring managed runtime components are installed');
+        await this.runtimeBootstrapService.ensureManagedRuntime();
+    }
+
+    private async ensureServerBinaryAvailable(serverPath: string): Promise<void> {
+        if (fs.existsSync(serverPath)) {
+            return;
+        }
+
+        try {
+            await this.ensureManagedRuntimeReady();
+            if (fs.existsSync(serverPath)) {
+                return;
+            }
+        } catch (error) {
+            this.logWarn(`Managed runtime ensure failed before llama launch: ${getErrorMessage(error as Error)}`);
+        }
+
+        const staged = this.stageBundledServerBinary(serverPath);
+        if (staged && fs.existsSync(serverPath)) {
+            return;
+        }
+    }
+
     async isServerRunning(): Promise<boolean> {
         return new Promise((resolve) => {
             const req = http.request({
@@ -129,8 +208,14 @@ export class LlamaService extends BaseService {
                 await this.localImageService.ensureSDCppReady();
             }
 
-            // Check if llama-server exists
             const serverPath = this.getServerPath();
+            await this.ensureServerBinaryAvailable(serverPath);
+
+            if (this.config.backend !== 'cpu' && !this.hasCudaBackendLibrary()) {
+                this.logWarn('CUDA backend library (ggml-cuda.dll) is missing; llama-server will run on CPU backend');
+            }
+
+            // Check if llama-server exists
             if (!fs.existsSync(serverPath)) {
                 return {
                     success: false,
@@ -156,11 +241,41 @@ export class LlamaService extends BaseService {
             this.logInfo(`Starting llama-server with model: ${modelPath}`);
             this.logInfo(`GPU Layers: ${this.config.gpuLayers}, Context: ${this.config.contextSize}`);
 
-            return this.startLlamaProcess(modelPath, serverPath);
+            const startResult = await this.startLlamaProcess(modelPath, serverPath);
+            if (startResult.success) {
+                return startResult;
+            }
+
+            if (this.shouldRetryAfterRuntimeRepair(startResult.error)) {
+                this.logWarn('llama-server failed due missing runtime dependency; retrying after managed runtime repair');
+                try {
+                    await this.ensureManagedRuntimeReady(true);
+                } catch (error) {
+                    this.logWarn(`Managed runtime repair retry failed: ${getErrorMessage(error as Error)}`);
+                }
+                return this.startLlamaProcess(modelPath, serverPath);
+            }
+
+            return startResult;
 
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };
         }
+    }
+
+    private shouldRetryAfterRuntimeRepair(errorMessage?: string): boolean {
+        if (!errorMessage) {
+            return false;
+        }
+        const normalized = errorMessage.toLowerCase();
+        return normalized.includes('0xc0000135')
+            || normalized.includes('3221225781')
+            || normalized.includes('dll not found');
+    }
+
+    private formatExitCodeHex(code: number): string {
+        const unsignedCode = code >>> 0;
+        return `0x${unsignedCode.toString(16).toUpperCase()}`;
     }
 
     private async startLlamaProcess(modelPath: string, serverPath: string): Promise<{ success: boolean; error?: string }> {
@@ -170,6 +285,7 @@ export class LlamaService extends BaseService {
         // Start server
         const env = this.constructLlamaEnv();
 
+        this.lastServerExitCode = null;
         this.serverProcess = spawn(serverPath, args, {
             cwd: this.binDir,
             env,
@@ -214,13 +330,18 @@ export class LlamaService extends BaseService {
             args.push('--defrag-thold', this.config.defragThold.toString());
         }
 
-        if (this.config.flashAttn ?? true) {
-            args.push('--flash-attn');
+        // Newer llama-server builds expect an explicit value for --flash-attn.
+        // Keep default behavior on auto by not forcing the flag unless disabled.
+        if (this.config.flashAttn === false) {
+            args.push('--flash-attn', 'off');
         }
 
         if (this.config.continuousBatching ?? true) {
             args.push('--cont-batching');
         }
+
+        // Keep reasoning enabled so users can observe live thinking traces.
+        args.push('--reasoning', 'on');
 
         if (this.config.mlock ?? true) {
             args.push('--mlock');
@@ -242,7 +363,10 @@ export class LlamaService extends BaseService {
 
         if (this.config.backend === 'vulkan') {
             env['GGML_VULKAN'] = '1';
-        } else if (this.config.backend === 'cuda') {
+        } else if (
+            this.config.backend === 'cuda'
+            || (this.config.backend === 'auto' && this.hasCudaBackendLibrary())
+        ) {
             env['GGML_CUDA'] = '1';
         } else if (this.config.backend === 'metal') {
             env['GGML_METAL'] = '1';
@@ -264,6 +388,7 @@ export class LlamaService extends BaseService {
 
         this.serverProcess.on('exit', (code) => {
             this.logInfo(`llama-server exited with code ${code}`);
+            this.lastServerExitCode = typeof code === 'number' ? code : null;
             this.serverProcess = null;
             this.currentModelPath = null;
         });
@@ -276,6 +401,19 @@ export class LlamaService extends BaseService {
                 this.currentModelPath = modelPath;
                 this.logInfo('llama-server started successfully');
                 return { success: true };
+            }
+            if (!this.serverProcess && this.lastServerExitCode !== null) {
+                const exitHex = this.formatExitCodeHex(this.lastServerExitCode);
+                if ((this.lastServerExitCode >>> 0) === LlamaService.WINDOWS_DLL_NOT_FOUND) {
+                    return {
+                        success: false,
+                        error: `llama-server exited with code ${this.lastServerExitCode} (${exitHex}) - required runtime DLLs are missing`
+                    };
+                }
+                return {
+                    success: false,
+                    error: `llama-server exited with code ${this.lastServerExitCode} (${exitHex})`
+                };
             }
         }
 

@@ -32,6 +32,80 @@ interface MessageActionHandlers {
     onRegenerate?: () => void;
 }
 
+interface DisplayMessageEntry {
+    id: string;
+    sourceMessageId: string;
+    message: Message;
+}
+
+function isThoughtOnlyMessage(message: Message): boolean {
+    return Boolean(message.metadata?.thoughtOnly === true);
+}
+
+function hasRenderableAssistantPayload(message: Message): boolean {
+    const textContent = typeof message.content === 'string'
+        ? message.content.trim()
+        : message.content.length > 0
+            ? '[multipart]'
+            : '';
+    return textContent.length > 0
+        || (message.images?.length ?? 0) > 0
+        || (message.sources?.length ?? 0) > 0
+        || (message.toolCalls?.length ?? 0) > 0
+        || (Array.isArray(message.toolResults) && message.toolResults.length > 0);
+}
+
+function buildDisplayMessages(messages: Message[]): DisplayMessageEntry[] {
+    const entries: DisplayMessageEntry[] = [];
+    for (const message of messages) {
+        if (message.role !== 'assistant' || isThoughtOnlyMessage(message)) {
+            entries.push({ id: message.id, sourceMessageId: message.id, message });
+            continue;
+        }
+
+        const reasoningSegments = (message.reasonings ?? [])
+            .filter(segment => typeof segment === 'string' && segment.trim().length > 0);
+
+        reasoningSegments.forEach((segment, index) => {
+            entries.push({
+                id: `${message.id}::thought::${index}`,
+                sourceMessageId: message.id,
+                message: {
+                    ...message,
+                    id: `${message.id}::thought::${index}`,
+                    content: '',
+                    reasoning: segment,
+                    reasonings: undefined,
+                    toolCalls: undefined,
+                    toolResults: undefined,
+                    images: undefined,
+                    sources: undefined,
+                    variants: undefined,
+                    metadata: {
+                        ...(message.metadata ?? {}),
+                        thoughtOnly: true,
+                        sourceMessageId: message.id,
+                        thoughtIndex: index,
+                    },
+                },
+            });
+        });
+
+        if (hasRenderableAssistantPayload(message) || reasoningSegments.length === 0) {
+            entries.push({
+                id: message.id,
+                sourceMessageId: message.id,
+                message: {
+                    ...message,
+                    reasoning: undefined,
+                    reasonings: undefined,
+                },
+            });
+        }
+    }
+    return entries;
+}
+
 export const MessageList = memo(({
     messages,
     streamingReasoning,
@@ -50,67 +124,77 @@ export const MessageList = memo(({
     const [focusedIndex, setFocusedIndex] = useState<number>(-1);
     const { t } = useTranslation(language);
     const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
+    const displayMessages = useMemo(() => buildDisplayMessages(messages), [messages]);
 
     const effectiveFocusedIndex =
-        messages.length === 0
+        displayMessages.length === 0
             ? -1
-            : focusedIndex >= 0 && focusedIndex < messages.length
+            : focusedIndex >= 0 && focusedIndex < displayMessages.length
                 ? focusedIndex
                 : -1;
 
     useEffect(() => {
-        if (effectiveFocusedIndex < 0 || effectiveFocusedIndex >= messages.length) {
+        if (effectiveFocusedIndex < 0 || effectiveFocusedIndex >= displayMessages.length) {
             return;
         }
-        const focusedMessage = messages[effectiveFocusedIndex];
+        const focusedMessage = displayMessages[effectiveFocusedIndex].message;
         sessionStorage.setItem('chat.messageList.focusedMessageId', focusedMessage.id);
         virtuosoRef?.current?.scrollToIndex({
             index: effectiveFocusedIndex,
             align: 'center',
             behavior: 'smooth',
         });
-    }, [effectiveFocusedIndex, messages, virtuosoRef]);
+    }, [displayMessages, effectiveFocusedIndex, virtuosoRef]);
 
     const messageActionHandlers = useMemo(() => {
         const handlers = new Map<string, MessageActionHandlers>();
-        for (const message of messages) {
-            const messageId = message.id;
-            handlers.set(messageId, {
-                onSpeak: (text) => onSpeak(text, messageId),
+        for (const entry of displayMessages) {
+            const { id, message, sourceMessageId } = entry;
+            handlers.set(id, {
+                onSpeak: (text) => onSpeak(text, sourceMessageId),
                 onReact: (emoji) => {
-                    void window.electron.db.updateMessage(messageId, { reactions: [emoji] });
+                    if (isThoughtOnlyMessage(message)) {
+                        return;
+                    }
+                    void window.electron.db.updateMessage(sourceMessageId, { reactions: [emoji] });
                 },
                 onBookmark: (isBookmarked) => {
-                    void window.electron.db.updateMessage(messageId, { isBookmarked });
+                    if (isThoughtOnlyMessage(message)) {
+                        return;
+                    }
+                    void window.electron.db.updateMessage(sourceMessageId, { isBookmarked });
                 },
                 onRate: (rating) => {
-                    void window.electron.db.updateMessage(messageId, { rating });
+                    if (isThoughtOnlyMessage(message)) {
+                        return;
+                    }
+                    void window.electron.db.updateMessage(sourceMessageId, { rating });
                 },
-                onRegenerate: message.role === 'assistant'
+                onRegenerate: message.role === 'assistant' && !isThoughtOnlyMessage(message)
                     ? () => {
-                        void onRegenerate?.(messageId);
+                        void onRegenerate?.(sourceMessageId);
                     }
                     : undefined,
             });
         }
         return handlers;
-    }, [messages, onRegenerate, onSpeak]);
+    }, [displayMessages, onRegenerate, onSpeak]);
 
     const handleKeyboardNavigation = useCallback(
         (event: React.KeyboardEvent<HTMLDivElement>) => {
-            if (messages.length === 0) {
+            if (displayMessages.length === 0) {
                 return;
             }
 
             if (event.key === 'ArrowUp') {
                 event.preventDefault();
-                setFocusedIndex(prev => Math.max(0, prev <= 0 ? messages.length - 1 : prev - 1));
+                setFocusedIndex(prev => Math.max(0, prev <= 0 ? displayMessages.length - 1 : prev - 1));
                 return;
             }
 
             if (event.key === 'ArrowDown') {
                 event.preventDefault();
-                setFocusedIndex(prev => Math.min(messages.length - 1, prev < 0 ? 0 : prev + 1));
+                setFocusedIndex(prev => Math.min(displayMessages.length - 1, prev < 0 ? 0 : prev + 1));
                 return;
             }
 
@@ -122,36 +206,37 @@ export const MessageList = memo(({
 
             if (event.key === 'End') {
                 event.preventDefault();
-                setFocusedIndex(messages.length - 1);
+                setFocusedIndex(displayMessages.length - 1);
                 return;
             }
 
             if (event.key === 'Enter' && effectiveFocusedIndex >= 0) {
                 event.preventDefault();
-                const focusedMessage = messages[effectiveFocusedIndex];
+                const focusedMessage = displayMessages[effectiveFocusedIndex].message;
                 setSelectedMessageId(prev => (prev === focusedMessage.id ? null : focusedMessage.id));
                 return;
             }
 
             if (event.key.toLowerCase() === 'r' && effectiveFocusedIndex >= 0) {
-                const focusedMessage = messages[effectiveFocusedIndex];
-                if (focusedMessage.role === 'assistant') {
+                const focusedEntry = displayMessages[effectiveFocusedIndex];
+                if (focusedEntry.message.role === 'assistant' && !isThoughtOnlyMessage(focusedEntry.message)) {
                     event.preventDefault();
-                    void onRegenerate?.(focusedMessage.id);
+                    void onRegenerate?.(focusedEntry.sourceMessageId);
                 }
             }
         },
-        [effectiveFocusedIndex, messages, onRegenerate]
+        [displayMessages, effectiveFocusedIndex, onRegenerate]
     );
 
-    const renderMessageItem = useCallback((index: number, message: Message) => {
+    const renderMessageItem = useCallback((index: number, entry: DisplayMessageEntry) => {
+        const { message, sourceMessageId } = entry;
         const isStreamingCurrent =
-            isLoading && index === messages.length - 1 && message.role === 'assistant';
-        const isLast = index === messages.length - 1;
+            isLoading && index === displayMessages.length - 1 && message.role === 'assistant';
+        const isLast = index === displayMessages.length - 1;
         const isFocused =
             index === effectiveFocusedIndex ||
             (selectedMessageId !== null && message.id === selectedMessageId);
-        const handlers = messageActionHandlers.get(message.id);
+        const handlers = messageActionHandlers.get(entry.id);
         if (!handlers) {
             return null;
         }
@@ -182,7 +267,9 @@ export const MessageList = memo(({
                     onApprovePlan={() => { }}
                     streamingSpeed={isStreamingCurrent ? streamingSpeed : null}
                     streamingReasoning={
-                        isStreamingCurrent ? streamingReasoning : undefined
+                        isStreamingCurrent && sourceMessageId === messages[messages.length - 1]?.id
+                            ? streamingReasoning
+                            : undefined
                     }
                 />
                 {isLast && <div className="h-4" />}
@@ -190,10 +277,11 @@ export const MessageList = memo(({
         );
     }, [
         isLoading,
-        messages.length,
+        displayMessages.length,
         effectiveFocusedIndex,
         selectedMessageId,
         messageActionHandlers,
+        messages,
         language,
         selectedProvider,
         onStopSpeak,
@@ -205,7 +293,7 @@ export const MessageList = memo(({
     // Determine if we should follow the output (stick to bottom)
     // We stick to bottom if we are loading (streaming) or if the user is near the bottom (handled by Virtuoso default 'smooth' or 'auto')
 
-    if (messages.length === 0 && isLoading) {
+    if (displayMessages.length === 0 && isLoading) {
         return (
             <div className="p-4 h-full flex flex-col justify-end">
                 <MessageSkeleton />
@@ -222,8 +310,8 @@ export const MessageList = memo(({
             aria-label={t('aria.messageList')}
             aria-describedby="message-list-keyboard-help"
             aria-activedescendant={
-                effectiveFocusedIndex >= 0 && messages[effectiveFocusedIndex]
-                    ? `message-list-option-${messages[effectiveFocusedIndex].id}`
+                effectiveFocusedIndex >= 0 && displayMessages[effectiveFocusedIndex]
+                    ? `message-list-option-${displayMessages[effectiveFocusedIndex].id}`
                     : undefined
             }
         >
@@ -232,8 +320,8 @@ export const MessageList = memo(({
             </p>
             <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
                 {isLoading ? t('aria.messageListStreaming') : ''}
-                {messages.length > 0 && !isLoading
-                    ? t('aria.messageListCount', { count: messages.length })
+                {displayMessages.length > 0 && !isLoading
+                    ? t('aria.messageListCount', { count: displayMessages.length })
                     : ''}
             </div>
             <div aria-live="polite" aria-atomic="false" className="sr-only">
@@ -245,11 +333,11 @@ export const MessageList = memo(({
             <Virtuoso
                 ref={virtuosoRef}
                 style={{ height: '100%', width: '100%' }}
-                data={messages}
+                data={displayMessages}
                 // Follow output only if currently streaming the last message
                 followOutput={isLoading ? 'smooth' : 'auto'}
                 atBottomStateChange={onAtBottomStateChange}
-                initialTopMostItemIndex={messages.length - 1}
+                initialTopMostItemIndex={displayMessages.length - 1}
                 alignToBottom={true} // Start at bottom for chat feel
                 itemContent={renderMessageItem}
             />

@@ -2,9 +2,7 @@ import { ToolCall } from '@main/types/llm.types';
 import { OpenAIResponse } from '@main/types/llm.types';
 import { JsonObject } from '@shared/types/common';
 import { ApiError } from '@shared/utils/error.util';
-
-import { validateLLMContent } from './llm-openai.helper';
-
+ 
 /**
  * Parses the OpenCode Responses API format into an OpenAIResponse.
  */
@@ -20,10 +18,9 @@ export function parseOpenCodeResponse(json: JsonObject): OpenAIResponse {
     }
 
     const { content, reasoning, tool_calls } = extractOpenCodeContent(output);
-    const validatedContent = validateLLMContent(content || (output['text'] as string) || '');
 
     return {
-        content: validatedContent,
+        content: content,
         role: 'assistant',
         reasoning_content: reasoning || undefined,
         tool_calls: tool_calls.length > 0 ? tool_calls : undefined

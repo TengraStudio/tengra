@@ -1,6 +1,6 @@
 import { Button } from '@renderer/components/ui/button';
 import { Input } from '@renderer/components/ui/input';
-import { Bookmark, Download,Plus, Share2, Trash2, Zap } from 'lucide-react';
+import { Bookmark, Download, Plus, Share2, Trash2, Zap } from 'lucide-react';
 import React from 'react';
 
 import { ImagePresetEntry } from '../../types';
@@ -45,7 +45,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                         <h3 className="text-lg font-bold text-foreground group-hover/presets:text-primary transition-colors">
                             {t('settings.images.presetsTitle')}
                         </h3>
-                        <p className="text-[10px] text-muted-foreground mt-1 font-bold opacity-60">
+                        <p className="typo-body text-muted-foreground mt-1 font-bold opacity-60">
                             {presetEntries.length} {t('settings.images.savedPresets')}
                         </p>
                     </div>
@@ -55,7 +55,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
             <div className="space-y-6 relative z-10">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                        <div className="text-[9px] font-bold text-muted-foreground/40 px-1">Preset Name</div>
+                        <div className="typo-body font-bold text-muted-foreground/40 px-1">Preset Name</div>
                         <Input
                             value={presetName}
                             onChange={event => setPresetName(event.target.value)}
@@ -64,7 +64,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                         />
                     </div>
                     <div className="space-y-2">
-                        <div className="text-[9px] font-bold text-muted-foreground/40 px-1">Prompt Prefix</div>
+                        <div className="typo-body font-bold text-muted-foreground/40 px-1">Prompt Prefix</div>
                         <Input
                             value={presetPromptPrefix}
                             onChange={event => setPresetPromptPrefix(event.target.value)}
@@ -75,7 +75,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                 </div>
                 <Button
                     onClick={() => { void handleSavePreset(); }}
-                    className="h-12 px-8 rounded-2xl bg-foreground text-background hover:bg-primary hover:text-primary-foreground text-[10px] font-bold transition-all active:scale-95 shadow-xl shadow-black/10 flex items-center gap-3 w-full sm:w-auto"
+                    className="h-12 px-8 rounded-2xl bg-foreground text-background hover:bg-primary hover:text-primary-foreground typo-body font-bold transition-all active:scale-95 shadow-xl shadow-black/10 flex items-center gap-3 w-full sm:w-auto"
                 >
                     <Plus className="w-4 h-4" />
                     {t('settings.images.savePreset')}
@@ -85,7 +85,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
             <div className="space-y-3 relative z-10">
                 {presetEntries.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-10 text-center bg-muted/5 border-2 border-dashed border-border/20 rounded-2xl opacity-40">
-                         <p className="text-[10px] font-bold text-muted-foreground px-6">
+                        <p className="typo-body font-bold text-muted-foreground px-6">
                             {t('settings.images.noPresets')}
                         </p>
                     </div>
@@ -95,7 +95,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                             <div key={preset.id} className="group/item flex items-center justify-between gap-4 bg-background/50 border border-border/20 rounded-2xl px-5 py-4 transition-all hover:bg-muted/10 hover:border-border/40 shadow-sm">
                                 <div className="flex items-center gap-4 min-w-0">
                                     <div className="h-2 w-2 rounded-full bg-primary/40 group-hover/item:bg-primary group-hover/item:scale-125 transition-all" />
-                                    <span className="text-[10px] font-bold text-foreground truncate">{preset.name}</span>
+                                    <span className="typo-body font-bold text-foreground truncate">{preset.name}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Button
@@ -124,17 +124,17 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
             <div className="bg-muted/20 border border-border/20 rounded-3xl p-6 space-y-4 relative z-10 group/share">
                 <div className="flex items-center gap-3 px-1">
                     <Zap className="w-3.5 h-3.5 text-primary" />
-                    <div className="text-[10px] font-bold text-muted-foreground/40">Import / Export Code</div>
+                    <div className="typo-body font-bold text-muted-foreground/40">Import / Export Code</div>
                 </div>
                 <textarea
                     value={presetShareCode}
                     onChange={event => setPresetShareCode(event.target.value)}
                     placeholder={t('settings.images.presetShareCodePlaceholder')}
-                    className="tw-min-h-32 w-full rounded-2xl border border-border/40 bg-background/40 p-6 font-mono text-[9px] text-muted-foreground leading-relaxed shadow-inner focus:ring-1 focus:ring-primary/20 outline-none transition-all custom-scrollbar"
+                    className="tw-min-h-32 w-full rounded-2xl border border-border/40 bg-background/40 p-6 font-mono typo-body text-muted-foreground leading-relaxed shadow-inner focus:ring-1 focus:ring-primary/20 outline-none transition-all custom-scrollbar"
                 />
                 <Button
                     onClick={() => { void handleImportPresetShare(); }}
-                    className="h-10 px-6 rounded-xl border-border/40 bg-muted/40 text-[9px] font-bold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all active:scale-95 shadow-sm flex items-center gap-2 w-full"
+                    className="h-10 px-6 rounded-xl border-border/40 bg-muted/40 typo-body font-bold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all active:scale-95 shadow-sm flex items-center gap-2 w-full"
                 >
                     <Download className="w-3.5 h-3.5" />
                     {t('settings.images.importPresetShare')}

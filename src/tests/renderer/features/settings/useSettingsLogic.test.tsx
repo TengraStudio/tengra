@@ -52,7 +52,7 @@ vi.mock('@renderer/features/settings/hooks/useSettingsAuth', () => ({
         authMessage: '',
         authBusy: null,
         isOllamaRunning: false,
-        authStatus: { codex: false, claude: false, antigravity: false, copilot: false },
+        authStatus: { codex: false, claude: false, antigravity: false, ollama: false, copilot: false },
         startOllama: async () => { },
         checkOllama: async () => { },
         refreshAuthStatus: async () => { },

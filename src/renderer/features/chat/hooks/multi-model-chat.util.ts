@@ -152,6 +152,7 @@ export async function generateMultiModelResponse(params: GenerateMultiModelRespo
                     reasoningEffort,
                 },
                 chatId: streamId,
+                assistantId,
                 workspaceId,
                 systemMode,
             });

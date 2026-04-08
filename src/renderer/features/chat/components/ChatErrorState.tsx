@@ -15,21 +15,33 @@ interface ChatErrorStateProps {
 const ERROR_STYLES: Record<ChatErrorKind, { border: string; bg: string; icon: string }> = {
     provider_unavailable: { border: 'border-warning/40', bg: 'bg-warning/10', icon: 'text-warning' },
     quota_exhausted: { border: 'border-destructive/40', bg: 'bg-destructive/10', icon: 'text-destructive' },
+    capacity_exhausted: { border: 'border-warning/40', bg: 'bg-warning/10', icon: 'text-warning' },
+    rate_limited: { border: 'border-warning/40', bg: 'bg-warning/10', icon: 'text-warning' },
     timeout: { border: 'border-warning/40', bg: 'bg-warning/10', icon: 'text-warning' },
+    auth: { border: 'border-destructive/40', bg: 'bg-destructive/10', icon: 'text-destructive' },
+    permission_denied: { border: 'border-destructive/40', bg: 'bg-destructive/10', icon: 'text-destructive' },
     generic: { border: 'border-destructive/40', bg: 'bg-destructive/10', icon: 'text-destructive' },
 };
 
 const ERROR_TITLE_KEYS: Record<ChatErrorKind, string> = {
     provider_unavailable: 'chat.errorProviderUnavailable',
     quota_exhausted: 'chat.errorQuotaExhausted',
+    capacity_exhausted: 'chat.errorCapacityExhausted',
+    rate_limited: 'chat.errorRateLimited',
     timeout: 'chat.errorTimeout',
+    auth: 'chat.errorAuth',
+    permission_denied: 'chat.errorPermissionDenied',
     generic: 'chat.errorGeneric',
 };
 
 const ERROR_ACTION_KEYS: Record<ChatErrorKind, string> = {
     provider_unavailable: 'chat.errorProviderUnavailableAction',
     quota_exhausted: 'chat.errorQuotaExhaustedAction',
+    capacity_exhausted: 'chat.errorCapacityExhaustedAction',
+    rate_limited: 'chat.errorRateLimitedAction',
     timeout: 'chat.errorTimeoutAction',
+    auth: 'chat.errorAuthAction',
+    permission_denied: 'chat.errorPermissionDeniedAction',
     generic: 'chat.errorRetry',
 };
 
@@ -40,6 +52,9 @@ const ErrorIcon: React.FC<{ kind: ChatErrorKind; className?: string }> = ({ kind
         return <WifiOff className={iconClass} />;
     }
     if (kind === 'timeout') {
+        return <Clock className={iconClass} />;
+    }
+    if (kind === 'capacity_exhausted' || kind === 'rate_limited') {
         return <Clock className={iconClass} />;
     }
     return <AlertTriangle className={iconClass} />;
@@ -58,7 +73,9 @@ export const ChatErrorState: React.FC<ChatErrorStateProps> = React.memo(({
     const { t } = useTranslation();
     const style = ERROR_STYLES[error.kind];
 
-    const showSwitchModel = error.kind === 'provider_unavailable' || error.kind === 'quota_exhausted';
+    const showSwitchModel = error.kind === 'provider_unavailable'
+        || error.kind === 'quota_exhausted'
+        || error.kind === 'capacity_exhausted';
 
     const resetTimeLabel = useMemo(() => {
         if (!error.resetsAt) {
@@ -98,6 +115,7 @@ export const ChatErrorState: React.FC<ChatErrorStateProps> = React.memo(({
                     <div className="flex items-center gap-2 pt-1">
                         <button
                             onClick={onRetry}
+                            disabled={error.retryable === false}
                             className="flex items-center gap-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1.5 text-xs font-medium transition-colors"
                         >
                             <RefreshCw className="w-3.5 h-3.5" />

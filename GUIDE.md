@@ -21,6 +21,7 @@ The chat represents your primary interaction point with the AI.
 - **Starting a Conversation**: Use the New Chat button to begin a fresh session.
 - **Providing Context**: You can attach specific files to your chat session using the context menu or by dragging files directly into the window.
 - **Model Selection**: Use the dropdown menu at the top of the chat window to switch between different AI models.
+- **Rich Code Rendering**: AI responses featuring code snippets are rendered using the Monaco editor core, providing professional-grade syntax highlighting and an enhanced reading experience.
 
 ### Managing Projects
 - **Local Folders**: Link existing projects on your machine to enable deep semantic indexing and workspace-aware AI suggestions.

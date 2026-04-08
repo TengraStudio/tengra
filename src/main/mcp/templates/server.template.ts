@@ -8,11 +8,9 @@ import { McpService } from '@main/mcp/types';
 export function buildTemplateServer(deps: McpDeps): McpService {
     return {
         name: 'template-server',
-        description: 'Template MCP server',
         actions: buildActions([
             {
                 name: 'exampleAction',
-                description: 'Describe what this action does',
                 handler: async ({ input }) => {
                     return {
                         success: true,

@@ -66,8 +66,8 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                     <div className="flex items-center gap-5">
                         <div className={cn(
                             "w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-700 shadow-inner border",
-                            sdCppStatus === 'ready' 
-                                ? "bg-success/10 border-success/20 text-success scale-110 shadow-success/10" 
+                            sdCppStatus === 'ready'
+                                ? "bg-success/10 border-success/20 text-success scale-110 shadow-success/10"
                                 : "bg-muted/30 border-border/10 text-muted-foreground"
                         )}>
                             {sdCppStatus === 'ready' ? <CheckCircle2 className="w-8 h-8" /> : <Settings2 className="w-8 h-8" />}
@@ -78,14 +78,14 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                                     {t('settings.images.runtimeName')}
                                 </h4>
                                 {sdCppStatus === 'ready' && (
-                                    <Badge className="bg-success/10 text-success hover:bg-success/20 border-success/20 text-[9px] font-bold px-2 py-0.5 rounded-lg">
+                                    <Badge className="bg-success/10 text-success hover:bg-success/20 border-success/20 typo-body font-bold px-2 py-0.5 rounded-lg">
                                         {t('settings.images.runtimeVersion')}
                                     </Badge>
                                 )}
                             </div>
                             <div className="flex items-center gap-3 mt-1.5 px-0.5">
                                 <span className={cn(
-                                    "text-[10px] font-bold   px-2.5 py-0.5 rounded-md border",
+                                    "typo-body font-bold   px-2.5 py-0.5 rounded-md border",
                                     sdCppStatus === 'ready' ? "bg-success/5 border-success/10 text-success" :
                                         sdCppStatus === 'installing' ? "bg-primary/5 border-primary/10 text-primary animate-pulse" : "bg-muted/10 border-border/10 text-muted-foreground/60"
                                 )}>
@@ -98,7 +98,7 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                         onClick={handleReinstallClick}
                         disabled={isReinstalling || sdCppStatus === 'installing'}
                         className={cn(
-                            "h-12 px-6 rounded-2xl text-[10px] font-bold   transition-all duration-500 flex items-center gap-3 shadow-lg active:scale-95 disabled:scale-100",
+                            "h-12 px-6 rounded-2xl typo-body font-bold   transition-all duration-500 flex items-center gap-3 shadow-lg active:scale-95 disabled:scale-100",
                             (isReinstalling || sdCppStatus === 'installing')
                                 ? "bg-muted/40 text-muted-foreground/50 border border-border/20 cursor-not-allowed"
                                 : "bg-foreground text-background hover:bg-primary hover:text-primary-foreground shadow-black/10"
@@ -116,7 +116,7 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                             <div className="space-y-2 min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
                                     <Download className="w-3.5 h-3.5 text-primary animate-bounce" />
-                                    <p className="text-[10px] font-bold text-primary leading-none">
+                                    <p className="typo-body font-bold text-primary leading-none">
                                         {t('settings.images.downloading')}
                                     </p>
                                 </div>
@@ -145,7 +145,7 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                     <div className="p-2 rounded-xl bg-warning/10 text-warning h-fit group-hover/help:scale-110 transition-transform">
                         <AlertTriangle className="w-4 h-4" />
                     </div>
-                    <p className="text-[10px] leading-relaxed text-muted-foreground/60 font-bold pt-1 text-justify">
+                    <p className="typo-body leading-relaxed text-muted-foreground/60 font-bold pt-1 text-justify">
                         {t('settings.images.reinstallHelp')}
                     </p>
                 </div>

@@ -41,6 +41,10 @@ interface HFModelApiDetails {
         library_name?: string;
     };
     siblings?: Array<{ rfilename?: string; size?: number }>;
+    gguf?: {
+        total?: number;
+    };
+    usedStorage?: number;
     lastModified?: string;
 }
 
@@ -153,6 +157,14 @@ export interface HFVersionComparison {
     };
 }
 
+export interface HFInstalledModel {
+    modelId: string;
+    path: string;
+    createdAt: number;
+    architecture?: string;
+    contextLength?: number;
+}
+
 export interface HFDatasetPreparationResult {
     success: boolean;
     outputPath: string;
@@ -202,6 +214,22 @@ export class HuggingFaceService extends BaseService {
 
     constructor(private httpService: HttpService) {
         super('HuggingFaceService');
+    }
+
+    /**
+     * Sanitizes a model ID by stripping marketplace prefixes or formatting issues.
+     * Hugging Face API requires IDs in 'author/repo' format.
+     */
+    private sanitizeModelId(modelId: string): string {
+        let san = modelId.trim();
+        // Remove common marketplace prefixes if they were added
+        if (san.startsWith('hf-')) {
+            san = san.substring(3);
+        }
+        // If it's a normalized slug (no slash), it's likely useless for the API, 
+        // but we'll try to find if it has at least one hyphen that might have been a slash.
+        // However, with our fix in MarketplaceService, new models will have slashes.
+        return san;
     }
 
     /**
@@ -297,8 +325,9 @@ export class HuggingFaceService extends BaseService {
      * Fetches file tree for a specific model hub repository.
      */
     async getModelFiles(modelId: string): Promise<HFModelFile[]> {
+        const sanitizedId = this.sanitizeModelId(modelId);
         try {
-            const url = `https://huggingface.co/api/models/${modelId}/tree/main?recursive=true`;
+            const url = `https://huggingface.co/api/models/${sanitizedId}/tree/main?recursive=true`;
             const response = await this.httpService.fetch(url, {
                 retryCount: 2,
                 timeoutMs: 10000
@@ -354,59 +383,50 @@ export class HuggingFaceService extends BaseService {
         };
     }
 
-    async getModelPreview(modelId: string): Promise<HFModelPreview | null> {
+    private buildModelDetailsUrl(sanitizedId: string): string {
+        return `https://huggingface.co/api/models/${sanitizedId}?blobs=true`;
+    }
+
+    private async fetchModelDetails(sanitizedId: string): Promise<HFModelApiDetails | null> {
         try {
-            const detailsUrl = `https://huggingface.co/api/models/${modelId}`;
-            const response = await this.httpService.fetch(detailsUrl, { retryCount: 2, timeoutMs: 12000 });
+            const response = await this.httpService.fetch(this.buildModelDetailsUrl(sanitizedId), {
+                retryCount: 2,
+                timeoutMs: 15000,
+            });
             if (!response.ok) {
                 return null;
             }
-
-            const details = await response.json() as HFModelApiDetails;
-            const model: HFModel = {
-                id: details.id,
-                name: details.id.split('/')[1] || details.id,
-                description: details.cardData?.short_description ?? `Model by ${details.author ?? 'unknown'}`,
-                author: details.author ?? 'unknown',
-                downloads: details.downloads ?? 0,
-                likes: details.likes ?? 0,
-                tags: details.tags ?? [],
-                lastModified: details.lastModified ?? new Date().toISOString(),
-                category: this.categorizeModel(details.tags ?? [], details.cardData?.short_description ?? '', details.id),
-                recommendationScore: 0
-            };
-            model.recommendationScore = this.computeRecommendationScore(model, '');
-
-            const ggufSizes = (details.siblings ?? [])
-                .filter(s => (s.rfilename ?? '').endsWith('.gguf') && typeof s.size === 'number')
-                .map(s => s.size as number);
-            const maxGGUFSize = ggufSizes.length > 0 ? Math.max(...ggufSizes) : 4 * 1024 ** 3;
-            const diskGB = Number((maxGGUFSize / (1024 ** 3)).toFixed(2));
-
-            return {
-                model,
-                benchmark: this.estimateBenchmark(model),
-                requirements: {
-                    minRamGB: Math.max(8, Math.ceil(diskGB * 1.2)),
-                    recommendedRamGB: Math.max(16, Math.ceil(diskGB * 1.8)),
-                    minVramGB: Math.max(4, Math.ceil(diskGB * 0.7)),
-                    diskGB
-                },
-                card: {
-                    title: model.name,
-                    summary: model.description,
-                    highlights: [
-                        `Category: ${model.category}`,
-                        `Downloads: ${model.downloads.toLocaleString()}`,
-                        `Likes: ${model.likes.toLocaleString()}`,
-                        `License: ${details.cardData?.license ?? 'unspecified'}`
-                    ]
-                }
-            };
+            return await response.json() as HFModelApiDetails;
         } catch (error) {
-            appLogger.error('HuggingFaceService', `Failed to fetch preview for ${modelId}: ${getErrorMessage(error as Error)}`);
+            appLogger.error('HuggingFaceService', `Failed to fetch model details for ${sanitizedId}: ${getErrorMessage(error as Error)}`);
             return null;
         }
+    }
+
+    private resolvePreviewDiskGB(details: HFModelApiDetails, paramCount: number | null): number {
+        const ggufSizes = (details.siblings ?? [])
+            .filter(sibling => (sibling.rfilename ?? '').toLowerCase().endsWith('.gguf') && typeof sibling.size === 'number' && sibling.size > 0)
+            .map(sibling => sibling.size as number);
+        const maxGGUFSize = ggufSizes.length > 0 ? Math.max(...ggufSizes) : undefined;
+        const ggufTotal = typeof details.gguf?.total === 'number' && details.gguf.total > 0 ? details.gguf.total : undefined;
+        const usedStorage = typeof details.usedStorage === 'number' && details.usedStorage > 0 ? details.usedStorage : undefined;
+        const resolvedBytes = maxGGUFSize ?? ggufTotal ?? usedStorage;
+        if (resolvedBytes) {
+            return Number((resolvedBytes / (1024 ** 3)).toFixed(2));
+        }
+        if (paramCount) {
+            return Number((paramCount * 0.6).toFixed(2));
+        }
+        return 0;
+    }
+
+    async getModelPreview(modelId: string): Promise<HFModelPreview | null> {
+        const sanitizedId = this.sanitizeModelId(modelId);
+        const details = await this.fetchModelDetails(sanitizedId);
+        if (!details) {
+            return null;
+        }
+        return this.mapDetailsToPreview(details);
     }
 
     async compareModels(modelIds: string[]): Promise<HFModelComparison> {
@@ -750,6 +770,49 @@ export class HuggingFaceService extends BaseService {
             .sort((a, b) => b.createdAt - a.createdAt);
     }
 
+    async getInstalledModelIds(): Promise<Set<string>> {
+        const ids = new Set<string>();
+        for (const v of this.modelVersions) {
+            ids.add(v.modelId);
+        }
+        return ids;
+    }
+
+    async listInstalledModels(): Promise<HFInstalledModel[]> {
+        const fs = await import('fs/promises');
+        const latestByModel = new Map<string, HFModelVersionRecord>();
+
+        for (const version of this.modelVersions) {
+            const modelId = version.modelId.trim();
+            if (modelId === '') {
+                continue;
+            }
+            const current = latestByModel.get(modelId);
+            if (!current || version.createdAt > current.createdAt) {
+                latestByModel.set(modelId, version);
+            }
+        }
+
+        const installed: HFInstalledModel[] = [];
+        for (const [modelId, version] of latestByModel.entries()) {
+            try {
+                await fs.access(version.path);
+                installed.push({
+                    modelId,
+                    path: version.path,
+                    createdAt: version.createdAt,
+                    architecture: version.metadata?.architecture,
+                    contextLength: version.metadata?.contextLength,
+                });
+            } catch (error) {
+                appLogger.warn('HuggingFaceService', `Skipping missing local HF model file: ${version.path}`, error as Error);
+            }
+        }
+
+        installed.sort((left, right) => right.createdAt - left.createdAt);
+        return installed;
+    }
+
     async compareModelVersions(modelId: string, leftVersionId: string, rightVersionId: string): Promise<HFVersionComparison> {
         const versions = await this.getModelVersions(modelId);
         const left = versions.find(v => v.versionId === leftVersionId);
@@ -790,15 +853,43 @@ export class HuggingFaceService extends BaseService {
         let changed = false;
         this.modelVersions = this.modelVersions.map(v => {
             if (v.modelId === modelId && v.versionId === versionId) {
-                changed = true;
-                return { ...v, pinned };
+                if (v.pinned !== pinned) {
+                    changed = true;
+                    return { ...v, pinned };
+                }
             }
             return v;
         });
         if (changed) {
             await this.persistModelVersions();
         }
-        return { success: changed };
+        return { success: true };
+    }
+
+    /**
+     * Deletes a model and all its versions/files.
+     */
+    async deleteModel(modelId: string): Promise<{ success: boolean; error?: string }> {
+        const fs = await import('fs/promises');
+        try {
+            const versionsToDelete = this.modelVersions.filter(v => v.modelId === modelId);
+            
+            for (const version of versionsToDelete) {
+                try {
+                    await fs.unlink(version.path);
+                } catch (e) {
+                    appLogger.warn('HuggingFaceService', `Failed to delete model file: ${version.path}`, e as Error);
+                }
+            }
+
+            this.modelVersions = this.modelVersions.filter(v => v.modelId !== modelId);
+            await this.persistModelVersions();
+
+            return { success: true };
+        } catch (error) {
+            appLogger.error('HuggingFaceService', `Failed to delete model ${modelId}`, error as Error);
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
     }
 
     async getVersionNotifications(modelId: string): Promise<string[]> {
@@ -834,7 +925,7 @@ export class HuggingFaceService extends BaseService {
                 .filter(Boolean)
                 .map(line => {
                     try {
-                        const parsed = JSON.parse(line) as Record<string, RuntimeValue>;
+                        const parsed = JSON.parse(line) as Record<string, unknown>;
                         return JSON.stringify(parsed);
                     } catch {
                         return JSON.stringify({ text: line });
@@ -850,6 +941,122 @@ export class HuggingFaceService extends BaseService {
                 error: getErrorMessage(error as Error)
             };
         }
+    }
+
+    async getBulkModelPreviews(modelIds: string[]): Promise<Record<string, HFModelPreview>> {
+        if (modelIds.length === 0) {
+            return {};
+        }
+
+        const results: Record<string, HFModelPreview> = {};
+        const idsBySanitized = new Map<string, string[]>();
+        for (const modelId of modelIds) {
+            const sanitizedId = this.sanitizeModelId(modelId);
+            if (!sanitizedId) {
+                continue;
+            }
+            const existing = idsBySanitized.get(sanitizedId) ?? [];
+            existing.push(modelId);
+            idsBySanitized.set(sanitizedId, existing);
+        }
+        const uniqueSanitizedIds = [...idsBySanitized.keys()];
+        const CHUNK_SIZE = 8;
+
+        for (let i = 0; i < uniqueSanitizedIds.length; i += CHUNK_SIZE) {
+            const chunk = uniqueSanitizedIds.slice(i, i + CHUNK_SIZE);
+            const previews = await Promise.all(chunk.map(async sanitizedId => {
+                const details = await this.fetchModelDetails(sanitizedId);
+                if (!details) {
+                    return null;
+                }
+                const preview = this.mapDetailsToPreview(details);
+                if (!preview) {
+                    return null;
+                }
+                return { sanitizedId, detailsId: details.id, preview };
+            }));
+            for (const entry of previews) {
+                if (!entry) {
+                    continue;
+                }
+                results[entry.sanitizedId] = entry.preview;
+                results[entry.detailsId] = entry.preview;
+                for (const rawId of idsBySanitized.get(entry.sanitizedId) ?? []) {
+                    results[rawId] = entry.preview;
+                }
+            }
+        }
+        
+        return results;
+    }
+
+    private mapDetailsToPreview(details: HFModelApiDetails): HFModelPreview | null {
+        try {
+            const model: HFModel = {
+                id: details.id,
+                name: details.id.split('/')[1] || details.id,
+                description: details.cardData?.short_description ?? `Model by ${details.author ?? 'unknown'}`,
+                author: details.author ?? 'unknown',
+                downloads: details.downloads ?? 0,
+                likes: details.likes ?? 0,
+                tags: details.tags ?? [],
+                lastModified: details.lastModified ?? new Date().toISOString(),
+                category: this.categorizeModel(details.tags ?? [], details.cardData?.short_description ?? '', details.id),
+                recommendationScore: 0
+            };
+            model.recommendationScore = this.computeRecommendationScore(model, '');
+
+            const paramCount = this.extractParametersFromId(details.id);
+            const diskGB = this.resolvePreviewDiskGB(details, paramCount);
+            const minRamFromDisk = diskGB > 0 ? Math.ceil(diskGB * 1.1) + 1 : 4;
+            const recommendedRamFromDisk = diskGB > 0 ? Math.ceil(diskGB * 1.5) + 2 : 8;
+            const minVramFromDisk = diskGB > 0 ? Math.ceil(diskGB * 0.6) : 3;
+
+            return {
+                model,
+                benchmark: this.estimateBenchmark(model),
+                requirements: {
+                    minRamGB: Math.max(paramCount ? Math.ceil(paramCount * 0.7) : 4, minRamFromDisk),
+                    recommendedRamGB: Math.max(paramCount ? Math.ceil(paramCount * 1.2) : 8, recommendedRamFromDisk),
+                    minVramGB: Math.max(paramCount ? Math.ceil(paramCount * 0.5) : 3, minVramFromDisk),
+                    diskGB
+                },
+                card: {
+                    title: model.name,
+                    summary: model.description,
+                    highlights: [
+                        `Category: ${model.category}`,
+                        `Downloads: ${model.downloads.toLocaleString()}`,
+                        `Likes: ${model.likes.toLocaleString()}`,
+                        `License: ${details.cardData?.license ?? 'unspecified'}`
+                    ]
+                }
+            };
+        } catch {
+            return null;
+        }
+    }
+
+    private extractParametersFromId(id: string): number | null {
+        const namePart = id.split('/')[1] || id;
+        const match = namePart.match(/(\d+(?:\.\d+)?)\s*(b|m|k)(?:\s|[^a-z0-9]|$)/i);
+        if (!match) {
+            return null;
+        }
+        
+        const count = parseFloat(match[1]);
+        const unit = match[2].toLowerCase();
+        
+        if (unit === 'b') {
+            return count;
+        }
+        if (unit === 'm') {
+            return count / 1000;
+        }
+        if (unit === 'k') {
+            return count / 1000000;
+        }
+        return null;
     }
 
     async startFineTune(
@@ -1040,19 +1247,22 @@ export class HuggingFaceService extends BaseService {
             }
 
             const total = (parseInt(response.headers.get('content-length') ?? '0', 10) || 0) + start;
-            const fileStream = fs.createWriteStream(outputPath, { flags: start > 0 ? 'a' : 'w' });
             if (!response.body) {
                 throw new Error('error.llm.response_body_null');
             }
 
             const reader = response.body.getReader();
             let received = start;
+            let fileStream: ReturnType<typeof fs.createWriteStream> | null = null; // SAFETY: Deferred creation until first byte to prevent empty files
 
             try {
                 for (let i = 0; i < 1_000_000_000; i++) {
                     const { done, value } = await reader.read();
                     if (done) {
                         break;
+                    }
+                    if (!fileStream) {
+                        fileStream = fs.createWriteStream(outputPath, { flags: start > 0 ? 'a' : 'w' });
                     }
                     fileStream.write(Buffer.from(value));
                     received += value.length;
@@ -1062,7 +1272,9 @@ export class HuggingFaceService extends BaseService {
                     }
                 }
             } finally {
-                fileStream.end();
+                if (fileStream) {
+                    fileStream.end();
+                }
                 reader.releaseLock();
             }
 
@@ -1191,19 +1403,24 @@ export class HuggingFaceService extends BaseService {
             throw new Error('error.llm.response_body_null');
         }
 
-        const ws = fs.createWriteStream(outputPath, { flags: 'w' });
         const reader = response.body.getReader();
+        let ws: ReturnType<typeof fs.createWriteStream> | null = null; // SAFETY: Deferred creation until first byte to prevent empty files
         let received = 0;
         for (let i = 0; i < 1_000_000_000; i++) {
             const { done, value } = await reader.read();
             if (done) {
                 break;
             }
+            if (!ws) {
+                ws = fs.createWriteStream(outputPath, { flags: 'w' });
+            }
             ws.write(Buffer.from(value));
             received += value.length;
             onProgress(received);
         }
-        ws.end();
+        if (ws) {
+            ws.end();
+        }
     }
 
     private extractQuantization(filename: string): string {

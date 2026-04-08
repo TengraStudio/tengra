@@ -24,7 +24,7 @@ export function sanitizeString(
     const {
         maxLength = 1000000, // Default 1MB of text
         allowNewlines = true,
-        trimWhitespace = true
+        trimWhitespace = false
     } = options;
 
     if (typeof input !== 'string') {

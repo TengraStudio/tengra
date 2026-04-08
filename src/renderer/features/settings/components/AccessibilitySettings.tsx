@@ -100,7 +100,7 @@ export const AccessibilitySettings: React.FC = () => {
                         <h2 className="text-xl font-bold text-foreground">
                             {t('settings.accessibility.title')}
                         </h2>
-                        <p className="text-[10px] text-muted-foreground font-bold opacity-70">
+                        <p className="typo-body text-muted-foreground font-bold opacity-70">
                             {t('settings.accessibility.description')}
                         </p>
                     </div>
@@ -109,7 +109,7 @@ export const AccessibilitySettings: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     onClick={handleReset}
-                    className="h-10 px-4 rounded-xl text-[10px] font-bold text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-border/40 transition-all active:scale-95"
+                    className="h-10 px-4 rounded-xl typo-body font-bold text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-border/40 transition-all active:scale-95"
                 >
                     <RotateCcw className="w-3.5 h-3.5 mr-2" />
                     {t('common.reset')}
@@ -159,11 +159,11 @@ export const AccessibilitySettings: React.FC = () => {
                         <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
                             <Shield className="w-4 h-4" />
                         </div>
-                        <h4 className="text-[11px] font-bold text-foreground">
+                        <h4 className="typo-body font-bold text-foreground">
                             {t('settings.accessibility.systemPrefs')}
                         </h4>
                     </div>
-                    <p className="text-[11px] text-muted-foreground font-medium leading-relaxed relative z-10 opacity-80">
+                    <p className="typo-body text-muted-foreground font-medium leading-relaxed relative z-10 opacity-80">
                         {t('settings.accessibility.systemPrefsDesc')}
                     </p>
                 </div>
@@ -174,7 +174,7 @@ export const AccessibilitySettings: React.FC = () => {
                         <div className="p-2 rounded-xl bg-muted/40 text-muted-foreground border border-border/40 group-hover:text-foreground">
                             <Command className="w-4 h-4" />
                         </div>
-                        <h4 className="text-[11px] font-bold text-foreground">
+                        <h4 className="typo-body font-bold text-foreground">
                             {t('settings.accessibility.shortcuts')}
                         </h4>
                     </div>
@@ -208,13 +208,13 @@ export const AccessibilitySettings: React.FC = () => {
                                 <div className="flex items-center gap-2">
                                     <Badge
                                         variant="outline"
-                                        className="h-5 px-1.5 min-w-[32px] justify-center rounded bg-background/80 border-border/60 text-[9px] font-mono font-bold shadow-sm group-hover/row:border-primary/40 group-hover/row:text-primary transition-colors"
+                                        className="h-5 px-1.5 min-w-[32px] justify-center rounded bg-background/80 border-border/60 typo-body font-mono font-bold shadow-sm group-hover/row:border-primary/40 group-hover/row:text-primary transition-colors"
                                     >
                                         {key}
                                     </Badge>
                                     <ArrowRight className="w-2.5 h-2.5 text-muted-foreground/30 opacity-0 group-hover/row:opacity-100 transition-all" />
                                 </div>
-                                <span className="text-[10px] text-muted-foreground font-bold opacity-60 group-hover/row:opacity-100 transition-opacity">
+                                <span className="typo-body text-muted-foreground font-bold opacity-60 group-hover/row:opacity-100 transition-opacity">
                                     {action}
                                 </span>
                             </div>

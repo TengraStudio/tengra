@@ -1,15 +1,16 @@
 import { Badge } from '@renderer/components/ui/badge';
 import { Button } from '@renderer/components/ui/button';
-import { 
-    AlertTriangle, 
-    Clock, 
-    Cpu, 
-    ExternalLink, 
-    Globe, 
-    RefreshCw, 
-    Smartphone, 
+import {
+    AlertTriangle,
+    Clock,
+    Cpu,
+    ExternalLink,
+    Globe,
+    RefreshCw,
+    Smartphone,
     Terminal,
-    Zap} from 'lucide-react';
+    Zap
+} from 'lucide-react';
 import React, { useMemo } from 'react';
 
 import logoBlack from '@/assets/tengra_black.png';
@@ -49,12 +50,12 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                         {t('app.name')}
                     </h2>
                     <div className="flex flex-wrap items-center justify-center gap-3">
-                        <Badge variant="outline" className="rounded-full border-primary/20 bg-primary/10 px-4 py-1.5 text-[11px] font-medium text-primary">
+                        <Badge variant="outline" className="rounded-full border-primary/20 bg-primary/10 px-4 py-1.5 typo-body font-medium text-primary">
                             v1.2.1-dev
                         </Badge>
                         <button
                             onClick={() => appLogger.warn('AboutTab', t('about.updateCheckAlert'))}
-                            className="h-8 rounded-full border border-border/20 px-5 text-[10px] font-medium text-muted-foreground/60 hover:bg-muted/10 hover:text-foreground"
+                            className="h-8 rounded-full border border-border/20 px-5 typo-body font-medium text-muted-foreground/60 hover:bg-muted/10 hover:text-foreground"
                         >
                             {t('about.checkUpdates')}
                         </button>
@@ -71,7 +72,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                         onClick={() =>
                             window.electron.openExternal('https://github.com/agnes0912491/Tengra')
                         }
-                        className="group/btn h-12 rounded-2xl border-border/30 bg-background text-[10px] font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                        className="group/btn h-12 rounded-2xl border-border/30 bg-background typo-body font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground"
                     >
                         <ExternalLink className="mr-3 h-4 w-4" />
                         {t('about.privacyPolicy')}
@@ -81,7 +82,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                         onClick={() =>
                             window.electron.openExternal('https://github.com/agnes0912491/Tengra')
                         }
-                        className="group/btn h-12 rounded-2xl border-border/30 bg-background text-[10px] font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                        className="group/btn h-12 rounded-2xl border-border/30 bg-background typo-body font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground"
                     >
                         <Globe className="mr-3 h-4 w-4" />
                         {t('about.github')}
@@ -89,10 +90,10 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                 </div>
 
                 <div className="mt-2 w-full border-t border-border/10 px-6 pt-8 opacity-60 sm:px-12">
-                    <p className="mb-1 text-[10px] font-medium text-muted-foreground">
+                    <p className="mb-1 typo-body font-medium text-muted-foreground">
                         {t('about.copyright')}
                     </p>
-                    <div className="mt-2 flex items-center justify-center gap-2 text-[9px] font-medium text-muted-foreground/60">
+                    <div className="mt-2 flex items-center justify-center gap-2 typo-body font-medium text-muted-foreground/60">
                         <Terminal className="w-2.5 h-2.5" />
                         <span>{t('about.kernelRevision')}</span>
                     </div>
@@ -103,16 +104,16 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                 <div className="relative z-10 flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
                         <Cpu className="w-4 h-4 text-primary" />
-                        <h4 className="text-[10px] font-medium text-muted-foreground/60">{t('about.systemTelemetry')}</h4>
+                        <h4 className="typo-body font-medium text-muted-foreground/60">{t('about.systemTelemetry')}</h4>
                     </div>
-                    <Badge variant="outline" className="h-5 border-primary/20 px-2 text-[9px] font-medium text-primary">{t('about.nativeDiagnostics')}</Badge>
+                    <Badge variant="outline" className="h-5 border-primary/20 px-2 typo-body font-medium text-primary">{t('about.nativeDiagnostics')}</Badge>
                 </div>
 
                 <div className="relative z-10 mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     <div className="rounded-[2rem] border border-border/20 bg-muted/5 p-5 transition-colors hover:bg-muted/10">
                         <div className="flex items-center gap-2 mb-4">
                             <Smartphone className="w-3.5 h-3.5 text-primary/60" />
-                            <div className="text-[9px] font-medium text-muted-foreground/60">
+                            <div className="typo-body font-medium text-muted-foreground/60">
                                 {t('advanced.platform')}
                             </div>
                         </div>
@@ -124,7 +125,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                     <div className="rounded-[2rem] border border-border/20 bg-muted/5 p-5 transition-colors hover:bg-muted/10">
                         <div className="flex items-center gap-2 mb-4">
                             <Globe className="w-3.5 h-3.5 text-primary/60" />
-                            <div className="text-[9px] font-medium text-muted-foreground/60">
+                            <div className="typo-body font-medium text-muted-foreground/60">
                                 {t('about.locale')}
                             </div>
                         </div>
@@ -136,13 +137,13 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                     <div className="rounded-[2rem] border border-border/20 bg-muted/5 p-5 transition-colors hover:bg-muted/10">
                         <div className="flex items-center gap-2 mb-4">
                             <RefreshCw className="w-3.5 h-3.5 text-primary/60" />
-                            <div className="text-[9px] font-medium text-muted-foreground/60">
+                            <div className="typo-body font-medium text-muted-foreground/60">
                                 {t('about.buildSync')}
                             </div>
                         </div>
                         <button
                             onClick={() => window.location.reload()}
-                            className="group/reload flex h-10 w-full items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-[10px] font-medium text-primary hover:bg-primary/20"
+                            className="group/reload flex h-10 w-full items-center justify-center rounded-xl border border-primary/20 bg-primary/10 typo-body font-medium text-primary hover:bg-primary/20"
                         >
                             <RefreshCw className="mr-3 h-3.5 w-3.5" />
                             {t('about.forceReload')}
@@ -152,7 +153,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                     <div className="rounded-[2rem] border border-border/20 bg-muted/5 p-5 transition-colors hover:bg-muted/10">
                         <div className="flex items-center gap-2 mb-4">
                             <Clock className="w-3.5 h-3.5 text-primary/60" />
-                            <div className="text-[9px] font-medium text-muted-foreground/60">
+                            <div className="typo-body font-medium text-muted-foreground/60">
                                 {t('about.sessionStart')}
                             </div>
                         </div>
@@ -166,18 +167,18 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                     </div>
 
                     <div className="flex flex-col justify-between gap-4 rounded-[2rem] border border-border/20 bg-muted/5 p-5 transition-colors hover:bg-muted/10 sm:col-span-2 md:flex-row md:items-center">
-                         <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-4">
                             <div className="flex items-center gap-2">
                                 <Zap className="w-3.5 h-3.5 text-primary/60" />
-                                <div className="text-[9px] font-medium text-muted-foreground/60">
+                                <div className="typo-body font-medium text-muted-foreground/60">
                                     {t('about.buildVersion')}
                                 </div>
                             </div>
-                             <div className="text-sm font-medium text-primary">
+                            <div className="text-sm font-medium text-primary">
                                 v1.2.1-RELEASE-DEV
                             </div>
                         </div>
-                        <Badge variant="outline" className="rounded-xl border-border/20 bg-background/50 px-4 py-2 font-mono text-[10px] font-medium text-muted-foreground">
+                        <Badge variant="outline" className="rounded-xl border-border/20 bg-background/50 px-4 py-2 font-mono typo-body font-medium text-muted-foreground">
                             {typeof __BUILD_TIME__ !== 'undefined'
                                 ? new Date(__BUILD_TIME__).toLocaleString()
                                 : t('about.notAvailable')}
@@ -204,7 +205,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                     <Button
                         variant="destructive"
                         onClick={onReset}
-                        className="h-12 rounded-2xl px-8 text-[11px] font-medium"
+                        className="h-12 rounded-2xl px-8 typo-body font-medium"
                     >
                         <RefreshCw className="w-4 h-4 mr-3" />
                         {t('about.executeWipe')}

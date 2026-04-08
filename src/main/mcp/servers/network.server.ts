@@ -59,20 +59,17 @@ const validateSSHConnection = (args: RuntimeValue): SSHConnection => {
 export function buildNetworkServers(deps: McpDeps): McpService[] {
     return [
         {
-            name: 'ssh',
-            description: 'SSH connections and remote commands (validated)',
+            name: 'ssh', 
             actions: buildActions([
                 {
-                    name: 'connect',
-                    description: 'Open SSH connection with validation',
+                    name: 'connect', 
                     handler: (args) => withTimeout(
                         () => deps.ssh.connect(validateSSHConnection(args)),
                         30000
                     )
                 },
                 {
-                    name: 'execute',
-                    description: 'Run remote command with validation (warning: ensure internal service uses array-based execution)',
+                    name: 'execute', 
                     handler: ({ connectionId, command, cwd }) => {
                         const validConnId = validateConnectionId(connectionId);
                         const validCommand = validateCommand(command);
@@ -89,8 +86,7 @@ export function buildNetworkServers(deps: McpDeps): McpService[] {
                     }
                 },
                 {
-                    name: 'disconnect',
-                    description: 'Close SSH connection',
+                    name: 'disconnect', 
                     handler: ({ connectionId }) => withTimeout(
                         async () => {
                             await deps.ssh.disconnect(validateConnectionId(connectionId));
@@ -102,12 +98,10 @@ export function buildNetworkServers(deps: McpDeps): McpService[] {
             ], 'ssh', deps.auditLog)
         },
         {
-            name: 'network',
-            description: 'Network utilities (allowlist-protected)',
+            name: 'network', 
             actions: buildActions([
                 {
-                    name: 'ping',
-                    description: 'Ping host (requires allowlist)',
+                    name: 'ping', 
                     handler: ({ host }) => {
                         const allowedHost = ensureAllowedTarget(deps, host as string);
 
@@ -118,8 +112,7 @@ export function buildNetworkServers(deps: McpDeps): McpService[] {
                     }
                 },
                 {
-                    name: 'traceroute',
-                    description: 'Run traceroute (requires allowlist)',
+                    name: 'traceroute', 
                     handler: ({ host }) => {
                         const allowedHost = ensureAllowedTarget(deps, host as string);
 
@@ -130,8 +123,7 @@ export function buildNetworkServers(deps: McpDeps): McpService[] {
                     }
                 },
                 {
-                    name: 'whois',
-                    description: 'WHOIS lookup (requires allowlist)',
+                    name: 'whois', 
                     handler: ({ domain }) => {
                         const allowedDomain = ensureAllowedTarget(deps, domain as string);
 

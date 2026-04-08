@@ -1,6 +1,5 @@
 import {
     Container,
-    Eraser,
     LayoutGrid,
     MessageSquare,
     Minus,
@@ -28,7 +27,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     currentView,
     onOpenSettings,
 }) => {
-    const { currentChatId, currentChatTitle, clearMessages } = useChatHeader();
+    const { currentChatTitle } = useChatHeader();
     const { language } = useAuthLanguage();
     const { t } = useTranslation(language);
 
@@ -74,16 +73,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 </div>
 
                 <div className="tengra-app-header__right no-drag">
-                    {currentView === 'chat' && currentChatId && (
-                        <button
-                            onClick={() => void clearMessages()}
-                            className="tengra-app-header__action group"
-                            title={t('chat.clear')}
-                        >
-                            <Eraser className="tengra-app-header__action-icon tengra-app-header__action-icon--rotate" />
-                        </button>
-                    )}
-
                     <button
                         onClick={onOpenSettings}
                         className={cn(

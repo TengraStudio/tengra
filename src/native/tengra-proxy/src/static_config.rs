@@ -78,7 +78,7 @@ pub fn oauth_provider_timeout_secs(provider: &str) -> anyhow::Result<u64> {
 
 fn default_oauth_timeout_secs(provider: &str) -> u64 {
     match provider {
-        "claude" | "antigravity" => 300,
+        "claude" | "antigravity" | "ollama" => 300,
         _ => 20,
     }
 }
@@ -130,5 +130,10 @@ mod tests {
             oauth_provider_timeout_secs("claude").expect_err("out-of-range timeout should fail");
         assert!(error.to_string().contains("between 10 and 600"));
         std::env::remove_var("TENGRA_OAUTH_TIMEOUT_SECS");
+    }
+
+    #[test]
+    fn uses_extended_default_timeout_for_ollama() {
+        assert_eq!(super::default_oauth_timeout_secs("ollama"), 300);
     }
 }

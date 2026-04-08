@@ -18,11 +18,12 @@ export interface ChatStreamChunk {
 
 function normalizeChunk(chunk: ChatStreamChunk): ChatStreamChunk[] {
     const results: ChatStreamChunk[] = [];
-    if (chunk.content !== undefined) {
+    if (typeof chunk.content === 'string' && chunk.content.length > 0) {
         results.push({ type: 'content', content: chunk.content });
     }
-    if (chunk.reasoning !== undefined) {
-        results.push({ type: 'reasoning', content: chunk.reasoning });
+    if (typeof chunk.reasoning === 'string' && chunk.reasoning.length > 0) {
+        // Preserve reasoning in the reasoning field, not content field
+        results.push({ type: 'reasoning', reasoning: chunk.reasoning });
     }
     if (chunk.images) {
         results.push({ type: 'images', images: chunk.images });
@@ -46,7 +47,6 @@ function normalizeChunk(chunk: ChatStreamChunk): ChatStreamChunk[] {
 export async function* chatStream(
     request: ChatStreamRequest
 ): AsyncGenerator<ChatStreamChunk> {
-    const { messages, model, tools = [], provider, options, chatId, workspaceId } = request;
     let currentResolver: ((value: void | null) => void) | null = null;
     const queue: ChatStreamChunk[] = [];
     const state = {
@@ -90,10 +90,11 @@ export async function* chatStream(
         }
     };
 
+    const { messages, model, tools, provider, options, chatId, assistantId, workspaceId } = request;
     const sessionConversationBridge = window.electron.session.conversation;
     const unsubscribe = sessionConversationBridge.onStreamChunk(listener);
 
-    void sessionConversationBridge.stream({ messages, model, tools, provider, options, chatId, workspaceId })
+    void sessionConversationBridge.stream({ messages, model, tools, provider, options, chatId, assistantId, workspaceId })
         .catch(err => {
             state.streamError = err;
             state.isDone = true;

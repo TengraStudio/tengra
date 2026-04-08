@@ -136,7 +136,7 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
                             </SelectContent>
                         </Select>
                         {isLoadingTerminalBackends && (
-                            <div className="mt-2 flex items-center gap-2 px-1 text-[10px] text-muted-foreground/70">
+                            <div className="mt-2 flex items-center gap-2 px-1 typo-body text-muted-foreground/70">
                                 <RefreshCw className="h-3 w-3 animate-spin" />
                                 <span>{t('common.loading')}</span>
                             </div>
@@ -161,7 +161,7 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
             >
                 <div className="grid gap-4 md:grid-cols-2">
                     <div className="rounded-2xl border border-border/20 bg-background/60 px-4 py-4">
-                        <div className="text-[11px] font-medium text-foreground">
+                        <div className="typo-body font-medium text-foreground">
                             {t('workspaceWizard.selectFolder')}
                         </div>
                         <div className="mt-2 text-xs leading-5 text-muted-foreground">
@@ -169,7 +169,7 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
                         </div>
                     </div>
                     <div className="rounded-2xl border border-border/20 bg-background/60 px-4 py-4">
-                        <div className="text-[11px] font-medium text-foreground">
+                        <div className="typo-body font-medium text-foreground">
                             {t('general.terminalBackend')}
                         </div>
                         <div className="mt-2 text-xs leading-5 text-muted-foreground">

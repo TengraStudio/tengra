@@ -15,6 +15,7 @@ import { getErrorMessage } from '@shared/utils/error.util';
 import type { FileChangeTracker } from './file-change-tracker.service';
 
 export class FileSystemService {
+    private static readonly MAX_SEARCH_DIRECTORIES = 100000;
     private allowedRoots: string[] = [];
     private readonly allowedDownloadHosts = new Set([
         'github.com',
@@ -676,10 +677,14 @@ export class FileSystemService {
         }
     }
 
-    async searchFiles(rootPath: string, pattern: string): Promise<ServiceResponse<string[]>> {
+    async searchFiles(
+        rootPath: string,
+        pattern: string,
+        maxResults = Number.POSITIVE_INFINITY
+    ): Promise<ServiceResponse<string[]>> {
         try {
             const results: string[] = [];
-            await this.searchFilesStream(rootPath, pattern, path => results.push(path));
+            await this.searchFilesStream(rootPath, pattern, path => results.push(path), maxResults);
             return { success: true, data: results };
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };
@@ -689,10 +694,27 @@ export class FileSystemService {
     async searchFilesStream(
         rootPath: string,
         pattern: string,
-        onResult: (path: string) => void
+        onResult: (path: string) => void,
+        maxResults = Number.POSITIVE_INFINITY
     ): Promise<void> {
         this.validatePath(rootPath);
-        const walk = async (dir: string) => {
+        const directories = [path.resolve(rootPath)];
+        const resultLimit = Number.isFinite(maxResults)
+            ? Math.max(1, Math.floor(maxResults))
+            : Number.POSITIVE_INFINITY;
+        let resultCount = 0;
+
+        for (
+            let visitedDirectories = 0;
+            directories.length > 0 &&
+                visitedDirectories < FileSystemService.MAX_SEARCH_DIRECTORIES &&
+                resultCount < resultLimit;
+            visitedDirectories += 1
+        ) {
+            const dir = directories.pop();
+            if (!dir) {
+                break;
+            }
             try {
                 const entries = await fs.readdir(dir, { withFileTypes: true });
                 for (const entry of entries) {
@@ -702,16 +724,23 @@ export class FileSystemService {
                     }
 
                     if (entry.isDirectory()) {
-                        await walk(full);
-                    } else if (entry.name.includes(pattern)) {
-                        onResult(full);
+                        directories.push(full);
+                        continue;
+                    }
+                    if (!entry.name.includes(pattern)) {
+                        continue;
+                    }
+
+                    onResult(full);
+                    resultCount += 1;
+                    if (resultCount >= resultLimit) {
+                        break;
                     }
                 }
             } catch {
                 // Ignore access errors during search
             }
-        };
-        await walk(path.resolve(rootPath));
+        }
     }
 
     async applyEdits(

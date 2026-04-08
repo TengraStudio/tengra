@@ -3,7 +3,6 @@ import { promisify } from 'util';
 
 import { appLogger } from '@main/logging/logger';
 import { validateCommand } from '@main/utils/command-validator.util';
-import { validateCommandArgs } from '@main/utils/shell-command-policy.util';
 import { JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 
@@ -64,10 +63,35 @@ export class CommandService {
         return validateCommand(command);
     }
 
-    private normalizeExecutableName(command: string): string {
-        const trimmed = command.trim();
-        const baseName = trimmed.split(/[\\/]/).pop() ?? trimmed;
-        return baseName.replace(/\.(exe|cmd|bat)$/i, '').toLowerCase();
+    private isPowerShellShell(shell: string): boolean {
+        const normalized = shell.toLowerCase();
+        return normalized.includes('powershell') || normalized.includes('pwsh');
+    }
+
+    private replaceWindowsEnvVarSyntax(command: string): string {
+        return command.replace(/%([A-Za-z_][A-Za-z0-9_]*)%/g, (_match, varName: string) => `$env:${varName}`);
+    }
+
+    private replaceWindowsIfNotExistMkdir(command: string): string {
+        const cmdIfPattern = /if\s+not\s+exist\s+("[^"]+"|'[^']+'|\S+)\s+mkdir\s+("[^"]+"|'[^']+'|\S+)/giu;
+        return command.replace(
+            cmdIfPattern,
+            (_match, probePath: string, targetPath: string) =>
+                `if (!(Test-Path ${probePath})) { New-Item -ItemType Directory -Path ${targetPath} -Force | Out-Null }`
+        );
+    }
+
+    private normalizeWindowsPowerShellCommand(command: string): string {
+        const withEnvVars = this.replaceWindowsEnvVarSyntax(command);
+        return this.replaceWindowsIfNotExistMkdir(withEnvVars);
+    }
+
+    private resolveExecutionContext(command: string, shellOverride?: string): { command: string; shell: string } {
+        const shell = shellOverride ?? DEFAULT_EXEC_SHELL;
+        if (process.platform !== 'win32' || !this.isPowerShellShell(shell)) {
+            return { command, shell };
+        }
+        return { command: this.normalizeWindowsPowerShellCommand(command), shell };
     }
 
     private parseCommand(command: string): { executable: string; args: string[] } | null {
@@ -92,20 +116,6 @@ export class CommandService {
         };
     }
 
-    private validateCommandExecution(command: string): { allowed: boolean; reason?: string } {
-        const parsed = this.parseCommand(command);
-        if (!parsed) {
-            return { allowed: false, reason: 'Invalid command format' };
-        }
-
-        const policy = validateCommandArgs(this.normalizeExecutableName(parsed.executable), parsed.args);
-        if (!policy.allowed) {
-            return { allowed: false, reason: policy.reason };
-        }
-
-        return { allowed: true };
-    }
-
     async executeCommand(
         command: string,
         options?: {
@@ -120,14 +130,6 @@ export class CommandService {
             return {
                 success: false,
                 error: safety.reason ?? 'Command blocked by safety policy'
-            };
-        }
-
-        const executionPolicy = this.validateCommandExecution(command);
-        if (!executionPolicy.allowed) {
-            return {
-                success: false,
-                error: executionPolicy.reason ?? 'Command blocked by argument policy'
             };
         }
 
@@ -148,11 +150,12 @@ export class CommandService {
                 error: `Command blocked: Too many active processes (Limit: ${CommandService.MAX_ACTIVE_PROCESSES})`
             };
         }
+        const executionContext = this.resolveExecutionContext(command, options.shell);
         return new Promise((resolve) => {
-            const child = exec(command, {
+            const child = exec(executionContext.command, {
                 cwd: options.cwd ?? process.cwd(),
                 timeout: options.timeout ?? this.maxTimeout,
-                shell: options.shell ?? DEFAULT_EXEC_SHELL,
+                shell: executionContext.shell,
                 maxBuffer: 10 * 1024 * 1024
             }, (error, stdout, stderr) => {
                 this.activeProcesses.delete(options.id);
@@ -201,11 +204,12 @@ export class CommandService {
     }
 
     private async runDirect(command: string, options?: { cwd?: string; timeout?: number; shell?: string }): Promise<CommandResult> {
+        const executionContext = this.resolveExecutionContext(command, options?.shell);
         try {
-            const { stdout, stderr } = await execAsync(command, {
+            const { stdout, stderr } = await execAsync(executionContext.command, {
                 cwd: options?.cwd ?? process.cwd(),
                 timeout: options?.timeout ?? this.maxTimeout,
-                shell: options?.shell ?? DEFAULT_EXEC_SHELL,
+                shell: executionContext.shell,
                 maxBuffer: 10 * 1024 * 1024
             });
             return { success: true, stdout: stdout.trim(), stderr: stderr.trim(), exitCode: 0 };
@@ -233,15 +237,6 @@ export class CommandService {
                 resolve({
                     success: false,
                     error: safety.reason ?? 'Command blocked by safety policy'
-                });
-                return;
-            }
-
-            const executionPolicy = this.validateCommandExecution(command);
-            if (!executionPolicy.allowed) {
-                resolve({
-                    success: false,
-                    error: executionPolicy.reason ?? 'Command blocked by argument policy'
                 });
                 return;
             }

@@ -9,7 +9,7 @@ import { McpDispatchResult } from '@main/mcp/types';
 import { BaseService } from '@main/services/base.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { JsonObject, JsonValue } from '@shared/types/common';
-import { McpPermissionProfile } from '@shared/types/settings';
+import { McpPermissionProfile,MCPServerConfig } from '@shared/types/settings';
 
 const MCP_PLUGIN_MESSAGE_KEY = {
     PERMISSION_REQUEST_NOT_FOUND: 'mainProcess.mcpPlugin.permissionRequestNotFound',
@@ -109,7 +109,8 @@ export class McpPluginService extends BaseService {
                     id: config.id,
                     env: config.env,
                     storage: config.storage
-                })
+                }),
+                tools: config.tools
             });
             this.plugins.set(plugin.name, plugin);
         }
@@ -513,20 +514,22 @@ export class McpPluginService extends BaseService {
     /**
      * Register a new external plugin
      */
-    async registerPlugin(name: string, description: string, command: string, args: string[], env?: Record<string, string>) {
+    async registerPlugin(config: MCPServerConfig) {
+        const { name, description = '', command, args, env } = config;
         if (this.plugins.has(name)) {
             throw new Error(`Plugin '${name}' already exists.`);
         }
 
-        const storage = { dataPath: `mcp-storage/${name}`, quotaMb: 256, migrationVersion: 1 };
+        const storage = config.storage ?? { dataPath: `mcp-storage/${name}`, quotaMb: 256, migrationVersion: 1 };
         const plugin = new ExternalMcpPlugin(name, description, {
             command,
             args,
             env: this.buildPluginEnvironment({
-                id: name,
+                id: config.id,
                 env,
                 storage
-            })
+            }),
+            tools: config.tools
         });
         await plugin.initialize();
         this.plugins.set(name, plugin);
@@ -534,15 +537,11 @@ export class McpPluginService extends BaseService {
         // Update settings persistence
         const settings = this.settingsService.getSettings();
         const userServers = [...(settings.mcpUserServers ?? []), {
-            id: name,
-            name,
+            ...config,
             description,
-            command,
-            args,
-            env,
             storage,
-            enabled: false,
-            tools: []
+            enabled: config.enabled ?? false,
+            tools: config.tools ?? []
         }];
         await this.settingsService.saveSettings({ mcpUserServers: userServers });
 

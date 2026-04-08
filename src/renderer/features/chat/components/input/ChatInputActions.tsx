@@ -49,7 +49,7 @@ export const ModelSelectorWrapper = memo(({ ctrl }: { ctrl: ControllerType }) =>
             }
             permissionPolicy={ctrl.permissionPolicy}
             onUpdatePermissionPolicy={ctrl.setPermissionPolicy}
-        /> 
+        />
     </div>
 ));
 ModelSelectorWrapper.displayName = 'ModelSelectorWrapper';
@@ -60,7 +60,7 @@ ModelSelectorWrapper.displayName = 'ModelSelectorWrapper';
 export const EnhanceButton = memo(({ ctrl }: { ctrl: ControllerType }) => {
     const isEnhancable = ctrl.input.trim() !== '' && !ctrl.isLoading;
     const isEnhancing = ctrl.isEnhancing;
-    
+
     return (
         <Button
             type="button"
@@ -91,7 +91,7 @@ EnhanceButton.displayName = 'EnhanceButton';
 export const SendButton = memo(({ ctrl }: { ctrl: ControllerType }) => {
     const hasContent = ctrl.input.trim() !== '' || ctrl.attachments.length > 0;
     const isLoading = ctrl.isLoading;
-    
+
     return (
         <Button
             type="button"
@@ -188,11 +188,11 @@ AttachButton.displayName = 'AttachButton';
  * ComposerStateBadges - Status indicators in the bottom bar
  */
 export const ComposerStateBadges = memo(({ ctrl }: { ctrl: ControllerType }) => (
-    <div className="flex items-center gap-1.5 ml-1"> 
+    <div className="flex items-center gap-1.5 ml-1">
         {ctrl.isListening && (
             <Badge
                 variant="destructive"
-                className="h-6 rounded-full border-transparent px-1.5 text-[10px] animate-pulse"
+                className="h-6 rounded-full border-transparent px-1.5 typo-body animate-pulse"
             >
                 <Mic size={10} aria-hidden="true" />
             </Badge>
@@ -200,7 +200,7 @@ export const ComposerStateBadges = memo(({ ctrl }: { ctrl: ControllerType }) => 
         {ctrl.attachments.length > 0 && (
             <Badge
                 variant="secondary"
-                className="h-6 gap-1 rounded-full px-2 text-[10px] font-medium"
+                className="h-6 gap-1 rounded-full px-2 typo-body font-medium"
             >
                 <Paperclip size={10} aria-hidden="true" />
                 <span>{ctrl.attachments.length}</span>
@@ -215,7 +215,7 @@ ComposerStateBadges.displayName = 'ComposerStateBadges';
  */
 export const ImageCountPanel = memo(({ ctrl }: { ctrl: ControllerType }) => (
     <div className="mb-2 flex items-center gap-2 rounded-xl border border-border/15 bg-muted/5 px-3 py-1.5 transition-all animate-in fade-in slide-in-from-top-1">
-        <span className="text-[11px] text-muted-foreground font-medium">{ctrl.t('input.imageCountLabel')}</span>
+        <span className="typo-body text-muted-foreground font-medium">{ctrl.t('input.imageCountLabel')}</span>
         <input
             type="number"
             min={1}

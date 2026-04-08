@@ -1,3 +1,4 @@
+import { AppSettings } from '@shared/types';
 import { IpcValue } from '@shared/types/common';
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
@@ -56,6 +57,8 @@ import { createWorkspaceBridge } from './preload/domains/workspace.preload';
 // Increase max listeners for ipcRenderer to handle multiple terminal/process streams
 ipcRenderer.setMaxListeners(60);
 
+const settingsBridge = createSettingsBridge(ipcRenderer);
+
 const api = {
     ...createWindowControlsBridge(ipcRenderer),
     ...createAuthBridge(ipcRenderer),
@@ -67,7 +70,7 @@ const api = {
     clipboard: createClipboardBridge(ipcRenderer),
     ...createSdCppBridge(ipcRenderer),
     sdCpp: createSdCppBridge(ipcRenderer),
-    ...createModelDownloaderBridge(ipcRenderer),
+    modelDownloader: createModelDownloaderBridge(ipcRenderer),
     ...createToolsBridge(ipcRenderer),
 
     // Unified ipcRenderer exposure
@@ -114,6 +117,10 @@ const api = {
         return () => ipcRenderer.removeListener('ollama:statusChange', listener);
     },
 
+    // Backward-compatible settings surface used across renderer code.
+    getSettings: () => settingsBridge.getSettings(),
+    saveSettings: (settings: AppSettings) => settingsBridge.saveSettings(settings),
+
     code: createCodeBridge(ipcRenderer),
     git: createGitBridge(ipcRenderer),
     ollama: createOllamaBridge(ipcRenderer),
@@ -151,14 +158,14 @@ const api = {
     selectDirectory: () => ipcRenderer.invoke('files:selectDirectory'),
     selectFile: (options?: { title?: string; filters?: { name: string; extensions: string[] }[] }) =>
         ipcRenderer.invoke('files:selectFile', options),
-    ...createSharedPromptsBridge(ipcRenderer),
-    ...createPromptTemplatesBridge(ipcRenderer),
+    sharedPrompts: createSharedPromptsBridge(ipcRenderer),
+    promptTemplates: createPromptTemplatesBridge(ipcRenderer),
     liveCollaboration: createLiveCollaborationBridge(ipcRenderer),
     userCollaboration: createLiveCollaborationBridge(ipcRenderer),
-    ...createSettingsBridge(ipcRenderer),
-    ...createHuggingFaceBridge(ipcRenderer),
-    ...createExportBridge(ipcRenderer),
-    ...createLogBridge(ipcRenderer),
+    settings: settingsBridge,
+    huggingface: createHuggingFaceBridge(ipcRenderer),
+    export: createExportBridge(ipcRenderer),
+    log: createLogBridge(ipcRenderer),
 };
 
 contextBridge.exposeInMainWorld('electron', api);

@@ -86,6 +86,50 @@ describe('Chat stream persistence', () => {
             timestamp: expect.any(Number)
         }));
     });
+
+    it('merges streamed tool calls across chunks before persistence', async () => {
+        const handler = ipcMainHandlers.get('session:conversation:stream');
+        mockLLMService.chatStream.mockReturnValue((async function* () {
+            yield { content: 'islem basladi' };
+            yield {
+                tool_calls: [{
+                    id: 'call-1',
+                    type: 'function',
+                    function: { name: 'execute_command', arguments: '{"command":"pwd"}' }
+                }]
+            };
+            yield {
+                tool_calls: [{
+                    id: 'call-2',
+                    type: 'function',
+                    function: { name: 'list_directory', arguments: '{"path":"%USERPROFILE%\\\\Desktop"}' }
+                }]
+            };
+        })());
+
+        const result = await handler!(mockEvent, {
+            messages: [{ role: 'user', content: 'araçlari calistir' }],
+            model: 'llama3.1:8b',
+            tools: [],
+            provider: 'ollama',
+            optionsJson: {},
+            chatId: 'chat-2',
+            workspaceId: 'proj-1',
+            systemMode: 'agent'
+        });
+
+        const addMessageCalls = mockDatabaseService.addMessage.mock.calls;
+        const persistedRecord = addMessageCalls[addMessageCalls.length - 1]?.[0] as {
+            toolCalls?: Array<{ id: string }>
+        };
+
+        expect(result).toMatchObject({ success: true });
+        expect(persistedRecord.toolCalls).toEqual(expect.arrayContaining([
+            expect.objectContaining({ id: 'call-1' }),
+            expect.objectContaining({ id: 'call-2' }),
+        ]));
+        expect(persistedRecord.toolCalls).toHaveLength(2);
+    });
 });
 
 

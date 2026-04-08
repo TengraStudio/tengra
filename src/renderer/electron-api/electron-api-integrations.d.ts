@@ -14,6 +14,7 @@ import type {
     InstallRequest,
     InstallResult,
     MarketplaceRegistry,
+    MarketplaceRuntimeProfile,
     MarketplaceSkill,
 } from '@shared/types/marketplace';
 import type { ProxySkill, ProxySkillUpsertInput } from '@shared/types/skill';
@@ -642,6 +643,7 @@ export interface ElectronApiIntegrationsDomain {
 
     marketplace: {
         fetch: () => Promise<MarketplaceRegistry>;
+        getRuntimeProfile: () => Promise<MarketplaceRuntimeProfile>;
         install: (request: InstallRequest) => Promise<InstallResult>;
     };
     locale: {

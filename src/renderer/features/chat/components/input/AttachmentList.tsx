@@ -16,11 +16,11 @@ interface AttachmentListProps {
  */
 export const AttachmentList = memo(({ attachments, onRemove, t }: AttachmentListProps) => {
     const getFileIcon = (type: string) => {
-        if (type === 'image') {return <ImageIcon size={12} />;}
-        if (type === 'video') {return <Video size={12} />;}
-        if (type === 'audio') {return <AudioLines size={12} />;}
-        if (type.includes('text') || type.includes('json') || type.includes('md')) {return <FileText size={12} />;}
-        if (type.includes('code') || type.includes('javascript') || type.includes('python')) {return <FileCode size={12} />;}
+        if (type === 'image') { return <ImageIcon size={12} />; }
+        if (type === 'video') { return <Video size={12} />; }
+        if (type === 'audio') { return <AudioLines size={12} />; }
+        if (type.includes('text') || type.includes('json') || type.includes('md')) { return <FileText size={12} />; }
+        if (type.includes('code') || type.includes('javascript') || type.includes('python')) { return <FileCode size={12} />; }
         return <FileIcon size={12} />;
     };
 
@@ -36,7 +36,7 @@ export const AttachmentList = memo(({ attachments, onRemove, t }: AttachmentList
                     {attachments.map((att, i) => (
                         <div
                             key={i}
-                            className="group relative flex items-center gap-1.5 rounded-xl border border-border/20 bg-muted/10 px-2 py-1 pr-6 text-[11px] text-muted-foreground transition-colors hover:bg-muted/20"
+                            className="group relative flex items-center gap-1.5 rounded-xl border border-border/20 bg-muted/10 px-2 py-1 pr-6 typo-body text-muted-foreground transition-colors hover:bg-muted/20"
                         >
                             {(att.type === 'image' || att.type === 'video') && typeof att.preview === 'string' ? (
                                 <img

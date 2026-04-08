@@ -4,6 +4,9 @@ import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { ToolDefinition } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
+import { MCPServerConfig } from '@shared/types/settings';
+
+type McpInstallConfig = Omit<MCPServerConfig, 'id'> & { id?: string };
 
 /**
  * McpDispatcher (Legacy Wrapper)
@@ -29,13 +32,15 @@ export class McpDispatcher {
         const plugins = await this.pluginService.listPlugins();
         const settings = this.settingsService.getSettings();
         const disabled = settings.mcpDisabledServers ?? [];
+        const userServers = settings.mcpUserServers ?? [];
 
         return plugins.map(p => ({
             id: p.id,
             name: p.name,
             description: p.description,
             source: p.source,
-            isEnabled: !disabled.includes(p.name),
+            isEnabled: !disabled.includes(p.name)
+                && (userServers.find(server => server.id === p.id || server.name === p.name)?.enabled ?? true),
             isAlive: p.isAlive,
             actions: p.actions
         }));
@@ -122,12 +127,15 @@ export class McpDispatcher {
         return this.pluginService.resolvePermissionRequest(requestId, decision);
     }
 
-    async installService(config: { name: string; description?: string; command: string; args: string[]; env?: Record<string, string> }) {
+    async installService(config: McpInstallConfig) {
         if (!this.pluginService) {
             return { success: false };
         }
         try {
-            await this.pluginService.registerPlugin(config.name, config.description ?? '', config.command, config.args, config.env);
+            await this.pluginService.registerPlugin({
+                ...config,
+                id: config.id ?? config.name,
+            });
             return { success: true };
         } catch (e) {
             appLogger.error('MCP', `Failed to install service ${config.name}`, e as Error);

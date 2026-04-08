@@ -64,10 +64,18 @@ export class StreamParser {
 
         try {
             appLogger.debug('stream-parser.util', `[StreamParser] Starting parse. Input type: ${input.constructor.name}`);
+            const parseOptions = {
+                decoder,
+                setBuf: (b: string) => { buffer = b; },
+                getBuf: () => buffer,
+                openCodeState,
+                xmlState,
+            };
+
             if (this.isWebStream(body)) {
-                yield* this.parseWebStream(body, decoder, (b) => { buffer = b; }, () => buffer, openCodeState, xmlState);
+                yield* this.parseWebStream(body, parseOptions);
             } else {
-                yield* this.parseNodeStream(body, decoder, (b) => { buffer = b; }, () => buffer, openCodeState, xmlState);
+                yield* this.parseNodeStream(body, parseOptions);
             }
         } catch (error) {
             appLogger.error('StreamParser', 'Parse error', error as Error);
@@ -97,12 +105,15 @@ export class StreamParser {
 
     private static async *parseWebStream(
         body: ReadableStream<Uint8Array>,
-        decoder: TextDecoder,
-        setBuf: (b: string) => void,
-        getBuf: () => string,
-        openCodeState: OpenCodeStreamState,
-        xmlState: XmlParserState
+        options: {
+            decoder: TextDecoder;
+            setBuf: (b: string) => void;
+            getBuf: () => string;
+            openCodeState: OpenCodeStreamState;
+            xmlState: XmlParserState;
+        }
     ) {
+        const { decoder, setBuf, getBuf, openCodeState, xmlState } = options;
         const reader = body.getReader();
         const MAX_ITERATIONS = 1_000_000;
         let iterationCount = 0;
@@ -122,12 +133,15 @@ export class StreamParser {
 
     private static async *parseNodeStream(
         body: AsyncIterable<Uint8Array>,
-        decoder: TextDecoder,
-        setBuf: (b: string) => void,
-        getBuf: () => string,
-        openCodeState: OpenCodeStreamState,
-        xmlState: XmlParserState
+        options: {
+            decoder: TextDecoder;
+            setBuf: (b: string) => void;
+            getBuf: () => string;
+            openCodeState: OpenCodeStreamState;
+            xmlState: XmlParserState;
+        }
     ) {
+        const { decoder, setBuf, getBuf, openCodeState, xmlState } = options;
         appLogger.debug('stream-parser.util', '[StreamParser] Using AsyncIterable iteration');
         for await (const value of body) {
             const newContent = decoder.decode(value, { stream: true });
@@ -144,7 +158,6 @@ export class StreamParser {
     ): Generator<StreamChunk> {
         const lines = buffer.split('\n');
         const lastLine = lines.pop();
-        appLogger.debug('stream-parser.util', `[StreamParser] Processing buffer, lines: ${lines.length}, remaining: ${lastLine?.length ?? 0}`);
         updateBuffer(lastLine ?? '');
 
         for (const line of lines) {
@@ -198,7 +211,6 @@ export class StreamParser {
 
     private static *handleOpenCodePayload(json: StreamPayload, openCodeState: OpenCodeStreamState): Generator<StreamChunk> {
         const type = json.type;
-        appLogger.debug('stream-parser.util', `[StreamParser] OpenCode Event: ${type}`);
 
         if (this.isOpenCodeDoneEvent(json)) {
             const contentItems = json.item?.content;
@@ -427,23 +439,56 @@ export class StreamParser {
         const content = delta.content ?? '';
         const reasoning = delta.reasoning_content ?? delta.reasoning ?? '';
 
-        if (content) { return this.createOpenAIChunk(choiceIdx, content, reasoning, delta, usage, finishReason); }
-        if (reasoning) { return this.createOpenAIChunk(choiceIdx, content, reasoning, delta, usage, finishReason); }
+        if (content) {
+            return this.createOpenAIChunk({
+                idx: choiceIdx,
+                content,
+                reasoning,
+                delta,
+                usage,
+                finishReason,
+            });
+        }
+        if (reasoning) {
+            return this.createOpenAIChunk({
+                idx: choiceIdx,
+                content,
+                reasoning,
+                delta,
+                usage,
+                finishReason,
+            });
+        }
         if ((delta.images && delta.images.length > 0) || delta.tool_calls || usage || finishReason) {
-            return this.createOpenAIChunk(choiceIdx, content, reasoning, delta, usage, finishReason);
+            return this.createOpenAIChunk({
+                idx: choiceIdx,
+                content,
+                reasoning,
+                delta,
+                usage,
+                finishReason,
+            });
         }
 
         return null;
     }
 
-    private static createOpenAIChunk(
-        idx: number, 
-        content: string, 
-        reasoning: string, 
-        delta: OpenAIStreamDelta, 
-        usage: StreamPayload['usage'],
-        finishReason?: string | null
-    ): StreamChunk {
+    private static createOpenAIChunk(options: {
+        idx: number;
+        content: string;
+        reasoning: string;
+        delta: OpenAIStreamDelta;
+        usage: StreamPayload['usage'];
+        finishReason?: string | null;
+    }): StreamChunk {
+        const {
+            idx,
+            content,
+            reasoning,
+            delta,
+            usage,
+            finishReason,
+        } = options;
         // Determine type based on tool_calls presence or finish_reason
         let chunkType: string | undefined;
         if (delta.tool_calls) {
@@ -486,7 +531,7 @@ export class StreamParser {
         xmlState.buffer += chunk.content;
         xmlState.lastUpdateTime = now;
 
-        const { toolCalls, cleanedText } = XmlToolParser.parse(xmlState.buffer);
+        const { toolCalls, cleanedText } = XmlToolParser.parse(xmlState.buffer, { trim: false });
 
         // Always update buffer if XML blocks were stripped (even empty ones with no <invoke>)
         const xmlBlocksWereStripped = cleanedText !== xmlState.buffer;

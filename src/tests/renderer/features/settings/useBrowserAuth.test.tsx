@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useBrowserAuth } from '@/features/settings/hooks/useBrowserAuth';
 import { UseLinkedAccountsResult } from '@/features/settings/hooks/useLinkedAccounts';
 import { AuthBusyState } from '@/features/settings/types';
+import { AppSettings } from '@/types/settings';
 
 type AuthChangedListener = (event: IpcRendererEvent, ...args: IpcValue[]) => void;
 
@@ -22,6 +23,18 @@ function createLinkedAccountsMock(): UseLinkedAccountsResult {
         setActiveAccount: vi.fn().mockResolvedValue(undefined),
     };
 }
+
+const settingsFixture: AppSettings = {
+    ollama: { url: 'http://localhost:11434' },
+    embeddings: { provider: 'none' },
+    general: {
+        language: 'en',
+        theme: 'dark',
+        resolution: '1920x1080',
+        fontSize: 14
+    },
+    proxy: { enabled: true, url: 'http://127.0.0.1:8317', key: '' }
+};
 
 describe('useBrowserAuth', () => {
     const notices: string[] = [];
@@ -52,7 +65,14 @@ describe('useBrowserAuth', () => {
                 state: 'state-1',
                 accountId: 'antigravity_requested',
             }),
+            ollamaLogin: vi.fn().mockResolvedValue({
+                url: 'https://example.com/auth',
+                state: 'state-1',
+                accountId: 'ollama_requested',
+            }),
+            ollamaSignout: vi.fn().mockResolvedValue({ success: true }),
             cancelAuth: vi.fn().mockResolvedValue(true),
+            unlinkProvider: vi.fn().mockResolvedValue({ success: true }),
             getLinkedAccounts: vi.fn().mockResolvedValue([]),
             getAccountsByProvider: vi.fn().mockResolvedValue([]),
             saveClaudeSession: vi.fn().mockResolvedValue({ success: true }),
@@ -329,5 +349,98 @@ describe('useBrowserAuth', () => {
 
         expect(result.current.authBusy).toBeNull();
         expect(notices).toContain('Connection failed.');
+    });
+
+    it('signs out ollama before unlinking provider during disconnect', async () => {
+        linkedAccounts.accounts = [
+            {
+                id: 'ollama_account_1',
+                provider: 'ollama',
+                isActive: true,
+                createdAt: Date.now(),
+            },
+        ];
+        const callOrder: string[] = [];
+        const ollamaSignout = window.electron.ollamaSignout;
+        if (!ollamaSignout) {
+            throw new Error('Missing ollamaSignout bridge in test setup');
+        }
+        vi.mocked(ollamaSignout).mockImplementation(async () => {
+            callOrder.push('signout');
+            return { success: true };
+        });
+        vi.mocked(window.electron.unlinkProvider).mockImplementation(async () => {
+            callOrder.push('unlink');
+            return { success: true };
+        });
+        const updateSettings = vi.fn().mockResolvedValue(undefined);
+
+        const { result } = renderHook(() => {
+            const [authBusy, setAuthBusy] = useState<AuthBusyState | null>(null);
+            const hook = useBrowserAuth({
+                settings: settingsFixture,
+                updateSettings,
+                linkedAccounts,
+                authBusy,
+                setAuthBusy,
+                setAuthNotice: message => {
+                    notices.push(message);
+                },
+            });
+
+            return {
+                authBusy,
+                hook,
+            };
+        });
+
+        await act(async () => {
+            await result.current.hook.disconnectProvider('ollama');
+        });
+
+        expect(window.electron.ollamaSignout).toHaveBeenCalledWith('ollama_account_1');
+        expect(window.electron.unlinkProvider).toHaveBeenCalledWith('ollama');
+        expect(callOrder).toEqual(['signout', 'unlink']);
+        expect(updateSettings).toHaveBeenCalledTimes(1);
+        expect(linkedAccounts.refreshAccounts).toHaveBeenCalledTimes(1);
+    });
+
+    it('times out browser auth attempts after 30 seconds', async () => {
+        vi.mocked(window.electron.ipcRenderer.invoke).mockResolvedValue({
+            status: 'wait',
+            accountId: 'ollama_default',
+        });
+
+        const { result } = renderHook(() => {
+            const [authBusy, setAuthBusy] = useState<AuthBusyState | null>(null);
+            const hook = useBrowserAuth({
+                settings: null,
+                updateSettings: async () => undefined,
+                linkedAccounts,
+                authBusy,
+                setAuthBusy,
+                setAuthNotice: message => {
+                    notices.push(message);
+                },
+            });
+
+            return {
+                authBusy,
+                hook,
+            };
+        });
+
+        await act(async () => {
+            await result.current.hook.connectBrowserProvider('ollama');
+        });
+        expect(result.current.authBusy?.provider).toBe('ollama');
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(31000);
+            await Promise.resolve();
+        });
+
+        expect(window.electron.cancelAuth).toHaveBeenCalled();
+        expect(result.current.authBusy).toBeNull();
     });
 });

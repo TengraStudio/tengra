@@ -2,9 +2,10 @@ use crate::auth::antigravity::client::AntigravityClient;
 use crate::auth::claude::client::ClaudeClient;
 use crate::auth::codex::client::CodexClient;
 use crate::auth::copilot::CopilotClient;
+use crate::auth::ollama::client::OllamaClient;
 use crate::auth::session::{
-    cancel_session, create_session, ensure_callback_server, get_session_status_for,
-    handle_manual_callback_request, ManualOAuthCallback,
+    cancel_session, complete_external_session, create_session, ensure_callback_server,
+    get_session_status_for, handle_manual_callback_request, ManualOAuthCallback,
 };
 use crate::proxy::server::AppState;
 use axum::{
@@ -12,8 +13,10 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde_json::{json, Value};
 use std::sync::Arc;
+
+const OLLAMA_AUTHORIZED_FALLBACK_URL: &str = "https://ollama.com/connect";
 
 #[derive(Deserialize)]
 pub struct PollQuery {
@@ -46,6 +49,11 @@ pub struct CancelAuthRequest {
     pub provider: String,
     pub state: String,
     pub account_id: String,
+}
+
+#[derive(Deserialize, Default)]
+pub struct OllamaSignoutRequest {
+    pub account_id: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -282,12 +290,14 @@ pub async fn handle_provider_auth_url(
     provider: &str,
     account_id: Option<&str>,
 ) -> Result<Json<AuthUrlResponse>, (axum::http::StatusCode, String)> {
-    ensure_callback_server(provider).await.map_err(|error| {
-        (
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-            error.to_string(),
-        )
-    })?;
+    if provider != "ollama" {
+        ensure_callback_server(provider).await.map_err(|error| {
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                error.to_string(),
+            )
+        })?;
+    }
     let needs_pkce = matches!(provider, "codex" | "claude");
     let (state, account_id, verifier) = create_session(provider, account_id, needs_pkce)
         .await
@@ -298,14 +308,38 @@ pub async fn handle_provider_auth_url(
             )
         })?;
 
-    let url = build_auth_url(provider, state.as_str(), verifier.as_deref())
-        .await
-        .map_err(|error| {
-            (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                error.to_string(),
-            )
-        })?;
+    if provider == "ollama" && should_eagerly_complete_ollama_session() {
+        let already_authorized =
+            complete_ollama_session_if_authorized(state.as_str(), account_id.as_str())
+                .await
+                .map_err(|error| {
+                    (
+                        axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                        error.to_string(),
+                    )
+                })?;
+        if already_authorized {
+            return Ok(Json(AuthUrlResponse {
+                url: OLLAMA_AUTHORIZED_FALLBACK_URL.to_string(),
+                state,
+                account_id,
+            }));
+        }
+    }
+
+    let url = build_auth_url(
+        provider,
+        state.as_str(),
+        verifier.as_deref(),
+        Some(account_id.as_str()),
+    )
+    .await
+    .map_err(|error| {
+        (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            error.to_string(),
+        )
+    })?;
 
     Ok(Json(AuthUrlResponse {
         url,
@@ -318,6 +352,7 @@ async fn build_auth_url(
     provider: &str,
     state: &str,
     verifier: Option<&str>,
+    account_id: Option<&str>,
 ) -> anyhow::Result<String> {
     match provider {
         "codex" => {
@@ -339,6 +374,7 @@ async fn build_auth_url(
             Ok(ClaudeClient::new().await?.generate_auth_url(state, &pkce))
         }
         "antigravity" => Ok(AntigravityClient::new().await?.generate_auth_url(state)),
+        "ollama" => build_ollama_auth_url(account_id).await,
         _ => Err(anyhow::anyhow!("Unsupported auth provider: {}", provider)),
     }
 }
@@ -364,16 +400,84 @@ pub async fn handle_antigravity_auth_url(
     handle_provider_auth_url("antigravity", query.account_id.as_deref()).await
 }
 
+pub async fn handle_ollama_auth_url(
+    _state: State<Arc<AppState>>,
+    Query(query): Query<AuthUrlQuery>,
+) -> Result<Json<AuthUrlResponse>, (axum::http::StatusCode, String)> {
+    handle_provider_auth_url("ollama", query.account_id.as_deref()).await
+}
+
+pub async fn handle_ollama_signout(
+    _state: State<Arc<AppState>>,
+    Json(payload): Json<OllamaSignoutRequest>,
+) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, String)> {
+    let base_url = resolve_ollama_base_url(payload.account_id.as_deref()).await;
+    let client = OllamaClient::new(base_url.as_deref(), None).map_err(|error| {
+        (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            error.to_string(),
+        )
+    })?;
+    let already_signed_out = match client.signout().await {
+        Ok(()) => false,
+        Err(error) => {
+            if is_ollama_not_authorized_error(error.to_string().as_str()) {
+                true
+            } else {
+                return Err((
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    error.to_string(),
+                ));
+            }
+        }
+    };
+
+    Ok(Json(json!({
+        "success": true,
+        "already_signed_out": already_signed_out
+    })))
+}
+
 pub async fn handle_get_auth_status(
     _state: State<Arc<AppState>>,
     Query(query): Query<AuthStatusQuery>,
 ) -> Result<Json<serde_json::Value>, (axum::http::StatusCode, String)> {
-    let session_status = get_session_status_for(
+    let mut session_status = get_session_status_for(
         query.provider.as_str(),
         query.state.as_str(),
         query.account_id.as_str(),
     )
     .await;
+
+    if query.provider.eq_ignore_ascii_case("ollama")
+        && session_status
+            .as_ref()
+            .map(|status| status.status == "wait")
+            .unwrap_or(false)
+    {
+        match complete_ollama_session_if_authorized(query.state.as_str(), query.account_id.as_str())
+            .await
+        {
+            Ok(true) => {
+                session_status = get_session_status_for(
+                    query.provider.as_str(),
+                    query.state.as_str(),
+                    query.account_id.as_str(),
+                )
+                .await;
+            }
+            Ok(false) => {}
+            Err(error) => {
+                return Ok(Json(json!({
+                    "status": "error",
+                    "provider": query.provider,
+                    "state": query.state,
+                    "account_id": query.account_id,
+                    "error": error.to_string()
+                })));
+            }
+        }
+    }
 
     if let Some(status) = session_status.clone() {
         if status.status == "ok" || status.status == "error" {
@@ -413,6 +517,113 @@ pub async fn handle_get_auth_status(
     })))
 }
 
+async fn build_ollama_auth_url(account_id: Option<&str>) -> anyhow::Result<String> {
+    let base_url = resolve_ollama_base_url(account_id).await;
+    let client = OllamaClient::new(base_url.as_deref(), None)?;
+    match client.fetch_signin_url().await {
+        Ok(url) => Ok(url),
+        Err(error) => {
+            if is_ollama_already_authorized_error(error.to_string().as_str()) {
+                return Ok(OLLAMA_AUTHORIZED_FALLBACK_URL.to_string());
+            }
+            Err(error)
+        }
+    }
+}
+
+fn should_eagerly_complete_ollama_session() -> bool {
+    false
+}
+
+async fn complete_ollama_session_if_authorized(
+    state: &str,
+    account_id: &str,
+) -> anyhow::Result<bool> {
+    let base_url = resolve_ollama_base_url(Some(account_id)).await;
+    let client = OllamaClient::new(base_url.as_deref(), None)?;
+    let profile = match client.fetch_profile().await {
+        Ok(profile) => profile,
+        Err(error) => {
+            if is_ollama_not_authorized_error(error.to_string().as_str()) {
+                return Ok(false);
+            }
+            return Err(error);
+        }
+    };
+
+    let profile_json = json!({
+        "id": profile.id,
+        "email": profile.email,
+        "name": profile.name,
+        "username": profile.username,
+        "image_url": profile.image_url
+    });
+    let display_name = profile
+        .name
+        .as_deref()
+        .or(profile.username.as_deref())
+        .map(str::to_string);
+    let token_json = json!({
+        "email": profile.email,
+        "display_name": display_name,
+        "avatar_url": profile.image_url,
+        "oauth_provider": "ollama",
+        "external_account_id": profile.id,
+        "base_url": base_url,
+        "provider_profile": profile_json
+    });
+
+    crate::db::save_token_with_retry(token_json, account_id, "ollama", 3).await?;
+    crate::db::delete_provider_accounts_except("ollama", account_id).await?;
+    complete_external_session("ollama", state, account_id).await?;
+    Ok(true)
+}
+
+fn is_ollama_already_authorized_error(message: &str) -> bool {
+    message.to_ascii_lowercase().contains("already authorized")
+}
+
+fn is_ollama_not_authorized_error(message: &str) -> bool {
+    let normalized = message.to_ascii_lowercase();
+    normalized.contains("status 401")
+        || normalized.contains("status 403")
+        || normalized.contains("unauthorized")
+}
+
+async fn resolve_ollama_base_url(account_id: Option<&str>) -> Option<String> {
+    if let Some(id) = account_id {
+        if let Ok(Some(account)) = crate::db::get_linked_account("ollama", id).await {
+            if let Some(url) = extract_ollama_base_url_from_account(&account) {
+                return Some(url);
+            }
+        }
+    }
+
+    resolve_ollama_base_url_from_env()
+}
+
+fn resolve_ollama_base_url_from_env() -> Option<String> {
+    std::env::var("TENGRA_OLLAMA_BASE_URL")
+        .ok()
+        .or_else(|| std::env::var("OLLAMA_HOST").ok())
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+}
+
+fn extract_ollama_base_url_from_account(account: &Value) -> Option<String> {
+    let metadata = match account.get("metadata") {
+        Some(Value::Object(map)) => Value::Object(map.clone()),
+        Some(Value::String(text)) => serde_json::from_str::<Value>(text).ok()?,
+        _ => Value::Null,
+    };
+    metadata
+        .get("base_url")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
+}
+
 pub async fn handle_cancel_auth(
     _state: State<Arc<AppState>>,
     Json(payload): Json<CancelAuthRequest>,
@@ -438,7 +649,10 @@ pub async fn handle_cancel_auth(
 
 #[cfg(test)]
 mod tests {
-    use super::{AuthStatusQuery, CancelAuthRequest};
+    use super::{
+        extract_ollama_base_url_from_account, is_ollama_not_authorized_error,
+        should_eagerly_complete_ollama_session, AuthStatusQuery, CancelAuthRequest,
+    };
 
     #[test]
     fn auth_status_query_requires_provider_state_and_account_id() {
@@ -462,5 +676,29 @@ mod tests {
         assert_eq!(payload.provider, "claude");
         assert_eq!(payload.state, "xyz");
         assert_eq!(payload.account_id, "claude_456");
+    }
+
+    #[test]
+    fn parses_ollama_base_url_from_stringified_metadata() {
+        let account = serde_json::json!({
+            "metadata": "{\"base_url\":\"http://127.0.0.1:11434\"}"
+        });
+        let base_url = extract_ollama_base_url_from_account(&account);
+        assert_eq!(base_url.as_deref(), Some("http://127.0.0.1:11434"));
+    }
+
+    #[test]
+    fn classifies_ollama_unauthorized_errors() {
+        assert!(is_ollama_not_authorized_error(
+            "Ollama profile fetch failed with status 401 Unauthorized"
+        ));
+        assert!(is_ollama_not_authorized_error(
+            "Ollama profile fetch failed with status 403 Forbidden"
+        ));
+    }
+
+    #[test]
+    fn defers_ollama_profile_persistence_until_after_signin() {
+        assert!(!should_eagerly_complete_ollama_session());
     }
 }

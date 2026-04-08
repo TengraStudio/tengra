@@ -127,8 +127,11 @@ describe('ProxyProcessManager runtime launch configuration', () => {
         Object.defineProperty(service, 'ensureBinary', {
             value: vi.fn().mockResolvedValue('C:/runtime/bin/tengra-proxy.exe'),
         });
-        Object.defineProperty(service, 'killExistingProxyProcesses', {
-            value: vi.fn().mockResolvedValue(undefined),
+        Object.defineProperty(service, 'isPortAcceptingConnections', {
+            value: vi.fn().mockResolvedValue(false),
+        });
+        Object.defineProperty(service, 'isExistingProxyHealthy', {
+            value: vi.fn().mockResolvedValue(false),
         });
         Object.defineProperty(service, 'waitForHealthy', {
             value: vi.fn().mockResolvedValue(undefined),
@@ -152,6 +155,9 @@ describe('ProxyProcessManager runtime launch configuration', () => {
 
     it('passes provider OAuth timeout config to proxy environment', async () => {
         vi.mocked(settingsService.getSettings).mockReturnValue({
+            ollama: {
+                url: 'http://127.0.0.1:11434',
+            },
             proxy: {
                 enabled: true,
                 url: 'http://127.0.0.1:8317/v1',
@@ -164,6 +170,7 @@ describe('ProxyProcessManager runtime launch configuration', () => {
                     codex: 45000,
                     claude: 120000,
                     antigravity: 60000,
+                    ollama: 90000,
                 },
             },
         } as never);
@@ -177,6 +184,15 @@ describe('ProxyProcessManager runtime launch configuration', () => {
             TENGRA_OAUTH_TIMEOUT_CODEX_SECS: '45',
             TENGRA_OAUTH_TIMEOUT_CLAUDE_SECS: '120',
             TENGRA_OAUTH_TIMEOUT_ANTIGRAVITY_SECS: '60',
+            TENGRA_OAUTH_TIMEOUT_OLLAMA_SECS: '90',
+        });
+
+        const buildOllamaBaseUrlEnv = Reflect.get(service, 'buildOllamaBaseUrlEnv') as
+            | (() => Record<string, string>)
+            | undefined;
+        expect(buildOllamaBaseUrlEnv).toBeTypeOf('function');
+        expect(buildOllamaBaseUrlEnv?.call(service)).toEqual({
+            TENGRA_OLLAMA_BASE_URL: 'http://127.0.0.1:11434',
         });
     });
 
@@ -205,6 +221,9 @@ describe('ProxyProcessManager runtime launch configuration', () => {
     it('fails startup when fixed OAuth bridge port 1455 is occupied', async () => {
         Object.defineProperty(service, 'isPortAcceptingConnections', {
             value: vi.fn().mockResolvedValue(true),
+        });
+        Object.defineProperty(service, 'isExistingProxyHealthy', {
+            value: vi.fn().mockResolvedValue(false),
         });
         Object.defineProperty(service, 'ensureBinary', {
             value: vi.fn().mockResolvedValue('C:/runtime/bin/tengra-proxy.exe'),

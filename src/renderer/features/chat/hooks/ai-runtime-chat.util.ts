@@ -141,6 +141,7 @@ export function buildAssistantPresentationMetadata(options: {
     intent: AiIntentClassification;
     content?: string;
     reasoning?: string;
+    reasonings?: string[];
     toolCalls?: ToolCall[];
     toolResults?: ToolResult[];
     images?: string[];
@@ -154,6 +155,7 @@ export function buildAssistantPresentationMetadata(options: {
             intent: options.intent,
             content: options.content ?? '',
             reasoning: options.reasoning,
+            reasonings: options.reasonings,
             toolCalls: options.toolCalls,
             toolResults: options.toolResults,
             images: options.images,
@@ -163,4 +165,21 @@ export function buildAssistantPresentationMetadata(options: {
             evidenceSnapshot: options.evidenceSnapshot,
         }),
     };
+}
+
+/**
+ * Deduplicates messages by their unique ID.
+ */
+export function deduplicateMessages(messages: Message[]): Message[] {
+    const seen = new Set<string>();
+    return messages.filter(m => {
+        if (!m.id) {
+            return true;
+        }
+        if (seen.has(m.id)) {
+            return false;
+        }
+        seen.add(m.id);
+        return true;
+    });
 }

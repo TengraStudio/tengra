@@ -8,6 +8,13 @@
   "coverage": 100,
   "schemaVersion": "1.0.0",
   "translations": {
+    "system": {
+      "instructions": {
+        "rules": "\n## LANGUAGE RULES (ENGLISH)\n- Prioritize communicating with the user in **English**.\n- Follow proper English grammar and punctuation.\n- Be concise and clear in your responses.\n- Match the user's tone and formality level.\n- If the user uses casual language or profanity, you may respond similarly if appropriate.\n",
+        "reminder": "LANGUAGE: Match the user's current language (default: English).",
+        "reinforcement": "Respond in the user's language. If they use English, follow English conventions and phrasing."
+      }
+    },
     "about": {
       "description": "Tengra is a next-generation AI IDE assistant for developers, bringing local and cloud AI models together in one interface.",
       "checkUpdates": "Check for updates",
@@ -631,7 +638,24 @@
       "clear": "Clear",
       "error": "Error",
       "toolLoop": {
-        "limitReachedPreserved": "Tool loop limit reached before a final answer was produced. Previous tool results were preserved for inspection."
+        "limitReachedPreserved": "Tool loop limit reached before a final answer was produced. Previous tool results were preserved for inspection.",
+        "fallback": {
+          "evidencePrefix": "Based on the collected evidence: ",
+          "notFoundWithPath": "I couldn't find the requested resource: `{{path}}`. Please check the path and try again.",
+          "notFoundGeneric": "I couldn't find the requested resource while {{operationHint}}. Please check the path and try again.",
+          "permission": "I hit a permission error while {{operationHint}}. Please check permissions and try again.",
+          "timeout": "The operation timed out while {{operationHint}}. I can retry if you want.",
+          "rateLimit": "I hit a rate limit while {{operationHint}}. Please wait a bit and try again.",
+          "validation": "The input looks invalid while {{operationHint}}. Let's fix the parameters and try again.",
+          "network": "I hit a network error while {{operationHint}}. Please check the connection and try again.",
+          "unknown": "I couldn't complete the request while {{operationHint}}. Error: {{errorDetail}}",
+          "operation": {
+            "filesystem": "accessing the filesystem",
+            "webSearch": "performing a web search",
+            "command": "running a command",
+            "generic": "processing your request"
+          }
+        }
       },
       "quotaExceeded": "Quota or rate limit exceeded. This may be caused by too many requests or exhausted quota. Please wait a few minutes and try again.",
       "rateLimitExceeded": "Rate limit or quota exceeded. Please wait a few minutes and try again.",
@@ -650,15 +674,6 @@
       "moreLines": "more lines",
       "scrollToBottom": "Scroll to bottom",
       "scrollToBottomWithCount": "Scroll to bottom ({{count}} new messages)",
-      "codeBlock": {
-        "plaintext": "plaintext",
-        "running": "Running...",
-        "execute": "Execute",
-        "addToWorkspace": "Add to Workspace",
-        "openInEditor": "Open in Editor",
-        "output": "Output",
-        "executed": "Ran the {{language}} block successfully."
-      },
       "collaboration": {
         "title": "Multi-Model Collaboration",
         "selectedModels": "Selected Models",
@@ -740,6 +755,14 @@
       "errorProviderUnavailableAction": "Try a Different Provider",
       "errorQuotaExhausted": "Your usage quota has been exhausted or the rate limit has been reached for this model.",
       "errorQuotaExhaustedAction": "Switch to Local Model",
+      "errorCapacityExhausted": "This model is temporarily at capacity. Please retry shortly or switch to another model.",
+      "errorCapacityExhaustedAction": "Switch Model",
+      "errorRateLimited": "You have hit the request rate limit for this model. Wait briefly and try again.",
+      "errorRateLimitedAction": "Retry",
+      "errorAuth": "Authentication failed for the selected provider account. Please re-authenticate and try again.",
+      "errorAuthAction": "Retry",
+      "errorPermissionDenied": "This action is not permitted for the selected provider or workspace permissions.",
+      "errorPermissionDeniedAction": "Switch Model",
       "errorQuotaResetHint": "Quota resets at {{time}}",
       "errorTimeout": "The request timed out. The server may be overloaded, or the response may be too large.",
       "errorTimeoutAction": "Retry",
@@ -822,6 +845,7 @@
       "title": "Command palette title"
     },
     "common": {
+      "info": "Info",
       "select": "Select",
       "more": "More",
       "operationsInProgress": "{{count}} operations in progress",
@@ -887,11 +911,19 @@
       "privateKey": "Private Key",
       "reset": "Reset",
       "resetZoom": "Reset Zoom",
-      "resume": "Resume",
       "searching": "Searching...",
+      "remaining": "remaining",
+      "canceling": "Canceling...",
+      "paused": "Paused",
+      "completed": "Completed",
+      "error": "Error",
+      "queued": "Queued",
       "send": "Send",
       "stop": "Stop",
       "pause": "Pause",
+      "resume": "Resume",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
       "unarchive": "Unarchive",
       "update": "Update",
       "username": "Username",
@@ -1947,8 +1979,32 @@
       "networkError": "A network error occurred.",
       "syncing": "Syncing Marketplace",
       "authorBy": "by {{author}}",
+      "category": "Category",
+      "author": "Author",
       "emptyState": "No {{mode}} found",
       "preview": "PREVIEW",
+      "downloads": "Downloads",
+      "pullCount": "Pulls",
+      "performance": "Performance",
+      "performanceScore": "Compatibility Score",
+      "tokensPerSecond": "Tokens / sec",
+      "ram": "RAM",
+      "vram": "VRAM",
+      "disk": "Disk",
+      "memoryRequirement": "Lowest RAM",
+      "storageRequirement": "Lowest storage",
+      "modelFit": {
+        "all": "All fits",
+        "recommended": "Recommended",
+        "workable": "Workable",
+        "limited": "Limited",
+        "blocked": "Blocked"
+      },
+      "target": {
+        "all": "Any backend",
+        "gpu": "GPU preferred",
+        "cpu": "CPU only"
+      },
       "tabs": {
         "mcp": "MCP Modules",
         "skills": "Skills",
@@ -1956,7 +2012,10 @@
         "personas": "Agent Personalities",
         "models": "AI Models",
         "prompts": "Prompt Library",
-        "languages": "Languages"
+        "languages": "Languages",
+        "ollama": "Ollama Models",
+        "huggingface": "Hugging Face Models",
+        "community": "Community"
       },
       "mcp": {
         "title": "Model Context Protocol",
@@ -1968,7 +2027,10 @@
         "filters": {
           "all": "All",
           "core": "Internal",
-          "user": "External"
+          "user": "External",
+          "all authors": "All Authors",
+          "all categories": "All Categories",
+          "popularity": "Popularity"
         },
         "stats": {
           "active": "Active",
@@ -2508,6 +2570,9 @@
       "searchPlaceholder": "Search models...",
       "refresh": "Refresh",
       "noModelsFound": "No models found",
+      "history": "History",
+      "historyItems": "History Items",
+      "confirmDelete": "Are you sure you want to delete this model? This action cannot be undone.",
       "context": "Context",
       "pricing": "Pricing",
       "thinkingLevels": "Thinking",
@@ -3694,7 +3759,18 @@
       "automationWorkflow": "Automation Workflows",
       "moveTo": "Move to...",
       "models": "Models",
-      "marketplace": "Marketplace"
+      "marketplace": "Marketplace",
+      "downloads": "Downloads",
+      "downloadsToday": "Today",
+      "downloadsHistory": "History",
+      "downloadHistoryEmpty": "No downloads yet.",
+      "downloadRetryQueued": "Download retry queued.",
+      "downloadRetryFailed": "Retry could not be started.",
+      "downloadPauseFailed": "Failed to pause download.",
+      "downloadResumeFailed": "Failed to resume download.",
+      "downloadCancelFailed": "Failed to cancel download.",
+      "downloadCancelled": "Download cancelled.",
+      "downloadCompleted": "Download completed."
     },
     "speech": {
       "title": "Voice & Speech",
@@ -4822,6 +4898,7 @@
       "unnamedGroup": "Unnamed group",
       "changePreview": "Change preview",
       "reasoningTitle": "Reasoning",
+      "thoughtStep": "Thought #{{index}}",
       "consoleTitle": "Console",
       "consoleTab": "Console",
       "planTab": "Plan",

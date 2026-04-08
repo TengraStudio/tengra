@@ -1,11 +1,13 @@
-import { AiPresentationMetadata } from '@shared/types/ai-runtime';
-import { memo } from 'react';
+import { JsonValue } from '@shared/types/common';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { memo, useMemo } from 'react';
 
 import { Language } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { Message } from '@/types';
+import { Message, ToolResult } from '@/types';
 
-import { AiPresentationPanel } from './AiPresentationPanel';
+import { ToolDisplay } from '../ToolDisplay';
+
 import { AssistantLogo } from './AssistantLogo';
 import { MessageBubbleContent } from './MarkdownContent';
 import { MessageActions } from './MessageActions';
@@ -25,6 +27,33 @@ import { ThoughtSection } from './ThoughtSection';
 import { ToolRecoveryNotice } from './ToolRecoveryNotice';
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
+type ToolCallView = {
+    id: string;
+    name: string;
+    arguments: Record<string, JsonValue>;
+};
+
+function buildToolCalls(message: Message): ToolCallView[] {
+    if (!message.toolCalls || message.toolCalls.length === 0) {
+        return [];
+    }
+    return message.toolCalls.map(toolCall => ({
+        id: toolCall.id,
+        name: toolCall.function.name,
+        arguments: safeJsonParse<Record<string, JsonValue>>(toolCall.function.arguments, {}),
+    }));
+}
+
+function buildToolResultMap(message: Message): Map<string, ToolResult> {
+    const toolResults = Array.isArray(message.toolResults) ? message.toolResults : [];
+    const map = new Map<string, ToolResult>();
+    for (const toolResult of toolResults) {
+        if (typeof toolResult.toolCallId === 'string' && toolResult.toolCallId.length > 0) {
+            map.set(toolResult.toolCallId, toolResult);
+        }
+    }
+    return map;
+}
 
 interface BubbleContentSectionProps {
     contentProps: MessageBubbleContentProps;
@@ -67,6 +96,29 @@ interface MessageBubbleInnerProps {
     actionsContextProps: MessageActionsContextProps;
 }
 
+const MessageToolRuns = memo(({ message, isStreaming }: { message: Message; isStreaming?: boolean }) => {
+    const toolCalls = buildToolCalls(message);
+    if (toolCalls.length === 0) {
+        return null;
+    }
+    const toolResultMap = buildToolResultMap(message);
+    return (
+        <div className="w-full space-y-3 my-2">
+            {toolCalls.map(toolCall => (
+                <div key={toolCall.id} className="w-full">
+                    <ToolDisplay
+                        toolCall={toolCall}
+                        result={toolResultMap.get(toolCall.id)}
+                        isExecuting={Boolean(isStreaming) && !toolResultMap.has(toolCall.id)}
+                    />
+                </div>
+            ))}
+        </div>
+    );
+});
+
+MessageToolRuns.displayName = 'MessageToolRuns';
+
 const MessageBubbleInner = memo(
     ({
         isUser,
@@ -83,15 +135,11 @@ const MessageBubbleInner = memo(
             isUser,
             quotaDetails
         );
-        const bubbleClass = isUser
-            ? 'bg-muted/10 px-4 py-3 rounded-tr-sm border border-border/50 text-foreground/90'
-            : 'bg-transparent';
 
         return (
             <div
                 className={cn(
-                    'rounded-2xl px-0 py-1 text-base leading-relaxed whitespace-pre-wrap break-words border-none relative group/bubble w-full overflow-hidden',
-                    bubbleClass
+                    'rounded-2xl p-2 text-base leading-relaxed whitespace-pre-wrap break-words border-none relative group/bubble w-full overflow-hidden',
                 )}
             >
                 {isStreaming && <ResponseProgress />}
@@ -146,29 +194,57 @@ const PlanAndThought = memo(
     ({
         plan,
         thought,
+        reasonings,
+        showReasoningHistory = true,
         isLast,
         isStreaming,
         onApprovePlan,
-        isThoughtExpanded,
-        setIsThoughtExpanded,
+        isThoughtExpanded: _isThoughtExpanded,
+        setIsThoughtExpanded: _setIsThoughtExpanded,
         t,
-    }: PlanAndThoughtProps) => (
-        <>
-            <PlanSection
-                plan={plan}
-                isLast={isLast}
-                isStreaming={isStreaming}
-                onApprovePlan={onApprovePlan}
-                t={t}
-            />
-            <ThoughtSection
-                thought={thought}
-                isThoughtExpanded={isThoughtExpanded}
-                setIsThoughtExpanded={setIsThoughtExpanded}
-                t={t}
-            />
-        </>
-    )
+    }: PlanAndThoughtProps & { reasonings?: string[]; showReasoningHistory?: boolean }) => {
+        const allThoughts = useMemo(() => {
+            if (!showReasoningHistory) {
+                return [];
+            }
+            const thoughts = reasonings && reasonings.length > 0 ? [...reasonings] : [];
+            if (thought && thought.trim().length > 0) {
+                const latestInHistory = thoughts.length > 0 ? thoughts[thoughts.length - 1] : null;
+                if (thought.trim() !== (latestInHistory || '').trim()) {
+                    thoughts.push(thought);
+                }
+            }
+            return thoughts;
+        }, [reasonings, thought, showReasoningHistory]);
+
+        return (
+            <>
+                <PlanSection
+                    plan={plan}
+                    isLast={isLast}
+                    isStreaming={isStreaming}
+                    onApprovePlan={onApprovePlan}
+                    t={t}
+                />
+                {allThoughts.map((tText: string, idx: number) => {
+                    const isLatest = idx === allThoughts.length - 1;
+                    const isFirst = idx === 0;
+                    const initiallyExpanded = (isFirst && _isThoughtExpanded) || (isLatest && isStreaming && isLast);
+
+                    return (
+                        <ThoughtSection
+                            key={idx}
+                            thought={tText}
+                            initiallyExpanded={initiallyExpanded}
+                            segmentIndex={idx}
+                            isStreaming={isLatest && Boolean(isStreaming) && isLast}
+                            t={t}
+                        />
+                    );
+                })}
+            </>
+        );
+    }
 );
 
 PlanAndThought.displayName = 'PlanAndThought';
@@ -192,11 +268,11 @@ export interface SingleMessageViewContentProps {
     isUser: boolean;
     isStreaming?: boolean;
     interruptedToolNames: string[];
-    aiPresentation: AiPresentationMetadata | null;
     isThoughtExpanded: boolean;
     setIsThoughtExpanded: (v: boolean) => void;
     plan: string | null;
     thought: string | null;
+    streamingReasoning?: string;
     isLast: boolean;
     onApprovePlan?: () => void;
     displayContent: string;
@@ -225,7 +301,6 @@ export const SingleMessageViewContent = memo(
         isUser,
         isStreaming,
         interruptedToolNames,
-        aiPresentation,
         isThoughtExpanded,
         setIsThoughtExpanded,
         plan,
@@ -248,6 +323,7 @@ export const SingleMessageViewContent = memo(
         const wrapperClasses = buildWrapperClasses(isUser, isFocused);
         const contentWrapperClasses = buildContentWrapperClasses(isUser);
         const columnWrapperClasses = buildColumnWrapperClasses(isUser);
+        const isThoughtOnly = Boolean(message.metadata?.thoughtOnly === true);
 
         return (
             <div id={id} className={wrapperClasses}>
@@ -261,10 +337,11 @@ export const SingleMessageViewContent = memo(
                         />
                     )}
                     <div className={columnWrapperClasses}>
-                        {!isUser && <AiPresentationPanel presentation={aiPresentation} t={t} />}
                         <PlanAndThought
                             plan={plan}
                             thought={thought}
+                            reasonings={isThoughtOnly ? undefined : message.reasonings}
+                            showReasoningHistory={!isThoughtOnly}
                             isLast={isLast}
                             isStreaming={isStreaming}
                             onApprovePlan={onApprovePlan}
@@ -272,21 +349,26 @@ export const SingleMessageViewContent = memo(
                             setIsThoughtExpanded={setIsThoughtExpanded}
                             t={t}
                         />
-                        <ToolRecoveryNotice
-                            interruptedToolNames={interruptedToolNames}
-                            onRegenerate={actionsContextProps.onRegenerate}
-                            t={t}
-                        />
-                        <MessageBubbleInner
-                            isUser={isUser}
-                            isStreaming={isStreaming}
-                            displayContent={displayContent}
-                            quotaDetails={quotaDetails}
-                            message={message}
-                            contentProps={contentProps}
-                            actionsContextProps={actionsContextProps}
-                        />
-                        {hasReactions && (
+                        {!isThoughtOnly && (
+                            <>
+                                <ToolRecoveryNotice
+                                    interruptedToolNames={interruptedToolNames}
+                                    onRegenerate={actionsContextProps.onRegenerate}
+                                    t={t}
+                                />
+                                <MessageBubbleInner
+                                    isUser={isUser}
+                                    isStreaming={isStreaming}
+                                    displayContent={displayContent}
+                                    quotaDetails={quotaDetails}
+                                    message={message}
+                                    contentProps={contentProps}
+                                    actionsContextProps={actionsContextProps}
+                                />
+                                {!isUser && <MessageToolRuns message={message} isStreaming={isStreaming} />}
+                            </>
+                        )}
+                        {!isThoughtOnly && hasReactions && (
                             <div className="mb-1 mt-1 flex flex-wrap gap-1 px-1">
                                 {message.reactions?.map((emoji, index) => (
                                     <button
@@ -300,7 +382,8 @@ export const SingleMessageViewContent = memo(
                                 ))}
                             </div>
                         )}
-                        {!isUser &&
+                        {!isThoughtOnly &&
+                            !isUser &&
                             !quotaDetails &&
                             (displayContent || contentProps.images.length > 0) && (
                                 <MessageFooter

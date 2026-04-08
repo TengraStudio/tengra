@@ -39,8 +39,8 @@ export const ImageSettingsProvider: React.FC<ImageSettingsProviderProps> = ({
                         <div className="flex items-center gap-5 relative z-10 w-full pr-8">
                             <div className={cn(
                                 "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 flex-shrink-0 border shadow-inner",
-                                currentProvider === p 
-                                    ? "bg-primary border-primary/20 text-primary-foreground shadow-lg shadow-primary/20 scale-110" 
+                                currentProvider === p
+                                    ? "bg-primary border-primary/20 text-primary-foreground shadow-lg shadow-primary/20 scale-110"
                                     : "bg-background border-border/20 text-muted-foreground group-hover:text-primary group-hover:border-primary/20 group-hover:scale-105"
                             )}>
                                 {p === 'sd-cpp' ? <span className="font-bold text-sm">SD</span> : <Image className="w-6 h-6" />}
@@ -49,7 +49,7 @@ export const ImageSettingsProvider: React.FC<ImageSettingsProviderProps> = ({
                                 <div className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
                                     {p === 'sd-cpp' ? 'Local Runtime' : 'Remote Cloud'}
                                 </div>
-                                <p className="text-[10px] text-muted-foreground/40 leading-none mt-1.5 font-bold">
+                                <p className="typo-body text-muted-foreground/40 leading-none mt-1.5 font-bold">
                                     {p === 'sd-cpp' ? t('settings.images.localRuntime') : t('settings.images.remoteCloud')}
                                 </p>
                             </div>

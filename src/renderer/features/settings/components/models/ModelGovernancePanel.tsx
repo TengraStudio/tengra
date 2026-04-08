@@ -121,11 +121,10 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                 )}>
                     <div className="flex items-center gap-4">
                         <div
-                            className={`rounded-xl border p-2 ${
-                                isAllowlistMode
-                                    ? 'bg-success/10 border-success/30 text-success'
-                                    : 'bg-destructive/10 border-destructive/30 text-destructive'
-                            }`}
+                            className={`rounded-xl border p-2 ${isAllowlistMode
+                                ? 'bg-success/10 border-success/30 text-success'
+                                : 'bg-destructive/10 border-destructive/30 text-destructive'
+                                }`}
                         >
                             {isAllowlistMode ? (
                                 <ShieldCheck className="w-4 h-4" />
@@ -134,10 +133,10 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                             )}
                         </div>
                         <div>
-                            <div className="text-[10px] font-medium text-foreground">
+                            <div className="typo-body font-medium text-foreground">
                                 {t('workspaces.governanceMode')}
                             </div>
-                            <div className="mt-0.5 text-[10px] text-muted-foreground/70">
+                            <div className="mt-0.5 typo-body text-muted-foreground/70">
                                 {isAllowlistMode ? 'Allowlist' : 'Blocklist'}
                             </div>
                         </div>
@@ -148,42 +147,42 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
 
             <div className="mt-8 animate-in fade-in slide-in-from-top-4 rounded-2xl border border-border/20 bg-muted/10 p-4 duration-500">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <div className="flex-1 min-w-0">
-                    <Select value={selectedModel} onValueChange={setSelectedModel}>
-                        <SelectTrigger className="h-11 rounded-xl border-border/30 bg-background text-xs font-medium">
-                            <SelectValue placeholder={t('workspaces.selectModelPlaceholder')} />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-80 overflow-y-auto rounded-xl border-border/30 bg-popover">
-                            {availableForSelect.map(id => (
-                                <SelectItem key={id} value={id} className="m-1 rounded-lg text-[10px] font-medium">
-                                    {id}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={addToAllowlist}
-                        disabled={!selectedModel}
-                        className="h-11 rounded-xl border-success/20 bg-success/5 px-5 text-[10px] font-medium text-success hover:bg-success hover:text-success-foreground disabled:opacity-40"
-                    >
-                        <ShieldCheck className="w-3.5 h-3.5 mr-2" />
-                        {t('workspaces.addToAllowlist')}
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={addToBlocklist}
-                        disabled={!selectedModel}
-                        className="h-11 rounded-xl border-destructive/20 bg-destructive/5 px-5 text-[10px] font-medium text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-40"
-                    >
-                        <ShieldAlert className="w-3.5 h-3.5 mr-2" />
-                        {t('workspaces.addToBlocklist')}
-                    </Button>
-                </div>
+                    <div className="flex-1 min-w-0">
+                        <Select value={selectedModel} onValueChange={setSelectedModel}>
+                            <SelectTrigger className="h-11 rounded-xl border-border/30 bg-background text-xs font-medium">
+                                <SelectValue placeholder={t('workspaces.selectModelPlaceholder')} />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-80 overflow-y-auto rounded-xl border-border/30 bg-popover">
+                                {availableForSelect.map(id => (
+                                    <SelectItem key={id} value={id} className="m-1 rounded-lg typo-body font-medium">
+                                        {id}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={addToAllowlist}
+                            disabled={!selectedModel}
+                            className="h-11 rounded-xl border-success/20 bg-success/5 px-5 typo-body font-medium text-success hover:bg-success hover:text-success-foreground disabled:opacity-40"
+                        >
+                            <ShieldCheck className="w-3.5 h-3.5 mr-2" />
+                            {t('workspaces.addToAllowlist')}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={addToBlocklist}
+                            disabled={!selectedModel}
+                            className="h-11 rounded-xl border-destructive/20 bg-destructive/5 px-5 typo-body font-medium text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-40"
+                        >
+                            <ShieldAlert className="w-3.5 h-3.5 mr-2" />
+                            {t('workspaces.addToBlocklist')}
+                        </Button>
+                    </div>
                 </div>
             </div>
 
@@ -191,7 +190,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                 <div className="space-y-4 group/list">
                     <div className="flex items-center gap-3 px-1">
                         <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
-                        <div className="text-[10px] font-medium text-success">
+                        <div className="typo-body font-medium text-success">
                             {t('workspaces.allowedModels')}
                         </div>
                     </div>
@@ -199,7 +198,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                         {governance.allowedModels.length === 0 ? (
                             <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/20 bg-muted/5 py-10 text-center opacity-50 transition-colors group-hover/list:border-success/20">
                                 <ShieldCheck className="w-6 h-6 mb-3 text-muted-foreground" />
-                                <p className="px-6 text-[10px] font-medium text-muted-foreground">
+                                <p className="px-6 typo-body font-medium text-muted-foreground">
                                     {t('workspaces.noAllowedModels')}
                                 </p>
                             </div>
@@ -211,7 +210,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                                 >
                                     <div className="flex items-center gap-4 min-w-0">
                                         <div className="h-2 w-2 rounded-full bg-success/40 group-hover/item:bg-success" />
-                                        <span className="truncate text-[10px] font-medium text-foreground">
+                                        <span className="truncate typo-body font-medium text-foreground">
                                             {modelId}
                                         </span>
                                     </div>
@@ -232,7 +231,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                 <div className="space-y-4 group/list-block">
                     <div className="flex items-center gap-3 px-1">
                         <div className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
-                        <div className="text-[10px] font-medium text-destructive">
+                        <div className="typo-body font-medium text-destructive">
                             {t('workspaces.blockedModels')}
                         </div>
                     </div>
@@ -240,7 +239,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                         {governance.blockedModels.length === 0 ? (
                             <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/20 bg-muted/5 py-10 text-center opacity-50 transition-colors group-hover/list-block:border-destructive/20">
                                 <ShieldAlert className="w-6 h-6 mb-3 text-muted-foreground" />
-                                <p className="px-6 text-[10px] font-medium text-muted-foreground">
+                                <p className="px-6 typo-body font-medium text-muted-foreground">
                                     {t('workspaces.noBlockedModels')}
                                 </p>
                             </div>
@@ -252,7 +251,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                                 >
                                     <div className="flex items-center gap-4 min-w-0">
                                         <div className="h-2 w-2 rounded-full bg-destructive/40 group-hover/item:bg-destructive" />
-                                        <span className="truncate text-[10px] font-medium text-foreground">
+                                        <span className="truncate typo-body font-medium text-foreground">
                                             {modelId}
                                         </span>
                                     </div>

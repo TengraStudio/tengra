@@ -16,6 +16,14 @@ interface PendingRequest {
     timestamp: number;
 }
 
+const SENSITIVE_HEADER_NAMES = new Set([
+    'authorization',
+    'cookie',
+    'proxy-authorization',
+    'x-api-key',
+    'x-auth-token',
+]);
+
 export class HttpService extends BaseService {
     private pendingRequests: Map<string, PendingRequest> = new Map();
     private readonly DEDUPLICATION_WINDOW_MS = 1000; // 1 second window
@@ -108,7 +116,7 @@ export class HttpService extends BaseService {
     }
 
     private logRequest(requestId: string, url: string, options: RequestInit): void {
-        const headers = options.headers ? JSON.stringify(options.headers) : '{}';
+        const headers = JSON.stringify(this.sanitizeHeaders(options.headers));
         const bodyContent = options.body ? (typeof options.body === 'string' ? options.body.substring(0, 500) : '[Binary/Stream]') : '';
         const httpMethod = options.method ?? 'GET';
 
@@ -117,6 +125,18 @@ export class HttpService extends BaseService {
         if (bodyContent) {
             appLogger.debug('HTTP', `[${requestId}] Body: ${bodyContent}${bodyContent.length >= 500 ? '...' : ''}`);
         }
+    }
+
+    private sanitizeHeaders(headersInit: HeadersInit | undefined): Record<string, string> {
+        const safeHeaders: Record<string, string> = {};
+        if (!headersInit) {
+            return safeHeaders;
+        }
+        const headers = new Headers(headersInit);
+        headers.forEach((value, key) => {
+            safeHeaders[key] = SENSITIVE_HEADER_NAMES.has(key.toLowerCase()) ? '[REDACTED]' : value;
+        });
+        return safeHeaders;
     }
 
     private async logResponse(requestId: string, url: string, response: Response, startTime: number): Promise<void> {

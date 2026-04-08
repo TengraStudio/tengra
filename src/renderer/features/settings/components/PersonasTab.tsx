@@ -29,7 +29,7 @@ function SummaryCard({
 }) {
     return (
         <div className="rounded-2xl border border-border/20 bg-background/60 px-4 py-4">
-            <div className="text-[10px] text-muted-foreground">{label}</div>
+            <div className="typo-body text-muted-foreground">{label}</div>
             <div className="mt-2 text-lg font-medium text-foreground">{value}</div>
         </div>
     );
@@ -69,7 +69,7 @@ export const PersonasTab: React.FC<PersonasTabProps> = ({
                             <Users className="h-4 w-4 text-primary" />
                             <h3 className="text-sm font-medium text-foreground">{t('settings.personas')}</h3>
                         </div>
-                        <Badge variant="outline" className="border-border/20 text-[10px] text-muted-foreground">
+                        <Badge variant="outline" className="border-border/20 typo-body text-muted-foreground">
                             {personas.length}
                         </Badge>
                     </div>
@@ -85,11 +85,10 @@ export const PersonasTab: React.FC<PersonasTabProps> = ({
                                         setEditingPersonaId(persona.id);
                                         setPersonaDraft(persona);
                                     }}
-                                    className={`w-full rounded-2xl border px-4 py-3 text-left transition-colors ${
-                                        isActive
-                                            ? 'border-foreground/15 bg-background text-foreground'
-                                            : 'border-border/15 bg-background/40 text-foreground hover:bg-background/70'
-                                    }`}
+                                    className={`w-full rounded-2xl border px-4 py-3 text-left transition-colors ${isActive
+                                        ? 'border-foreground/15 bg-background text-foreground'
+                                        : 'border-border/15 bg-background/40 text-foreground hover:bg-background/70'
+                                        }`}
                                 >
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0">
@@ -154,7 +153,7 @@ export const PersonasTab: React.FC<PersonasTabProps> = ({
                     <div className="grid gap-5 md:grid-cols-2">
                         <div className="space-y-4">
                             <div>
-                                <label className="mb-2 flex items-center gap-2 pl-1 text-[10px] text-muted-foreground">
+                                <label className="mb-2 flex items-center gap-2 pl-1 typo-body text-muted-foreground">
                                     <User className="h-3.5 w-3.5 text-primary/60" />
                                     {t('personas.nameLabel')}
                                 </label>
@@ -170,7 +169,7 @@ export const PersonasTab: React.FC<PersonasTabProps> = ({
                             </div>
 
                             <div>
-                                <label className="mb-2 flex items-center gap-2 pl-1 text-[10px] text-muted-foreground">
+                                <label className="mb-2 flex items-center gap-2 pl-1 typo-body text-muted-foreground">
                                     <MessageSquare className="h-3.5 w-3.5 text-primary/60" />
                                     {t('personas.descriptionLabel')}
                                 </label>
@@ -195,7 +194,7 @@ export const PersonasTab: React.FC<PersonasTabProps> = ({
                         </div>
 
                         <div>
-                            <label className="mb-2 flex items-center gap-2 pl-1 text-[10px] text-muted-foreground">
+                            <label className="mb-2 flex items-center gap-2 pl-1 typo-body text-muted-foreground">
                                 <Brain className="h-3.5 w-3.5 text-primary/60" />
                                 {t('personas.promptLabel')}
                             </label>

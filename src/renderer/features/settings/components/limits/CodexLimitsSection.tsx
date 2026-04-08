@@ -60,7 +60,7 @@ export const CodexLimitsSection: React.FC<CodexLimitsSectionProps> = ({
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 px-2 py-1 rounded-full bg-background/50 border border-border/50 self-start">
-                                    <span className="text-[10px] font-bold text-muted-foreground/80">
+                                    <span className="typo-body font-bold text-muted-foreground/80">
                                         {t('settings.usageLimits.enable')}
                                     </span>
                                     <Switch

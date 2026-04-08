@@ -1,5 +1,6 @@
 import { StreamParser } from '@main/utils/stream-parser.util';
-import { describe, expect, it } from 'vitest';
+import { XmlToolParser } from '@main/utils/xml-tool-parser.util';
+import { describe, expect, it, vi } from 'vitest';
 
 describe('StreamParser', () => {
     it('should parse simple chunks', async () => {
@@ -20,7 +21,8 @@ describe('StreamParser', () => {
 
         expect(chunks).toHaveLength(2);
         expect(chunks[0]?.content).toBe('Hello');
-        expect(chunks[1]?.content).toBe('World');
+        expect(chunks[1]?.content).toBe(' World');
+        expect(chunks.map(chunk => chunk.content ?? '').join('')).toBe('Hello World');
     });
 
     it('should handle split lines', async () => {
@@ -58,6 +60,51 @@ describe('StreamParser', () => {
 
         expect(chunks).toHaveLength(1);
         expect(chunks[0]?.images).toEqual(['img1']);
+    });
+
+    it('should preserve standalone space chunks', async () => {
+        const stream = new ReadableStream({
+            start(controller) {
+                controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"foo"}}]}\n\n'));
+                controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":" "}}]}\n\n'));
+                controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"bar"}}]}\n\n'));
+                controller.close();
+            }
+        });
+        const mockResponse = { body: stream } as never;
+
+        const chunks = [];
+        for await (const chunk of StreamParser.parseChatStream(mockResponse)) {
+            chunks.push(chunk);
+        }
+
+        expect(chunks.map(chunk => chunk.content ?? '').join('')).toBe('foo bar');
+    });
+
+    it('should not trim plain text when parsing xml tool content', () => {
+        const parsed = XmlToolParser.parse(' ');
+        expect(parsed.cleanedText).toBe('');
+    });
+
+    it('should invoke xml parsing for normal content chunks', async () => {
+        const parseSpy = vi.spyOn(XmlToolParser, 'parse');
+        const stream = new ReadableStream({
+            start(controller) {
+                controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"x"}}]}\n\n'));
+                controller.close();
+            }
+        });
+        const mockResponse = { body: stream } as never;
+
+        const chunks = [];
+        for await (const chunk of StreamParser.parseChatStream(mockResponse)) {
+            chunks.push(chunk);
+        }
+
+        expect(chunks).toHaveLength(1);
+        expect(parseSpy).toHaveBeenCalled();
+        expect(parseSpy.mock.calls.some(call => call[1] && (call[1] as { trim?: boolean }).trim === false)).toBe(true);
+        parseSpy.mockRestore();
     });
 
     it('should assemble opencode tool calls from streamed argument deltas', async () => {

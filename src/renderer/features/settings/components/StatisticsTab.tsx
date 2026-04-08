@@ -1,11 +1,12 @@
 import { Badge } from '@renderer/components/ui/badge';
-import { 
-    Activity, 
-    BarChart3, 
-    Calendar, 
+import {
+    Activity,
+    BarChart3,
+    Calendar,
     Clock,
-    Loader2, 
-    TrendingUp} from 'lucide-react';
+    Loader2,
+    TrendingUp
+} from 'lucide-react';
 import React, { memo } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -45,8 +46,8 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = memo(
                         key={value}
                         onClick={() => onChange(value)}
                         className={cn(
-                            'relative h-9 overflow-hidden rounded-xl px-4 text-[10px] font-medium transition-colors',
-                            isActive 
+                            'relative h-9 overflow-hidden rounded-xl px-4 typo-body font-medium transition-colors',
+                            isActive
                                 ? 'bg-background text-primary'
                                 : 'text-muted-foreground/60 hover:bg-muted/20 hover:text-foreground'
                         )}
@@ -74,7 +75,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(
             return (
                 <div className="flex flex-col h-96 items-center justify-center space-y-6">
                     <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                    <div className="text-[10px] font-medium text-muted-foreground/50 animate-pulse">
+                    <div className="typo-body font-medium text-muted-foreground/50 animate-pulse">
                         {t('statistics.synchronizingMetrics')}
                     </div>
                 </div>
@@ -82,10 +83,10 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(
         }
 
         return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 ease-out pb-16">
-            <div className="flex flex-col gap-6 px-1 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                         <div className="mb-3 flex items-center gap-4">
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 ease-out pb-16">
+                <div className="flex flex-col gap-6 px-1 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                        <div className="mb-3 flex items-center gap-4">
                             <div className="rounded-2xl bg-primary/10 p-3.5 text-primary">
                                 <BarChart3 className="w-7 h-7" />
                             </div>
@@ -94,8 +95,8 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(
                                     {t('statistics.title')}
                                 </h3>
                                 <div className="flex items-center gap-2 mt-2">
-                                     <div className="h-1 w-8 bg-primary rounded-full" />
-                                    <p className="text-[10px] font-medium text-muted-foreground opacity-60">
+                                    <div className="h-1 w-8 bg-primary rounded-full" />
+                                    <p className="typo-body font-medium text-muted-foreground opacity-60">
                                         {t('statistics.telemetryAnalytics')}
                                     </p>
                                 </div>
@@ -107,9 +108,9 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(
                     </div>
 
                     <div className="flex flex-col gap-3">
-                         <div className="flex items-center gap-2 px-1">
+                        <div className="flex items-center gap-2 px-1">
                             <Calendar className="w-3 h-3 text-primary/60" />
-                            <span className="text-[9px] font-medium text-muted-foreground/60">{t('statistics.temporalFilter')}</span>
+                            <span className="typo-body font-medium text-muted-foreground/60">{t('statistics.temporalFilter')}</span>
                         </div>
                         <PeriodSelector
                             period={statsPeriod}
@@ -123,23 +124,23 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(
                     <div className="relative z-10 flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-3">
                             <Activity className="w-4 h-4 text-primary" />
-                            <h4 className="text-[10px] font-medium text-muted-foreground/60">{t('statistics.consumptionMatrix')}</h4>
+                            <h4 className="typo-body font-medium text-muted-foreground/60">{t('statistics.consumptionMatrix')}</h4>
                         </div>
-                        <Badge variant="outline" className="h-5 border-primary/20 px-2 text-[9px] font-medium text-primary">{t('statistics.liveFeed')}</Badge>
+                        <Badge variant="outline" className="h-5 border-primary/20 px-2 typo-body font-medium text-primary">{t('statistics.liveFeed')}</Badge>
                     </div>
 
                     <div className="relative z-10 mt-6">
-                         <OverviewCards t={t} statsData={statsData} />
+                        <OverviewCards t={t} statsData={statsData} />
                     </div>
                 </div>
 
                 <div className="overflow-hidden rounded-3xl border border-border/30 bg-card p-6 sm:p-8">
-                     <div className="relative z-10 flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="relative z-10 flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-3">
                             <TrendingUp className="w-4 h-4 text-primary" />
-                            <h4 className="text-[10px] font-medium text-muted-foreground/60">{t('statistics.propagationCurve')}</h4>
+                            <h4 className="typo-body font-medium text-muted-foreground/60">{t('statistics.propagationCurve')}</h4>
                         </div>
-                         <div className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground/60">
+                        <div className="flex items-center gap-2 typo-body font-medium text-muted-foreground/60">
                             <Clock className="w-3 h-3" />
                             <span>{t('statistics.realtimeTracking')}</span>
                         </div>

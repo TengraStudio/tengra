@@ -450,15 +450,15 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                 </SettingsField>
                 <div className="grid gap-3 md:grid-cols-3">
                     <div className="rounded-2xl border border-border/20 bg-background/60 px-4 py-4">
-                        <div className="text-[11px] font-medium text-foreground">{t('settings.editor.option.fontSize')}</div>
+                        <div className="typo-body font-medium text-foreground">{t('settings.editor.option.fontSize')}</div>
                         <div className="mt-2 text-xs text-muted-foreground">{editorSettings.fontSize}</div>
                     </div>
                     <div className="rounded-2xl border border-border/20 bg-background/60 px-4 py-4">
-                        <div className="text-[11px] font-medium text-foreground">{t('settings.editor.option.wordWrap')}</div>
+                        <div className="typo-body font-medium text-foreground">{t('settings.editor.option.wordWrap')}</div>
                         <div className="mt-2 text-xs text-muted-foreground">{editorSettings.wordWrap}</div>
                     </div>
                     <div className="rounded-2xl border border-border/20 bg-background/60 px-4 py-4">
-                        <div className="text-[11px] font-medium text-foreground">{t('settings.editor.option.cursorBlinking')}</div>
+                        <div className="typo-body font-medium text-foreground">{t('settings.editor.option.cursorBlinking')}</div>
                         <div className="mt-2 text-xs text-muted-foreground">{editorSettings.cursorBlinking}</div>
                     </div>
                 </div>

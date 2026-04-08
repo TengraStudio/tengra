@@ -1,7 +1,7 @@
-import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { useMemo } from 'react';
 
-import { Message } from '@/types';
+import { parseChatErrorFromText } from '@/features/chat/utils/chat-error-normalizer.util';
+import { ChatError, Message } from '@/types';
 
 export type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
 
@@ -12,18 +12,100 @@ export interface ParsedMessageSections {
 }
 
 const messageContentParseCache = new Map<string, ParsedMessageSections>();
+const TOOL_TRACE_PATTERNS = [
+    /<function_calls>/i,
+    /<\/function_calls>/i,
+    /"tool_call"/i,
+    /"tool_calls"/i,
+    /"tool_results"/i,
+];
+
+function stripPatternPreservingWordBoundary(content: string, pattern: RegExp): string {
+    return content.replace(pattern, (match, ...args: unknown[]) => {
+        const offset = args[args.length - 2];
+        const input = args[args.length - 1];
+
+        if (typeof offset !== 'number' || typeof input !== 'string') {
+            return '';
+        }
+
+        const before = offset > 0 ? input[offset - 1] : '';
+        const afterIndex = offset + match.length;
+        const after = afterIndex < input.length ? input[afterIndex] : '';
+        const punctuationWithoutLeadingSpace = '])}.!,?;:';
+        const openingDelimiters = '[({';
+        const shouldInsertSpace =
+            before !== ''
+            && after !== ''
+            && !/\s/.test(before)
+            && !/\s/.test(after)
+            && !punctuationWithoutLeadingSpace.includes(after)
+            && !openingDelimiters.includes(before);
+
+        return shouldInsertSpace ? ' ' : '';
+    });
+}
+
+const PROMPT_LEAK_PATTERNS = [
+    /(?:^|\n)\s*(?:system prompt|prompt to ai|internal prompt|developer prompt)\s*[:-]/i,
+    /(?:^|\n)\s*#\s*tengra ai system/i,
+    /(?:^|\n)\s*##\s*core identity/i,
+    /(?:^|\n)\s*##\s*response contract/i,
+    /(?:^|\n)\s*##\s*tool & evidence policy/i,
+    /(?:^|\n)\s*##\s*anti-loop & deterministic finalization/i,
+];
+
+const PROMPT_BLOCK_START = /(?:^|\n)\s*(?:system prompt|prompt to ai|internal prompt|developer prompt)\s*[:-]\s*/i;
+
+function stripLeakedPrompt(content: string): string {
+    if (content.trim().length === 0) {
+        return content;
+    }
+
+    const startMatch = PROMPT_BLOCK_START.exec(content);
+    if (startMatch && startMatch.index >= 0) {
+        const prefix = content.slice(0, startMatch.index).trimEnd();
+        return prefix;
+    }
+
+    const hasKnownHeaderLeak = PROMPT_LEAK_PATTERNS.some(pattern => pattern.test(content));
+    if (!hasKnownHeaderLeak) {
+        return content;
+    }
+
+    const lines = content.split('\n');
+    const filtered = lines.filter(line => !PROMPT_LEAK_PATTERNS.some(pattern => pattern.test(line)));
+    return filtered.join('\n').trim();
+}
+
+function stripToolTraceReasoning(reasoning: string | null): string | null {
+    if (!reasoning) {
+        return null;
+    }
+    const lines = reasoning.split('\n');
+    const filteredLines = lines.filter(line => {
+        const trimmedLine = line.trim();
+        if (trimmedLine === '') {
+            return true;
+        }
+        return TOOL_TRACE_PATTERNS.every(pattern => !pattern.test(trimmedLine));
+    });
+    const normalized = filteredLines.join('\n').trim();
+    return normalized.length > 0 ? normalized : null;
+}
 
 const parseTagSection = (
     content: string,
     tagName: 'think' | 'plan'
 ): { value: string | null; content: string } => {
-    const match = new RegExp(`<${tagName}>([\\s\\S]*?)(?:<\\/${tagName}>|$)`).exec(content);
+    const pattern = new RegExp(`<${tagName}>([\\s\\S]*?)(?:<\\/${tagName}>|$)`, 'i');
+    const match = pattern.exec(content);
     if (!match) {
         return { value: null, content };
     }
     return {
         value: match[1],
-        content: content.replace(new RegExp(`<${tagName}>[\\s\\S]*?(?:<\\/${tagName}>|$)`), ''),
+        content: stripPatternPreservingWordBoundary(content, pattern),
     };
 };
 
@@ -34,10 +116,28 @@ const parseMessageTaggedSections = (
 ): ParsedMessageSections => {
     const thoughtSection = parseTagSection(content, 'think');
     const planSection = parseTagSection(thoughtSection.content, 'plan');
+    const reasoningSource = streaming ?? reasoning ?? thoughtSection.value;
+    const cleanupPatterns = [
+        /\{"name":\s*"[^"]+",\s*"parameters":\s*\{[\s\S]*?\}\}/g,
+        /\{"name":\s*"[^"]+",\s*"arguments":\s*"[\s\S]*?"\}/g,
+        /function:\s*[\w\-_]+[\s\n]*parameters:\s*[\s\S]*?(?=\n\n|$)/gi, // Greedy Llama-style
+        /function:\s*[\w\-_]+[\s\n]*arguments:\s*[\s\S]*?(?=\n\n|$)/gi, // Alternate Llama-style
+        /<think>[\s\S]*?(?:<\/think>|$)/gi,
+        /<plan>[\s\S]*?(?:<\/plan>|$)/gi,
+        /<function_calls>[\s\S]*?(?:<\/function_calls>|$)/gi,
+        /<thinking>[\s\S]*?(?:<\/thinking>|$)/gi, // Catch variants
+        /<planing>[\s\S]*?(?:<\/planing>|$)/gi, // Catch typos
+    ];
+    let filteredContent = stripLeakedPrompt(planSection.content);
+    for (const pattern of cleanupPatterns) {
+        filteredContent = stripPatternPreservingWordBoundary(filteredContent, pattern);
+    }
+    filteredContent = filteredContent.trim();
+
     return {
-        thought: streaming ?? reasoning ?? thoughtSection.value,
+        thought: stripToolTraceReasoning(reasoningSource),
         plan: planSection.value,
-        displayContent: planSection.content.trim(),
+        displayContent: filteredContent,
     };
 };
 
@@ -61,7 +161,7 @@ export const useMessageContent = (
                             }
                             return '';
                         })
-                        .join('')
+                        .join(' ')
                     : '';
         const cacheKey = `${content}::${reasoning ?? ''}`;
         if (!streaming) {
@@ -83,35 +183,42 @@ export const useMessageContent = (
         return parsed;
     }, [raw, reasoning, streaming]);
 
-export interface QuotaErrorResponse {
-    message?: string;
-    resets_at?: number;
-    model?: string;
-    error?: {
-        message?: string;
-        resets_at?: number;
-        model?: string;
-    };
+export const useChatMessageError = (content: string, model: string | null) =>
+    useMemo(() => {
+        return parseChatErrorFromText(content, model);
+    }, [content, model]);
+
+export interface QuotaErrorDetails {
+    message: string;
+    resets_at: number | null;
+    model: string | null;
 }
 
-export const useQuotaDetails = (is429: boolean, content: string, t: TranslationFn) =>
+function buildQuotaMessage(error: ChatError, t: TranslationFn): string {
+    if (error.kind === 'capacity_exhausted') {
+        return error.message || t('chat.errorCapacityExhausted');
+    }
+    if (error.kind === 'rate_limited') {
+        return error.message || t('chat.errorRateLimited');
+    }
+    return error.message || t('messageBubble.quotaMessage');
+}
+
+export const useQuotaDetails = (chatError: ChatError | null, t: TranslationFn): QuotaErrorDetails | null =>
     useMemo(() => {
-        if (!is429) {
+        if (!chatError) {
             return null;
         }
-        try {
-            const m = content.match(/\{[\s\S]*\}/);
-            if (m) {
-                const d = safeJsonParse<QuotaErrorResponse>(m[0], {});
-                const o = d.error ?? d;
-                return {
-                    message: o.message ?? t('messageBubble.quotaExceeded'),
-                    resets_at: o.resets_at ?? null,
-                    model: o.model ?? null,
-                };
-            }
-        } catch {
-            /* skip */
+        if (
+            chatError.kind !== 'quota_exhausted'
+            && chatError.kind !== 'capacity_exhausted'
+            && chatError.kind !== 'rate_limited'
+        ) {
+            return null;
         }
-        return { message: t('messageBubble.quotaMessage'), resets_at: null, model: null };
-    }, [is429, content, t]);
+        return {
+            message: buildQuotaMessage(chatError, t),
+            resets_at: chatError.resetsAt ?? null,
+            model: chatError.model ?? null,
+        };
+    }, [chatError, t]);

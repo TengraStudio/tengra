@@ -131,7 +131,7 @@ export interface TokenResponse {
   error_description?: string;
 }
 
-type BrowserAuthProvider = 'antigravity' | 'claude' | 'codex';
+type BrowserAuthProvider = 'antigravity' | 'claude' | 'codex' | 'ollama';
 type OAuthTimeoutProvider = BrowserAuthProvider | 'default';
 
 interface OAuthTimeoutConfig {
@@ -139,6 +139,7 @@ interface OAuthTimeoutConfig {
   codex?: number;
   claude?: number;
   antigravity?: number;
+  ollama?: number;
 }
 
 interface ProxyRequestExecutionOptions {
@@ -286,11 +287,9 @@ export class ProxyService extends BaseService {
   override async cleanup(): Promise<void> {
     try {
       this.clearProviderQueueTimers();
-      // Force stop proxy on app exit - kill all proxy processes including orphaned ones
-      await this.processManager.stop();
-      this.logInfo('Proxy service stopped (force killed all proxy processes)');
+      this.logInfo('Proxy service cleanup completed; background proxy remains available');
     } catch (e) {
-      this.logError('Failed to stop proxy during cleanup:', e as Error);
+      this.logError('Failed to clean proxy service during cleanup:', e as Error);
     }
   }
 
@@ -300,6 +299,7 @@ export class ProxyService extends BaseService {
       codex: { windowMs: 60_000, maxRequests: 80, warningThreshold: 0.85, maxQueueSize: 120, allowPremiumBypass: true },
       claude: { windowMs: 60_000, maxRequests: 70, warningThreshold: 0.85, maxQueueSize: 100, allowPremiumBypass: true },
       antigravity: { windowMs: 60_000, maxRequests: 80, warningThreshold: 0.85, maxQueueSize: 120, allowPremiumBypass: true },
+      ollama: { windowMs: 60_000, maxRequests: 90, warningThreshold: 0.9, maxQueueSize: 140, allowPremiumBypass: true },
       proxy: { windowMs: 60_000, maxRequests: 120, warningThreshold: 0.9, maxQueueSize: 200, allowPremiumBypass: true },
       default: { windowMs: 60_000, maxRequests: 60, warningThreshold: 0.85, maxQueueSize: 100, allowPremiumBypass: false }
     };
@@ -364,6 +364,7 @@ export class ProxyService extends BaseService {
     if (p.includes('anthropic') || p.includes('claude')) { return 'claude'; }
     if (p.includes('antigravity') || p.includes('google') || p.includes('gemini')) { return 'antigravity'; }
     if (p.includes('codex') || p.includes('openai')) { return 'codex'; }
+    if (p.includes('ollama')) { return 'ollama'; }
     if (p.includes('proxy')) { return 'proxy'; }
     return p;
   }
@@ -693,6 +694,48 @@ export class ProxyService extends BaseService {
     return this.getBrowserAuthUrl('codex', accountId);
   }
 
+  /** Starts Ollama auth URL flow. @returns Auth URL and state parameter */
+  async getOllamaAuthUrl(accountId?: string): Promise<{ url: string; state: string; accountId: string }> {
+    return this.getBrowserAuthUrl('ollama', accountId);
+  }
+
+  /** Disconnects Ollama cloud identity for the current local Ollama key. */
+  async ollamaSignout(accountId?: string): Promise<{ success: boolean; alreadySignedOut?: boolean; error?: string }> {
+    try {
+      const response = await this.makeRequestWithTimeout<{
+        success?: boolean;
+        already_signed_out?: boolean;
+        alreadySignedOut?: boolean;
+        error?: string;
+      }>('/v0/management/ollama-signout', {
+        timeoutMs: this.getOAuthTimeoutMs('ollama'),
+        apiKey: await this.getRuntimeProxyApiKey(),
+        method: 'POST',
+        body: accountId ? { account_id: accountId } : {},
+        rateLimit: { provider: 'ollama', priority: 2, isPremiumBypass: true }
+      });
+
+      if ('success' in response && response.success === true) {
+        const alreadySignedOut = ('alreadySignedOut' in response && typeof response.alreadySignedOut === 'boolean')
+          ? response.alreadySignedOut
+          : ('already_signed_out' in response && typeof response.already_signed_out === 'boolean')
+              ? response.already_signed_out
+              : undefined;
+        return { success: true, alreadySignedOut };
+      }
+
+      const errorMessage = 'error' in response && typeof response.error === 'string'
+        ? response.error
+        : 'Failed to sign out Ollama account';
+      appLogger.warn('ProxyService', `ollamaSignout failed: ${errorMessage}`);
+      return { success: false, error: errorMessage };
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      appLogger.warn('ProxyService', `ollamaSignout request failed: ${errorMessage}`);
+      return { success: false, error: errorMessage };
+    }
+  }
+
   async getBrowserAuthStatus(
     provider: BrowserAuthProvider,
     state: string,
@@ -705,6 +748,14 @@ export class ProxyService extends BaseService {
     });
 
     const fallbackStatus = async (): Promise<BrowserAuthStatusResponse> => {
+      if (provider === 'ollama') {
+        return {
+          status: 'wait',
+          provider,
+          state,
+          accountId
+        };
+      }
       const account = await this.getLocalBrowserAuthAccount(provider, accountId);
       if (account) {
         return {
@@ -756,7 +807,8 @@ export class ProxyService extends BaseService {
     const providerAliases: Record<BrowserAuthProvider, string[]> = {
       codex: ['codex', 'openai'],
       claude: ['claude', 'anthropic'],
-      antigravity: ['antigravity', 'google', 'gemini']
+      antigravity: ['antigravity', 'google', 'gemini'],
+      ollama: ['ollama']
     };
     const aliases = new Set(providerAliases[provider]);
     const account = (await this.databaseService.getLinkedAccounts())
@@ -906,7 +958,7 @@ export class ProxyService extends BaseService {
    * @returns Proxy status
    * @throws on invalid port
    */
-  async startEmbeddedProxy(options?: { port?: number }): Promise<ProxyEmbedStatus> {
+  async startEmbeddedProxy(options?: { port?: number; persistent?: boolean }): Promise<ProxyEmbedStatus> {
     const previous = this.operationLock;
     const current = (async () => {
       try {
@@ -920,7 +972,7 @@ export class ProxyService extends BaseService {
     return current;
   }
 
-  private async startEmbeddedProxyInternal(options?: { port?: number }): Promise<ProxyEmbedStatus> {
+  private async startEmbeddedProxyInternal(options?: { port?: number; persistent?: boolean }): Promise<ProxyEmbedStatus> {
     const start = performance.now();
     if (options?.port !== undefined) {
       const portError = validatePort(options.port);
@@ -930,7 +982,10 @@ export class ProxyService extends BaseService {
       }
     }
     this.currentPort = options?.port ?? 8317;
-    const status = await this.processManager.start(options);
+    const status = await this.processManager.start({
+      ...options,
+      persistent: options?.persistent ?? true
+    });
     if (!status.running && status.error) {
       this.logError(`Proxy startup failed: [${status.errorCode ?? AppErrorCode.PROXY_START_FAILED}] ${status.error}`);
       return { ...status, errorCode: status.errorCode ?? AppErrorCode.PROXY_START_FAILED };

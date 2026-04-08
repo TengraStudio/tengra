@@ -1,5 +1,5 @@
 import { Badge } from '@renderer/components/ui/badge';
-import { Activity, Lock,Shield, Zap } from 'lucide-react';
+import { Activity, Lock, Shield, Zap } from 'lucide-react';
 import React, { useMemo } from 'react';
 
 import type { GroupedModels } from '@/types';
@@ -139,8 +139,8 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
                             {t('settings.usageLimits.title')}
                         </h3>
                         <div className="flex items-center gap-2 mt-2">
-                             <div className="h-1 w-8 bg-primary rounded-full group-hover:w-12 transition-all duration-700" />
-                            <p className="text-[10px] font-bold text-muted-foreground opacity-50">
+                            <div className="h-1 w-8 bg-primary rounded-full group-hover:w-12 transition-all duration-700" />
+                            <p className="typo-body font-bold text-muted-foreground opacity-50">
                                 {t('settings.usageLimits.consumptionGuard')}
                             </p>
                         </div>
@@ -158,11 +158,11 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
                     <div className="flex items-center justify-between px-1 mb-8 relative z-10">
                         <div className="flex items-center gap-3">
                             <Zap className="w-4 h-4 text-primary" />
-                            <h4 className="text-[10px] font-bold text-muted-foreground/40">{t('settings.usageLimits.copilotProtocol')}</h4>
+                            <h4 className="typo-body font-bold text-muted-foreground/40">{t('settings.usageLimits.copilotProtocol')}</h4>
                         </div>
-                        <Badge variant="outline" className="h-5 text-[8px] px-2 font-bold border-primary/20 text-primary">{t('settings.usageLimits.activePolicy')}</Badge>
+                        <Badge variant="outline" className="h-5 typo-body px-2 font-bold border-primary/20 text-primary">{t('settings.usageLimits.activePolicy')}</Badge>
                     </div>
-                     <div className="relative z-10">
+                    <div className="relative z-10">
                         <CopilotLimitsSection
                             copilotLimits={copilotLimits}
                             copilotRemaining={copilotRemaining}
@@ -178,9 +178,9 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
                     <div className="flex items-center justify-between px-1 mb-8 relative z-10">
                         <div className="flex items-center gap-3">
                             <Activity className="w-4 h-4 text-primary" />
-                            <h4 className="text-[10px] font-bold text-muted-foreground/40">{t('settings.usageLimits.coreAllocation')}</h4>
+                            <h4 className="typo-body font-bold text-muted-foreground/40">{t('settings.usageLimits.coreAllocation')}</h4>
                         </div>
-                        <Badge variant="outline" className="h-5 text-[8px] px-2 font-bold border-primary/20 text-primary">{t('settings.usageLimits.customQuotas')}</Badge>
+                        <Badge variant="outline" className="h-5 typo-body px-2 font-bold border-primary/20 text-primary">{t('settings.usageLimits.customQuotas')}</Badge>
                     </div>
                     <div className="relative z-10">
                         <AntigravityLimitsSection
@@ -189,7 +189,7 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
                             updateAntigravityLimit={updateAntigravityLimit}
                         />
                     </div>
-                     <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-primary/5 rounded-full blur-[100px] opacity-30 pointer-events-none" />
+                    <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-primary/5 rounded-full blur-[100px] opacity-30 pointer-events-none" />
                 </div>
 
                 {/* Codex Section */}
@@ -197,9 +197,9 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
                     <div className="flex items-center justify-between px-1 mb-8 relative z-10">
                         <div className="flex items-center gap-3">
                             <Lock className="w-4 h-4 text-primary" />
-                            <h4 className="text-[10px] font-bold text-muted-foreground/40">{t('settings.usageLimits.legacyThresholds')}</h4>
+                            <h4 className="typo-body font-bold text-muted-foreground/40">{t('settings.usageLimits.legacyThresholds')}</h4>
                         </div>
-                        <Badge variant="outline" className="h-5 text-[8px] px-2 font-bold border-primary/20 text-primary">{t('settings.usageLimits.restrictive')}</Badge>
+                        <Badge variant="outline" className="h-5 typo-body px-2 font-bold border-primary/20 text-primary">{t('settings.usageLimits.restrictive')}</Badge>
                     </div>
                     <div className="relative z-10">
                         <CodexLimitsSection

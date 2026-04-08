@@ -368,9 +368,19 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
     );
 
     // Marketplace Service
-    container.register('marketplaceService', ls => new MarketplaceService(ls as LocaleService), [
-        'localeService',
-    ]);
+    container.register(
+        'marketplaceService',
+        (ls, mds, hfs, os, ss, ps, lls) => new MarketplaceService(
+            ls as LocaleService,
+            mds as ModelDownloaderService,
+            hfs as HuggingFaceService,
+            os as OllamaService,
+            ss as SystemService,
+            ps as PerformanceService,
+            lls as LlamaService
+        ),
+        ['localeService', 'modelDownloaderService', 'huggingFaceService', 'ollamaService', 'systemService', 'performanceService', 'llamaService']
+    );
 
     container.register(
         'socialMediaService',
@@ -486,8 +496,8 @@ function registerLLMServices() {
     ]);
     container.register(
         'llamaService',
-        (ds, lis) => new LlamaService(ds as DataService, lis as LocalImageService),
-        ['dataService', 'localImageService']
+        (ds, rbs) => new LlamaService(ds as DataService, rbs as RuntimeBootstrapService),
+        ['dataService', 'runtimeBootstrapService']
     );
     container.register('ollamaService', (ss, ebs) => new OllamaService(ss as SettingsService, ebs as EventBusService), [
         'settingsService',
@@ -509,7 +519,8 @@ function registerLLMServices() {
                 tokenService: args[6] as TokenService,
                 huggingFaceService: args[7] as HuggingFaceService,
                 fallbackService: args[8] as ModelFallbackService,
-                cacheService: args[9] as ResponseCacheService
+                cacheService: args[9] as ResponseCacheService,
+                llamaService: args[10] as LlamaService
             }),
         [
             'httpService',
@@ -521,7 +532,8 @@ function registerLLMServices() {
             'tokenService',
             'huggingFaceService',
             'modelFallbackService',
-            'responseCacheService'
+            'responseCacheService',
+            'llamaService'
         ]
     );
     container.register(

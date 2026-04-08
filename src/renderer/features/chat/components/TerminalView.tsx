@@ -1,7 +1,11 @@
+import { ChevronDown, Loader2, SquareTerminal } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { ToolResult } from '@/types';
@@ -11,6 +15,7 @@ interface CommandExecutionResult {
     stdout?: string;
     stderr?: string;
     error?: string;
+    exitCode?: number | null;
 }
 
 interface TerminalViewProps {
@@ -24,12 +29,6 @@ interface TerminalViewProps {
 
 type StatusType = 'error' | 'running' | 'completed';
 
-const STATUS_CLASSES: Record<StatusType, string> = {
-    error: 'bg-destructive/10 text-destructive border-destructive/20',
-    running: 'bg-success/10 text-success border-success/20',
-    completed: 'bg-muted/20 text-muted-foreground border-border/50',
-};
-
 function getStatusType(isExecuting: boolean | undefined, hasError: boolean): StatusType {
     if (hasError) {
         return 'error';
@@ -40,246 +39,84 @@ function getStatusType(isExecuting: boolean | undefined, hasError: boolean): Sta
     return 'completed';
 }
 
-interface TerminalHeaderProps {
-    hasOutput: boolean;
-    showMarkdown: boolean;
-    isExecuting?: boolean;
-    toolCallId: string;
-    t: (key: string) => string;
-    onToggleMarkdown: () => void;
-}
-
-const TerminalHeader: React.FC<TerminalHeaderProps> = ({
-    hasOutput,
-    showMarkdown,
-    isExecuting,
-    toolCallId,
-    t,
-    onToggleMarkdown,
-}) => {
-    const handleKill = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        void (async () => {
-            const success = await window.electron.killTool(toolCallId);
-            if (success) {
-                appLogger.warn('TerminalView', 'Process killed');
-            }
-        })();
-    };
-
-    return (
-        <div className="terminal-header bg-muted h-7 flex items-center justify-between px-2">
-            <div className="flex gap-1.5 opacity-80 hover:opacity-100 transition-opacity">
-                <div className="terminal-dot bg-destructive border-destructive" />
-                <div className="terminal-dot bg-warning border-warning" />
-                <div className="terminal-dot bg-success border-success" />
-            </div>
-            <div className="text-sm text-muted-foreground font-medium select-none flex-1 text-center font-mono flex items-center justify-center gap-2">
-                <span className="opacity-50">{t('tools.terminalHost')}</span>
-                <span className="text-muted-foreground">~</span>
-                <span>{t('tools.terminalShell')}</span>
-            </div>
-            {hasOutput && (
-                <button
-                    onClick={e => {
-                        e.stopPropagation();
-                        onToggleMarkdown();
-                    }}
-                    className="text-xs bg-background/50 text-muted-foreground hover:bg-background/80 px-2 py-0.5 rounded border border-border transition-colors font-bold mr-2"
-                    title={t('toolDisplay.markdownView')}
-                >
-                    {showMarkdown ? t('toolDisplay.text') : t('toolDisplay.markdown')}
-                </button>
-            )}
-            {isExecuting && (
-                <button
-                    onClick={handleKill}
-                    className="text-sm bg-destructive/10 text-destructive hover:bg-destructive/20 px-2 py-0.5 rounded border border-destructive/20 transition-colors font-bold"
-                    title={t('tools.forceStop')}
-                >
-                    {t('tools.stop')}
-                </button>
-            )}
-        </div>
-    );
-};
-
-interface OutputContentProps {
-    stdout?: string;
-    stderr?: string;
-    error?: string;
-    showMarkdown: boolean;
-    outputText: string;
-    hasOutput: boolean;
-    isExecuting?: boolean;
-    t: (key: string) => string;
-}
-
-const OutputContent: React.FC<OutputContentProps> = ({
-    stdout,
-    stderr,
-    error,
-    showMarkdown,
-    outputText,
-    hasOutput,
-    isExecuting,
-    t,
-}) => {
-    if (showMarkdown) {
-        return (
-            <div className="text-muted-foreground text-sm leading-6">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {outputText || t('tools.noOutputReturned')}
-                </ReactMarkdown>
-            </div>
-        );
+function extractCommandExecutionResult(result?: ToolResult): CommandExecutionResult {
+    if (!result) {
+        return {};
     }
 
-    return (
-        <>
-            {stdout && (
-                <div className="text-muted-foreground whitespace-pre-wrap leading-6">
-                    {stdout}
-                </div>
-            )}
-            {stderr && (
-                <div className="text-destructive whitespace-pre-wrap mt-2 leading-6">
-                    <span className="inline-block mr-2">{t('tools.stderrLabel')}</span>
-                    {stderr}
-                </div>
-            )}
-            {error && (
-                <div className="text-destructive font-bold whitespace-pre-wrap mt-2 leading-6 bg-destructive/10 p-2 rounded">
-                    <span className="inline-block mr-2">{t('tools.errorLabel')}</span>
-                    {error}
-                </div>
-            )}
-            {!hasOutput && !isExecuting && (
-                <div className="text-muted-foreground text-xs mt-1 opacity-50">
-                    {t('tools.noOutput')}
-                </div>
-            )}
-        </>
-    );
-};
+    const payload = result.result;
+    if (typeof payload === 'string') {
+        return {
+            stdout: payload,
+            error: typeof result.error === 'string' ? result.error : undefined,
+        };
+    }
 
-interface TerminalButtonProps {
-    expanded: boolean;
-    onToggle: () => void;
-    statusType: StatusType;
-    statusLabel: string;
-    command: string;
-    preview: string;
-    isExecuting?: boolean;
-    t: (key: string) => string;
+    if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+        const maybeStdout = (payload as Record<string, unknown>).stdout;
+        const maybeStderr = (payload as Record<string, unknown>).stderr;
+        const maybeError = (payload as Record<string, unknown>).error;
+        const maybeExitCode = (payload as Record<string, unknown>).exitCode;
+
+        return {
+            stdout: typeof maybeStdout === 'string' ? maybeStdout : undefined,
+            stderr: typeof maybeStderr === 'string' ? maybeStderr : undefined,
+            error: typeof maybeError === 'string'
+                ? maybeError
+                : (typeof result.error === 'string' ? result.error : undefined),
+            exitCode: typeof maybeExitCode === 'number' ? maybeExitCode : null,
+        };
+    }
+
+    return {
+        error: typeof result.error === 'string' ? result.error : undefined,
+    };
 }
 
-const TerminalButton: React.FC<TerminalButtonProps> = ({
-    expanded,
-    onToggle,
-    statusType,
-    statusLabel,
-    command,
-    preview,
-    isExecuting,
-    t,
-}) => (
-    <button
-        onClick={onToggle}
-        className={cn(
-            'w-full text-left rounded-xl border px-3 py-2 transition-all',
-            expanded
-                ? 'bg-muted/30 border-border'
-                : 'bg-muted/10 border-border/50 hover:bg-muted/20'
-        )}
-    >
-        <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 min-w-0">
-                <span
-                    className={cn(
-                        'text-xs font-bold   px-2 py-0.5 rounded border',
-                        STATUS_CLASSES[statusType]
-                    )}
-                >
-                    {statusLabel}
-                </span>
-                <span className="text-xs text-muted-foreground">{t('tools.command')}</span>
-                <span className="text-xs font-mono text-foreground/80 truncate">{command}</span>
-            </div>
-            <span
-                className={cn(
-                    'text-xs text-muted-foreground transition-transform',
-                    expanded && 'rotate-180'
-                )}
-            >
-                v
-            </span>
-        </div>
-        {!expanded && (
-            <div className="mt-2 text-xs font-mono text-muted-foreground whitespace-pre-wrap max-h-24 overflow-hidden">
-                {preview || (isExecuting ? t('tools.executing') : t('tools.noOutput'))}
-            </div>
-        )}
-    </button>
-);
-
-interface TerminalBodyProps {
-    command: string;
-    isExecuting?: boolean;
-    result?: ToolResult;
-    stdout?: string;
-    stderr?: string;
-    error?: string;
-    showMarkdown: boolean;
-    outputText: string;
-    hasOutput: boolean;
-    t: (key: string) => string;
+function getStatusVariant(statusType: StatusType): 'destructive' | 'warning' | 'success' {
+    if (statusType === 'error') {
+        return 'destructive';
+    }
+    if (statusType === 'running') {
+        return 'warning';
+    }
+    return 'success';
 }
 
-const TerminalBody: React.FC<TerminalBodyProps> = ({
-    command,
-    isExecuting,
-    result,
+function TerminalTextOutput({
     stdout,
     stderr,
     error,
-    showMarkdown,
-    outputText,
     hasOutput,
+    isExecuting,
     t,
-}) => (
-    <div className="terminal-content p-4 bg-background min-h-32 max-h-96 overflow-y-auto font-mono text-sm leading-relaxed selection:bg-primary/20">
-        <div className="flex items-center gap-2 text-success font-bold mb-1">
-            <span className="text-primary">&gt;</span>
-            <span className="text-info-light">~</span>
-            <span className="text-muted-foreground">{command}</span>
-        </div>
-        <div className="pl-0 mt-2">
-            {isExecuting && (
-                <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-muted animate-pulse" />
-                    {t('tools.executingCommand')}
-                </div>
+}: {
+    stdout?: string;
+    stderr?: string;
+    error?: string;
+    hasOutput: boolean;
+    isExecuting?: boolean;
+    t: (key: string) => string;
+}) {
+    return (
+        <div className="space-y-3 font-mono text-xs leading-5">
+            {stdout && <pre className="whitespace-pre-wrap text-emerald-200">{stdout}</pre>}
+            {stderr && (
+                <pre className="whitespace-pre-wrap rounded-md border border-amber-400/30 bg-amber-400/10 p-2 text-amber-200">
+                    {t('tools.stderrLabel')} {stderr}
+                </pre>
             )}
-            {result && (
-                <OutputContent
-                    stdout={stdout}
-                    stderr={stderr}
-                    error={error}
-                    showMarkdown={showMarkdown}
-                    outputText={outputText}
-                    hasOutput={hasOutput}
-                    isExecuting={isExecuting}
-                    t={t}
-                />
+            {error && (
+                <pre className="whitespace-pre-wrap rounded-md border border-red-400/35 bg-red-400/10 p-2 text-red-200">
+                    {t('tools.errorLabel')} {error}
+                </pre>
             )}
-            <div className="mt-2">
-                <span className="text-success font-bold mr-2">&gt;</span>
-                <span className="inline-block w-2.5 h-5 bg-muted/80 align-sub animate-pulse" />
-            </div>
+            {!hasOutput && !isExecuting && (
+                <div className="text-muted-foreground">{t('tools.noOutput')}</div>
+            )}
         </div>
-    </div>
-);
+    );
+}
 
 export const TerminalView = React.memo(({
     toolCallId,
@@ -294,71 +131,140 @@ export const TerminalView = React.memo(({
 
     useEffect(() => {
         return () => {
-            if (isExecuting) {
-                void (async () => {
-                    const success = await window.electron.killTool(toolCallId);
-                    if (success) {
-                        appLogger.warn(
-                            'TerminalView',
-                            `Process auto-killed on unmount: ${toolCallId}`
-                        );
-                    }
-                })();
+            if (!isExecuting) {
+                return;
             }
+            void (async () => {
+                const success = await window.electron.killTool(toolCallId);
+                if (success) {
+                    appLogger.warn('TerminalView', `Process auto-killed on unmount: ${toolCallId}`);
+                }
+            })();
         };
     }, [isExecuting, toolCallId]);
 
-    const resultData = result?.result as CommandExecutionResult | undefined;
-    const { stdout, stderr, error } = resultData ?? {};
-
+    const { stdout, stderr, error, exitCode } = extractCommandExecutionResult(result);
     const outputText = [stdout, stderr, error].filter(Boolean).join('\n');
-    const preview = useMemo(() => outputText ? outputText.split('\n').slice(0, 6).join('\n') : '', [outputText]);
+    const preview = useMemo(
+        () => (outputText ? outputText.split('\n').slice(0, 6).join('\n') : ''),
+        [outputText]
+    );
     const hasOutput = Boolean(outputText);
     const hasError = Boolean(error ?? stderr);
-
     const statusType = getStatusType(isExecuting, hasError);
     const statusLabel = isExecuting
         ? t('tools.running')
         : hasError
-          ? t('tools.error')
-          : t('tools.completed');
+            ? t('tools.error')
+            : t('tools.completed');
 
     return (
-        <div className="my-3 animate-in fade-in slide-in-from-bottom-1 duration-500">
-            <TerminalButton
-                expanded={expanded}
-                onToggle={onToggleExpand}
-                statusType={statusType}
-                statusLabel={statusLabel}
-                command={command}
-                preview={preview}
-                isExecuting={isExecuting}
-                t={t}
-            />
-            {expanded && (
-                <div className="terminal-window mt-3 border border-border shadow-2xl rounded-xl overflow-hidden">
-                    <TerminalHeader
-                        hasOutput={hasOutput}
-                        showMarkdown={showMarkdown}
-                        isExecuting={isExecuting}
-                        toolCallId={toolCallId}
-                        t={t}
-                        onToggleMarkdown={() => setShowMarkdown(!showMarkdown)}
-                    />
-                    <TerminalBody
-                        command={command}
-                        isExecuting={isExecuting}
-                        result={result}
-                        stdout={stdout}
-                        stderr={stderr}
-                        error={error}
-                        showMarkdown={showMarkdown}
-                        outputText={outputText}
-                        hasOutput={hasOutput}
-                        t={t}
-                    />
+        <Card className={cn('my-2 overflow-hidden border-border/40 bg-card/70 backdrop-blur-sm', hasError && 'border-destructive/35')}>
+            <button
+                type="button"
+                onClick={onToggleExpand}
+                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/25"
+            >
+                <div className="flex min-w-0 items-center gap-2">
+                    <SquareTerminal className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-xs font-semibold text-muted-foreground">{t('tools.command')}</span>
+                    <span className="truncate font-mono text-xs text-foreground/90">{command}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Badge variant={getStatusVariant(statusType)} className="text-xxs">
+                        {statusLabel}
+                    </Badge>
+                    <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', expanded && 'rotate-180')} />
+                </div>
+            </button>
+
+            {!expanded && (
+                <div className="px-4 pb-4">
+                    <pre className="max-h-24 overflow-hidden whitespace-pre-wrap font-mono text-xs text-muted-foreground">
+                        {preview || (isExecuting ? t('tools.executingCommand') : t('tools.noOutput'))}
+                    </pre>
                 </div>
             )}
-        </div>
+
+            {expanded && (
+                <CardContent className="space-y-3 px-4 pb-4 pt-0">
+                    <div className="overflow-hidden rounded-lg border border-border/40 bg-[#0b1016]">
+                        <div className="flex items-center justify-between border-b border-white/10 bg-black/15 px-3 py-2">
+                            <div className="flex items-center gap-1.5">
+                                <span className="h-2.5 w-2.5 rounded-full bg-red-400/85" />
+                                <span className="h-2.5 w-2.5 rounded-full bg-amber-300/85" />
+                                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/85" />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {hasOutput && (
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-7 border-white/15 bg-white/5 px-2 text-xxs text-slate-200 hover:bg-white/10"
+                                        onClick={event => {
+                                            event.stopPropagation();
+                                            setShowMarkdown(prev => !prev);
+                                        }}
+                                        title={t('toolDisplay.markdownView')}
+                                    >
+                                        {showMarkdown ? t('toolDisplay.text') : t('toolDisplay.markdown')}
+                                    </Button>
+                                )}
+                                {isExecuting && (
+                                    <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        className="h-7 px-2 text-xxs"
+                                        onClick={event => {
+                                            event.stopPropagation();
+                                            void (async () => {
+                                                const success = await window.electron.killTool(toolCallId);
+                                                if (success) {
+                                                    appLogger.warn('TerminalView', 'Process killed');
+                                                }
+                                            })();
+                                        }}
+                                        title={t('tools.forceStop')}
+                                    >
+                                        {t('tools.stop')}
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                        <div className="max-h-80 overflow-y-auto p-3">
+                            <div className="mb-3 flex flex-wrap items-center gap-2 font-mono text-xs text-emerald-300">
+                                <span>&gt;</span>
+                                <span className="break-all">{command}</span>
+                                {typeof exitCode === 'number' && (
+                                    <span className="text-xxs text-slate-300/80">({`exit ${exitCode}`})</span>
+                                )}
+                            </div>
+                            {isExecuting && (
+                                <div className="mb-3 flex items-center gap-2 text-xs text-slate-300">
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    <span>{t('tools.executingCommand')}</span>
+                                </div>
+                            )}
+                            {showMarkdown ? (
+                                <div className="prose prose-invert max-w-none text-sm text-slate-200">
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                        {outputText || t('tools.noOutputReturned')}
+                                    </ReactMarkdown>
+                                </div>
+                            ) : (
+                                <TerminalTextOutput
+                                    stdout={stdout}
+                                    stderr={stderr}
+                                    error={error}
+                                    hasOutput={hasOutput}
+                                    isExecuting={isExecuting}
+                                    t={t}
+                                />
+                            )}
+                        </div>
+                    </div>
+                </CardContent>
+            )}
+        </Card>
     );
 });

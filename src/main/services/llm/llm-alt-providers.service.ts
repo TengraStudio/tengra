@@ -1,7 +1,6 @@
 import { CircuitBreaker } from '@main/core/circuit-breaker';
 import { appLogger } from '@main/logging/logger';
 import { HttpService } from '@main/services/external/http.service';
-import { filterContent } from '@main/services/llm/content-filter.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
 import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { ChatMessage, OpenAIResponse, ToolCall } from '@main/types/llm.types';
@@ -205,7 +204,7 @@ export class LLMAltProvidersService {
         }
 
         const { content, reasoning, tool_calls } = this.extractOpenCodeContent(output);
-        const validatedContent = this.validateContent(content || (output['text'] as string) || '');
+        const validatedContent = content || (output['text'] as string) || '';
 
         return {
             content: validatedContent,
@@ -273,7 +272,7 @@ export class LLMAltProvidersService {
         try {
             for await (const chunk of StreamParser.parseChatStream(response)) {
                 const processedChunk: AltStreamYield = {
-                    ...(chunk.content ? { content: this.validateContent(chunk.content) } : {}),
+                    ...(chunk.content ? { content: chunk.content } : {}),
                     ...(chunk.reasoning ? { reasoning: chunk.reasoning } : {}),
                     ...(chunk.type ? { type: chunk.type } : {}),
                     ...(chunk.tool_calls ? { tool_calls: chunk.tool_calls } : {}),
@@ -314,7 +313,7 @@ export class LLMAltProvidersService {
             );
         }
         const content = data['content'] as Array<{ text: string }> | undefined;
-        const validatedContent = this.validateContent(content?.[0]?.text ?? '');
+        const validatedContent = content?.[0]?.text ?? '';
         return { content: validatedContent, role: 'assistant' };
     }
 
@@ -361,11 +360,4 @@ export class LLMAltProvidersService {
         };
     }
 
-    private validateContent(content: string): string {
-        const result = filterContent(content);
-        if (result.blocked) {
-            appLogger.warn('LLMAltProvidersService', `Content filtering blocked: ${result.matchedPatterns.join(', ')}`);
-        }
-        return result.content;
-    }
 }

@@ -1,3 +1,4 @@
+import { deduplicateMessages } from '@renderer/features/chat/hooks/ai-runtime-chat.util';
 import { useAttachments } from '@renderer/features/chat/hooks/useAttachments';
 import { useChatCRUD } from '@renderer/features/chat/hooks/useChatCRUD';
 import { useChatGenerator } from '@renderer/features/chat/hooks/useChatGenerator';
@@ -17,7 +18,6 @@ import { generateId } from '@/lib/utils';
 import { AppSettings, Chat, Message } from '@/types';
 import { CatchError } from '@/types/common';
 import { appLogger } from '@/utils/renderer-logger';
-
 /** Maximum messages to keep in memory per chat to prevent memory leaks */
 const MAX_MESSAGES_IN_MEMORY = 100;
 
@@ -39,6 +39,7 @@ interface UseChatManagerOptions {
     t: (key: string, options?: Record<string, unknown>) => string;
     activeWorkspacePath?: string | undefined;
     workspaceId?: string | undefined;
+    models: import('@/types').ModelInfo[];
 }
 
 /**
@@ -97,7 +98,8 @@ function readChatPermissionPolicy(chat: Chat): WorkspaceAgentPermissionPolicy | 
     const pathPolicy =
         candidate.pathPolicy === 'workspace-root-only' ||
         candidate.pathPolicy === 'allowlist' ||
-        candidate.pathPolicy === 'restricted-off-dangerous'
+        candidate.pathPolicy === 'restricted-off-dangerous' ||
+        candidate.pathPolicy === 'full-access'
             ? candidate.pathPolicy
             : null;
 
@@ -142,6 +144,24 @@ function isImageOnlyModel(modelId: string): boolean {
     ].some(pattern => normalizedModelId.includes(pattern));
 }
 
+function getConfiguredOllamaContextWindow(
+    appSettings: AppSettings | undefined,
+    selectedModel: string
+): number | null {
+    const modelKey = selectedModel.trim().startsWith('ollama/')
+        ? selectedModel.trim()
+        : `ollama/${selectedModel.trim()}`;
+    const perModel = appSettings?.modelSettings?.[modelKey]?.numCtx;
+    if (typeof perModel === 'number' && Number.isFinite(perModel) && perModel > 0) {
+        return perModel;
+    }
+    const globalNumCtx = appSettings?.ollama?.numCtx;
+    if (typeof globalNumCtx === 'number' && Number.isFinite(globalNumCtx) && globalNumCtx > 0) {
+        return globalNumCtx;
+    }
+    return null;
+}
+
 function toTextContent(content: Message['content']): string {
     if (typeof content === 'string') {
         return content;
@@ -159,7 +179,8 @@ function toTextContent(content: Message['content']): string {
             }
             return '';
         })
-        .join('')
+        .join(' ')
+        .replace(/\s+/g, ' ')
         .trim();
 }
 
@@ -211,20 +232,24 @@ function useChatInitialization(loadFolders: () => Promise<void>, setChats: React
 }
 
 function useLazyMessageLoader(currentChatId: string | null, chats: Chat[], setChats: React.Dispatch<React.SetStateAction<Chat[]>>): void {
+    const loadedChatIdsRef = useRef(new Set<string>());
+
     useEffect(() => {
-        if (!currentChatId) { return; }
+        if (!currentChatId || loadedChatIdsRef.current.has(currentChatId)) { return; }
         const targetChat = chats.find(c => c.id === currentChatId);
-        if (targetChat?.messages.length !== 0) { return; }
+        if (!targetChat) { return; }
 
         const fetchMessages = async () => {
             try {
+                loadedChatIdsRef.current.add(currentChatId);
                 const messages = await window.electron.db.getMessages(currentChatId);
                 const trimmedMessages = trimMessages(messages as Message[]);
                 setChats(prev => prev.map(c => {
-                    if (c.id !== currentChatId || c.messages.length > 0) {
+                    if (c.id !== currentChatId) {
                         return c;
                     }
-                    return { ...c, messages: trimmedMessages };
+                    const combined = [...c.messages, ...trimmedMessages];
+                    return { ...c, messages: deduplicateMessages(combined) };
                 }));
             } catch (e) {
                 appLogger.error('ChatManager', `Failed to load messages for ${currentChatId}`, e as Error);
@@ -246,14 +271,18 @@ export function useChatManager(options: UseChatManagerOptions) {
         formatChatError, 
         t,
         activeWorkspacePath,
-        workspaceId
+        workspaceId,
+        models,
     } = options;
 
     const [chats, setChats] = useState<Chat[]>([]);
     const [currentChatId, setCurrentChatId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [input, setInput] = useState('');
-    const [contextTokens] = useState(0);
+    const [contextTokens, setContextTokens] = useState(0);
+    const [contextWindow, setContextWindow] = useState(128000); // Default common limit
+    const isSendingRef = useRef(false);
+
 
     const [systemMode, setSystemMode] = useState<'thinking' | 'agent' | 'fast'>('agent');
     const [imageRequestCount, setImageRequestCount] = useState(1);
@@ -385,6 +414,46 @@ export function useChatManager(options: UseChatManagerOptions) {
         prevChatIdRef.current = currentChatId;
     }, [currentChatId, setChats]);
 
+    // Update context token usage and window limit
+    useEffect(() => {
+        const chat = chats.find(c => c.id === currentChatId);
+        if (!chat) {
+            setContextTokens(0);
+            return;
+        }
+
+        // Calculate total tokens from all messages in the chat
+        const total = chat.messages.reduce((acc, msg) => {
+            if (msg.usage?.totalTokens) {
+                return acc + msg.usage.totalTokens;
+            }
+            // Fallback estimation if usage is missing
+            const contentLen = typeof msg.content === 'string' ? msg.content.length : 0;
+            return acc + Math.ceil(contentLen / 4);
+        }, 0);
+        setContextTokens(total);
+
+        const isOllamaProvider = selectedProvider.toLowerCase() === 'ollama'
+            || selectedModel.toLowerCase().startsWith('ollama/');
+        if (isOllamaProvider) {
+            const configured = getConfiguredOllamaContextWindow(appSettings, selectedModel);
+            if (configured !== null) {
+                setContextWindow(configured);
+                return;
+            }
+        }
+
+        // Resolve context window from the provided models list
+        const activeModelInfo = models.find(m => m.id === selectedModel);
+        if (activeModelInfo?.contextWindow !== undefined) {
+            setContextWindow(Number(activeModelInfo.contextWindow));
+            return;
+        }
+
+        // Standard fallback if model info is not available or has no context window
+        setContextWindow(128000);
+    }, [appSettings, currentChatId, chats, models, selectedModel, selectedProvider]);
+
     const currentChat = chats.find(c => c.id === currentChatId);
     const currentSessionState = useSessionState(currentChatId);
     const currentStreamState = currentChatId ? streamingStates[currentChatId] : undefined;
@@ -429,68 +498,103 @@ export function useChatManager(options: UseChatManagerOptions) {
         const readyAttachments = attachments.filter(att => att.status === 'ready');
         const hasInputText = content.trim() !== '';
         const hasReadyAttachments = readyAttachments.length > 0;
+        
+        if (isSendingRef.current) { return; }
         if ((!hasInputText && !hasReadyAttachments) || !selectedModel || isLoading) { return; }
 
-        setChats(prev => prev.map(c => c.id === currentChatId ? { ...c, isGenerating: true } : c));
-        setInput('');
-        let chatId = currentChatId;
-        if (!chatId) {
-            const newChatId = generateId();
-            const timestamp = Date.now();
-            const newChatDb = { id: newChatId, title: content.slice(0, 50), model: selectedModel, backend: selectedProvider as string, createdAt: timestamp, updatedAt: timestamp, isGenerating: true };
-            const createResult = await window.electron.db.createChat(newChatDb);
-            if (!createResult.success) {
-                appLogger.error('ChatManager', '[useChatManager] Failed to create chat');
-                setChats(prev => prev.map(c => c.id === currentChatId ? { ...c, isGenerating: false } : c));
-                return;
-            }
-            setChats(prev => [{ ...newChatDb, messages: [], createdAt: new Date(timestamp), updatedAt: new Date(timestamp), isGenerating: true }, ...prev]);
-            chatId = newChatId;
-            setCurrentChatId(chatId);
-        }
+        isSendingRef.current = true;
+        try {
+            setInput('');
+            let chatId = currentChatId;
 
-        const timestamp = Date.now();
-        const imageInputs = readyAttachments.flatMap(att => {
-            if (att.type === 'image' && typeof att.content === 'string' && att.content.startsWith('data:image/')) {
-                return [att.content];
+            if (!chatId) {
+                const newChatId = generateId();
+                const createdAtMs = Date.now();
+                const newChatDb = {
+                    id: newChatId,
+                    title: content.slice(0, 50),
+                    model: selectedModel,
+                    backend: selectedProvider as string,
+                    createdAt: createdAtMs,
+                    updatedAt: createdAtMs,
+                    isGenerating: true
+                };
+
+                setChats(prev => [{
+                    ...newChatDb,
+                    messages: [],
+                    createdAt: new Date(createdAtMs),
+                    updatedAt: new Date(createdAtMs),
+                    isGenerating: true
+                }, ...prev]);
+                setCurrentChatId(newChatId);
+                chatId = newChatId;
+
+                const createResult = await window.electron.db.createChat(newChatDb);
+                if (!createResult.success) {
+                    appLogger.error('ChatManager', '[useChatManager] Failed to create chat');
+                    setChats(prev => prev.filter(chat => chat.id !== newChatId));
+                    setCurrentChatId(null);
+                    return;
+                }
+            } else {
+                setChats(prev => prev.map(c => c.id === chatId ? { ...c, isGenerating: true } : c));
             }
-            if (att.type === 'video' && typeof att.preview === 'string' && att.preview.startsWith('data:image/')) {
-                return [att.preview];
-            }
-            return [];
-        });
-        const attachmentContext = buildAttachmentPromptContext(
-            readyAttachments,
-            t('chat.attachmentPrompt.label')
-        );
-        const mergedContent = hasInputText
-            ? `${content}${attachmentContext}`
-            : `${attachmentContext}\n[${t('chat.attachmentPrompt.analyzeMedia')}]`.trim();
-        const userMessage: Message = {
-            id: generateId(),
-            role: 'user',
-            content: mergedContent,
-            timestamp: new Date(timestamp),
-            images: imageInputs.length > 0 ? imageInputs : undefined,
-            metadata: isImageOnlyModel(selectedModel)
-                ? { imageRequestCount }
-                : undefined
-        };
-        if (!chatId) { throw new Error('CHAT_ID_CREATION_FAILED'); }
-        await window.electron.db.addMessage({ ...userMessage, chatId, timestamp, provider: selectedProvider, model: selectedModel });
-        setChats(prev =>
-            prev.map((c: Chat) =>
-                c.id === chatId
-                    ? {
-                        ...c,
-                        messages: [...c.messages, userMessage],
-                        title: c.messages.length === 0 ? mergedContent.slice(0, 50) : c.title
-                    }
-                    : c
-            )
-        );
-        setAttachments([]);
-        void generateResponse(chatId, userMessage);
+
+            const timestamp = Date.now();
+            const imageInputs = readyAttachments.flatMap(att => {
+                if (att.type === 'image' && typeof att.content === 'string' && att.content.startsWith('data:image/')) {
+                    return [att.content];
+                }
+                if (att.type === 'video' && typeof att.preview === 'string' && att.preview.startsWith('data:image/')) {
+                    return [att.preview];
+                }
+                return [];
+            });
+            const attachmentContext = buildAttachmentPromptContext(
+                readyAttachments,
+                t('chat.attachmentPrompt.label')
+            );
+            const mergedContent = hasInputText
+                ? `${content}${attachmentContext}`
+                : `${attachmentContext}\n[${t('chat.attachmentPrompt.analyzeMedia')}]`.trim();
+            const userMessage: Message = {
+                id: generateId(),
+                role: 'user',
+                content: mergedContent,
+                timestamp: new Date(timestamp),
+                images: imageInputs.length > 0 ? imageInputs : undefined,
+                metadata: isImageOnlyModel(selectedModel)
+                    ? { imageRequestCount }
+                    : undefined
+            };
+            if (!chatId) { throw new Error('CHAT_ID_CREATION_FAILED'); }
+
+            setChats(prev =>
+                prev.map((c: Chat) =>
+                    c.id === chatId
+                        ? {
+                            ...c,
+                            messages: deduplicateMessages([...c.messages, userMessage]),
+                            title: c.messages.length === 0 ? mergedContent.slice(0, 50) : c.title
+                        }
+                        : c
+                )
+            );
+            void window.electron.db.addMessage({
+                ...userMessage,
+                chatId,
+                timestamp,
+                provider: selectedProvider,
+                model: selectedModel
+            }).catch((error) => {
+                appLogger.error('ChatManager', '[useChatManager] Failed to persist user message', error as Error);
+            });
+            setAttachments([]);
+            void generateResponse(chatId, userMessage);
+        } finally {
+            isSendingRef.current = false;
+        }
     }, [input, attachments, selectedModel, isLoading, currentChatId, selectedProvider, generateResponse, imageRequestCount, setChats, setAttachments, t]);
 
     const regenerateMessage = useCallback(
@@ -525,12 +629,12 @@ export function useChatManager(options: UseChatManagerOptions) {
 
     return useMemo(() => ({
         chats, setChats, currentChatId, setCurrentChatId, messages, displayMessages, searchTerm, setSearchTerm, input, setInput, isLoading,
-        streamingReasoning, streamingSpeed, chatError, clearChatError, contextTokens, handleSend, stopGeneration, createNewChat, deleteChat, clearMessages,
+        streamingReasoning, streamingSpeed, chatError, clearChatError, contextTokens, contextWindow, handleSend, stopGeneration, createNewChat, deleteChat, clearMessages,
         folders, createFolder, updateFolder, deleteFolder, moveChatToFolder, addMessage, prompts, createPrompt, deletePrompt, updatePrompt,
         isListening, startListening, stopListening, updateChat, togglePin, toggleFavorite, attachments, setAttachments, processFile, removeAttachment,
         t, handleSpeak, systemMode, setSystemMode, imageRequestCount, setImageRequestCount, regenerateMessage, bulkDeleteChats,
         permissionPolicy, setPermissionPolicy
-    }), [chats, currentChatId, messages, displayMessages, searchTerm, input, isLoading, streamingReasoning, streamingSpeed, chatError, clearChatError, contextTokens,
+    }), [chats, currentChatId, messages, displayMessages, searchTerm, input, isLoading, streamingReasoning, streamingSpeed, chatError, clearChatError, contextTokens, contextWindow,
         handleSend, stopGeneration, createNewChat, deleteChat, clearMessages, folders, createFolder, updateFolder, deleteFolder, moveChatToFolder,
         addMessage, prompts, createPrompt, deletePrompt, updatePrompt, isListening, startListening, stopListening, updateChat, togglePin, toggleFavorite,
         attachments, setAttachments, processFile, removeAttachment, t, handleSpeak, systemMode, imageRequestCount, regenerateMessage, bulkDeleteChats,

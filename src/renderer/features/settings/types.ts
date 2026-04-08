@@ -19,8 +19,8 @@ export type SettingsCategory =
     | 'social-media';
 
 export type DetailedStats = Awaited<ReturnType<Window['electron']['db']['getDetailedStats']>>
-export type AuthStatusState = { codex: boolean; claude: boolean; antigravity: boolean; copilot?: boolean }
-export type BrowserOAuthProvider = 'codex' | 'claude' | 'antigravity'
+export type AuthStatusState = { codex: boolean; claude: boolean; antigravity: boolean; ollama: boolean; copilot?: boolean }
+export type BrowserOAuthProvider = 'codex' | 'claude' | 'antigravity' | 'ollama'
 export type DeviceAuthProvider = 'github' | 'copilot'
 export type SettingsAuthProvider = BrowserOAuthProvider | DeviceAuthProvider
 export interface AuthBusyState {

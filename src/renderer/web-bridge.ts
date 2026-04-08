@@ -11,6 +11,7 @@ import type { Workspace, WorkspaceAnalysis } from '@shared/types';
 import type { AdvancedSemanticFragment, PendingMemory } from '@shared/types/advanced-memory';
 import type { Chat, Folder, Message, ToolResult } from '@shared/types/chat';
 import type { IpcValue } from '@shared/types/common';
+import type { InstallRequest, MarketplaceRegistry, MarketplaceRuntimeProfile } from '@shared/types/marketplace';
 import type { ClaudeQuota, CodexUsage } from '@shared/types/quota';
 import type { AppSettings } from '@shared/types/settings';
 import type { IpcRendererEvent } from 'electron';
@@ -70,6 +71,8 @@ export const webElectronMock: ElectronAPI = {
         },
     }),
     antigravityLogin: async () => ({ url: 'http://localhost', state: 'mock-state', accountId: 'antigravity_mock' }),
+    ollamaLogin: async () => ({ url: 'http://localhost', state: 'mock-state', accountId: 'ollama_mock' }),
+    ollamaSignout: async () => ({ success: true }),
 
     claudeLogin: async () => ({ url: 'http://localhost', state: 'mock-state', accountId: 'claude_mock' }),
     claudeBrowserLogin: async () => ({ sessionKey: 'mock-key', status: 'success' }),
@@ -564,6 +567,53 @@ export const webElectronMock: ElectronAPI = {
         pause: async (_downloadId: string) => ({}),
         resume: async (_downloadId: string) => ({}),
         cancel: async (_downloadId: string) => ({}),
+        history: async (_limit?: number) => ({ success: true, items: [] }),
+        retry: async (_historyId: string) => ({ success: false }),
+    },
+    marketplace: {
+        fetch: async () => ({
+            version: '0',
+            lastUpdated: new Date().toISOString(),
+            themes: [],
+            mcp: [],
+            personas: [],
+            models: [],
+            prompts: [],
+            languages: [],
+            skills: [],
+        } satisfies MarketplaceRegistry),
+        getRuntimeProfile: async () => ({
+            system: {
+                platform: navigator.platform || 'web',
+                arch: 'x64',
+                cpuCores: navigator.hardwareConcurrency || 4,
+                cpuLoadPercent: 0,
+                totalMemoryBytes: 0,
+                freeMemoryBytes: 0,
+                storageTotalBytes: 0,
+                storageFreeBytes: 0,
+                storageUsedBytes: 0,
+                storageUsagePercent: 0,
+            },
+            gpu: {
+                available: false,
+                source: 'none',
+                backends: [],
+                devices: [],
+            },
+            performance: {
+                rssBytes: 0,
+                heapUsedBytes: 0,
+                processCount: 0,
+                alertCount: 0,
+            },
+        } satisfies MarketplaceRuntimeProfile),
+        install: async (_request: InstallRequest) => ({
+            success: true,
+            path: '',
+            queuedDownloads: 0,
+            downloadIds: [],
+        }),
     },
 
     llama: {
