@@ -3,8 +3,10 @@ import { JsonValue } from '@shared/types/common';
 import {
     buildAiEvidenceEntries,
     calculateToolCallSignature,
+    composeDeterministicAnswer,
     createEvidenceRecord,
     getAiToolLoopBudget,
+    isLowSignalProgressContent,
 } from '@shared/utils/ai-runtime.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
@@ -185,21 +187,60 @@ function findMissingRequiredArgument(toolCall: ToolCall, tools: ToolDefinition[]
 
 function getMostRecentSuccessfulToolContentsByName(
     toolMessages: Message[],
+    toolCallMap: Map<string, NonNullable<Message['toolCalls']>[number]>,
     toolName: string,
     count: number
 ): string[] | null {
+    const resolveToolName = (message: Message): string | null => {
+        if (message.toolCallId) {
+            const mappedToolCall = toolCallMap.get(message.toolCallId);
+            const mappedName = mappedToolCall?.function.name;
+            if (typeof mappedName === 'string' && mappedName.trim().length > 0) {
+                return mappedName;
+            }
+        }
+
+        const payload = readToolMessagePayload(message);
+        const directToolName = payload['tool'];
+        if (typeof directToolName === 'string' && directToolName.trim().length > 0) {
+            return directToolName;
+        }
+        const details = payload['details'];
+        if (details && typeof details === 'object' && !Array.isArray(details)) {
+            const detailsRecord = details as Record<string, JsonValue>;
+            const nestedToolName = detailsRecord['tool'];
+            if (typeof nestedToolName === 'string' && nestedToolName.trim().length > 0) {
+                return nestedToolName;
+            }
+        }
+        return null;
+    };
+
     const matchingContents = toolMessages
         .slice()
         .reverse()
-        .filter(message => {
-            const payload = readToolMessagePayload(message);
-            return isSuccessfulToolMessage(message) && payload['tool'] === toolName;
-        })
+        .filter(message => isSuccessfulToolMessage(message) && resolveToolName(message) === toolName)
         .map(message => getToolMessageContent(message));
     if (matchingContents.length === 0) {
         return null;
     }
     return Array.from({ length: count }, (_, index) => matchingContents[index] ?? matchingContents[0]);
+}
+
+function buildDeterministicAnswerFromEvidence(
+    intentClassification: AiIntentClassification,
+    toolCalls: ToolCall[],
+    toolMessages: Message[],
+    language: string
+): string | undefined {
+    const storedToolResults = buildStoredToolResults(toolCalls, toolMessages);
+    return composeDeterministicAnswer({
+        intent: intentClassification,
+        content: '',
+        toolCalls,
+        toolResults: storedToolResults,
+        language,
+    });
 }
 
 interface ExecuteToolTurnLoopParams {
@@ -265,17 +306,23 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
     const seenToolFamilies = new Set<string>();
     let consecutiveSameFamilyTurns = 0;
     let lastToolFamily = '';
+    const traceId = `${chatId.slice(0, 8)}:${currentAssistantId.slice(0, 8)}`;
 
     appLogger.info(
         'useChatGenerator',
-        `Tool loop started: chatId=${chatId}, model=${activeModel}, provider=${selectedProvider}, maxIterations=${toolLoopBudget.maxModelTurns}, initialMessages=${initialMessages.length}, intent=${intentClassification.intent}`
+        `[${traceId}] Tool loop started: chatId=${chatId}, model=${activeModel}, provider=${selectedProvider}, maxIterations=${toolLoopBudget.maxModelTurns}, initialMessages=${initialMessages.length}, intent=${intentClassification.intent}`
     );
 
     while (toolIterations < toolLoopBudget.maxModelTurns) {
         if (currentMessages.length === 0) {
+            appLogger.warn('useChatGenerator', `[${traceId}] loop-break: no current messages before iteration=${toolIterations + 1}`);
             break;
         }
         const toolsAllowedThisTurn = executedToolTurnCount < toolLoopBudget.maxExecutedToolTurns;
+        appLogger.info(
+            'useChatGenerator',
+            `[${traceId}] iteration=${toolIterations + 1} start currentMessages=${currentMessages.length}, reasonings=${reasonings.length}, historyToolCalls=${toolCallsHistory.length}, toolsAllowed=${String(toolsAllowedThisTurn)}`
+        );
 
         const stream = chatStream({
             messages: currentMessages,
@@ -308,6 +355,11 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
             initialContent: accumulatedContent,
             initialToolCalls: [...toolCallsHistory],
         });
+        const streamDuration = Math.round(performance.now() - streamStartTime);
+        appLogger.info(
+            'useChatGenerator',
+            `[${traceId}] iteration=${toolIterations + 1} stream-done durationMs=${streamDuration}, finalContentLen=${result.finalContent.length}, finalReasoningLen=${result.finalReasoning.length}, turnToolCalls=${result.finalToolCalls.length}`
+        );
         const streamedContent = result.finalContent;
         let turnReasoning = result.finalReasoning.trim();
 
@@ -350,12 +402,29 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
                 });
             }
         }
-        if (turnDisplayContent.trim().length > 0) {
-            accumulatedContent = turnDisplayContent;
+        const normalizedStreamedContent = streamedContent.trim();
+        
+        let updatedAccumulatedContent = accumulatedContent;
+        if (normalizedStreamedContent.length > 0) {
+            // If the model produced a low-signal filler text (common for Gemini/Antigravity provider)
+            // before calling a tool, we wrap it in <think> tags. This hides it from the main UI
+            // by pushing it to the reasoning accordion, and ensures the LLM retains it in history
+            // so it doesn't get stuck in a repetition loop.
+            if (isLowSignalProgressContent(normalizedStreamedContent) && !normalizedStreamedContent.startsWith('<think>')) {
+                appLogger.info('useChatGenerator', `[${traceId}] Wrapping low-signal content in <think> tags to prevent repetition`);
+                updatedAccumulatedContent = `<think>\n${normalizedStreamedContent}\n</think>`;
+                if (!reasonings.includes(normalizedStreamedContent)) {
+                    reasonings.push(normalizedStreamedContent);
+                }
+            } else {
+                updatedAccumulatedContent = streamedContent;
+            }
         }
+        accumulatedContent = updatedAccumulatedContent;
+
         appLogger.info(
             'useChatGenerator',
-            `Tool loop iteration ${toolIterations + 1}: toolCalls=${currentTurnToolCalls.length}, contentLength=${turnDisplayContent.length}`
+            `[${traceId}] Tool loop iteration ${toolIterations + 1}: toolCalls=${currentTurnToolCalls.length}, contentLength=${streamedContent.length}`
         );
 
         if (currentTurnToolCalls.length === 0) {
@@ -364,6 +433,20 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
                 shouldRecoverFromLowSignalFinalContent(assistantContent, toolEvidenceState.toolMessages)
                 && lowSignalRecoveryCount < 1
             ) {
+                const deterministicFallback = buildDeterministicAnswerFromEvidence(
+                    intentClassification,
+                    toolCallsHistory,
+                    toolEvidenceState.toolMessages,
+                    language
+                );
+                if (deterministicFallback) {
+                    appLogger.warn(
+                        'useChatGenerator',
+                        `[${traceId}] Low-signal final content detected; deterministic evidence answer available, forcing finalize: chatId=${chatId}`
+                    );
+                    wasSafetyBreak = true;
+                    break;
+                }
                 lastAssistantMessage = {
                     id: currentAssistantId,
                     role: 'assistant',
@@ -387,7 +470,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
                 toolIterations++;
                 appLogger.warn(
                     'useChatGenerator',
-                    `Recovered from low-signal final content using prior tool evidence: chatId=${chatId}, noProgressTurns=${noProgressToolTurnCount}`
+                    `[${traceId}] Recovered from low-signal final content using prior tool evidence: chatId=${chatId}, noProgressTurns=${noProgressToolTurnCount}`
                 );
                 continue;
             }
@@ -397,7 +480,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
             ) {
                 appLogger.warn(
                     'useChatGenerator',
-                    `Low-signal recovery limit reached, forcing finalize: chatId=${chatId}, recoveries=${lowSignalRecoveryCount}`
+                    `[${traceId}] Low-signal recovery limit reached, forcing finalize: chatId=${chatId}, recoveries=${lowSignalRecoveryCount}`
                 );
                 wasSafetyBreak = true;
                 break;
@@ -494,6 +577,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
         if (validExecutableToolCalls.every(toolCall => toolCall.function.name === 'resolve_path')) {
             const repeatedResolvePathContents = getMostRecentSuccessfulToolContentsByName(
                 toolEvidenceState.toolMessages,
+                toolEvidenceState.toolCallMap,
                 'resolve_path',
                 validExecutableToolCalls.length
             );
@@ -538,7 +622,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
         }
         appLogger.info(
             'useChatGenerator',
-            `Tool signature check: repeatedCount=${repeatedToolSignatureCount}, signature=${toolSignature || 'empty'}`
+            `[${traceId}] Tool signature check: repeatedCount=${repeatedToolSignatureCount}, signature=${toolSignature || 'empty'}`
         );
         recentToolSignatures = updateRecentToolSignatures(
             recentToolSignatures,
@@ -570,7 +654,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
             toolIterations++;
             appLogger.warn(
                 'useChatGenerator',
-                `Tool budget exhausted; forcing model-only continuation: executedTurns=${executedToolTurnCount}, requestedCalls=${validExecutableToolCalls.length}`
+                `[${traceId}] Tool budget exhausted; forcing model-only continuation: executedTurns=${executedToolTurnCount}, requestedCalls=${validExecutableToolCalls.length}`
             );
             continue;
         }
@@ -598,8 +682,22 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
             toolIterations++;
             appLogger.warn(
                 'useChatGenerator',
-                `Blocked repeated tool execution: signature=${toolSignature}, repeatedCount=${repeatedToolSignatureCount}`
+                `[${traceId}] Blocked repeated tool execution: signature=${toolSignature}, repeatedCount=${repeatedToolSignatureCount}`
             );
+            const deterministicFallback = buildDeterministicAnswerFromEvidence(
+                intentClassification,
+                toolCallsHistory,
+                toolEvidenceState.toolMessages,
+                language
+            );
+            if (deterministicFallback) {
+                appLogger.warn(
+                    'useChatGenerator',
+                    `[${traceId}] Repeated signature detected with deterministic evidence answer available; forcing finalize: signature=${toolSignature}`
+                );
+                wasSafetyBreak = true;
+                break;
+            }
 
             // Safety check even when blocked
             const loopAction = evaluateLoopSafety({
@@ -664,7 +762,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
             const familyNames = currentTurnFamilies;
             appLogger.warn(
                 'useChatGenerator',
-                `Semantic tool-family loop detected without progress: family=${familyNames.join(',')}, consecutiveSameFamily=${consecutiveSameFamilyTurns}, isMonotonous=${String(isMonotonous)}, noProgress=${noProgressToolTurnCount}`
+                `[${traceId}] Semantic tool-family loop detected without progress: family=${familyNames.join(',')}, consecutiveSameFamily=${consecutiveSameFamilyTurns}, isMonotonous=${String(isMonotonous)}, noProgress=${noProgressToolTurnCount}`
             );
             const assistantMsgForFamily = buildAssistantMessage({
                 id: currentAssistantId,
@@ -717,6 +815,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
             }));
         };
         updateInFlightToolProgress();
+        const toolExecutionStart = performance.now();
         const { toolResults, generatedImages } = await executeBatchToolCalls({
             toolCalls: validExecutableToolCalls,
             workspacePath: activeWorkspacePath,
@@ -729,6 +828,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
                 updateInFlightToolProgress();
             },
         });
+        const toolExecutionDuration = Math.round(performance.now() - toolExecutionStart);
         lastToolResults = toolResults;
         executedToolTurnCount += 1;
         cacheToolContentsForSignature(
@@ -739,7 +839,9 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
         // A tool succeeding does NOT count as progress if it's the same family we've already used.
         const executedFamilies = new Set(validExecutableToolCalls.map(tc => tc.function.name));
         const hasNewFamilyEvidence = Array.from(executedFamilies).some(family => !seenToolFamilies.has(family));
-        const hasSubstantialContent = result.finalContent.trim().length > TOOL_LOOP_LOW_SIGNAL_CONTENT_THRESHOLD;
+        const normalizedFinalContent = result.finalContent.trim();
+        const hasSubstantialContent = normalizedFinalContent.length > TOOL_LOOP_LOW_SIGNAL_CONTENT_THRESHOLD
+            && !isLowSignalProgressContent(normalizedFinalContent);
         const currentTurnMadeProgress = hasSubstantialContent
             || (hasSuccessfulToolEvidence(toolResults) && hasNewFamilyEvidence);
         // Register all families we've seen
@@ -751,7 +853,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
             : noProgressToolTurnCount + 1;
         appLogger.info(
             'useChatGenerator',
-            `Tool execution batch done: calls=${validExecutableToolCalls.length}, results=${toolResults.length}, images=${generatedImages.length}, noProgressTurns=${noProgressToolTurnCount}`
+            `[${traceId}] Tool execution batch done: calls=${validExecutableToolCalls.length}, results=${toolResults.length}, images=${generatedImages.length}, noProgressTurns=${noProgressToolTurnCount}, durationMs=${toolExecutionDuration}`
         );
 
         const turnEvidenceEntries = buildAiEvidenceEntries({
@@ -854,6 +956,10 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
     }
 
     if (toolIterations >= toolLoopBudget.maxModelTurns || wasSafetyBreak) {
+        appLogger.warn(
+            'useChatGenerator',
+            `[${traceId}] Loop ended via safety path iterations=${toolIterations}, wasSafetyBreak=${String(wasSafetyBreak)}`
+        );
         await finalizeLoopForcefully({
             repeatedToolSignatureCount,
             executableToolCalls: [],
@@ -885,6 +991,9 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
             lowSignalContentThreshold: TOOL_LOOP_LOW_SIGNAL_CONTENT_THRESHOLD,
         });
     }
-    appLogger.info('useChatGenerator', `Tool loop finished: chatId=${chatId}, iterations=${toolIterations}`);
+    appLogger.info(
+        'useChatGenerator',
+        `[${traceId}] Tool loop finished: chatId=${chatId}, iterations=${toolIterations}, executedToolTurns=${executedToolTurnCount}, noProgressTurns=${noProgressToolTurnCount}, malformedCalls=${malformedToolCallCount}`
+    );
     return currentAssistantId;
 }
