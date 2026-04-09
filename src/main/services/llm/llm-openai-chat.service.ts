@@ -58,8 +58,9 @@ const OPENAI_RETRY_POLICY = {
 
 const PROVIDER_DEFAULT_MAX_TOKENS: Record<string, number> = {
     nvidia: 4096,
-    huggingface: 512,
-    'local-ai': 512,
+    huggingface: 16384,
+    'local-ai': 4096,
+    opencode: 32768,
 };
 
 const ERROR_CODES = {

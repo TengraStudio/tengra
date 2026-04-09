@@ -17,6 +17,30 @@ import {
 const MAX_STREAMED_MESSAGE_CONTENT = 180000;
 const MAX_REASONING_SEGMENT_CONTENT = 60000;
 const STREAM_CONTENT_TRUNCATION_NOTICE = '\n\n[Stream stopped: response exceeded Tengra safety limit.]';
+const STREAM_LOG_PREVIEW_LENGTH = 140;
+
+function buildLogPreview(value: string): string {
+    const normalized = value.replace(/\s+/g, ' ').trim();
+    if (normalized.length <= STREAM_LOG_PREVIEW_LENGTH) {
+        return normalized;
+    }
+    return `${normalized.slice(0, STREAM_LOG_PREVIEW_LENGTH)}...`;
+}
+
+function buildStreamTraceId(chatId: string, assistantId: string): string {
+    return `${chatId.slice(0, 8)}:${assistantId.slice(0, 8)}`;
+}
+
+function summarizeChunkForLog(chunk: StreamChunk): string {
+    const chunkType = chunk.type ?? 'unknown';
+    const chunkIndex = chunk.index ?? 0;
+    const contentLength = typeof chunk.content === 'string' ? chunk.content.length : 0;
+    const reasoningLength = typeof chunk.reasoning === 'string' ? chunk.reasoning.length : 0;
+    const toolCallCount = Array.isArray(chunk.tool_calls) ? chunk.tool_calls.length : 0;
+    const imageCount = Array.isArray(chunk.images) ? chunk.images.length : 0;
+    const sourceCount = Array.isArray(chunk.sources) ? chunk.sources.length : 0;
+    return `type=${chunkType}, index=${chunkIndex}, contentLen=${contentLength}, reasoningLen=${reasoningLength}, toolCalls=${toolCallCount}, images=${imageCount}, sources=${sourceCount}`;
+}
 
 /**
  * Robustly extracts reasoning/thought content from message content.
@@ -30,10 +54,15 @@ export function extractReasoning(
     const shouldTrim = options.trim ?? true;
     const normalize = (value: string): string => shouldTrim ? value.trim() : value;
     const effectiveReasoning = normalize(explicitReasoning);
+    const hasMeaningfulExplicitReasoning = explicitReasoning.trim().length > 0;
 
     // If explicit reasoning is provided by the provider, use it and append any tag content if needed
     // However, usually providers use EITHER explicit reasoning property OR tags.
-    if (effectiveReasoning.length > 0) {
+    if (hasMeaningfulExplicitReasoning && effectiveReasoning.length > 0) {
+        appLogger.info(
+            'processChatStream',
+            `extractReasoning: using explicit reasoning len=${effectiveReasoning.length}, trim=${String(shouldTrim)}`
+        );
         return effectiveReasoning;
     }
 
@@ -43,10 +72,14 @@ export function extractReasoning(
         const contentAfterStart = content.substring(thinkStart + 7);
         const thinkEnd = contentAfterStart.toLowerCase().indexOf('</think>');
         if (thinkEnd !== -1) {
-            return normalize(contentAfterStart.substring(0, thinkEnd));
+            const extracted = normalize(contentAfterStart.substring(0, thinkEnd));
+            appLogger.info('processChatStream', `extractReasoning: extracted <think> block len=${extracted.length}`);
+            return extracted;
         }
         // Handle unclosed tag during streaming
-        return normalize(contentAfterStart);
+        const extracted = normalize(contentAfterStart);
+        appLogger.info('processChatStream', `extractReasoning: extracted unclosed <think> len=${extracted.length}`);
+        return extracted;
     }
 
     // fallback to variants like <thinking>
@@ -55,11 +88,16 @@ export function extractReasoning(
         const contentAfterStart = content.substring(thinkingStart + 10);
         const thinkingEnd = contentAfterStart.toLowerCase().indexOf('</thinking>');
         if (thinkingEnd !== -1) {
-            return normalize(contentAfterStart.substring(0, thinkingEnd));
+            const extracted = normalize(contentAfterStart.substring(0, thinkingEnd));
+            appLogger.info('processChatStream', `extractReasoning: extracted <thinking> block len=${extracted.length}`);
+            return extracted;
         }
-        return normalize(contentAfterStart);
+        const extracted = normalize(contentAfterStart);
+        appLogger.info('processChatStream', `extractReasoning: extracted unclosed <thinking> len=${extracted.length}`);
+        return extracted;
     }
 
+    appLogger.info('processChatStream', 'extractReasoning: no explicit reasoning or think tags found');
     return '';
 }
 
@@ -274,7 +312,10 @@ const isReasoningStreamChunk = (chunk: StreamChunk): boolean =>
     chunk.type === 'reasoning' || typeof chunk.reasoning === 'string';
 
 const shouldCloseReasoningSegment = (chunk: StreamChunk): boolean =>
-    chunk.type === 'content' || chunk.type === 'tool_calls' || chunk.type === 'error';
+    chunk.type === 'content'
+    || chunk.type === 'tool_calls'
+    || chunk.type === 'error'
+    || (Array.isArray(chunk.tool_calls) && chunk.tool_calls.length > 0);
 
 const truncateReasoningSegment = (value: string): string =>
     value.length <= MAX_REASONING_SEGMENT_CONTENT
@@ -285,7 +326,7 @@ const appendReasoningSegment = (
     state: ReasoningSegmentState,
     reasoning: string
 ): ReasoningSegmentState => {
-    if (reasoning.length === 0) {
+    if (reasoning.trim().length === 0) {
         return state;
     }
     const segments = [...state.segments];
@@ -562,12 +603,27 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
         segments: [...(initialReasonings ?? [])], 
         isClosed: Boolean(initialReasonings && initialReasonings.length > 0)
     };
+    const traceId = buildStreamTraceId(chatId, assistantId);
+    let chunkCount = 0;
+
+    appLogger.info(
+        'processChatStream',
+        `[${traceId}] stream-start model=${activeModel}, provider=${selectedProvider}, initialContentLen=${finalContent.length}, initialReasonings=${reasoningState.segments.length}`
+    );
 
     const queueDbSave = (saveOptions: SaveToDbOptions): void => {
         if (pendingDbSave) {
             queuedDbSave = saveOptions;
+            appLogger.info(
+                'processChatStream',
+                `[${traceId}] db-save queued while previous save in-flight contentLen=${saveOptions.content.length}, reasoningLen=${saveOptions.reasoning.length}`
+            );
             return;
         }
+        appLogger.info(
+            'processChatStream',
+            `[${traceId}] db-save start contentLen=${saveOptions.content.length}, reasoningLen=${saveOptions.reasoning.length}`
+        );
         pendingDbSave = saveMessageToDb(saveOptions)
             .catch((error: RendererDataValue) => {
                 const err = error instanceof Error ? error : new Error(String(error));
@@ -575,6 +631,7 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
             })
             .finally(() => {
                 pendingDbSave = null;
+                appLogger.info('processChatStream', `[${traceId}] db-save completed`);
                 if (queuedDbSave) {
                     const nextSave = queuedDbSave;
                     queuedDbSave = null;
@@ -585,6 +642,8 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
 
     // Process stream chunks
     for await (const chunk of stream) {
+        chunkCount += 1;
+        appLogger.info('processChatStream', `[${traceId}] chunk#${chunkCount} ${summarizeChunkForLog(chunk)}`);
         const isReasoningChunk = isReasoningStreamChunk(chunk);
         const iterationReasoning = isReasoningChunk && reasoningState.isClosed ? '' : finalReasoning;
         const { index, result } = processChunkIteration({
@@ -602,11 +661,19 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
 
         // Update state if chunk produced changes
         if (result.updated) {
+            appLogger.info(
+                'processChatStream',
+                `[${traceId}] chunk#${chunkCount} updated index=${index}, hasContent=${result.newContent !== undefined}, hasReasoning=${typeof result.newReasoning === 'string'}, hasToolCalls=${Array.isArray(result.newToolCalls)}`
+            );
             if (result.streamError && index === 0) {
                 const suffix = buildStreamInterruptedSuffix(result.streamError);
                 if (!finalContent.includes(suffix)) {
                     finalContent = `${finalContent}${suffix}`.trim();
                 }
+                appLogger.warn(
+                    'processChatStream',
+                    `[${traceId}] stream error appended to content error=${buildLogPreview(result.streamError)}`
+                );
             }
             if (result.streamError) {
                 // Also update one last time to capture the error in streaming state
@@ -623,6 +690,10 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
             if (updates.finalReasoning) {
                 finalReasoning = updates.finalReasoning;
                 reasoningState = appendReasoningSegment(reasoningState, finalReasoning);
+                appLogger.info(
+                    'processChatStream',
+                    `[${traceId}] explicit reasoning update len=${finalReasoning.length}, segments=${reasoningState.segments.length}, preview=${buildLogPreview(finalReasoning)}`
+                );
             }
             if (updates.finalContent !== undefined) {
                 if (!hasPrimaryContentChunk) {
@@ -636,18 +707,33 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
                 const clamped = clampStreamedContent(finalContent);
                 finalContent = clamped.content;
                 streamContentTruncated = streamContentTruncated || clamped.truncated;
+                appLogger.info(
+                    'processChatStream',
+                    `[${traceId}] content update len=${finalContent.length}, truncated=${String(clamped.truncated)}, preview=${buildLogPreview(finalContent)}`
+                );
             }
             if (updates.finalImages) {
                 finalImages = updates.finalImages;
             }
             if (updates.finalToolCalls) {
                 finalToolCalls = updates.finalToolCalls;
+                appLogger.info(
+                    'processChatStream',
+                    `[${traceId}] tool-calls update count=${finalToolCalls.length}`
+                );
             }
 
             // Extract reasoning from content if not explicitly provided
-            finalReasoning = extractReasoning(finalContent, updates.finalReasoning || finalReasoning, { trim: false });
-            if (updates.finalReasoning) {
+            const newlyExtractedReasoning = extractReasoning(finalContent, updates.finalReasoning || finalReasoning, { trim: false });
+            if (updates.finalReasoning || (newlyExtractedReasoning && newlyExtractedReasoning !== finalReasoning)) {
+                finalReasoning = newlyExtractedReasoning;
                 reasoningState = appendReasoningSegment(reasoningState, finalReasoning);
+                appLogger.info(
+                    'processChatStream',
+                    `[${traceId}] post-extraction reasoning len=${finalReasoning.length}, segments=${reasoningState.segments.length}, preview=${buildLogPreview(finalReasoning)}`
+                );
+            } else {
+                finalReasoning = newlyExtractedReasoning;
             }
 
             if (result.usage) {
@@ -664,6 +750,10 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
         }
         if (shouldCloseReasoningSegment(chunk)) {
             reasoningState = { ...reasoningState, isClosed: true };
+            appLogger.info(
+                'processChatStream',
+                `[${traceId}] reasoning-segment closed by chunkType=${chunk.type ?? 'unknown'}, totalSegments=${reasoningState.segments.length}`
+            );
         }
 
         // Throttled updates
@@ -693,6 +783,10 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
         lastSaveTime = throttleResult.lastSaveTime;
         lastDbSaveTime = throttleResult.lastDbSaveTime;
         if (streamContentTruncated) {
+            appLogger.warn(
+                'processChatStream',
+                `[${traceId}] stream terminated early due to safety content truncation len=${finalContent.length}`
+            );
             break;
         }
     }
@@ -729,6 +823,11 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
     setChats((prev) => updateChatTitles({ prev, chatId, assistantId, completedMsg, finalContent, t }));
 
     if (autoReadEnabled && finalContent) { handleSpeak(assistantId, finalContent); }
+
+    appLogger.info(
+        'processChatStream',
+        `[${traceId}] stream-finished chunks=${chunkCount}, finalContentLen=${finalContent.length}, finalReasoningLen=${effectiveFinalReasoning.length}, reasonings=${allReasonings?.length ?? 0}, toolCalls=${finalToolCalls.length}, usageTotal=${finalUsage.totalTokens}`
+    );
 
     return { finalContent, finalReasoning: effectiveFinalReasoning, finalReasonings: allReasonings, finalSources, finalVariants, finalToolCalls, finalUsage };
 };

@@ -117,13 +117,19 @@ export class StreamParser {
         const reader = body.getReader();
         const MAX_ITERATIONS = 1_000_000;
         let iterationCount = 0;
+        let shouldBreak = false;
         try {
-            while (iterationCount < MAX_ITERATIONS) {
+            while (iterationCount < MAX_ITERATIONS && !shouldBreak) {
                 const { done, value } = await reader.read();
                 if (done) { break; }
                 const newContent = decoder.decode(value, { stream: true });
                 setBuf(getBuf() + newContent);
-                yield* this.processBuffer(getBuf(), setBuf, openCodeState, xmlState);
+                for (const chunk of this.processBuffer(getBuf(), setBuf, openCodeState, xmlState)) {
+                    yield chunk;
+                    if (chunk.finish_reason != null) {
+                        shouldBreak = true;
+                    }
+                }
                 iterationCount++;
             }
         } finally {
@@ -146,7 +152,16 @@ export class StreamParser {
         for await (const value of body) {
             const newContent = decoder.decode(value, { stream: true });
             setBuf(getBuf() + newContent);
-            yield* this.processBuffer(getBuf(), setBuf, openCodeState, xmlState);
+            let shouldBreak = false;
+            for (const chunk of this.processBuffer(getBuf(), setBuf, openCodeState, xmlState)) {
+                yield chunk;
+                if (chunk.finish_reason != null) {
+                    shouldBreak = true;
+                }
+            }
+            if (shouldBreak) {
+                break;
+            }
         }
     }
 
@@ -545,7 +560,8 @@ export class StreamParser {
                 ...chunk,
                 content: '', // XML calls are usually standalone or handled in cleanedText
                 type: 'tool_calls',
-                tool_calls: toolCalls
+                tool_calls: toolCalls,
+                finish_reason: 'tool_calls'
             };
         }
 
