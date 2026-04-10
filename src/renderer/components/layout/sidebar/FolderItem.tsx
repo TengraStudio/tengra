@@ -69,10 +69,10 @@ export const FolderItem: React.FC<FolderItemProps> = ({
                             onChange={e => setName(e.target.value)}
                             onBlur={handleRename}
                             onKeyDown={e => e.key === 'Enter' && handleRename()}
-                            className="bg-transparent border-none outline-none text-xs font-medium w-full"
+                            className="bg-transparent border-none outline-none typo-caption font-medium w-full"
                         />
                     ) : (
-                        <span className="text-xs font-medium truncate">{folder.name}</span>
+                        <span className="typo-caption font-medium truncate">{folder.name}</span>
                     )}
                     <span className="text-xxs text-muted-foreground/40">{chats.length}</span>
                 </div>

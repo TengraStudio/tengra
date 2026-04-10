@@ -52,6 +52,21 @@ const createFinalAnswerStream = async function* () {
     yield { content: 'Masaustunde 8 oge var.' };
 };
 
+const createLowSignalPlanningToolTurnStream = async function* () {
+    yield { content: 'to verify or determine where to place the project. I\'ll use the Desktop folder by default.' };
+    yield {
+        type: 'tool_calls' as const,
+        tool_calls: [{
+            id: 'tool-call-low-signal',
+            type: 'function' as const,
+            function: {
+                name: 'list_directory',
+                arguments: JSON.stringify({ path: '%USERPROFILE%/Desktop' }),
+            },
+        }],
+    };
+};
+
 const createSameToolTurnStream = async function* () {
     yield {
         type: 'tool_calls' as const,
@@ -117,6 +132,34 @@ const createWriteFileToolTurnStream = async function* () {
             function: {
                 name: 'write_file',
                 arguments: JSON.stringify({ path: 'todo-app/app/page.tsx', content: 'export default function Page() { return null; }' }),
+            },
+        }],
+    };
+};
+
+const createResolvePathToolTurnStreamA = async function* () {
+    yield {
+        type: 'tool_calls' as const,
+        tool_calls: [{
+            id: 'tool-call-resolve-1',
+            type: 'function' as const,
+            function: {
+                name: 'resolve_path',
+                arguments: JSON.stringify({ path: '~/Desktop/todo-app' }),
+            },
+        }],
+    };
+};
+
+const createResolvePathToolTurnStreamB = async function* () {
+    yield {
+        type: 'tool_calls' as const,
+        tool_calls: [{
+            id: 'tool-call-resolve-2',
+            type: 'function' as const,
+            function: {
+                name: 'resolve_path',
+                arguments: JSON.stringify({ path: '%USERPROFILE%/Desktop/task-manager-nextjs' }),
             },
         }],
     };
@@ -794,6 +837,71 @@ describe('useChatGenerator - Validation', () => {
 describe('useChatGenerator - Efficiency & Rebinds', () => {
     beforeEach(setupChatGeneratorTestMocks);
 
+    it('blocks repeated resolve_path turns after one successful resolution in the same loop', async () => {
+        mockGetToolDefinitions.mockResolvedValue([{
+            type: 'function',
+            function: {
+                name: 'resolve_path',
+                description: 'Resolve user path',
+                parameters: {
+                    type: 'object',
+                    properties: { path: { type: 'string' } },
+                    required: ['path'],
+                },
+            },
+        }]);
+        mockChatStream
+            .mockImplementationOnce(() => createResolvePathToolTurnStreamA())
+            .mockImplementationOnce(() => createResolvePathToolTurnStreamB())
+            .mockImplementationOnce(() => createFinalAnswerStream());
+        mockExecuteTools.mockResolvedValue({
+            toolCallId: 'tool-call-resolve-1',
+            name: 'resolve_path',
+            success: true,
+            result: {
+                success: true,
+                resultKind: 'path_resolution',
+                path: 'C:/Users/agnes/Desktop/todo-app',
+                pathExists: false,
+                parentExists: true,
+                complete: true,
+                displaySummary: 'Resolved path: C:/Users/agnes/Desktop/todo-app',
+            },
+        });
+
+        const { result } = renderHook(() => {
+            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const chatGenerator = useChatGenerator({
+                chats,
+                setChats,
+                selectedModel: 'model-a',
+                selectedProvider: 'codex',
+                language: 'tr',
+                t: (key: string) => key,
+                handleSpeak: vi.fn(),
+                autoReadEnabled: false,
+                formatChatError: (err: CatchError) =>
+                    err instanceof Error ? err.message : String(err ?? ''),
+                systemMode: 'agent',
+            });
+
+            return {
+                ...chatGenerator,
+                chats,
+            };
+        });
+
+        await act(async () => {
+            await result.current.generateResponse('chat-1', {
+                ...createUserMessage(),
+                content: 'Masaustumde bir klasor yolu hazirla',
+            });
+        });
+
+        expect(mockExecuteTools).toHaveBeenCalledTimes(1);
+        expect(mockChatStream).toHaveBeenCalledTimes(3);
+    });
+
     it('reuses duplicate tool calls without executing them again', async () => {
         mockGetToolDefinitions.mockResolvedValue([
             {
@@ -1007,6 +1115,71 @@ describe('useChatGenerator - Efficiency & Rebinds', () => {
             })
         );
         expect(result.current.chats[0]?.messages.some(message => message.role === 'system' || message.role === 'tool')).toBe(false);
+    });
+
+    it('does not treat repeated low-signal planning text as progress and exits tool loop early', async () => {
+        mockGetToolDefinitions.mockResolvedValue([
+            {
+                type: 'function',
+                function: {
+                    name: 'list_directory',
+                    description: 'List directory contents',
+                    parameters: {
+                        type: 'object',
+                        properties: { path: { type: 'string' } },
+                    },
+                },
+            },
+        ]);
+        mockChatStream
+            .mockImplementationOnce(() => createLowSignalPlanningToolTurnStream())
+            .mockImplementationOnce(() => createLowSignalPlanningToolTurnStream());
+        mockExecuteTools.mockResolvedValue({
+            toolCallId: 'tool-call-low-signal',
+            name: 'list_directory',
+            success: true,
+            result: {
+                path: '%USERPROFILE%/Desktop',
+                entryCount: 12,
+                fileCount: 10,
+                directoryCount: 2,
+                displaySummary: 'Listed 12 entries in Desktop',
+            },
+        });
+
+        const { result } = renderHook(() => {
+            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const chatGenerator = useChatGenerator({
+                chats,
+                setChats,
+                selectedModel: 'model-a',
+                selectedProvider: 'codex',
+                language: 'en',
+                t: (key: string) => key,
+                handleSpeak: vi.fn(),
+                autoReadEnabled: false,
+                formatChatError: (err: CatchError) =>
+                    err instanceof Error ? err.message : String(err ?? ''),
+                systemMode: 'agent',
+            });
+
+            return {
+                ...chatGenerator,
+                chats,
+            };
+        });
+
+        await act(async () => {
+            await result.current.generateResponse('chat-1', {
+                ...createUserMessage(),
+                content: 'How many files are on my Desktop?',
+            });
+        });
+
+        expect(mockChatStream).toHaveBeenCalledTimes(2);
+        expect(mockExecuteTools).toHaveBeenCalledTimes(1);
+        expect(result.current.chats[0]?.messages[0]?.content).toContain('contains 10 files and 2 folders');
+        expect(result.current.chats[0]?.messages[0]?.content).not.toContain('to verify or determine where to place the project');
     });
 
     it('shows in-flight progress text while a tool call is still running', async () => {

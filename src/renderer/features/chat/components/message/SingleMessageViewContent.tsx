@@ -1,10 +1,12 @@
+import { compactToolCallsForDisplay } from '@renderer/features/chat/components/message/tool-call-display.util';
 import { JsonValue } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 
 import { Language } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { Message, ToolResult } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { ToolDisplay } from '../ToolDisplay';
 
@@ -34,10 +36,11 @@ type ToolCallView = {
 };
 
 function buildToolCalls(message: Message): ToolCallView[] {
-    if (!message.toolCalls || message.toolCalls.length === 0) {
+    const displayToolCalls = compactToolCallsForDisplay(message.toolCalls);
+    if (!displayToolCalls || displayToolCalls.length === 0) {
         return [];
     }
-    return message.toolCalls.map(toolCall => ({
+    return displayToolCalls.map(toolCall => ({
         id: toolCall.id,
         name: toolCall.function.name,
         arguments: safeJsonParse<Record<string, JsonValue>>(toolCall.function.arguments, {}),
@@ -182,6 +185,7 @@ MessageBubbleInner.displayName = 'MessageBubbleInner';
 interface PlanAndThoughtProps {
     plan: string | null;
     thought: string | null;
+    thoughtDurationMs?: number;
     isLast: boolean;
     isStreaming?: boolean;
     onApprovePlan?: () => void;
@@ -190,10 +194,49 @@ interface PlanAndThoughtProps {
     t: TranslationFn;
 }
 
+export function buildThoughtHistory(
+    reasonings?: string[],
+    thought?: string | null,
+    showReasoningHistory: boolean = true
+): string[] {
+    if (!showReasoningHistory) {
+        return [];
+    }
+
+    const thoughts = (reasonings ?? [])
+        .filter(reasoningItem => reasoningItem.trim().length > 0);
+    const nextThought = typeof thought === 'string' ? thought : '';
+    const normalizedThought = nextThought.trim();
+    if (normalizedThought.length === 0) {
+        return thoughts;
+    }
+
+    if (thoughts.length === 0) {
+        return [nextThought];
+    }
+
+    const latestIndex = thoughts.length - 1;
+    const latestInHistory = thoughts[latestIndex].trim();
+    if (normalizedThought === latestInHistory) {
+        return thoughts;
+    }
+    if (normalizedThought.startsWith(latestInHistory)) {
+        thoughts[latestIndex] = nextThought;
+        return thoughts;
+    }
+    if (latestInHistory.startsWith(normalizedThought)) {
+        return thoughts;
+    }
+
+    thoughts.push(nextThought);
+    return thoughts;
+}
+
 const PlanAndThought = memo(
     ({
         plan,
         thought,
+        thoughtDurationMs,
         reasonings,
         showReasoningHistory = true,
         isLast,
@@ -204,18 +247,16 @@ const PlanAndThought = memo(
         t,
     }: PlanAndThoughtProps & { reasonings?: string[]; showReasoningHistory?: boolean }) => {
         const allThoughts = useMemo(() => {
-            if (!showReasoningHistory) {
-                return [];
-            }
-            const thoughts = reasonings && reasonings.length > 0 ? [...reasonings] : [];
-            if (thought && thought.trim().length > 0) {
-                const latestInHistory = thoughts.length > 0 ? thoughts[thoughts.length - 1] : null;
-                if (thought.trim() !== (latestInHistory || '').trim()) {
-                    thoughts.push(thought);
-                }
-            }
-            return thoughts;
+            return buildThoughtHistory(reasonings, thought, showReasoningHistory);
         }, [reasonings, thought, showReasoningHistory]);
+
+        useEffect(() => {
+            const messageHint = typeof thought === 'string' ? thought.trim().slice(0, 80) : '';
+            appLogger.info(
+                'SingleMessageViewContent',
+                `PlanAndThought render: thoughts=${allThoughts.length}, hasPlan=${String(Boolean(plan && plan.trim().length > 0))}, isStreaming=${String(Boolean(isStreaming))}, isLast=${String(isLast)}, latestThoughtPreview=${messageHint}`
+            );
+        }, [allThoughts.length, thought, plan, isStreaming, isLast]);
 
         return (
             <>
@@ -235,6 +276,7 @@ const PlanAndThought = memo(
                         <ThoughtSection
                             key={idx}
                             thought={tText}
+                            thoughtDurationMs={thoughtDurationMs}
                             initiallyExpanded={initiallyExpanded}
                             segmentIndex={idx}
                             isStreaming={isLatest && Boolean(isStreaming) && isLast}
@@ -340,6 +382,7 @@ export const SingleMessageViewContent = memo(
                         <PlanAndThought
                             plan={plan}
                             thought={thought}
+                            thoughtDurationMs={message.responseTime}
                             reasonings={isThoughtOnly ? undefined : message.reasonings}
                             showReasoningHistory={!isThoughtOnly}
                             isLast={isLast}

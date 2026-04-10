@@ -9,7 +9,6 @@ import React, { createContext, useCallback, useContext, useState } from 'react';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-import './status-bar.css';
 
 export interface StatusBarItem {
     id: string;

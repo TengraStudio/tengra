@@ -5,7 +5,6 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-import './modal.css';
 
 interface ModalProps {
     isOpen: boolean

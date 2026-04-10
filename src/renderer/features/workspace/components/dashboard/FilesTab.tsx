@@ -40,7 +40,7 @@ export const FilesTab: React.FC<FilesTabProps> = ({
                             key={file.path}
                             onClick={() => setActiveFile(file.path)}
                             className={cn(
-                                'group flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 border',
+                                'group flex items-center gap-2 px-3 py-1.5 rounded-md typo-caption font-medium transition-all duration-200 border',
                                 activeFile === file.path
                                     ? 'bg-primary/10 text-primary border-primary/20 shadow-sm'
                                     : 'text-muted-foreground border-transparent hover:bg-muted/50 hover:text-foreground'

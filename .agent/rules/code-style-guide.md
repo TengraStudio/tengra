@@ -9,8 +9,8 @@ trigger: always_on
 ## Quick Start
 
 1. Read [AGENTS.md](../../AGENTS.md) - Complete project guide
-2. Read [docs/AI_RULES.md](../../docs/AI_RULES.md) - Comprehensive coding standards
-3. Check [docs/TODO.md](../../docs/TODO.md) - Current tasks and priorities
+2. Read [AI_RULES.md](../../AI_RULES.md) - Comprehensive coding standards
+3. Check [TODO.md](../../TODO.md) - Current tasks and priorities
 
 ## Forbidden Actions
 
@@ -20,15 +20,20 @@ trigger: always_on
 - ❌ **NEVER** delete entire files to edit them
 - ❌ **NEVER** use `while(true)` without bounds
 - ❌ **NEVER** hardcode user-facing strings
+- ❌ **NEVER** use Tailwind utility classes directly in renderer JSX
+- ❌ **NEVER** create/import additional renderer CSS files; `src/renderer/index.css` is the only renderer stylesheet
+- ❌ **NEVER** describe internal rule execution in user-facing delivery messages
 
 ## Required Actions
 
 - ✅ **ALWAYS** run `npm run build && npm run lint` before committing
-- ✅ **ALWAYS** update `docs/TODO.md` after completing tasks
+- ✅ **ALWAYS** update `TODO.md` after completing tasks
 - ✅ **ALWAYS** use `t('key')` for translations
 - ✅ **ALWAYS** check return values
 - ✅ **ALWAYS** handle Promise rejections
 - ✅ **ALWAYS** use JSDoc for public methods
+- ✅ **ALWAYS** style renderer UI via semantic classes defined in `src/renderer/index.css`
+- ✅ **ALWAYS** define reusable spacing/radius/border/shadow/typography values under `:root` tokens in `src/renderer/index.css`
 
 ## NASA Power of Ten Rules
 
@@ -40,13 +45,13 @@ trigger: always_on
 
 ## Workflow
 
-1. Read docs/AI_RULES.md
+1. Read AI_RULES.md
 2. Make changes
 3. `npm run build && npm run lint`
-4. Update docs/TODO.md (mark `[x]`, don't delete)
+4. Update TODO.md (mark `[x]`, don't delete)
 5. Update the relevant markdown docs if user-facing behavior changed
 6. Commit and push
 
-For complete details, see [AGENTS.md](../../AGENTS.md) and [docs/AI_RULES.md](../../docs/AI_RULES.md).
+For complete details, see [AGENTS.md](../../AGENTS.md) and [AI_RULES.md](../../AI_RULES.md).
 
 

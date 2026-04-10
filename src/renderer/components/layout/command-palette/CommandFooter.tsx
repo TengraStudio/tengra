@@ -1,6 +1,5 @@
 import React from 'react';
 
-import './command-footer.css';
 
 interface CommandFooterProps {
     t: (key: string) => string;

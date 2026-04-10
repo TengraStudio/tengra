@@ -33,6 +33,7 @@ pub fn normalize_requested_model_name(model: &str) -> String {
 pub fn upstream_model_name(model: &str) -> String {
     match normalize_requested_model_name(model).as_str() {
         "gemini-2.5-computer-use-preview-10-2025" => "rev19-uic3-1p".to_string(),
+        "gemini-3-flash-agent" => "gemini-3-flash".to_string(),
         "gemini-3-pro-image-preview" => "gemini-3-pro-image".to_string(),
         "gemini-3-pro-preview" => "gemini-3-pro-high".to_string(),
         "gemini-3-flash-preview" => "gemini-3-flash".to_string(),
@@ -104,6 +105,10 @@ mod tests {
         assert_eq!(alias_model_name("gemini-3-flash"), "gemini-3-flash-preview");
         assert_eq!(
             upstream_model_name("gemini-3-flash-preview"),
+            "gemini-3-flash"
+        );
+        assert_eq!(
+            upstream_model_name("gemini-3-flash-agent"),
             "gemini-3-flash"
         );
         assert_eq!(

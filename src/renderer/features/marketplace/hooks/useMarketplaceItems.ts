@@ -29,6 +29,20 @@ export function useMarketplaceItems({ mode, registry, localPlugins, query, insta
         () => new Set(installedModels.map(m => String(m.id ?? '').toLowerCase()).filter(Boolean)),
         [installedModels]
     );
+    const installedMcpIds = useMemo(() => {
+        const ids = new Set<string>();
+        for (const plugin of localPlugins) {
+            const normalizedId = String(plugin.id ?? '').trim().toLowerCase();
+            if (normalizedId.length > 0) {
+                ids.add(normalizedId);
+            }
+            const normalizedName = String(plugin.name ?? '').trim().toLowerCase();
+            if (normalizedName.length > 0) {
+                ids.add(normalizedName);
+            }
+        }
+        return ids;
+    }, [localPlugins]);
 
     const getStoreItems = useCallback((): MarketplaceItem[] => {
         if (!registry) {
@@ -54,6 +68,7 @@ export function useMarketplaceItems({ mode, registry, localPlugins, query, insta
                 }
                 break;
             }
+            case 'extensions': items = registry.extensions || []; break;
             default: items = [];
         }
 
@@ -69,9 +84,17 @@ export function useMarketplaceItems({ mode, registry, localPlugins, query, insta
                     ...enrichMarketplaceModel(model, runtimeProfile),
                 };
             }
+            if (mode === 'mcp' && item.itemType === 'mcp') {
+                const mcpItem = item as MarketplaceMcp;
+                const normalizedId = mcpItem.id.toLowerCase();
+                return {
+                    ...item,
+                    installed: installedMcpIds.has(normalizedId) || Boolean(item.installed),
+                };
+            }
             return item;
         });
-    }, [registry, mode, modelTab, installedModelsSet, runtimeProfile]);
+    }, [registry, mode, modelTab, installedModelsSet, installedMcpIds, runtimeProfile]);
 
     const storeItems = useMemo(() => getStoreItems(), [getStoreItems]);
 
@@ -113,7 +136,15 @@ export function useMarketplaceItems({ mode, registry, localPlugins, query, insta
             }
 
             const installed = Boolean(i.installed);
-            if (mode !== 'mcp') {
+            const mcpItem = i.itemType === 'mcp' ? (i as MarketplaceMcp) : null;
+            if (mode === 'mcp') {
+                if (mcpView === 'installed' && !installed) {
+                    return false;
+                }
+                if (mcpView === 'external' && mcpItem?.category?.toLowerCase() === 'internal') {
+                    return false;
+                }
+            } else {
                 if (filter === 'installed' && !installed) {
                     return false;
                 }
@@ -135,7 +166,8 @@ export function useMarketplaceItems({ mode, registry, localPlugins, query, insta
                     return false;
                 }
             }
-            if (query.category && modelItem?.category !== query.category) {
+            const itemCategory = mode === 'mcp' ? mcpItem?.category : modelItem?.category;
+            if (query.category && itemCategory !== query.category) {
                 return false;
             }
 
@@ -166,7 +198,7 @@ export function useMarketplaceItems({ mode, registry, localPlugins, query, insta
             }
             return b.version.localeCompare(a.version);
         });
-    }, [storeItems, search, filter, query.author, query.category, sort, mode, modelFit, modelTarget]);
+    }, [storeItems, search, filter, query.author, query.category, sort, mode, mcpView, modelFit, modelTarget]);
 
     const filteredLocal = useMemo(() => mode === 'mcp'
         ? localPlugins
@@ -174,22 +206,41 @@ export function useMarketplaceItems({ mode, registry, localPlugins, query, insta
                 p.name.toLowerCase().includes(search.toLowerCase()) ||
                 p.description?.toLowerCase().includes(search.toLowerCase())
             )
-            .filter(p => (mcpView === 'external' ? p.source !== 'core' : true))
+            .filter(p => {
+                if (mcpView === 'installed') {
+                    return true;
+                }
+                if (mcpView === 'external') {
+                    return p.source !== 'core';
+                }
+                return true;
+            })
             .sort((a, b) => (sort === 'name_desc' ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name)))
         : [], [localPlugins, search, mcpView, sort, mode]);
 
     const combinedItems = useMemo(() => {
-        const localItems = filteredLocal.map((plugin, index) => ({ 
-            type: 'local' as const, 
-            plugin, 
-            key: `local-${plugin.id ?? plugin.name ?? index}` 
+        const remoteItems = filteredStoreItems.map(item => ({
+            type: 'store' as const,
+            item,
+            key: `store-${item.itemType}-${item.id}`
         }));
-        const remoteItems = filteredStoreItems.map(item => ({ 
-            type: 'store' as const, 
-            item, 
-            key: `store-${item.itemType}-${item.id}` 
-        }));
-        return mode === 'mcp' ? [...localItems, ...remoteItems] : remoteItems;
+        if (mode !== 'mcp') {
+            return remoteItems;
+        }
+
+        const remoteItemIds = new Set(
+            remoteItems
+                .map(entry => entry.item.id.toLowerCase())
+                .filter(id => id.length > 0)
+        );
+        const localItems = filteredLocal
+            .filter(plugin => !remoteItemIds.has(plugin.id.toLowerCase()))
+            .map((plugin, index) => ({
+                type: 'local' as const,
+                plugin,
+                key: `local-${plugin.id ?? plugin.name ?? index}`
+            }));
+        return [...localItems, ...remoteItems];
     }, [filteredLocal, filteredStoreItems, mode]);
 
     const totalCount = combinedItems.length;

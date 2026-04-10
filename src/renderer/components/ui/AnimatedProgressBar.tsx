@@ -2,7 +2,6 @@ import React from 'react';
 
 import { cn } from '@/lib/utils';
 
-import './animated-progress-bar.css';
 
 interface AnimatedProgressBarProps {
     value: number;

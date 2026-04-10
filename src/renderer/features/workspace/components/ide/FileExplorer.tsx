@@ -221,7 +221,7 @@ const FileTreeItem = ({
             {isOpen && (
                 <div>
                     {loading ? (
-                        <div className="pl-8 py-1 text-xs text-muted-foreground">
+                        <div className="pl-8 py-1 typo-caption text-muted-foreground">
                             {t('common.loading')}
                         </div>
                     ) : (
@@ -326,7 +326,7 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
 
     if (loading) {
         return (
-            <div className="p-4 text-xs text-muted-foreground">
+            <div className="p-4 typo-caption text-muted-foreground">
                 {t('workspaceDashboard.loadingFiles')}
             </div>
         );
@@ -343,7 +343,7 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
                 />
             ))}
             {rootNodes.length === 0 && (
-                <div className="p-4 text-xs text-muted-foreground text-center">
+                <div className="p-4 typo-caption text-muted-foreground text-center">
                     {t('workspaceDashboard.emptyDir')}
                 </div>
             )}

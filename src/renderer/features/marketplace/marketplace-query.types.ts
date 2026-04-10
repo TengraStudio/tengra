@@ -1,4 +1,4 @@
-export type MarketplaceTab = 'mcp' | 'skills' | 'themes' | 'personas' | 'models' | 'prompts' | 'languages';
+export type MarketplaceTab = 'mcp' | 'extensions' | 'skills' | 'themes' | 'personas' | 'models' | 'prompts' | 'languages';
 export type ModelTab = 'ollama' | 'huggingface' | 'community';
 export type MarketplaceFilterValue = 'all' | 'installed' | 'not_installed';
 export type MarketplaceModelFitValue = 'all' | 'recommended' | 'workable' | 'limited' | 'blocked';
@@ -44,6 +44,7 @@ const DEFAULT_QUERY_STATE: MarketplaceQueryState = {
 export function createDefaultMarketplaceQueries(): Record<MarketplaceTab, MarketplaceQueryState> {
     return {
         mcp: { ...DEFAULT_QUERY_STATE },
+        extensions: { ...DEFAULT_QUERY_STATE },
         skills: { ...DEFAULT_QUERY_STATE },
         themes: { ...DEFAULT_QUERY_STATE },
         personas: { ...DEFAULT_QUERY_STATE },

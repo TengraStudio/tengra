@@ -93,7 +93,7 @@ export const PersonasTab: React.FC<PersonasTabProps> = ({
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0">
                                             <div className="truncate text-sm font-medium">{persona.name}</div>
-                                            <div className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+                                            <div className="mt-1 line-clamp-2 typo-caption leading-5 text-muted-foreground">
                                                 {persona.description}
                                             </div>
                                         </div>
@@ -102,7 +102,7 @@ export const PersonasTab: React.FC<PersonasTabProps> = ({
                                 </button>
                             );
                         }) : (
-                            <div className="rounded-2xl border border-dashed border-border/30 px-4 py-8 text-center text-xs text-muted-foreground">
+                            <div className="rounded-2xl border border-dashed border-border/30 px-4 py-8 text-center typo-caption text-muted-foreground">
                                 {t('personas.empty')}
                             </div>
                         )}
@@ -119,7 +119,7 @@ export const PersonasTab: React.FC<PersonasTabProps> = ({
                                 <h3 className="text-lg font-medium text-foreground">
                                     {editingPersonaId ? t('common.update') : t('common.add')}
                                 </h3>
-                                <p className="text-xs text-muted-foreground">{t('personas.description')}</p>
+                                <p className="typo-caption text-muted-foreground">{t('personas.description')}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -130,7 +130,7 @@ export const PersonasTab: React.FC<PersonasTabProps> = ({
                                         setEditingPersonaId(null);
                                         setPersonaDraft({ name: '', description: '', prompt: '' });
                                     }}
-                                    className="h-10 rounded-full border-border/20 px-4 text-xs"
+                                    className="h-10 rounded-full border-border/20 px-4 typo-caption"
                                 >
                                     <X className="mr-2 h-3.5 w-3.5" />
                                     {t('common.cancel')}
@@ -138,7 +138,7 @@ export const PersonasTab: React.FC<PersonasTabProps> = ({
                             )}
                             <Button
                                 onClick={handleSavePersona}
-                                className="h-10 rounded-full px-4 text-xs"
+                                className="h-10 rounded-full px-4 typo-caption"
                             >
                                 {editingPersonaId ? (
                                     <Edit2 className="mr-2 h-3.5 w-3.5" />
@@ -216,7 +216,7 @@ export const PersonasTab: React.FC<PersonasTabProps> = ({
                                 onClick={() => {
                                     handleDeletePersona(editingPersonaId);
                                 }}
-                                className="h-10 rounded-full px-4 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                className="h-10 rounded-full px-4 typo-caption text-destructive hover:bg-destructive/10 hover:text-destructive"
                             >
                                 <Trash2 className="mr-2 h-3.5 w-3.5" />
                                 {t('common.delete')}

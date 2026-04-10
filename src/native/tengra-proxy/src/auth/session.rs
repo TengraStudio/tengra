@@ -399,7 +399,7 @@ async fn exchange_claude(session: OAuthSession, code: &str) -> Result<SessionSta
 }
 
 async fn exchange_antigravity(session: OAuthSession, code: &str) -> Result<SessionStatus> {
-    let client = AntigravityClient::new().await?;
+    let client = AntigravityClient::new(None).await?;
     let token = client.exchange_code(code).await?;
     let email = client
         .get_user_email(&token.access_token)

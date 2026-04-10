@@ -7,7 +7,6 @@ import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-import './sidebar-header.css';
 
 interface SidebarHeaderProps {
     isCollapsed: boolean;

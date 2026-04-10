@@ -106,8 +106,8 @@ export const SSHTunnels: React.FC<SSHTunnelsProps> = ({ connectionId, t }) => {
                 <div className="space-y-2 max-h-40 overflow-auto pr-1">
                     {tunnels.map(tunnel => (
                         <div key={tunnel.id} className="flex items-center justify-between border border-border rounded px-2 py-1">
-                            <div className="text-xs">{tunnel.type} {tunnel.localHost}:{tunnel.localPort} → {tunnel.remoteHost}:{tunnel.remotePort}</div>
-                            <button className="secondary-btn text-xs px-2 py-1" onClick={() => {
+                            <div className="typo-caption">{tunnel.type} {tunnel.localHost}:{tunnel.localPort} → {tunnel.remoteHost}:{tunnel.remotePort}</div>
+                            <button className="secondary-btn typo-caption px-2 py-1" onClick={() => {
                                 void window.electron.ssh.closeTunnel(tunnel.id)
                                     .then(() => loadData())
                                     .catch((error: Error) => {
@@ -116,7 +116,7 @@ export const SSHTunnels: React.FC<SSHTunnelsProps> = ({ connectionId, t }) => {
                             }}>{t('ssh.closeTunnel')}</button>
                         </div>
                     ))}
-                    {tunnels.length === 0 ? <div className="text-xs text-muted-foreground">{t('ssh.noTunnels')}</div> : null}
+                    {tunnels.length === 0 ? <div className="typo-caption text-muted-foreground">{t('ssh.noTunnels')}</div> : null}
                 </div>
             </section>
 
@@ -126,7 +126,7 @@ export const SSHTunnels: React.FC<SSHTunnelsProps> = ({ connectionId, t }) => {
                     {presets.map(preset => (
                         <div key={preset.id} className="flex items-center justify-between border border-border rounded px-2 py-1">
                             <button
-                                className="text-xs text-left flex-1"
+                                className="typo-caption text-left flex-1"
                                 onClick={() => {
                                     setType(preset.type);
                                     setLocalHost(preset.localHost);
@@ -137,7 +137,7 @@ export const SSHTunnels: React.FC<SSHTunnelsProps> = ({ connectionId, t }) => {
                             >
                                 {preset.name}
                             </button>
-                            <button className="secondary-btn text-xs px-2 py-1" onClick={() => {
+                            <button className="secondary-btn typo-caption px-2 py-1" onClick={() => {
                                 void window.electron.ssh.deleteTunnelPreset(preset.id)
                                     .then(() => loadData())
                                     .catch((error: Error) => {
@@ -146,7 +146,7 @@ export const SSHTunnels: React.FC<SSHTunnelsProps> = ({ connectionId, t }) => {
                             }}>{t('common.delete')}</button>
                         </div>
                     ))}
-                    {presets.length === 0 ? <div className="text-xs text-muted-foreground">{t('ssh.noTunnelPresets')}</div> : null}
+                    {presets.length === 0 ? <div className="typo-caption text-muted-foreground">{t('ssh.noTunnelPresets')}</div> : null}
                 </div>
             </section>
         </div>

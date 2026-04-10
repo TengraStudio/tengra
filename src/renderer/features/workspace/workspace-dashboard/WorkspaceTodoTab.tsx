@@ -46,7 +46,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from '@/i18n';
 import { JsonObject, JsonValue, Workspace } from '@/types';
 
-import '@xyflow/react/dist/style.css';
 
 interface WorkspaceTodoTabProps {
     workspace: Workspace
@@ -138,7 +137,7 @@ const TodoNode = ({ data, selected }: NodeProps<Node<TodoCanvasNodeData>>) => {
         <div className={`min-w-60 max-w-80 rounded-xl border bg-card text-card-foreground shadow-sm ${selected ? 'border-primary' : 'border-border'}`}>
             <Handle type="target" position={Position.Left} className="!bg-primary/80 !border-0 !w-2 !h-2" />
             <div className="p-3 space-y-2">
-                <div className="text-xs font-medium line-clamp-2">{title || '—'}</div>
+                <div className="typo-caption font-medium line-clamp-2">{title || '—'}</div>
                 <div className="flex items-center gap-2 flex-wrap">
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 tw-text-10 ${STATUS_CLASSES[status]}`}>
                         {statusIcon(status)}
@@ -319,8 +318,8 @@ const FlowToolbar: React.FC<{
 }> = ({ onFit, onAutoLayout, onUndo, onRedo, canUndo, canRedo, fitLabel, layoutLabel }) => {
     return (
         <Panel position="top-right" className="m-2 flex items-center gap-2 rounded-lg border border-border bg-background/90 p-1">
-            <button onClick={onFit} className="h-7 px-2 text-xs rounded bg-muted hover:bg-muted/80">{fitLabel}</button>
-            <button onClick={onAutoLayout} className="h-7 px-2 text-xs rounded bg-muted hover:bg-muted/80 inline-flex items-center gap-1"><Shuffle className="w-3 h-3" />{layoutLabel}</button>
+            <button onClick={onFit} className="h-7 px-2 typo-caption rounded bg-muted hover:bg-muted/80">{fitLabel}</button>
+            <button onClick={onAutoLayout} className="h-7 px-2 typo-caption rounded bg-muted hover:bg-muted/80 inline-flex items-center gap-1"><Shuffle className="w-3 h-3" />{layoutLabel}</button>
             <button onClick={onUndo} disabled={!canUndo} className="h-7 w-7 rounded bg-muted hover:bg-muted/80 disabled:opacity-40"><Undo2 className="w-3.5 h-3.5 mx-auto" /></button>
             <button onClick={onRedo} disabled={!canRedo} className="h-7 w-7 rounded bg-muted hover:bg-muted/80 disabled:opacity-40"><Redo2 className="w-3.5 h-3.5 mx-auto" /></button>
         </Panel>
@@ -367,7 +366,7 @@ const TodoCanvasStatsBar: React.FC<TodoCanvasStatsBarProps> = ({
     t,
 }) => (
     <div className="px-3 py-2 border-b border-border flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+        <div className="flex items-center gap-2 typo-caption text-muted-foreground flex-wrap">
             <span>{t('workspaceDashboard.todoList')}:</span>
             <span>{stats.total}</span>
             <span className="text-success">{stats.completed}</span>
@@ -386,14 +385,14 @@ const TodoCanvasStatsBar: React.FC<TodoCanvasStatsBarProps> = ({
                         setQuery(event.target.value)
                     }
                     placeholder={t('placeholder.search')}
-                    className="h-8 w-32 pl-7 pr-2 text-xs"
+                    className="h-8 w-32 pl-7 pr-2 typo-caption"
                 />
             </div>
             <Select
                 value={statusFilter}
                 onValueChange={(val: 'all' | TodoStatus) => setStatusFilter(val)}
             >
-                <SelectTrigger className="h-8 w-[120px] text-xs">
+                <SelectTrigger className="h-8 w-[120px] typo-caption">
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -410,7 +409,7 @@ const TodoCanvasStatsBar: React.FC<TodoCanvasStatsBarProps> = ({
                 </SelectContent>
             </Select>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="h-8 w-[140px] text-xs">
+                <SelectTrigger className="h-8 w-[140px] typo-caption">
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -426,24 +425,24 @@ const TodoCanvasStatsBar: React.FC<TodoCanvasStatsBarProps> = ({
             </Select>
             <button
                 onClick={onAddNode}
-                className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs inline-flex items-center gap-1 transition-colors hover:bg-primary/90"
+                className="h-8 px-3 rounded-md bg-primary text-primary-foreground typo-caption inline-flex items-center gap-1 transition-colors hover:bg-primary/90"
             >
                 <Plus className="w-3.5 h-3.5" />
                 {t('workspaceDashboard.createTodo')}
             </button>
             <button
                 onClick={onExportJson}
-                className="h-8 px-2 rounded-md border border-border text-xs transition-colors hover:bg-muted"
+                className="h-8 px-2 rounded-md border border-border typo-caption transition-colors hover:bg-muted"
             >
                 <FileJson className="w-3.5 h-3.5" />
             </button>
             <button
                 onClick={onExportMarkdown}
-                className="h-8 px-2 rounded-md border border-border text-xs transition-colors hover:bg-muted"
+                className="h-8 px-2 rounded-md border border-border typo-caption transition-colors hover:bg-muted"
             >
                 <FileText className="w-3.5 h-3.5" />
             </button>
-            <label className="h-8 px-2 rounded-md border border-border text-xs inline-flex items-center cursor-pointer transition-colors hover:bg-muted">
+            <label className="h-8 px-2 rounded-md border border-border typo-caption inline-flex items-center cursor-pointer transition-colors hover:bg-muted">
                 <Upload className="w-3.5 h-3.5" />
                 <input
                     type="file"
@@ -487,13 +486,13 @@ const TodoCanvasSidebar: React.FC<TodoCanvasSidebarProps> = ({
             {t('workspaceDashboard.todoCanvas.history')}: {historyTick}
         </div>
         <div className="space-y-2">
-            <div className="text-xs font-medium">{t('workspaceDashboard.todoCanvas.templates')}</div>
+            <div className="typo-caption font-medium">{t('workspaceDashboard.todoCanvas.templates')}</div>
             <div className="flex flex-wrap gap-2">
                 {TEMPLATE_PRESETS.map(template => (
                     <button
                         key={template.id}
                         onClick={() => onApplyTemplate(template.id)}
-                        className="h-7 px-2 rounded-md border border-border text-xs"
+                        className="h-7 px-2 rounded-md border border-border typo-caption"
                     >
                         {t(template.titleKey)}
                     </button>
@@ -501,13 +500,13 @@ const TodoCanvasSidebar: React.FC<TodoCanvasSidebarProps> = ({
             </div>
         </div>
         {!selectedNode ? (
-            <div className="text-xs text-muted-foreground">
+            <div className="typo-caption text-muted-foreground">
                 {t('workspaceDashboard.todoCanvas.selectNode')}
             </div>
         ) : (
             <>
                 <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">
+                    <Label className="typo-caption text-muted-foreground">
                         {t('workspaceDashboard.todoCanvas.task')}
                     </Label>
                     <Input
@@ -520,7 +519,7 @@ const TodoCanvasSidebar: React.FC<TodoCanvasSidebarProps> = ({
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">
+                        <Label className="typo-caption text-muted-foreground">
                             {t('workspaceDashboard.status')}
                         </Label>
                         <Select
@@ -544,7 +543,7 @@ const TodoCanvasSidebar: React.FC<TodoCanvasSidebarProps> = ({
                         </Select>
                     </div>
                     <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">
+                        <Label className="typo-caption text-muted-foreground">
                             {t('workspaceDashboard.todoCanvas.category')}
                         </Label>
                         <Input
@@ -558,7 +557,7 @@ const TodoCanvasSidebar: React.FC<TodoCanvasSidebarProps> = ({
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">
+                        <Label className="typo-caption text-muted-foreground">
                             {t('workspaceDashboard.todoCanvas.assignee')}
                         </Label>
                         <Input
@@ -570,7 +569,7 @@ const TodoCanvasSidebar: React.FC<TodoCanvasSidebarProps> = ({
                         />
                     </div>
                     <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">
+                        <Label className="typo-caption text-muted-foreground">
                             {t('workspaceDashboard.todoCanvas.parent')}
                         </Label>
                         <Select
@@ -594,7 +593,7 @@ const TodoCanvasSidebar: React.FC<TodoCanvasSidebarProps> = ({
                     </div>
                 </div>
                 <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">
+                    <Label className="typo-caption text-muted-foreground">
                         {t('workspaceDashboard.todoCanvas.links')}
                     </Label>
                     <Textarea
@@ -602,25 +601,25 @@ const TodoCanvasSidebar: React.FC<TodoCanvasSidebarProps> = ({
                         onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) =>
                             updateSelectedNodeData({ links: event.target.value })
                         }
-                        className="min-h-24 py-1 text-xs"
+                        className="min-h-24 py-1 typo-caption"
                     />
                 </div>
                 <div className="flex flex-wrap gap-2">
                     <button
                         onClick={onAddSubTask}
-                        className="h-8 px-3 rounded-md border border-border text-xs transition-colors hover:bg-muted"
+                        className="h-8 px-3 rounded-md border border-border typo-caption transition-colors hover:bg-muted"
                     >
                         {t('workspaceDashboard.todoCanvas.subTask')}
                     </button>
                     <button
                         onClick={onDeleteSelectedNode}
-                        className="h-8 px-3 rounded-md border border-destructive/40 text-destructive text-xs transition-colors hover:bg-destructive/10"
+                        className="h-8 px-3 rounded-md border border-destructive/40 text-destructive typo-caption transition-colors hover:bg-destructive/10"
                     >
                         {t('common.delete')}
                     </button>
                     <button
                         onClick={onApplyAutoLayout}
-                        className="h-8 px-3 rounded-md border border-border text-xs transition-colors hover:bg-muted"
+                        className="h-8 px-3 rounded-md border border-border typo-caption transition-colors hover:bg-muted"
                     >
                         {t('workspaceDashboard.todoCanvas.swimlaneLayout')}
                     </button>
@@ -967,7 +966,7 @@ const WorkspaceTodoTabCanvas: React.FC<WorkspaceTodoTabProps> = ({ workspace, on
                 t={t}
             />
             {canvasError ? (
-                <div className="px-3 py-1.5 text-xs text-destructive border-b border-destructive/30 bg-destructive/5">
+                <div className="px-3 py-1.5 typo-caption text-destructive border-b border-destructive/30 bg-destructive/5">
                     {canvasError}
                 </div>
             ) : null}

@@ -459,7 +459,7 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
     return (
         <div className="absolute inset-0 overflow-hidden">  
             {statusMessage && (
-                <div className="absolute top-12 right-2 z-20 text-xs text-muted-foreground rounded border border-border/40 bg-background/90 px-2 py-1">
+                <div className="absolute top-12 right-2 z-20 typo-caption text-muted-foreground rounded border border-border/40 bg-background/90 px-2 py-1">
                     {statusMessage}
                 </div>
             )}
@@ -517,7 +517,7 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
                 <div className="absolute bottom-2 left-2 z-20 tw-w-440 tw-max-w-90p rounded border border-border/40 bg-background/95 shadow-2xl backdrop-blur">
                     <div className="flex items-center justify-between gap-3 border-b border-border/40 px-3 py-2">
                         <div className="min-w-0">
-                            <div className="truncate text-xs font-semibold text-foreground">
+                            <div className="truncate typo-caption font-semibold text-foreground">
                                 {workspaceResults.symbol}
                             </div>
                             <div className="tw-text-10 text-muted-foreground/70">

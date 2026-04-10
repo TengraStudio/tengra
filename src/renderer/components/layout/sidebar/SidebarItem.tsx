@@ -5,7 +5,6 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 
-import './sidebar-item.css';
 
 export interface SidebarItemProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     icon: LucideIcon;

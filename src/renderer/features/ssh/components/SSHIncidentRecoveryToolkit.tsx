@@ -46,12 +46,12 @@ export const SSHIncidentRecoveryToolkit: React.FC<SSHIncidentRecoveryToolkitProp
     return (
         <div className="p-4 space-y-3">
             <div className="text-sm font-semibold">{t('ssh.recoveryToolkit')}</div>
-            <div className="text-xs text-muted-foreground">{t('ssh.recoveryToolkitSubtitle')}</div>
+            <div className="typo-caption text-muted-foreground">{t('ssh.recoveryToolkitSubtitle')}</div>
             <div className="flex flex-wrap gap-2">
                 {commands.map(entry => (
                     <button
                         key={entry.id}
-                        className="secondary-btn text-xs"
+                        className="secondary-btn typo-caption"
                         disabled={runningId !== null}
                         onClick={() => { void runDiagnostic(entry); }}
                     >
@@ -60,7 +60,7 @@ export const SSHIncidentRecoveryToolkit: React.FC<SSHIncidentRecoveryToolkitProp
                 ))}
             </div>
             <div className="space-y-2">
-                <div className="text-xs font-medium">{t('ssh.recoveryRepairSteps')}</div>
+                <div className="typo-caption font-medium">{t('ssh.recoveryRepairSteps')}</div>
                 <div className="grid gap-2">
                     {[
                         'sudo systemctl status ssh',
@@ -68,17 +68,17 @@ export const SSHIncidentRecoveryToolkit: React.FC<SSHIncidentRecoveryToolkitProp
                         'sudo chmod 700 ~/.ssh && sudo chmod 600 ~/.ssh/authorized_keys',
                     ].map(snippet => (
                         <div key={snippet} className="flex items-center justify-between gap-2 border border-border/40 rounded px-2 py-1">
-                            <code className="text-xs truncate">{snippet}</code>
-                            <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void copySnippet(snippet); }}>
+                            <code className="typo-caption truncate">{snippet}</code>
+                            <button className="secondary-btn typo-caption px-2 py-1" onClick={() => { void copySnippet(snippet); }}>
                                 {t('ssh.recoveryCopySnippet')}
                             </button>
                         </div>
                     ))}
                 </div>
             </div>
-            {status && <div className="text-xs text-muted-foreground">{status}</div>}
+            {status && <div className="typo-caption text-muted-foreground">{status}</div>}
             {output && (
-                <pre className="text-xs whitespace-pre-wrap bg-background border border-border/40 rounded p-2 max-h-64 overflow-auto">
+                <pre className="typo-caption whitespace-pre-wrap bg-background border border-border/40 rounded p-2 max-h-64 overflow-auto">
                     {output}
                 </pre>
             )}

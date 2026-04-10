@@ -174,7 +174,7 @@ const SharedPromptHeader: React.FC<HeaderProps> = ({ t, searchQuery, onSearchCha
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
                 placeholder={t('sharedPrompts.searchPlaceholder')}
-                className="w-full pl-7 pr-2 py-1 text-xs rounded bg-muted/40 border border-border"
+                className="w-full pl-7 pr-2 py-1 typo-caption rounded bg-muted/40 border border-border"
             />
         </div>
         <button onClick={onAdd} className="p-1.5 rounded hover:bg-accent/60" title={t('sharedPrompts.create')}>
@@ -201,7 +201,7 @@ interface FormProps {
 const SharedPromptForm: React.FC<FormProps> = ({ t, form, isEditing, onFormChange, onSave, onCancel }) => (
     <div className="p-3 border-b border-border bg-muted/40">
         <div className="flex justify-between items-center mb-2">
-            <span className="text-xs font-semibold">
+            <span className="typo-caption font-semibold">
                 {isEditing ? t('sharedPrompts.editPrompt') : t('sharedPrompts.createPrompt')}
             </span>
             <button onClick={onCancel} className="p-1 rounded hover:bg-accent/60">
@@ -212,32 +212,32 @@ const SharedPromptForm: React.FC<FormProps> = ({ t, form, isEditing, onFormChang
             value={form.title}
             onChange={(e) => onFormChange({ ...form, title: e.target.value })}
             placeholder={t('sharedPrompts.titlePlaceholder')}
-            className="w-full mb-2 px-2 py-1 text-xs rounded bg-background border border-border"
+            className="w-full mb-2 px-2 py-1 typo-caption rounded bg-background border border-border"
         />
         <textarea
             value={form.content}
             onChange={(e) => onFormChange({ ...form, content: e.target.value })}
             placeholder={t('sharedPrompts.contentPlaceholder')}
             rows={3}
-            className="w-full mb-2 px-2 py-1 text-xs rounded bg-background border border-border resize-none"
+            className="w-full mb-2 px-2 py-1 typo-caption rounded bg-background border border-border resize-none"
         />
         <div className="flex gap-2 mb-2">
             <input
                 value={form.category}
                 onChange={(e) => onFormChange({ ...form, category: e.target.value })}
                 placeholder={t('sharedPrompts.categoryPlaceholder')}
-                className="flex-1 px-2 py-1 text-xs rounded bg-background border border-border"
+                className="flex-1 px-2 py-1 typo-caption rounded bg-background border border-border"
             />
             <input
                 value={form.tags}
                 onChange={(e) => onFormChange({ ...form, tags: e.target.value })}
                 placeholder={t('sharedPrompts.tagsPlaceholder')}
-                className="flex-1 px-2 py-1 text-xs rounded bg-background border border-border"
+                className="flex-1 px-2 py-1 typo-caption rounded bg-background border border-border"
             />
         </div>
         <button
             onClick={onSave}
-            className="px-3 py-1 text-xs rounded bg-primary text-foreground hover:opacity-90"
+            className="px-3 py-1 typo-caption rounded bg-primary text-foreground hover:opacity-90"
         >
             {isEditing ? t('common.save') : t('common.create')}
         </button>
@@ -255,7 +255,7 @@ interface ListProps {
 const SharedPromptList: React.FC<ListProps> = ({ t, prompts, onInsert, onEdit, onDelete }) => (
     <div className="flex-1 overflow-y-auto p-2">
         {prompts.length === 0 && (
-            <div className="text-center text-xs text-muted-foreground mt-8">
+            <div className="text-center typo-caption text-muted-foreground mt-8">
                 {t('sharedPrompts.empty')}
             </div>
         )}
@@ -269,7 +269,7 @@ const SharedPromptList: React.FC<ListProps> = ({ t, prompts, onInsert, onEdit, o
                 onKeyDown={(e) => { if (e.key === 'Enter') {onInsert(prompt.content);} }}
             >
                 <div className="flex justify-between items-start">
-                    <span className="text-xs font-medium">{prompt.title}</span>
+                    <span className="typo-caption font-medium">{prompt.title}</span>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                             onClick={(e) => { e.stopPropagation(); onEdit(prompt); }}
@@ -287,7 +287,7 @@ const SharedPromptList: React.FC<ListProps> = ({ t, prompts, onInsert, onEdit, o
                         </button>
                     </div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{prompt.content}</p>
+                <p className="typo-caption text-muted-foreground mt-0.5 line-clamp-2">{prompt.content}</p>
                 {prompt.tags.length > 0 && (
                     <div className="flex gap-1 mt-1 flex-wrap">
                         {prompt.tags.map((tag) => (

@@ -124,7 +124,7 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
                         '',
                         t('workspaceDashboard.contributions.days.sun'),
                     ].map((day, i) => (
-                        <div key={i} className="text-xs text-muted-foreground h-2.5 leading-tight">
+                        <div key={i} className="typo-caption text-muted-foreground h-2.5 leading-tight">
                             {day}
                         </div>
                     ))}
@@ -136,7 +136,7 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
                         {weeks.map((week, weekIndex) => (
                             <div key={weekIndex} className="flex flex-col gap-1">
                                 {/* Month label */}
-                                <div className="h-2.5 text-xs text-muted-foreground">
+                                <div className="h-2.5 typo-caption text-muted-foreground">
                                     {monthLabels.find(m => m.index === weekIndex)?.month ?? ''}
                                 </div>
                                 {/* Week days */}
@@ -162,7 +162,7 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
             </div>
 
             {/* Legend */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 typo-caption text-muted-foreground">
                 <span>{t('workspaceDashboard.contributions.legendLess')}</span>
                 <div className="flex gap-0.5">
                     <div className="w-2.5 h-2.5 rounded-sm bg-muted/10 border border-muted/20" />

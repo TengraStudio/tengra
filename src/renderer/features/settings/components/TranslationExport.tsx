@@ -153,7 +153,7 @@ export const TranslationExport: React.FC = () => {
                         key={info.lang}
                         className="rounded-lg border border-border/40 bg-muted/10 p-3 text-center"
                     >
-                        <div className="text-xs font-medium text-muted-foreground">{info.label}</div>
+                        <div className="typo-caption font-medium text-muted-foreground">{info.label}</div>
                         <div
                             className={cn(
                                 'text-lg font-bold',
@@ -172,14 +172,14 @@ export const TranslationExport: React.FC = () => {
             <div className="flex gap-2">
                 <button
                     onClick={handleExportJSON}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-border/40 px-3 py-1.5 text-xs hover:bg-muted/30 transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border/40 px-3 py-1.5 typo-caption hover:bg-muted/30 transition-colors"
                 >
                     <Download className="w-3.5 h-3.5" />
                     {t('settings.translationExport.exportJSON')}
                 </button>
                 <button
                     onClick={handleExportCSV}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-border/40 px-3 py-1.5 text-xs hover:bg-muted/30 transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border/40 px-3 py-1.5 typo-caption hover:bg-muted/30 transition-colors"
                 >
                     <Download className="w-3.5 h-3.5" />
                     {t('settings.translationExport.exportCSV')}

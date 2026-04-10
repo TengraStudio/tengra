@@ -52,7 +52,7 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                         value={modelSearch}
                         onChange={e => setModelSearch(e.target.value)}
                         placeholder={t('workspaces.searchModels')}
-                        className="h-11 rounded-2xl border-border/30 bg-background pl-12 pr-6 text-xs font-medium placeholder:text-muted-foreground/35"
+                        className="h-11 rounded-2xl border-border/30 bg-background pl-12 pr-6 typo-caption font-medium placeholder:text-muted-foreground/35"
                     />
                 </div>
                 <Button

@@ -11,7 +11,7 @@ import React, { Suspense, useEffect, useMemo } from 'react';
 
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { LoadingState } from '@/components/ui/LoadingState';
-import { renderViewSkeleton } from '@/components/ui/view-skeletons';
+import { renderViewSkeleton, ViewSkeletonId } from '@/components/ui/view-skeletons';
 import { useAuth, useAuthSettingsUi } from '@/context/AuthContext';
 import { useTranslation } from '@/i18n';
 import {
@@ -23,6 +23,7 @@ import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 import { trackAnimationEvent } from '@/store/animation-analytics.store';
 import type { GroupedModels } from '@/types';
+import { ExtensionViewHost } from '@renderer/features/extensions/components/ExtensionViewHost';
 
 import {
     ChatViewWrapperView,
@@ -129,6 +130,7 @@ const ModelsSection: React.FC = () => {
     );
 };
 
+
 const TerminalPlaceholderSection: React.FC = () => {
     const { t } = useTranslation();
 
@@ -207,7 +209,10 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
             case 'docker': return <DockerSection />;
             case 'terminal': return <TerminalPlaceholderSection />;
             case 'marketplace': return <Suspense fallback={<LoadingState size="md" />}><MarketplaceView /></Suspense>;
-            default: return null;
+            default: {
+                // If it's not a core view, check if it's an extension view
+                return <ExtensionViewHost viewId={currentView} />;
+            }
         }
     };
 
@@ -225,7 +230,11 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
                     style={{ willChange: 'opacity' }}
                 >
                     <ErrorBoundary resetKeys={[currentView]}>
-                        <Suspense fallback={renderViewSkeleton(currentView)}>
+                        <Suspense fallback={renderViewSkeleton(
+                            ['chat', 'workspace', 'settings', 'mcp', 'memory', 'agent', 'models', 'docker', 'terminal', 'marketplace'].includes(currentView)
+                                ? currentView as ViewSkeletonId
+                                : 'marketplace'
+                        )}>
                             {renderView()}
                         </Suspense>
                     </ErrorBoundary>

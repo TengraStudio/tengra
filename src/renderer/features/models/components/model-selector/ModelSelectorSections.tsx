@@ -82,7 +82,7 @@ export const ModelSelectorModeTabs: React.FC<ModelSelectorModeTabsProps> = ({
                             key={mode}
                             onClick={() => onChatModeChange?.(mode)}
                             className={cn(
-                                'flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200',
+                                'flex items-center gap-2 px-3.5 py-1.5 rounded-lg typo-caption font-bold transition-all duration-200',
                                 isActive
                                     ? cn(config.bg, config.color, "shadow-[0_2px_8px_-2px_rgba(0,0,0,0.2)] scale-[1.02]")
                                     : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/50'
@@ -101,7 +101,7 @@ export const ModelSelectorModeTabs: React.FC<ModelSelectorModeTabsProps> = ({
                 <button
                     onClick={() => onTabChange('models')}
                     className={cn(
-                        'px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200',
+                        'px-4 py-1.5 rounded-lg typo-caption font-bold transition-all duration-200',
                         activeTab === 'models'
                             ? 'bg-primary/20 text-primary shadow-[0_2px_8px_-2px_rgba(0,0,0,0.1)]'
                             : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/50'
@@ -113,7 +113,7 @@ export const ModelSelectorModeTabs: React.FC<ModelSelectorModeTabsProps> = ({
                     <button
                         onClick={() => onTabChange('reasoning')}
                         className={cn(
-                            'px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200',
+                            'px-4 py-1.5 rounded-lg typo-caption font-bold transition-all duration-200',
                             activeTab === 'reasoning'
                                 ? 'bg-primary/20 text-primary shadow-[0_2_2px_8px_-2px_rgba(0,0,0,0.1)]'
                                 : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/50'
@@ -126,7 +126,7 @@ export const ModelSelectorModeTabs: React.FC<ModelSelectorModeTabsProps> = ({
                     <button
                         onClick={() => onTabChange('permissions')}
                         className={cn(
-                            'px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200',
+                            'px-4 py-1.5 rounded-lg typo-caption font-bold transition-all duration-200',
                             activeTab === 'permissions'
                                 ? 'bg-primary/20 text-primary shadow-[0_2px_8px_-2px_rgba(0,0,0,0.1)]'
                                 : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/50'

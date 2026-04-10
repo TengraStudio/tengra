@@ -29,7 +29,7 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
                 {quickActions.map(action => (
                     <button
                         key={action.id}
-                        className="secondary-btn text-xs"
+                        className="secondary-btn typo-caption"
                         onClick={() => {
                             if (selectedConnectionId) {
                                 onExecute(action.command);

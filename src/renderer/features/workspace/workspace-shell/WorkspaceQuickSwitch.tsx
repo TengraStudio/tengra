@@ -96,7 +96,7 @@ export const WorkspaceQuickSwitch: React.FC<WorkspaceQuickSwitchProps> = ({
                         </button>
                     ))}
                     {items.length === 0 && (
-                        <div className="px-3 py-6 text-center text-xs text-muted-foreground">
+                        <div className="px-3 py-6 text-center typo-caption text-muted-foreground">
                             {t('workspace.noMatchingTabs')}
                         </div>
                     )}

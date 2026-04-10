@@ -143,7 +143,7 @@ export function SkillsMarketplace({
         return (
             <div className="flex flex-col items-center justify-center py-32 space-y-5">
                 <RefreshCw className="w-8 h-8 text-primary animate-spin opacity-40" />
-                <p className="text-xs font-bold text-muted-foreground animate-pulse">
+                <p className="typo-caption font-bold text-muted-foreground animate-pulse">
                     {t('marketplace.syncing')}
                 </p>
             </div>
@@ -186,7 +186,7 @@ export function SkillsMarketplace({
                         }));
                     }}
                 >
-                    <SelectTrigger className="h-9 w-40 text-xs">
+                    <SelectTrigger className="h-9 w-40 typo-caption">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -205,7 +205,7 @@ export function SkillsMarketplace({
                         }));
                     }}
                 >
-                    <SelectTrigger className="h-9 w-40 text-xs">
+                    <SelectTrigger className="h-9 w-40 typo-caption">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -214,7 +214,7 @@ export function SkillsMarketplace({
                         <SelectItem value="version_desc">{t('mcp.version')} ↓</SelectItem>
                     </SelectContent>
                 </Select>
-                <div className="rounded-full bg-muted/30 px-3 py-1 text-xs font-bold text-muted-foreground">
+                <div className="rounded-full bg-muted/30 px-3 py-1 typo-caption font-bold text-muted-foreground">
                     {filteredSkills.length} {t('marketplace.results')}
                 </div>
             </div>
@@ -236,7 +236,7 @@ export function SkillsMarketplace({
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-bold text-foreground leading-none mb-1">{item.name}</h3>
-                                        <p className="text-xs text-muted-foreground font-medium">{item.description}</p>
+                                        <p className="typo-caption text-muted-foreground font-medium">{item.description}</p>
                                     </div>
                                 </div>
                                 <Badge variant="outline" className="typo-body uppercase">
@@ -292,19 +292,19 @@ export function SkillsMarketplace({
                         type="button"
                         onClick={() => onQueryChange(prev => ({ ...prev, page: Math.max(1, activePage - 1) }))}
                         disabled={activePage <= 1}
-                        className="inline-flex items-center gap-1 rounded-md border border-border/40 px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                        className="inline-flex items-center gap-1 rounded-md border border-border/40 px-3 py-1.5 typo-caption font-semibold text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         <ChevronLeft className="h-3.5 w-3.5" />
                         {t('common.previous')}
                     </button>
-                    <span className="text-xs font-semibold text-muted-foreground">
+                    <span className="typo-caption font-semibold text-muted-foreground">
                         {t('common.pageOf', { current: activePage, total: totalPages })}
                     </span>
                     <button
                         type="button"
                         onClick={() => onQueryChange(prev => ({ ...prev, page: Math.min(totalPages, activePage + 1) }))}
                         disabled={activePage >= totalPages}
-                        className="inline-flex items-center gap-1 rounded-md border border-border/40 px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                        className="inline-flex items-center gap-1 rounded-md border border-border/40 px-3 py-1.5 typo-caption font-semibold text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         {t('common.next')}
                         <ChevronRight className="h-3.5 w-3.5" />

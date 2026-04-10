@@ -181,6 +181,20 @@ function buildEvidenceFallbackContent(toolMessages: Message[], language?: string
         : 'Based on the collected evidence: I synthesized the available tool results.';
 }
 
+function isToolProgressContent(content: string): boolean {
+    const normalized = content.trim().toLowerCase();
+    if (normalized.length === 0) {
+        return false;
+    }
+    if (normalized.startsWith('using tool:')) {
+        return true;
+    }
+    if (normalized.startsWith('arac kullaniliyor:') || normalized.startsWith('arac kullaniyorum:')) {
+        return true;
+    }
+    return normalized === 'tools.usingtool';
+}
+
 export async function finalizeToolTurn(params: FinalizeTurnParams): Promise<void> {
     await persistToolExecutionMetadata({
         chatId: params.chatId,
@@ -284,6 +298,7 @@ export function evaluateLoopSafety(
         directAnswerHint: string;
     }
 ): { action: 'break' | 'continue' | 'proceed'; nextMessages: Message[] } {
+    const NON_SINGLE_REPEAT_BREAK_NO_PROGRESS_THRESHOLD = 3;
     const alternatingLoopDetected = hasAlternatingToolLoop(
         params.recentToolSignatures,
         options.recentSignatureWindow
@@ -295,7 +310,9 @@ export function evaluateLoopSafety(
     // and the model is still asking for similar things without processing previous results,
     // we should forcefully guide it to a final answer or break.
     const hasFilesystemEvidence = params.evidenceRecords.some(r =>
-        r.toolName === 'list_directory' || r.toolName === 'file_exists'
+        r.toolName === 'list_directory'
+        || r.toolName === 'file_exists'
+        || r.toolName === 'resolve_path'
     );
 
     if (
@@ -326,7 +343,7 @@ export function evaluateLoopSafety(
     if (
         !isSingleLookupIntent
         && params.repeatedToolSignatureCount >= 2
-        && params.noProgressToolTurnCount >= 2
+        && params.noProgressToolTurnCount >= NON_SINGLE_REPEAT_BREAK_NO_PROGRESS_THRESHOLD
     ) {
         appLogger.info(
             'useChatGenerator',
@@ -337,7 +354,10 @@ export function evaluateLoopSafety(
 
     // Semantic: all recent signatures use the same tool family — break if it's coupled with no real progress
     const MONOTONOUS_FAMILY_WINDOW = 3;
-    if (params.noProgressToolTurnCount >= 2 && isMonotonousToolFamily(params.recentToolSignatures, MONOTONOUS_FAMILY_WINDOW)) {
+    if (
+        params.noProgressToolTurnCount >= NON_SINGLE_REPEAT_BREAK_NO_PROGRESS_THRESHOLD
+        && isMonotonousToolFamily(params.recentToolSignatures, MONOTONOUS_FAMILY_WINDOW)
+    ) {
         appLogger.info(
             'useChatGenerator',
             `Breaking tool loop: monotonous tool family detected without progress across ${MONOTONOUS_FAMILY_WINDOW} recent signatures. noProgress=${params.noProgressToolTurnCount}`
@@ -377,6 +397,7 @@ export async function finalizeLoopForcefully(
 
     const assistantContent = getMessageStringContent(params.assistantMsg.content);
     const normalizedAssistantContent = assistantContent.trim();
+    const hasProgressOnlyContent = isToolProgressContent(normalizedAssistantContent);
     const hasMeaningfulAssistantContent = normalizedAssistantContent.length > 0
         && !isLowSignalProgressContent(normalizedAssistantContent);
     const fallbackContent = shouldPreserveToolLoopFallbackContent(
@@ -407,7 +428,7 @@ export async function finalizeLoopForcefully(
         language: params.language,
     });
     const resolvedFallbackContent = fallbackContent
-        ?? (hasMeaningfulAssistantContent ? normalizedAssistantContent : undefined)
+        ?? (hasMeaningfulAssistantContent && !hasProgressOnlyContent ? normalizedAssistantContent : undefined)
         ?? deterministicFallbackContent
         ?? toolErrorFallbackContent
         ?? evidenceFallbackContent

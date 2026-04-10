@@ -3,7 +3,15 @@ import { LinkedAccount } from '@main/services/data/database.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { JsonObject, JsonValue } from '@shared/types/common';
-import { ClaudeQuota, CodexUsage, CopilotQuota, ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota';
+import {
+    AntigravityQuotaModelData,
+    ClaudeQuota,
+    CodexUsage,
+    CopilotQuota,
+    ModelQuotaItem,
+    QuotaInfo,
+    QuotaResponse
+} from '@shared/types/quota';
 import { getErrorMessage, TengraError } from '@shared/utils/error.util';
 
 import { AntigravityHandler } from './quota/antigravity-handler';
@@ -17,6 +25,7 @@ export interface QuotaModel {
         remainingFraction?: number;
         remainingQuota?: number;
         totalQuota?: number;
+        aiCredits?: QuotaInfo['aiCredits'];
     }
 }
 
@@ -181,7 +190,7 @@ export class QuotaService {
         try {
             const data = await this.antigravityHandler.fetchAntigravityUpstreamForToken(account);
             if (data) {
-                return this.antigravityHandler.parseQuotaResponse(data as { models?: Record<string, { displayName?: string; quotaInfo?: QuotaInfo }> });
+                return this.antigravityHandler.parseQuotaResponse(data as { models?: Record<string, AntigravityQuotaModelData> });
             }
         } catch (error) {
             if (error instanceof QuotaError && error.quotaCode === QuotaErrorCode.AUTH_EXPIRED) {
@@ -208,7 +217,7 @@ export class QuotaService {
             const accounts = await this.authService.getAllAccountsFull();
             const account = accounts.find(a => a.provider.startsWith('antigravity') || a.provider.startsWith('google'));
             if (account === undefined) { return []; }
-            const data = await this.antigravityHandler.fetchAntigravityUpstreamForToken(account) as { models?: Record<string, { displayName?: string; quotaInfo?: QuotaInfo }> } | null;
+            const data = await this.antigravityHandler.fetchAntigravityUpstreamForToken(account) as { models?: Record<string, AntigravityQuotaModelData> } | null;
             if (data?.models) {
                 return this.antigravityHandler.parseQuotaResponse(data)?.models ?? [];
             }

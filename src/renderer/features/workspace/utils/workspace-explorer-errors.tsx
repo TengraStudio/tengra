@@ -268,7 +268,7 @@ export function WorkspaceErrorFallback({
             <p className="text-sm text-destructive">{message}</p>
             <button
                 onClick={resetErrorBoundary}
-                className="mt-2 px-3 py-1 text-xs bg-destructive text-destructive-foreground rounded hover:bg-destructive/90"
+                className="mt-2 px-3 py-1 typo-caption bg-destructive text-destructive-foreground rounded hover:bg-destructive/90"
             >
                 {t('common.retry')}
             </button>

@@ -5,20 +5,21 @@ export interface LogBridge {
     write: (
         level: 'debug' | 'info' | 'warn' | 'error',
         message: string,
-        data?: Record<string, IpcValue>
+        data?: IpcValue,
+        context?: string
     ) => void;
-    debug: (message: string, data?: Record<string, IpcValue>) => void;
-    info: (message: string, data?: Record<string, IpcValue>) => void;
-    warn: (message: string, data?: Record<string, IpcValue>) => void;
-    error: (message: string, data?: Record<string, IpcValue>) => void;
+    debug: (message: string, data?: IpcValue, context?: string) => void;
+    info: (message: string, data?: IpcValue, context?: string) => void;
+    warn: (message: string, data?: IpcValue, context?: string) => void;
+    error: (message: string, data?: IpcValue, context?: string) => void;
 }
 
 export function createLogBridge(ipc: IpcRenderer): LogBridge {
     return {
-        write: (level, message, data) => ipc.send('log:write', { level, message, data }),
-        debug: (message, data) => ipc.send('log:write', { level: 'debug', message, data }),
-        info: (message, data) => ipc.send('log:write', { level: 'info', message, data }),
-        warn: (message, data) => ipc.send('log:write', { level: 'warn', message, data }),
-        error: (message, data) => ipc.send('log:write', { level: 'error', message, data }),
+        write: (level, message, data, context) => ipc.send('log:write', { level, message, data, context }),
+        debug: (message, data, context) => ipc.send('log:write', { level: 'debug', message, data, context }),
+        info: (message, data, context) => ipc.send('log:write', { level: 'info', message, data, context }),
+        warn: (message, data, context) => ipc.send('log:write', { level: 'warn', message, data, context }),
+        error: (message, data, context) => ipc.send('log:write', { level: 'error', message, data, context }),
     };
 }

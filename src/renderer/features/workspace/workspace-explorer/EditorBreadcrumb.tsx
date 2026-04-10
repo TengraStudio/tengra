@@ -41,7 +41,7 @@ export const EditorBreadcrumb: React.FC<EditorBreadcrumbProps> = ({
     return (
         <nav
             aria-label={t('workspaceDashboard.editor.breadcrumbNav')}
-            className="flex items-center gap-0.5 px-3 py-1 text-xs text-muted-foreground bg-muted/20 border-b border-border/30 overflow-x-auto scrollbar-none"
+            className="flex items-center gap-0.5 px-3 py-1 typo-caption text-muted-foreground bg-muted/20 border-b border-border/30 overflow-x-auto scrollbar-none"
         >
             {segments.map((segment, index) => {
                 const isLast = index === segments.length - 1;

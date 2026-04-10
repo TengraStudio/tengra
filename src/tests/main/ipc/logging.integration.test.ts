@@ -218,6 +218,29 @@ describe('Logging IPC Handlers', () => {
             const handler = mockIpcMainListeners.get('log:write');
             expect(handler).toBeDefined();
         });
+
+        it('should preserve structured renderer context for persisted log entries', async () => {
+            const handler = mockIpcMainListeners.get('log:write');
+            expect(handler).toBeDefined();
+
+            await mockIpcMainHandlers.get('log:buffer:clear')!({});
+            handler!(
+                { sender: { id: 7 } },
+                {
+                    level: 1,
+                    message: 'streaming-state apply chatId=test',
+                    context: 'processChatStream',
+                }
+            );
+
+            const getHandler = mockIpcMainHandlers.get('log:buffer:get');
+            const buffer = await getHandler!({}) as LogEntry[];
+            expect(buffer.at(-1)).toMatchObject({
+                level: 'info',
+                source: 'renderer:processChatStream',
+                message: 'streaming-state apply chatId=test',
+            });
+        });
     });
 
     describe('pushLogEntry', () => {

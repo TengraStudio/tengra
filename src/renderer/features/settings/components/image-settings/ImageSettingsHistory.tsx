@@ -81,7 +81,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                     value={historySearchQuery}
                     onChange={event => setHistorySearchQuery(event.target.value)}
                     placeholder={t('settings.images.searchHistory')}
-                    className="h-12 pl-12 pr-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 text-xs font-bold placeholder:text-muted-foreground/30 shadow-inner group-hover:bg-muted/30 transition-all"
+                    className="h-12 pl-12 pr-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 typo-caption font-bold placeholder:text-muted-foreground/30 shadow-inner group-hover:bg-muted/30 transition-all"
                 />
             </div>
 
@@ -98,7 +98,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                         <div key={entry.id} className="group/item flex flex-col gap-4 bg-background/50 border border-border/20 rounded-2xl p-5 transition-all hover:bg-muted/10 hover:border-border/40 shadow-sm">
                             <div className="flex items-start justify-between gap-4">
                                 <div className="space-y-1.5 min-w-0 flex-1">
-                                    <div className="text-xs font-bold text-foreground truncate group-hover/item:text-primary transition-colors">
+                                    <div className="typo-caption font-bold text-foreground truncate group-hover/item:text-primary transition-colors">
                                         {entry.prompt}
                                     </div>
                                     <div className="flex flex-wrap items-center gap-3">
@@ -203,7 +203,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                         <div className="space-y-1">
                             <div className="typo-body font-bold text-muted-foreground/40">{t('settings.images.analyticsAverageDuration')}</div>
                             <div className="text-2xl font-bold text-foreground tabular-nums group-hover/analytics:text-primary transition-colors">
-                                {Math.round(imageAnalytics.averageDurationMs / 1000)}<span className="text-xs ml-1">s</span>
+                                {Math.round(imageAnalytics.averageDurationMs / 1000)}<span className="typo-caption ml-1">s</span>
                             </div>
                         </div>
                     )}
@@ -224,7 +224,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                         </div>
                         <div className="text-right">
                             <div className="text-xl font-bold text-foreground">
-                                {Math.round(comparisonResult.summary.averageFileSizeBytes / 1024)} <span className="text-xs font-bold text-muted-foreground/40">kb</span>
+                                {Math.round(comparisonResult.summary.averageFileSizeBytes / 1024)} <span className="typo-caption font-bold text-muted-foreground/40">kb</span>
                             </div>
                             <div className="typo-body font-bold text-muted-foreground/40 mt-1">Average Size</div>
                         </div>

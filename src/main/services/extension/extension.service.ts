@@ -8,7 +8,9 @@ import * as path from 'path';
 import * as vm from 'vm';
 
 import { BaseService } from '@main/services/base.service';
+import { SettingsService } from '@main/services/system/settings.service';
 import {
+    ConfigurationChangeEvent,
     ExtensionContext,
     ExtensionDevOptions,
     ExtensionManifest,
@@ -22,12 +24,12 @@ import {
     ExtensionTestResult,
 } from '@shared/types/extension';
 import { createExtensionLogger, createExtensionState, validateManifest } from '@shared/utils/extension.util';
-import { BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 
 /** Extension instance */
 interface ExtensionInstance {
     manifest: ExtensionManifest;
-    context: ExtensionContext;
+    context: ExtensionRuntimeContext;
     status: ExtensionStatus;
     module: ExtensionModule | null;
     profileData: ExtensionProfileData;
@@ -37,6 +39,8 @@ interface ExtensionInstance {
 interface ExtensionServiceState {
     extensions: Map<string, ExtensionInstance>;
     watchers: Map<string, fs.FSWatcher>;
+    extensionConfigs: Map<string, Record<string, RuntimeValue>>;
+    configListeners: Map<string, Set<(event: ConfigurationChangeEvent) => void>>;
     mainWindow: BrowserWindow | null;
     extensionsPath: string;
 }
@@ -46,6 +50,36 @@ interface ExtensionActionResult {
     error?: string;
     messageKey?: string;
     messageParams?: Record<string, string | number>;
+}
+
+interface ExtensionPackageJsonAuthor {
+    name?: string;
+    email?: string;
+    url?: string;
+}
+
+interface ExtensionPackageJson {
+    id?: string;
+    name?: string;
+    version?: string;
+    description?: string;
+    main?: string;
+    license?: string;
+    author?: string | ExtensionPackageJsonAuthor;
+    tengra?: Partial<ExtensionManifest>;
+    manifest?: Partial<ExtensionManifest>;
+}
+
+type ExtensionCommandHandler = (...args: RuntimeValue[]) => RuntimeValue | Promise<RuntimeValue>;
+
+interface ExtensionCommandBridge {
+    registerCommand(commandId: string, handler: ExtensionCommandHandler): { dispose: () => void };
+    executeCommand<T extends RuntimeValue = RuntimeValue>(commandId: string, ...args: RuntimeValue[]): Promise<T>;
+    listCommands(): string[];
+}
+
+interface ExtensionRuntimeContext extends ExtensionContext {
+    commands: ExtensionCommandBridge;
 }
 
 const ALLOWED_PERMISSIONS: ReadonlySet<ExtensionPermission> = new Set([
@@ -77,6 +111,16 @@ const EXTENSION_ERROR_MESSAGE = {
     ENTRY_POINT_OUTSIDE_ROOT: 'Extension entry point resolves outside extension root',
     ACTIVATE_FUNCTION_MISSING: 'Extension module must export an activate function'
 } as const;
+const EXTENSION_STATE_CHANNEL = 'extension:state-changed';
+type ExtensionStateEvent =
+    | 'installed'
+    | 'updated'
+    | 'uninstalled'
+    | 'activated'
+    | 'deactivated'
+    | 'disabled'
+    | 'activation-failed'
+    | 'scan-completed';
 
 /**
  * Extension Service
@@ -86,11 +130,13 @@ export class ExtensionService extends BaseService {
     private state: ExtensionServiceState = {
         extensions: new Map(),
         watchers: new Map(),
+        extensionConfigs: new Map(),
+        configListeners: new Map(),
         mainWindow: null,
         extensionsPath: '',
     };
 
-    constructor() {
+    constructor(private settingsService: SettingsService) {
         super('ExtensionService');
     }
 
@@ -98,7 +144,7 @@ export class ExtensionService extends BaseService {
         this.logInfo('Initializing Extension Service...');
 
         // Set up extensions directory
-        const userDataPath = process.env.USERDATA || '';
+        const userDataPath = app.getPath('userData');
         this.state.extensionsPath = path.join(userDataPath, 'extensions');
 
         try {
@@ -108,7 +154,57 @@ export class ExtensionService extends BaseService {
         }
 
         this.setupIpcHandlers();
+        
+        // Auto-scan extensions directory
+        void this.scanExtensions();
+
         this.logInfo('Extension Service initialized successfully');
+    }
+
+    /** Scan extensions directory and install all found extensions */
+    private async scanExtensions(): Promise<void> {
+        if (!this.state.extensionsPath) {
+            return;
+        }
+
+        try {
+            const entries = await fs.promises.readdir(this.state.extensionsPath, { withFileTypes: true });
+            for (const entry of entries) {
+                if (!entry.isDirectory() && !entry.isSymbolicLink()) {
+                    continue;
+                }
+
+                const extPath = path.join(this.state.extensionsPath, entry.name);
+                const result = await this.installExtension(extPath);
+                if (!result.success || !result.extensionId) {
+                    continue;
+                }
+
+                await this.syncScannedExtensionState(result.extensionId);
+            }
+            this.emitStateChange('scan-completed');
+        } catch (error) {
+            this.logError('Failed to scan extensions directory', error as Error);
+        }
+    }
+
+    private async syncScannedExtensionState(extensionId: string): Promise<void> {
+        const settings = this.settingsService.getSettings();
+        const isDisabled = settings.extensionDisabledServers?.includes(extensionId) ?? false;
+        if (isDisabled) {
+            const disabledInstance = this.state.extensions.get(extensionId);
+            if (disabledInstance) {
+                disabledInstance.status = 'disabled';
+                this.emitStateChange('disabled', extensionId, 'disabled');
+            }
+            return;
+        }
+
+        const instance = this.state.extensions.get(extensionId);
+        const shouldActivateOnStartup = instance?.manifest.activationEvents?.some(event => event.type === 'onStartup') ?? false;
+        if (shouldActivateOnStartup) {
+            await this.activateExtension(extensionId);
+        }
     }
 
     override async cleanup(): Promise<void> {
@@ -128,6 +224,9 @@ export class ExtensionService extends BaseService {
                 this.logError(`Failed to deactivate ${extensionId}`, error as Error);
             }
         }
+
+        this.state.extensionConfigs.clear();
+        this.state.configListeners.clear();
 
         this.removeIpcHandlers();
         this.logInfo('Extension Service cleaned up');
@@ -154,6 +253,8 @@ export class ExtensionService extends BaseService {
         ipcMain.handle('extension:get-profile', this.handleGetProfile.bind(this));
         ipcMain.handle('extension:validate', this.handleValidate.bind(this));
         ipcMain.handle('extension:get-state', this.handleGetState.bind(this));
+        ipcMain.handle('extension:get-config', this.handleGetConfig.bind(this));
+        ipcMain.handle('extension:update-config', this.handleUpdateConfig.bind(this));
     }
 
     /** Remove IPC handlers */
@@ -172,20 +273,23 @@ export class ExtensionService extends BaseService {
         ipcMain.removeHandler('extension:get-profile');
         ipcMain.removeHandler('extension:validate');
         ipcMain.removeHandler('extension:get-state');
+        ipcMain.removeHandler('extension:get-config');
+        ipcMain.removeHandler('extension:update-config');
     }
 
     // IPC Handlers
 
-    private handleGetAll(): { success: boolean; extensions: Array<{ manifest: ExtensionManifest; status: ExtensionStatus }> } {
+    private handleGetAll(): { success: boolean; extensions: Array<{ manifest: ExtensionManifest; status: ExtensionStatus; extensionPath: string; isDev: boolean }> } {
         const extensions = Array.from(this.state.extensions.values()).map((instance) => ({
             manifest: instance.manifest,
             status: instance.status,
+            extensionPath: instance.context.extensionPath,
             isDev: this.state.watchers.has(instance.manifest.id),
         }));
         return { success: true, extensions };
     }
 
-    private handleGet(_event: Electron.IpcMainInvokeEvent, extensionId: string): { success: boolean; extension?: { manifest: ExtensionManifest; status: ExtensionStatus; isDev: boolean } } {
+    private handleGet(_event: Electron.IpcMainInvokeEvent, extensionId: string): { success: boolean; extension?: { manifest: ExtensionManifest; status: ExtensionStatus; extensionPath: string; isDev: boolean } } {
         const instance = this.state.extensions.get(extensionId);
         if (!instance) {
             return { success: false };
@@ -195,6 +299,7 @@ export class ExtensionService extends BaseService {
             extension: {
                 manifest: instance.manifest,
                 status: instance.status,
+                extensionPath: instance.context.extensionPath,
                 isDev: this.state.watchers.has(extensionId),
             },
         };
@@ -218,7 +323,14 @@ export class ExtensionService extends BaseService {
 
     private async handleActivate(_event: Electron.IpcMainInvokeEvent, extensionId: string): Promise<ExtensionActionResult> {
         try {
-            return await this.activateExtension(extensionId);
+            const result = await this.activateExtension(extensionId);
+            if (result.success) {
+                const settings = this.settingsService.getSettings();
+                const disabled = settings.extensionDisabledServers || [];
+                const newDisabled = disabled.filter(id => id !== extensionId);
+                await this.settingsService.saveSettings({ extensionDisabledServers: newDisabled });
+            }
+            return result;
         } catch (error) {
             return { success: false, error: (error as Error).message };
         }
@@ -226,7 +338,15 @@ export class ExtensionService extends BaseService {
 
     private async handleDeactivate(_event: Electron.IpcMainInvokeEvent, extensionId: string): Promise<{ success: boolean; error?: string }> {
         try {
-            return await this.deactivateExtension(extensionId);
+            const result = await this.deactivateExtension(extensionId);
+            if (result.success) {
+                const settings = this.settingsService.getSettings();
+                const disabled = settings.extensionDisabledServers || [];
+                if (!disabled.includes(extensionId)) {
+                    await this.settingsService.saveSettings({ extensionDisabledServers: [...disabled, extensionId] });
+                }
+            }
+            return result;
         } catch (error) {
             return { success: false, error: (error as Error).message };
         }
@@ -299,6 +419,37 @@ export class ExtensionService extends BaseService {
         return validateManifest(manifest);
     }
 
+    private handleGetConfig(
+        _event: Electron.IpcMainInvokeEvent,
+        extensionId: string
+    ): { success: boolean; config?: Record<string, RuntimeValue>; error?: string } {
+        const instance = this.state.extensions.get(extensionId);
+        if (!instance) {
+            return { success: false, error: EXTENSION_ERROR_MESSAGE.EXTENSION_NOT_FOUND };
+        }
+        return { success: true, config: this.getExtensionConfigSnapshot(extensionId) };
+    }
+
+    private async handleUpdateConfig(
+        _event: Electron.IpcMainInvokeEvent,
+        extensionId: string,
+        configPatch: RuntimeValue
+    ): Promise<{ success: boolean; config?: Record<string, RuntimeValue>; error?: string }> {
+        if (!configPatch || typeof configPatch !== 'object' || Array.isArray(configPatch)) {
+            return { success: false, error: 'Invalid extension config payload' };
+        }
+
+        try {
+            const updatedConfig = await this.updateExtensionConfig(
+                extensionId,
+                configPatch as Record<string, RuntimeValue>
+            );
+            return { success: true, config: updatedConfig };
+        } catch (error) {
+            return { success: false, error: (error as Error).message };
+        }
+    }
+
     // Public API Methods
 
     /** Get all extensions */
@@ -354,10 +505,9 @@ export class ExtensionService extends BaseService {
         }
 
         const manifestContent = await fs.promises.readFile(manifestPath, 'utf-8');
-        const packageJson = JSON.parse(manifestContent);
-        const manifest = packageJson.tengra as ExtensionManifest;
-
-        if (!manifest) {
+        const packageJson = JSON.parse(manifestContent) as ExtensionPackageJson;
+        const resolvedManifest = this.buildManifestFromPackageJson(packageJson);
+        if (!resolvedManifest) {
             return {
                 success: false,
                 error: EXTENSION_ERROR_MESSAGE.NO_TENGRA_CONFIGURATION,
@@ -365,18 +515,34 @@ export class ExtensionService extends BaseService {
             };
         }
 
-        const validation = validateManifest(manifest);
+        const validation = validateManifest(resolvedManifest);
         if (!validation.valid) {
             return { success: false, error: `Invalid manifest: ${validation.errors.join(', ')}` };
         }
 
+        const manifest = resolvedManifest as ExtensionManifest;
         const permissionValidation = this.validateDeclaredPermissions(manifest.permissions);
         if (!permissionValidation.valid) {
             return { success: false, error: permissionValidation.error };
         }
 
+        const existing = this.state.extensions.get(manifest.id);
+        if (existing?.status === 'active') {
+            const deactivation = await this.deactivateExtension(manifest.id);
+            if (!deactivation.success) {
+                return { success: false, error: deactivation.error ?? 'Failed to deactivate existing extension' };
+            }
+        }
+        const existingWatcher = this.state.watchers.get(manifest.id);
+        if (existingWatcher) {
+            existingWatcher.close();
+            this.state.watchers.delete(manifest.id);
+        }
+
+        await this.ensureExtensionConfigLoaded(manifest.id, resolvedExtensionPath);
+
         // Create extension context
-        const context: ExtensionContext = {
+        const baseContext: ExtensionContext = {
             extensionId: manifest.id,
             extensionPath: resolvedExtensionPath,
             globalState: createExtensionState(`${manifest.id}:global`),
@@ -389,6 +555,10 @@ export class ExtensionService extends BaseService {
                 debug: (message, ...args) => this.streamLog(manifest.id, 'debug', message, ...args),
             }),
             configuration: this.createConfigAccessor(manifest.id),
+        };
+        const context: ExtensionRuntimeContext = {
+            ...baseContext,
+            commands: this.createCommandAccessor(manifest.id, baseContext),
         };
 
         // Create profile data
@@ -412,9 +582,29 @@ export class ExtensionService extends BaseService {
         };
 
         this.state.extensions.set(manifest.id, instance);
-        this.logInfo(`Extension installed: ${manifest.id}`);
+        const event: ExtensionStateEvent = existing ? 'updated' : 'installed';
+        this.logInfo(`Extension ${existing ? 'updated' : 'installed'}: ${manifest.id}`);
+        this.emitStateChange(event, manifest.id, 'installed');
 
         return { success: true, extensionId: manifest.id };
+    }
+
+    private emitStateChange(
+        event: ExtensionStateEvent,
+        extensionId?: string,
+        status?: ExtensionStatus
+    ): void {
+        const targetWindow = this.state.mainWindow;
+        if (!targetWindow || targetWindow.isDestroyed()) {
+            return;
+        }
+
+        targetWindow.webContents.send(EXTENSION_STATE_CHANNEL, {
+            event,
+            extensionId,
+            status,
+            timestamp: Date.now(),
+        });
     }
 
     /** Helper to stream logs via IPC */
@@ -423,7 +613,11 @@ export class ExtensionService extends BaseService {
         switch (level) {
             case 'info': this.logInfo(fullMessage, ...args as []); break;
             case 'warn': this.logWarn(fullMessage, ...args as []); break;
-            case 'error': this.logError(fullMessage, args[0] as Error); break;
+            case 'error': {
+                const possibleError = args[0];
+                this.logError(fullMessage, possibleError instanceof Error ? possibleError : undefined);
+                break;
+            }
             case 'debug': this.logDebug(fullMessage, ...args as []); break;
         }
 
@@ -475,7 +669,10 @@ export class ExtensionService extends BaseService {
         }
 
         this.state.extensions.delete(extensionId);
+        this.state.extensionConfigs.delete(extensionId);
+        this.state.configListeners.delete(extensionId);
         this.logInfo(`Extension uninstalled: ${extensionId}`);
+        this.emitStateChange('uninstalled', extensionId);
 
         return { success: true };
     }
@@ -515,6 +712,7 @@ export class ExtensionService extends BaseService {
             instance.profileData.timestamps.activated = startTime;
 
             this.logInfo(`Extension activated: ${extensionId} (${instance.profileData.activationTime}ms)`);
+            this.emitStateChange('activated', extensionId, 'active');
             return { success: true };
         } catch (error) {
             const maxSizeKb = Math.floor(MAX_EXTENSION_SCRIPT_BYTES / 1024);
@@ -525,6 +723,7 @@ export class ExtensionService extends BaseService {
             instance.profileData.errorCount++;
             instance.profileData.lastError = (error as Error).message;
             this.logError(`Failed to activate ${extensionId}`, error as Error);
+            this.emitStateChange('activation-failed', extensionId, 'error');
             return {
                 success: false,
                 error: isSandboxSizeLimitError
@@ -586,6 +785,7 @@ export class ExtensionService extends BaseService {
             instance.profileData.timestamps.deactivated = Date.now();
 
             this.logInfo(`Extension deactivated: ${extensionId}`);
+            this.emitStateChange('deactivated', extensionId, 'inactive');
             return { success: true };
         } catch (error) {
             this.logError(`Failed to deactivate ${extensionId}`, error as Error);
@@ -722,6 +922,67 @@ export class ExtensionService extends BaseService {
         return { valid: true };
     }
 
+    private buildManifestFromPackageJson(packageJson: ExtensionPackageJson): Partial<ExtensionManifest> | null {
+        const extensionConfig = this.extractExtensionManifestConfig(packageJson);
+        if (!extensionConfig) {
+            return null;
+        }
+
+        const resolvedAuthor = this.resolveExtensionAuthor(extensionConfig.author ?? packageJson.author);
+        return {
+            ...extensionConfig,
+            id: extensionConfig.id ?? packageJson.id ?? packageJson.name,
+            name: extensionConfig.name ?? packageJson.name,
+            version: extensionConfig.version ?? packageJson.version,
+            description: extensionConfig.description ?? packageJson.description,
+            main: extensionConfig.main ?? packageJson.main,
+            license: extensionConfig.license ?? packageJson.license,
+            author: resolvedAuthor,
+            category: extensionConfig.category ?? 'other',
+            keywords: Array.isArray(extensionConfig.keywords) ? extensionConfig.keywords : [],
+        };
+    }
+
+    private extractExtensionManifestConfig(packageJson: ExtensionPackageJson): Partial<ExtensionManifest> | null {
+        if (packageJson.tengra && typeof packageJson.tengra === 'object' && !Array.isArray(packageJson.tengra)) {
+            return packageJson.tengra;
+        }
+        if (packageJson.manifest && typeof packageJson.manifest === 'object' && !Array.isArray(packageJson.manifest)) {
+            return packageJson.manifest;
+        }
+        return null;
+    }
+
+    private resolveExtensionAuthor(
+        author: ExtensionPackageJsonAuthor | ExtensionManifest['author'] | string | undefined
+    ): ExtensionManifest['author'] | undefined {
+        if (typeof author === 'string') {
+            const normalizedName = author.trim();
+            if (normalizedName.length === 0) {
+                return undefined;
+            }
+            return { name: normalizedName };
+        }
+
+        if (!author || typeof author !== 'object') {
+            return undefined;
+        }
+
+        const normalizedName = typeof author.name === 'string' ? author.name.trim() : '';
+        if (normalizedName.length === 0) {
+            return undefined;
+        }
+
+        const normalizedAuthor: ExtensionManifest['author'] = { name: normalizedName };
+        if (typeof author.email === 'string' && author.email.trim().length > 0) {
+            normalizedAuthor.email = author.email.trim();
+        }
+        if (typeof author.url === 'string' && author.url.trim().length > 0) {
+            normalizedAuthor.url = author.url.trim();
+        }
+        return normalizedAuthor;
+    }
+
     private resolveAndValidateExtensionPath(extensionPath: string): string | null {
         const normalizedCandidate = path.resolve(extensionPath);
         if (!fs.existsSync(normalizedCandidate)) {
@@ -762,6 +1023,7 @@ export class ExtensionService extends BaseService {
         const sandbox = {
             module: sandboxModule,
             exports: sandboxModule.exports,
+            require: this.createSandboxRequire(extensionId),
             console: Object.freeze({
                 log: (...args: RuntimeValue[]) => this.streamLog(extensionId, 'info', args.map(String).join(' ')),
                 warn: (...args: RuntimeValue[]) => this.streamLog(extensionId, 'warn', args.map(String).join(' ')),
@@ -786,36 +1048,197 @@ export class ExtensionService extends BaseService {
         return loaded as ExtensionModule;
     }
 
-    /** Create configuration accessor */
-    private createConfigAccessor(_extensionId: string): ExtensionContext['configuration'] {
-        void _extensionId;
-        return {
-            get<T>(_section: string, defaultValue?: T): T | undefined {
-                void _section;
-                // This would read from actual configuration
-                return defaultValue;
+    private createSandboxRequire(extensionId: string): (moduleName: string) => RuntimeValue {
+        const loggerBridge = {
+            appLogger: {
+                info: (...args: RuntimeValue[]) => this.streamLog(extensionId, 'info', args.map(String).join(' ')),
+                warn: (...args: RuntimeValue[]) => this.streamLog(extensionId, 'warn', args.map(String).join(' ')),
+                error: (...args: RuntimeValue[]) => this.streamLog(extensionId, 'error', args.map(String).join(' ')),
+                debug: (...args: RuntimeValue[]) => this.streamLog(extensionId, 'debug', args.map(String).join(' ')),
             },
-            async update(_section: string, _value: RuntimeValue): Promise<void> {
-                void _section;
-                void _value;
-                // This would update actual configuration
-            },
-            has(_section: string): boolean {
-                void _section;
-                return false;
-            },
-            onDidChange: () => ({ dispose: () => { } }),
+        };
+
+        return (moduleName: string): RuntimeValue => {
+            if (moduleName === '@main/logging/logger') {
+                return loggerBridge;
+            }
+            if (moduleName === '@shared/types/extension') {
+                return {};
+            }
+            throw new Error(`Unsupported extension module import: ${moduleName}`);
         };
     }
-}
 
-// Singleton instance
-let extensionServiceInstance: ExtensionService | null = null;
+    private createCommandAccessor(
+        extensionId: string,
+        context: ExtensionContext
+    ): ExtensionRuntimeContext['commands'] {
+        const commandHandlers = new Map<string, ExtensionCommandHandler>();
+        return {
+            registerCommand: (commandId: string, handler: ExtensionCommandHandler): { dispose: () => void } => {
+                const normalizedCommandId = commandId.trim();
+                if (normalizedCommandId.length === 0) {
+                    throw new Error('Extension command id is required');
+                }
 
-/** Get or create the extension service instance */
-export function getExtensionService(): ExtensionService {
-    if (!extensionServiceInstance) {
-        extensionServiceInstance = new ExtensionService();
+                commandHandlers.set(normalizedCommandId, handler);
+                this.logInfo(`[Extension: ${extensionId}] Registered command: ${normalizedCommandId}`);
+
+                const disposable = {
+                    dispose: (): void => {
+                        commandHandlers.delete(normalizedCommandId);
+                    },
+                };
+                context.subscriptions.push(disposable);
+                return disposable;
+            },
+            executeCommand: async <T extends RuntimeValue = RuntimeValue>(
+                commandId: string,
+                ...args: RuntimeValue[]
+            ): Promise<T> => {
+                const handler = commandHandlers.get(commandId);
+                if (!handler) {
+                    throw new Error(`Extension command not found: ${commandId}`);
+                }
+
+                const result = await handler(...args);
+                return result as T;
+            },
+            listCommands: (): string[] => Array.from(commandHandlers.keys()),
+        };
     }
-    return extensionServiceInstance;
+
+    /** Create configuration accessor */
+    private createConfigAccessor(extensionId: string): ExtensionContext['configuration'] {
+        return {
+            get: <T>(section: string, defaultValue?: T): T | undefined => {
+                const config = this.state.extensionConfigs.get(extensionId) ?? {};
+                if (Object.prototype.hasOwnProperty.call(config, section)) {
+                    return config[section] as T;
+                }
+                return defaultValue;
+            },
+            update: async (section: string, value: RuntimeValue): Promise<void> => {
+                const trimmedSection = section.trim();
+                if (trimmedSection.length === 0) {
+                    throw new Error('Extension configuration section is required');
+                }
+                await this.updateExtensionConfig(extensionId, { [trimmedSection]: value });
+            },
+            has: (section: string): boolean => {
+                const config = this.state.extensionConfigs.get(extensionId) ?? {};
+                return Object.prototype.hasOwnProperty.call(config, section);
+            },
+            onDidChange: (listener: (event: ConfigurationChangeEvent) => void) => {
+                let listeners = this.state.configListeners.get(extensionId);
+                if (!listeners) {
+                    listeners = new Set<(event: ConfigurationChangeEvent) => void>();
+                    this.state.configListeners.set(extensionId, listeners);
+                }
+                listeners.add(listener);
+                return {
+                    dispose: () => {
+                        listeners?.delete(listener);
+                        if (listeners?.size === 0) {
+                            this.state.configListeners.delete(extensionId);
+                        }
+                    }
+                };
+            },
+        };
+    }
+
+    private getExtensionConfigPath(extensionPath: string): string {
+        return path.join(extensionPath, '.tengra-config.json');
+    }
+
+    private async ensureExtensionConfigLoaded(extensionId: string, extensionPath: string): Promise<void> {
+        if (this.state.extensionConfigs.has(extensionId)) {
+            return;
+        }
+        const loadedConfig = await this.readExtensionConfigFile(extensionPath);
+        this.state.extensionConfigs.set(extensionId, loadedConfig);
+    }
+
+    private async readExtensionConfigFile(extensionPath: string): Promise<Record<string, RuntimeValue>> {
+        const configPath = this.getExtensionConfigPath(extensionPath);
+        try {
+            const serialized = await fs.promises.readFile(configPath, 'utf8');
+            const parsed = JSON.parse(serialized) as RuntimeValue;
+            if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+                this.logWarn(`Invalid extension config at ${configPath}; expected object`);
+                return {};
+            }
+            return { ...(parsed as Record<string, RuntimeValue>) };
+        } catch (error) {
+            const readError = error as NodeJS.ErrnoException;
+            if (readError.code !== 'ENOENT') {
+                this.logError(`Failed to read extension config: ${configPath}`, readError);
+            }
+            return {};
+        }
+    }
+
+    private async persistExtensionConfig(extensionId: string): Promise<void> {
+        const instance = this.state.extensions.get(extensionId);
+        if (!instance) {
+            throw new Error(EXTENSION_ERROR_MESSAGE.EXTENSION_NOT_FOUND);
+        }
+        const nextConfig = this.state.extensionConfigs.get(extensionId) ?? {};
+        const configPath = this.getExtensionConfigPath(instance.context.extensionPath);
+        await fs.promises.writeFile(configPath, JSON.stringify(nextConfig, null, 2), 'utf8');
+    }
+
+    private notifyExtensionConfigChanged(extensionId: string, section: string): void {
+        const listeners = this.state.configListeners.get(extensionId);
+        if (!listeners || listeners.size === 0) {
+            return;
+        }
+        const event: ConfigurationChangeEvent = {
+            affectsConfiguration: (candidateSection: string): boolean => {
+                const normalizedCandidate = candidateSection.trim();
+                if (normalizedCandidate.length === 0) {
+                    return false;
+                }
+                return section === normalizedCandidate
+                    || section.startsWith(`${normalizedCandidate}.`)
+                    || normalizedCandidate.startsWith(`${section}.`);
+            },
+        };
+        for (const listener of listeners) {
+            try {
+                listener(event);
+            } catch (error) {
+                this.logError(`Extension config listener failed: ${extensionId}`, error as Error);
+            }
+        }
+    }
+
+    private getExtensionConfigSnapshot(extensionId: string): Record<string, RuntimeValue> {
+        const current = this.state.extensionConfigs.get(extensionId) ?? {};
+        return { ...current };
+    }
+
+    private async updateExtensionConfig(
+        extensionId: string,
+        configPatch: Record<string, RuntimeValue>
+    ): Promise<Record<string, RuntimeValue>> {
+        if (!this.state.extensions.has(extensionId)) {
+            throw new Error(EXTENSION_ERROR_MESSAGE.EXTENSION_NOT_FOUND);
+        }
+        const currentConfig = this.state.extensionConfigs.get(extensionId) ?? {};
+        const nextConfig = {
+            ...currentConfig,
+            ...configPatch,
+        };
+        this.state.extensionConfigs.set(extensionId, nextConfig);
+        await this.persistExtensionConfig(extensionId);
+        for (const key of Object.keys(configPatch)) {
+            this.notifyExtensionConfigChanged(extensionId, key);
+        }
+        return { ...nextConfig };
+    }
 }
+
+
+

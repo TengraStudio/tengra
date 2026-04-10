@@ -20,7 +20,7 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({
 
     return (
         <div className="mt-3 rounded-lg border border-border bg-muted/40 p-3">
-            <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+            <div className="mb-2 flex items-center justify-between typo-caption text-muted-foreground">
                 <span>{t('codeSandbox.output')}</span>
                 <span>{t('codeSandbox.executionTime', { ms: durationMs })}</span>
             </div>
@@ -33,7 +33,7 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({
 
             {stderr && (
                 <div className="mt-2">
-                    <span className="text-xs font-semibold text-destructive">
+                    <span className="typo-caption font-semibold text-destructive">
                         {t('codeSandbox.stderr')}
                     </span>
                     <pre className="whitespace-pre-wrap break-words font-mono text-sm text-destructive">

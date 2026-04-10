@@ -74,7 +74,7 @@ class RendererLogger {
         const levelStr = LogLevel[level];
         const formattedMessage = `[${timestamp}] [${levelStr}] [${context}] ${message}`;
 
-        if (this.tryElectronLog(level, formattedMessage, data)) { return; }
+        if (this.tryElectronLog(level, context, message, data)) { return; }
 
         const consoleMethod = this.getConsoleMethod(level);
         if (data !== undefined) {
@@ -84,7 +84,7 @@ class RendererLogger {
         }
     }
 
-    private tryElectronLog(level: LogLevel, formattedMessage: string, data?: LogData): boolean {
+    private tryElectronLog(level: LogLevel, context: string, message: string, data?: LogData): boolean {
         const electronLog = window.electron?.log;
         if (!electronLog) { return false; }
 
@@ -94,9 +94,9 @@ class RendererLogger {
             return false;
         }
         if (data !== undefined) {
-            logMethod(formattedMessage, data);
+            logMethod(message, data, context);
         } else {
-            logMethod(formattedMessage);
+            logMethod(message, undefined, context);
         }
         return true;
     }

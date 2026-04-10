@@ -97,7 +97,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                             ? t('common.manual')
                             : t('common.auto')}
                     </div>
-                    <div className="mt-1 truncate text-xs font-medium text-muted-foreground/40">
+                    <div className="mt-1 truncate typo-caption font-medium text-muted-foreground/40">
                         {councilSetup.chairman.mode === 'manual'
                             ? `${selectedChairmanProvider} · ${selectedChairmanModel}`
                             : t('agents.strategy')}
@@ -111,7 +111,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                     <div className="text-lg font-bold text-foreground/90">
                         {t(`council.strategies.${councilSetup.strategy}`)}
                     </div>
-                    <div className="mt-1 truncate text-xs font-medium text-muted-foreground/40">
+                    <div className="mt-1 truncate typo-caption font-medium text-muted-foreground/40">
                         {selectedChairmanProvider} · {selectedChairmanModel}
                     </div>
                 </div>
@@ -123,7 +123,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                     <div className="text-lg font-bold text-foreground/90">
                         {requestedSubagentLabel}
                     </div>
-                    <div className="mt-1 text-xs font-medium text-muted-foreground/40">
+                    <div className="mt-1 typo-caption font-medium text-muted-foreground/40">
                         {t('common.active')}
                     </div>
                 </div>
@@ -213,7 +213,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                 </div>
 
                 <div className="rounded-2xl bg-primary/5 p-4 border border-primary/10">
-                    <p className="text-xs leading-relaxed text-primary/80 font-medium">
+                    <p className="typo-caption leading-relaxed text-primary/80 font-medium">
                         {t(`council.strategiesDesc.${councilSetup.strategy}`)}
                     </p>
                 </div>
@@ -298,7 +298,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                 </Button>
                 <Button 
                     onClick={onApplyCouncilSetup} 
-                    className="rounded-2xl px-8 h-12 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold tw-tracking-20 tw-shadow-primary-medium tw-hover-shadow-primary-glow transition-all"
+                    className="rounded-2xl px-8 h-12 bg-primary hover:bg-primary/90 text-primary-foreground typo-caption font-bold tw-tracking-20 tw-shadow-primary-medium tw-hover-shadow-primary-glow transition-all"
                 >
                     <Waypoints className="mr-2 h-4 w-4" />
                     {t('council.runCouncil')}

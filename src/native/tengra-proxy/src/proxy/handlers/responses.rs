@@ -8,6 +8,7 @@ use axum::{
 };
 use futures::{Stream, StreamExt};
 use serde_json::{json, Value};
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::{convert::Infallible, pin::Pin};
 
@@ -23,14 +24,14 @@ pub async fn handle_responses(
     let chat_payload = normalize_responses_request(&payload)
         .map_err(|error| (StatusCode::BAD_REQUEST, Json(json!({ "error": error }))))?;
     if chat_payload.stream {
-        let response = execute_chat_completion_payload(chat_payload).await?;
+        let response = execute_chat_completion_payload(_state.clone(), chat_payload).await?;
         return Ok(Sse::new(translate_responses_stream(
             response.into_body().into_data_stream(),
         ))
         .into_response());
     }
 
-    let response = execute_chat_completion_payload(chat_payload).await?;
+    let response = execute_chat_completion_payload(_state.clone(), chat_payload).await?;
     let status = response.status();
     let body = to_bytes(response.into_body(), 2 * 1024 * 1024)
         .await
@@ -57,13 +58,19 @@ fn translate_responses_stream(
         let mut buffer = String::new();
         let mut response_id = uuid::Uuid::new_v4().to_string();
         let mut response_created = false;
+        let mut tool_state = ResponsesToolState::default();
 
         while let Some(chunk) = input.next().await {
             match chunk {
                 Ok(bytes) => {
                     buffer.push_str(String::from_utf8_lossy(&bytes).as_ref());
                     while let Some(frame) = take_next_frame(&mut buffer) {
-                        for event in chat_frame_to_responses_events(frame.as_str(), &mut response_id, &mut response_created) {
+                        for event in chat_frame_to_responses_events(
+                            frame.as_str(),
+                            &mut response_id,
+                            &mut response_created,
+                            &mut tool_state,
+                        ) {
                             yield Ok(axum::response::sse::Event::default().data(event));
                         }
                     }
@@ -78,7 +85,12 @@ fn translate_responses_stream(
         }
 
         if !buffer.trim().is_empty() {
-            for event in chat_frame_to_responses_events(buffer.trim(), &mut response_id, &mut response_created) {
+            for event in chat_frame_to_responses_events(
+                buffer.trim(),
+                &mut response_id,
+                &mut response_created,
+                &mut tool_state,
+            ) {
                 yield Ok(axum::response::sse::Event::default().data(event));
             }
         }
@@ -101,10 +113,15 @@ fn chat_frame_to_responses_events(
     frame: &str,
     response_id: &mut String,
     response_created: &mut bool,
+    tool_state: &mut ResponsesToolState,
 ) -> Vec<String> {
     let mut events = Vec::new();
     for payload in extract_chat_payloads(frame) {
         if payload == "[DONE]" {
+            events.extend(flush_pending_tool_done_events(
+                response_id.as_str(),
+                tool_state,
+            ));
             events.push(
                 json!({
                     "type": "response.completed",
@@ -143,6 +160,7 @@ fn chat_frame_to_responses_events(
         events.extend(openai_chunk_to_responses_events(
             &chunk,
             response_id.as_str(),
+            tool_state,
         ));
     }
     events
@@ -157,7 +175,25 @@ fn extract_chat_payloads(frame: &str) -> Vec<String> {
         .collect()
 }
 
-fn openai_chunk_to_responses_events(chunk: &Value, response_id: &str) -> Vec<String> {
+#[derive(Clone)]
+struct ResponsesToolCallState {
+    id: String,
+    name: String,
+    saw_arguments: bool,
+}
+
+#[derive(Default)]
+struct ResponsesToolState {
+    by_index: HashMap<i64, ResponsesToolCallState>,
+    emitted_added_ids: HashSet<String>,
+    emitted_done_ids: HashSet<String>,
+}
+
+fn openai_chunk_to_responses_events(
+    chunk: &Value,
+    response_id: &str,
+    tool_state: &mut ResponsesToolState,
+) -> Vec<String> {
     let mut events = Vec::new();
     let Some(choice) = chunk
         .get("choices")
@@ -166,6 +202,7 @@ fn openai_chunk_to_responses_events(chunk: &Value, response_id: &str) -> Vec<Str
     else {
         return events;
     };
+    let finish_reason = choice.get("finish_reason").and_then(Value::as_str);
     let delta = choice.get("delta").cloned().unwrap_or_else(|| json!({}));
 
     if let Some(text) = delta.get("content").and_then(Value::as_str) {
@@ -200,17 +237,19 @@ fn openai_chunk_to_responses_events(chunk: &Value, response_id: &str) -> Vec<Str
 
     if let Some(tool_calls) = delta.get("tool_calls").and_then(Value::as_array) {
         for (index, tool_call) in tool_calls.iter().enumerate() {
-            let arguments = tool_call
-                .get("function")
-                .and_then(|value| value.get("arguments"))
-                .and_then(Value::as_str)
-                .unwrap_or_default();
-            if arguments.is_empty() {
-                continue;
-            }
+            let tool_call_index = tool_call
+                .get("index")
+                .and_then(Value::as_i64)
+                .unwrap_or(index as i64);
             let function_name = tool_call
                 .get("function")
                 .and_then(|value| value.get("name"))
+                .and_then(Value::as_str)
+                .unwrap_or_default();
+            let existing_state = tool_state.by_index.get(&tool_call_index).cloned();
+            let arguments = tool_call
+                .get("function")
+                .and_then(|value| value.get("arguments"))
                 .and_then(Value::as_str)
                 .unwrap_or_default();
             let tool_call_id = tool_call
@@ -218,6 +257,7 @@ fn openai_chunk_to_responses_events(chunk: &Value, response_id: &str) -> Vec<Str
                 .and_then(Value::as_str)
                 .filter(|id| !id.is_empty())
                 .map(str::to_string)
+                .or_else(|| existing_state.as_ref().map(|state| state.id.clone()))
                 .unwrap_or_else(|| {
                     format!(
                         "{}-{}",
@@ -226,21 +266,68 @@ fn openai_chunk_to_responses_events(chunk: &Value, response_id: &str) -> Vec<Str
                         } else {
                             function_name
                         },
-                        index
+                        tool_call_index
                     )
                 });
+            let resolved_name = if !function_name.is_empty() {
+                function_name.to_string()
+            } else {
+                existing_state
+                    .as_ref()
+                    .map(|state| state.name.clone())
+                    .unwrap_or_default()
+            };
+
+            let should_emit_added = !tool_state.emitted_added_ids.contains(&tool_call_id);
+            tool_state.emitted_added_ids.insert(tool_call_id.clone());
+
+            let updated_state = ResponsesToolCallState {
+                id: tool_call_id.clone(),
+                name: resolved_name.clone(),
+                saw_arguments: existing_state
+                    .as_ref()
+                    .map(|state| state.saw_arguments)
+                    .unwrap_or(false)
+                    || !arguments.is_empty(),
+            };
+            tool_state.by_index.insert(tool_call_index, updated_state);
+
+            if should_emit_added {
+                events.push(
+                    json!({
+                        "type": "response.output_item.added",
+                        "response_id": response_id,
+                        "item": {
+                            "id": tool_call_id.clone(),
+                            "type": "function_call",
+                            "call_id": tool_call_id.clone(),
+                            "name": resolved_name.clone(),
+                            "arguments": ""
+                        }
+                    })
+                    .to_string(),
+                );
+            }
+
+            if arguments.is_empty() {
+                continue;
+            }
             events.push(
                 json!({
                     "type": "response.function_call_arguments.delta",
                     "response_id": response_id,
                     "item_id": tool_call_id.clone(),
                     "call_id": tool_call_id,
-                    "name": function_name,
+                    "name": resolved_name,
                     "delta": arguments
                 })
                 .to_string(),
             );
         }
+    }
+
+    if finish_reason == Some("tool_calls") {
+        events.extend(flush_pending_tool_done_events(response_id, tool_state));
     }
 
     if let Some(usage) = chunk.get("usage") {
@@ -258,6 +345,38 @@ fn openai_chunk_to_responses_events(chunk: &Value, response_id: &str) -> Vec<Str
         );
     }
 
+    events
+}
+
+fn flush_pending_tool_done_events(
+    response_id: &str,
+    tool_state: &mut ResponsesToolState,
+) -> Vec<String> {
+    let mut pending: Vec<ResponsesToolCallState> = tool_state
+        .by_index
+        .values()
+        .filter(|state| state.saw_arguments)
+        .cloned()
+        .collect();
+    pending.sort_by(|left, right| left.id.cmp(&right.id));
+
+    let mut events = Vec::new();
+    for state in pending {
+        if tool_state.emitted_done_ids.contains(&state.id) {
+            continue;
+        }
+        tool_state.emitted_done_ids.insert(state.id.clone());
+        events.push(
+            json!({
+                "type": "response.function_call_arguments.done",
+                "response_id": response_id,
+                "item_id": state.id.clone(),
+                "call_id": state.id,
+                "name": state.name
+            })
+            .to_string(),
+        );
+    }
     events
 }
 
@@ -408,6 +527,15 @@ fn normalize_responses_request(payload: &Value) -> Result<ChatCompletionRequest,
             .map(|value| value as f32),
         stop: payload.get("stop").and_then(string_vec_from_value),
         reasoning_effort,
+        thinking_level: payload
+            .get("thinking_level")
+            .or_else(|| payload.get("thinkingLevel"))
+            .and_then(Value::as_str)
+            .map(str::to_string),
+        thinking_budget: payload
+            .get("thinking_budget")
+            .or_else(|| payload.get("thinkingBudget"))
+            .and_then(Value::as_i64),
         provider: payload
             .get("provider")
             .and_then(Value::as_str)
@@ -552,6 +680,7 @@ mod tests {
 
     use super::{
         chat_frame_to_responses_events, normalize_responses_request, openai_chat_to_responses,
+        ResponsesToolState,
     };
 
     #[test]
@@ -628,13 +757,54 @@ mod tests {
     fn converts_chat_stream_frame_to_responses_events() {
         let mut response_id = "resp_1".to_string();
         let mut created = false;
+        let mut tool_state = ResponsesToolState::default();
         let events = chat_frame_to_responses_events(
             "data: {\"id\":\"chatcmpl_1\",\"model\":\"gpt-5-codex\",\"choices\":[{\"delta\":{\"content\":\"hello\"}}]}\n\n",
             &mut response_id,
             &mut created,
+            &mut tool_state,
         );
         assert_eq!(events.len(), 2);
         assert!(events[0].contains("\"response.created\""));
         assert!(events[1].contains("\"response.output_text.delta\""));
+    }
+
+    #[test]
+    fn preserves_tool_call_identity_and_emits_done_for_streamed_tool_calls() {
+        let mut response_id = "resp_1".to_string();
+        let mut created = false;
+        let mut tool_state = ResponsesToolState::default();
+
+        let first_events = chat_frame_to_responses_events(
+            "data: {\"id\":\"chatcmpl_1\",\"model\":\"gpt-5-codex\",\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_1\",\"type\":\"function\",\"function\":{\"name\":\"list_directory\",\"arguments\":\"{\\\"path\\\":\\\"C\"}}]}}]}\n\n",
+            &mut response_id,
+            &mut created,
+            &mut tool_state,
+        );
+        assert!(first_events
+            .iter()
+            .any(|event| event.contains("\"response.output_item.added\"")));
+        assert!(first_events
+            .iter()
+            .any(|event| event.contains("\"call_id\":\"call_1\"")));
+        assert!(first_events
+            .iter()
+            .any(|event| event.contains("\"name\":\"list_directory\"")));
+
+        let second_events = chat_frame_to_responses_events(
+            "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"type\":\"function\",\"function\":{\"arguments\":\":/Users\\\"}\"}}]},\"finish_reason\":\"tool_calls\"}]}\n\n",
+            &mut response_id,
+            &mut created,
+            &mut tool_state,
+        );
+        assert!(second_events
+            .iter()
+            .any(|event| event.contains("\"response.function_call_arguments.delta\"")));
+        assert!(second_events
+            .iter()
+            .any(|event| event.contains("\"response.function_call_arguments.done\"")));
+        assert!(second_events
+            .iter()
+            .any(|event| event.contains("\"call_id\":\"call_1\"")));
     }
 }

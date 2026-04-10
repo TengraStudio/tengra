@@ -65,7 +65,7 @@ export const SavedProfileSelector: React.FC<SavedProfileSelectorProps> = ({ onSe
 
     return (
         <div className="space-y-2 mb-4">
-            <label className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+            <label className="typo-caption text-muted-foreground font-medium flex items-center gap-1.5">
                 <Server className="w-3 h-3" />
                 {t('workspaceModals.savedProfiles')}
             </label>
@@ -77,7 +77,7 @@ export const SavedProfileSelector: React.FC<SavedProfileSelectorProps> = ({ onSe
                         onClick={() => onSelect(profile)}
                         className="flex flex-col items-start px-3 py-2 h-auto hover:bg-muted/60 text-left transition-all border border-transparent hover:border-border/60 group"
                     >
-                        <span className="text-xs font-medium text-foreground group-hover:text-success transition-colors">
+                        <span className="typo-caption font-medium text-foreground group-hover:text-success transition-colors">
                             {profile.name}
                         </span>
                         <span className="tw-text-10 text-muted-foreground truncate w-full">

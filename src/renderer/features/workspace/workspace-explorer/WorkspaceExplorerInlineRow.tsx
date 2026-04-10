@@ -59,7 +59,7 @@ export const WorkspaceExplorerInlineRow: React.FC<WorkspaceExplorerInlineRowProp
                     }
                 }}
                 onBlur={onSubmit}
-                className="w-full rounded-md border border-primary/20 bg-background/90 px-2 py-1 text-xs text-foreground outline-none focus:border-primary/40"
+                className="w-full rounded-md border border-primary/20 bg-background/90 px-2 py-1 typo-caption text-foreground outline-none focus:border-primary/40"
                 placeholder={placeholder}
                 tabIndex={-1}
             />

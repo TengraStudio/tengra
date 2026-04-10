@@ -2,7 +2,6 @@ import React from 'react';
 
 import { cn } from '@/lib/utils';
 
-import './typing-indicator.css';
 
 interface TypingIndicatorProps {
     className?: string

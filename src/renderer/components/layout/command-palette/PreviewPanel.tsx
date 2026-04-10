@@ -4,7 +4,6 @@ import React from 'react';
 
 import { useTranslation } from '@/i18n';
 
-import './preview-panel.css';
 
 interface PreviewPanelProps {
     selectedItem?: CommandItem | undefined;
@@ -45,7 +44,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ selectedItem }) => {
             ) : (
                 <div className="tengra-preview-panel__empty">
                     <Command className="w-12 h-12 mb-4" />
-                    <p className="text-xs font-medium">
+                    <p className="typo-caption font-medium">
                         {t('commandPalette.previewEmpty')}
                     </p>
                 </div>

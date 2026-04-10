@@ -69,13 +69,13 @@ export const TerminalAppearanceSection: React.FC<TerminalAppearanceSectionProps>
                 <div className="text-base font-bold text-foreground">
                     {t('terminal.appearance')}
                 </div>
-                <div className="text-xs font-medium text-muted-foreground/70">
+                <div className="typo-caption font-medium text-muted-foreground/70">
                     {t('tips.tip5')}
                 </div>
             </div>
 
             <div
-                className="rounded-2xl border border-border/40 p-4 font-mono text-xs shadow-inner"
+                className="rounded-2xl border border-border/40 p-4 font-mono typo-caption shadow-inner"
                 style={{
                     backgroundColor: resolvedAppearance.theme.background,
                     color: resolvedAppearance.theme.foreground,
@@ -100,7 +100,7 @@ export const TerminalAppearanceSection: React.FC<TerminalAppearanceSectionProps>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div className="grid gap-2">
-                    <Label className="text-xs font-medium text-muted-foreground">
+                    <Label className="typo-caption font-medium text-muted-foreground">
                         {t('terminal.theme')}
                     </Label>
                     <Select
@@ -121,7 +121,7 @@ export const TerminalAppearanceSection: React.FC<TerminalAppearanceSectionProps>
                 </div>
 
                 <div className="grid gap-2">
-                    <Label className="text-xs font-medium text-muted-foreground">
+                    <Label className="typo-caption font-medium text-muted-foreground">
                         {t('terminal.font')}
                     </Label>
                     <Select
@@ -142,7 +142,7 @@ export const TerminalAppearanceSection: React.FC<TerminalAppearanceSectionProps>
                 </div>
 
                 <div className="grid gap-2">
-                    <Label className="text-xs font-medium text-muted-foreground">
+                    <Label className="typo-caption font-medium text-muted-foreground">
                         {t('terminal.cursorStyle')}
                     </Label>
                     <Select
@@ -200,7 +200,7 @@ export const TerminalAppearanceSection: React.FC<TerminalAppearanceSectionProps>
 
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                 <div className="grid gap-4">
-                    <Label className="text-xs font-medium text-muted-foreground flex justify-between">
+                    <Label className="typo-caption font-medium text-muted-foreground flex justify-between">
                         <span>{t('terminal.fontSize')}</span>
                         <span className="text-primary font-bold">
                             {terminalAppearance.fontSize}
@@ -217,7 +217,7 @@ export const TerminalAppearanceSection: React.FC<TerminalAppearanceSectionProps>
                     />
                 </div>
                 <div className="grid gap-4">
-                    <Label className="text-xs font-medium text-muted-foreground flex justify-between">
+                    <Label className="typo-caption font-medium text-muted-foreground flex justify-between">
                         <span>{t('terminal.lineHeight')}</span>
                         <span className="text-primary font-bold">
                             {terminalAppearance.lineHeight.toFixed(1)}
@@ -234,7 +234,7 @@ export const TerminalAppearanceSection: React.FC<TerminalAppearanceSectionProps>
                     />
                 </div>
                 <div className="grid gap-4">
-                    <Label className="text-xs font-medium text-muted-foreground flex justify-between">
+                    <Label className="typo-caption font-medium text-muted-foreground flex justify-between">
                         <span>{t('terminal.transparency')}</span>
                         <span className="text-primary font-bold">
                             {terminalAppearance.surfaceOpacity.toFixed(2)}
@@ -251,7 +251,7 @@ export const TerminalAppearanceSection: React.FC<TerminalAppearanceSectionProps>
                     />
                 </div>
                 <div className="grid gap-4">
-                    <Label className="text-xs font-medium text-muted-foreground flex justify-between">
+                    <Label className="typo-caption font-medium text-muted-foreground flex justify-between">
                         <span>{t('terminal.blur')}</span>
                         <span className="text-primary font-bold">
                             {terminalAppearance.surfaceBlur}

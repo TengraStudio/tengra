@@ -9,7 +9,6 @@ import {
     updateLoadingOperationProgress,
 } from '@/store/loading-analytics.store';
 
-import './loading-state.css';
 
 export interface LoadingStateProps {
     /**
@@ -125,7 +124,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
     };
 
     const textSizeClasses = {
-        sm: 'text-xs',
+        sm: 'typo-caption',
         md: 'text-sm',
         lg: 'text-base'
     };
@@ -211,7 +210,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
                         <span className={cn('font-medium', textSizeClasses[size])}>{message}</span>
                     )}
                     {stage && (
-                        <span className="text-xs text-muted-foreground">{stage}</span>
+                        <span className="typo-caption text-muted-foreground">{stage}</span>
                     )}
                     {clampedProgress !== undefined && (
                         <div className="w-56 h-1.5 bg-muted/50 rounded-full overflow-hidden">
@@ -221,7 +220,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
                             />
                         </div>
                     )}
-                    {estimateLabel && <span className="text-xs text-muted-foreground/80">{estimateLabel}</span>}
+                    {estimateLabel && <span className="typo-caption text-muted-foreground/80">{estimateLabel}</span>}
                     {onCancel && (
                         <button
                             onClick={() => {
@@ -230,7 +229,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
                                 }
                                 onCancel();
                             }}
-                            className="mt-1 px-2.5 py-1 rounded border border-border/60 text-xs text-foreground hover:bg-accent/40"
+                            className="mt-1 px-2.5 py-1 rounded border border-border/60 typo-caption text-foreground hover:bg-accent/40"
                         >
                             {resolvedCancelLabel}
                         </button>
@@ -253,7 +252,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
         >
             <Loader2 className={cn('animate-spin text-primary', sizeClasses[size])} aria-hidden="true" />
             {message && <span className={cn('font-medium', textSizeClasses[size])}>{message}</span>}
-            {stage && <span className="text-xs text-muted-foreground">{stage}</span>}
+            {stage && <span className="typo-caption text-muted-foreground">{stage}</span>}
             {clampedProgress !== undefined && (
                 <div className={cn('h-1.5 bg-muted/50 rounded-full overflow-hidden', compact ? 'w-44' : 'w-56')}>
                     <div
@@ -262,7 +261,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
                     />
                 </div>
             )}
-            {estimateLabel && <span className="text-xs text-muted-foreground/80">{estimateLabel}</span>}
+            {estimateLabel && <span className="typo-caption text-muted-foreground/80">{estimateLabel}</span>}
             {onCancel && (
                 <button
                     onClick={() => {
@@ -271,7 +270,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
                         }
                         onCancel();
                     }}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-border/60 text-xs text-foreground hover:bg-accent/40"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-border/60 typo-caption text-foreground hover:bg-accent/40"
                 >
                     <X className="w-3 h-3" />
                     {resolvedCancelLabel}

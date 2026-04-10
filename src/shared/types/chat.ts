@@ -157,6 +157,7 @@ export interface ChatRequest {
 export interface ChatStreamRequest extends ChatRequest {
     chatId?: string
     assistantId?: string
+    streamId?: string
 }
 
 export type ChatErrorKind =

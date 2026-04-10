@@ -6,7 +6,7 @@ import type {
     MarketplaceTheme
 } from '@shared/types/marketplace';
 import { compareVersions } from '@shared/utils/extension.util';
-import { CheckCircle2, Download, Globe, Heart, MessageSquare, Package, Palette, RefreshCw, Sparkles, Zap } from 'lucide-react';
+import { CheckCircle2, Download, Globe, Heart, MessageSquare, Package, Palette, Puzzle, RefreshCw, Sparkles, TriangleAlert, Zap } from 'lucide-react';
 import type { ElementType } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -67,6 +67,7 @@ export function MarketCard({
         prompt: MessageSquare,
         language: Globe,
         skill: Sparkles,
+        extension: Puzzle,
     } as Record<string, ElementType>)[item.itemType] || Package);
 
     const primaryActionLabel = isInstalling
@@ -114,7 +115,7 @@ export function MarketCard({
                     }}
                     disabled={isInstalling || (Boolean(item.installed) && !hasUpdate)}
                     className={`
-                        flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all shrink-0
+                        flex items-center gap-2 px-3.5 py-2 rounded-lg typo-caption font-bold transition-all shrink-0
                         ${item.installed && !hasUpdate
                             ? 'bg-muted/50 text-muted-foreground cursor-default'
                             : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95'}
@@ -134,6 +135,13 @@ export function MarketCard({
             <p className="text-sm text-muted-foreground/90 leading-relaxed line-clamp-3 mb-5 relative z-10">
                 {item.description}
             </p>
+
+            {item.itemType === 'extension' && hasUpdate && installedVersion && (
+                <div className="mb-4 inline-flex items-center gap-2 rounded-lg border border-warning/35 bg-warning/10 px-3 py-1.5 typo-caption font-semibold text-warning">
+                    <TriangleAlert className="h-3.5 w-3.5" />
+                    {`${t('common.update')}: v${installedVersion} -> v${item.version}`}
+                </div>
+            )}
 
             <div className="mt-auto space-y-3 relative z-10">
                 <div className="flex flex-wrap items-center gap-2">
@@ -203,7 +211,7 @@ export function MarketCard({
 
             {languageItem && item.installed && !isActive && (
                 <div className="mt-3 pt-3 border-t border-border/20 flex items-center justify-between">
-                    <span className="text-xs font-semibold text-muted-foreground">{languageItem.nativeName}</span>
+                    <span className="typo-caption font-semibold text-muted-foreground">{languageItem.nativeName}</span>
                     <button
                         onClick={(event) => {
                             event.stopPropagation();

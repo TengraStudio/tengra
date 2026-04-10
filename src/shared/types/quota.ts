@@ -1,10 +1,21 @@
 import { JsonValue } from '@/types/common';
 
+export type AntigravityAiCreditsInfo = {
+    pricingType?: string;
+    useAICredits?: boolean;
+    creditAmount?: number;
+    minimumCreditAmountForUsage?: number;
+    status?: string;
+    hasSufficientCredits?: boolean;
+    canUseCredits?: boolean;
+}
+
 export type QuotaInfo = {
     remainingQuota: number;
     totalQuota: number;
     remainingFraction: number;
     resetTime?: string;
+    aiCredits?: AntigravityAiCreditsInfo;
 }
 
 export type ModelPermission = {
@@ -35,6 +46,17 @@ export type ModelQuotaItem = {
     [key: string]: JsonValue | undefined;
 }
 
+export type AntigravityQuotaModelData = {
+    displayName?: string;
+    quotaInfo?: QuotaInfo;
+    pricingType?: string;
+    useAICredits?: boolean;
+    creditAmount?: number;
+    minimumCreditAmountForUsage?: number;
+    status?: string;
+    [key: string]: JsonValue | undefined;
+}
+
 export interface QuotaResponse {
     status: string;
     next_reset: string;
@@ -49,6 +71,7 @@ export interface QuotaResponse {
     usageSource?: 'openai' | 'anthropic' | 'copilot' | 'local' | 'none' | 'chatgpt';
     copilot?: CopilotQuota;
     claudeQuota?: ClaudeQuota;
+    antigravityAiCredits?: AntigravityAiCreditsInfo;
 }
 
 export interface ClaudeQuota {

@@ -3,7 +3,6 @@ import { Virtuoso } from 'react-virtuoso';
 
 import { cn } from '@/lib/utils';
 
-import './tool-output-virtualizer.css';
 
 interface ToolOutputVirtualizerProps {
     content: string;

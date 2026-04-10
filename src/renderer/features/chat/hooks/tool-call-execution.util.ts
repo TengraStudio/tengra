@@ -3,6 +3,7 @@ import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { generateId } from '@/lib/utils';
 import { Message } from '@/types';
 import { JsonValue } from '@/types/common';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { normalizeToolArgs } from './chat-runtime-policy.util';
 
@@ -12,6 +13,45 @@ interface ToolExecutionResponse {
     data?: JsonValue;
     error?: string;
     errorType?: string;
+}
+
+const TOOL_EXECUTION_TIMEOUT_DEFAULT_MS = 45000;
+const TOOL_EXECUTION_TIMEOUT_BY_NAME = new Map<string, number>([
+    ['execute_command', 70000],
+    ['generate_image', 90000],
+    ['terminal_session_wait', 130000],
+]);
+
+function resolveToolExecutionTimeoutMs(
+    toolName: string,
+    args: Record<string, unknown>
+): number {
+    const baseTimeoutMs = TOOL_EXECUTION_TIMEOUT_BY_NAME.get(toolName) ?? TOOL_EXECUTION_TIMEOUT_DEFAULT_MS;
+
+    if (toolName === 'terminal_session_wait') {
+        const requested = args.timeoutMs;
+        if (typeof requested === 'number' && Number.isFinite(requested)) {
+            const bounded = Math.max(1000, Math.min(Math.floor(requested) + 5000, 130000));
+            return bounded;
+        }
+    }
+
+    return baseTimeoutMs;
+}
+
+async function withTimeout<T>(operation: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+    let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutHandle = setTimeout(() => reject(new Error(message)), timeoutMs);
+    });
+
+    try {
+        return await Promise.race([operation, timeoutPromise]);
+    } finally {
+        if (timeoutHandle) {
+            clearTimeout(timeoutHandle);
+        }
+    }
 }
 
 const NON_EMPTY_STRING_REQUIRED_ARGUMENTS = new Map<string, string[]>([
@@ -133,6 +173,7 @@ export async function executeToolCall(
     toolMessage: Message;
     generatedImages: string[];
 }> {
+    const executionStartAt = Date.now();
     const toolArgs = typeof toolCall.function.arguments === 'string'
         ? toolCall.function.arguments.length > 100000
             ? (() => { throw new Error(t('chat.toolArgumentsTooLarge')); })()
@@ -162,12 +203,25 @@ export async function executeToolCall(
         normalizedArgs.cwd = activeWorkspacePath;
     }
 
-    const toolExecResult = await window.electron.executeTools(
-        toolCall.function.name,
-        normalizedArgs as Record<string, unknown>,
-        toolCall.id,
-        chatId
-    ) as ToolExecutionResponse;
+    const toolTimeoutMs = resolveToolExecutionTimeoutMs(toolCall.function.name, normalizedArgs as Record<string, unknown>);
+    appLogger.info(
+        'tool-call-execution',
+        `executeToolCall:start tool=${toolCall.function.name}, toolCallId=${toolCall.id}, timeoutMs=${toolTimeoutMs}, argKeys=${Object.keys(normalizedArgs).join(',')}`
+    );
+    const toolExecResult = await withTimeout(
+        window.electron.executeTools(
+            toolCall.function.name,
+            normalizedArgs as Record<string, unknown>,
+            toolCall.id,
+            chatId
+        ) as Promise<ToolExecutionResponse>,
+        toolTimeoutMs,
+        `Tool '${toolCall.function.name}' timed out after ${toolTimeoutMs}ms`
+    );
+    appLogger.info(
+        'tool-call-execution',
+        `executeToolCall:finish tool=${toolCall.function.name}, toolCallId=${toolCall.id}, success=${String(toolExecResult.success)}, durationMs=${Date.now() - executionStartAt}, errorType=${toolExecResult.errorType ?? 'none'}`
+    );
 
     const generatedImages = toolCall.function.name === 'generate_image'
         ? readToolResultImages(toolExecResult)

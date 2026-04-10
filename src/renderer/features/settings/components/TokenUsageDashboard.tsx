@@ -86,7 +86,7 @@ const TokenUsageDashboard: React.FC<TokenUsageDashboardProps> = ({ providerUsage
         <div className="space-y-6">
             <div>
                 <h3 className="text-lg font-semibold text-foreground">{t('tokenUsageDashboard.title')}</h3>
-                <p className="text-xs text-muted-foreground">{t('tokenUsageDashboard.subtitle')}</p>
+                <p className="typo-caption text-muted-foreground">{t('tokenUsageDashboard.subtitle')}</p>
             </div>
 
             {/* Summary cards */}
@@ -101,7 +101,7 @@ const TokenUsageDashboard: React.FC<TokenUsageDashboardProps> = ({ providerUsage
             <div className="rounded-xl border border-border/40 bg-card/50 p-4">
                 <h4 className="text-sm font-semibold text-foreground mb-3">{t('tokenUsageDashboard.byProvider')}</h4>
                 {providerUsages.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">{t('tokenUsageDashboard.noData')}</p>
+                    <p className="typo-caption text-muted-foreground">{t('tokenUsageDashboard.noData')}</p>
                 ) : (
                     <div className="space-y-2">
                         {providerUsages.map((u) => {
@@ -109,7 +109,7 @@ const TokenUsageDashboard: React.FC<TokenUsageDashboardProps> = ({ providerUsage
                             const pct = Math.round((total / maxProviderTokens) * 100);
                             return (
                                 <div key={u.provider} className="space-y-1">
-                                    <div className="flex justify-between text-xs">
+                                    <div className="flex justify-between typo-caption">
                                         <span className="font-medium text-foreground capitalize">{u.provider}</span>
                                         <span className="text-muted-foreground">
                                             {formatTokenCount(total)} &middot; {formatCost(u.estimatedCostUsd)}
@@ -132,7 +132,7 @@ const TokenUsageDashboard: React.FC<TokenUsageDashboardProps> = ({ providerUsage
             <div className="rounded-xl border border-border/40 bg-card/50 p-4">
                 <h4 className="text-sm font-semibold text-foreground mb-3">{t('tokenUsageDashboard.usageTrend')}</h4>
                 {dailyTrend.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">{t('tokenUsageDashboard.noData')}</p>
+                    <p className="typo-caption text-muted-foreground">{t('tokenUsageDashboard.noData')}</p>
                 ) : (
                     <div className="flex items-end gap-1 h-24">
                         {dailyTrend.map((day) => {

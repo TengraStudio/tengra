@@ -2,8 +2,6 @@ import type { TerminalTab } from '@/types';
 
 import { TerminalPanelContentImpl } from './TerminalPanelImpl';
 
-import '@xterm/xterm/css/xterm.css';
-import '@renderer/features/settings/tailwind-semantic-utilities.css';
 
 export interface TerminalPanelProps {
     isOpen: boolean;

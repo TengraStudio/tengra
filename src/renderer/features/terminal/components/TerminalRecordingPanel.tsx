@@ -60,7 +60,7 @@ export function TerminalRecordingPanel({
     return (
         <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 tw-w-460 tw-max-w-95vw">
             <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="text-xs font-semibold text-foreground">{t('terminal.recordingsTitle')}</div>
+                <div className="typo-caption font-semibold text-foreground">{t('terminal.recordingsTitle')}</div>
                 <button
                     onClick={() => {
                         setIsRecordingPanelOpen(false);
@@ -77,7 +77,7 @@ export function TerminalRecordingPanel({
                     onClick={toggleRecording}
                     disabled={!hasActiveSession && !activeRecordingTabId}
                     className={cn(
-                        'h-7 px-2 rounded text-xs border transition-colors',
+                        'h-7 px-2 rounded typo-caption border transition-colors',
                         activeRecordingTabId
                             ? 'border-destructive/50 bg-destructive/10 text-destructive'
                             : 'border-border text-muted-foreground hover:text-foreground hover:bg-accent/40'
@@ -92,7 +92,7 @@ export function TerminalRecordingPanel({
                         }
                     }}
                     disabled={!selectedRecording || isReplayRunning}
-                    className="h-7 px-2 rounded text-xs border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                    className="h-7 px-2 rounded typo-caption border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
                 >
                     <Play className="w-3 h-3" />
                     {t('terminal.replay')}
@@ -100,7 +100,7 @@ export function TerminalRecordingPanel({
                 <button
                     onClick={stopReplay}
                     disabled={!isReplayRunning}
-                    className="h-7 px-2 rounded text-xs border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                    className="h-7 px-2 rounded typo-caption border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
                 >
                     <Square className="w-3 h-3" />
                     {t('common.stop')}
@@ -112,7 +112,7 @@ export function TerminalRecordingPanel({
                         }
                     }}
                     disabled={!selectedRecording}
-                    className="h-7 px-2 rounded text-xs border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                    className="h-7 px-2 rounded typo-caption border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
                 >
                     <Download className="w-3 h-3" />
                     {t('terminal.exportRecording')}
@@ -125,7 +125,7 @@ export function TerminalRecordingPanel({
             )}
             <div className="max-h-32 overflow-y-auto custom-scrollbar space-y-1 mb-2">
                 {recordings.length === 0 && (
-                    <div className="px-2 py-2 text-xs text-muted-foreground">{t('terminal.noRecordingsYet')}</div>
+                    <div className="px-2 py-2 typo-caption text-muted-foreground">{t('terminal.noRecordingsYet')}</div>
                 )}
                 {recordings.map(recording => (
                     <button
@@ -142,7 +142,7 @@ export function TerminalRecordingPanel({
                                 : 'border-border/60 hover:bg-accent/40'
                         )}
                     >
-                        <div className="text-xs text-foreground truncate">{recording.tabName}</div>
+                        <div className="typo-caption text-foreground truncate">{recording.tabName}</div>
                         <div className="tw-text-10 text-muted-foreground truncate">
                             {new Date(recording.startedAt).toLocaleString()} -{' '}
                             {(recording.durationMs / 1000).toFixed(1)}s - {recording.events.length}{' '}

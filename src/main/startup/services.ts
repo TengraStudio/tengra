@@ -100,6 +100,7 @@ import type { SSHService } from '@main/services/workspace/ssh.service';
 import { TerminalService } from '@main/services/workspace/terminal.service';
 import { TerminalSmartService } from '@main/services/workspace/terminal-smart.service';
 import type { WorkspaceService } from '@main/services/workspace/workspace.service';
+import { ExtensionService } from '@main/services/extension/extension.service';
 import {
     bootstrapCoreData,
     initDeferredServices,
@@ -227,6 +228,7 @@ export interface Services {
     socialMediaService: SocialMediaService;
     cronSchedulerService: CronSchedulerService;
     notificationDispatcherService: NotificationDispatcherService;
+    extensionService: ExtensionService;
 }
 
 /**
@@ -259,7 +261,8 @@ export async function createServices(allowedFileRoots: Set<string>): Promise<Ser
     const ollamaHealthService = container.resolve<OllamaHealthService>('ollamaHealthService');
 
     // 5. Build Services Map
-    const services = buildServicesMap(dataService, settingsService, ollamaHealthService);
+    const extensionService = container.resolve<ExtensionService>('extensionService');
+    const services = buildServicesMap(dataService, settingsService, ollamaHealthService, extensionService);
 
     // 6. Post-Map Setup
     dataService.setTelemetryService(services.telemetryService);
@@ -370,16 +373,18 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
     // Marketplace Service
     container.register(
         'marketplaceService',
-        (ls, mds, hfs, os, ss, ps, lls) => new MarketplaceService(
+        (ls, mds, hfs, os, ss, ps, lls, exts, settings) => new MarketplaceService(
             ls as LocaleService,
             mds as ModelDownloaderService,
             hfs as HuggingFaceService,
             os as OllamaService,
             ss as SystemService,
             ps as PerformanceService,
-            lls as LlamaService
+            lls as LlamaService,
+            exts as ExtensionService,
+            settings as SettingsService
         ),
-        ['localeService', 'modelDownloaderService', 'huggingFaceService', 'ollamaService', 'systemService', 'performanceService', 'llamaService']
+        ['localeService', 'modelDownloaderService', 'huggingFaceService', 'ollamaService', 'systemService', 'performanceService', 'llamaService', 'extensionService', 'settingsService']
     );
 
     container.register(
@@ -402,6 +407,9 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
 
     container.register('localeService', ds => new LocaleService(ds as DataService), [
         'dataService',
+    ]);
+    container.register('extensionService', ss => new ExtensionService(ss as SettingsService), [
+        'settingsService',
     ]);
 }
 
@@ -925,7 +933,8 @@ function registerMcpServices() {
 function buildServicesMap(
     dataService: DataService,
     settingsService: SettingsService,
-    ollamaHealthService: ReturnType<typeof getOllamaHealthService>
+    ollamaHealthService: ReturnType<typeof getOllamaHealthService>,
+    extensionService: ExtensionService
 ): Services {
     return {
         settingsService,
@@ -1023,6 +1032,7 @@ function buildServicesMap(
         cronSchedulerService: container.resolve<CronSchedulerService>('cronSchedulerService'),
         notificationDispatcherService: container.resolve<NotificationDispatcherService>('notificationDispatcherService'),
         localeService: container.resolve<LocaleService>('localeService'),
+        extensionService,
         apiServerService: null as RuntimeValue as ApiServerService, // Will be created in main.ts after ToolExecutor
     };
 }

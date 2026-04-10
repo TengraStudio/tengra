@@ -57,7 +57,7 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
             <div className="w-1/3 border-r border-border bg-muted/20 flex flex-col">
                 <div className="p-3 border-b border-border font-medium text-sm flex justify-between items-center">
                     <span>{t('ssh.logFiles')}</span>
-                    <button onClick={() => void loadFiles()} className="text-xs opacity-70 hover:opacity-100">{t('common.refresh')}</button>
+                    <button onClick={() => void loadFiles()} className="typo-caption opacity-70 hover:opacity-100">{t('common.refresh')}</button>
                 </div>
                 <div className="overflow-y-auto flex-1">
                     {logFiles.length === 0 ? (
@@ -80,11 +80,11 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
 
             {/* Viewer */}
             <div className="flex-1 flex flex-col bg-background text-foreground">
-                <div className="p-2 bg-muted/30 border-b border-border text-xs font-mono text-muted-foreground flex justify-between">
+                <div className="p-2 bg-muted/30 border-b border-border typo-caption font-mono text-muted-foreground flex justify-between">
                     <span>{selectedLog ?? t('ssh.selectLogFile')}</span>
                     <span>{loading ? t('ssh.reading') : t('ssh.lastLines', { count: 100 })}</span>
                 </div>
-                <pre className="flex-1 overflow-auto p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">
+                <pre className="flex-1 overflow-auto p-4 font-mono typo-caption leading-relaxed whitespace-pre-wrap">
                     {content}
                 </pre>
             </div>

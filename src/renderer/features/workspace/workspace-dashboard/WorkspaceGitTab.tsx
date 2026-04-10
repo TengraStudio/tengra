@@ -82,12 +82,12 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
             ) : (
                 <>
                     {lastActionError && lastActionError.toLowerCase().includes('lock') && (
-                        <div className="rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+                        <div className="rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 typo-caption text-warning">
                             {lastActionError}
                         </div>
                     )}
                     {gitData.loading && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 border border-border/50 rounded-xl px-3 py-2">
+                        <div className="flex items-center gap-2 typo-caption text-muted-foreground bg-muted/30 border border-border/50 rounded-xl px-3 py-2">
                             <RefreshCw className="w-3.5 h-3.5 animate-spin text-primary" />
                             {t('workspaceDashboard.loadingGit')}
                         </div>
@@ -99,7 +99,7 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
                             return (
                                 <div key={section.key} className="bg-card/60 border border-border/50 rounded-xl px-3 py-2 space-y-1">
                                     <div className="tw-text-11 text-muted-foreground">{section.label}</div>
-                                    <div className="flex items-center gap-1.5 text-xs font-medium">
+                                    <div className="flex items-center gap-1.5 typo-caption font-medium">
                                         {state.loading ? (
                                             <>
                                                 <RefreshCw className="w-3 h-3 animate-spin text-warning" />

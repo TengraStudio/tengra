@@ -2,7 +2,6 @@ import React, { useRef, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 
-import './animated-card.css';
 
 interface AnimatedCardProps {
     children: React.ReactNode

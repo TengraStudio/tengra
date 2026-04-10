@@ -162,11 +162,11 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
                             }}
                         >
                             {isBranchLoading ? (
-                                <div className="px-3 py-2 text-xs text-muted-foreground">
+                                <div className="px-3 py-2 typo-caption text-muted-foreground">
                                     {t('workspace.loadingBranches')}
                                 </div>
                             ) : branches.length === 0 ? (
-                                <div className="px-3 py-2 text-xs text-muted-foreground">
+                                <div className="px-3 py-2 typo-caption text-muted-foreground">
                                     {t('workspace.noBranchesFound')}
                                 </div>
                             ) : (
@@ -188,7 +188,7 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
                                                 }
                                             }}
                                             disabled={isBranchSwitching}
-                                            className="w-full px-3 py-2 text-left text-xs font-medium hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 text-foreground rounded-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="w-full px-3 py-2 text-left typo-caption font-medium hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 text-foreground rounded-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             <span className="truncate">{branch}</span>
                                             {branch === branchName && (

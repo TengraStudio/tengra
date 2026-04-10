@@ -97,7 +97,7 @@ const ResponseCard: React.FC<ResponseCardProps> = ({ response }) => (
     <Card className="p-3">
         <div className="flex items-start justify-between mb-2">
             <span className="text-sm font-medium">{response.provider}/{response.model}</span>
-            <span className="text-xs text-muted-foreground">{response.latency}ms</span>
+            <span className="typo-caption text-muted-foreground">{response.latency}ms</span>
         </div>
         <p className="text-sm text-muted-foreground line-clamp-3">{response.content}</p>
     </Card>
@@ -131,7 +131,7 @@ const FinalResult: React.FC<FinalResultProps> = ({ results, t }) => {
                             <span className="text-sm font-medium">{t('chat.collaboration.bestResponse')}</span>
                         </div>
                         <p className="text-sm mb-2">{results.bestResponse.content}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="typo-caption text-muted-foreground">
                             {t('chat.collaboration.from', { provider: results.bestResponse.provider, model: results.bestResponse.model })}
                         </p>
                     </div>
@@ -162,7 +162,7 @@ const PresenceCard = React.memo<PresenceCardProps>(({ presence, allowGuests, onT
             </Button>
         </div>
         {presence.map((participant) => (
-            <div key={participant.id} className="text-xs flex items-center gap-2">
+            <div key={participant.id} className="typo-caption flex items-center gap-2">
                 <span className={`w-2 h-2 rounded-full ${participant.isOnline ? 'bg-success' : 'bg-muted-foreground'}`} />
                 <span>{participant.name}</span>
             </div>
@@ -194,7 +194,7 @@ const SharedMemoryCard = React.memo<SharedMemoryCardProps>(({
             <Button size="sm" onClick={() => { onAddMemory(sharedMemoryNote); }}>{t('common.add')}</Button>
         </div>
         {sharedMemory.map((entry) => (
-            <p key={entry} className="text-xs text-muted-foreground">{entry}</p>
+            <p key={entry} className="typo-caption text-muted-foreground">{entry}</p>
         ))}
     </Card>
 ));
@@ -216,7 +216,7 @@ const CursorMarkersCard = React.memo<CursorMarkersCardProps>(({ cursorMarkers, o
             </Button>
         </div>
         {cursorMarkers.map((marker) => (
-            <p key={marker.id} className="text-xs text-muted-foreground">
+            <p key={marker.id} className="typo-caption text-muted-foreground">
                 {marker.user} → {marker.target}
             </p>
         ))}
@@ -240,7 +240,7 @@ const AnnotationsCard = React.memo<AnnotationsCardProps>(({ annotations, onAnnot
             </Button>
         </div>
         {annotations.map((annotation) => (
-            <p key={annotation.id} className="text-xs text-muted-foreground">
+            <p key={annotation.id} className="typo-caption text-muted-foreground">
                 {annotation.author}: {annotation.note}
             </p>
         ))}
@@ -277,7 +277,7 @@ const SessionRecordingCard = React.memo<SessionRecordingCardProps>(({
         </div>
         {shareLink && <Input value={shareLink} readOnly />}
         {recordedEvents.map((event, index) => (
-            <p key={`${event}-${index}`} className="text-xs text-muted-foreground">{event}</p>
+            <p key={`${event}-${index}`} className="typo-caption text-muted-foreground">{event}</p>
         ))}
     </Card>
 ));
@@ -517,7 +517,7 @@ export function MultiModelCollaboration({
                 {availableModels.length > 0 && s.selectedModels.length === 0 && !s.isRunning && !s.results && (
                     <div className="p-4 bg-muted/50 border border-dashed border-muted-foreground/25 rounded-md text-center space-y-1">
                         <p className="text-sm font-medium">{s.t('chat.collaboration.emptyStateTitle')}</p>
-                        <p className="text-xs text-muted-foreground">{s.t('chat.collaboration.emptyStateDescription')}</p>
+                        <p className="typo-caption text-muted-foreground">{s.t('chat.collaboration.emptyStateDescription')}</p>
                     </div>
                 )}
 

@@ -17,7 +17,6 @@ import {
 } from '@/store/notification-center.store';
 import { Toast } from '@/types';
 
-import './toasts-container.css';
 
 interface ToastsContainerProps {
     toasts: Toast[];
@@ -198,7 +197,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                             {notificationTypes.map(type => (
                                 <label
                                     key={type}
-                                    className="flex items-center justify-between rounded border border-border/50 bg-background/40 px-2 py-1.5 text-xs"
+                                    className="flex items-center justify-between rounded border border-border/50 bg-background/40 px-2 py-1.5 typo-caption"
                                 >
                                     <span className="capitalize">{type}</span>
                                     <input
@@ -231,7 +230,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                                 {snapshot.scheduled.slice(0, 6).map(item => (
                                     <div
                                         key={item.id}
-                                        className="rounded border border-border/50 bg-background/30 px-2 py-1 text-xs text-muted-foreground"
+                                        className="rounded border border-border/50 bg-background/30 px-2 py-1 typo-caption text-muted-foreground"
                                     >
                                         <CalendarClock className="w-3.5 h-3.5 inline mr-1" />
                                         {item.payload.message}
@@ -246,7 +245,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
 
                     <div className="max-h-80 overflow-auto px-4 py-2 space-y-2">
                         {history.length === 0 && (
-                            <div className="py-6 text-center text-xs text-muted-foreground">
+                            <div className="py-6 text-center typo-caption text-muted-foreground">
                                 {t('notifications.center.noNotifications')}
                             </div>
                         )}
@@ -267,11 +266,11 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                                     </div>
                                 </div>
                                 {item.title && (
-                                    <div className="text-xs font-semibold text-foreground mb-0.5">
+                                    <div className="typo-caption font-semibold text-foreground mb-0.5">
                                         {item.title}
                                     </div>
                                 )}
-                                <div className="text-xs text-foreground/90">{item.message}</div>
+                                <div className="typo-caption text-foreground/90">{item.message}</div>
                                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
                                     {!item.readAt && (
                                         <button

@@ -340,6 +340,49 @@ fn normalize_openai_metadata_map(row: &Value) -> Option<Map<String, Value>> {
     changed.then_some(metadata)
 }
 
+fn is_sensitive_metadata_key(key: &str) -> bool {
+    matches!(
+        key.to_ascii_lowercase().as_str(),
+        "access_token"
+            | "accesstoken"
+            | "refresh_token"
+            | "refreshtoken"
+            | "session_token"
+            | "sessiontoken"
+            | "id_token"
+            | "idtoken"
+            | "authorization"
+            | "code"
+            | "token"
+    )
+}
+
+fn sanitize_token_metadata_value(value: &Value) -> Value {
+    match value {
+        Value::Object(map) => {
+            let mut sanitized = Map::new();
+            for (key, entry) in map {
+                if is_sensitive_metadata_key(key) {
+                    continue;
+                }
+                sanitized.insert(key.clone(), sanitize_token_metadata_value(entry));
+            }
+            Value::Object(sanitized)
+        }
+        Value::Array(items) => Value::Array(
+            items
+                .iter()
+                .map(sanitize_token_metadata_value)
+                .collect::<Vec<_>>(),
+        ),
+        _ => value.clone(),
+    }
+}
+
+fn sanitize_token_metadata(token_data: &Value) -> Value {
+    sanitize_token_metadata_value(token_data)
+}
+
 fn emit_auth_update(provider: &str, account_id: &str, token_data: &Value) {
     let payload = serde_json::json!({
         "provider": provider,
@@ -422,7 +465,8 @@ pub async fn save_token(
         .unwrap_or("")
         .to_string();
     let expires_at = token_data.get("expires_at").and_then(|v| v.as_i64());
-    let metadata_json = serde_json::to_string(&token_data).unwrap_or_default();
+    let sanitized_metadata = sanitize_token_metadata(&token_data);
+    let metadata_json = serde_json::to_string(&sanitized_metadata).unwrap_or_default();
 
     // --- ENCRYPTION ---
     if let Ok(master_key) = crate::security::load_master_key() {
@@ -733,7 +777,10 @@ pub async fn update_token_data(
         .unwrap_or_default();
     if let Some(token_map) = token_data.as_object() {
         for (key, value) in token_map {
-            merged_metadata.insert(key.clone(), value.clone());
+            if is_sensitive_metadata_key(key) {
+                continue;
+            }
+            merged_metadata.insert(key.clone(), sanitize_token_metadata_value(value));
         }
     }
     let metadata_json = Value::Object(merged_metadata).to_string();

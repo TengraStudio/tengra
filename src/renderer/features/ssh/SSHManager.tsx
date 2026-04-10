@@ -539,7 +539,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                             t={t}
                         />
                         {pendingDeleteProfileId ? (
-                            <div className="absolute bottom-4 left-4 right-4 rounded-lg border border-destructive/30 bg-background/95 p-3 text-xs shadow-lg">
+                            <div className="absolute bottom-4 left-4 right-4 rounded-lg border border-destructive/30 bg-background/95 p-3 typo-caption shadow-lg">
                                 <div className="mb-2 text-muted-foreground">{t('ssh.confirmDelete')}</div>
                                 <div className="flex gap-2">
                                     <button className="secondary-btn flex-1" onClick={handleCancelDelete}>

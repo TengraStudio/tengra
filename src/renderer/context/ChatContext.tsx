@@ -184,7 +184,7 @@ function useHistorySync(
 }
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-    const { appSettings, language } = useAuth();
+    const { appSettings, language, quotas, linkedAccounts } = useAuth();
     const { selectedModel, selectedProvider, selectedModels, models } = useModel();
     const { t } = useTranslation();
     const { workspaces: workspaces, selectedWorkspace: selectedWorkspace, setSelectedWorkspace: setSelectedWorkspace, loadWorkspaces: loadWorkspaces } = useWorkspace();
@@ -206,7 +206,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         t,
         workspaceId: selectedWorkspace?.id,
         activeWorkspacePath: selectedWorkspace?.path,
-        models
+        models,
+        quotas: quotas ?? undefined,
+        linkedAccounts: linkedAccounts?.accounts,
     });
 
     const handlers = useMemo(() => ({

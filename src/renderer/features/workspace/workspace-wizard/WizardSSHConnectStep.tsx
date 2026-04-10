@@ -32,7 +32,7 @@ export const WizardSSHConnectStep: React.FC<WizardSSHConnectStepProps> = ({
             <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
                     <div className="col-span-2">
-                        <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+                        <Label className="typo-caption font-semibold text-muted-foreground mb-1.5 block">
                             {t('common.host')}
                         </Label>
                         <Input
@@ -46,7 +46,7 @@ export const WizardSSHConnectStep: React.FC<WizardSSHConnectStepProps> = ({
                         />
                     </div>
                     <div>
-                        <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+                        <Label className="typo-caption font-semibold text-muted-foreground mb-1.5 block">
                             {t('common.port')}
                         </Label>
                         <Input
@@ -61,7 +61,7 @@ export const WizardSSHConnectStep: React.FC<WizardSSHConnectStepProps> = ({
                 </div>
 
                 <div>
-                    <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+                    <Label className="typo-caption font-semibold text-muted-foreground mb-1.5 block">
                         {t('common.username')}
                     </Label>
                     <Input
@@ -75,14 +75,14 @@ export const WizardSSHConnectStep: React.FC<WizardSSHConnectStepProps> = ({
                 </div>
 
                 <div>
-                    <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+                    <Label className="typo-caption font-semibold text-muted-foreground mb-1.5 block">
                         {t('common.authType')}
                     </Label>
                     <div className="flex bg-muted/10 rounded-lg p-1 border border-border/50">
                         <button
                             onClick={() => setSshForm(p => ({ ...p, authType: 'password' }))}
                             className={cn(
-                                'flex-1 py-2 rounded-md text-xs font-medium transition-all',
+                                'flex-1 py-2 rounded-md typo-caption font-medium transition-all',
                                 sshForm.authType === 'password'
                                     ? 'bg-muted/40 text-foreground shadow-sm'
                                     : 'text-muted-foreground hover:text-foreground'
@@ -93,7 +93,7 @@ export const WizardSSHConnectStep: React.FC<WizardSSHConnectStepProps> = ({
                         <button
                             onClick={() => setSshForm(p => ({ ...p, authType: 'key' }))}
                             className={cn(
-                                'flex-1 py-2 rounded-md text-xs font-medium transition-all',
+                                'flex-1 py-2 rounded-md typo-caption font-medium transition-all',
                                 sshForm.authType === 'key'
                                     ? 'bg-muted/40 text-foreground shadow-sm'
                                     : 'text-muted-foreground hover:text-foreground'
@@ -106,7 +106,7 @@ export const WizardSSHConnectStep: React.FC<WizardSSHConnectStepProps> = ({
 
                 {sshForm.authType === 'password' ? (
                     <div>
-                        <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+                        <Label className="typo-caption font-semibold text-muted-foreground mb-1.5 block">
                             {t('common.password')}
                         </Label>
                         <Input
@@ -122,7 +122,7 @@ export const WizardSSHConnectStep: React.FC<WizardSSHConnectStepProps> = ({
                 ) : (
                     <div className="space-y-4">
                         <div>
-                            <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+                            <Label className="typo-caption font-semibold text-muted-foreground mb-1.5 block">
                                 {t('common.privateKey')}
                             </Label>
                             <Textarea
@@ -130,12 +130,12 @@ export const WizardSSHConnectStep: React.FC<WizardSSHConnectStepProps> = ({
                                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                                     setSshForm(p => ({ ...p, privateKey: e.target.value }))
                                 }
-                                className="h-24 font-mono text-xs resize-none"
+                                className="h-24 font-mono typo-caption resize-none"
                                 placeholder={t('ssh.placeholders.privateKey')}
                             />
                         </div>
                         <div>
-                            <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+                            <Label className="typo-caption font-semibold text-muted-foreground mb-1.5 block">
                                 {t('common.passphrase')}{' '}
                                 <span className="opacity-60">{t('workspaceWizard.optional')}</span>
                             </Label>

@@ -132,7 +132,7 @@ export function WorkspaceOverviewHeader({
                     <button
                         onClick={onAnalyze}
                         disabled={loading}
-                        className="p-2 rounded-lg bg-muted/20 border border-border text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all flex items-center gap-2 text-xs"
+                        className="p-2 rounded-lg bg-muted/20 border border-border text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all flex items-center gap-2 typo-caption"
                         title={t('common.refresh')}
                     >
                         <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />

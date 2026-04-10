@@ -88,7 +88,7 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                                 value={editSource}
                                 onChange={event => setEditSource(event.target.value)}
                                 placeholder={t('settings.images.editSource')}
-                                className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 text-xs font-bold placeholder:text-muted-foreground/30 shadow-inner group-hover:bg-muted/30 transition-all"
+                                className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 typo-caption font-bold placeholder:text-muted-foreground/30 shadow-inner group-hover:bg-muted/30 transition-all"
                             />
                         </div>
                         <div className="space-y-2">
@@ -97,7 +97,7 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                                 value={editPrompt}
                                 onChange={event => setEditPrompt(event.target.value)}
                                 placeholder={t('settings.images.editPrompt')}
-                                className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 text-xs font-bold placeholder:text-muted-foreground/30 shadow-inner group-hover:bg-muted/30 transition-all"
+                                className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 typo-caption font-bold placeholder:text-muted-foreground/30 shadow-inner group-hover:bg-muted/30 transition-all"
                             />
                         </div>
                         <div className="space-y-2">
@@ -106,7 +106,7 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                                 value={editPresetId}
                                 onValueChange={(value: 'balanced' | 'detail' | 'stylize') => handleApplyEditPreset(value)}
                             >
-                                <SelectTrigger className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 text-xs font-bold focus:ring-primary/20">
+                                <SelectTrigger className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 typo-caption font-bold focus:ring-primary/20">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
@@ -122,7 +122,7 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                                 value={editMode}
                                 onValueChange={(value: 'img2img' | 'inpaint' | 'outpaint' | 'style-transfer') => setEditMode(value)}
                             >
-                                <SelectTrigger className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 text-xs font-bold focus:ring-primary/20">
+                                <SelectTrigger className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 typo-caption font-bold focus:ring-primary/20">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
@@ -161,7 +161,7 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
 
                     <Button
                         onClick={() => { void handleRunEdit(); }}
-                        className="h-14 px-10 rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold transition-all active:scale-95 shadow-2xl shadow-primary/20 flex items-center gap-4 w-full"
+                        className="h-14 px-10 rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 typo-caption font-bold transition-all active:scale-95 shadow-2xl shadow-primary/20 flex items-center gap-4 w-full"
                     >
                         <Zap className="w-5 h-5" />
                         {t('settings.images.editRun')}

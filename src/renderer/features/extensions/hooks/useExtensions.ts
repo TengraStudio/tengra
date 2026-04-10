@@ -113,8 +113,15 @@ function useExtensionState() {
 
         void loadExtensions();
 
+        const removeListener = window.electron.on?.('extension:state-changed', () => {
+            void loadExtensions();
+        });
+
         return () => {
             mounted = false;
+            if (typeof removeListener === 'function') {
+                removeListener();
+            }
         };
     }, []);
 

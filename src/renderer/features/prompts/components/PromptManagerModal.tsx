@@ -56,7 +56,7 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
                 {isEditing ? (
                     <div className="flex-1 flex flex-col gap-4 animate-in fade-in slide-in-from-right-2 duration-200">
                         <div className="space-y-2">
-                            <label className="text-xs font-medium text-muted-foreground">{t('ssh.promptManager.labels.title')}</label>
+                            <label className="typo-caption font-medium text-muted-foreground">{t('ssh.promptManager.labels.title')}</label>
                             <input
                                 value={editForm.title}
                                 onChange={e => setEditForm(prev => ({ ...prev, title: e.target.value }))}
@@ -66,7 +66,7 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
                             />
                         </div>
                         <div className="space-y-2 flex-1 flex flex-col">
-                            <label className="text-xs font-medium text-muted-foreground">{t('ssh.promptManager.labels.content')}</label>
+                            <label className="typo-caption font-medium text-muted-foreground">{t('ssh.promptManager.labels.content')}</label>
                             <textarea
                                 value={editForm.content}
                                 onChange={e => setEditForm(prev => ({ ...prev, content: e.target.value }))}
@@ -95,7 +95,7 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
                             {prompts.length === 0 ? (
                                 <div className="h-full flex flex-col items-center justify-center text-muted-foreground text-sm opacity-60">
                                     <p>{t('ssh.promptManager.empty.title')}</p>
-                                    <p className="text-xs">{t('ssh.promptManager.empty.subtitle')}</p>
+                                    <p className="typo-caption">{t('ssh.promptManager.empty.subtitle')}</p>
                                 </div>
                             ) : (
                                 prompts.map(prompt => (
@@ -106,7 +106,7 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
                                         <div className="flex items-start justify-between gap-3">
                                             <div>
                                                 <h4 className="font-medium text-sm text-foreground">{prompt.title}</h4>
-                                                <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{prompt.content}</p>
+                                                <p className="typo-caption text-muted-foreground line-clamp-2 mt-1">{prompt.content}</p>
                                             </div>
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <Button

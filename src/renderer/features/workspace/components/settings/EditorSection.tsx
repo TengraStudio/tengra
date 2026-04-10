@@ -71,7 +71,7 @@ const EditorBehaviorFields: React.FC<SettingsSectionProps> = ({
                 {t('editor.suggestions.title')}
             </Label>
             <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{t('workspaces.indexing')}</span>
+                <span className="typo-caption text-muted-foreground">{t('workspaces.indexing')}</span>
                 <Checkbox
                     checked={formData.editorInlayHints}
                     onCheckedChange={(checked: CheckedState) =>
@@ -84,7 +84,7 @@ const EditorBehaviorFields: React.FC<SettingsSectionProps> = ({
         <div className={panelClassName}>
             <Label className="mb-2 block text-muted-foreground">{t('terminal.fontLigatures')}</Label>
             <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{t('common.preview')}</span>
+                <span className="typo-caption text-muted-foreground">{t('common.preview')}</span>
                 <Checkbox
                     checked={formData.editorFontLigatures}
                     onCheckedChange={(checked: CheckedState) =>
@@ -152,7 +152,7 @@ const EditorLayoutFields: React.FC<SettingsSectionProps> = ({
         <Label className="mb-2 block text-muted-foreground">{t('common.layout')}</Label>
         <div className="grid gap-3">
             <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{t('settings.editor.option.minimap')}</span>
+                <span className="typo-caption text-muted-foreground">{t('settings.editor.option.minimap')}</span>
                 <Checkbox
                     checked={formData.editorMinimap}
                     onCheckedChange={(checked: CheckedState) =>
@@ -161,7 +161,7 @@ const EditorLayoutFields: React.FC<SettingsSectionProps> = ({
                 />
             </div>
             <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{t('settings.editor.option.folding')}</span>
+                <span className="typo-caption text-muted-foreground">{t('settings.editor.option.folding')}</span>
                 <Checkbox
                     checked={formData.editorFolding}
                     onCheckedChange={(checked: CheckedState) =>
@@ -170,7 +170,7 @@ const EditorLayoutFields: React.FC<SettingsSectionProps> = ({
                 />
             </div>
             <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{t('settings.editor.option.codeLens')}</span>
+                <span className="typo-caption text-muted-foreground">{t('settings.editor.option.codeLens')}</span>
                 <Checkbox
                     checked={formData.editorCodeLens}
                     onCheckedChange={(checked: CheckedState) =>
@@ -223,7 +223,7 @@ const EditorFormattingFields: React.FC<SettingsSectionProps> = ({
                 </SelectContent>
             </Select>
             <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{t('settings.editor.option.formatOnPaste')}</span>
+                <span className="typo-caption text-muted-foreground">{t('settings.editor.option.formatOnPaste')}</span>
                 <Checkbox
                     checked={formData.editorFormatOnPaste}
                     onCheckedChange={(checked: CheckedState) =>
@@ -232,7 +232,7 @@ const EditorFormattingFields: React.FC<SettingsSectionProps> = ({
                 />
             </div>
             <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{t('settings.editor.option.smoothScrolling')}</span>
+                <span className="typo-caption text-muted-foreground">{t('settings.editor.option.smoothScrolling')}</span>
                 <Checkbox
                     checked={formData.editorSmoothScrolling}
                     onCheckedChange={(checked: CheckedState) =>

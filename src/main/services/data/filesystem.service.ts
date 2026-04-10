@@ -149,8 +149,7 @@ export class FileSystemService {
 
     async readFile(filePath: string): Promise<ServiceResponse<string>> {
         try {
-            const expandedPath = this.expandEnvVars(filePath);
-            this.validatePath(expandedPath);
+            const expandedPath = this.expandEnvVars(filePath); 
             const absolutePath = path.resolve(expandedPath);
             const stats = await fs.stat(absolutePath);
 

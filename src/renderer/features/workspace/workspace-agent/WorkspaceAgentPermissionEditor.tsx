@@ -54,7 +54,7 @@ function AllowlistSection({
                     value={inputValue}
                     onChange={event => onInputChange(event.target.value)}
                     placeholder={t('common.selectEllipsis')}
-                    className="h-9 rounded-xl border border-border/40 bg-background/50 text-xs focus:ring-0 focus:border-border/60 transition-all"
+                    className="h-9 rounded-xl border border-border/40 bg-background/50 typo-caption focus:ring-0 focus:border-border/60 transition-all"
                 />
                 <Button variant="secondary" onClick={onAddEntry} className="h-9 rounded-xl px-4 bg-primary/10 hover:bg-primary/20 text-primary tw-text-10 font-bold border border-primary/20 transition-all shrink-0">
                     <Plus className="mr-1.5 h-3.5 w-3.5" />

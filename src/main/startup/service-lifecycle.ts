@@ -97,6 +97,7 @@ const DEFERRED_SERVICE_NAMES: string[] = [
     'agentService',
     // Workspace & external
     'backupService',
+    'extensionService',
 ];
 
 export function startCriticalHealthChecks(deps: { databaseService: RuntimeValue; networkService: RuntimeValue }): void {

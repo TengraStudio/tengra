@@ -40,7 +40,7 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({
                             disabled={!isClickable}
                             onClick={() => onStepClick?.(index)}
                             className={cn(
-                                'flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-300',
+                                'flex items-center gap-2 rounded-lg px-3 py-1.5 typo-caption font-medium transition-all duration-300',
                                 isClickable && 'cursor-pointer hover:bg-muted/30',
                                 !isClickable && 'cursor-default',
                                 isCurrent && 'bg-primary/10 text-primary',

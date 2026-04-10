@@ -584,7 +584,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                         </div>
                     </div>
                 </div>
-                <p className="text-xs text-muted-foreground/60 leading-relaxed max-w-2xl font-medium px-1">
+                <p className="typo-caption text-muted-foreground/60 leading-relaxed max-w-2xl font-medium px-1">
                     {t('advanced.description')}
                 </p>
             </div>

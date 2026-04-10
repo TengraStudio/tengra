@@ -29,7 +29,7 @@ export const BulkArchiveModal: React.FC<BulkArchiveModalProps> = ({
                                 {count} {t('sidebar.workspaces').toLowerCase()}
                             </span>
                             ?
-                            <span className="block mt-1 text-xs text-success font-normal opacity-80">
+                            <span className="block mt-1 typo-caption text-success font-normal opacity-80">
                                 {t('workspaces.archiveWarning')}
                             </span>
                         </p>

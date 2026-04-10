@@ -25,7 +25,7 @@ export const BulkDeleteModal: React.FC<BulkDeleteModalProps> = ({ isOpen, count,
                         <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
                             <p className="text-sm text-destructive/90 leading-relaxed font-light">
                                 {t('workspaces.deleteConfirmation')} <span className="font-semibold text-foreground">{count} {t('sidebar.workspaces').toLowerCase()}</span>?
-                                <span className="block mt-1 text-xs text-destructive/70 font-normal opacity-80">{t('workspaces.deleteWarning')}</span>
+                                <span className="block mt-1 typo-caption text-destructive/70 font-normal opacity-80">{t('workspaces.deleteWarning')}</span>
                             </p>
                         </div>
                         <DeleteFilesCheckbox checked={deleteFiles} onChange={setDeleteFiles} t={t} />

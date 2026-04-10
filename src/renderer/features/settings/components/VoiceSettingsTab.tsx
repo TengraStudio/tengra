@@ -95,7 +95,7 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
                         </div>
                         <div>
                             <h3 className="text-sm font-bold text-foreground">{t('voice.interfaceTitle')}</h3>
-                            <p className="text-xs text-muted-foreground">{t('voice.interfaceSubtitle')}</p>
+                            <p className="typo-caption text-muted-foreground">{t('voice.interfaceSubtitle')}</p>
                         </div>
                     </div>
                     <Switch
@@ -143,7 +143,7 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
                                         <Label className="text-xxs font-bold text-muted-foreground">
                                             {t('voice.speed')}
                                         </Label>
-                                        <span className="text-xs font-mono text-primary font-bold">{settings.speechRate}x</span>
+                                        <span className="typo-caption font-mono text-primary font-bold">{settings.speechRate}x</span>
                                     </div>
                                     <Slider
                                         min={0.5}
@@ -162,7 +162,7 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
                                         <Label className="text-xxs font-bold text-muted-foreground">
                                             {t('voice.pitch')}
                                         </Label>
-                                        <span className="text-xs font-mono text-primary font-bold">{settings.speechPitch}</span>
+                                        <span className="typo-caption font-mono text-primary font-bold">{settings.speechPitch}</span>
                                     </div>
                                     <Slider
                                         min={0.5}
@@ -179,7 +179,7 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
                                         <Label className="text-xxs font-bold text-muted-foreground">
                                             {t('voice.volume')}
                                         </Label>
-                                        <span className="text-xs font-mono text-primary font-bold">{Math.round(settings.speechVolume * 100)}%</span>
+                                        <span className="typo-caption font-mono text-primary font-bold">{Math.round(settings.speechVolume * 100)}%</span>
                                     </div>
                                     <Slider
                                         min={0}
@@ -206,7 +206,7 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <Mic className="w-4 h-4 text-muted-foreground" />
-                                        <span className="text-xs">{t('voice.continuousListening')}</span>
+                                        <span className="typo-caption">{t('voice.continuousListening')}</span>
                                     </div>
                                     <Switch
                                         checked={settings.continuousListening}
@@ -237,7 +237,7 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
 
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-xs">{t('voice.audioFeedback')}</span>
+                                    <span className="typo-caption">{t('voice.audioFeedback')}</span>
                                     <Switch
                                         checked={settings.audioFeedback}
                                         onCheckedChange={(checked) => { void updateSettings({ audioFeedback: checked }); }}
@@ -245,7 +245,7 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <span className="text-xs">{t('voice.visualFeedback')}</span>
+                                    <span className="typo-caption">{t('voice.visualFeedback')}</span>
                                     <Switch
                                         checked={settings.visualFeedback}
                                         onCheckedChange={(checked) => { void updateSettings({ visualFeedback: checked }); }}

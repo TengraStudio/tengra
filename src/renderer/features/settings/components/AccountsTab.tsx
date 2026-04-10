@@ -16,8 +16,10 @@ import { Bot, ChevronDown, Cpu, ExternalLink, Globe, Info, Key, Plus, RefreshCw,
 import React, { useState } from 'react';
 
 import { AppSettings } from '@/types';
+import type { QuotaResponse } from '@/types/quota';
+import type { AntigravityCreditUsageMode } from '@/types/settings';
 
-import { AuthBusyState } from '../types';
+import { AccountWrapper, AuthBusyState } from '../types';
 
 import { AccountRow } from './accounts/AccountRow';
 
@@ -50,6 +52,68 @@ const PROVIDER_ACCOUNT_ALIASES: Record<string, string[]> = {
     github: ['github'],
     copilot: ['copilot', 'copilot_token']
 };
+
+function normalizeEmail(email?: string): string | null {
+    if (typeof email !== 'string') {
+        return null;
+    }
+    const normalized = email.trim().toLowerCase();
+    return normalized.length > 0 ? normalized : null;
+}
+
+export function findMatchingQuotaAccount(
+    account: LinkedAccountInfo,
+    quotaData: AccountWrapper<QuotaResponse> | null
+): QuotaResponse | null {
+    if (!quotaData?.accounts?.length) {
+        return null;
+    }
+
+    const normalizedEmail = normalizeEmail(account.email);
+    const idMatch = quotaData.accounts.find(quotaAccount => quotaAccount.accountId === account.id);
+    if (idMatch) {
+        return idMatch;
+    }
+
+    if (normalizedEmail === null) {
+        return null;
+    }
+
+    return quotaData.accounts.find(quotaAccount => normalizeEmail(quotaAccount.email) === normalizedEmail) ?? null;
+}
+
+export function getCreditUsageMode(
+    settings: AppSettings,
+    accountId: string,
+    quotaAccount: QuotaResponse | null
+): AntigravityCreditUsageMode {
+    const savedMode = settings.antigravity?.creditUsageModeByAccount?.[accountId];
+    if (savedMode) {
+        return savedMode;
+    }
+    return quotaAccount?.antigravityAiCredits?.useAICredits === true ? 'auto' : 'ask-every-time';
+}
+
+export function buildAntigravityCreditModeSettings(
+    settings: AppSettings,
+    accountId: string,
+    mode: AntigravityCreditUsageMode
+): AppSettings {
+    const currentAntigravity: NonNullable<AppSettings['antigravity']> = settings.antigravity ?? {
+        connected: false,
+        creditUsageModeByAccount: {},
+    };
+    return {
+        ...settings,
+        antigravity: {
+            ...currentAntigravity,
+            creditUsageModeByAccount: {
+                ...(currentAntigravity.creditUsageModeByAccount ?? {}),
+                [accountId]: mode,
+            }
+        }
+    };
+}
 
 /**
  * API Key provider configuration for direct API access
@@ -123,19 +187,20 @@ function ProviderIdentity({
 
 interface AccountsTabProps {
     settings: AppSettings | null
+    quotaData: AccountWrapper<QuotaResponse> | null
     linkedAccounts: UseLinkedAccountsResult
     authBusy: AuthBusyState | null
     authMessage: string
     isOllamaRunning: boolean
-    refreshAuthStatus: () => void
-    connectGitHubProfile: () => void
-    connectCopilot: () => void
-    connectBrowserProvider: (p: 'codex' | 'claude' | 'antigravity' | 'ollama') => void
+    refreshAuthStatus: () => Promise<void>
+    connectGitHubProfile: () => Promise<void>
+    connectCopilot: () => Promise<void>
+    connectBrowserProvider: (p: 'codex' | 'claude' | 'antigravity' | 'ollama') => Promise<void>
     cancelAuthFlow: () => void
-    startOllama: () => void
-    checkOllama: () => void
-    handleSave: (s?: AppSettings) => void
-    setSettings: (s: AppSettings) => void
+    startOllama: () => Promise<void>
+    checkOllama: () => Promise<void>
+    handleSave: (s?: AppSettings) => Promise<void>
+    setSettings: (s: AppSettings) => Promise<void>
     deviceCodeModal?: DeviceCodeModalState
     closeDeviceCodeModal?: () => void
     setManualSessionModal: (state: import('./ManualSessionModal').ManualSessionModalState) => void
@@ -145,16 +210,29 @@ interface AccountsTabProps {
 interface ProviderCardProps {
     provider: ProviderConfig
     accounts: LinkedAccountInfo[]
+    quotaData: AccountWrapper<QuotaResponse> | null
+    settings: AppSettings
     authBusy: AuthBusyState | null
     onConnect: (providerId: string) => void
     onUnlink: (accountId: string) => Promise<void>
     onSetActive: (providerId: string, accountId: string) => Promise<void>
     onShowManualSession: (accountId: string, email?: string) => void
+    onCreditUsageModeChange: (accountId: string, mode: AntigravityCreditUsageMode) => void
     t: (key: string) => string
 }
 
 const ProviderCard = React.memo<ProviderCardProps>(({
-    provider, accounts, authBusy, onConnect, onUnlink, onSetActive, onShowManualSession, t
+    provider,
+    accounts,
+    quotaData,
+    settings,
+    authBusy,
+    onConnect,
+    onUnlink,
+    onSetActive,
+    onShowManualSession,
+    onCreditUsageModeChange,
+    t
 }) => {
     const [expanded, setExpanded] = useState(accounts.length > 0);
     const isBusy = authBusy?.provider === provider.id;
@@ -182,7 +260,7 @@ const ProviderCard = React.memo<ProviderCardProps>(({
                 <ProviderIdentity logo={provider.logo} providerId={provider.id} />
                 <div className="flex-1 min-w-0">
                     <div className="text-sm font-semibold text-foreground">{t(provider.name)}</div>
-                    <div className="mt-1 text-xs text-muted-foreground">{t(provider.description)}</div>
+                    <div className="mt-1 typo-caption text-muted-foreground">{t(provider.description)}</div>
                 </div>
                 <div className="flex flex-wrap items-center gap-3 sm:justify-end">
                     {hasAccounts ? (
@@ -219,19 +297,28 @@ const ProviderCard = React.memo<ProviderCardProps>(({
             {hasAccounts && expanded && (
                 <div className="border-t border-border/20 bg-muted/[0.02] animate-in slide-in-from-top-2 duration-300">
                     <div className="py-2">
-                        {accounts.map((account, index) => (
+                        {accounts.map((account, index) => {
+                            const quotaAccount = provider.id === 'antigravity'
+                                ? findMatchingQuotaAccount(account, quotaData)
+                                : null;
+
+                            return (
                             <AccountRow
                                 key={account.id}
                                 account={account}
                                 isLast={index === accounts.length - 1}
                                 isBusy={isBusy}
                                 providerId={provider.id}
+                                creditAmount={quotaAccount?.antigravityAiCredits?.creditAmount}
+                                creditUsageMode={getCreditUsageMode(settings, account.id, quotaAccount)}
                                 onUnlink={onUnlink}
                                 onSetActive={onSetActive}
                                 onShowManualSession={onShowManualSession}
+                                onCreditUsageModeChange={provider.id === 'antigravity' ? onCreditUsageModeChange : undefined}
                                 t={t}
                             />
-                        ))}
+                            );
+                        })}
                     </div>
 
                     <div className="p-4 pt-1 mb-2">
@@ -259,28 +346,34 @@ const ProviderList = React.memo(({
     title,
     providers,
     accounts,
+    quotaData,
+    settings,
     authBusy,
     onConnect,
     onUnlink,
     onSetActive,
     onShowManualSession,
+    onCreditUsageModeChange,
     t
 }: {
     title: string
     providers: ProviderConfig[]
     accounts: LinkedAccountInfo[]
+    quotaData: AccountWrapper<QuotaResponse> | null
+    settings: AppSettings
     authBusy: AuthBusyState | null
     onConnect: (id: string) => void
     onUnlink: (id: string) => Promise<void>
     onSetActive: (pid: string, aid: string) => Promise<void>
     onShowManualSession: (aid: string, email?: string) => void
+    onCreditUsageModeChange: (accountId: string, mode: AntigravityCreditUsageMode) => void
     t: (k: string) => string
 }) => {
     return (
         <section className="space-y-4">
             <div className="flex items-center gap-3 mb-2 px-1">
                 <Shield className="w-4 h-4 text-primary" />
-                <h3 className="text-xs font-medium text-muted-foreground">
+                <h3 className="typo-caption font-medium text-muted-foreground">
                     {title}
                 </h3>
             </div>
@@ -290,11 +383,14 @@ const ProviderList = React.memo(({
                         key={provider.id}
                         provider={provider}
                         accounts={accounts.filter(a => (PROVIDER_ACCOUNT_ALIASES[provider.id] ?? [provider.id]).includes(a.provider.toLowerCase()))}
+                        quotaData={quotaData}
+                        settings={settings}
                         authBusy={authBusy}
                         onConnect={onConnect}
                         onUnlink={onUnlink}
                         onSetActive={onSetActive}
                         onShowManualSession={onShowManualSession}
+                        onCreditUsageModeChange={onCreditUsageModeChange}
                         t={t}
                     />
                 ))}
@@ -354,7 +450,7 @@ const ApiKeyProviderCard = React.memo(({
                 <ProviderIdentity logo={provider.logo} icon={IconComponent} providerId={provider.id} />
                 <div className="flex-1 min-w-0">
                     <div className="text-sm font-semibold text-foreground">{t(provider.name)}</div>
-                    <div className="mt-1 text-xs text-muted-foreground">{t(provider.description)}</div>
+                    <div className="mt-1 typo-caption text-muted-foreground">{t(provider.description)}</div>
                 </div>
                 <div className="flex flex-wrap items-center gap-3 sm:justify-end">
                     {hasKeys ? (
@@ -423,7 +519,7 @@ const ApiKeyProviderCard = React.memo(({
                                     value={newKey}
                                     onChange={(e) => setNewKey(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleAddKey()}
-                                    className="h-11 rounded-xl border-border/40 bg-background pl-11 font-mono text-xs"
+                                    className="h-11 rounded-xl border-border/40 bg-background pl-11 font-mono typo-caption"
                                 />
                                 <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
                             </div>
@@ -475,8 +571,8 @@ const ApiKeyProvidersSection = React.memo(({
     t
 }: {
     settings: AppSettings
-    setSettings: (s: AppSettings) => void
-    handleSave: (s?: AppSettings) => void
+    setSettings: (s: AppSettings) => Promise<void>
+    handleSave: (s?: AppSettings) => Promise<void>
     t: (k: string) => string
 }) => {
     // ... same logic for getApiKeys, handleAddKey, handleRemoveKey ...
@@ -539,7 +635,7 @@ const ApiKeyProvidersSection = React.memo(({
             <div className="flex flex-col gap-2 px-1">
                 <div className="flex items-center gap-3">
                     <Key className="w-4 h-4 text-primary" />
-                    <h3 className="text-xs font-medium text-muted-foreground">
+                    <h3 className="typo-caption font-medium text-muted-foreground">
                         {t('accounts.categories.apiKeyProviders')}
                     </h3>
                 </div>
@@ -575,17 +671,17 @@ const OllamaSection = React.memo(({
 }: {
     isRunning: boolean
     settings: AppSettings
-    setSettings: (s: AppSettings) => void
-    handleSave: (s?: AppSettings) => void
-    startOllama: () => void
-    checkOllama: () => void
+    setSettings: (s: AppSettings) => Promise<void>
+    handleSave: (s?: AppSettings) => Promise<void>
+    startOllama: () => Promise<void>
+    checkOllama: () => Promise<void>
     t: (k: string) => string
 }) => {
     return (
         <section className="space-y-4 pt-4">
             <div className="flex items-center gap-3 mb-2 px-1">
                 <Terminal className="w-4 h-4 text-primary" />
-                <h3 className="text-xs font-medium text-muted-foreground">
+                <h3 className="typo-caption font-medium text-muted-foreground">
                     {t('accounts.categories.localModels')}
                 </h3>
             </div>
@@ -596,7 +692,7 @@ const OllamaSection = React.memo(({
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="text-sm font-semibold text-foreground">{t('accounts.providers.ollama.name')}</div>
-                        <div className="mt-1 text-xs text-muted-foreground">{t('accounts.providers.ollama.description')}</div>
+                        <div className="mt-1 typo-caption text-muted-foreground">{t('accounts.providers.ollama.description')}</div>
                     </div>
                     <Badge className={cn(
                         'h-7 rounded-lg px-3 typo-body font-medium',
@@ -629,7 +725,7 @@ const OllamaSection = React.memo(({
                                     };
                                     void handleSave(nextSettings);
                                 }}
-                                className="h-10 w-full rounded-xl border-border/40 bg-background font-mono text-xs"
+                                className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption"
                             />
                         </div>
                         <div className="space-y-2">
@@ -657,7 +753,7 @@ const OllamaSection = React.memo(({
                                     };
                                     void handleSave(nextSettings);
                                 }}
-                                className="h-10 w-full rounded-xl border-border/40 bg-background font-mono text-xs"
+                                className="h-10 w-full rounded-xl border-border/40 bg-background font-mono typo-caption"
                             />
                         </div>
                     </div>
@@ -668,7 +764,7 @@ const OllamaSection = React.memo(({
                             onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                checkOllama();
+                                void checkOllama();
                             }}
                             className="h-9 rounded-xl border-border/30 bg-background px-5 typo-body font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground"
                         >
@@ -682,7 +778,7 @@ const OllamaSection = React.memo(({
                                 onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    startOllama();
+                                    void startOllama();
                                 }}
                                 className="h-9 rounded-xl border-primary/25 bg-primary/5 px-5 typo-body font-medium text-primary hover:bg-primary hover:text-primary-foreground"
                             >
@@ -699,7 +795,7 @@ const OllamaSection = React.memo(({
 OllamaSection.displayName = 'OllamaSection';
 
 export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
-    settings, linkedAccounts, authBusy, authMessage, isOllamaRunning,
+    settings, quotaData, linkedAccounts, authBusy, authMessage, isOllamaRunning,
     connectGitHubProfile, connectCopilot, connectBrowserProvider,
     cancelAuthFlow,
     startOllama, checkOllama, handleSave, setSettings, deviceCodeModal, closeDeviceCodeModal,
@@ -707,12 +803,12 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
 }) => {
     const handleConnect = React.useCallback((providerId: string) => {
         switch (providerId) {
-            case 'github': connectGitHubProfile(); break;
-            case 'copilot': connectCopilot(); break;
-            case 'codex': connectBrowserProvider('codex'); break;
-            case 'claude': connectBrowserProvider('claude'); break;
-            case 'antigravity': connectBrowserProvider('antigravity'); break;
-            case 'ollama': connectBrowserProvider('ollama'); break;
+            case 'github': void connectGitHubProfile(); break;
+            case 'copilot': void connectCopilot(); break;
+            case 'codex': void connectBrowserProvider('codex'); break;
+            case 'claude': void connectBrowserProvider('claude'); break;
+            case 'antigravity': void connectBrowserProvider('antigravity'); break;
+            case 'ollama': void connectBrowserProvider('ollama'); break;
         }
     }, [connectGitHubProfile, connectCopilot, connectBrowserProvider]);
 
@@ -726,6 +822,15 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
     const handleShowManualSession = React.useCallback((accountId: string, email?: string) => {
         setManualSessionModal({ isOpen: true, accountId, email });
     }, [setManualSessionModal]);
+
+    const handleCreditUsageModeChange = React.useCallback((accountId: string, mode: AntigravityCreditUsageMode) => {
+        if (!settings) {
+            return;
+        }
+        const nextSettings = buildAntigravityCreditModeSettings(settings, accountId, mode);
+        void setSettings(nextSettings);
+        void handleSave(nextSettings);
+    }, [handleSave, setSettings, settings]);
 
     if (!settings) { return null; }
 
@@ -789,11 +894,14 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
                     title={t('accounts.categories.aiProviders')}
                     providers={aiProviders}
                     accounts={linkedAccounts.accounts}
+                    quotaData={quotaData}
+                    settings={settings}
                     authBusy={authBusy}
                     onConnect={handleConnect}
                     onUnlink={linkedAccounts.unlinkAccount}
                     onSetActive={linkedAccounts.setActiveAccount}
                     onShowManualSession={handleShowManualSession}
+                    onCreditUsageModeChange={handleCreditUsageModeChange}
                     t={t}
                 />
 
@@ -803,11 +911,14 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
                     title={t('accounts.categories.developerTools')}
                     providers={developerProviders}
                     accounts={linkedAccounts.accounts}
+                    quotaData={quotaData}
+                    settings={settings}
                     authBusy={authBusy}
                     onConnect={handleConnect}
                     onUnlink={linkedAccounts.unlinkAccount}
                     onSetActive={linkedAccounts.setActiveAccount}
                     onShowManualSession={handleShowManualSession}
+                    onCreditUsageModeChange={handleCreditUsageModeChange}
                     t={t}
                 />
 

@@ -72,7 +72,7 @@ export function TerminalTabsBar({
                         }}
                         onDragEnd={onTabDragEnd}
                         className={cn(
-                            'flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap border border-transparent min-w-24 max-w-48 flex-shrink-0',
+                            'flex items-center gap-2 px-3 py-1.5 rounded-md typo-caption font-medium transition-all whitespace-nowrap border border-transparent min-w-24 max-w-48 flex-shrink-0',
                             activeTabId === tab.id
                                 ? 'bg-accent text-foreground border-border shadow-sm'
                                 : 'text-muted-foreground hover:text-foreground hover:bg-accent/50',

@@ -43,7 +43,7 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
                     <div className="text-center space-y-3 p-8">
                         <Sparkles className="w-12 h-12 mx-auto animate-bounce text-primary" />
                         <div className="space-y-1">
-                            <p className="text-xs font-bold text-foreground">
+                            <p className="typo-caption font-bold text-foreground">
                                 {translateKey('workspaces.generating')}
                             </p>
                             <p className="text-xxs text-muted-foreground">
@@ -60,7 +60,7 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
                 ) : (
                     <div className="text-center p-8 opacity-40">
                         <ImageIcon className="w-16 h-16 mx-auto mb-4 text-primary/40" />
-                        <p className="text-xs font-bold mb-4">
+                        <p className="typo-caption font-bold mb-4">
                             {translateKey('workspaces.preview')}
                         </p>
                         <button

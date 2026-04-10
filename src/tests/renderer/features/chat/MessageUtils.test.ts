@@ -17,4 +17,13 @@ describe('useMessageContent', () => {
 
         expect(result.current.displayContent).toBe('merhaba, nasilsin?');
     });
+
+    it('uses the streaming fast path for plain text content without structured markers', () => {
+        const raw = 'Normal icerik akmaya devam ediyor.';
+        const { result } = renderHook(() => useMessageContent(raw, undefined, 'Canli dusunce'));
+
+        expect(result.current.thought).toBe('Canli dusunce');
+        expect(result.current.plan).toBeNull();
+        expect(result.current.displayContent).toBe(raw);
+    });
 });

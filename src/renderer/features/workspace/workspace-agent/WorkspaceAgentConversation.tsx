@@ -44,18 +44,18 @@ function TelemetryCard({
     return (
         <div className="rounded-2xl border border-border/50 bg-muted/30 p-3">
             <div className="flex items-center justify-between gap-3">
-                <div className="text-xs font-semibold text-info">
+                <div className="typo-caption font-semibold text-info">
                     {telemetry.provider} · {telemetry.model}
                 </div>
                 <div className="text-xxs text-muted-foreground">
                     {Math.round(telemetry.usagePercent)}%
                 </div>
             </div>
-            <div className="mt-2 text-xs text-muted-foreground">
+            <div className="mt-2 typo-caption text-muted-foreground">
                 {telemetry.pressureState} · {telemetry.usedTokens} / {telemetry.contextWindow}
             </div>
             {telemetry.handoffCount > 0 && (
-                <div className="mt-1 text-xs text-muted-foreground">
+                <div className="mt-1 typo-caption text-muted-foreground">
                     {telemetry.handoffCount}x · {telemetry.lastHandoffLabel ?? telemetry.model}
                 </div>
             )}
@@ -90,14 +90,14 @@ function TimelineCard({ event }: { event: AgentEventRecord }): JSX.Element {
     return (
         <div className="rounded-2xl border border-border/50 bg-muted/30 p-3">
             <div className="flex items-center justify-between gap-3">
-                <div className="text-xs font-semibold text-info">
+                <div className="typo-caption font-semibold text-info">
                     {event.type}
                 </div>
                 <div className="text-xxs text-muted-foreground">
                     {event.timestamp.toLocaleTimeString()}
                 </div>
             </div>
-            <div className="mt-2 text-xs text-muted-foreground">
+            <div className="mt-2 typo-caption text-muted-foreground">
                 {event.stateBeforeTransition} → {event.stateAfterTransition}
             </div>
         </div>

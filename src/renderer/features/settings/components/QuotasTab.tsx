@@ -64,7 +64,7 @@ export const QuotasTab: React.FC<QuotasTabProps> = ({
                 <div className="mb-4 flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
                         <Activity className="w-4 h-4 text-primary" />
-                        <h4 className="text-xs font-medium text-foreground">{t('statistics.connectedServices')}</h4>
+                        <h4 className="typo-caption font-medium text-foreground">{t('statistics.connectedServices')}</h4>
                     </div>
                     <Badge variant="outline" className="h-6 w-fit border-border/20 px-2 typo-body text-muted-foreground">
                         {t('statistics.live')}

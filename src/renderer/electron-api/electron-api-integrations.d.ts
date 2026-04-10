@@ -655,12 +655,13 @@ export interface ElectronApiIntegrationsDomain {
         write: (
             level: 'debug' | 'info' | 'warn' | 'error',
             message: string,
-            data?: IpcValue
+            data?: IpcValue,
+            context?: string
         ) => void;
-        debug: (message: string, data?: IpcValue) => void;
-        info: (message: string, data?: IpcValue) => void;
-        warn: (message: string, data?: IpcValue) => void;
-        error: (message: string, data?: IpcValue) => void;
+        debug: (message: string, data?: IpcValue, context?: string) => void;
+        info: (message: string, data?: IpcValue, context?: string) => void;
+        warn: (message: string, data?: IpcValue, context?: string) => void;
+        error: (message: string, data?: IpcValue, context?: string) => void;
     };
 
     update: {
@@ -881,6 +882,8 @@ export interface ElectronApiIntegrationsDomain {
             state?: { global: Record<string, RendererDataValue>; workspace: Record<string, RendererDataValue> };
         }>;
         validate: (manifest: RendererDataValue) => Promise<{ valid: boolean; errors: string[] }>;
+        getConfig: (extensionId: string) => Promise<{ success: boolean; config?: Record<string, IpcValue>; error?: string }>;
+        updateConfig: (extensionId: string, config: Record<string, IpcValue>) => Promise<{ success: boolean; config?: Record<string, IpcValue>; error?: string }>;
     };
 
     codeSandbox: {

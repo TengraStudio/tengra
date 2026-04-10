@@ -56,7 +56,7 @@ const SuggestionItem: React.FC<{
         <span className={`mt-0.5 shrink-0 ${SEVERITY_STYLES[suggestion.severity]}`}>
             {TYPE_ICONS[suggestion.type]}
         </span>
-        <span className="text-xs text-muted-foreground flex-1 leading-relaxed">
+        <span className="typo-caption text-muted-foreground flex-1 leading-relaxed">
             {suggestion.message}
         </span>
         <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -96,7 +96,7 @@ export const PromptSuggestions: React.FC<PromptSuggestionsProps> = React.memo(({
 
     if (isAnalyzing) {
         return (
-            <div className="px-3 py-2 text-xs text-muted-foreground/60 animate-pulse">
+            <div className="px-3 py-2 typo-caption text-muted-foreground/60 animate-pulse">
                 {t('promptOptimizer.analyzing')}
             </div>
         );
@@ -110,7 +110,7 @@ export const PromptSuggestions: React.FC<PromptSuggestionsProps> = React.memo(({
         <div className="border-t border-border/50 bg-background/50">
             <button
                 onClick={() => setIsExpanded(prev => !prev)}
-                className="flex w-full items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:bg-accent/50"
+                className="flex w-full items-center gap-2 px-3 py-1.5 typo-caption transition-colors hover:bg-accent/50"
             >
                 <span className={`px-1.5 py-0.5 rounded text-xxxs font-semibold ${getScoreColor(analysis.score)}`}>
                     {analysis.score}

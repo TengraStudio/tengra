@@ -14,7 +14,6 @@ import {
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-import './keyboard-shortcuts-modal.css';
 
 /**
  * Get all focusable elements within a container.

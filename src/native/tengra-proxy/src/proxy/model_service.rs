@@ -933,7 +933,8 @@ fn antigravity_thinking_levels(id: &str) -> Option<Vec<String>> {
         "gemini-3.1-flash-preview"
         | "gemini-3.1-flash"
         | "gemini-3-flash-preview"
-        | "gemini-3-flash" => Some(vec![
+        | "gemini-3-flash"
+        | "gemini-3-flash-agent" => Some(vec![
             "minimal".to_string(),
             "low".to_string(),
             "medium".to_string(),
@@ -1135,8 +1136,8 @@ fn static_model(
 #[cfg(test)]
 mod tests {
     use super::{
-        claude_models, dedupe_models, normalize_nvidia_model_id, normalize_provider,
-        parse_provider_models_from_payload,
+        antigravity_thinking_levels, claude_models, dedupe_models, normalize_nvidia_model_id,
+        normalize_provider, parse_provider_models_from_payload,
     };
     use crate::proxy::antigravity::normalize_discovered_model_id;
     use crate::proxy::model_service::ServedModel;
@@ -1268,6 +1269,19 @@ mod tests {
             vec!["gemini-2.0-flash", "gemini-1.5-pro", "gemini-2.5-pro"]
         );
         assert!(models.iter().all(|model| model.provider == "gemini"));
+    }
+
+    #[test]
+    fn assigns_flash_thinking_levels_to_agent_alias() {
+        assert_eq!(
+            antigravity_thinking_levels("gemini-3-flash-agent"),
+            Some(vec![
+                "minimal".to_string(),
+                "low".to_string(),
+                "medium".to_string(),
+                "high".to_string(),
+            ])
+        );
     }
 
     #[test]

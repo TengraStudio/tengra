@@ -70,7 +70,7 @@ export const PromptTemplateLibrary: React.FC<PromptTemplateLibraryProps> = ({ on
                 <div className="flex gap-1 px-3 py-1.5 overflow-x-auto border-b border-border/50">
                     <button
                         onClick={() => setActiveCategory('')}
-                        className={cn('px-2 py-0.5 rounded text-xs whitespace-nowrap', !activeCategory ? 'bg-primary/20 text-primary font-bold' : 'text-muted-foreground hover:bg-muted/20')}
+                        className={cn('px-2 py-0.5 rounded typo-caption whitespace-nowrap', !activeCategory ? 'bg-primary/20 text-primary font-bold' : 'text-muted-foreground hover:bg-muted/20')}
                     >
                         {t('prompts.library.all')}
                     </button>
@@ -78,7 +78,7 @@ export const PromptTemplateLibrary: React.FC<PromptTemplateLibraryProps> = ({ on
                         <button
                             key={c}
                             onClick={() => setActiveCategory(c)}
-                            className={cn('px-2 py-0.5 rounded text-xs whitespace-nowrap', activeCategory === c ? 'bg-primary/20 text-primary font-bold' : 'text-muted-foreground hover:bg-muted/20')}
+                            className={cn('px-2 py-0.5 rounded typo-caption whitespace-nowrap', activeCategory === c ? 'bg-primary/20 text-primary font-bold' : 'text-muted-foreground hover:bg-muted/20')}
                         >
                             {c}
                         </button>
@@ -99,7 +99,7 @@ export const PromptTemplateLibrary: React.FC<PromptTemplateLibraryProps> = ({ on
                             )}
                         </div>
                         {tp.description && (
-                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{tp.description}</p>
+                            <p className="typo-caption text-muted-foreground mt-0.5 line-clamp-1">{tp.description}</p>
                         )}
                     </button>
                 ))}

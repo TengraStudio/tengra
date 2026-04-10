@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import React, { memo, useEffect, useRef } from 'react';
 
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -112,13 +113,13 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
             <div
                 role="group"
                 aria-label={t('aria.chatInput')}
-                className={cn('relative z-30 px-3 pb-4 pt-1 sm:px-6 sm:pb-6', ctrl.isDragging && 'bg-primary/5')}
+                className={cn('relative z-30 px-2 pb-3 pt-1 sm:px-4 sm:pb-4', ctrl.isDragging && 'bg-primary/5')}
                 onDragOver={e => { e.preventDefault(); e.stopPropagation(); ctrl.setIsDragging(true); }}
                 onDragLeave={e => { e.preventDefault(); e.stopPropagation(); ctrl.setIsDragging(false); }}
                 onDrop={ctrl.onDrop}
             >
                 {ctrl.lastError && (
-                    <div role="status" aria-live="polite" className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive animate-in fade-in slide-in-from-top-1">
+                    <div role="status" aria-live="polite" className="mb-2.5 flex items-center justify-between gap-2 rounded-md border border-destructive/25 bg-destructive/5 px-3 py-2 typo-caption text-destructive animate-in fade-in slide-in-from-top-1">
                         <span>{ctrl.t(ctrl.lastError.messageKey)}</span>
                         <button type="button" onClick={ctrl.clearLastError} className="p-1 rounded-md hover:bg-destructive/10 transition-colors" aria-label={ctrl.t('common.close')}><X size={12} aria-hidden="true" /></button>
                     </div>
@@ -138,11 +139,11 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                 />
 
                 <div className={cn(
-                    'group flex flex-col relative overflow-hidden rounded-[24px] border border-border/40 bg-background/95 transition-all duration-300 shadow-sm',
-                    'focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/5 focus-within:shadow-md',
+                    'group relative flex flex-col overflow-hidden rounded-lg border border-border/50 bg-background transition-colors duration-200',
+                    'focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-ring',
                     ctrl.isDragging && 'border-primary/45 bg-primary/5'
                 )}>
-                    <div className="px-4 pt-4">
+                    <div className="px-3 pt-3">
                         {ctrl.isImageOnlyModel && <ImageCountPanel ctrl={ctrl} />}
                         <Textarea
                             data-testid="chat-textarea"
@@ -159,11 +160,11 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                         />
                     </div>
 
-                    <div className="px-4">
+                    <div className="px-3">
                         <AttachmentList attachments={ctrl.attachments} onRemove={ctrl.removeAttachment} t={ctrl.t} />
                     </div>
 
-                    <div className="flex items-center justify-between px-2 pb-2 pt-1 transition-all">
+                    <div className="flex items-center justify-between px-2.5 pb-2 pt-1 transition-all">
                         <div className="flex items-center gap-1.5 pl-1.5">
                             <ModelSelectorWrapper ctrl={ctrl} />
                             <div className="flex items-center gap-0.5">
@@ -179,6 +180,16 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                         </div>
                     </div>
                 </div>
+
+                <ConfirmationModal
+                    isOpen={ctrl.antigravityCreditConfirmation.isOpen}
+                    onClose={ctrl.cancelAntigravityCreditUsage}
+                    onConfirm={ctrl.confirmAntigravityCreditUsage}
+                    title={ctrl.antigravityCreditConfirmation.title}
+                    message={ctrl.antigravityCreditConfirmation.message}
+                    confirmLabel={ctrl.antigravityCreditConfirmation.confirmLabel}
+                    variant="warning"
+                />
             </div>
         );
     }

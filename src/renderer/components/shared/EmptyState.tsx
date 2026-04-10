@@ -7,7 +7,6 @@
 
 import React, { memo } from 'react';
 
-import './empty-state.css';
 
 /** Props for the EmptyState component */
 interface EmptyStateAction {

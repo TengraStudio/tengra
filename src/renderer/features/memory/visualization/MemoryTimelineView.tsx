@@ -117,7 +117,7 @@ export const MemoryTimelineView: React.FC = () => {
                     </div>
                     <div>
                         <h2 className="text-sm font-bold">{t('memory.timelineView')}</h2>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="typo-caption text-muted-foreground">
                             {t('memory.timelineTotalEvents', { count: items.length })}
                         </p>
                     </div>
@@ -165,7 +165,7 @@ export const MemoryTimelineView: React.FC = () => {
                 {loading ? (
                     <div className="flex flex-col items-center justify-center h-full gap-4">
                         <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                        <span className="text-xs text-muted-foreground">{t('memory.timelineReconstructing')}</span>
+                        <span className="typo-caption text-muted-foreground">{t('memory.timelineReconstructing')}</span>
                     </div>
                 ) : (
                     Object.keys(groupedItems).length === 0 ? (
@@ -181,7 +181,7 @@ export const MemoryTimelineView: React.FC = () => {
                                 {/* Date Marker */}
                                 <div className="absolute -left-14 top-0 flex items-center gap-4">
                                     <div className="w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-primary/20 shadow-md" />
-                                    <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold whitespace-nowrap">
+                                    <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary typo-caption font-bold whitespace-nowrap">
                                         {format(new Date(date), 'MMMM d, yyyy')}
                                     </div>
                                 </div>
@@ -203,11 +203,11 @@ export const MemoryTimelineView: React.FC = () => {
                                                                 <Brain className="w-3.5 h-3.5" />
                                                             </div>
                                                         )}
-                                                        <span className="text-xs font-bold text-foreground/60">
+                                                        <span className="typo-caption font-bold text-foreground/60">
                                                             {item.title}
                                                         </span>
                                                     </div>
-                                                    <span className="text-xs text-muted-foreground font-mono">
+                                                    <span className="typo-caption text-muted-foreground font-mono">
                                                         {format(item.timestamp, 'HH:mm')}
                                                     </span>
                                                 </div>
@@ -218,7 +218,7 @@ export const MemoryTimelineView: React.FC = () => {
 
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {item.tags.map(tag => (
-                                                        <span key={tag} className="px-2 py-0.5 rounded-md bg-muted/30 text-xs text-muted-foreground border border-border/30">
+                                                        <span key={tag} className="px-2 py-0.5 rounded-md bg-muted/30 typo-caption text-muted-foreground border border-border/30">
                                                             #{tag}
                                                         </span>
                                                     ))}

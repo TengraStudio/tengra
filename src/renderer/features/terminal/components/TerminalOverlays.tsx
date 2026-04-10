@@ -63,7 +63,7 @@ export function TerminalOverlays({
             {isAiPanelOpen && (
                 <div className="absolute top-2 right-2 z-30 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-3 py-3 min-w-96 max-w-lg">
                     <div className="flex items-center justify-between gap-3 mb-3">
-                        <div className="flex items-center gap-2 text-xs font-semibold">
+                        <div className="flex items-center gap-2 typo-caption font-semibold">
                             <Bot className="w-4 h-4 text-primary" />
                             {aiPanelMode === 'explain-error' && t('terminal.aiExplainError')}
                             {aiPanelMode === 'fix-error' && t('terminal.aiFixError')}
@@ -82,7 +82,7 @@ export function TerminalOverlays({
                             <div className="text-xxxs text-destructive font-semibold mb-1">
                                 {aiSelectedIssue.severity}
                             </div>
-                            <div className="text-xs text-foreground/90 line-clamp-3">
+                            <div className="typo-caption text-foreground/90 line-clamp-3">
                                 {aiSelectedIssue.message}
                             </div>
                         </div>
@@ -90,7 +90,7 @@ export function TerminalOverlays({
                     {aiIsLoading ? (
                         <div className="flex items-center justify-center gap-2 py-6">
                             <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                            <span className="text-xs text-muted-foreground">
+                            <span className="typo-caption text-muted-foreground">
                                 {t('terminal.aiAnalyzing')}
                             </span>
                         </div>
@@ -102,7 +102,7 @@ export function TerminalOverlays({
                                         <div className="text-xxxs text-muted-foreground mb-1">
                                             {t('terminal.aiSummary')}
                                         </div>
-                                        <div className="text-xs text-foreground">
+                                        <div className="typo-caption text-foreground">
                                             {String(aiResult.data.summary ?? '')}
                                         </div>
                                     </div>
@@ -110,7 +110,7 @@ export function TerminalOverlays({
                                         <div className="text-xxxs text-muted-foreground mb-1">
                                             {t('terminal.aiCause')}
                                         </div>
-                                        <div className="text-xs text-foreground">
+                                        <div className="typo-caption text-foreground">
                                             {String(aiResult.data.cause ?? '')}
                                         </div>
                                     </div>
@@ -118,7 +118,7 @@ export function TerminalOverlays({
                                         <div className="text-xxxs text-muted-foreground mb-1">
                                             {t('terminal.aiSolution')}
                                         </div>
-                                        <div className="text-xs text-foreground">
+                                        <div className="typo-caption text-foreground">
                                             {String(aiResult.data.solution ?? '')}
                                         </div>
                                     </div>
@@ -127,7 +127,7 @@ export function TerminalOverlays({
                                             <div className="text-xxxs text-muted-foreground mb-1">
                                                 {t('terminal.aiSteps')}
                                             </div>
-                                            <ol className="list-decimal list-inside text-xs text-foreground space-y-1">
+                                            <ol className="list-decimal list-inside typo-caption text-foreground space-y-1">
                                                 {(aiResult.data.steps as string[]).map((step, idx) => (
                                                     <li key={idx}>{step}</li>
                                                 ))}
@@ -144,14 +144,14 @@ export function TerminalOverlays({
                                                 {t('terminal.aiSuggestedCommand')}
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <code className="flex-1 text-xs bg-muted/50 px-2 py-1.5 rounded font-mono break-all">
+                                                <code className="flex-1 typo-caption bg-muted/50 px-2 py-1.5 rounded font-mono break-all">
                                                     {String(aiResult.data.suggestedCommand)}
                                                 </code>
                                                 <button
                                                     onClick={() => {
                                                         void handleAiApplyFix(String(aiResult.data.suggestedCommand));
                                                     }}
-                                                    className="shrink-0 px-2 py-1.5 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors flex items-center gap-1"
+                                                    className="shrink-0 px-2 py-1.5 typo-caption bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors flex items-center gap-1"
                                                 >
                                                     <Play className="w-3 h-3" />
                                                     {t('terminal.aiRunCommand')}

@@ -318,6 +318,13 @@ export const settingsSchema: Schema = {
             apiKey: { type: 'string' }
         }
     },
+    antigravity: {
+        type: 'object',
+        children: {
+            connected: { type: 'boolean' },
+            creditUsageModeByAccount: { type: 'object' }
+        }
+    },
     theme: {
         type: 'string',
         validators: [validators.oneOf(['dark', 'light', 'system'])],

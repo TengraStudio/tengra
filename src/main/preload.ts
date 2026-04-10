@@ -87,11 +87,13 @@ const api = {
         removeAllListeners: (channel: string) => ipcRenderer.removeAllListeners(channel)
     },
 
-    // Backward compatibility for components using window.electron.on
+    // Backward compatibility for components using window.electron.on/invoke
     on: (channel: string, listener: (event: IpcRendererEvent, ...args: IpcValue[]) => void) => {
         ipcRenderer.on(channel, listener);
         return () => ipcRenderer.removeListener(channel, listener);
     },
+
+    invoke: (channel: string, ...args: IpcValue[]) => ipcRenderer.invoke(channel, ...args),
 
     openExternal: (url: string) => {
         void ipcRenderer.invoke('shell:openExternal', url);

@@ -120,7 +120,7 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                                         {t('settings.images.downloading')}
                                     </p>
                                 </div>
-                                <p className="text-xs text-muted-foreground/80 truncate font-bold opacity-40">
+                                <p className="typo-caption text-muted-foreground/80 truncate font-bold opacity-40">
                                     {downloadProgress.filename}
                                 </p>
                             </div>

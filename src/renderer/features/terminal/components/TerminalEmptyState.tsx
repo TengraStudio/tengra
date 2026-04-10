@@ -13,7 +13,7 @@ export function TerminalEmptyState({ title, actionLabel, onCreate }: TerminalEmp
             <p className="text-sm">{title}</p>
             <button
                 onClick={onCreate}
-                className="mt-4 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg text-xs font-bold transition-all border border-primary/30"
+                className="mt-4 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg typo-caption font-bold transition-all border border-primary/30"
             >
                 {actionLabel}
             </button>

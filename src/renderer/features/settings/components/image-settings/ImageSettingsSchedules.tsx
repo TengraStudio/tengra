@@ -65,7 +65,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                             value={schedulePrompt}
                             onChange={event => setSchedulePrompt(event.target.value)}
                             placeholder={t('settings.images.schedulePrompt')}
-                            className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 text-xs font-bold placeholder:text-muted-foreground/30 shadow-inner group-hover:bg-muted/30 transition-all"
+                            className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 typo-caption font-bold placeholder:text-muted-foreground/30 shadow-inner group-hover:bg-muted/30 transition-all"
                         />
                     </div>
                     <div className="space-y-2">
@@ -74,7 +74,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                             type="datetime-local"
                             value={scheduleAt}
                             onChange={event => setScheduleAt(event.target.value)}
-                            className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 text-xs font-bold shadow-inner group-hover:bg-muted/30 transition-all"
+                            className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 typo-caption font-bold shadow-inner group-hover:bg-muted/30 transition-all"
                         />
                     </div>
                     <div className="space-y-2">
@@ -83,7 +83,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                             value={schedulePriority}
                             onValueChange={(value: 'low' | 'normal' | 'high') => setSchedulePriority(value)}
                         >
-                            <SelectTrigger className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 text-xs font-bold focus:ring-primary/20">
+                            <SelectTrigger className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 typo-caption font-bold focus:ring-primary/20">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
@@ -99,7 +99,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                             value={scheduleResourceProfile}
                             onValueChange={(value: 'balanced' | 'quality' | 'speed') => setScheduleResourceProfile(value)}
                         >
-                            <SelectTrigger className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 text-xs font-bold focus:ring-primary/20">
+                            <SelectTrigger className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 typo-caption font-bold focus:ring-primary/20">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
@@ -173,7 +173,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                             <div key={entry.id} className="group/item flex flex-col gap-4 bg-background/50 border border-border/20 rounded-2xl p-5 transition-all hover:bg-muted/10 hover:border-border/40 shadow-sm">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="space-y-1.5 min-w-0 flex-1">
-                                        <div className="text-xs font-bold text-foreground truncate group-hover/item:text-primary transition-colors">
+                                        <div className="typo-caption font-bold text-foreground truncate group-hover/item:text-primary transition-colors">
                                             {entry.options.prompt}
                                         </div>
                                         <div className="flex flex-wrap items-center gap-3">

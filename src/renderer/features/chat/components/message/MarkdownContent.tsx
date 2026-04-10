@@ -17,6 +17,7 @@ import { QuotaErrorCard } from './QuotaErrorCard';
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
 
 const LazyReactMarkdown = lazy(() => import('react-markdown'));
+const STREAMING_PLAIN_TEXT_PREVIEW_THRESHOLD = 12000;
 
 const flattenNodeText = (node: React.ReactNode): string => {
     if (typeof node === 'string' || typeof node === 'number') {
@@ -201,6 +202,12 @@ export const MessageBubbleContent = memo(
             ),
             [displayContent, onSpeak, onStop, isSpeaking, onCodeConvert, t]
         );
+        const shouldUseStreamingPlainTextPreview = useMemo(() => {
+            if (showRawMarkdown || isUser || !isStreaming) {
+                return false;
+            }
+            return displayContent.length >= STREAMING_PLAIN_TEXT_PREVIEW_THRESHOLD;
+        }, [displayContent.length, isStreaming, isUser, showRawMarkdown]);
 
         // Detect permission error in tool calls
         const hasPermissionError = useMemo(() => {
@@ -225,7 +232,7 @@ export const MessageBubbleContent = memo(
         if (!displayContent) {
             return null;
         }
-        if (showRawMarkdown || isUser) {
+        if (showRawMarkdown || isUser || shouldUseStreamingPlainTextPreview) {
             return (
                 <div className="flex flex-col gap-2">
                     <AttachmentList attachments={attachments ?? []} onRemove={() => {}} t={t} />

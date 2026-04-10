@@ -180,6 +180,28 @@ export function composeDeterministicAnswer(context: AiPresentationContext): stri
     }
 
     for (const toolResult of toolResults) {
+        if (toolResult.name !== 'resolve_path' || !isToolResultObject(toolResult.result)) {
+            continue;
+        }
+        const path = getString(toolResult.result.path);
+        const pathExists = getBoolean(toolResult.result.pathExists);
+        const parentExists = getBoolean(toolResult.result.parentExists);
+        if (!path) {
+            continue;
+        }
+        if (pathExists === true) {
+            return isTurkish
+                ? `\`${path}\` yolu mevcut.`
+                : `The resolved path exists: \`${path}\`.`;
+        }
+        if (pathExists === false && parentExists === true) {
+            return isTurkish
+                ? `\`${path}\` yolu henuz mevcut degil ama ust dizin erisilebilir.`
+                : `The resolved path does not exist yet, but its parent directory is accessible: \`${path}\`.`;
+        }
+    }
+
+    for (const toolResult of toolResults) {
         if (toolResult.name !== 'file_exists') {
             continue;
         }
@@ -442,6 +464,9 @@ export function isLowSignalProgressContent(content: string): boolean {
         /\bbakıyorum\b/,
         /\bchecking\b/,
         /\binspecting\b/,
+        /\bto verify or determine\b/,
+        /\bi'?ll use the .* folder by default\b/,
+        /\bwhere to place the project\b/,
         /\bworking on it\b/,
         /\bprocessing\b/,
         /\bone moment\b/,
@@ -461,7 +486,9 @@ export function inferAiIntentFromAssistantState(context: Pick<
 
     if ((context.toolCalls?.length ?? 0) > 0 || (context.toolResults?.length ?? 0) > 0) {
         const hasFilesystemEvidence = (context.toolResults ?? []).some(toolResult =>
-            toolResult.name === 'list_directory' || toolResult.name === 'file_exists'
+            toolResult.name === 'list_directory'
+            || toolResult.name === 'file_exists'
+            || toolResult.name === 'resolve_path'
         );
         return hasFilesystemEvidence ? 'single_lookup' : 'multi_lookup';
     }
@@ -522,7 +549,14 @@ export function doesEvidenceSatisfyIntent(
 
     if (intent === 'single_lookup') {
         const hasSolidEvidence = records.some(r =>
-            (r.toolName === 'list_directory' || r.toolName === 'file_exists' || r.toolName === 'get_system_info' || r.toolName === 'read_file' || r.toolName === 'grep_search') &&
+            (
+                r.toolName === 'list_directory'
+                || r.toolName === 'file_exists'
+                || r.toolName === 'resolve_path'
+                || r.toolName === 'get_system_info'
+                || r.toolName === 'read_file'
+                || r.toolName === 'grep_search'
+            ) &&
             (r.satisfactionScore ?? 0.5) >= 0.7
         );
         return hasSolidEvidence || totalScore >= 0.7 ? 'complete' : 'partial';

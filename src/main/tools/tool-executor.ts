@@ -455,8 +455,37 @@ export class ToolExecutor {
 
     private resolveUserPath(inputPath: string, basePath?: string): string {
         const expandedPath = this.expandPathInput(inputPath);
+        const rewriteWindowsUserHome = (candidatePath: string): string => {
+            if (process.platform !== 'win32') {
+                return candidatePath;
+            }
+            const currentHome = process.env.USERPROFILE ?? process.env.HOME ?? '';
+            if (currentHome.trim().length === 0) {
+                return candidatePath;
+            }
+            const normalizedHome = path.resolve(currentHome);
+            const userPathMatch = path.resolve(candidatePath).match(/^[a-z]:[\\/]users[\\/][^\\/]+([\\/].*)?$/iu);
+            if (!userPathMatch) {
+                return candidatePath;
+            }
+
+            const pathUnderUsers = path.resolve(candidatePath);
+            const currentHomeLower = normalizedHome.toLowerCase();
+            const candidateLower = pathUnderUsers.toLowerCase();
+            if (candidateLower.startsWith(currentHomeLower)) {
+                return candidatePath;
+            }
+
+            const relativeFromUsersRoot = pathUnderUsers.replace(/^[a-z]:[\\/]users[\\/][^\\/]+/iu, '');
+            const remappedPath = `${normalizedHome}${relativeFromUsersRoot}`;
+            appLogger.warn(
+                'ToolExecutor',
+                `Remapped absolute path from another Windows profile: input=${candidatePath}, remapped=${remappedPath}`
+            );
+            return remappedPath;
+        };
         if (path.isAbsolute(expandedPath)) {
-            return path.resolve(expandedPath);
+            return path.resolve(rewriteWindowsUserHome(expandedPath));
         }
 
         const firstSegment = expandedPath.split(/[\\/]/u)[0]?.toLowerCase() ?? '';
@@ -812,7 +841,8 @@ export class ToolExecutor {
                 errorType: 'unknown',
             };
         }
-        const path = args['path'].trim();
+        const inputPath = args['path'].trim();
+        const path = this.resolveUserPath(inputPath);
         try {
             const existedBefore = (await this.options.fileSystem.fileExists(path)).exists;
             const response = await this.options.fileSystem.createDirectory(path);
@@ -823,6 +853,7 @@ export class ToolExecutor {
                         success: false,
                         resultKind: 'directory_create',
                         path,
+                        inputPath,
                         pathExists: existedBefore,
                         complete: false,
                         displaySummary: `Failed to create directory: ${path}`,
@@ -837,6 +868,7 @@ export class ToolExecutor {
                     success: true,
                     resultKind: 'directory_create',
                     path,
+                    inputPath,
                     pathExists: true,
                     existedBefore,
                     created: !existedBefore,

@@ -1,5 +1,7 @@
 import React from 'react';
 
+import type { AntigravityAiCreditsInfo } from '@/types/quota';
+
 export interface ModelListItem {
     id: string;
     label: string;
@@ -27,6 +29,7 @@ export interface ModelListItem {
         totalQuota?: number;
         resetTime?: string;
         remainingFraction?: number;
+        aiCredits?: AntigravityAiCreditsInfo;
     };
     percentage?: number;
     reset?: string;

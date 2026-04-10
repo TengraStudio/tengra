@@ -2,7 +2,6 @@ import React, { useRef,useState } from 'react';
 
 import { cn } from '@/lib/utils';
 
-import './ripple-button.css';
 
 interface RippleButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: 'default' | 'primary' | 'secondary' | 'ghost' | 'destructive'

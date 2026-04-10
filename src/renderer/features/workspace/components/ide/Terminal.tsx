@@ -8,7 +8,6 @@ import { getTerminalTheme } from '@/lib/terminal-theme';
 import { performanceMonitor } from '@/utils/performance';
 import { appLogger } from '@/utils/renderer-logger';
 
-import '@xterm/xterm/css/xterm.css';
 
 interface TerminalComponentProps {
     cwd?: string | undefined;

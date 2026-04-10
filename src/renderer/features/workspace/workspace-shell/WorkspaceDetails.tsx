@@ -17,6 +17,7 @@ import { useWorkspaceBranchState } from '@/features/workspace/hooks/useWorkspace
 import { useWorkspaceShortcuts } from '@/features/workspace/hooks/useWorkspaceShortcuts';
 import { useWorkspaceTaskRunner } from '@/features/workspace/hooks/useWorkspaceTaskRunner';
 import { useWorkspaceDetailsController } from '@/features/workspace/hooks/useWorkspaceWorkspaceController';
+import { WORKSPACE_NAVIGATE_EVENT, WorkspaceNavigationAction } from '@/features/workspace/utils/workspace-navigation';
 import { runWorkspaceStartupPreflight, WorkspaceStartupPreflightResult } from '@/features/workspace/utils/workspace-startup-preflight';
 import { useRenderTracker } from '@/hooks/useRenderTracker';
 import { useWorkspaceProfiler } from '@/hooks/useWorkspaceProfiler';
@@ -223,6 +224,21 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
         }
         return 'ready';
     }, [preflightResult, taskRunner.runningTaskCount]);
+
+    React.useEffect(() => {
+        const handler = (e: Event) => {
+            const customEvent = e as CustomEvent<WorkspaceNavigationAction>;
+            const action = customEvent.detail;
+            if (action.type === 'open_file') {
+                openWorkspaceFile(action.path, action.line);
+            } else if (action.type === 'open_diff') {
+                wm.setDashboardTab('git');
+            }
+        };
+
+        window.addEventListener(WORKSPACE_NAVIGATE_EVENT, handler);
+        return () => window.removeEventListener(WORKSPACE_NAVIGATE_EVENT, handler);
+    }, [openWorkspaceFile, wm]);
 
     return (
         <div className="h-full flex flex-col bg-background relative overflow-hidden">

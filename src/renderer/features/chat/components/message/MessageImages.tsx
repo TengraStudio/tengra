@@ -76,10 +76,10 @@ export const MessageImages = memo(({ images, t }: MessageImagesProps) => {
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-background/75 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                                 <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between rounded-xl border border-border/50 bg-background/80 px-3 py-2 opacity-0 backdrop-blur-md transition-opacity duration-300 group-hover:opacity-100">
-                                    <span className="text-xs font-medium text-foreground">
+                                    <span className="typo-caption font-medium text-foreground">
                                         {t('messageBubble.attachedImage', { index: i + 1 })}
                                     </span>
-                                    <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                                    <span className="flex items-center gap-1 typo-caption font-medium text-muted-foreground">
                                         <Expand className="h-3.5 w-3.5" />
                                         {t('common.zoomIn')}
                                     </span>

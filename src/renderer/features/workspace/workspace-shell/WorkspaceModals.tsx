@@ -95,7 +95,7 @@ const EditWorkspaceModal: React.FC<{
                 <Modal isOpen={!!workspace} onClose={onClose} title={t('workspaces.editWorkspace')}>
                     <div className="space-y-4 pt-2">
                         <div className="space-y-2">
-                            <Label className="text-xs font-medium text-muted-foreground">
+                            <Label className="typo-caption font-medium text-muted-foreground">
                                 {t('workspaces.nameLabel')}
                             </Label>
                             <Input
@@ -113,7 +113,7 @@ const EditWorkspaceModal: React.FC<{
                             )}
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-xs font-medium text-muted-foreground">
+                            <Label className="typo-caption font-medium text-muted-foreground">
                                 {t('workspaces.description')}
                             </Label>
                             <Textarea
@@ -177,7 +177,7 @@ const DeleteWorkspaceModal: React.FC<{
                             <p className="text-sm text-destructive">
                                 {t('workspaces.deleteConfirmation')}{' '}
                                 <span className="font-bold text-foreground">{workspace.title}</span>?
-                                <span className="block mt-1 text-xs text-destructive/70 font-medium">
+                                <span className="block mt-1 typo-caption text-destructive/70 font-medium">
                                     {t('workspaces.deleteWarning')}
                                 </span>
                             </p>
@@ -227,7 +227,7 @@ const ArchiveWorkspaceModal: React.FC<{
                                 ? t('workspaces.restoreConfirmation')
                                 : t('workspaces.archiveConfirmation')}{' '}
                             <span className="font-semibold text-foreground">{workspace.title}</span>?
-                            <span className="block mt-1 text-xs text-success font-normal opacity-80">
+                            <span className="block mt-1 typo-caption text-success font-normal opacity-80">
                                 {workspace.status === 'archived'
                                     ? t('workspaces.restoreWarning')
                                     : t('workspaces.archiveWarning')}
@@ -280,7 +280,7 @@ const BulkArchiveModal: React.FC<{
                                 {count} {t('sidebar.workspaces').toLowerCase()}
                             </span>
                             ?
-                            <span className="block mt-1 text-xs text-success font-normal opacity-80">
+                            <span className="block mt-1 typo-caption text-success font-normal opacity-80">
                                 {mode === 'restore'
                                     ? t('workspaces.restoreWarning')
                                     : t('workspaces.archiveWarning')}
@@ -338,7 +338,7 @@ const BulkDeleteModal: React.FC<{
                                     {count} {t('sidebar.workspaces').toLowerCase()}
                                 </span>
                                 ?
-                                <span className="block mt-1 text-xs text-destructive/70 font-normal opacity-80">
+                                <span className="block mt-1 typo-caption text-destructive/70 font-normal opacity-80">
                                     {t('workspaces.deleteWarning')}
                                 </span>
                             </p>

@@ -46,7 +46,7 @@ export const ImageSettingsTab: React.FC<SettingsSharedProps> = ({ settings, hand
                         </div>
                     </div>
                 </div>
-                <p className="text-xs text-muted-foreground/60 leading-relaxed max-w-2xl font-medium px-1">
+                <p className="typo-caption text-muted-foreground/60 leading-relaxed max-w-2xl font-medium px-1">
                     {t('settings.images.description')}
                 </p>
             </div>
@@ -113,7 +113,7 @@ export const ImageSettingsTab: React.FC<SettingsSharedProps> = ({ settings, hand
                 </div>
 
                 {h.actionMessage && (
-                    <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-xs font-bold text-primary animate-in slide-in-from-top-2 duration-500">
+                    <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 typo-caption font-bold text-primary animate-in slide-in-from-top-2 duration-500">
                         {h.actionMessage}
                     </div>
                 )}

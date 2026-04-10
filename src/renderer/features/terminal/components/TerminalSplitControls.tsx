@@ -79,7 +79,7 @@ export function TerminalSplitControls({
                                     onClick={() => {
                                         applySplitPreset(preset);
                                     }}
-                                    className="flex-1 px-1.5 py-0.5 rounded-sm text-left text-xs hover:bg-accent/50 transition-colors flex items-center justify-between gap-2"
+                                    className="flex-1 px-1.5 py-0.5 rounded-sm text-left typo-caption hover:bg-accent/50 transition-colors flex items-center justify-between gap-2"
                                 >
                                     <span className="truncate">{preset.name}</span>
                                     <span className="tw-text-10 text-muted-foreground capitalize">

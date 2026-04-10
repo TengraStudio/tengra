@@ -3,7 +3,7 @@ import * as http from 'http';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { AuthService } from '@main/services/security/auth.service';
-import { JsonObject } from '@shared/types/common';
+import { JsonObject, JsonValue } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 /**
@@ -20,6 +20,19 @@ export class AuthAPIService extends BaseService {
     private readonly accountsCacheTtlMs = 1500;
     private accountsInFlight: Promise<string> | null = null;
     private readonly updateInFlightByAccount = new Map<string, Promise<void>>();
+    private static readonly SENSITIVE_METADATA_KEYS = new Set([
+        'access_token',
+        'accesstoken',
+        'refresh_token',
+        'refreshtoken',
+        'session_token',
+        'sessiontoken',
+        'id_token',
+        'idtoken',
+        'authorization',
+        'code',
+        'token',
+    ]);
 
     constructor(private authService: AuthService) {
         super('AuthAPIService');
@@ -331,7 +344,7 @@ export class AuthAPIService extends BaseService {
         isCodexProvider: boolean,
         email?: string
     ): JsonObject {
-        const baseMetadata: JsonObject = { ...(existingMetadata ?? {}) };
+        const baseMetadata = this.stripSensitiveMetadata(existingMetadata);
 
         if (isClaudeProvider || isCodexProvider) {
             // tengra-proxy owns Claude/Codex refresh; this bridge only exposes access tokens
@@ -345,6 +358,46 @@ export class AuthAPIService extends BaseService {
             auth_type: isClaudeProvider ? 'oauth' : (existingMetadata?.auth_type ?? 'oauth'),
             email: email,
         };
+    }
+
+    private stripSensitiveMetadata(metadata: JsonObject | undefined): JsonObject {
+        if (!metadata) {
+            return {};
+        }
+
+        const sanitized = this.stripSensitiveMetadataValue(metadata);
+        if (!sanitized || typeof sanitized !== 'object' || Array.isArray(sanitized)) {
+            return {};
+        }
+
+        return sanitized;
+    }
+
+    private stripSensitiveMetadataValue(value: JsonValue): JsonValue | undefined {
+        if (Array.isArray(value)) {
+            const sanitizedArray = value
+                .map(entry => this.stripSensitiveMetadataValue(entry))
+                .filter((entry): entry is JsonValue => entry !== undefined);
+            return sanitizedArray;
+        }
+
+        if (!value || typeof value !== 'object') {
+            return value;
+        }
+
+        const sanitizedEntries: Array<[string, JsonValue]> = [];
+        for (const [key, entry] of Object.entries(value)) {
+            if (AuthAPIService.SENSITIVE_METADATA_KEYS.has(key.toLowerCase())) {
+                continue;
+            }
+
+            const sanitizedEntry = this.stripSensitiveMetadataValue(entry as JsonValue);
+            if (sanitizedEntry !== undefined) {
+                sanitizedEntries.push([key, sanitizedEntry]);
+            }
+        }
+
+        return Object.fromEntries(sanitizedEntries);
     }
 
     private normalizeProviderName(provider: string): string {

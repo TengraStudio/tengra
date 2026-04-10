@@ -58,7 +58,7 @@ export function MarketplaceToolbar({
                 </div>
 
                 <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <div className="px-3 py-1.5 rounded-lg bg-primary/5 text-xs font-bold text-primary border border-primary/10">
+                    <div className="px-3 py-1.5 rounded-lg bg-primary/5 typo-caption font-bold text-primary border border-primary/10">
                         {totalCount.toLocaleString()} {t('marketplace.results')}
                     </div>
                     {hasActiveFilters && (
@@ -80,21 +80,21 @@ export function MarketplaceToolbar({
                             <button
                                 type="button"
                                 onClick={() => onQueryChange(prev => ({ ...prev, mcpView: 'all', page: 1 }))}
-                                className={`rounded-md px-4 py-1.5 text-xs font-bold transition-all ${mcpView === 'all' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:bg-muted/50'}`}
+                                className={`rounded-md px-4 py-1.5 typo-caption font-bold transition-all ${mcpView === 'all' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:bg-muted/50'}`}
                             >
                                 {t('marketplace.mcp.filters.all')}
                             </button>
                             <button
                                 type="button"
                                 onClick={() => onQueryChange(prev => ({ ...prev, mcpView: 'installed', page: 1 }))}
-                                className={`rounded-md px-4 py-1.5 text-xs font-bold transition-all ${mcpView === 'installed' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:bg-muted/50'}`}
+                                className={`rounded-md px-4 py-1.5 typo-caption font-bold transition-all ${mcpView === 'installed' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:bg-muted/50'}`}
                             >
                                 {t('modelExplorer.installed')}
                             </button>
                             <button
                                 type="button"
                                 onClick={() => onQueryChange(prev => ({ ...prev, mcpView: 'external', page: 1 }))}
-                                className={`rounded-md px-4 py-1.5 text-xs font-bold transition-all ${mcpView === 'external' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:bg-muted/50'}`}
+                                className={`rounded-md px-4 py-1.5 typo-caption font-bold transition-all ${mcpView === 'external' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:bg-muted/50'}`}
                             >
                                 {t('marketplace.mcp.filters.user')}
                             </button>
@@ -103,7 +103,7 @@ export function MarketplaceToolbar({
                             value={sort}
                             onValueChange={value => onQueryChange(prev => ({ ...prev, sort: value as MarketplaceSortValue, page: 1 }))}
                         >
-                            <SelectTrigger className="h-9 w-44 text-xs font-bold border-border/30 bg-background/50">
+                            <SelectTrigger className="h-9 w-44 typo-caption font-bold border-border/30 bg-background/50">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -119,7 +119,7 @@ export function MarketplaceToolbar({
                             value={filter}
                             onValueChange={value => onQueryChange(prev => ({ ...prev, filter: value as MarketplaceFilterValue, page: 1 }))}
                         >
-                            <SelectTrigger className="h-9 w-36 text-xs font-bold border-border/30 bg-background/50">
+                            <SelectTrigger className="h-9 w-36 typo-caption font-bold border-border/30 bg-background/50">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -140,7 +140,7 @@ export function MarketplaceToolbar({
                                     }));
                                 }}
                             >
-                                <SelectTrigger className="h-9 w-40 text-xs font-bold border-border/30 bg-background/50">
+                                <SelectTrigger className="h-9 w-40 typo-caption font-bold border-border/30 bg-background/50">
                                     <SelectValue placeholder={t('marketplace.author')} />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -163,7 +163,7 @@ export function MarketplaceToolbar({
                                     }));
                                 }}
                             >
-                                <SelectTrigger className="h-9 w-44 text-xs font-bold border-border/30 bg-background/50">
+                                <SelectTrigger className="h-9 w-44 typo-caption font-bold border-border/30 bg-background/50">
                                     <SelectValue placeholder={t('marketplace.category')} />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -179,7 +179,7 @@ export function MarketplaceToolbar({
                             value={sort as string}
                             onValueChange={value => onQueryChange(prev => ({ ...prev, sort: value as MarketplaceSortValue, page: 1 }))}
                         >
-                            <SelectTrigger className="h-9 w-44 text-xs font-bold border-border/30 bg-background/50">
+                            <SelectTrigger className="h-9 w-44 typo-caption font-bold border-border/30 bg-background/50">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -204,7 +204,7 @@ export function MarketplaceToolbar({
                                     value={modelFit ?? 'all'}
                                     onValueChange={value => onQueryChange(prev => ({ ...prev, modelFit: value as MarketplaceQueryState['modelFit'], page: 1 }))}
                                 >
-                                    <SelectTrigger className="h-9 w-44 text-xs font-bold border-border/30 bg-background/50">
+                                    <SelectTrigger className="h-9 w-44 typo-caption font-bold border-border/30 bg-background/50">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -219,7 +219,7 @@ export function MarketplaceToolbar({
                                     value={modelTarget ?? 'all'}
                                     onValueChange={value => onQueryChange(prev => ({ ...prev, modelTarget: value as MarketplaceQueryState['modelTarget'], page: 1 }))}
                                 >
-                                    <SelectTrigger className="h-9 w-36 text-xs font-bold border-border/30 bg-background/50">
+                                    <SelectTrigger className="h-9 w-36 typo-caption font-bold border-border/30 bg-background/50">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>

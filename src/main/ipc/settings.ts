@@ -13,6 +13,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import { z } from 'zod';
 
 const MAX_SECRET_LENGTH = 4096;
+const antigravityCreditUsageModeSchema = z.enum(['auto', 'ask-every-time']);
 const settingsCredentialSchema = z.object({
     apiKey: z.string().max(MAX_SECRET_LENGTH).optional(),
     token: z.string().max(MAX_SECRET_LENGTH).optional(),
@@ -55,6 +56,10 @@ const AppSettingsSchema = z.object({
     nvidia: settingsCredentialSchema.optional(),
     github: settingsCredentialSchema.optional(),
     copilot: settingsCredentialSchema.optional(),
+    antigravity: settingsCredentialSchema.extend({
+        connected: z.boolean().optional(),
+        creditUsageModeByAccount: z.record(z.string(), antigravityCreditUsageModeSchema).optional()
+    }).optional(),
 }).passthrough();
 
 /**

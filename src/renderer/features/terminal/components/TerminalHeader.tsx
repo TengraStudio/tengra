@@ -26,7 +26,7 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
                     key={tab.id}
                     onClick={() => setActiveTabId(tab.id)}
                     className={cn(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap border border-transparent",
+                        "flex items-center gap-2 px-3 py-1.5 rounded-md typo-caption font-medium transition-all whitespace-nowrap border border-transparent",
                         activeTabId === tab.id
                             ? "bg-accent text-foreground border-border shadow-sm"
                             : "text-muted-foreground hover:text-foreground hover:bg-accent/50"

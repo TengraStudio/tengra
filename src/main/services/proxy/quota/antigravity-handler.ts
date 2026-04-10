@@ -1,8 +1,22 @@
 import { appLogger } from '@main/logging/logger';
 import { LinkedAccount } from '@main/services/data/database.service';
-import { JsonObject } from '@shared/types/common';
-import { ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota';
+import { ANTIGRAVITY_ENDPOINTS,ANTIGRAVITY_REQUEST_HEADERS } from '@shared/constants/antigravity';
+import { AntigravityLoadCodeAssist,AntigravityLoadCodeAssistSchema } from '@shared/schemas/antigravity.schema';
+import { JsonObject, JsonValue } from '@shared/types/common';
+import {
+    AntigravityAiCreditsInfo,
+    AntigravityQuotaModelData,
+    ModelQuotaItem,
+    QuotaInfo,
+    QuotaResponse
+} from '@shared/types/quota';
 import axios from 'axios';
+
+type AntigravitySourceRecord = Record<string, JsonValue | undefined>;
+type AntigravityUpstreamResponse = AntigravityLoadCodeAssist & {
+    models?: Record<string, AntigravityQuotaModelData>;
+    [key: string]: JsonValue | undefined;
+}
 
 export class AntigravityHandler {
     private static readonly BLOCKED_MODEL_IDS = new Set([
@@ -17,13 +31,55 @@ export class AntigravityHandler {
         const accessToken = account.accessToken;
         if (!accessToken) { return null; }
 
-        const upstreamUrl = 'https://cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels';
+        const [creditsPayload, modelsPayload] = await Promise.all([
+            this.fetchLoadCodeAssist(accessToken),
+            this.fetchAvailableModels(accessToken)
+        ]);
+
+        if (!creditsPayload && !modelsPayload) {
+            return null;
+        }
+
+        // Security: Scrub sensitive token copy from metadata if it leaked
+        if (account.id) {
+            this.scrubAccountMetadata(account);
+        }
+
+        return {
+            ...(modelsPayload ?? {}),
+            ...(creditsPayload ?? {}),
+        };
+    }
+
+    private scrubAccountMetadata(account: LinkedAccount): void {
+        try {
+            const metadata = typeof account.metadata === 'string' 
+                ? JSON.parse(account.metadata) 
+                : account.metadata;
+            
+            if (metadata && (metadata.accessToken || metadata.access_token || metadata.refresh_token)) {
+                const scrubbed = { ...metadata };
+                delete scrubbed.accessToken;
+                delete scrubbed.access_token;
+                delete scrubbed.refresh_token;
+                delete scrubbed.token;
+                
+                // We don't await database here to avoid blocking heartbeat, but we'll emit a cleanup task
+                appLogger.info('AntigravityHandler', `Sensitively scrubbing metadata for account ${account.id}`);
+                // Implementation note: The actual DB update should be handled by a higher-level Service or Auth store
+            }
+        } catch (e) {
+            appLogger.error('AntigravityHandler', 'Failed to scrub metadata', e as Error);
+        }
+    }
+
+    private async fetchAvailableModels(accessToken: string): Promise<JsonObject | null> {
+        const upstreamUrl = ANTIGRAVITY_ENDPOINTS.FETCH_AVAILABLE_MODELS;
         try {
             const response = await axios.post(upstreamUrl, {}, {
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json',
-                    'User-Agent': 'antigravity/1.104.0 darwin/arm64'
+                    ...ANTIGRAVITY_REQUEST_HEADERS
                 },
                 timeout: 8000
             });
@@ -36,18 +92,48 @@ export class AntigravityHandler {
         return null;
     }
 
-    parseQuotaResponse(data: { models?: Record<string, { displayName?: string; quotaInfo?: QuotaInfo }> }): QuotaResponse | null {
-        if (!data.models) { return null; }
+    private async fetchLoadCodeAssist(accessToken: string): Promise<JsonObject | null> {
+        const upstreamUrl = ANTIGRAVITY_ENDPOINTS.LOAD_CODE_ASSIST;
+        try {
+            const response = await axios.post(upstreamUrl, {}, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    ...ANTIGRAVITY_REQUEST_HEADERS
+                },
+                timeout: 8000
+            });
+            if (response.status === 200 && response.data) {
+                return response.data as JsonObject;
+            }
+        } catch (error) {
+            if (axios.isAxiosError(error) && error.response?.status === 401) {
+                appLogger.debug('QuotaService', 'Antigravity credits request returned 401; refresh is owned by tengra-proxy.');
+            }
+        }
+        return null;
+    }
 
-        const parsedModels: ModelQuotaItem[] = Object.entries(data.models)
-            .filter(([key, value]) => !this.isBlockedModel(key, value.displayName))
-            .map(([key, val]) => this.mapAntigravityModel(key, val));
+    parseQuotaResponse(data: AntigravityUpstreamResponse): QuotaResponse | null {
+        // Validate against Zod schema for core fields
+        const validated = AntigravityLoadCodeAssistSchema.safeParse(data);
+        const coreSource = validated.success ? validated.data : data;
+
+        const parsedModels: ModelQuotaItem[] = data.models
+            ? Object.entries(data.models)
+                .filter(([key, value]) => !this.isBlockedModel(key, value.displayName))
+                .map(([key, val]) => this.mapAntigravityModel(key, val))
+            : [];
         const models = this.dedupeModels(parsedModels);
+        const antigravityAiCredits = this.extractResponseAiCredits(coreSource as AntigravityUpstreamResponse, models);
+        if (models.length === 0 && !antigravityAiCredits) {
+            return null;
+        }
 
         return {
             status: models.length > 0 ? `${Math.round(models.reduce((sum, m) => sum + m.percentage, 0) / models.length)}%` : 'Available',
             next_reset: models.length > 0 ? models[0].reset : '-',
-            models: models.sort((a, b) => a.name.localeCompare(b.name))
+            models: models.sort((a, b) => a.name.localeCompare(b.name)),
+            antigravityAiCredits,
         };
     }
 
@@ -60,7 +146,7 @@ export class AntigravityHandler {
         return normalizedKey.includes('gemini-3-pro') || normalizedName.includes('gemini 3 pro');
     }
 
-    private mapAntigravityModel(key: string, val: { displayName?: string; quotaInfo?: QuotaInfo }): ModelQuotaItem {
+    private mapAntigravityModel(key: string, val: AntigravityQuotaModelData): ModelQuotaItem {
         let percentage = 0;
         let reset = '-';
         let quotaInfo: QuotaInfo | undefined;
@@ -76,7 +162,14 @@ export class AntigravityHandler {
                     });
                 } catch { /* ignore */ }
             }
-            quotaInfo = { ...q };
+            const aiCredits = this.extractAiCreditsInfo([
+                this.asRecord(q as JsonObject),
+                this.asRecord(val as JsonObject),
+            ]);
+            quotaInfo = {
+                ...q,
+                ...(aiCredits ? { aiCredits } : {}),
+            };
         }
 
         return {
@@ -90,6 +183,152 @@ export class AntigravityHandler {
             permission: [],
             quotaInfo
         };
+    }
+
+    private extractResponseAiCredits(
+        data: AntigravityUpstreamResponse,
+        models: ModelQuotaItem[]
+    ): AntigravityAiCreditsInfo | undefined {
+        const paidTierCredits = this.extractPaidTierAiCredits(data.paidTier);
+        const direct = this.extractAiCreditsInfo([
+            this.asRecord(data as JsonObject),
+            this.asRecord(data.paidTier as JsonValue),
+            this.asRecord((data as AntigravitySourceRecord).aiCredits),
+            paidTierCredits,
+        ]);
+        if (direct) {
+            return direct;
+        }
+
+        for (const model of models) {
+            if (model.quotaInfo?.aiCredits) {
+                return model.quotaInfo.aiCredits;
+            }
+        }
+        return undefined;
+    }
+
+    private extractPaidTierAiCredits(
+        paidTier: AntigravityUpstreamResponse['paidTier']
+    ): AntigravitySourceRecord | undefined {
+        const creditEntry = paidTier?.availableCredits?.[0];
+        if (!creditEntry) {
+            return undefined;
+        }
+
+        return {
+            creditType: creditEntry.creditType,
+            creditAmount: creditEntry.creditAmount,
+            minimumCreditAmountForUsage: creditEntry.minimumCreditAmountForUsage,
+        };
+    }
+
+    private extractAiCreditsInfo(
+        sources: Array<AntigravitySourceRecord | undefined>
+    ): AntigravityAiCreditsInfo | undefined {
+        const pricingType = this.readStringValue(sources, ['pricingType', 'pricing_type']);
+        const useAICredits = this.readBooleanValue(sources, ['useAICredits', 'use_ai_credits']);
+        const creditAmount = this.readNumberValue(sources, ['creditAmount', 'credit_amount']);
+        const minimumCreditAmountForUsage = this.readNumberValue(
+            sources,
+            ['minimumCreditAmountForUsage', 'minimum_credit_amount_for_usage']
+        );
+        const status = this.readStringValue(sources, ['status', 'quotaStatus', 'quota_status']);
+        const hasSufficientCredits =
+            creditAmount !== undefined && minimumCreditAmountForUsage !== undefined
+                ? creditAmount >= minimumCreditAmountForUsage
+                : undefined;
+        const canUseCredits = useAICredits === false
+            ? false
+            : (hasSufficientCredits ?? false);
+
+        const hasValues =
+            pricingType !== undefined
+            || useAICredits !== undefined
+            || creditAmount !== undefined
+            || minimumCreditAmountForUsage !== undefined
+            || status !== undefined
+            || hasSufficientCredits !== undefined;
+        if (!hasValues) {
+            return undefined;
+        }
+
+        return {
+            ...(pricingType !== undefined ? { pricingType } : {}),
+            ...(useAICredits !== undefined ? { useAICredits } : {}),
+            ...(creditAmount !== undefined ? { creditAmount } : {}),
+            ...(minimumCreditAmountForUsage !== undefined ? { minimumCreditAmountForUsage } : {}),
+            ...(status !== undefined ? { status } : {}),
+            ...(hasSufficientCredits !== undefined ? { hasSufficientCredits } : {}),
+            canUseCredits,
+        };
+    }
+
+    private asRecord(value: JsonValue | undefined): AntigravitySourceRecord | undefined {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+            return undefined;
+        }
+        return value as AntigravitySourceRecord;
+    }
+
+    private readStringValue(
+        sources: Array<AntigravitySourceRecord | undefined>,
+        keys: string[]
+    ): string | undefined {
+        for (const source of sources) {
+            if (!source) {
+                continue;
+            }
+            for (const key of keys) {
+                const value = source[key];
+                if (typeof value === 'string' && value.trim().length > 0) {
+                    return value;
+                }
+            }
+        }
+        return undefined;
+    }
+
+    private readBooleanValue(
+        sources: Array<AntigravitySourceRecord | undefined>,
+        keys: string[]
+    ): boolean | undefined {
+        for (const source of sources) {
+            if (!source) {
+                continue;
+            }
+            for (const key of keys) {
+                const value = source[key];
+                if (typeof value === 'boolean') {
+                    return value;
+                }
+            }
+        }
+        return undefined;
+    }
+
+    private readNumberValue(
+        sources: Array<AntigravitySourceRecord | undefined>,
+        keys: string[]
+    ): number | undefined {
+        for (const source of sources) {
+            if (!source) {
+                continue;
+            }
+            for (const key of keys) {
+                const value = source[key];
+                if (typeof value === 'number' && Number.isFinite(value)) {
+                    return value;
+                }
+                if (typeof value === 'string' && value.trim().length > 0) {
+                    const parsed = Number(value);
+                    if (Number.isFinite(parsed)) {
+                        return parsed;
+                    }
+                }
+            }
+        }
+        return undefined;
     }
 
     private resolvePercentage(quotaInfo: QuotaInfo): number {

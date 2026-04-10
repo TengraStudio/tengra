@@ -44,7 +44,7 @@ export function TerminalCommandPanels({
             {isCommandHistoryOpen && (
                 <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 tw-w-420 tw-max-w-95vw">
                     <div className="flex items-center justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-1 text-xs font-medium text-foreground">
+                        <div className="flex items-center gap-1 typo-caption font-medium text-foreground">
                             <History className="w-3.5 h-3.5 text-muted-foreground" />
                             {t('terminal.commandHistory')}
                         </div>
@@ -72,16 +72,16 @@ export function TerminalCommandPanels({
                             setCommandHistoryQuery(event.target.value);
                         }}
                         placeholder={t('terminal.historySearchPlaceholder')}
-                        className="w-full h-7 px-2 rounded border border-border bg-background/60 text-xs outline-none mb-2"
+                        className="w-full h-7 px-2 rounded border border-border bg-background/60 typo-caption outline-none mb-2"
                     />
                     <div className="max-h-56 overflow-y-auto custom-scrollbar">
                         {isCommandHistoryLoading && (
-                            <div className="px-2 py-2 text-xs text-muted-foreground">
+                            <div className="px-2 py-2 typo-caption text-muted-foreground">
                                 {t('common.loading')}
                             </div>
                         )}
                         {!isCommandHistoryLoading && commandHistoryItems.length === 0 && (
-                            <div className="px-2 py-2 text-xs text-muted-foreground">
+                            <div className="px-2 py-2 typo-caption text-muted-foreground">
                                 {t('terminal.noHistory')}
                             </div>
                         )}
@@ -95,7 +95,7 @@ export function TerminalCommandPanels({
                                     className="w-full text-left px-2 py-1.5 rounded hover:bg-accent/40 transition-colors"
                                     title={entry.command}
                                 >
-                                    <div className="text-xs text-foreground truncate">
+                                    <div className="typo-caption text-foreground truncate">
                                         {entry.command}
                                     </div>
                                     <div className="tw-text-10 text-muted-foreground truncate">
@@ -110,7 +110,7 @@ export function TerminalCommandPanels({
             {isTaskRunnerOpen && (
                 <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 tw-w-420 tw-max-w-95vw">
                     <div className="flex items-center justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-1 text-xs font-medium text-foreground">
+                        <div className="flex items-center gap-1 typo-caption font-medium text-foreground">
                             <TerminalSquare className="w-3.5 h-3.5 text-muted-foreground" />
                             {t('terminal.taskRunner')}
                         </div>
@@ -128,16 +128,16 @@ export function TerminalCommandPanels({
                             setTaskRunnerQuery(event.target.value);
                         }}
                         placeholder={t('terminal.tasksSearchPlaceholder')}
-                        className="w-full h-7 px-2 rounded border border-border bg-background/60 text-xs outline-none mb-2"
+                        className="w-full h-7 px-2 rounded border border-border bg-background/60 typo-caption outline-none mb-2"
                     />
                     <div className="max-h-56 overflow-y-auto custom-scrollbar">
                         {isTaskRunnerLoading && (
-                            <div className="px-2 py-2 text-xs text-muted-foreground">
+                            <div className="px-2 py-2 typo-caption text-muted-foreground">
                                 {t('common.loading')}
                             </div>
                         )}
                         {!isTaskRunnerLoading && taskRunnerItems.length === 0 && (
-                            <div className="px-2 py-2 text-xs text-muted-foreground">
+                            <div className="px-2 py-2 typo-caption text-muted-foreground">
                                 {t('terminal.noTasksFound')}
                             </div>
                         )}
@@ -151,7 +151,7 @@ export function TerminalCommandPanels({
                                     className="w-full text-left px-2 py-1.5 rounded hover:bg-accent/40 transition-colors"
                                     title={item.command}
                                 >
-                                    <div className="text-xs text-foreground truncate">
+                                    <div className="typo-caption text-foreground truncate">
                                         {item.command}
                                     </div>
                                     <div className="tw-text-10 text-muted-foreground truncate">

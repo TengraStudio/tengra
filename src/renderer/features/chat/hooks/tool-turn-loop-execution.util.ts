@@ -10,6 +10,7 @@ import {
 } from '@shared/utils/ai-runtime.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
+import { compactToolCallsForDisplay } from '@/features/chat/components/message/tool-call-display.util';
 import { chatStream } from '@/lib/chat-stream';
 import { generateId } from '@/lib/utils';
 import { Chat, Message, ToolCall, ToolDefinition, ToolResult } from '@/types';
@@ -261,6 +262,7 @@ interface ExecuteToolTurnLoopParams {
     activeWorkspacePath: string | undefined;
     systemMode: 'thinking' | 'agent' | 'fast';
     intentClassification: AiIntentClassification;
+    confirmAntigravityCreditUsage?: (model: string, provider: string) => Promise<boolean>;
 }
 
 export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Promise<string> {
@@ -282,6 +284,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
         activeWorkspacePath,
         systemMode,
         intentClassification,
+        confirmAntigravityCreditUsage,
     } = params;
     const toolLoopBudget = getAiToolLoopBudget(intentClassification);
 
@@ -323,6 +326,18 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
             'useChatGenerator',
             `[${traceId}] iteration=${toolIterations + 1} start currentMessages=${currentMessages.length}, reasonings=${reasonings.length}, historyToolCalls=${toolCallsHistory.length}, toolsAllowed=${String(toolsAllowedThisTurn)}`
         );
+
+        if (confirmAntigravityCreditUsage) {
+            const approved = await confirmAntigravityCreditUsage(activeModel, selectedProvider);
+            if (!approved) {
+                appLogger.info(
+                    'useChatGenerator',
+                    `[${traceId}] credit usage declined before iteration=${toolIterations + 1}`
+                );
+                wasSafetyBreak = true;
+                break;
+            }
+        }
 
         const stream = chatStream({
             messages: currentMessages,
@@ -805,7 +820,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
                 }
                 nextMessages[messageIndex] = {
                     ...existingMessage,
-                    toolCalls: toolCallsHistory.length > 0 ? [...toolCallsHistory] : existingMessage.toolCalls,
+                    toolCalls: compactToolCallsForDisplay(toolCallsHistory) ?? existingMessage.toolCalls,
                     toolResults: storedToolResults,
                 };
                 return {

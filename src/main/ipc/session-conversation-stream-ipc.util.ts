@@ -9,6 +9,7 @@ const STREAM_CHUNK_BINARY_THRESHOLD_BYTES = 4_096;
 function safeSend(sender: WebContents, channel: string, ...args: RuntimeValue[]): boolean {
     try {
         if (sender.isDestroyed()) {
+            appLogger.warn('IPC', `[IPC:safeSend] sender destroyed before send channel=${channel}`);
             return false;
         }
         sender.send(channel, ...args);
@@ -43,16 +44,34 @@ export function safeSendConversationChunk(
     sender: WebContents,
     chunk: Record<string, RuntimeValue>
 ): boolean {
+    const chunkType = typeof chunk.type === 'string' ? chunk.type : 'content';
+    const contentLength = typeof chunk.content === 'string' ? chunk.content.length : 0;
+    const reasoningLength = typeof chunk.reasoning === 'string' ? chunk.reasoning.length : 0;
+    const streamId = typeof chunk.streamId === 'string' ? chunk.streamId : '';
+    const chatId = typeof chunk.chatId === 'string' ? chunk.chatId : '';
+
     if (shouldSendBinaryConversationChunk(chunk)) {
         const encodedChunk = encodeConversationChunk(chunk);
         if (encodedChunk) {
+            appLogger.debug(
+                'IPC',
+                `[IPC:conversation] send-binary chatId=${chatId} streamId=${streamId} type=${chunkType} contentLen=${contentLength} reasoningLen=${reasoningLength} bytes=${encodedChunk.byteLength}`
+            );
             return safeSend(
                 sender,
                 SESSION_CONVERSATION_CHANNELS.STREAM_CHUNK_BINARY,
                 encodedChunk
             );
         }
+        appLogger.warn(
+            'IPC',
+            `[IPC:conversation] binary-encode-failed; fallback-json chatId=${chatId} streamId=${streamId} type=${chunkType} contentLen=${contentLength} reasoningLen=${reasoningLength}`
+        );
     }
 
+    appLogger.debug(
+        'IPC',
+        `[IPC:conversation] send-json chatId=${chatId} streamId=${streamId} type=${chunkType} contentLen=${contentLength} reasoningLen=${reasoningLength}`
+    );
     return safeSend(sender, SESSION_CONVERSATION_CHANNELS.STREAM_CHUNK, chunk);
 }

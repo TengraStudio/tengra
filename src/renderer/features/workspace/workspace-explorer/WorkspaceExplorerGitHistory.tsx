@@ -31,7 +31,7 @@ export function WorkspaceExplorerGitHistory({
                         <History className="h-3 w-3" />
                         <span>{t('agent.history')}</span>
                     </div>
-                    <div className="mt-1 truncate text-xs font-semibold text-foreground">
+                    <div className="mt-1 truncate typo-caption font-semibold text-foreground">
                         {fileName}
                     </div>
                 </div>
@@ -47,7 +47,7 @@ export function WorkspaceExplorerGitHistory({
 
             <div className="mt-3 max-h-64 space-y-1.5 overflow-y-auto pr-1">
                 {loading ? (
-                    <div className="flex items-center gap-2 rounded-lg border border-border/40 bg-background/60 px-3 py-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 rounded-lg border border-border/40 bg-background/60 px-3 py-2 typo-caption text-muted-foreground">
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         <span>{t('common.loading')}</span>
                     </div>
@@ -63,7 +63,7 @@ export function WorkspaceExplorerGitHistory({
                                     {commit.relativeTime}
                                 </span>
                             </div>
-                            <div className={cn('mt-1 truncate text-xs font-medium text-foreground')}>
+                            <div className={cn('mt-1 truncate typo-caption font-medium text-foreground')}>
                                 {commit.message}
                             </div>
                             <div className="mt-1 truncate tw-text-11 text-muted-foreground">

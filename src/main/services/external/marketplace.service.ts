@@ -1,8 +1,12 @@
+import { exec } from 'child_process';
 import path from 'path';
+import { promisify } from 'util';
+const execAsync = promisify(exec);
 
 import { appLogger } from '@main/logging/logger';
 import { PerformanceService } from '@main/services/analysis/performance.service';
 import { BaseService } from '@main/services/base.service';
+import { ExtensionService } from '@main/services/extension/extension.service';
 import { HuggingFaceService } from '@main/services/llm/huggingface.service';
 import { LlamaService } from '@main/services/llm/llama.service';
 import {
@@ -10,11 +14,13 @@ import {
     ModelDownloadResult} from '@main/services/llm/model-downloader.service';
 import { OllamaService } from '@main/services/llm/ollama.service';
 import { LocaleService } from '@main/services/system/locale.service';
+import { SettingsService } from '@main/services/system/settings.service';
 import { SystemService } from '@main/services/system/system.service';
 import { localePackSchema } from '@shared/schemas/locale.schema';
 import { marketplaceRegistrySchema } from '@shared/schemas/marketplace.schema';
 import {
     InstallResult,
+    MarketplaceExtension,
     MarketplaceItem,
     MarketplaceMcp,
     MarketplaceModel,
@@ -35,6 +41,24 @@ interface RemoteModelSourceConfig {
 interface IndexedModel {
     item: MarketplaceModel;
     order: number;
+}
+
+type ExtensionPackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
+
+interface MarketplaceExtensionManifestMetadata {
+    main?: string;
+    id?: string;
+}
+
+interface MarketplaceExtensionPackageJson {
+    id?: string;
+    name?: string;
+    version?: string;
+    main?: string;
+    packageManager?: string;
+    scripts?: Record<string, string>;
+    tengra?: MarketplaceExtensionManifestMetadata;
+    manifest?: MarketplaceExtensionManifestMetadata;
 }
 
 const remoteModelRecordSchema = z.object({
@@ -78,6 +102,7 @@ export class MarketplaceService extends BaseService {
     private readonly USER_PROMPTS_PATH = path.join(app.getPath('userData'), 'runtime', 'prompts');
     private readonly USER_LOCALES_PATH = path.join(app.getPath('userData'), 'runtime', 'locales');
     private readonly USER_SKILLS_PATH = path.join(app.getPath('userData'), 'runtime', 'skills');
+    private readonly USER_EXTENSIONS_PATH = path.join(app.getPath('userData'), 'extensions');
 
     constructor(
         private readonly localeService?: LocaleService,
@@ -86,7 +111,9 @@ export class MarketplaceService extends BaseService {
         private readonly ollamaService?: OllamaService,
         private readonly systemService?: SystemService,
         private readonly performanceService?: PerformanceService,
-        private readonly llamaService?: LlamaService
+        private readonly llamaService?: LlamaService,
+        private readonly extensionService?: ExtensionService,
+        private readonly settingsService?: SettingsService
     ) {
         super('MarketplaceService');
     }
@@ -100,6 +127,7 @@ export class MarketplaceService extends BaseService {
         await fs.ensureDir(this.USER_PROMPTS_PATH);
         await fs.ensureDir(this.USER_LOCALES_PATH);
         await fs.ensureDir(this.USER_SKILLS_PATH);
+        await fs.ensureDir(this.USER_EXTENSIONS_PATH);
     }
 
     /**
@@ -192,6 +220,20 @@ export class MarketplaceService extends BaseService {
                     fileName = `${sanitizedId}.skill.json`;
                     payload = (await axios.get(item.downloadUrl)).data as RuntimeValue;
                     break;
+                case 'extension': {
+                    targetPath = this.USER_EXTENSIONS_PATH;
+                    const extensionItem = item as MarketplaceExtension;
+                    const extensionInstallPath = path.join(targetPath, sanitizedId);
+                    const repoUrl = extensionItem.repository ?? '';
+                    
+                    if (item.downloadUrl.endsWith('.git') || repoUrl.endsWith('.git')) {
+                        payload = { type: 'git', url: item.downloadUrl || repoUrl };
+                    } else {
+                        await fs.ensureDir(extensionInstallPath);
+                        payload = (await axios.get(item.downloadUrl)).data as RuntimeValue;
+                    }
+                    break;
+                }
                 default:
                     throw new Error(`Unsupported item type: ${item.itemType}`);
             }
@@ -224,6 +266,36 @@ export class MarketplaceService extends BaseService {
                     queuedDownloads: queued.queuedDownloads,
                     downloadIds: queued.downloadIds,
                 };
+            }
+
+            if (item.itemType === 'extension') {
+                const extensionPath = path.join(targetPath, sanitizedId);
+                const gitPayload = payload as { type?: string; url?: string };
+
+                if (gitPayload.type === 'git' && gitPayload.url) {
+                    appLogger.info('MarketplaceService', `Cloning extension from git: ${gitPayload.url}`);
+                    // Use a helper or direct exec to clone
+                    await this.cloneExtensionRepository(gitPayload.url, extensionPath);
+                } else {
+                    const manifestPath = path.join(extensionPath, 'package.json');
+                    await fs.writeJson(manifestPath, payload, { spaces: 2 });
+                }
+
+                await this.ensureExtensionEntrypoint(extensionPath);
+                
+                if (this.extensionService) {
+                    const installResult = await this.extensionService.installExtension(extensionPath);
+                    if (!installResult.success || !installResult.extensionId) {
+                        throw new Error(installResult.error ?? `Failed to install extension: ${item.id}`);
+                    }
+                    const activationResult = await this.extensionService.activateExtension(installResult.extensionId);
+                    if (!activationResult.success) {
+                        throw new Error(activationResult.error ?? `Failed to activate extension: ${installResult.extensionId}`);
+                    }
+                }
+
+                appLogger.info('MarketplaceService', `${item.itemType} installed successfully at: ${extensionPath}`);
+                return { success: true, path: extensionPath };
             }
 
             if (item.itemType === 'mcp') {
@@ -1042,6 +1114,7 @@ export class MarketplaceService extends BaseService {
             prompts: this.annotateInstalledItems(registry.prompts ?? [], installedVersions.prompt),
             languages: this.annotateInstalledItems(registry.languages ?? [], installedVersions.language),
             skills: this.annotateInstalledItems(registry.skills ?? [], installedVersions.skill),
+            extensions: this.annotateInstalledItems(registry.extensions ?? [], installedVersions.extension),
         };
     }
 
@@ -1049,11 +1122,15 @@ export class MarketplaceService extends BaseService {
         items: T[],
         installedById: Map<string, string>
     ): T[] {
-        return items.map(item => ({
-            ...item,
-            installed: installedById.has(item.id),
-            installedVersion: installedById.get(item.id),
-        }));
+        return items.map(item => {
+            const installedVersion =
+                installedById.get(item.id) ?? installedById.get(item.id.toLowerCase());
+            return {
+                ...item,
+                installed: typeof installedVersion === 'string',
+                installedVersion,
+            };
+        });
     }
 
     private async readInstalledVersions(): Promise<Record<MarketplaceItem['itemType'], Map<string, string>>> {
@@ -1063,13 +1140,75 @@ export class MarketplaceService extends BaseService {
 
         return {
             theme: await this.readVersionsFromDirectory(this.USER_THEMES_PATH, '.theme.json'),
-            mcp: await this.readVersionsFromDirectory(this.USER_MCP_PATH, '.mcp.json'),
+            mcp: this.readInstalledMcpVersionsFromSettings(),
             persona: await this.readVersionsFromDirectory(this.USER_PERSONAS_PATH, '.persona.json'),
             model: await this.readVersionsFromDirectory(this.USER_MODELS_PATH, '.model.json'),
             prompt: await this.readVersionsFromDirectory(this.USER_PROMPTS_PATH, '.prompt.json'),
             language: localeVersions,
             skill: await this.readVersionsFromDirectory(this.USER_SKILLS_PATH, '.skill.json'),
+            extension: await this.readInstalledExtensionVersions(),
         };
+    }
+
+    private readInstalledMcpVersionsFromSettings(): Map<string, string> {
+        const versions = new Map<string, string>();
+        const userServers = this.settingsService?.getSettings().mcpUserServers ?? [];
+
+        for (const server of userServers) {
+            const serverVersion =
+                typeof server.version === 'string' && server.version.trim().length > 0
+                    ? server.version.trim()
+                    : '0.0.0';
+            const candidateIds = [server.id, server.name]
+                .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+                .map(value => value.trim());
+
+            for (const candidateId of candidateIds) {
+                versions.set(candidateId, serverVersion);
+                versions.set(candidateId.toLowerCase(), serverVersion);
+            }
+        }
+
+        return versions;
+    }
+
+    private async readInstalledExtensionVersions(): Promise<Map<string, string>> {
+        const versions = new Map<string, string>();
+        const installedDirectories = await fs.readdir(this.USER_EXTENSIONS_PATH);
+
+        for (const directoryName of installedDirectories) {
+            const packageJsonPath = path.join(this.USER_EXTENSIONS_PATH, directoryName, 'package.json');
+            if (!(await fs.pathExists(packageJsonPath))) {
+                continue;
+            }
+
+            try {
+                const packageJson = await fs.readJson(packageJsonPath) as MarketplaceExtensionPackageJson;
+                const version = typeof packageJson.version === 'string' && packageJson.version.trim().length > 0
+                    ? packageJson.version.trim()
+                    : '0.0.0';
+                const candidateIds = [
+                    packageJson.tengra?.id,
+                    packageJson.manifest?.id,
+                    packageJson.id,
+                    packageJson.name,
+                    directoryName,
+                ]
+                    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+                    .map(value => value.trim());
+
+                for (const candidateId of candidateIds) {
+                    versions.set(candidateId, version);
+                    versions.set(candidateId.toLowerCase(), version);
+                }
+            } catch (error) {
+                appLogger.warn('MarketplaceService', `Failed to inspect installed extension package: ${packageJsonPath}`, {
+                    error: error instanceof Error ? error.message : String(error),
+                });
+            }
+        }
+
+        return versions;
     }
 
     private async readLocaleVersions(): Promise<Map<string, string>> {
@@ -1107,5 +1246,254 @@ export class MarketplaceService extends BaseService {
             }
         }
         return versions;
+    }
+
+    private async ensureExtensionEntrypoint(extensionPath: string): Promise<void> {
+        const packageJsonPath = path.join(extensionPath, 'package.json');
+        if (!(await fs.pathExists(packageJsonPath))) {
+            throw new Error(`Extension package.json not found: ${packageJsonPath}`);
+        }
+
+        const packageJson = await fs.readJson(packageJsonPath) as MarketplaceExtensionPackageJson;
+        const entrypointRelativePath = this.resolveExtensionEntrypointRelativePath(packageJson);
+        if (!entrypointRelativePath) {
+            throw new Error('Extension main entrypoint is missing from package metadata.');
+        }
+
+        const entrypointPath = path.join(extensionPath, entrypointRelativePath);
+        if (await fs.pathExists(entrypointPath)) {
+            return;
+        }
+
+        appLogger.warn('MarketplaceService', `Extension entrypoint missing (${entrypointRelativePath}), attempting local build.`, {
+            extensionPath,
+        });
+        const buildScript = packageJson.scripts?.build;
+        if (typeof buildScript !== 'string' || buildScript.trim().length === 0) {
+            throw new Error(`Extension entrypoint "${entrypointRelativePath}" is missing and no build script is defined.`);
+        }
+
+        const packageManager = await this.resolveExtensionPackageManager(extensionPath, packageJson);
+        await this.ensureExtensionDependencies(extensionPath, packageManager);
+        try {
+            await this.runExtensionShellCommand(this.getExtensionBuildCommand(packageManager), extensionPath);
+        } catch (error) {
+            if (await fs.pathExists(entrypointPath)) {
+                appLogger.warn('MarketplaceService', 'Extension build reported errors but entrypoint was generated; continuing install.', {
+                    extensionPath,
+                    entrypointRelativePath,
+                });
+                return;
+            }
+            const fallbackCompiled = await this.tryCompileExtensionEntrypointFallback(
+                extensionPath,
+                entrypointRelativePath
+            );
+            if (fallbackCompiled) {
+                appLogger.warn('MarketplaceService', 'Extension entrypoint generated via fallback compile despite build failure.', {
+                    extensionPath,
+                    entrypointRelativePath,
+                });
+                return;
+            }
+            throw this.createExtensionBuildFailureError(error as Error);
+        }
+
+        if (!(await fs.pathExists(entrypointPath))) {
+            throw new Error(`Extension build finished but entrypoint is still missing: ${entrypointRelativePath}`);
+        }
+    }
+
+    private resolveExtensionEntrypointRelativePath(packageJson: MarketplaceExtensionPackageJson): string | null {
+        const candidate =
+            packageJson.tengra?.main
+            ?? packageJson.manifest?.main
+            ?? packageJson.main;
+        if (typeof candidate !== 'string') {
+            return null;
+        }
+        const normalizedCandidate = candidate.trim();
+        return normalizedCandidate.length > 0 ? normalizedCandidate : null;
+    }
+
+    private async tryCompileExtensionEntrypointFallback(
+        extensionPath: string,
+        entrypointRelativePath: string
+    ): Promise<boolean> {
+        const sourceEntrypointPath = await this.resolveExtensionSourceEntrypointPath(
+            extensionPath,
+            entrypointRelativePath
+        );
+        if (!sourceEntrypointPath) {
+            return false;
+        }
+
+        const relativeSourceEntrypointPath = path.relative(extensionPath, sourceEntrypointPath);
+        const entrypointDirectory = path.dirname(entrypointRelativePath);
+        const normalizedOutDir = entrypointDirectory === '.' ? 'dist' : entrypointDirectory;
+        try {
+            await this.runExtensionShellCommand(
+                `npx tsc "${relativeSourceEntrypointPath}" --outDir "${normalizedOutDir}" --module CommonJS --target ES2020 --esModuleInterop --skipLibCheck --noEmitOnError false`,
+                extensionPath
+            );
+        } catch {
+            // tsc can still emit output with diagnostics when noEmitOnError=false
+        }
+
+        return fs.pathExists(path.join(extensionPath, entrypointRelativePath));
+    }
+
+    private async resolveExtensionSourceEntrypointPath(
+        extensionPath: string,
+        entrypointRelativePath: string
+    ): Promise<string | null> {
+        const normalizedEntrypoint = entrypointRelativePath.replace(/\\/g, '/');
+        const candidateRelativePaths = new Set<string>([
+            normalizedEntrypoint.replace(/\.js$/i, '.ts'),
+            normalizedEntrypoint.replace(/\.js$/i, '.tsx'),
+        ]);
+        if (normalizedEntrypoint.startsWith('dist/')) {
+            const sourceRelative = `src/${normalizedEntrypoint.slice('dist/'.length)}`;
+            candidateRelativePaths.add(sourceRelative.replace(/\.js$/i, '.ts'));
+            candidateRelativePaths.add(sourceRelative.replace(/\.js$/i, '.tsx'));
+        }
+
+        for (const candidateRelativePath of candidateRelativePaths) {
+            const candidateAbsolutePath = path.join(extensionPath, candidateRelativePath);
+            if (await fs.pathExists(candidateAbsolutePath)) {
+                return candidateAbsolutePath;
+            }
+        }
+        return null;
+    }
+
+    private async ensureExtensionDependencies(
+        extensionPath: string,
+        packageManager: ExtensionPackageManager
+    ): Promise<void> {
+        const nodeModulesPath = path.join(extensionPath, 'node_modules');
+        if (await fs.pathExists(nodeModulesPath)) {
+            return;
+        }
+        await this.runExtensionShellCommand(this.getExtensionInstallCommand(packageManager), extensionPath);
+    }
+
+    private async resolveExtensionPackageManager(
+        extensionPath: string,
+        packageJson: MarketplaceExtensionPackageJson
+    ): Promise<ExtensionPackageManager> {
+        const packageManagerField =
+            typeof packageJson.packageManager === 'string'
+                ? packageJson.packageManager.toLowerCase()
+                : '';
+
+        if (packageManagerField.startsWith('pnpm@')) {
+            return 'pnpm';
+        }
+        if (packageManagerField.startsWith('yarn@')) {
+            return 'yarn';
+        }
+        if (packageManagerField.startsWith('bun@')) {
+            return 'bun';
+        }
+        if (await fs.pathExists(path.join(extensionPath, 'pnpm-lock.yaml'))) {
+            return 'pnpm';
+        }
+        if (await fs.pathExists(path.join(extensionPath, 'yarn.lock'))) {
+            return 'yarn';
+        }
+        if (await fs.pathExists(path.join(extensionPath, 'bun.lockb'))) {
+            return 'bun';
+        }
+        return 'npm';
+    }
+
+    private getExtensionInstallCommand(packageManager: ExtensionPackageManager): string {
+        switch (packageManager) {
+            case 'pnpm':
+                return 'pnpm install';
+            case 'yarn':
+                return 'yarn install';
+            case 'bun':
+                return 'bun install';
+            default:
+                return 'npm install --no-audit --no-fund';
+        }
+    }
+
+    private getExtensionBuildCommand(packageManager: ExtensionPackageManager): string {
+        switch (packageManager) {
+            case 'pnpm':
+                return 'pnpm run build';
+            case 'yarn':
+                return 'yarn run build';
+            case 'bun':
+                return 'bun run build';
+            default:
+                return 'npm run build';
+        }
+    }
+
+    private async runExtensionShellCommand(command: string, workingDirectory: string): Promise<void> {
+        appLogger.info('MarketplaceService', `Running extension command: ${command}`, {
+            workingDirectory,
+        });
+        try {
+            await execAsync(command, { cwd: workingDirectory, windowsHide: true });
+        } catch (error) {
+            const commandError = error as Error & { stdout?: string; stderr?: string };
+            const detailedMessage = commandError.stderr?.trim()
+                || commandError.stdout?.trim()
+                || commandError.message;
+            throw new Error(`Extension command failed (${command}): ${detailedMessage}`);
+        }
+    }
+
+    private createExtensionBuildFailureError(error: Error): Error {
+        const originalMessage = error.message;
+        const hasModuleResolutionFailure =
+            originalMessage.includes("Cannot find module '@main/")
+            || originalMessage.includes("Cannot find module '@shared/")
+            || originalMessage.includes("Cannot find module 'react'")
+            || originalMessage.includes("Cannot find module 'lucide-react'");
+        const hasJsxConfigurationFailure =
+            originalMessage.includes("Cannot use JSX unless the '--jsx' flag is provided");
+
+        if (hasModuleResolutionFailure || hasJsxConfigurationFailure) {
+            return new Error(
+                'Extension build failed in an isolated marketplace environment. '
+                + 'This extension currently depends on Tengra internal aliases (@main/@shared), '
+                + 'or missing self-declared frontend dependencies/JSX config. '
+                + 'Publish prebuilt dist assets or provide a self-contained build setup in the extension repository. '
+                + `Original error: ${originalMessage}`
+            );
+        }
+
+        return error;
+    }
+
+    private async cloneExtensionRepository(url: string, targetPath: string): Promise<void> {
+        try {
+            if (await fs.pathExists(targetPath)) {
+                const gitDirectoryPath = path.join(targetPath, '.git');
+                if (await fs.pathExists(gitDirectoryPath)) {
+                    appLogger.info('MarketplaceService', `Extension directory ${targetPath} already exists, attempting pull...`);
+                    try {
+                        await execAsync('git pull --ff-only', { cwd: targetPath });
+                        return;
+                    } catch (pullError) {
+                        appLogger.warn('MarketplaceService', `Git pull failed in ${targetPath}, reinstalling clean copy.`, pullError as Error);
+                    }
+                } else {
+                    appLogger.warn('MarketplaceService', `Extension directory ${targetPath} is not a git repository, reinstalling clean copy.`);
+                }
+                await fs.remove(targetPath);
+            }
+            appLogger.info('MarketplaceService', `Cloning extension from ${url} into ${targetPath}`);
+            await execAsync(`git clone "${url}" "${targetPath}"`);
+        } catch (error) {
+            appLogger.error('MarketplaceService', `Failed to clone extension repository: ${url}`, error as Error);
+            throw new Error(`Git operations failed for extension: ${(error as Error).message}`);
+        }
     }
 }

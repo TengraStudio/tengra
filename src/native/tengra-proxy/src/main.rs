@@ -226,7 +226,7 @@ async fn run_antigravity_auth_flow(account_id: &str) -> anyhow::Result<()> {
     eprintln!("[LOG] --- Tengra Antigravity Auth Bridge ---");
 
     // 1. Client oluştur
-    let client = auth::antigravity::client::AntigravityClient::new().await?;
+    let client = auth::antigravity::client::AntigravityClient::new(None).await?;
     let state = generate_oauth_state();
     let auth_url = client.generate_auth_url(&state);
 

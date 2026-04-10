@@ -1,6 +1,7 @@
 import type { MarketplaceModelPerformanceEstimate, MarketplaceModelTag } from '@shared/types/marketplace';
+import { compareVersions } from '@shared/utils/extension.util';
 import DOMPurify from 'dompurify';
-import { Download, Heart, Package, X } from 'lucide-react';
+import { Download, Heart, Package, TriangleAlert, X } from 'lucide-react';
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -12,6 +13,7 @@ export type MarketplaceInfoItem = {
     author: string;
     version: string;
     installed: boolean;
+    installedVersion?: string;
     itemType: string;
     provider?: string;
     sourceLabel?: string;
@@ -74,6 +76,11 @@ export function MarketplaceInfoPanel({
     }
 
     const sanitizedReadme = item.readme ? DOMPurify.sanitize(item.readme) : '';
+    const hasUpdate = Boolean(
+        item.installed
+        && item.installedVersion
+        && compareVersions(item.version, item.installedVersion) > 0
+    );
     const totalSubmodels = item.submodels?.length || 0;
     const totalPages = Math.ceil(totalSubmodels / pageSize);
     const paginatedSubmodels = item.submodels?.slice((currentPage - 1) * pageSize, currentPage * pageSize) || [];
@@ -93,8 +100,15 @@ export function MarketplaceInfoPanel({
             <div className="space-y-4">
                 <div>
                     <h3 className="text-base font-bold text-foreground leading-tight">{item.name}</h3>
-                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground/90 font-medium">{item.description}</p>
+                    <p className="mt-2 typo-caption leading-relaxed text-muted-foreground/90 font-medium">{item.description}</p>
                 </div>
+
+                {hasUpdate && item.installedVersion && (
+                    <div className="inline-flex items-center gap-2 rounded-lg border border-warning/35 bg-warning/10 px-3 py-1.5 typo-caption font-semibold text-warning">
+                        <TriangleAlert className="h-3.5 w-3.5" />
+                        {`${t('common.update')}: v${item.installedVersion} -> v${item.version}`}
+                    </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4 pt-2">
                     <div className="space-y-2">
@@ -152,11 +166,11 @@ export function MarketplaceInfoPanel({
                             </span>
                         </div>
                         {item.performance.selectedVariant && (
-                            <div className="rounded-xl bg-background/70 px-3 py-2 text-xs font-bold text-foreground">
+                            <div className="rounded-xl bg-background/70 px-3 py-2 typo-caption font-bold text-foreground">
                                 {item.performance.selectedVariant.name}
                             </div>
                         )}
-                        <div className="grid grid-cols-2 gap-3 text-xs">
+                        <div className="grid grid-cols-2 gap-3 typo-caption">
                             <div className="rounded-xl bg-background/70 px-3 py-2">
                                 <div className="typo-body uppercase text-muted-foreground/50 font-bold">{t('marketplace.tokensPerSecond')}</div>
                                 <div className="font-bold text-foreground">{item.performance.estimatedTokensPerSecond.toFixed(1)}</div>
@@ -198,7 +212,7 @@ export function MarketplaceInfoPanel({
                 )}
 
                 {item.readme && (
-                    <div className="mt-6 border-t border-border/20 pt-6 prose prose-invert prose-sm max-w-full overflow-hidden text-xs leading-relaxed">
+                    <div className="mt-6 border-t border-border/20 pt-6 prose prose-invert prose-sm max-w-full overflow-hidden typo-caption leading-relaxed">
                         <p className="mb-4 font-bold uppercase tracking-widest text-muted-foreground/30 typo-body">{t('common.info')} (README)</p>
                         <div className="text-muted-foreground/90 readme-content bg-muted/5 p-4 rounded-xl border border-border/5">
                             {((item.provider === 'ollama' || item.provider === 'huggingface') && (item.readme.includes('<h2') || item.readme.includes('<li>') || item.readme.includes('<p>') || item.readme.includes('<h1>'))) ? (
@@ -211,7 +225,7 @@ export function MarketplaceInfoPanel({
                                     remarkPlugins={[remarkGfm]}
                                     components={{
                                         h1: ({ ...props }) => <h1 className="text-sm font-bold mt-4 mb-2 first:mt-0" {...props} />,
-                                        h2: ({ ...props }) => <h2 className="text-xs font-bold mt-4 mb-2 first:mt-0" {...props} />,
+                                        h2: ({ ...props }) => <h2 className="typo-caption font-bold mt-4 mb-2 first:mt-0" {...props} />,
                                         p: ({ ...props }) => <p className="mb-3 last:mb-0" {...props} />,
                                         ul: ({ ...props }) => <ul className="list-disc ml-4 mb-3" {...props} />,
                                         li: ({ ...props }) => <li className="mb-1" {...props} />,
@@ -227,7 +241,7 @@ export function MarketplaceInfoPanel({
                 )}
                 {item.isReadmeLoading && !item.readme && (
                     <div className="mt-6 border-t border-border/20 pt-6">
-                        <p className="text-xs text-muted-foreground/70 font-medium">{t('marketplace.syncing')}</p>
+                        <p className="typo-caption text-muted-foreground/70 font-medium">{t('marketplace.syncing')}</p>
                     </div>
                 )}
 

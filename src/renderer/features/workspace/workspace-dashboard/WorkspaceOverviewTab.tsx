@@ -111,11 +111,11 @@ export const WorkspaceOverviewTab = ({
                     </div>
                     <div className="flex flex-wrap gap-2">
                         {analysis.frameworks.map((fw: string) => (
-                            <span key={fw} className="px-3 py-1 bg-muted/30 border border-border rounded-full text-xs text-primary font-medium">
+                            <span key={fw} className="px-3 py-1 bg-muted/30 border border-border rounded-full typo-caption text-primary font-medium">
                                 {fw}
                             </span>
                         ))}
-                        {analysis.frameworks.length === 0 && <span className="text-xs text-muted-foreground">{t('workspaceDashboard.noFrameworks')}</span>}
+                        {analysis.frameworks.length === 0 && <span className="typo-caption text-muted-foreground">{t('workspaceDashboard.noFrameworks')}</span>}
                     </div>
                 </div>
 
@@ -159,7 +159,7 @@ export const WorkspaceOverviewTab = ({
                         {analysis.todos.map((todo: string, i: number) => (
                             <div key={i} className="flex items-start gap-3 p-3 bg-muted/10 rounded-xl border border-border/50 hover:bg-muted/20 transition-colors">
                                 <div className="w-4 h-4 rounded border border-border/50 mt-0.5 flex-shrink-0" />
-                                <span className="text-xs text-foreground/80 line-clamp-2">{todo}</span>
+                                <span className="typo-caption text-foreground/80 line-clamp-2">{todo}</span>
                             </div>
                         ))}
                     </div>

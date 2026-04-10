@@ -4,7 +4,6 @@ import React, { useEffect,useRef, useState } from 'react';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-import './floating-action-button.css';
 
 interface FabAction {
     icon: React.ReactNode

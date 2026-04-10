@@ -25,7 +25,7 @@ export const WorkspaceSection: React.FC<WorkspaceSectionProps> = ({
                     <FolderTree className="w-4 h-4 text-primary" />
                     {t('workspaces.mounts')}
                 </h3>
-                <p className="text-xs text-muted-foreground">{t('workspaces.mountsDesc')}</p>
+                <p className="typo-caption text-muted-foreground">{t('workspaces.mountsDesc')}</p>
             </div>
             <button
                 onClick={onAddMount}
@@ -48,7 +48,7 @@ export const WorkspaceSection: React.FC<WorkspaceSectionProps> = ({
                         </div>
                         <div>
                             <div className="text-sm font-semibold text-foreground">{mount.name}</div>
-                            <div className="text-xs text-muted-foreground font-mono truncate max-w-md">{mount.rootPath}</div>
+                            <div className="typo-caption text-muted-foreground font-mono truncate max-w-md">{mount.rootPath}</div>
                         </div>
                     </div>
                     <button
@@ -84,7 +84,7 @@ export const WorkspaceSection: React.FC<WorkspaceSectionProps> = ({
                     <div className="text-sm font-semibold text-foreground">
                         {t('workspaces.deleteWorkspace')}
                     </div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="typo-caption text-muted-foreground">
                         {t('workspaces.deleteWarning').trim()}
                     </div>
                 </div>

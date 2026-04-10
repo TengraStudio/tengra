@@ -36,7 +36,7 @@ const MountTypeToggle: React.FC<MountTypeToggleProps> = ({ type, setMountForm, t
         <button
             onClick={() => setMountForm(prev => ({ ...prev, type: 'local' }))}
             className={cn(
-                'py-2 text-xs font-medium rounded-md transition-all',
+                'py-2 typo-caption font-medium rounded-md transition-all',
                 type === 'local'
                     ? 'bg-muted/60 text-foreground'
                     : 'text-muted-foreground hover:text-muted-foreground'
@@ -47,7 +47,7 @@ const MountTypeToggle: React.FC<MountTypeToggleProps> = ({ type, setMountForm, t
         <button
             onClick={() => setMountForm(prev => ({ ...prev, type: 'ssh' }))}
             className={cn(
-                'py-2 text-xs font-medium rounded-md transition-all',
+                'py-2 typo-caption font-medium rounded-md transition-all',
                 type === 'ssh'
                     ? 'bg-muted/60 text-foreground'
                     : 'text-muted-foreground hover:text-muted-foreground'
@@ -72,7 +72,7 @@ const LocalMountForm: React.FC<LocalMountFormProps> = ({
     t,
 }) => (
     <div className="space-y-2">
-        <label className="text-xs text-muted-foreground font-medium">
+        <label className="typo-caption text-muted-foreground font-medium">
             {t('workspaceModals.folderPath')}
         </label>
         <div className="flex gap-2">
@@ -85,7 +85,7 @@ const LocalMountForm: React.FC<LocalMountFormProps> = ({
             />
             <button
                 onClick={pickLocalFolder}
-                className="px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/60 text-foreground text-xs font-medium"
+                className="px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/60 text-foreground typo-caption font-medium"
             >
                 {t('workspaceModals.pick')}
             </button>
@@ -149,7 +149,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
             <SavedProfileSelector onSelect={onSelectProfile} t={t} />
 
             <div className="space-y-1">
-                <label className="text-xs text-muted-foreground font-medium">{t('workspaceModals.mountName')}</label>
+                <label className="typo-caption text-muted-foreground font-medium">{t('workspaceModals.mountName')}</label>
                 <input
                     type="text"
                     value={mountForm.name || ''}
@@ -161,7 +161,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
 
             <div className="grid grid-cols-3 gap-3">
                 <div className="col-span-2 space-y-1">
-                    <label className="text-xs text-muted-foreground font-medium">{t('workspaceModals.host')}</label>
+                    <label className="typo-caption text-muted-foreground font-medium">{t('workspaceModals.host')}</label>
                     <input
                         type="text"
                         value={mountForm.host || ''}
@@ -170,7 +170,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                     />
                 </div>
                 <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground font-medium">{t('workspaceModals.port')}</label>
+                    <label className="typo-caption text-muted-foreground font-medium">{t('workspaceModals.port')}</label>
                     <input
                         type="text"
                         value={mountForm.port || ''}
@@ -181,7 +181,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
             </div>
 
             <div className="space-y-1">
-                <label className="text-xs text-muted-foreground font-medium">{t('workspaceModals.username')}</label>
+                <label className="typo-caption text-muted-foreground font-medium">{t('workspaceModals.username')}</label>
                 <input
                     type="text"
                     value={mountForm.username || ''}
@@ -191,7 +191,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
             </div>
 
             <div className="space-y-2">
-                <label className="text-xs text-muted-foreground font-medium">{t('workspaceModals.authType')}</label>
+                <label className="typo-caption text-muted-foreground font-medium">{t('workspaceModals.authType')}</label>
                 <div className="flex gap-2">
                     <button
                         onClick={() => setMountForm(prev => ({ ...prev, authType: 'password' }))}
@@ -220,7 +220,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
 
             {mountForm.authType === 'password' ? (
                 <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground font-medium">{t('workspaceModals.password')}</label>
+                    <label className="typo-caption text-muted-foreground font-medium">{t('workspaceModals.password')}</label>
                     <input
                         type="password"
                         value={mountForm.password || ''}
@@ -231,7 +231,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
             ) : (
                 <div className="space-y-3">
                     <div className="space-y-1">
-                        <label className="text-xs text-muted-foreground font-medium">{t('workspaceModals.privateKey')}</label>
+                        <label className="typo-caption text-muted-foreground font-medium">{t('workspaceModals.privateKey')}</label>
                         <div className="flex gap-2">
                             <input
                                 type="text"
@@ -242,14 +242,14 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                             />
                             <button
                                 onClick={() => { void pickKeyFile(); }}
-                                className="px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/60 text-foreground text-xs font-medium"
+                                className="px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/60 text-foreground typo-caption font-medium"
                             >
                                 {t('workspaceModals.pick')}
                             </button>
                         </div>
                     </div>
                     <div className="space-y-1">
-                        <label className="text-xs text-muted-foreground font-medium">{t('workspaceModals.passphrase')}</label>
+                        <label className="typo-caption text-muted-foreground font-medium">{t('workspaceModals.passphrase')}</label>
                         <input
                             type="password"
                             value={mountForm.passphrase || ''}
@@ -269,7 +269,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                     onChange={e => setMountForm(prev => ({ ...prev, saveProfile: e.target.checked }))}
                     className="w-3.5 h-3.5 rounded border-border/40 bg-background/70 text-success focus:ring-success/50"
                 />
-                <label htmlFor="saveProfile" className="text-xs text-muted-foreground cursor-pointer select-none">
+                <label htmlFor="saveProfile" className="typo-caption text-muted-foreground cursor-pointer select-none">
                     {t('workspaceModals.saveAsProfile')}
                 </label>
             </div>
@@ -279,7 +279,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                     onClick={() => { void handleTest(); }}
                     disabled={testing || !mountForm.host || !mountForm.username}
                     className={cn(
-                        "w-full py-2 rounded-lg text-xs font-semibold transition-all border",
+                        "w-full py-2 rounded-lg typo-caption font-semibold transition-all border",
                         testing
                             ? "bg-muted/40 border-border/40 text-muted-foreground animate-pulse"
                             : testResult?.success
@@ -383,13 +383,13 @@ const MountModal: React.FC<MountModalProps> = ({
                     <div className="flex justify-end gap-2 mt-4">
                         <button
                             onClick={() => { setShowMountModal(false); }}
-                            className="px-4 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                            className="px-4 py-2 rounded-lg typo-caption font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40"
                         >
                             {t('workspaceModals.cancel')}
                         </button>
                         <button
                             onClick={() => { void addMount(); }}
-                            className="px-4 py-2 rounded-lg text-xs font-semibold bg-success text-background hover:bg-success"
+                            className="px-4 py-2 rounded-lg typo-caption font-semibold bg-success text-background hover:bg-success"
                         >
                             {t('workspaceModals.add')}
                         </button>
@@ -479,7 +479,7 @@ const EntryModal: React.FC<EntryModalProps> = ({
                     <div className="flex justify-end gap-2">
                         <button
                             onClick={closeEntryModal}
-                            className="px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                            className="px-3 py-2 rounded-lg typo-caption font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40"
                             aria-label={t('workspaceModals.cancel')}
                         >
                             {t('workspaceModals.cancel')}
@@ -487,7 +487,7 @@ const EntryModal: React.FC<EntryModalProps> = ({
                         <button
                             onClick={submitEntryModal}
                             disabled={entryBusy}
-                            className="px-3 py-2 rounded-lg text-xs font-semibold bg-success text-background hover:bg-success disabled:opacity-50"
+                            className="px-3 py-2 rounded-lg typo-caption font-semibold bg-success text-background hover:bg-success disabled:opacity-50"
                         >
                             {entryBusy ? t('common.ellipsis') : t('workspaceModals.confirm')}
                         </button>

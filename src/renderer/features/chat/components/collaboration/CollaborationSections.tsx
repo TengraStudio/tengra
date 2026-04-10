@@ -31,14 +31,14 @@ export const PresenceSection = memo(({
                 variant={allowGuests ? 'secondary' : 'outline'}
                 size="sm"
                 onClick={onToggleGuests}
-                className="h-7 text-xs"
+                className="h-7 typo-caption"
             >
                 {allowGuests ? t('chat.collaboration.guestsAllowed') : t('chat.collaboration.guestsBlocked')}
             </Button>
         </div>
         <div className="space-y-1.5">
             {presence.map((participant) => (
-                <div key={participant.id} className="text-xs flex items-center gap-2">
+                <div key={participant.id} className="typo-caption flex items-center gap-2">
                     <span className={cn(
                         "w-2 h-2 rounded-full",
                         participant.isOnline ? 'bg-success shadow-sm' : 'bg-muted-foreground'
@@ -72,9 +72,9 @@ export const MemorySection = memo(({
                 value={sharedMemoryNote}
                 onChange={(e) => onNoteChange(e.target.value)}
                 placeholder={t('chat.collaboration.memoryPlaceholder')}
-                className="h-8 text-xs"
+                className="h-8 typo-caption"
             />
-            <Button size="sm" onClick={onAddMemory} className="h-8 text-xs">{t('common.add')}</Button>
+            <Button size="sm" onClick={onAddMemory} className="h-8 typo-caption">{t('common.add')}</Button>
         </div>
         <div className="max-h-24 overflow-y-auto space-y-1 px-1">
             {sharedMemory.map((entry, i) => (
@@ -106,7 +106,7 @@ export const ActivitySection = memo(({
                     size="sm"
                     variant="outline"
                     onClick={onAddMarker}
-                    className="h-7 text-xs"
+                    className="h-7 typo-caption"
                 >
                     {t('chat.collaboration.addMarker')}
                 </Button>
@@ -126,7 +126,7 @@ export const ActivitySection = memo(({
                     size="sm"
                     variant="outline"
                     onClick={onAddAnnotation}
-                    className="h-7 text-xs"
+                    className="h-7 typo-caption"
                 >
                     {t('chat.collaboration.annotate')}
                 </Button>
@@ -164,7 +164,7 @@ export const SharingSection = memo(({
                 size="sm"
                 variant={isRecording ? 'destructive' : 'outline'}
                 onClick={onToggleRecording}
-                className="h-8 text-xs"
+                className="h-8 typo-caption"
             >
                 <span className={cn("w-2 h-2 rounded-full mr-2", isRecording ? "bg-foreground animate-pulse" : "bg-destructive")} />
                 {isRecording ? t('chat.collaboration.stopRecording') : t('chat.collaboration.startRecording')}
@@ -173,13 +173,13 @@ export const SharingSection = memo(({
                 size="sm"
                 variant="outline"
                 onClick={onGenerateLink}
-                className="h-8 text-xs"
+                className="h-8 typo-caption"
             >
                 <Copy className="w-3 h-3 mr-2" />
                 {t('chat.collaboration.generateShareLink')}
             </Button>
         </div>
-        {shareLink && <Input value={shareLink} readOnly className="h-8 text-xs bg-muted/50" />}
+        {shareLink && <Input value={shareLink} readOnly className="h-8 typo-caption bg-muted/50" />}
         <div className="max-h-32 overflow-y-auto space-y-1 rounded border border-border/50 bg-muted/30 p-2 px-1 font-mono text-xxxs">
             {recordedEvents.length === 0 && <p className="text-muted-foreground/50">{t('chat.collaboration.noEvents')}</p>}
             {recordedEvents.map((event, index) => (

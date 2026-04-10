@@ -1,7 +1,6 @@
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-import './context-window-indicator.css';
 
 /** Props for the ContextWindowIndicator component */
 interface ContextWindowIndicatorProps {

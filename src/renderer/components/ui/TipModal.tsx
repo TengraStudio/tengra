@@ -5,7 +5,6 @@ import { useEffect,useState } from 'react';
 
 import { Language,useTranslation } from '@/i18n';
 
-import './tip-modal.css';
 
 export function TipModal({ language = 'en' }: { language?: Language }) {
     const { t } = useTranslation(language);

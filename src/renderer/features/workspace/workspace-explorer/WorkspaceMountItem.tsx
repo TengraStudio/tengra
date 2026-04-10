@@ -81,7 +81,7 @@ const MountHeader: React.FC<MountHeaderProps> = ({
             </span>
             <MountIcon mountType={mount.type} />
             <div className="flex-1 min-w-0 flex items-center gap-2">
-                <div className="text-xs font-bold truncate text-muted-foreground/70">
+                <div className="typo-caption font-bold truncate text-muted-foreground/70">
                     {mount.name}
                 </div>
                 {mount.type === 'ssh' && (

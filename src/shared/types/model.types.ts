@@ -1,4 +1,5 @@
 import type { JsonValue } from './common';
+import type { AntigravityAiCreditsInfo } from './quota';
 
 export interface ModelInfo {
     id?: string;
@@ -6,7 +7,13 @@ export interface ModelInfo {
     provider?: string;
     providerCategory?: string;
     sourceProvider?: string;
-    quotaInfo?: { remainingQuota?: number; totalQuota?: number; resetTime?: string; remainingFraction?: number };
+    quotaInfo?: {
+        remainingQuota?: number;
+        totalQuota?: number;
+        resetTime?: string;
+        remainingFraction?: number;
+        aiCredits?: AntigravityAiCreditsInfo;
+    };
     percentage?: number;
     reset?: string;
     label?: string;

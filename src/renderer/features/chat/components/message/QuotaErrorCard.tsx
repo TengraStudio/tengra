@@ -24,13 +24,13 @@ export const QuotaErrorCard = memo(({ details, t }: QuotaErrorCardProps) => (
                     {t('messageBubble.quotaExceeded')}
                 </div>
                 {details.model && (
-                    <div className="text-xs opacity-70 mt-0.5">{details.model}</div>
+                    <div className="typo-caption opacity-70 mt-0.5">{details.model}</div>
                 )}
             </div>
         </div>
         <p className="text-sm opacity-90 leading-relaxed mb-3">{details.message}</p>
         {details.resets_at && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-destructive/10 border border-destructive/10 text-xs font-medium">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-destructive/10 border border-destructive/10 typo-caption font-medium">
                 <Clock className="w-3.5 h-3.5" />
                 <span>
                     {t('messageBubble.resetsAt')}{' '}

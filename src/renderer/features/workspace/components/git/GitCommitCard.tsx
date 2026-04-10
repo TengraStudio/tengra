@@ -30,7 +30,7 @@ export const GitCommitCard: React.FC<CommitCardProps> = ({ commit, isSelected, o
             <div className="text-sm text-foreground font-bold line-clamp-2 leading-tight mb-1">
                 {commit.message}
             </div>
-            <div className="text-xs text-muted-foreground">
+            <div className="typo-caption text-muted-foreground">
                 <span className="font-semibold text-primary/70">{commit.author}</span>
                 <span className="mx-1.5">/</span>
                 {new Date(commit.date).toLocaleDateString()}

@@ -273,7 +273,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
                 ) : (
                     <FileIcon fileName={node.name} className="w-3.5 h-3.5" />
                 )}
-                <span className="flex-1 min-w-0 truncate text-xs font-normal">
+                <span className="flex-1 min-w-0 truncate typo-caption font-normal">
                     {node.name}
                 </span>
                 {node.gitStatus && (

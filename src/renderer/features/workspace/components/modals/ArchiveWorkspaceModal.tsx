@@ -25,7 +25,7 @@ export const ArchiveWorkspaceModal: React.FC<ArchiveWorkspaceModalProps> = ({
                         <p className="text-sm text-success/90 leading-relaxed font-light">
                             {t('workspaces.archiveConfirmation')}{' '}
                             <span className="font-semibold text-foreground">{workspace.title}</span>?
-                            <span className="block mt-1 text-xs text-success font-normal opacity-80">
+                            <span className="block mt-1 typo-caption text-success font-normal opacity-80">
                                 {t('workspaces.archiveWarning')}
                             </span>
                         </p>

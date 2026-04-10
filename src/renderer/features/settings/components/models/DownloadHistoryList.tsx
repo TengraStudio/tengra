@@ -49,7 +49,7 @@ export const DownloadHistoryList: React.FC<DownloadHistoryListProps> = ({
             <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-border/30 rounded-2xl bg-muted/5 animate-in fade-in duration-500">
                 <History className="w-12 h-12 text-muted-foreground/20 mb-4" />
                 <h3 className="text-sm font-semibold text-foreground/70">{t('modelsPage.noDownloadHistory')}</h3>
-                <p className="text-xs text-muted-foreground/50 mt-1 max-w-[240px]">
+                <p className="typo-caption text-muted-foreground/50 mt-1 max-w-[240px]">
                     {t('modelsPage.noDownloadHistoryDescription')}
                 </p>
             </div>
@@ -75,7 +75,7 @@ export const DownloadHistoryList: React.FC<DownloadHistoryListProps> = ({
                         variant="ghost"
                         size="sm"
                         onClick={onClear}
-                        className="h-9 rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive px-4 text-xs font-bold"
+                        className="h-9 rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive px-4 typo-caption font-bold"
                     >
                         <Trash2 className="w-3.5 h-3.5 mr-2" />
                         {t('common.clear')}
@@ -117,7 +117,7 @@ export const DownloadHistoryList: React.FC<DownloadHistoryListProps> = ({
                                             {item.provider}
                                         </Badge>
                                     </div>
-                                    <div className="flex items-center gap-3 text-xs text-muted-foreground/50 font-medium">
+                                    <div className="flex items-center gap-3 typo-caption text-muted-foreground/50 font-medium">
                                         <span className="flex items-center gap-1">
                                             <span className={cn(
                                                 "h-1.5 w-1.5 rounded-full",

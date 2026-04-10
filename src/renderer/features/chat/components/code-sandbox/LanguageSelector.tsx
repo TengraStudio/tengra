@@ -39,7 +39,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>{t('codeSandbox.languageLabel')}</span>
             <Select value={value} onValueChange={handleChange} disabled={disabled}>
-                <SelectTrigger className="h-8 w-[120px] px-2 py-1 text-xs">
+                <SelectTrigger className="h-8 w-[120px] px-2 py-1 typo-caption">
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

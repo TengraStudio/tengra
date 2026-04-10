@@ -13,6 +13,7 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::net::TcpListener;
+use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
 
 use crate::db;
@@ -22,7 +23,8 @@ use crate::static_config;
 const INSECURE_PROXY_FALLBACK_ENV: &str = "TENGRA_PROXY_ALLOW_INSECURE_DEFAULT_KEY";
 
 pub struct AppState {
-    // No db_url needed, db module handles it
+    pub signature_cache: Mutex<std::collections::HashMap<String, String>>,
+    pub session_id_cache: Mutex<std::collections::HashMap<String, String>>,
 }
 
 #[derive(Deserialize)]
@@ -32,7 +34,10 @@ struct OAuthVerifyQuery {
 
 pub async fn start_proxy_server(port: u16) -> anyhow::Result<()> {
     ensure_bridge_startup_preflight().await?;
-    let state = Arc::new(AppState {});
+    let state = Arc::new(AppState {
+        signature_cache: Mutex::new(std::collections::HashMap::new()),
+        session_id_cache: Mutex::new(std::collections::HashMap::new()),
+    });
     let protected = Router::new()
         .route(
             "/v1/models",

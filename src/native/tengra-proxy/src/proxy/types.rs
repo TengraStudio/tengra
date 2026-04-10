@@ -13,6 +13,10 @@ pub struct ChatCompletionRequest {
     pub top_p: Option<f32>,
     pub stop: Option<Vec<String>>,
     pub reasoning_effort: Option<String>,
+    #[serde(alias = "thinkingLevel")]
+    pub thinking_level: Option<String>,
+    #[serde(alias = "thinkingBudget")]
+    pub thinking_budget: Option<i64>,
     pub provider: Option<String>,
     pub tools: Option<Vec<Value>>,
     pub tool_choice: Option<Value>,

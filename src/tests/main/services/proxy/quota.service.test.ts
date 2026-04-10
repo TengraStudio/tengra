@@ -68,6 +68,83 @@ describe('QuotaService', () => {
             expect(result?.accounts[0].email).toBe('test@example.com');
         });
 
+        it('should preserve Antigravity AI Credits metadata per account and model', async () => {
+            const mockAccount: LinkedAccount = {
+                id: 'acc-credits',
+                provider: 'google',
+                email: 'credits@example.com',
+                accessToken: 'token-credits'
+            } as LinkedAccount;
+
+            vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([mockAccount]);
+
+            (quotaService as never as { antigravityHandler: { fetchAntigravityUpstreamForToken: ReturnType<typeof vi.fn> } })
+                .antigravityHandler.fetchAntigravityUpstreamForToken = vi.fn().mockResolvedValue({
+                    useAICredits: true,
+                    creditAmount: 12,
+                    minimumCreditAmountForUsage: 4,
+                    models: {
+                        'gemini-3.1-pro': {
+                            displayName: 'Gemini 3.1 Pro',
+                            quotaInfo: {
+                                remainingQuota: 0,
+                                totalQuota: 100,
+                                remainingFraction: 0,
+                            },
+                            pricingType: 'STATIC_CREDIT',
+                            useAICredits: true,
+                            creditAmount: 12,
+                            minimumCreditAmountForUsage: 4,
+                        }
+                    }
+                });
+
+            const result = await quotaService.getQuota(8080, 'key');
+            expect(result?.accounts[0].antigravityAiCredits?.canUseCredits).toBe(true);
+            expect(result?.accounts[0].models[0].quotaInfo?.aiCredits?.pricingType).toBe('STATIC_CREDIT');
+            expect(result?.accounts[0].models[0].quotaInfo?.aiCredits?.creditAmount).toBe(12);
+        });
+
+        it('should read Antigravity AI Credits from loadCodeAssist paidTier payloads', async () => {
+            const mockAccount: LinkedAccount = {
+                id: 'acc-paid-tier',
+                provider: 'antigravity',
+                email: 'credits@example.com',
+                accessToken: 'token-credits'
+            } as LinkedAccount;
+
+            vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([mockAccount]);
+
+            (quotaService as never as { antigravityHandler: { fetchAntigravityUpstreamForToken: ReturnType<typeof vi.fn> } })
+                .antigravityHandler.fetchAntigravityUpstreamForToken = vi.fn().mockResolvedValue({
+                    paidTier: {
+                        id: 'g1-pro-tier',
+                        availableCredits: [
+                            {
+                                creditType: 'GOOGLE_ONE_AI',
+                                creditAmount: '19',
+                                minimumCreditAmountForUsage: '50',
+                            }
+                        ]
+                    },
+                    models: {
+                        'gemini-3.1-flash-lite': {
+                            displayName: 'Gemini 3.1 Flash Lite',
+                            quotaInfo: {
+                                remainingQuota: 100,
+                                totalQuota: 100,
+                                remainingFraction: 1,
+                            }
+                        }
+                    }
+                });
+
+            const result = await quotaService.getQuota(8080, 'key');
+            expect(result?.accounts[0].antigravityAiCredits?.creditAmount).toBe(19);
+            expect(result?.accounts[0].antigravityAiCredits?.minimumCreditAmountForUsage).toBe(50);
+            expect(result?.accounts[0].antigravityAiCredits?.canUseCredits).toBe(false);
+        });
+
         it('should return null for negative port', async () => {
             const result = await quotaService.getQuota(-1, 'key');
             expect(result).toBeNull();

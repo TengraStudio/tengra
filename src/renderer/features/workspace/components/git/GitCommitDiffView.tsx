@@ -36,7 +36,7 @@ export const GitCommitDiffView: React.FC<CommitDiffViewProps> = ({
                     <span>{t('workspaceDashboard.analyzingCommit')}</span>
                 </div>
             ) : commitDiff ? (
-                <div className="tw-max-h-500 overflow-auto p-4 font-mono text-xs leading-relaxed">
+                <div className="tw-max-h-500 overflow-auto p-4 font-mono typo-caption leading-relaxed">
                     {commitDiff.split('\n').map((line: string, idx: number) => (
                         <GitDiffLine key={idx} line={line} idx={idx} />
                     ))}

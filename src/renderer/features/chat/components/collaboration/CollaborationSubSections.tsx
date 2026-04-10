@@ -82,7 +82,7 @@ export const ActivitySection = memo(({
                     <Button size="sm" variant="outline" onClick={onAddMarker}>{t('chat.collaboration.addMarker')}</Button>
                 </div>
                 {cursorMarkers.map((marker) => (
-                    <p key={marker.id} className="text-xs text-muted-foreground">{marker.user} → {marker.target}</p>
+                    <p key={marker.id} className="typo-caption text-muted-foreground">{marker.user} → {marker.target}</p>
                 ))}
             </Card>
             <Card className="p-3 space-y-2">
@@ -91,7 +91,7 @@ export const ActivitySection = memo(({
                     <Button size="sm" variant="outline" onClick={onAddAnnotation}>{t('chat.collaboration.annotate')}</Button>
                 </div>
                 {annotations.map((annotation) => (
-                    <p key={annotation.id} className="text-xs text-muted-foreground">{annotation.author}: {annotation.note}</p>
+                    <p key={annotation.id} className="typo-caption text-muted-foreground">{annotation.author}: {annotation.note}</p>
                 ))}
             </Card>
         </div>

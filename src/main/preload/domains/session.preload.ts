@@ -45,9 +45,13 @@ export function createSessionBridge(ipc: IpcRenderer): SessionBridge {
                     callback(chunk as Parameters<Parameters<SessionBridge['conversation']['onStreamChunk']>[0]>[0]);
                 };
                 const binaryListener = (_event: IpcRendererEvent, payload: ArrayBuffer | Uint8Array) => {
-                    const buffer = payload instanceof Uint8Array ? payload : new Uint8Array(payload);
-                    const chunk = JSON.parse(new TextDecoder().decode(buffer)) as RuntimeValue;
-                    callback(chunk as Parameters<Parameters<SessionBridge['conversation']['onStreamChunk']>[0]>[0]);
+                    try {
+                        const buffer = payload instanceof Uint8Array ? payload : new Uint8Array(payload);
+                        const chunk = JSON.parse(new TextDecoder().decode(buffer)) as RuntimeValue;
+                        callback(chunk as Parameters<Parameters<SessionBridge['conversation']['onStreamChunk']>[0]>[0]);
+                    } catch {
+                        return;
+                    }
                 };
                 ipc.on(SESSION_CONVERSATION_CHANNELS.STREAM_CHUNK, listener);
                 ipc.on(SESSION_CONVERSATION_CHANNELS.STREAM_CHUNK_BINARY, binaryListener);

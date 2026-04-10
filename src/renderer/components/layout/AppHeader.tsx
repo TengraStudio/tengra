@@ -16,7 +16,6 @@ import { AppView } from '@/hooks/useAppState';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-import './app-header.css';
 
 interface AppHeaderProps {
     currentView: AppView

@@ -8,7 +8,6 @@ import { cn } from '@/lib/utils';
 import { ensureMonacoInitialized } from '@/utils/monaco-loader.util';
 import { appLogger } from '@/utils/renderer-logger';
 
-import './diff-viewer.css';
 
 interface DiffViewerProps {
     original: string;

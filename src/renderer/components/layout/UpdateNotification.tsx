@@ -6,7 +6,6 @@ import { useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { appLogger } from '@/utils/renderer-logger';
 
-import './update-notification.css';
 
 type UpdateState =
     | 'checking'

@@ -86,7 +86,7 @@ export function PackageManager({ connectionId }: PackageManagerProps) {
                         <div key={i} className="bg-card/40 border border-border/50 rounded-lg p-3 flex items-start justify-between hover:bg-card/60 transition-colors group">
                             <div>
                                 <div className="font-medium text-foreground/90 text-sm group-hover:text-primary transition-colors">{pkg.name}</div>
-                                <div className="text-xs text-muted-foreground/40 mt-1 font-mono">{pkg.version}</div>
+                                <div className="typo-caption text-muted-foreground/40 mt-1 font-mono">{pkg.version}</div>
                             </div>
                             <Layers size={14} className="text-muted-foreground/20 group-hover:text-primary/40 transition-colors" />
                         </div>

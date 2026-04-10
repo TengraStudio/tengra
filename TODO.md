@@ -93,6 +93,22 @@
 - [x] Optimized core tool execution by parallelizing bounded multi-file reads/writes, capping tool result cache growth, short-caching tool definitions, applying workspace path normalization to batch file arguments, and making file search stop as soon as the requested result limit is reached.
 - [x] Hardened tengra-proxy lifecycle and OAuth refresh readiness by preserving background proxy processes across app shutdown, reusing existing healthy proxy daemons on startup, running token refresh immediately on proxy boot, retrying Antigravity chat requests after 401-triggered refresh, and redacting sensitive HTTP headers from debug logs.
 - [x] Hardened chat reasoning/tool-loop rendering by segmenting streamed reasoning into persistent accordion blocks, rejecting empty `create_directory` path calls before filesystem access, treating failed tool calls as no-progress for loop safety, clamping oversized streamed/session content before IPC schema validation, and removing hot-path stream parser debug spam.
+- [x] Fixed repeated planning-sentence loops by suppressing duplicate OpenCode `response.output_text.done` emissions without item IDs and expanding low-signal progress detection for "Desktop by default" fallback phrasing.
+- [x] Reduced slow tool-loop recoveries by treating long low-signal planning text as non-progress, preventing accumulation of placeholder text across turns, and force-finalizing when deterministic evidence already exists.
+- [x] Fixed reasoning accordion empty-state regressions by dropping whitespace-only reasoning from stream extraction/history and suppressing blank thought sections in message rendering.
+- [x] Expanded chat debug instrumentation across stream parsing, tool-loop iterations, message-to-thought mapping, and thought section rendering to trace why accordion segments disappear or stall at "Thinking".
+- [x] Fixed missing tool accordion while "Thinking" by preserving typeless `tool_calls` chunks in renderer stream normalization/parser and expanded per-tool execution timing logs across renderer + main IPC.
+- [x] Refined thought accordion UX by removing duplicate thought text from main reply body, showing thought duration in accordion header, and enabling scrollable long-thought content (`overflow-y-auto`).
+- [x] Fixed Antigravity reasoning stream duplication by separating provider cumulative buffers from the visible thought segment, swallowing replayed history after segment boundaries, and making streamed thought accordion updates idempotent when the latest segment grows.
+- [x] Fixed session-stream accordion regressions by persisting streamed reasoning/tool-call chunks on the same assistant message and collapsing consecutive reasoning-only assistant entries into a single message bubble.
+- [x] Normalized Windows absolute tool paths under mismatched `C:\Users\...` profiles to the active user home before directory creation to reduce false path-policy failures.
+- [x] Restored session conversation tool-call continuation so provider turns that end with `tool_calls` now execute tools, append results to the same assistant message, and continue the bounded stream loop instead of stopping silently.
+- [x] Added Antigravity AI Credits groundwork with multi-account-aware quota parsing, credit fallback visibility in model/settings surfaces, workspace routing support, simplified end-user tool call summaries, and restored live reasoning updates for collapsed assistant bubbles during streaming.
+- [x] Compacted duplicate Antigravity tool-call cards in chat bubbles and live tool-loop updates so repeated `resolve_path` runs no longer flood the UI while reasoning-free tool turns are in progress.
+- [x] Expanded chat renderer diagnostics so logs now show streaming-state apply, throttled chat-state writes, and collapsed display-entry counts for Antigravity tool-stream freeze investigations.
+- [x] Removed the renderer-side streamed response safety clamp that surfaced `response exceeded Tengra safety limit`, and upgraded renderer log forwarding to preserve structured `renderer:<context>` entries in persisted session logs for proxy-vs-UI debugging.
+- [x] Fixed Antigravity thought-request loss in `tengra-proxy` by preserving Gemini `thinking_level` / `thinking_budget` fields through proxy normalization, mapping planner-response `modifiedResponse` back to assistant content, and aligning stream/non-stream Antigravity thought extraction with the provider step contract.
+- [x] Reduced Antigravity stream freeze symptoms by switching chat follow-output to non-animated scrolling, fast-pathing plain-text stream parsing, falling back to lightweight plain-text rendering for oversized live assistant replies, and routing `gemini-3-flash-agent` through the thought-capable Gemini 3 Flash compatibility path with restored thinking levels.
 
 ## AI Runtime Refactor Handoff Plan
 
@@ -543,6 +559,7 @@ Bu aşamada build/lint/type-check/test henüz özellikle çalıştırılmadı. S
 - [x] Create core Shadcn/ui components (Input, Checkbox, Label, Textarea) with HSL theme support
 - [x] Migrate Workspace Settings fields to Shadcn/ui (General, Editor, Advanced, Dev Server)
 - [ ] Continue migrating inputs and checkboxes across other features (SSH, SFTP, Chat, Terminal)
+- [x] Consolidate renderer styles into a single `src/renderer/index.css`, remove per-component CSS imports, and standardize shared `:root` design tokens
 
 ## Remote Interaction (Günün Hedefi: Discord & Telegram)
 - [x] Define `RemoteAccountsSettings` schema and update `AppSettings` interface
@@ -569,6 +586,9 @@ Bu aşamada build/lint/type-check/test henüz özellikle çalıştırılmadı. S
 - [x] Optimized code rendering by migrating `CodeBlock` to `MonacoBlock` in the chat interface, resolving and standardizing TypeScript interfaces for better components and props.
 - [x] Resolved word and sentence merging in AI messages by disabling default whitespace trimming in the sanitization layer, preserving intentional spaces in multi-part content while maintaining strict trimming for system identifiers (chatId, model, provider).
 - [x] Optimized Ollama model context window by implementing dynamic `numCtx` resolution (supporting Model Registry defaults and per-model overrides in Settings), while stabilizing real-time reasoning extraction from `<think>` tags during streaming and ensuring unclosed tags are correctly stripped from the display content.
+- [x] Added Antigravity account-level AI Credits controls in Settings by surfacing per-account credit balances in connected accounts, persisting `auto` / `ask-every-time` credit usage preferences per linked account, and aligning settings validation with the new multi-account credit mode map.
+- [x] Documented Antigravity reverse-engineering findings, sourced AI Credits from `loadCodeAssist`, and scrubbed plaintext token fields from linked-account metadata on write/startup cleanup.
+- [x] Wired Antigravity account-scoped AI Credits confirmation into chat generation and tool-loop follow-up turns, and fixed native proxy account selection to prefer requested/active accounts deterministically for multi-account setups.
 
 - [x] Enhanced Marketplace model metadata extraction (pull counts, READMEs, submodels), integrated 9,000+ models into the unified `registry.json`, and implemented advanced filtering/sorting by author, category, and popularity.
 - [x] Decoupled Marketplace model tabs (Ollama, Hugging Face, Community), implemented full localization for tab labels and popularity metrics, and unified the type system to achieve a stable, production-ready build.
@@ -580,4 +600,21 @@ Bu aşamada build/lint/type-check/test henüz özellikle çalıştırılmadı. S
 - [x] Hardened GPU initialization for Windows with --disable-gpu-sandbox and --disable-gpu-driver-bug-workarounds to resolve persistent EGL context errors.
 - [x] Corrected VRAM unit mismatches (MB vs Bytes) and parameter count normalization, fixing unrealistic (7000+) vs degraded (6) TPS estimates.
 
-*Updated on 2026-04-08*
+## Job Finder Plugin Integration
+- [x] Create dedicated repository for `job-finder-plugin`
+- [x] Implement manifest-driven UI expansion in Tengra core
+- [x] Build `ExtensionViewHost` for dynamic non-core view rendering
+- [x] Integrate `ExtensionViewHost` into `ViewManager` routing
+- [x] Create Job Finder UI component in plugin folder (High-quality React)
+- [x] Implement Extension Development Bridge for renderer-side component registration (via `safe-file://` dynamic bundle loading)
+- [x] Register Job Finder commands in plugin Main process (`job-finder.search`, `job-finder.analyze-cv`)
+- [x] Decentralize UI registration: No hardcoded imports in Tengra core; extensions register via `window.Tengra.registerExtensionComponent`
+- [x] Implement Git-based extension installation in `MarketplaceService` (cloning from repository URL)
+- [ ] Implement browser scraping engine for job sites (LinkedIn, Indeed, etc.)
+- [ ] Implement AI-driven CV analysis and ATS scoring logic
+- [ ] Implement ZIP extraction for extension installation (fallback)
+- [x] Finalize end-to-end marketplace activation flow (Install -> Extract -> Activate -> Render), including post-install auto-activation, renderer live refresh via `extension:state-changed`, and settings-side MCP + Extension unified management.
+
+- [x] Fixed extension configuration IPC crash (`window.electron.invoke` missing) and refactored `ExtensionPluginsTab` to use the typed domain bridge for improved safety.
+
+*Updated on 2026-04-10*

@@ -107,7 +107,7 @@ const ModelSelector = ({
                                 )}
                             >
                                 <span>{model.name}</span>
-                                <span className="text-xs text-muted-foreground">
+                                <span className="typo-caption text-muted-foreground">
                                     {model.provider}
                                 </span>
                             </button>
@@ -200,7 +200,7 @@ const ResponseCardStats = ({
     t: (key: string) => string;
 }) => (
     <div
-        className="flex items-center gap-4 px-4 py-2 border-t border-border/30 bg-muted/10 text-xs text-muted-foreground"
+        className="flex items-center gap-4 px-4 py-2 border-t border-border/30 bg-muted/10 typo-caption text-muted-foreground"
         aria-label={t('modelComparison.metrics')}
     >
         <span className="flex items-center gap-1" title={t('modelComparison.responseTime')}>

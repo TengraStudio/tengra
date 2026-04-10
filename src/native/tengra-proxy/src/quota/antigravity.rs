@@ -10,7 +10,7 @@ pub async fn fetch_antigravity_quota(session_token: &str) -> Result<QuotaResult>
     let res = client
         .post(url)
         .bearer_auth(session_token)
-        .header("User-Agent", "antigravity/1.104.0 darwin/arm64")
+        .header("User-Agent", "antigravity/1.107.0")
         .header("Content-Type", "application/json")
         .body("{}")
         .send()

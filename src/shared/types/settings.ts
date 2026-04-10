@@ -5,6 +5,7 @@ import { JsonValue } from '@/types/common';
 import type { Workspace } from './workspace';
 
 export type McpPermissionProfile = 'read-only' | 'workspace-only' | 'network-enabled' | 'destructive' | 'full-access';
+export type AntigravityCreditUsageMode = 'auto' | 'ask-every-time';
 
 export type ModelGovernanceSettings = {
     mode: 'allowlist' | 'blocklist';
@@ -175,6 +176,7 @@ export interface AppSettings {
     antigravity?: {
         connected: boolean;
         token?: string;
+        creditUsageModeByAccount?: Record<string, AntigravityCreditUsageMode>;
     };
     codex?: {
         connected: boolean;
@@ -251,6 +253,7 @@ export interface AppSettings {
         maxTokens: number;
     }>;
     mcpDisabledServers?: string[];
+    extensionDisabledServers?: string[];
     mcpUserServers?: MCPServerConfig[];
     mcpSecurityAllowedHosts?: string[];
     mcpReviewPolicy?: 'elevated' | 'trusted';

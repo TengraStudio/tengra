@@ -13,6 +13,7 @@ interface ConversationRequestParams {
     systemMode?: SystemMode;
     chatId?: string;
     assistantId?: string;
+    streamId?: string;
 }
 
 interface ConversationStreamParams extends ConversationRequestParams {
@@ -28,8 +29,9 @@ export function sanitizeConversationRequestParams(params: ConversationRequestPar
     systemMode?: SystemMode;
     chatId?: string;
     assistantId?: string;
+    streamId?: string;
 } {
-    const { messages, model, provider, tools, workspaceId, systemMode, chatId, assistantId } = params;
+    const { messages, model, provider, tools, workspaceId, systemMode, chatId, assistantId, streamId } = params;
     if (!Array.isArray(messages) || messages.length === 0) {
         throw new Error('error.chat.invalid_messages');
     }
@@ -55,6 +57,9 @@ export function sanitizeConversationRequestParams(params: ConversationRequestPar
         assistantId: assistantId
             ? sanitizeString(assistantId, { maxLength: 100, allowNewlines: false, trimWhitespace: true })
             : undefined,
+        streamId: streamId
+            ? sanitizeString(streamId, { maxLength: 100, allowNewlines: false, trimWhitespace: true })
+            : undefined,
     };
 }
 
@@ -67,6 +72,7 @@ export function sanitizeConversationStreamInputs(params: ConversationStreamParam
     systemMode?: SystemMode;
     chatId: string;
     assistantId?: string;
+    streamId?: string;
 } {
     const { chatId } = params;
     if (!chatId) {
@@ -85,6 +91,14 @@ export function extractConversationReasoningEffort(optionsJson?: JsonObject): st
         return undefined;
     }
     return sanitizeString(raw, { maxLength: 20, allowNewlines: false });
+}
+
+export function extractConversationAccountId(optionsJson?: JsonObject): string | undefined {
+    const raw = optionsJson?.['accountId'];
+    if (typeof raw !== 'string') {
+        return undefined;
+    }
+    return sanitizeString(raw, { maxLength: 128, allowNewlines: false, trimWhitespace: true });
 }
 
 function sanitizeConversationMessage(message: Message): Message {

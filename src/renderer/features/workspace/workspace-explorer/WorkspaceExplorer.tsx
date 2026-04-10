@@ -109,7 +109,7 @@ function WorkspaceExplorerEmptyState({ label }: { label: string }): React.ReactE
     return (
         <div className="flex-1 flex flex-col items-center justify-center text-sm text-muted-foreground gap-2 opacity-60">
             <Folder className="w-8 h-8 opacity-20" />
-            <span className="text-xs font-medium">{label}</span>
+            <span className="typo-caption font-medium">{label}</span>
         </div>
     );
 }
@@ -924,7 +924,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                         : 'border-b border-border/50 bg-transparent'
                 )}
             >
-                <span className="text-xs font-bold text-muted-foreground/50">
+                <span className="typo-caption font-bold text-muted-foreground/50">
                     {t('workspace.files')}
                 </span>
                 <button
@@ -945,7 +945,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                             setWorkspaceExplorerFilterQuery(workspaceId, event.target.value)
                         }
                         placeholder={t('common.search')}
-                        className="h-8 w-full rounded-md border border-border/50 bg-background/70 pl-8 pr-2 text-xs text-foreground outline-none transition-colors focus:border-primary/40"
+                        className="h-8 w-full rounded-md border border-border/50 bg-background/70 pl-8 pr-2 typo-caption text-foreground outline-none transition-colors focus:border-primary/40"
                     />
                 </label>
             </div>

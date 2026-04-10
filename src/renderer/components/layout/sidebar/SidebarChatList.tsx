@@ -6,7 +6,6 @@ import { Chat, Folder } from '@/types';
 
 import { SidebarFolderSection } from './SidebarFolderSection';
 
-import './sidebar-chat-list.css';
 
 interface SidebarChatListProps {
     isCollapsed: boolean;
@@ -179,7 +178,7 @@ export const SidebarChatList = React.memo(
                     {chatsCount === 0 && !isCollapsed && (
                         <div className="flex flex-col items-center justify-center py-8 text-muted-foreground/50">
                             <MessageSquare className="w-8 h-8 mb-2 opacity-30" />
-                            <p className="text-xs">{t('sidebar.noChats')}</p>
+                            <p className="typo-caption">{t('sidebar.noChats')}</p>
                         </div>
                     )}
                 </div>

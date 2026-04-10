@@ -1,4 +1,4 @@
-use crate::auth::antigravity::types::AntigravityToken;
+use crate::auth::antigravity::types::{AntigravityPaidTier, AntigravityToken};
 use crate::static_config;
 use anyhow::{anyhow, Result};
 use reqwest;
@@ -16,10 +16,11 @@ pub struct AntigravityClient {
 pub struct AntigravityProjectContext {
     pub project_id: String,
     pub tier_id: String,
+    pub ai_credits: Option<AntigravityPaidTier>,
 }
 
 impl AntigravityClient {
-    pub async fn new() -> Result<Self> {
+    pub async fn new(redirect_uri: Option<String>) -> Result<Self> {
         let timeout_secs = static_config::oauth_provider_timeout_secs("antigravity")?;
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(timeout_secs))
@@ -28,7 +29,8 @@ impl AntigravityClient {
             client,
             client_id: static_config::ANTIGRAVITY_CLIENT_ID.to_string(),
             client_secret: static_config::ANTIGRAVITY_CLIENT_SECRET.to_string(),
-            redirect_uri: "http://localhost:51121/oauth-callback".to_string(),
+            redirect_uri: redirect_uri
+                .unwrap_or_else(|| "http://localhost:51121/oauth-callback".to_string()),
         })
     }
 
@@ -108,15 +110,15 @@ impl AntigravityClient {
             .post("https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist")
             .bearer_auth(access_token)
             .header("Content-Type", "application/json")
-            .header("User-Agent", "google-api-nodejs-client/9.15.1")
+            .header("User-Agent", "antigravity/1.107.0")
             .header("X-Goog-Api-Client", "google-cloud-sdk vscode_cloudshelleditor/0.1")
             .header(
                 "Client-Metadata",
-                "{\"ideType\":\"IDE_UNSPECIFIED\",\"platform\":\"PLATFORM_UNSPECIFIED\",\"pluginType\":\"GEMINI\"}",
+                "{\"ideType\":\"ANTIGRAVITY\",\"platform\":\"PLATFORM_UNSPECIFIED\",\"pluginType\":\"GEMINI\"}",
             )
             .json(&json!({
                 "metadata": {
-                    "ideType": "IDE_UNSPECIFIED",
+                    "ideType": "ANTIGRAVITY",
                     "platform": "PLATFORM_UNSPECIFIED",
                     "pluginType": "GEMINI"
                 }
@@ -133,9 +135,12 @@ impl AntigravityClient {
         let project_id =
             extract_project_id(&body).ok_or_else(|| anyhow!("Missing cloudaicompanionProject"))?;
         let tier_id = extract_default_tier_id(&body).unwrap_or_else(|| "legacy-tier".to_string());
+        let ai_credits = extract_paid_tier(&body);
+
         Ok(AntigravityProjectContext {
             project_id,
             tier_id,
+            ai_credits,
         })
     }
 
@@ -151,16 +156,16 @@ impl AntigravityClient {
                 .post("https://cloudcode-pa.googleapis.com/v1internal:onboardUser")
                 .bearer_auth(access_token)
                 .header("Content-Type", "application/json")
-                .header("User-Agent", "google-api-nodejs-client/9.15.1")
+                .header("User-Agent", "antigravity/1.107.0")
                 .header("X-Goog-Api-Client", "google-cloud-sdk vscode_cloudshelleditor/0.1")
                 .header(
                     "Client-Metadata",
-                    "{\"ideType\":\"IDE_UNSPECIFIED\",\"platform\":\"PLATFORM_UNSPECIFIED\",\"pluginType\":\"GEMINI\"}",
+                    "{\"ideType\":\"ANTIGRAVITY\",\"platform\":\"PLATFORM_UNSPECIFIED\",\"pluginType\":\"GEMINI\"}",
                 )
                 .json(&json!({
                     "tierId": context.tier_id,
                     "metadata": {
-                        "ideType": "IDE_UNSPECIFIED",
+                        "ideType": "ANTIGRAVITY",
                         "platform": "PLATFORM_UNSPECIFIED",
                         "pluginType": "GEMINI"
                     },
@@ -185,6 +190,69 @@ impl AntigravityClient {
         }
 
         Ok(context.project_id.clone())
+    }
+
+    /// Fetches the user identity and permissions from the backend.
+    pub async fn fetch_user(&self, access_token: &str) -> Result<Value> {
+        let res = self
+            .client
+            .post("https://cloudcode-pa.googleapis.com/v1internal:fetchUser")
+            .bearer_auth(access_token)
+            .header("Content-Type", "application/json")
+            .header("User-Agent", "antigravity/1.107.0")
+            .header("X-Goog-Api-Client", "google-cloud-sdk vscode_cloudshelleditor/0.1")
+            .header(
+                "Client-Metadata",
+                "{\"ideType\":\"ANTIGRAVITY\",\"platform\":\"PLATFORM_UNSPECIFIED\",\"pluginType\":\"GEMINI\"}",
+            )
+            .json(&json!({
+                "metadata": {
+                    "ideType": "ANTIGRAVITY",
+                    "platform": "PLATFORM_UNSPECIFIED",
+                    "pluginType": "GEMINI"
+                }
+            }))
+            .send()
+            .await?;
+
+        if !res.status().is_success() {
+            let body = res.text().await?;
+            return Err(anyhow!("Failed to fetch Antigravity user: {}", body));
+        }
+
+        Ok(res.json().await?)
+    }
+
+    /// Sets the user settings for the AI Companion.
+    pub async fn set_user_settings(&self, access_token: &str, settings: Value) -> Result<()> {
+        let res = self
+            .client
+            .post("https://cloudcode-pa.googleapis.com/v1internal:setUserSettings")
+            .bearer_auth(access_token)
+            .header("Content-Type", "application/json")
+            .header("User-Agent", "antigravity/1.107.0")
+            .header("X-Goog-Api-Client", "google-cloud-sdk vscode_cloudshelleditor/0.1")
+            .header(
+                "Client-Metadata",
+                "{\"ideType\":\"ANTIGRAVITY\",\"platform\":\"PLATFORM_UNSPECIFIED\",\"pluginType\":\"GEMINI\"}",
+            )
+            .json(&json!({
+                "settings": settings,
+                "metadata": {
+                    "ideType": "ANTIGRAVITY",
+                    "platform": "PLATFORM_UNSPECIFIED",
+                    "pluginType": "GEMINI"
+                }
+            }))
+            .send()
+            .await?;
+
+        if !res.status().is_success() {
+            let body = res.text().await?;
+            return Err(anyhow!("Failed to set Antigravity user settings: {}", body));
+        }
+
+        Ok(())
     }
 }
 
@@ -228,6 +296,11 @@ fn extract_default_tier_id(body: &Value) -> Option<String> {
 
 fn extract_onboarded_project_id(body: &Value) -> Option<String> {
     body.get("response").and_then(extract_project_id)
+}
+
+fn extract_paid_tier(body: &Value) -> Option<AntigravityPaidTier> {
+    body.get("paidTier")
+        .and_then(|v| serde_json::from_value(v.clone()).ok())
 }
 
 #[cfg(test)]

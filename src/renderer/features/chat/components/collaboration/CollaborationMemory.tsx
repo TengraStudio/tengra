@@ -29,13 +29,13 @@ export const CollaborationMemory = memo(({
                     value={sharedMemoryNote}
                     onChange={(event) => { setSharedMemoryNote(event.target.value); }}
                     placeholder={t('chat.collaboration.memoryPlaceholder')}
-                    className="h-8 text-xs font-medium placeholder:text-muted-foreground/50 border-muted-foreground/10 focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-all"
+                    className="h-8 typo-caption font-medium placeholder:text-muted-foreground/50 border-muted-foreground/10 focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-all"
                 />
                 <Button
                     size="sm"
                     onClick={handleAddMemory}
                     disabled={!sharedMemoryNote.trim()}
-                    className="h-8 px-4 text-xs font-bold transition-transform hover:scale-105"
+                    className="h-8 px-4 typo-caption font-bold transition-transform hover:scale-105"
                 >
                     {t('common.add')}
                 </Button>
@@ -51,7 +51,7 @@ export const CollaborationMemory = memo(({
                     sharedMemory.map((entry, index) => (
                         <div key={index} className="flex items-start gap-2 group animate-in slide-in-from-left-2 fade-in duration-300">
                             <div className="w-1.5 h-1.5 rounded-full bg-primary/40 mt-1.5 shrink-0 group-hover:bg-primary transition-colors" />
-                            <p className="text-xs font-normal text-foreground/80 leading-relaxed font-sans">{entry}</p>
+                            <p className="typo-caption font-normal text-foreground/80 leading-relaxed font-sans">{entry}</p>
                         </div>
                     ))
                 )}

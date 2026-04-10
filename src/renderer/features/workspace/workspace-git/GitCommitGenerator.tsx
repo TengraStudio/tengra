@@ -24,7 +24,7 @@ const GeneratorHeader = ({ t, isLoading, workspacePath, onFetch }: HeaderProps) 
         </div>
         <div className="flex-1">
             <h2 className="font-semibold text-foreground">{t('git.commitGenerator')}</h2>
-            <p className="text-xs text-muted-foreground">{t('git.generatorSubtitle')}</p>
+            <p className="typo-caption text-muted-foreground">{t('git.generatorSubtitle')}</p>
         </div>
         <button
             onClick={onFetch}
@@ -53,7 +53,7 @@ const SuggestionArea = ({
     isCopied,
 }: SuggestionAreaProps) => (
     <div className="space-y-2">
-        <label className="text-xs text-muted-foreground">{t('git.suggestedMessage')}</label>
+        <label className="typo-caption text-muted-foreground">{t('git.suggestedMessage')}</label>
         <div className="relative">
             <textarea
                 value={suggestion}
@@ -205,10 +205,10 @@ export function GitCommitGenerator({ workspacePath, onClose }: GitCommitGenerato
                 )}
                 {diff && (
                     <div className="space-y-2">
-                        <label className="text-xs text-muted-foreground">
+                        <label className="typo-caption text-muted-foreground">
                             {t('git.stagedChanges')}
                         </label>
-                        <pre className="bg-background/60 border border-border/30 rounded-lg p-3 text-xs font-mono text-muted-foreground max-h-48 overflow-y-auto">
+                        <pre className="bg-background/60 border border-border/30 rounded-lg p-3 typo-caption font-mono text-muted-foreground max-h-48 overflow-y-auto">
                             {diff.slice(0, 2000)}
                             {diff.length > 2000 && '\n... (truncated)'}
                         </pre>

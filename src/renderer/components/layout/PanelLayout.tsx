@@ -16,7 +16,6 @@ import {
     serializePersistedPanelLayout,
 } from './panel-layout-persistence';
 
-import './panel-layout.css';
 
 // Types
 export type PanelPosition = 'left' | 'right' | 'bottom' | 'center'

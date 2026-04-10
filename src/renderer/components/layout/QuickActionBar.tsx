@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Language, useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 
-import './quick-action-bar.css';
 
 interface QuickActionBarProps {
     onExplain: (text: string) => void

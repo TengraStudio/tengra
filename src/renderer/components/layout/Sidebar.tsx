@@ -12,7 +12,6 @@ import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { Chat } from '@/types';
 
-import './sidebar/sidebar.css';
 
 const PromptManagerModal = lazy(() =>
     import('@/features/prompts/components/PromptManagerModal').then(module => ({ default: module.PromptManagerModal }))

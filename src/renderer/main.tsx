@@ -8,7 +8,16 @@ import ReactDOM from 'react-dom/client';
 
 import '@renderer/index.css';
 
+import { registerLocalExtensions } from '@renderer/features/extensions/extension-renderers';
+import { registerExtensionComponent } from '@renderer/features/extensions/components/ExtensionViewHost';
+
+// Expose extension SDK to the global window object
+window.Tengra = {
+    registerExtensionComponent,
+};
+
 installRendererLogger();
+registerLocalExtensions();
 performanceMonitor.mark('renderer:boot');
 
 const bootstrapWindow = window as Window & {

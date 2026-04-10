@@ -20,6 +20,7 @@ export interface SessionConversationStreamStartResult {
 
 export interface SessionConversationStreamChunk {
     chatId?: string;
+    streamId?: string;
     content?: string;
     reasoning?: string;
     done?: boolean;

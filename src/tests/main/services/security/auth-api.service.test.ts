@@ -160,6 +160,37 @@ describe('AuthAPIService - GET /api/auth/accounts', () => {
 
         expect(res.statusCode).toBe(500);
     });
+
+    it('should strip sensitive token fields from exposed metadata', async () => {
+        const account = makeAccount({
+            provider: 'antigravity',
+            metadata: {
+                access_token: 'plain-access',
+                refresh_token: 'plain-refresh',
+                token: {
+                    access_token: 'nested-access'
+                },
+                project_id: 'demo-project',
+                tier_id: 'standard-tier'
+            }
+        });
+        vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([account]);
+
+        await service.initialize();
+        const res = await request(service.getPort(), 'GET', '/api/auth/accounts');
+
+        expect(res.statusCode).toBe(200);
+        const parsed = JSON.parse(res.body) as {
+            accounts: Array<{ metadata: Record<string, unknown> }>
+        };
+        expect(parsed.accounts[0]?.metadata).toMatchObject({
+            project_id: 'demo-project',
+            tier_id: 'standard-tier'
+        });
+        expect(parsed.accounts[0]?.metadata).not.toHaveProperty('access_token');
+        expect(parsed.accounts[0]?.metadata).not.toHaveProperty('refresh_token');
+        expect(parsed.accounts[0]?.metadata).not.toHaveProperty('token');
+    });
 });
 
 describe('AuthAPIService - POST /api/auth/accounts/:id', () => {

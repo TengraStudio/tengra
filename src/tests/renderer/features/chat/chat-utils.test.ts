@@ -325,6 +325,11 @@ describe('extractReasoning', () => {
         expect(extractReasoning('', 'Selam ', { trim: false })).toBe('Selam ');
     });
 
+    it('ignores whitespace-only explicit reasoning and falls back to think tags', () => {
+        const content = '<think>gercek dusunce</think>';
+        expect(extractReasoning(content, '   ', { trim: false })).toBe('gercek dusunce');
+    });
+
     it('does not duplicate prior turn content when stream already includes full content', async () => {
         const { processChatStream } = await import('@/features/chat/hooks/process-stream');
         Object.defineProperty(window, 'electron', {
@@ -519,5 +524,153 @@ describe('extractReasoning', () => {
 
         expect(result.finalContent).toBe('Ara cevap. Final cevap.');
         expect(result.finalReasonings).toEqual(['Ilk dusunce.', 'Ikinci dusunce.']);
+    });
+
+    it('does not duplicate cumulative think-tag reasoning within a single segment', async () => {
+        const { processChatStream } = await import('@/features/chat/hooks/process-stream');
+        Object.defineProperty(window, 'electron', {
+            configurable: true,
+            writable: true,
+            value: {
+                db: {
+                    updateMessage: vi.fn().mockResolvedValue({ success: true }),
+                },
+            },
+        });
+        const setStreamingStates = vi.fn();
+        const setChats = vi.fn();
+
+        const stream = (async function* () {
+            yield { type: 'content', content: '<think>Ilk' };
+            yield { type: 'content', content: ' dusunce' };
+            yield { type: 'content', content: ' genisliyor</think>Yanıt.' };
+        })();
+
+        const result = await processChatStream({
+            stream,
+            chatId: 'chat-4',
+            assistantId: 'assistant-4',
+            intentClassification: {
+                intent: 'single_lookup',
+                confidence: 'high',
+                systemMode: 'agent',
+                requiresTooling: true,
+                preferredMaxModelTurns: 4,
+                preferredMaxToolTurns: 2,
+            },
+            setStreamingStates,
+            setChats,
+            streamStartTime: performance.now(),
+            activeModel: 'model-a',
+            selectedProvider: 'antigravity',
+            t: (key: string) => key,
+            autoReadEnabled: false,
+            handleSpeak: vi.fn(),
+        });
+
+        expect(result.finalReasoning).toBe('Ilk dusunce genisliyor');
+        expect(result.finalReasonings).toEqual(['Ilk dusunce genisliyor']);
+    });
+
+    it('keeps only the new suffix when a new reasoning segment replays prior history', async () => {
+        const { processChatStream } = await import('@/features/chat/hooks/process-stream');
+        Object.defineProperty(window, 'electron', {
+            configurable: true,
+            writable: true,
+            value: {
+                db: {
+                    updateMessage: vi.fn().mockResolvedValue({ success: true }),
+                },
+            },
+        });
+        const setStreamingStates = vi.fn();
+        const setChats = vi.fn();
+
+        const stream = (async function* () {
+            yield { type: 'content', content: '<think>Ilk dusunce.</think>Ara cevap.' };
+            yield {
+                type: 'tool_calls',
+                tool_calls: [{
+                    id: 'tool-call-2',
+                    type: 'function' as const,
+                    function: {
+                        name: 'list_directory',
+                        arguments: '{"path":"C:/Users/agnes/Desktop"}',
+                    },
+                }],
+            };
+            yield { type: 'content', content: '<think>Ilk dusunce.Ikinci' };
+            yield { type: 'content', content: ' dusunce.</think>Final cevap.' };
+        })();
+
+        const result = await processChatStream({
+            stream,
+            chatId: 'chat-5',
+            assistantId: 'assistant-5',
+            intentClassification: {
+                intent: 'single_lookup',
+                confidence: 'high',
+                systemMode: 'agent',
+                requiresTooling: true,
+                preferredMaxModelTurns: 4,
+                preferredMaxToolTurns: 2,
+            },
+            setStreamingStates,
+            setChats,
+            streamStartTime: performance.now(),
+            activeModel: 'model-a',
+            selectedProvider: 'antigravity',
+            t: (key: string) => key,
+            autoReadEnabled: false,
+            handleSpeak: vi.fn(),
+        });
+
+        expect(result.finalReasoning).toBe('Ikinci dusunce.');
+        expect(result.finalReasonings).toEqual(['Ilk dusunce.', 'Ikinci dusunce.']);
+    });
+
+    it('does not append the Tengra safety limit message for long streamed responses', async () => {
+        const { processChatStream } = await import('@/features/chat/hooks/process-stream');
+        Object.defineProperty(window, 'electron', {
+            configurable: true,
+            writable: true,
+            value: {
+                db: {
+                    updateMessage: vi.fn().mockResolvedValue({ success: true }),
+                },
+            },
+        });
+        const setStreamingStates = vi.fn();
+        const setChats = vi.fn();
+        const longChunk = 'a'.repeat(200500);
+
+        const stream = (async function* () {
+            yield { type: 'content', content: longChunk };
+        })();
+
+        const result = await processChatStream({
+            stream,
+            chatId: 'chat-6',
+            assistantId: 'assistant-6',
+            intentClassification: {
+                intent: 'single_lookup',
+                confidence: 'high',
+                systemMode: 'agent',
+                requiresTooling: false,
+                preferredMaxModelTurns: 2,
+                preferredMaxToolTurns: 0,
+            },
+            setStreamingStates,
+            setChats,
+            streamStartTime: performance.now(),
+            activeModel: 'model-a',
+            selectedProvider: 'antigravity',
+            t: (key: string) => key,
+            autoReadEnabled: false,
+            handleSpeak: vi.fn(),
+        });
+
+        expect(result.finalContent).toHaveLength(200500);
+        expect(result.finalContent).not.toContain('response exceeded Tengra safety limit');
     });
 });

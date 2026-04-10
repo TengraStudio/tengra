@@ -19,6 +19,8 @@ export interface ExtensionBridge {
     getProfile: (extensionId: string) => Promise<RuntimeValue | null>;
     getState: (extensionId: string) => Promise<RuntimeValue | null>;
     validate: (manifest: Record<string, RuntimeValue>) => Promise<{ valid: boolean; errors: string[] }>;
+    getConfig: (extensionId: string) => Promise<{ success: boolean; config?: Record<string, RuntimeValue>; error?: string }>;
+    updateConfig: (extensionId: string, config: Record<string, RuntimeValue>) => Promise<{ success: boolean; config?: Record<string, RuntimeValue>; error?: string }>;
 }
 
 export function createExtensionBridge(ipc: IpcRenderer): ExtensionBridge {
@@ -42,5 +44,7 @@ export function createExtensionBridge(ipc: IpcRenderer): ExtensionBridge {
         getProfile: extensionId => ipc.invoke('extension:get-profile', extensionId),
         getState: extensionId => ipc.invoke('extension:get-state', extensionId),
         validate: manifest => ipc.invoke('extension:validate', manifest),
+        getConfig: extensionId => ipc.invoke('extension:get-config', extensionId),
+        updateConfig: (extensionId, config) => ipc.invoke('extension:update-config', extensionId, config),
     };
 }

@@ -59,6 +59,13 @@ const marketplacePersonaSchema = marketplaceItemBaseSchema.extend({
     context: z.string().min(1),
 });
 
+const marketplaceExtensionSchema = marketplaceItemBaseSchema.extend({
+    itemType: z.literal('extension'),
+    category: z.string().min(1).max(64),
+    publisher: z.string().min(1).max(128).optional(),
+    repository: z.string().url().optional(),
+});
+
 const marketplaceModelSchema = marketplaceItemBaseSchema.extend({
     itemType: z.literal('model'),
     parameters: z.string().optional(),
@@ -152,10 +159,11 @@ export const marketplaceRegistrySchema = z.object({
     prompts: z.array(marketplacePromptSchema).optional(),
     languages: z.array(marketplaceLanguageSchema).optional(),
     skills: z.array(marketplaceSkillSchema).optional(),
+    extensions: z.array(marketplaceExtensionSchema).optional(),
 }) satisfies z.ZodType<MarketplaceRegistry>;
 
 export const marketplaceInstallRequestSchema = z.object({
-    type: z.enum(['theme', 'mcp', 'persona', 'model', 'prompt', 'language', 'skill']),
+    type: z.enum(['theme', 'mcp', 'persona', 'model', 'prompt', 'language', 'skill', 'extension']),
     id: z.string().min(1).max(128),
     downloadUrl: z.string().url(),
     provider: z.enum(['ollama', 'huggingface', 'custom']).optional(),

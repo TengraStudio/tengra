@@ -1,4 +1,4 @@
-﻿import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { Box, Play, RefreshCw, Square, Terminal, Trash2 } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
@@ -57,16 +57,16 @@ const ContainerItem: React.FC<{
                 </span>
                 <span
                     className={cn(
-                        'text-xs px-2 py-0.5 rounded-full capitalize',
+                        'typo-caption px-2 py-0.5 rounded-full capitalize',
                         getStateColor(container.state)
                     )}
                 >
                     {container.state}
                 </span>
             </div>
-            <div className="text-xs text-muted-foreground truncate">{container.image}</div>
+            <div className="typo-caption text-muted-foreground truncate">{container.image}</div>
             {container.ports && (
-                <div className="text-xs text-neutral mt-1 truncate">{container.ports}</div>
+                <div className="typo-caption text-neutral mt-1 truncate">{container.ports}</div>
             )}
             <div className="flex gap-1 mt-2">
                 {container.state === 'running' ? (
@@ -247,7 +247,7 @@ export function DockerDashboard({
                     </div>
                     <div>
                         <h2 className="font-semibold text-foreground">{t('docker.title')}</h2>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="typo-caption text-muted-foreground">
                             {containers.length} {t('docker.containers')}
                         </p>
                     </div>
@@ -291,7 +291,7 @@ export function DockerDashboard({
                         <Terminal size={14} className="text-muted-foreground" />
                         <span className="text-sm text-muted-foreground">{t('docker.logs')}</span>
                     </div>
-                    <pre className="flex-1 p-4 text-xs font-mono text-muted-foreground overflow-y-auto whitespace-pre-wrap">
+                    <pre className="flex-1 p-4 typo-caption font-mono text-muted-foreground overflow-y-auto whitespace-pre-wrap">
                         {selectedContainer
                             ? logs || t('docker.loading')
                             : t('docker.selectContainer')}

@@ -12,7 +12,6 @@ import { cn } from '@/lib/utils';
 
 import { Button } from '../ui/button';
 
-import './action-controls.css';
 
 export interface ActionControlsProps {
     /** Callback fired when the primary action is triggered */

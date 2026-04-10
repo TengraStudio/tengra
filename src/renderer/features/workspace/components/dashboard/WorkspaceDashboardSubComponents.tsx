@@ -62,7 +62,7 @@ export function SearchResults({ results, workspaceRoot, searchQuery, onSelect, t
                     onClick={() => onSelect(res.file, res.line)}
                     className="p-2 hover:bg-muted/20 rounded cursor-pointer group mb-2 mx-1"
                 >
-                    <div className="flex items-center gap-2 text-xs text-primary mb-0.5">
+                    <div className="flex items-center gap-2 typo-caption text-primary mb-0.5">
                         <span className="font-mono">
                             {res.file.replace(workspaceRoot, '')}:{res.line}
                         </span>

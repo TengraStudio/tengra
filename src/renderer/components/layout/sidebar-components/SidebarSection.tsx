@@ -216,7 +216,7 @@ const SidebarCollapsedSection: React.FC<{
                             'py-2'
                         )}
                     >
-                        <div className="px-3 py-2 text-xs font-semibold text-muted-foreground border-b border-border/50 mb-1">
+                        <div className="px-3 py-2 typo-caption font-semibold text-muted-foreground border-b border-border/50 mb-1">
                             {tooltip}
                         </div>
                         {children}

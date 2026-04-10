@@ -26,7 +26,7 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({
                 <Info className="w-4 h-4 text-primary" />
                 {t('workspaces.basicInfo')}
             </h3>
-            <p className="text-xs text-muted-foreground">{t('workspaces.basicInfoDesc')}</p>
+            <p className="typo-caption text-muted-foreground">{t('workspaces.basicInfoDesc')}</p>
         </div>
 
         <div className="space-y-4">

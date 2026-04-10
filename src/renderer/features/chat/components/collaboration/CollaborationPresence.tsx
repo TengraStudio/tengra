@@ -46,7 +46,7 @@ export const CollaborationPresence = memo(({
             </div>
             <div className="space-y-2">
                 {presence.map((participant) => (
-                    <div key={participant.id} className="text-xs flex items-center gap-3 font-medium transition-opacity hover:opacity-100">
+                    <div key={participant.id} className="typo-caption flex items-center gap-3 font-medium transition-opacity hover:opacity-100">
                         <div className="relative">
                             <span className={`flex w-2.5 h-2.5 rounded-full shadow-sm ring-2 ring-background transition-colors ${participant.isOnline ? 'bg-success animate-pulse' : 'bg-muted-foreground/40'
                                 }`} />

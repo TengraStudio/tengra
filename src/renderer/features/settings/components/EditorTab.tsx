@@ -54,7 +54,7 @@ function MonacoToggleRow({
 }) {
     return (
         <div className="flex items-center justify-between rounded-2xl border border-border/20 bg-background/60 px-4 py-3">
-            <span className="text-xs text-foreground">{label}</span>
+            <span className="typo-caption text-foreground">{label}</span>
             <Checkbox
                 checked={checked}
                 onCheckedChange={value => {
@@ -444,22 +444,22 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                         }}
                         rows={12}
                         spellCheck={false}
-                        className="min-h-[240px] resize-y rounded-2xl border border-border/20 bg-background px-4 py-3 font-mono text-xs leading-6"
+                        className="min-h-[240px] resize-y rounded-2xl border border-border/20 bg-background px-4 py-3 font-mono typo-caption leading-6"
                         placeholder={t('settings.editor.additionalOptionsPlaceholder')}
                     />
                 </SettingsField>
                 <div className="grid gap-3 md:grid-cols-3">
                     <div className="rounded-2xl border border-border/20 bg-background/60 px-4 py-4">
                         <div className="typo-body font-medium text-foreground">{t('settings.editor.option.fontSize')}</div>
-                        <div className="mt-2 text-xs text-muted-foreground">{editorSettings.fontSize}</div>
+                        <div className="mt-2 typo-caption text-muted-foreground">{editorSettings.fontSize}</div>
                     </div>
                     <div className="rounded-2xl border border-border/20 bg-background/60 px-4 py-4">
                         <div className="typo-body font-medium text-foreground">{t('settings.editor.option.wordWrap')}</div>
-                        <div className="mt-2 text-xs text-muted-foreground">{editorSettings.wordWrap}</div>
+                        <div className="mt-2 typo-caption text-muted-foreground">{editorSettings.wordWrap}</div>
                     </div>
                     <div className="rounded-2xl border border-border/20 bg-background/60 px-4 py-4">
                         <div className="typo-body font-medium text-foreground">{t('settings.editor.option.cursorBlinking')}</div>
-                        <div className="mt-2 text-xs text-muted-foreground">{editorSettings.cursorBlinking}</div>
+                        <div className="mt-2 typo-caption text-muted-foreground">{editorSettings.cursorBlinking}</div>
                     </div>
                 </div>
             </SettingsPanel>

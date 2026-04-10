@@ -40,7 +40,7 @@ export const PromptCommandMenu = memo(({ show, prompts, selectedIndex, onSelect,
                         key={prompt.id}
                         onClick={() => onSelect(prompt)}
                         className={cn(
-                            'block w-full px-3 py-2 text-left text-xs transition-colors',
+                            'block w-full px-3 py-2 text-left typo-caption transition-colors',
                             i === selectedIndex
                                 ? 'bg-primary/10 text-primary'
                                 : 'text-foreground hover:bg-accent/40'

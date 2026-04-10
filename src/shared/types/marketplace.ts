@@ -8,7 +8,7 @@ export interface MarketplaceItem {
   version: string;
   downloadUrl: string;
   previewUrl?: string;
-  itemType: 'theme' | 'mcp' | 'persona' | 'model' | 'prompt' | 'language' | 'skill';
+  itemType: 'theme' | 'mcp' | 'persona' | 'model' | 'prompt' | 'language' | 'skill' | 'extension';
   installed?: boolean;
   installedVersion?: string;
 }
@@ -29,6 +29,12 @@ export interface MarketplaceMcp extends MarketplaceItem {
   tools?: MCPServerConfig['tools'];
   storage?: MCPServerConfig['storage'];
   capabilities?: string[];
+}
+
+export interface MarketplaceExtension extends MarketplaceItem {
+  category: string;
+  publisher?: string;
+  repository?: string;
 }
 
 export interface MarketplacePersona extends MarketplaceItem {
@@ -164,10 +170,11 @@ export interface MarketplaceRegistry {
   prompts?: MarketplacePrompt[];
   languages?: MarketplaceLanguage[];
   skills?: MarketplaceSkill[];
+  extensions?: MarketplaceExtension[];
 }
 
 export interface InstallRequest {
-  type: 'theme' | 'mcp' | 'persona' | 'model' | 'prompt' | 'language' | 'skill';
+  type: 'theme' | 'mcp' | 'persona' | 'model' | 'prompt' | 'language' | 'skill' | 'extension';
   id: string;
   downloadUrl: string;
   provider?: MarketplaceModel['provider'];

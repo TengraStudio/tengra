@@ -22,7 +22,6 @@ import {
     terminalWriteResponseSchema
 } from '../utils/terminal-ipc';
 
-import '@xterm/xterm/css/xterm.css';
 
 const TERMINAL_SCROLLBACK_LINES = 10000;
 
@@ -40,7 +39,7 @@ const TerminalErrorOverlay: React.FC<{ t: (k: string) => string }> = ({ t }) => 
     <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
         <div className="text-center px-4">
             <p className="text-destructive text-sm mb-1">{t('terminal.sessionFailed')}</p>
-            <p className="text-muted-foreground text-xs">{t('terminal.closeAndCreate')}</p>
+            <p className="text-muted-foreground typo-caption">{t('terminal.closeAndCreate')}</p>
         </div>
     </div>
 );

@@ -42,14 +42,15 @@ struct AntigravityRateLimitState {
 }
 
 pub async fn handle_chat_completions(
-    _state: State<Arc<AppState>>,
+    state: State<Arc<AppState>>,
     _headers: HeaderMap,
     Json(payload): Json<ChatCompletionRequest>,
 ) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
-    execute_chat_completion_payload(payload).await
+    execute_chat_completion_payload(state, payload).await
 }
 
 pub async fn execute_chat_completion_payload(
+    state: State<Arc<AppState>>,
     payload: ChatCompletionRequest,
 ) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
     // 1. Resolve Provider
@@ -85,9 +86,22 @@ pub async fn execute_chat_completion_payload(
         ));
     }
 
-    // Round-robin via random selection among active keys
-    use rand::seq::SliceRandom;
-    let Some(active_key_row) = active_keys.choose(&mut rand::thread_rng()).copied() else {
+    let requested_account_id = requested_account_id(&payload);
+    let active_key_row = requested_account_id
+        .as_deref()
+        .and_then(|account_id| {
+            active_keys
+                .iter()
+                .copied()
+                .find(|row| row.get("id").and_then(Value::as_str) == Some(account_id))
+                .or_else(|| {
+                    accounts
+                        .iter()
+                        .find(|row| row.get("id").and_then(Value::as_str) == Some(account_id))
+                })
+        })
+        .or_else(|| active_keys.first().copied());
+    let Some(active_key_row) = active_key_row else {
         return Err((
             StatusCode::UNAUTHORIZED,
             Json(json!({"error": format!("No active account for {}", provider)})),
@@ -106,18 +120,32 @@ pub async fn execute_chat_completion_payload(
     let auth_token = decrypt_if_needed(raw_token)?;
 
     if provider == "copilot" {
-        return execute_copilot_rate_limited(payload, &provider, &auth_token, active_key_row).await;
+        return execute_copilot_rate_limited(
+            state,
+            payload,
+            &provider,
+            &auth_token,
+            active_key_row,
+        )
+        .await;
     }
 
     if provider == "antigravity" {
-        return execute_antigravity_rate_limited(payload, &provider, &auth_token, active_key_row)
-            .await;
+        return execute_antigravity_rate_limited(
+            state,
+            payload,
+            &provider,
+            &auth_token,
+            active_key_row,
+        )
+        .await;
     }
 
-    execute_upstream_request(payload, &provider, &auth_token, active_key_row).await
+    execute_upstream_request(state, payload, &provider, &auth_token, active_key_row).await
 }
 
 async fn execute_antigravity_rate_limited(
+    state: State<Arc<AppState>>,
     payload: ChatCompletionRequest,
     provider: &str,
     auth_token: &str,
@@ -147,7 +175,8 @@ async fn execute_antigravity_rate_limited(
         sleep(Duration::from_millis(wait_ms as u64)).await;
     }
 
-    let result = execute_upstream_request(payload, provider, auth_token, active_key_row).await;
+    let result =
+        execute_upstream_request(state, payload, provider, auth_token, active_key_row).await;
 
     {
         let limiter = antigravity_rate_limiter();
@@ -159,6 +188,7 @@ async fn execute_antigravity_rate_limited(
 }
 
 async fn execute_copilot_rate_limited(
+    state: State<Arc<AppState>>,
     payload: ChatCompletionRequest,
     provider: &str,
     auth_token: &str,
@@ -187,7 +217,8 @@ async fn execute_copilot_rate_limited(
         sleep(Duration::from_millis(wait_ms as u64)).await;
     }
 
-    let result = execute_upstream_request(payload, provider, auth_token, active_key_row).await;
+    let result =
+        execute_upstream_request(state, payload, provider, auth_token, active_key_row).await;
 
     {
         let limiter = copilot_rate_limiter();
@@ -199,16 +230,19 @@ async fn execute_copilot_rate_limited(
 }
 
 async fn execute_upstream_request(
+    state: State<Arc<AppState>>,
     payload: ChatCompletionRequest,
     provider: &str,
     auth_token: &str,
     active_key_row: &serde_json::Value,
 ) -> Result<Response, (StatusCode, Json<serde_json::Value>)> {
+    let provider_str = provider.to_string();
     let prepared_payload = prepare_payload(provider, payload, auth_token, active_key_row).await?;
     let request_body = request::translate_request(provider, &prepared_payload);
 
     let res = if provider == "antigravity" {
         execute_antigravity_request(
+            state.clone(),
             provider,
             auth_token,
             active_key_row,
@@ -218,6 +252,7 @@ async fn execute_upstream_request(
         .await?
     } else {
         send_upstream_request(
+            state.clone(),
             provider,
             auth_token,
             active_key_row,
@@ -236,7 +271,9 @@ async fn execute_upstream_request(
     }
 
     if prepared_payload.stream {
-        let sse_stream = stream::translate_stream(provider, res.bytes_stream());
+        let session_key = generate_session_key(active_key_row, &prepared_payload);
+        let sse_stream =
+            stream::translate_stream(provider_str, res.bytes_stream(), state.clone(), session_key);
         Ok(Sse::new(sse_stream).into_response())
     } else {
         let status = res.status();
@@ -253,6 +290,7 @@ async fn execute_upstream_request(
 }
 
 async fn execute_antigravity_request(
+    state: State<Arc<AppState>>,
     provider: &str,
     auth_token: &str,
     active_key_row: &Value,
@@ -270,6 +308,7 @@ async fn execute_antigravity_request(
 
     for candidate in fallback_base_urls(base_url.as_deref()) {
         let res = send_upstream_request(
+            state.clone(),
             provider,
             auth_token,
             active_key_row,
@@ -285,6 +324,7 @@ async fn execute_antigravity_request(
                     // Upstream rate limit. Wait 2.2s and retry once.
                     sleep(Duration::from_millis(2200)).await;
                     let retry_res = send_upstream_request(
+                        state.clone(),
                         provider,
                         auth_token,
                         active_key_row,
@@ -306,6 +346,7 @@ async fn execute_antigravity_request(
                     return Ok(response);
                 } else if response.status() == StatusCode::UNAUTHORIZED {
                     if let Some(retry_response) = retry_antigravity_after_refresh(
+                        state.clone(),
                         active_key_row,
                         payload,
                         request_body,
@@ -341,6 +382,7 @@ async fn execute_antigravity_request(
 }
 
 async fn retry_antigravity_after_refresh(
+    state: State<Arc<AppState>>,
     active_key_row: &Value,
     payload: &ChatCompletionRequest,
     request_body: &Value,
@@ -353,6 +395,7 @@ async fn retry_antigravity_after_refresh(
         return Ok(None);
     };
     let response = send_upstream_request(
+        state.clone(),
         "antigravity",
         token.as_str(),
         active_key_row,
@@ -368,6 +411,7 @@ async fn retry_antigravity_after_refresh(
 }
 
 async fn send_upstream_request(
+    state: State<Arc<AppState>>,
     provider: &str,
     auth_token: &str,
     active_key_row: &Value,
@@ -377,12 +421,28 @@ async fn send_upstream_request(
 ) -> Result<reqwest::Response, (StatusCode, Json<serde_json::Value>)> {
     let upstream_url =
         get_upstream_url(provider, payload.stream, active_key_row, base_url_override);
+
+    let session_key = generate_session_key(active_key_row, payload);
+    let (session_id, prior_signature) = {
+        let mut sid_cache = state.session_id_cache.lock().await;
+        let sig_cache = state.signature_cache.lock().await;
+
+        let sid = sid_cache
+            .entry(session_key.clone())
+            .or_insert_with(|| uuid::Uuid::new_v4().to_string())
+            .clone();
+        let sig = sig_cache.get(&session_key).cloned();
+        (sid, sig)
+    };
+
     let builder = headers::apply_headers(
         upstream_http_client().post(upstream_url),
         provider,
         auth_token,
         payload.stream,
         active_key_row,
+        Some(&session_id),
+        prior_signature.as_deref(),
     );
     builder.json(request_body).send().await.map_err(|error| {
         (
@@ -440,7 +500,7 @@ async fn resolve_antigravity_project_id(
         return Ok(project_id);
     }
 
-    let client = crate::auth::antigravity::client::AntigravityClient::new()
+    let client = crate::auth::antigravity::client::AntigravityClient::new(None)
         .await
         .map_err(|error| {
             (
@@ -489,6 +549,22 @@ fn antigravity_project_from_row(active_key_row: &Value) -> Option<String> {
         .and_then(Value::as_str)
         .map(str::trim)
         .filter(|value| !value.is_empty() && *value != "auto")
+        .map(str::to_string)
+}
+
+fn requested_account_id(payload: &ChatCompletionRequest) -> Option<String> {
+    payload
+        .metadata
+        .as_ref()
+        .and_then(|metadata| metadata.get("account_id").and_then(Value::as_str))
+        .or_else(|| {
+            payload
+                .metadata
+                .as_ref()
+                .and_then(|metadata| metadata.get("accountId").and_then(Value::as_str))
+        })
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
         .map(str::to_string)
 }
 
@@ -641,10 +717,35 @@ fn antigravity_base_url(active_key_row: &Value) -> String {
 fn upstream_http_client() -> &'static Client {
     UPSTREAM_HTTP_CLIENT.get_or_init(|| {
         Client::builder()
-            .timeout(std::time::Duration::from_secs(30))
+            // Streaming completions can legitimately run for several minutes.
+            // Keep a long request timeout to avoid cutting active streams mid-response.
+            .timeout(std::time::Duration::from_secs(600))
+            .connect_timeout(std::time::Duration::from_secs(15))
             .pool_max_idle_per_host(8)
             .tcp_keepalive(std::time::Duration::from_secs(30))
             .build()
             .unwrap_or_else(|_| Client::new())
     })
+}
+
+fn generate_session_key(
+    row: &serde_json::Value,
+    payload: &crate::proxy::types::ChatCompletionRequest,
+) -> String {
+    let account_id = row
+        .get("id")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("anon")
+        .to_string();
+    let conversation_id = payload
+        .metadata
+        .as_ref()
+        .and_then(|m| {
+            m.get("conversation_id")
+                .or_else(|| m.get("conversationId"))
+                .and_then(serde_json::Value::as_str)
+        })
+        .unwrap_or("default")
+        .to_string();
+    format!("{}:{}", account_id, conversation_id)
 }

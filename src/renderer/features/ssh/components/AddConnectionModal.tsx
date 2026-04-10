@@ -188,7 +188,7 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                             }
                             placeholder={t('ssh.placeholders.jumpHostChain')}
                         />
-                        <div className="text-xs text-muted-foreground mt-1">
+                        <div className="typo-caption text-muted-foreground mt-1">
                             {t('ssh.jumpHostChainHint')}
                         </div>
                     </div>
@@ -282,7 +282,7 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                 </div>
                 {testMessage !== '' && (
                     <div
-                        className={`mx-4 mb-4 rounded border border-border/30 bg-muted/20 p-2 text-xs sm:mx-5 ${
+                        className={`mx-4 mb-4 rounded border border-border/30 bg-muted/20 p-2 typo-caption sm:mx-5 ${
                             testState === 'failure'
                                 ? 'text-destructive border-destructive/20'
                                 : 'text-muted-foreground'

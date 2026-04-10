@@ -315,7 +315,7 @@ export function WorkspaceCollaborationSurface({
                     <div
                         key={entry.actorId}
                         className={cn(
-                            'flex tw-min-w-140 items-center gap-2 rounded-lg border px-2.5 py-2 text-xs',
+                            'flex tw-min-w-140 items-center gap-2 rounded-lg border px-2.5 py-2 typo-caption',
                             entry.isLocal
                                 ? 'border-primary/20 bg-primary/5 text-primary'
                                 : 'border-border/50 bg-background/60 text-foreground'
@@ -343,7 +343,7 @@ export function WorkspaceCollaborationSurface({
                     {remoteLocks.map(lockEntry => (
                         <div
                             key={`${lockEntry.actorId}:${lockEntry.filePath}`}
-                            className="flex items-center gap-2 rounded-lg border border-warning/20 bg-warning/10 px-2.5 py-1.5 text-xs text-warning"
+                            className="flex items-center gap-2 rounded-lg border border-warning/20 bg-warning/10 px-2.5 py-1.5 typo-caption text-warning"
                         >
                             <Lock className="h-3 w-3" />
                             <span className="truncate">{getFileName(lockEntry.filePath ?? '')}</span>
@@ -361,7 +361,7 @@ export function WorkspaceCollaborationSurface({
                         {feedEntries.map(entry => (
                             <div
                                 key={`${entry.actorId}:${entry.filePath}:${entry.createdAt}:${entry.kind}`}
-                                className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-background/60 px-2.5 py-2 text-xs"
+                                className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-background/60 px-2.5 py-2 typo-caption"
                             >
                                 <div className="min-w-0">
                                     <div className="truncate font-medium text-foreground">

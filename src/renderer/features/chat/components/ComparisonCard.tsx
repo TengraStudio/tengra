@@ -43,7 +43,7 @@ export const ComparisonCard: React.FC<ComparisonCardProps> = React.memo(({ resul
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold truncate">{result.model}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                    <span className="typo-caption px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                         {result.provider}
                     </span>
                 </div>
@@ -63,7 +63,7 @@ export const ComparisonCard: React.FC<ComparisonCardProps> = React.memo(({ resul
 
             {/* Metrics footer */}
             <div className="flex items-center justify-between px-4 py-2 border-t border-border/50 bg-muted/30">
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <div className="flex items-center gap-4 typo-caption text-muted-foreground">
                     <span>{t('modelComparison.responseTime')}: {result.responseTime}ms</span>
                     <span>{t('modelComparison.tokenCount')}: {result.tokenCount}</span>
                     <span>{t('modelComparison.tokensPerSecond')}: {result.tokensPerSecond}</span>

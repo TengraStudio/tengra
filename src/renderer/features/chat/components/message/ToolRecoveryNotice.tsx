@@ -16,7 +16,7 @@ export const ToolRecoveryNotice = memo(
         }
 
         return (
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 typo-caption text-warning">
                 <div className="flex min-w-0 items-center gap-2">
                     <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                     <span className="truncate">

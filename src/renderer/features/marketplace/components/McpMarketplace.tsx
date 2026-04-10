@@ -247,25 +247,6 @@ export function McpMarketplace({
         return selectedStoreItem as MarketplaceModel;
     }, [selectedStoreItem]);
 
-    const handleToggleMcp = useCallback(async (plugin: McpPlugin) => {
-        try {
-            await window.electron.mcp.toggle(plugin.id ?? plugin.name, !plugin.isEnabled);
-            await onRefreshMcpPlugins();
-        } catch {
-            pushNotification({ type: 'error', message: t('mcp.toggleFailed') });
-        }
-    }, [onRefreshMcpPlugins, t]);
-
-    const handleUninstallMcp = useCallback(async (plugin: McpPlugin) => {
-        try {
-            await window.electron.mcp.uninstall(plugin.id ?? plugin.name);
-            await onRefreshMcpPlugins();
-            pushNotification({ type: 'success', message: t('mcp.uninstallSuccess') });
-        } catch {
-            pushNotification({ type: 'error', message: t('mcp.uninstallFailed') });
-        }
-    }, [onRefreshMcpPlugins, t]);
-
     const handleInstall = useCallback(async (item: MarketplaceItem) => {
         if (installingId) { return; }
         setInstallingId(item.id);
@@ -418,6 +399,7 @@ export function McpMarketplace({
                 author: 'System',
                 version: '1.0.0',
                 installed: true,
+                installedVersion: '1.0.0',
                 itemType: 'mcp',
             };
         }
@@ -452,6 +434,7 @@ export function McpMarketplace({
             author: item.author,
             version: item.version,
             installed: Boolean(item.installed),
+            installedVersion: item.installedVersion,
             itemType: item.itemType,
             readme: resolvedReadme,
             totalSize: displaySize,
@@ -545,8 +528,6 @@ export function McpMarketplace({
                                     <McpCard
                                         plugin={entry.plugin}
                                         t={t}
-                                        onToggle={(p) => void handleToggleMcp(p)}
-                                        onUninstall={(p) => void handleUninstallMcp(p)}
                                     />
                                 ) : (
                                     <MarketCard
@@ -611,6 +592,7 @@ function EmptyState({
 }) {
     const modeKeyByMode: Record<MarketplaceMode, string> = {
         mcp: 'marketplace.tabs.mcp',
+        extensions: 'marketplace.tabs.extensions',
         skills: 'marketplace.tabs.skills',
         themes: 'marketplace.tabs.themes',
         personas: 'marketplace.tabs.personas',
@@ -631,7 +613,7 @@ function Loader({ t }: { t: (key: string) => string }) {
     return (
         <div className="flex flex-col items-center justify-center py-32 space-y-5">
             <RefreshCw className="w-8 h-8 text-primary animate-spin opacity-40" />
-            <p className="text-xs font-bold text-muted-foreground animate-pulse">{t('marketplace.syncing')}</p>
+            <p className="typo-caption font-bold text-muted-foreground animate-pulse">{t('marketplace.syncing')}</p>
         </div>
     );
 }
@@ -654,19 +636,19 @@ function Pagination({
                 type="button"
                 onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                 disabled={currentPage <= 1}
-                className="inline-flex items-center gap-1 rounded-md border border-border/40 px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-md border border-border/40 px-3 py-1.5 typo-caption font-semibold text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
             >
                 <ChevronLeft className="h-3.5 w-3.5" />
                 {t('common.previous')}
             </button>
-            <span className="text-xs font-semibold text-muted-foreground">
+            <span className="typo-caption font-semibold text-muted-foreground">
                 {t('common.pageOf', { current: currentPage, total: totalPages })}
             </span>
             <button
                 type="button"
                 onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage >= totalPages}
-                className="inline-flex items-center gap-1 rounded-md border border-border/40 px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-md border border-border/40 px-3 py-1.5 typo-caption font-semibold text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
             >
                 {t('common.next')}
                 <ChevronRight className="h-3.5 w-3.5" />

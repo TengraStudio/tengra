@@ -4,7 +4,6 @@ import React from 'react';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-import './scroll-to-bottom-button.css';
 
 interface ScrollToBottomButtonProps {
     onClick: () => void

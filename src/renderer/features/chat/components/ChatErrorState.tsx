@@ -100,13 +100,13 @@ export const ChatErrorState: React.FC<ChatErrorStateProps> = React.memo(({
                     </p>
 
                     {error.model && (
-                        <p className="text-xs text-muted-foreground">
+                        <p className="typo-caption text-muted-foreground">
                             {error.model}
                         </p>
                     )}
 
                     {resetTimeLabel && (
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1.5 typo-caption text-muted-foreground">
                             <Clock className="w-3 h-3" />
                             <span>{resetTimeLabel}</span>
                         </div>
@@ -116,7 +116,7 @@ export const ChatErrorState: React.FC<ChatErrorStateProps> = React.memo(({
                         <button
                             onClick={onRetry}
                             disabled={error.retryable === false}
-                            className="flex items-center gap-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1.5 text-xs font-medium transition-colors"
+                            className="flex items-center gap-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1.5 typo-caption font-medium transition-colors"
                         >
                             <RefreshCw className="w-3.5 h-3.5" />
                             {t(ERROR_ACTION_KEYS[error.kind])}
@@ -125,7 +125,7 @@ export const ChatErrorState: React.FC<ChatErrorStateProps> = React.memo(({
                         {showSwitchModel && onSwitchModel && (
                             <button
                                 onClick={onSwitchModel}
-                                className="flex items-center gap-1.5 rounded-lg border border-border/70 hover:bg-accent/50 text-muted-foreground hover:text-foreground px-3 py-1.5 text-xs font-medium transition-colors"
+                                className="flex items-center gap-1.5 rounded-lg border border-border/70 hover:bg-accent/50 text-muted-foreground hover:text-foreground px-3 py-1.5 typo-caption font-medium transition-colors"
                             >
                                 <ArrowRightLeft className="w-3.5 h-3.5" />
                                 {t('chat.errorSwitchModel')}

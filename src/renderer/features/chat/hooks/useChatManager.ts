@@ -7,6 +7,7 @@ import { usePromptManager } from '@renderer/features/chat/hooks/usePromptManager
 import { useSpeechRecognition } from '@renderer/features/chat/hooks/useSpeechRecognition';
 import { useSessionState } from '@renderer/hooks/useSessionState';
 import { WORKSPACE_AGENT_METADATA_KEY } from '@shared/constants/defaults';
+import { QuotaResponse } from '@shared/types/quota';
 import type { SessionConversationGenerationStatus } from '@shared/types/session-conversation';
 import {
     WORKSPACE_AGENT_CHAT_TYPE,
@@ -40,6 +41,8 @@ interface UseChatManagerOptions {
     activeWorkspacePath?: string | undefined;
     workspaceId?: string | undefined;
     models: import('@/types').ModelInfo[];
+    quotas?: { accounts: QuotaResponse[] } | null | undefined;
+    linkedAccounts?: Array<import('@renderer/electron.d').LinkedAccountInfo> | undefined;
 }
 
 /**
@@ -321,9 +324,18 @@ export function useChatManager(options: UseChatManagerOptions) {
     }, [appSettings]);
 
     const { prompts, createPrompt, deletePrompt, updatePrompt } = usePromptManager();
-    const { streamingStates, lastChatError, clearChatError, generateResponse, stopGeneration } = useChatGenerator({
+    const {
+        streamingStates,
+        lastChatError,
+        clearChatError,
+        generateResponse,
+        stopGeneration,
+        antigravityCreditConfirmation,
+        confirmAntigravityCreditUsage,
+        cancelAntigravityCreditUsage,
+    } = useChatGenerator({
         chats, setChats, appSettings, selectedModel, selectedProvider, selectedModels: options.selectedModels,
-        language, selectedPersona, activeWorkspacePath, workspaceId,
+        language, selectedPersona, activeWorkspacePath, workspaceId, quotas: options.quotas, linkedAccounts: options.linkedAccounts,
         t, handleSpeak, autoReadEnabled, formatChatError, systemMode
     });
     const { folders, loadFolders, createFolder, updateFolder, deleteFolder: baseDeleteFolder } = useFolderManager();
@@ -493,6 +505,17 @@ export function useChatManager(options: UseChatManagerOptions) {
         [messages, messageSearchIndex, normalizedSearchTerm]
     );
 
+    useEffect(() => {
+        if (!currentChatId) {
+            return;
+        }
+        const lastMessage = displayMessages.length > 0 ? displayMessages[displayMessages.length - 1] : undefined;
+        appLogger.info(
+            'ChatManager',
+            `derived-state chatId=${currentChatId.slice(0, 8)}, messages=${messages.length}, displayMessages=${displayMessages.length}, isLoading=${String(isLoading)}, streamState=${currentStreamState ? 'present' : 'none'}, streamToolCalls=${currentStreamState?.toolCalls?.length ?? 0}, streamReasoningLen=${currentStreamState?.reasoning?.length ?? 0}, lastRole=${lastMessage?.role ?? 'none'}, lastToolCalls=${lastMessage?.toolCalls?.length ?? 0}, lastToolResults=${Array.isArray(lastMessage?.toolResults) ? lastMessage.toolResults.length : 0}`
+        );
+    }, [currentChatId, currentStreamState, displayMessages, isLoading, messages.length]);
+
     const handleSend = useCallback(async (customInput?: string) => {
         const content = customInput ?? input;
         const readyAttachments = attachments.filter(att => att.status === 'ready');
@@ -633,10 +656,10 @@ export function useChatManager(options: UseChatManagerOptions) {
         folders, createFolder, updateFolder, deleteFolder, moveChatToFolder, addMessage, prompts, createPrompt, deletePrompt, updatePrompt,
         isListening, startListening, stopListening, updateChat, togglePin, toggleFavorite, attachments, setAttachments, processFile, removeAttachment,
         t, handleSpeak, systemMode, setSystemMode, imageRequestCount, setImageRequestCount, regenerateMessage, bulkDeleteChats,
-        permissionPolicy, setPermissionPolicy
+        permissionPolicy, setPermissionPolicy, antigravityCreditConfirmation, confirmAntigravityCreditUsage, cancelAntigravityCreditUsage
     }), [chats, currentChatId, messages, displayMessages, searchTerm, input, isLoading, streamingReasoning, streamingSpeed, chatError, clearChatError, contextTokens, contextWindow,
         handleSend, stopGeneration, createNewChat, deleteChat, clearMessages, folders, createFolder, updateFolder, deleteFolder, moveChatToFolder,
         addMessage, prompts, createPrompt, deletePrompt, updatePrompt, isListening, startListening, stopListening, updateChat, togglePin, toggleFavorite,
         attachments, setAttachments, processFile, removeAttachment, t, handleSpeak, systemMode, imageRequestCount, regenerateMessage, bulkDeleteChats,
-        permissionPolicy, setPermissionPolicy]);
+        permissionPolicy, setPermissionPolicy, antigravityCreditConfirmation, confirmAntigravityCreditUsage, cancelAntigravityCreditUsage]);
 }

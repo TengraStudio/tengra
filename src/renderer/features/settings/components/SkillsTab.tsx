@@ -65,11 +65,11 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
                 icon={Sparkles}
             >
                 {loading ? (
-                    <div className="py-4 text-xs text-muted-foreground">
+                    <div className="py-4 typo-caption text-muted-foreground">
                         {normalizeTranslation(t('common.loading'), 'Loading...')}
                     </div>
                 ) : skills.length === 0 ? (
-                    <div className="rounded-xl border border-border/25 bg-background/40 p-3 text-xs text-muted-foreground">
+                    <div className="rounded-xl border border-border/25 bg-background/40 p-3 typo-caption text-muted-foreground">
                         {normalizeTranslation(t('settings.skills.empty'), 'No installed skills yet.')}
                     </div>
                 ) : (
@@ -81,7 +81,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
                                     <div className="flex items-center justify-between gap-3">
                                         <div className="min-w-0">
                                             <p className="truncate text-sm font-semibold">{skill.name}</p>
-                                            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                                            <p className="mt-1 line-clamp-2 typo-caption text-muted-foreground">
                                                 {skill.description || normalizeTranslation(t('settings.skills.noDescription'), 'No description')}
                                             </p>
                                         </div>

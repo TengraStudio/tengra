@@ -71,10 +71,10 @@ export const EnhanceButton = memo(({ ctrl }: { ctrl: ControllerType }) => {
             variant="ghost"
             size="icon"
             className={cn(
-                'h-8 w-8 rounded-full transition-all active:scale-95',
+                'h-8 w-8 rounded-md transition-colors',
                 isEnhancing
-                    ? 'bg-warning/10 text-warning animate-pulse'
-                    : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                    ? 'bg-warning/10 text-warning'
+                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
             )}
             title={ctrl.t('input.enhancePrompt')}
             aria-label={ctrl.t('input.enhancePrompt')}
@@ -105,12 +105,12 @@ export const SendButton = memo(({ ctrl }: { ctrl: ControllerType }) => {
             disabled={!isLoading && !hasContent}
             size="icon"
             className={cn(
-                'h-8 w-8 rounded-full transition-all duration-200 active:scale-90 shadow-sm',
+                'h-8 w-8 rounded-md border transition-colors duration-150',
                 isLoading
-                    ? 'bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/10'
+                    ? 'border-destructive/35 bg-destructive/10 text-destructive hover:bg-destructive/15'
                     : hasContent
-                        ? 'bg-primary text-primary-foreground hover:bg-primary/95 hover:shadow-primary/20 active:translate-y-0.5'
-                        : 'bg-muted/40 text-muted-foreground/30'
+                        ? 'border-primary bg-primary text-primary-foreground hover:bg-primary/90'
+                        : 'border-border/35 bg-muted/35 text-muted-foreground/40'
             )}
             aria-label={isLoading ? ctrl.t('common.stop') : ctrl.t('common.send')}
             aria-busy={isLoading}
@@ -140,10 +140,10 @@ export const VoiceButton = memo(({ ctrl }: { ctrl: ControllerType }) => (
         size="icon"
         onClick={ctrl.isListening ? ctrl.stopListening : ctrl.startListening}
         className={cn(
-            'h-8 w-8 rounded-full transition-all active:scale-95',
+            'h-8 w-8 rounded-md transition-colors',
             ctrl.isListening
-                ? 'bg-destructive/10 text-destructive animate-pulse'
-                : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                ? 'bg-destructive/10 text-destructive'
+                : 'text-muted-foreground hover:bg-accent hover:text-foreground'
         )}
         title={
             ctrl.isListening
@@ -175,7 +175,7 @@ export const AttachButton = memo(({ onClick, ctrl }: { onClick: () => void; ctrl
         variant="ghost"
         size="icon"
         onClick={onClick}
-        className="h-8 w-8 rounded-full text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-all active:scale-95"
+        className="h-8 w-8 rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         title={ctrl.t('input.attachFile')}
         aria-label={ctrl.t('input.attachFile')}
     >
@@ -192,7 +192,7 @@ export const ComposerStateBadges = memo(({ ctrl }: { ctrl: ControllerType }) => 
         {ctrl.isListening && (
             <Badge
                 variant="destructive"
-                className="h-6 rounded-full border-transparent px-1.5 typo-body animate-pulse"
+                className="h-6 rounded-md border-transparent px-1.5 typo-body"
             >
                 <Mic size={10} aria-hidden="true" />
             </Badge>
@@ -200,7 +200,7 @@ export const ComposerStateBadges = memo(({ ctrl }: { ctrl: ControllerType }) => 
         {ctrl.attachments.length > 0 && (
             <Badge
                 variant="secondary"
-                className="h-6 gap-1 rounded-full px-2 typo-body font-medium"
+                className="h-6 gap-1 rounded-md px-2 typo-body font-medium"
             >
                 <Paperclip size={10} aria-hidden="true" />
                 <span>{ctrl.attachments.length}</span>
@@ -214,7 +214,7 @@ ComposerStateBadges.displayName = 'ComposerStateBadges';
  * ImageCountPanel - Settings for image generation models
  */
 export const ImageCountPanel = memo(({ ctrl }: { ctrl: ControllerType }) => (
-    <div className="mb-2 flex items-center gap-2 rounded-xl border border-border/15 bg-muted/5 px-3 py-1.5 transition-all animate-in fade-in slide-in-from-top-1">
+    <div className="mb-2 flex items-center gap-2 rounded-md border border-border/30 bg-muted/5 px-2.5 py-1.5 transition-all animate-in fade-in slide-in-from-top-1">
         <span className="typo-body text-muted-foreground font-medium">{ctrl.t('input.imageCountLabel')}</span>
         <input
             type="number"
@@ -229,7 +229,7 @@ export const ImageCountPanel = memo(({ ctrl }: { ctrl: ControllerType }) => (
                 }
                 ctrl.setImageRequestCount(Math.max(1, Math.min(5, nextValue)));
             }}
-            className="ml-auto h-7 w-12 rounded-lg border border-border/20 bg-background px-1.5 text-center text-xs text-foreground outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/5"
+            className="ml-auto h-7 w-12 rounded-md border border-border/45 bg-background px-1.5 text-center typo-caption text-foreground outline-none transition-colors focus-visible:ring-1 focus-visible:ring-ring"
             aria-label={ctrl.t('input.imageCountLabel')}
         />
     </div>

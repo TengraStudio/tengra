@@ -25,6 +25,7 @@ import {
 import {
     AgentDefinition,
     AgentStartOptions,
+    AntigravityAiCreditsInfo,
     AppSettings,
     Chat,
     CodexUsage,
@@ -75,6 +76,7 @@ export interface ModelDefinition {
         totalQuota?: number;
         resetTime?: string;
         remainingFraction?: number;
+        aiCredits?: AntigravityAiCreditsInfo;
     };
     percentage?: number;
     reset?: string;
@@ -1023,11 +1025,11 @@ export interface ElectronAPI {
     };
 
     log: {
-        write: (level: string, message: string, data?: Record<string, IpcValue>) => void;
-        debug: (message: string, data?: Record<string, IpcValue>) => void;
-        info: (message: string, data?: Record<string, IpcValue>) => void;
-        warn: (message: string, data?: Record<string, IpcValue>) => void;
-        error: (message: string, data?: Record<string, IpcValue>) => void;
+        write: (level: string, message: string, data?: IpcValue, context?: string) => void;
+        debug: (message: string, data?: IpcValue, context?: string) => void;
+        info: (message: string, data?: IpcValue, context?: string) => void;
+        warn: (message: string, data?: IpcValue, context?: string) => void;
+        error: (message: string, data?: IpcValue, context?: string) => void;
     };
 
     gallery: {

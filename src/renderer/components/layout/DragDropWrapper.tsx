@@ -3,7 +3,6 @@ import React, { useRef } from 'react';
 
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 
-import './drag-drop-wrapper.css';
 
 interface DragDropWrapperProps {
     isDragging: boolean;

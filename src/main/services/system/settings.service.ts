@@ -3,7 +3,7 @@ import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { RuntimeValue } from '@shared/types/common';
-import { AppSettings } from '@shared/types/settings';
+import { AntigravityCreditUsageMode, AppSettings } from '@shared/types/settings';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { app } from 'electron';
@@ -87,6 +87,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     },
     antigravity: {
         connected: false,
+        creditUsageModeByAccount: {},
     },
     copilot: {
         connected: false,
@@ -198,6 +199,27 @@ const DEFAULT_SETTINGS: AppSettings = {
         },
     },
 };
+
+const ANTIGRAVITY_CREDIT_USAGE_MODES: readonly AntigravityCreditUsageMode[] = ['auto', 'ask-every-time'];
+
+function isAntigravityCreditUsageMode(value: RuntimeValue): value is AntigravityCreditUsageMode {
+    return typeof value === 'string'
+        && ANTIGRAVITY_CREDIT_USAGE_MODES.includes(value as AntigravityCreditUsageMode);
+}
+
+function sanitizeAntigravityCreditUsageMap(
+    value: RuntimeValue
+): Record<string, AntigravityCreditUsageMode> {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return {};
+    }
+
+    const entries = Object.entries(value as Record<string, RuntimeValue>)
+        .filter(([, mode]) => isAntigravityCreditUsageMode(mode))
+        .map(([accountId, mode]) => [accountId, mode]);
+
+    return Object.fromEntries(entries);
+}
 
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
@@ -489,6 +511,13 @@ export class SettingsService extends BaseService {
             ...loadedObj,
             connected: hasLinkedAccount || loadedObj.connected === true,
             token: typeof loadedObj.token === 'string' ? loadedObj.token : undefined,
+            ...(provider === 'antigravity'
+                ? {
+                    creditUsageModeByAccount: sanitizeAntigravityCreditUsageMap(
+                        loadedObj.creditUsageModeByAccount
+                    )
+                }
+                : {}),
         } as AppSettings[T];
     }
 

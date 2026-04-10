@@ -149,7 +149,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                     <div className="flex-1 min-w-0">
                         <Select value={selectedModel} onValueChange={setSelectedModel}>
-                            <SelectTrigger className="h-11 rounded-xl border-border/30 bg-background text-xs font-medium">
+                            <SelectTrigger className="h-11 rounded-xl border-border/30 bg-background typo-caption font-medium">
                                 <SelectValue placeholder={t('workspaces.selectModelPlaceholder')} />
                             </SelectTrigger>
                             <SelectContent className="max-h-80 overflow-y-auto rounded-xl border-border/30 bg-popover">

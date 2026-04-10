@@ -682,34 +682,74 @@ fn apply_gemini_reasoning(
     payload: &ChatCompletionRequest,
     generation_config: &mut Map<String, Value>,
 ) {
-    let Some(effort) = payload
-        .reasoning_effort
-        .as_deref()
-        .map(normalize_reasoning_effort)
-    else {
-        return;
-    };
-    if effort == "none" {
+    if is_gemini_3_model(&payload.model) {
+        let Some(level) = resolve_gemini_thinking_level(payload) else {
+            return;
+        };
+        generation_config.insert(
+            "thinkingConfig".to_string(),
+            json!({
+                "thinkingLevel": level,
+                "includeThoughts": true
+            }),
+        );
         return;
     }
 
-    let thinking_config = if is_gemini_3_model(&payload.model) {
-        let level = gemini_level_for_model(&payload.model, &effort);
-        json!({
-            "thinkingLevel": level,
-            "includeThoughts": true
-        })
-    } else {
-        json!({
-            "thinkingBudget": gemini_budget_for_effort(&effort),
-            "include_thoughts": true
-        })
+    let Some(budget) = resolve_gemini_thinking_budget(payload) else {
+        return;
     };
-    generation_config.insert("thinkingConfig".to_string(), thinking_config);
+    generation_config.insert(
+        "thinkingConfig".to_string(),
+        json!({
+            "thinkingBudget": budget,
+            "include_thoughts": true
+        }),
+    );
 }
 
 fn normalize_reasoning_effort(value: &str) -> String {
     value.trim().to_lowercase()
+}
+
+fn resolve_gemini_thinking_level(payload: &ChatCompletionRequest) -> Option<String> {
+    if let Some(level) = payload
+        .thinking_level
+        .as_deref()
+        .map(normalize_reasoning_effort)
+    {
+        if level != "none" && !level.is_empty() {
+            return Some(level);
+        }
+        return None;
+    }
+
+    let effort = payload
+        .reasoning_effort
+        .as_deref()
+        .map(normalize_reasoning_effort)?;
+    if effort == "none" {
+        return None;
+    }
+    Some(gemini_level_for_model(&payload.model, &effort))
+}
+
+fn resolve_gemini_thinking_budget(payload: &ChatCompletionRequest) -> Option<i64> {
+    if let Some(budget) = payload.thinking_budget {
+        if budget > 0 || budget == -1 {
+            return Some(budget);
+        }
+        return None;
+    }
+
+    let effort = payload
+        .reasoning_effort
+        .as_deref()
+        .map(normalize_reasoning_effort)?;
+    if effort == "none" {
+        return None;
+    }
+    Some(gemini_budget_for_effort(&effort))
 }
 
 fn is_gemini_3_model(model: &str) -> bool {
@@ -751,7 +791,8 @@ mod tests {
     use serde_json::{json, Value};
 
     use super::{
-        gemini_budget_for_effort, gemini_level_for_model, is_gemini_3_model, translate_request,
+        gemini_budget_for_effort, gemini_level_for_model, is_gemini_3_model,
+        resolve_gemini_thinking_budget, resolve_gemini_thinking_level, translate_request,
     };
     use crate::proxy::types::{ChatCompletionRequest, ChatMessage};
 
@@ -773,6 +814,8 @@ mod tests {
             top_p: None,
             stop: None,
             reasoning_effort: reasoning_effort.map(str::to_string),
+            thinking_level: None,
+            thinking_budget: None,
             provider: Some("antigravity".to_string()),
             tools: None,
             tool_choice: None,
@@ -830,6 +873,23 @@ mod tests {
     }
 
     #[test]
+    fn prefers_explicit_thinking_level_for_gemini_three() {
+        let mut payload = sample_request("gemini-3-flash-preview", None);
+        payload.thinking_level = Some("high".to_string());
+        assert_eq!(
+            resolve_gemini_thinking_level(&payload),
+            Some("high".to_string())
+        );
+    }
+
+    #[test]
+    fn preserves_explicit_thinking_budget_for_gemini_twenty_five() {
+        let mut payload = sample_request("gemini-2.5-pro", None);
+        payload.thinking_budget = Some(4096);
+        assert_eq!(resolve_gemini_thinking_budget(&payload), Some(4096));
+    }
+
+    #[test]
     fn translates_gemini_tools_and_function_responses() {
         let payload = ChatCompletionRequest {
             model: "gemini-3-flash-preview".to_string(),
@@ -868,6 +928,8 @@ mod tests {
             top_p: None,
             stop: None,
             reasoning_effort: None,
+            thinking_level: None,
+            thinking_budget: None,
             provider: Some("antigravity".to_string()),
             tools: Some(vec![json!({
                 "type": "function",

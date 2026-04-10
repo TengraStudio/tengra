@@ -12,11 +12,15 @@
 3.  **NO PLACEHOLDERS**: Write final, production-ready code with complete logic.
 4.  **BUILD & LINT**: Never deliver code that fails `npm run build`, `npm run lint`, or `npm run type-check`.
 5.  **NASA RULES**: Max 150 lines per function. Fixed loop bounds mandatory.
-6.  **BOY SCOUT RULE**: Mandatory. Every edit MUST fix at least one existing lint/type issue.directory.
+6.  **BOY SCOUT RULE**: Mandatory. Every edit MUST fix at least one existing lint/type issue.
 7.  **ADVANCED HARDENING**: Strictly follow [Advanced Agent Hardening Rules](.agent/rules/advanced-hardening.md).
 8.  **FRIDAY FORBIDDEN**: NO COMMITS OR MAJOR DEPLOYMENTS ON FRIDAYS. Fridays are for testing, documentation, and review ONLY.
 9. **TEST PASS MANDATORY**: Never commit code that fails any test. `npm run test` must pass 100%.
 10. **READ RULES FIRST**: You MUST read rule files (`MASTER_COMMANDMENTS.md`, `AI_RULES.md`, `advanced-hardening.md`) using `view_file` at the start of every session before coding. (Locations: `.agent/rules/`, root).
+11. **CSS-FIRST UI**: In all renderer JSX, use semantic class names only; do not use Tailwind utility chains directly.
+12. **SINGLE STYLESHEET**: All renderer styles must live in `src/renderer/index.css`. Do not create or import extra renderer CSS files.
+13. **ROOT TOKEN SYSTEM**: Spacing, radius, border, shadow, transition, and typography values must be defined under `:root` in `src/renderer/index.css`.
+14. **CLEAN COMMUNICATION**: Never use slang/noise, and never narrate which internal rules were applied.
 
 ---
 
@@ -33,8 +37,8 @@
 9. [Testing Rules](#9-testing-rules)
 10. [Code Style & Conventions](#10-code-style--conventions)
 11. [Forbidden Actions](#11-forbidden-actions)
-12. [Checklist Before Committing](#12-checklist-before-committing)
-13. [Performance Optimization Rules](#13-performance-optimization-rules)
+12. [Agent Communication Rules](#12-agent-communication-rules)
+13. [Agent Efficiency Rules](#13-agent-efficiency-rules)
 
 ---
 
@@ -407,6 +411,15 @@ type Status = 'pending' | 'complete' | 'failed';
 | `@shared/*` | `src/shared/*` | Shared types, utilities |
 | `@/*` | `src/renderer/*` | Shorthand for renderer |
 
+### 10.3 UI Styling Rules (CSS-First, Strict)
+
+1. All renderer JSX must use semantic class names defined in `src/renderer/index.css`.
+2. Tailwind utility chains are forbidden in renderer JSX, including `src/renderer/components/ui/`.
+3. Forbidden tokens include (not limited to): `text-*`, `font-*`, `leading-*`, `tracking-*`, `p*`, `m*`, `w-*`, `h-*`, `flex*`, `grid*`, `gap-*`, `items-*`, `justify-*`, `rounded-*`, `border-*`, `shadow-*`, `ring-*`, `bg-*`, `opacity-*`, `transition*`.
+4. Design primitives (typography, spacing, radius, border width, shadow, transition timing, z-index) must be declared under `:root` in `src/renderer/index.css`.
+5. Do not add new renderer CSS files; extend `src/renderer/index.css`.
+6. When touching JSX with utility classes, migrate that block to semantic classes in the same change.
+
 ---
 
 ## 11. Forbidden Actions
@@ -425,3 +438,32 @@ type Status = 'pending' | 'complete' | 'failed';
 12. Do not use synchronous file operations in main thread
 13. Do not create memory leaks (event listeners without cleanup)
 14. Do not use deprecated APIs
+15. Do not use utility class tokens directly in renderer JSX
+16. Do not create/import additional renderer CSS files outside `src/renderer/index.css`
+17. Do not explain to the user which internal rules were applied
+18. Do not use slang, mocking, or low-signal filler in assistant messages
+
+---
+
+## 12. Agent Communication Rules
+
+1. Communicate in a professional, direct, concise style.
+2. Do not produce exaggerated, joking, sarcastic, or irrelevant text.
+3. Do not include internal process theater ("I followed rule X", "I applied commandment Y").
+4. Report only high-signal facts: what changed, what was verified, what remains risky.
+5. Prefer short sentences and concrete technical wording over commentary.
+
+---
+
+## 13. Agent Efficiency Rules
+
+1. Start with targeted file discovery; do not run wide scans without reason.
+2. Prefer minimal-scope edits over broad refactors unless explicitly requested.
+3. Batch related tool calls in parallel when safe; avoid redundant command reruns.
+4. Validate in this order unless the task requires otherwise:
+   1. Targeted lint/type checks for touched files.
+   2. Full `npm run type-check`.
+   3. Full `npm run lint`.
+   4. Full `npm run build`.
+5. If a command fails, stop, capture root cause, fix, then re-run only required checks.
+6. Every response must include verification status (passed/failed/not-run) for executed checks.

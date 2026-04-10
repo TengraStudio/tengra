@@ -111,7 +111,7 @@ export function TerminalAppearanceModals({
                                 onClick={() => {
                                     applyAppearancePatch({ themePresetId: preset.id });
                                 }}
-                                className="w-full px-2 py-1 rounded-sm text-left text-xs hover:bg-accent/50 transition-colors flex items-center justify-between gap-2"
+                                className="w-full px-2 py-1 rounded-sm text-left typo-caption hover:bg-accent/50 transition-colors flex items-center justify-between gap-2"
                             >
                                 <span className="truncate">{preset.name}</span>
                                 <span className="tw-text-10 text-muted-foreground">
@@ -146,7 +146,7 @@ export function TerminalAppearanceModals({
                                     applyAppearancePatch({ fontPresetId: fontPreset.id });
                                 }}
                                 className={cn(
-                                    'w-full px-2 py-1 rounded-sm text-left text-xs hover:bg-accent/50 transition-colors',
+                                    'w-full px-2 py-1 rounded-sm text-left typo-caption hover:bg-accent/50 transition-colors',
                                     terminalAppearance.fontPresetId === fontPreset.id && 'bg-accent/40'
                                 )}
                             >
@@ -154,7 +154,7 @@ export function TerminalAppearanceModals({
                             </button>
                         ))}
                     </div>
-                    <label className="flex items-center justify-between gap-3 text-xs">
+                    <label className="flex items-center justify-between gap-3 typo-caption">
                         <span>{t('terminal.fontLigatures')}</span>
                         <input
                             type="checkbox"
@@ -188,7 +188,7 @@ export function TerminalAppearanceModals({
                             ))}
                         </div>
                     </div>
-                    <label className="flex items-center justify-between gap-3 text-xs">
+                    <label className="flex items-center justify-between gap-3 typo-caption">
                         <span>{t('terminal.cursorBlink')}</span>
                         <input
                             type="checkbox"
@@ -199,7 +199,7 @@ export function TerminalAppearanceModals({
                             className="h-3.5 w-3.5 rounded border-border bg-background"
                         />
                     </label>
-                    <label className="flex items-center gap-2 text-xs">
+                    <label className="flex items-center gap-2 typo-caption">
                         <span className="w-20 shrink-0 text-muted-foreground">
                             {t('terminal.fontSize')}
                         </span>
@@ -218,7 +218,7 @@ export function TerminalAppearanceModals({
                             {terminalAppearance.fontSize}
                         </span>
                     </label>
-                    <label className="flex items-center gap-2 text-xs">
+                    <label className="flex items-center gap-2 typo-caption">
                         <span className="w-20 shrink-0 text-muted-foreground">
                             {t('terminal.lineHeight')}
                         </span>
@@ -248,7 +248,7 @@ export function TerminalAppearanceModals({
                         shareShortcutPreferences={shareShortcutPreferences}
                         importShortcutShareCode={importShortcutShareCode}
                     />
-                    <label className="flex items-center gap-2 text-xs">
+                    <label className="flex items-center gap-2 typo-caption">
                         <span className="w-20 shrink-0 text-muted-foreground">
                             {t('terminal.transparency')}
                         </span>
@@ -264,7 +264,7 @@ export function TerminalAppearanceModals({
                             className="flex-1"
                         />
                     </label>
-                    <label className="flex items-center gap-2 text-xs">
+                    <label className="flex items-center gap-2 typo-caption">
                         <span className="w-20 shrink-0 text-muted-foreground">{t('terminal.blur')}</span>
                         <input
                             type="range"
@@ -365,13 +365,13 @@ export function TerminalAppearanceModals({
                     <div className="flex items-center justify-end gap-1 pt-1 border-t border-border/60">
                         <button
                             onClick={exportAppearancePreferences}
-                            className="px-2 py-1 rounded border border-border text-xs hover:bg-accent/50 transition-colors"
+                            className="px-2 py-1 rounded border border-border typo-caption hover:bg-accent/50 transition-colors"
                         >
                             {t('terminal.exportTheme')}
                         </button>
                         <button
                             onClick={openAppearanceImportDialog}
-                            className="px-2 py-1 rounded border border-border text-xs hover:bg-accent/50 transition-colors"
+                            className="px-2 py-1 rounded border border-border typo-caption hover:bg-accent/50 transition-colors"
                         >
                             {t('terminal.importTheme')}
                         </button>

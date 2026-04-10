@@ -251,7 +251,9 @@ export default defineConfig(({ mode }) => {
                 'clsx',
                 'tailwind-merge',
                 'date-fns',
-                'zod'
+                'zod',
+                'dompurify',
+                '@xyflow/react'
             ],
             // Exclude large deps that don't need pre-bundling
             exclude: ['@lancedb/lancedb', 'apache-arrow'],

@@ -1,7 +1,6 @@
 import { Command, Search, X } from 'lucide-react';
 import React from 'react';
 
-import './command-header.css';
 
 interface CommandHeaderProps {
     search: string;

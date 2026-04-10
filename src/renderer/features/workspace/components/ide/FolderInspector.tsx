@@ -74,7 +74,7 @@ const ScriptsSection = ({ scripts }: { scripts: ScriptsRecord }) => {
                         key={name}
                         className="flex items-center justify-between group p-1.5 hover:bg-accent/20 rounded transition-colors cursor-pointer"
                     >
-                        <span className="font-mono text-xs text-info-light font-bold">{name}</span>
+                        <span className="font-mono typo-caption text-info-light font-bold">{name}</span>
                         <span
                             className="font-mono text-xxs text-muted-foreground truncate tw-max-w-120"
                             title={String(scripts[name])}
@@ -127,7 +127,7 @@ const PackageInfoSection = ({ pkg }: { pkg: Record<string, IpcValue> }) => {
     const { t } = useTranslation();
     return (
         <div className="space-y-3">
-            <h3 className="text-xs font-bold text-muted-foreground flex items-center gap-2">
+            <h3 className="typo-caption font-bold text-muted-foreground flex items-center gap-2">
                 <Package className="w-3.5 h-3.5" />{' '}
                 {t('workspaceDashboard.folderInspector.packageTitle')}
             </h3>
@@ -163,10 +163,10 @@ const ReadmeSection = ({ readme }: { readme: string }) => {
 
     return (
         <div className="space-y-3">
-            <h3 className="text-xs font-bold text-muted-foreground flex items-center gap-2">
+            <h3 className="typo-caption font-bold text-muted-foreground flex items-center gap-2">
                 <FileText className="w-3.5 h-3.5" /> {t('workspaceDashboard.folderInspector.readme')}
             </h3>
-            <div className="bg-muted/30 rounded-lg p-3 border border-border/50 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-muted text-xs text-muted-foreground leading-relaxed">
+            <div className="bg-muted/30 rounded-lg p-3 border border-border/50 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-muted typo-caption text-muted-foreground leading-relaxed">
                 <pre className="whitespace-pre-wrap font-sans">{displayText}</pre>
             </div>
         </div>

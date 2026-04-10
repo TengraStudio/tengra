@@ -68,7 +68,7 @@ const MessageVariantCard = memo(
                             t={t}
                         />
                         <div className="flex flex-col">
-                            <span className="text-xs font-bold text-foreground/90">
+                            <span className="typo-caption font-bold text-foreground/90">
                                 {variant.model ?? t('messageBubble.unknownModel')}
                             </span>
                             <span className="text-xxs text-muted-foreground">
@@ -233,7 +233,7 @@ export const VariantsView = memo(
                     <div className="bg-primary/10 p-1.5 rounded-lg">
                         <Sparkles className="w-4 h-4 text-primary" />
                     </div>
-                    <span className="text-xs font-bold text-muted-foreground">
+                    <span className="typo-caption font-bold text-muted-foreground">
                         {t('chat.modelComparison')}
                     </span>
                 </div>

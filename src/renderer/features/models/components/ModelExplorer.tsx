@@ -73,12 +73,12 @@ const ExplorerHeader: React.FC<ExplorerHeaderProps> = ({ query, totalHf, onSearc
 const ExplorerActions: React.FC<ExplorerActionsProps> = ({ activeSource, setActiveSource, sortBy, setSortBy, page, setPage, t }) => (
     <div className="flex items-center justify-between">
         <div className="flex gap-3">
-            <button onClick={() => setActiveSource('all')} className={cn("px-6 py-2.5 rounded-xl text-xs font-bold transition-all border", activeSource === 'all' ? "bg-primary text-primary-foreground border-primary" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>{t('modelExplorer.allSources')}</button>
-            <button onClick={() => setActiveSource('ollama')} className={cn("px-6 py-2.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2", activeSource === 'ollama' ? "bg-warning/10 text-warning border-warning/40" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>
+            <button onClick={() => setActiveSource('all')} className={cn("px-6 py-2.5 rounded-xl typo-caption font-bold transition-all border", activeSource === 'all' ? "bg-primary text-primary-foreground border-primary" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>{t('modelExplorer.allSources')}</button>
+            <button onClick={() => setActiveSource('ollama')} className={cn("px-6 py-2.5 rounded-xl typo-caption font-bold transition-all border flex items-center gap-2", activeSource === 'ollama' ? "bg-warning/10 text-warning border-warning/40" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>
                 <Database className="w-3.5 h-3.5" />
                 <span>{t('modelExplorer.sourceOllama')}</span>
             </button>
-            <button onClick={() => setActiveSource('huggingface')} className={cn("px-6 py-2.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2", activeSource === 'huggingface' ? "bg-warning/10 text-warning-600 border-warning/30 dark:text-warning" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>
+            <button onClick={() => setActiveSource('huggingface')} className={cn("px-6 py-2.5 rounded-xl typo-caption font-bold transition-all border flex items-center gap-2", activeSource === 'huggingface' ? "bg-warning/10 text-warning-600 border-warning/30 dark:text-warning" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>
                 <Box className="w-3.5 h-3.5" />
                 <span>{t('modelExplorer.sourceHuggingFace')}</span>
             </button>
@@ -145,7 +145,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                 <ExplorerActions activeSource={activeSource} setActiveSource={setActiveSource} sortBy={sortBy} setSortBy={setSortBy} page={page} setPage={setPage} t={t} />
                 {comparisonIds.length > 0 && (
                     <div className="rounded-xl border border-info/30 bg-info/5 px-4 py-3 flex items-center justify-between">
-                        <div className="text-xs text-info font-semibold">
+                        <div className="typo-caption text-info font-semibold">
                             {t('modelExplorer.compareQueue', { count: comparisonIds.length, max: 4 })}
                         </div>
                         <div className="flex items-center gap-2">
@@ -153,7 +153,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                                 onClick={() => void runComparison()}
                                 disabled={comparisonIds.length < 2 || comparisonLoading}
                                 className={cn(
-                                    'px-3 py-1.5 rounded-md text-xs font-bold border',
+                                    'px-3 py-1.5 rounded-md typo-caption font-bold border',
                                     comparisonIds.length < 2 || comparisonLoading
                                         ? 'opacity-50 cursor-not-allowed border-border/30'
                                         : 'border-info/40 bg-info/10 text-info'
@@ -163,7 +163,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                             </button>
                             <button
                                 onClick={clearComparison}
-                                className="px-3 py-1.5 rounded-md text-xs font-bold border border-border/40"
+                                className="px-3 py-1.5 rounded-md typo-caption font-bold border border-border/40"
                             >
                                 {t('common.clear')}
                             </button>
@@ -171,7 +171,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                     </div>
                 )}
                 {Boolean(comparisonResult) && (
-                    <div className="rounded-xl border border-border/40 bg-muted/20 px-4 py-3 text-xs">
+                    <div className="rounded-xl border border-border/40 bg-muted/20 px-4 py-3 typo-caption">
                         <div className="font-semibold mb-2">{t('modelExplorer.comparisonResult')}</div>
                         <pre className="whitespace-pre-wrap break-words text-muted-foreground">
                             {JSON.stringify(comparisonResult, null, 2)}
@@ -185,7 +185,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                     {loading && (
                         <div className="flex flex-col items-center justify-center py-10 space-y-4">
                             <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                            <p className="text-muted-foreground text-xs animate-pulse">{t('modelExplorer.searching')}</p>
+                            <p className="text-muted-foreground typo-caption animate-pulse">{t('modelExplorer.searching')}</p>
                         </div>
                     )}
 

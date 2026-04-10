@@ -110,6 +110,33 @@ describe('AuthService - Account Management', () => {
         expect(mockSecurityService.encryptSync).toHaveBeenCalledWith('my-token');
     });
 
+    it('strips sensitive token fields from linked-account metadata while preserving provider state', async () => {
+        vi.mocked(mockDatabaseService.getLinkedAccounts).mockResolvedValue([]);
+
+        await authService.linkAccount('antigravity', {
+            accessToken: 'my-token',
+            email: 'user@example.com',
+            metadata: {
+                access_token: 'plain-access',
+                refresh_token: 'plain-refresh',
+                token: {
+                    access_token: 'nested-access'
+                },
+                project_id: 'demo-project',
+                tier_id: 'standard-tier'
+            }
+        });
+
+        expect(mockDatabaseService.saveLinkedAccount).toHaveBeenCalledWith(
+            expect.objectContaining({
+                metadata: {
+                    project_id: 'demo-project',
+                    tier_id: 'standard-tier'
+                }
+            })
+        );
+    });
+
     it('should migrate legacy google accounts to antigravity on update', async () => {
         const legacyAccount = makeAccount({
             id: 'legacy-google-account',

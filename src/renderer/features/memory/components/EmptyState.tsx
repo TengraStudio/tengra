@@ -22,7 +22,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     <Icon className="w-12 h-12 text-muted-foreground/20" />
     <div className="space-y-1">
       <h3 className="font-bold text-muted-foreground">{title}</h3>
-      <p className="text-xs text-muted-foreground/50 max-w-xs">{description}</p>
+      <p className="typo-caption text-muted-foreground/50 max-w-xs">{description}</p>
     </div>
   </div>
 );

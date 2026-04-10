@@ -3,7 +3,6 @@ import React from 'react';
 import { getSettingsNavigationItems } from '@/features/settings/settings-navigation';
 import { SettingsCategory } from '@/features/settings/types';
 
-import './sidebar-settings-menu.css';
 
 interface SidebarSettingsMenuProps {
     onOpenSettings: (category?: SettingsCategory) => void

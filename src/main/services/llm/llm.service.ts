@@ -42,6 +42,7 @@ export interface LLMChatOptions {
     systemMode?: SystemMode;
     reasoningEffort?: string;
     workspaceRoot?: string;
+    accountId?: string;
     signal?: AbortSignal;
 }
 
@@ -422,13 +423,13 @@ export class LLMService {
     // --- Unified chat routing ---
 
     /** Unified streaming chat across all providers. */
-    async *chatStream(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[], provider?: string, options?: { systemMode?: SystemMode; reasoningEffort?: string; temperature?: number; signal?: AbortSignal; workspaceRoot?: string }) {
+    async *chatStream(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[], provider?: string, options?: { systemMode?: SystemMode; reasoningEffort?: string; temperature?: number; signal?: AbortSignal; workspaceRoot?: string; accountId?: string }) {
         const effectiveProvider = this.resolveProvider(model, provider);
         const p = effectiveProvider.toLowerCase();
         const config = await this.getRouteConfig(p, model, tools, options);
 
         if (p.includes('opencode')) {
-            yield* this.chatOpenCodeStream(messages, model, tools);
+            yield* this.chatOpenCodeStream(messages, model, tools, options?.signal);
         } else {
             yield* this.chatOpenAIStream(messages, {
                 model, tools,
@@ -439,7 +440,8 @@ export class LLMService {
                 systemMode: options?.systemMode,
                 reasoningEffort: options?.reasoningEffort,
                 signal: options?.signal,
-                workspaceRoot: options?.workspaceRoot
+                workspaceRoot: options?.workspaceRoot,
+                accountId: options?.accountId
             });
         }
     }

@@ -116,7 +116,7 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                             setContextMenu({ tabId: tab.id, x: event.clientX, y: event.clientY });
                         }}
                         className={cn(
-                            'group flex items-center gap-2 px-3 py-2 text-xs border-r border-border/30 transition-all tw-min-w-120 tw-max-w-200',
+                            'group flex items-center gap-2 px-3 py-2 typo-caption border-r border-border/30 transition-all tw-min-w-120 tw-max-w-200',
                             isActive
                                 ? 'bg-muted text-success border-t-2 border-t-emerald-500'
                                 : 'text-muted-foreground hover:bg-muted/50 hover:text-muted-foreground border-t-2 border-t-transparent'

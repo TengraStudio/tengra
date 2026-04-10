@@ -102,7 +102,7 @@ export const AccountManager: React.FC = () => {
                                     </div>
                                     <div>
                                         <p className="font-medium text-foreground">{account.displayName ?? t('accounts.unnamed')}</p>
-                                        <p className="text-xs text-muted-foreground">{t('accounts.idPrefix')} {account.id.slice(0, 8)}...</p>
+                                        <p className="typo-caption text-muted-foreground">{t('accounts.idPrefix')} {account.id.slice(0, 8)}...</p>
                                     </div>
                                 </div>
                                 {activeAccountId === account.id ? (

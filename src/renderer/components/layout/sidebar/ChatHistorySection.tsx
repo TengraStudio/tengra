@@ -112,7 +112,7 @@ export const ChatHistorySectionComponent: React.FC<ChatHistorySectionProps> = ({
                                 setIsCreatingFolder(false);
                             }
                         }}
-                        className="w-full bg-muted/20 border border-primary/30 text-xs rounded-md px-2 py-1 outline-none"
+                        className="w-full bg-muted/20 border border-primary/30 typo-caption rounded-md px-2 py-1 outline-none"
                         placeholder={t('sidebar.newFolderPlaceholder')}
                     />
                 </div>

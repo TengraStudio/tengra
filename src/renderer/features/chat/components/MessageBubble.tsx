@@ -15,8 +15,6 @@ import { useChatMessageError, useMessageContent, useQuotaDetails } from './messa
 import { VariantsView } from './message/MessageVariants';
 import { SingleMessageViewContent } from './message/SingleMessageViewContent';
 
-import 'katex/dist/katex.min.css';
-import '@renderer/features/chat/components/MessageBubble.css';
 
 type SingleMessageViewProps = MessageProps;
 

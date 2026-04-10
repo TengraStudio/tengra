@@ -1,4 +1,5 @@
 import { AiIntentClassification } from '@shared/types/ai-runtime';
+import { JsonValue } from '@shared/types/common';
 import { buildAiPresentationMetadata, isLowSignalProgressContent } from '@shared/utils/ai-runtime.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
@@ -45,18 +46,28 @@ export function buildStoredToolResults(
         return [];
     }
 
-    return toolCalls.map(toolCall => {
+    const storedResults: ToolResult[] = [];
+    for (const toolCall of toolCalls) {
         const matchingToolMessage = toolMessages.find(message => message.toolCallId === toolCall.id);
-        return {
+        if (!matchingToolMessage) {
+            continue;
+        }
+        const rawContent = getMessageStringContent(matchingToolMessage.content);
+        const parsedResult = safeJsonParse<JsonValue>(rawContent, rawContent);
+        const parsedRecord = parsedResult && typeof parsedResult === 'object' && !Array.isArray(parsedResult)
+            ? parsedResult as Record<string, JsonValue>
+            : null;
+        const error = typeof parsedRecord?.error === 'string' ? parsedRecord.error : undefined;
+        storedResults.push({
             toolCallId: toolCall.id,
             name: toolCall.function.name,
-            result: matchingToolMessage
-                ? safeJsonParse(getMessageStringContent(matchingToolMessage.content), {})
-                : {},
-            success: true,
+            result: parsedResult,
+            success: parsedRecord?.success !== false && !error,
+            error,
             isImage: toolCall.function.name === 'generate_image',
-        };
-    });
+        });
+    }
+    return storedResults;
 }
 
 export function getToolMessageContent(message: Message): string {

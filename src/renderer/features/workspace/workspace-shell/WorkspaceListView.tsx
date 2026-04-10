@@ -29,7 +29,7 @@ export const WorkspaceListView: React.FC<WorkspaceListViewProps> = memo(({
 }) => {
     return (
         <div className="rounded-xl border border-border/40 overflow-hidden">
-            <div className="grid tw-grid-cols-todo gap-3 px-4 py-3 bg-muted/20 text-xs font-semibold text-muted-foreground">
+            <div className="grid tw-grid-cols-todo gap-3 px-4 py-3 bg-muted/20 typo-caption font-semibold text-muted-foreground">
                 <div />
                 <button onClick={() => toggleSort('title')} className="flex items-center gap-1 text-left hover:text-foreground transition-colors">
                     {t('workspaces.tableName')} <ArrowDownUp className="w-3 h-3" />
@@ -61,10 +61,10 @@ export const WorkspaceListView: React.FC<WorkspaceListViewProps> = memo(({
                             title={workspace.description || t('workspaces.noDescription')}
                         >
                             <div className="font-medium truncate">{workspace.title}</div>
-                            <div className="text-xs text-muted-foreground truncate">{workspace.description || t('workspaces.noDescription')}</div>
+                            <div className="typo-caption text-muted-foreground truncate">{workspace.description || t('workspaces.noDescription')}</div>
                         </button>
-                        <div className="text-xs text-muted-foreground truncate font-mono">{workspace.path}</div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="typo-caption text-muted-foreground truncate font-mono">{workspace.path}</div>
+                        <div className="typo-caption text-muted-foreground">
                             {new Date(workspace.updatedAt).toLocaleDateString()}
                         </div>
                         <div className="flex items-center justify-end gap-1">
@@ -102,7 +102,7 @@ export const WorkspaceListView: React.FC<WorkspaceListViewProps> = memo(({
                 <div className="py-12 text-center border-t border-border/20">
                     <Monitor className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
                     <p className="text-muted-foreground font-medium">{t('workspaces.noWorkspaces')}</p>
-                    <p className="text-xs text-muted-foreground/50 mt-1">{t('workspaces.startNewWorkspace')}</p>
+                    <p className="typo-caption text-muted-foreground/50 mt-1">{t('workspaces.startNewWorkspace')}</p>
                 </div>
             )}
         </div>

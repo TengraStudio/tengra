@@ -39,7 +39,7 @@ export const GitCommitHistory: React.FC<CommitHistoryProps> = ({
                         onClick={() => {
                             void handleCommitSelect(null);
                         }}
-                        className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted/50 transition-colors"
+                        className="typo-caption text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted/50 transition-colors"
                     >
                         {t('workspaceDashboard.clearSelection')}
                     </button>

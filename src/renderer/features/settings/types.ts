@@ -15,6 +15,7 @@ export type SettingsCategory =
     | 'advanced'
     | 'about'
     | 'images'
+    | 'extensions'
     | 'usage-limits'
     | 'social-media';
 

@@ -13,7 +13,6 @@ import { useTranslation } from '@/i18n';
 import { AnimatePresence,motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 
-import './select-dropdown.css';
 
 interface SelectOption {
     value: string

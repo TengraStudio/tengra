@@ -105,7 +105,7 @@ export const DatabaseSizeDashboard: React.FC = () => {
     return (
         <div className="space-y-4">
             <div>
-                <h3 className="text-xs font-bold text-muted-foreground">
+                <h3 className="typo-caption font-bold text-muted-foreground">
                     {t('settings.databaseSizeDashboard.title')}
                 </h3>
                 <p className="tw-text-10 text-muted-foreground/60 mt-1">

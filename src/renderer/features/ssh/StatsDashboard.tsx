@@ -81,7 +81,7 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
                 <CardContent>
                     <div className="flex items-end gap-2">
                         <span className="text-2xl font-bold text-foreground">{stats.memory.percent}%</span>
-                        <span className="text-xs text-muted-foreground/40 mb-1">{stats.memory.used} / {stats.memory.total} MB</span>
+                        <span className="typo-caption text-muted-foreground/40 mb-1">{stats.memory.used} / {stats.memory.total} MB</span>
                     </div>
                     <div className="mt-3 h-2 w-full bg-muted/30 rounded-full overflow-hidden">
                         <motion.div
@@ -102,7 +102,7 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
                 <CardContent>
                     <div className="flex items-end gap-2">
                         <span className="text-2xl font-bold text-foreground">{stats.disk}%</span>
-                        <span className="text-xs text-muted-foreground/40 mb-1">{t('ssh.rootPartition')}</span>
+                        <span className="typo-caption text-muted-foreground/40 mb-1">{t('ssh.rootPartition')}</span>
                     </div>
                     <div className="mt-3 h-2 w-full bg-muted/30 rounded-full overflow-hidden">
                         <motion.div
@@ -124,7 +124,7 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
                     <div className="text-lg font-bold text-foreground truncate" title={stats.uptime}>
                         {stats.uptime !== '' ? stats.uptime : t('ssh.unknown')}
                     </div>
-                    <p className="text-xs text-muted-foreground/40 mt-1">{t('ssh.serverUptime')}</p>
+                    <p className="typo-caption text-muted-foreground/40 mt-1">{t('ssh.serverUptime')}</p>
                 </CardContent>
             </Card>
         </div>

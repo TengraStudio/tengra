@@ -168,7 +168,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                     </div>
 
                     {!telegramConfig.token && telegramConfig.enabled && (
-                        <div className="flex items-center gap-2 rounded-xl bg-amber-500/10 p-3 text-xs text-amber-500 border border-amber-500/20">
+                        <div className="flex items-center gap-2 rounded-xl bg-amber-500/10 p-3 typo-caption text-amber-500 border border-amber-500/20">
                             <AlertCircle className="h-4 w-4 shrink-0" />
                             <span>{t('settings.socialMedia.telegram.missingTokenWarning')}</span>
                         </div>
@@ -243,7 +243,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                 <Shield className="mt-0.5 h-5 w-5 text-primary" />
                 <div className="space-y-1">
                     <h4 className="text-sm font-medium text-primary">{t('settings.socialMedia.security.title')}</h4>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
+                    <p className="typo-caption text-muted-foreground leading-relaxed">
                         {t('settings.socialMedia.security.description')}
                     </p>
                 </div>
@@ -271,7 +271,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                                                 {job.cronExpression}
                                             </code>
                                         </div>
-                                        <p className="text-xs text-muted-foreground truncate mt-0.5">
+                                        <p className="typo-caption text-muted-foreground truncate mt-0.5">
                                             {job.message}
                                         </p>
                                         <div className="flex gap-1 mt-1">
@@ -344,8 +344,8 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                                 />
                             </SettingsField>
                             <div className="flex items-center gap-3">
-                                <span className="text-xs text-muted-foreground">{t('settings.socialMedia.cronJobs.platformsLabel')}</span>
-                                <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                                <span className="typo-caption text-muted-foreground">{t('settings.socialMedia.cronJobs.platformsLabel')}</span>
+                                <label className="flex items-center gap-1.5 typo-caption cursor-pointer">
                                     <input
                                         type="checkbox"
                                         checked={newCronDraft.platforms.includes('telegram')}
@@ -361,7 +361,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                                     />
                                     Telegram
                                 </label>
-                                <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                                <label className="flex items-center gap-1.5 typo-caption cursor-pointer">
                                     <input
                                         type="checkbox"
                                         checked={newCronDraft.platforms.includes('discord')}
@@ -383,7 +383,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                                     type="button"
                                     onClick={handleAddCronJob}
                                     disabled={!newCronDraft.label || !newCronDraft.message || newCronDraft.platforms.length === 0}
-                                    className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-40"
+                                    className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground typo-caption font-medium hover:bg-primary/90 transition-colors disabled:opacity-40"
                                 >
                                     {t('settings.socialMedia.cronJobs.addButton')}
                                 </button>
@@ -393,7 +393,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                                         setShowNewCronForm(false);
                                         setNewCronDraft(createEmptyCronJob());
                                     }}
-                                    className="px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-xs font-medium hover:bg-muted/80 transition-colors"
+                                    className="px-3 py-1.5 rounded-lg bg-muted text-muted-foreground typo-caption font-medium hover:bg-muted/80 transition-colors"
                                 >
                                     {t('common.cancel')}
                                 </button>
@@ -406,7 +406,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                         <button
                             type="button"
                             onClick={() => setShowNewCronForm(true)}
-                            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-dashed border-border/60 text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors w-full justify-center"
+                            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-dashed border-border/60 typo-caption text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors w-full justify-center"
                         >
                             <Plus className="h-4 w-4" />
                             {t('settings.socialMedia.cronJobs.addNew')}
@@ -445,7 +445,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                             <AlertCircle className="h-6 w-6 text-muted-foreground" />
                         </div>
                         <h5 className="text-sm font-medium">{t('settings.socialMedia.whatsapp.comingSoonTitle')}</h5>
-                        <p className="text-xs text-muted-foreground max-w-xs">
+                        <p className="typo-caption text-muted-foreground max-w-xs">
                             {t('settings.socialMedia.whatsapp.comingSoonDescription')}
                         </p>
                     </div>

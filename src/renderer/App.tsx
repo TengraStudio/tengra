@@ -36,7 +36,6 @@ import {
 import { useModel } from '@/context/ModelContext';
 import { useWorkspaceLibrary, useWorkspaceSelection } from '@/context/WorkspaceContext';
 
-import '@renderer/App.css';
 
 // Lazy load heavy layout components
 const CommandPalette = lazy(() => import('@renderer/components/layout/CommandPalette').then(m => ({ default: m.CommandPalette })));

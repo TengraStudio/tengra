@@ -4,7 +4,7 @@ import { Check, ImageIcon, Info, Pin } from 'lucide-react';
 import React from 'react';
 
 import { cn } from '@/lib/utils';
-import type { QuotaResponse } from '@/types/quota';
+import type { ModelQuotaItem, QuotaResponse } from '@/types/quota';
 
 interface ModelSelectorItemProps {
     model: ModelListItem;
@@ -65,15 +65,17 @@ function extractPercent(value: {
 }
 
 function getAntigravityPercent(model: ModelListItem, activeAntigravityQuota?: QuotaResponse | null): number | null {
-    const aliases = new Set(getAntigravityAliases(model.id, model.label));
-    const quotaMatches = activeAntigravityQuota?.models.filter(item => aliases.has(item.id.toLowerCase())) ?? [];
+    const quotaMatch = getAntigravityQuotaMatch(model, activeAntigravityQuota);
+    if (quotaMatch) {
+        return extractPercent(quotaMatch);
+    }
+
     const familyLabel = model.label.toLowerCase().replace(/\s*\((high|low)\)\s*$/i, '').trim();
     const fallbackMatches = activeAntigravityQuota?.models.filter(item => {
         const normalizedName = item.name.toLowerCase();
         return normalizedName.includes(familyLabel) || familyLabel.includes(normalizedName);
     }) ?? [];
-    const quotaPercents = quotaMatches
-        .concat(fallbackMatches)
+    const quotaPercents = fallbackMatches
         .map(item => extractPercent(item))
         .filter((percent): percent is number => percent !== null);
 
@@ -85,6 +87,20 @@ function getAntigravityPercent(model: ModelListItem, activeAntigravityQuota?: Qu
         return 0;
     }
     return extractPercent(model);
+}
+
+function getAntigravityQuotaMatch(
+    model: ModelListItem,
+    activeAntigravityQuota?: QuotaResponse | null
+): ModelQuotaItem | null {
+    const aliases = new Set(getAntigravityAliases(model.id, model.label));
+    const quotaMatches = activeAntigravityQuota?.models.filter(item => aliases.has(item.id.toLowerCase())) ?? [];
+    if (quotaMatches.length > 0) {
+        return quotaMatches.reduce((lowest, current) =>
+            current.percentage < lowest.percentage ? current : lowest
+        );
+    }
+    return null;
 }
 
 function getQuotaTone(percent: number): string {
@@ -146,10 +162,15 @@ const ModelQuotaDisplay: React.FC<{
     t: (key: string) => string;
 }> = ({ model, activeAntigravityQuota, t }) => {
     if (model.provider === 'antigravity') {
+        const quotaMatch = getAntigravityQuotaMatch(model, activeAntigravityQuota);
         const percent = getAntigravityPercent(model, activeAntigravityQuota);
         if (percent === null) {
             return null;
         }
+        const aiCredits = quotaMatch?.quotaInfo?.aiCredits;
+        const creditLabel = typeof aiCredits?.creditAmount === 'number'
+            ? `${t('models.creditsLeft')}: ${Math.max(0, Math.round(aiCredits.creditAmount))}`
+            : null;
 
         return (
             <div className="mt-2 space-y-1">
@@ -168,6 +189,11 @@ const ModelQuotaDisplay: React.FC<{
                         style={{ width: `${percent}%` }}
                     />
                 </div>
+                {creditLabel && (
+                    <div className="text-xxxs font-bold text-muted-foreground/70">
+                        {creditLabel}
+                    </div>
+                )}
             </div>
         );
     }

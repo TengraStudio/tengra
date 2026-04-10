@@ -8,6 +8,7 @@ import type { IpcRendererEvent } from 'electron';
 
 import {
     AgentDefinition,
+    AntigravityAiCreditsInfo,
     AppSettings,
     Chat,
     ClaudeQuota,
@@ -95,6 +96,7 @@ export interface ModelDefinition {
         totalQuota?: number;
         resetTime?: string;
         remainingFraction?: number;
+        aiCredits?: AntigravityAiCreditsInfo;
     };
     percentage?: number;
     reset?: string;
@@ -724,5 +726,8 @@ declare global {
     interface Window {
         electron: ElectronAPI;
         TengraSpeak: (text: string) => void;
+        Tengra: {
+            registerExtensionComponent: (viewId: string, Component: React.ComponentType<Record<string, unknown>>) => void;
+        };
     }
 }

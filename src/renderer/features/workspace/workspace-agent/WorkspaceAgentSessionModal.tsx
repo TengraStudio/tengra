@@ -133,7 +133,7 @@ export const WorkspaceAgentSessionModal: React.FC<WorkspaceAgentSessionModalProp
                                             <div className="truncate text-sm font-semibold text-foreground">
                                                 {session.title}
                                             </div>
-                                            <div className="mt-1 text-xs text-muted-foreground">
+                                            <div className="mt-1 typo-caption text-muted-foreground">
                                                 {session.lastMessagePreview || session.strategy}
                                             </div>
                                         </button>

@@ -8,7 +8,6 @@ import {
 } from '@/hooks/shortcutBindings';
 import { useTranslation } from '@/i18n';
 
-import './keyboard-shortcut-reference.css';
 
 interface ShortcutCategory {
     titleKey: string;

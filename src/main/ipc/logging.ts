@@ -119,6 +119,14 @@ export function registerLoggingIpc() {
  * @param arg1 - Log level string or structured log object
  * @param arg2 - Optional message string when arg1 is a level string
  */
+function extractRendererContext(data: JsonValue | Error | undefined): string | undefined {
+    if (!data || typeof data !== 'object' || data instanceof Error || !('rendererContext' in data)) {
+        return undefined;
+    }
+    const candidate = (data as { rendererContext?: JsonValue }).rendererContext;
+    return typeof candidate === 'string' && candidate.trim().length > 0 ? candidate : undefined;
+}
+
 function handleLogWrite(event: Electron.IpcMainEvent, arg1: string | { level?: LogLevel, message?: string, context?: string, data?: JsonValue | Error }, arg2?: string) {
     // SEC-013-4: Verify sender is a valid window
     try {
@@ -142,8 +150,9 @@ function handleLogWrite(event: Electron.IpcMainEvent, arg1: string | { level?: L
     } else {
         level = arg1.level ?? LogLevel.INFO;
         message = arg1.message ?? '';
-        context = arg1.context ? `renderer:${arg1.context}` : 'renderer';
         data = arg1.data;
+        const extractedContext = arg1.context ?? extractRendererContext(data);
+        context = extractedContext ? `renderer:${extractedContext}` : 'renderer';
     }
 
     logToApp(level, context, message, data);

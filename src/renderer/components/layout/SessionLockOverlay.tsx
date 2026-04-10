@@ -3,7 +3,6 @@ import { useEffect, useRef } from 'react';
 
 import { useTranslation } from '@/i18n';
 
-import './session-lock-overlay.css';
 
 interface SessionLockOverlayProps {
     isOpen: boolean;
@@ -56,7 +55,7 @@ export function SessionLockOverlay({
                     </div>
                     <div>
                         <h2 className="tengra-session-lock__title">{t('session.lockedTitle')}</h2>
-                        <p className="tengra-session-lock__subtext text-xs">
+                        <p className="tengra-session-lock__subtext typo-caption">
                             {t('session.lockedAt', {
                                 time: lockedAt ? new Date(lockedAt).toLocaleTimeString() : '-'
                             })}

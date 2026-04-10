@@ -69,7 +69,7 @@ export const VoiceOverlay: React.FC = () => {
                         )}
 
                         {session.lastCommand && (
-                            <div className="mt-2 flex items-center gap-2 text-xs font-semibold text-primary">
+                            <div className="mt-2 flex items-center gap-2 typo-caption font-semibold text-primary">
                                 <Command className="w-3 h-3" />
                                 <span>{t('voice.feedback.executedPrefix')}: {session.lastCommand.description}</span>
                             </div>

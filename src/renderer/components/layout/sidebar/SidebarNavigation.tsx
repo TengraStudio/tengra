@@ -1,16 +1,16 @@
-import { Brain, DownloadCloud, MessageSquare, Pause, Play, RefreshCcw, Rocket, ShoppingBag, X } from 'lucide-react';
+import { Briefcase, Brain, DownloadCloud, MessageSquare, Pause, Play, RefreshCcw, Rocket, ShoppingBag, X } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AppView } from '@/hooks/useAppState';
 import { cn } from '@/lib/utils';
 import { type DownloadHistoryItem, type DownloadStatus, downloadStore, type DownloadTaskState, useDownloadStore } from '@/store/download.store';
+import { useExtensionStore } from '@/store/extension.store';
 import { pushNotification } from '@/store/notification-center.store';
 import { formatBytes, formatDuration } from '@/utils/format.util';
 import { preloadViewResources } from '@/views/view-manager/view-loaders';
 
 import { SidebarItem } from './SidebarItem';
 
-import './sidebar-navigation.css';
 
 interface SidebarNavigationProps {
     currentView: AppView
@@ -58,33 +58,55 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
     const [downloadHistory, setDownloadHistory] = useState<DownloadHistoryItem[]>([]);
     const activeDownloads = useDownloadStore(s => s.activeDownloads);
     const refreshTimerRef = useRef<number | null>(null);
-    const navItems = useMemo(() => ([
-        {
-            view: 'chat' as const,
-            icon: MessageSquare,
-            label: t('sidebar.chats'),
-            badge: chatsCount > 0 ? chatsCount : undefined,
-            testId: 'sidebar-nav-chat'
-        },
-        {
-            view: 'workspace' as const,
-            icon: Rocket,
-            label: t('sidebar.workspaces'),
-            testId: 'sidebar-nav-workspace'
-        },
-        {
-            view: 'memory' as const,
-            icon: Brain,
-            label: t('sidebar.memory'),
-            testId: 'sidebar-nav-memory'
-        },
-        {
-            view: 'marketplace' as const,
-            icon: ShoppingBag,
-            label: t('sidebar.marketplace'),
-            testId: 'sidebar-nav-marketplace'
-        }
-    ]), [chatsCount, t]);
+    const extensions = useExtensionStore(s => s.extensions);
+
+    const navItems = useMemo(() => {
+        const items: Array<{ view: AppView; icon: typeof MessageSquare; label: string; badge?: number; testId: string }> = [
+            {
+                view: 'chat',
+                icon: MessageSquare,
+                label: t('sidebar.chats'),
+                badge: chatsCount > 0 ? chatsCount : undefined,
+                testId: 'sidebar-nav-chat'
+            },
+            {
+                view: 'workspace',
+                icon: Rocket,
+                label: t('sidebar.workspaces'),
+                testId: 'sidebar-nav-workspace'
+            },
+            {
+                view: 'memory',
+                icon: Brain,
+                label: t('sidebar.memory'),
+                testId: 'sidebar-nav-memory'
+            },
+            {
+                view: 'marketplace',
+                icon: ShoppingBag,
+                label: t('sidebar.marketplace'),
+                testId: 'sidebar-nav-marketplace'
+            }
+        ];
+
+        // Inject active extension sidebar views
+        extensions.forEach(ext => {
+            if (ext.status === 'active' && ext.manifest.contributes?.views) {
+                ext.manifest.contributes.views.forEach(view => {
+                    if (view.type === 'sidebar') {
+                        items.push({
+                            view: view.id,
+                            icon: view.icon === 'Briefcase' ? Briefcase : Rocket, // Basic icon mapping for now
+                            label: view.title,
+                            testId: `sidebar-nav-ext-${view.id}`
+                        });
+                    }
+                });
+            }
+        });
+
+        return items;
+    }, [chatsCount, t, extensions]);
     const [focusedIndex, setFocusedIndex] = useState(0);
     const preloadedViewsRef = useRef<Set<AppView>>(new Set());
     const activeDownloadCount = Object.values(activeDownloads).length;

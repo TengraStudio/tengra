@@ -68,6 +68,7 @@ export function MarketplaceView(): JSX.Element {
 
     const tabs: Array<{ id: MarketplaceTab, icon: React.ElementType }> = [
         { id: 'mcp', icon: Package },
+        { id: 'extensions', icon: Zap },
         { id: 'skills', icon: Sparkles },
         { id: 'themes', icon: Palette },
         { id: 'personas', icon: Sparkles },
@@ -77,6 +78,7 @@ export function MarketplaceView(): JSX.Element {
     ];
     const tabLabels: Record<MarketplaceTab, string> = {
         mcp: t('marketplace.tabs.mcp'),
+        extensions: t('marketplace.tabs.extensions'),
         skills: t('marketplace.tabs.skills'),
         themes: t('marketplace.tabs.themes'),
         personas: t('marketplace.tabs.personas'),
@@ -229,7 +231,7 @@ export function MarketplaceView(): JSX.Element {
                             <h1 className="text-lg font-bold leading-none">
                                 {t('marketplace.title')}
                             </h1>
-                            <p className="text-xs text-muted-foreground mt-1 font-medium">
+                            <p className="typo-caption text-muted-foreground mt-1 font-medium">
                                 {t('marketplace.subtitle')}
                             </p>
                             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -255,7 +257,7 @@ export function MarketplaceView(): JSX.Element {
                                     key={tab.id}
                                     disabled={!isEnabled}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${activeTab === tab.id
+                                    className={`flex items-center gap-2 px-4 py-1.5 rounded-md typo-caption font-semibold transition-all ${activeTab === tab.id
                                         ? 'bg-background text-foreground shadow-sm'
                                         : isEnabled
                                             ? 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'

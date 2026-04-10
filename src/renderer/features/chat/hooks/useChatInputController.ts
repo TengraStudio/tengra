@@ -108,7 +108,10 @@ export function useChatInputController() {
         prompts, isListening, startListening, stopListening,
         contextTokens,
         imageRequestCount, setImageRequestCount,
-        systemMode, setSystemMode
+        systemMode, setSystemMode,
+        antigravityCreditConfirmation,
+        confirmAntigravityCreditUsage,
+        cancelAntigravityCreditUsage,
     } = useChat();
 
     const {
@@ -369,6 +372,9 @@ export function useChatInputController() {
         isImageOnlyModel,
         imageRequestCount,
         setImageRequestCount,
+        antigravityCreditConfirmation,
+        confirmAntigravityCreditUsage,
+        cancelAntigravityCreditUsage,
         getModelReasoningLevel, setModelReasoningLevel,
         ...cmd
     };

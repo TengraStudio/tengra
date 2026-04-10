@@ -190,7 +190,7 @@ export function TerminalToolbar({
                         className="w-72 max-h-screen overflow-y-auto p-1 bg-popover border border-border rounded-lg"
                     >
                         {isLoadingLaunchOptions ? (
-                            <div className="px-3 py-2 text-xs text-muted-foreground">
+                            <div className="px-3 py-2 typo-caption text-muted-foreground">
                                 {t('common.loading')}
                             </div>
                         ) : availableShells.length > 0 ? (
@@ -238,7 +238,7 @@ export function TerminalToolbar({
                                                         createTerminal(shellId, backendId);
                                                         recordTerminalToolbarSuccess(performance.now() - startedAt);
                                                     }}
-                                                    className="w-full px-3 py-2 text-left text-xs font-medium hover:bg-accent/50 transition-colors flex items-center gap-2 text-foreground rounded-sm"
+                                                    className="w-full px-3 py-2 text-left typo-caption font-medium hover:bg-accent/50 transition-colors flex items-center gap-2 text-foreground rounded-sm"
                                                 >
                                                 <span className="opacity-50">&gt;_</span>
                                                 {s.name}
@@ -265,7 +265,7 @@ export function TerminalToolbar({
                                                     }
                                                     recordTerminalToolbarFallback();
                                                 }}
-                                                className="w-full px-3 py-2 text-left text-xs font-medium hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 text-foreground rounded-sm"
+                                                className="w-full px-3 py-2 text-left typo-caption font-medium hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 text-foreground rounded-sm"
                                             >
                                                 <span className="flex items-center gap-2">
                                                     <TerminalSquare className="w-3 h-3 opacity-60" />
@@ -283,7 +283,7 @@ export function TerminalToolbar({
                                     {t('terminal.select_connection')}
                                 </div>
                                 {isLoadingRemoteConnections && (
-                                    <div className="px-3 py-2 text-xs text-muted-foreground">
+                                    <div className="px-3 py-2 typo-caption text-muted-foreground">
                                         {t('common.loading')}
                                     </div>
                                 )}
@@ -294,7 +294,7 @@ export function TerminalToolbar({
                                             onClick={() => {
                                                 createRemoteTerminal({ kind: 'ssh', profile });
                                             }}
-                                            className="w-full px-3 py-2 text-left text-xs font-medium hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 text-foreground rounded-sm"
+                                            className="w-full px-3 py-2 text-left typo-caption font-medium hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 text-foreground rounded-sm"
                                             title={`${profile.username}@${profile.host}:${profile.port}`}
                                         >
                                             <span className="truncate">{t('terminal.sshPrefix')}: {profile.name}</span>
@@ -310,7 +310,7 @@ export function TerminalToolbar({
                                             onClick={() => {
                                                 createRemoteTerminal({ kind: 'docker', container });
                                             }}
-                                            className="w-full px-3 py-2 text-left text-xs font-medium hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 text-foreground rounded-sm"
+                                            className="w-full px-3 py-2 text-left typo-caption font-medium hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 text-foreground rounded-sm"
                                             title={container.id}
                                         >
                                             <span className="truncate">{t('terminal.dockerPrefix')}: {container.name}</span>
@@ -320,18 +320,18 @@ export function TerminalToolbar({
                                         </button>
                                     ))}
                                 {!isLoadingRemoteConnections && !hasRemoteConnections && (
-                                    <div className="px-3 py-2 text-xs text-muted-foreground">
+                                    <div className="px-3 py-2 typo-caption text-muted-foreground">
                                         {t('terminal.no_ssh_profiles')} / {t('terminal.no_containers')}
                                     </div>
                                 )}
                                 {selectableBackends.length === 0 && (
-                                    <div className="px-3 py-2 text-xs text-muted-foreground">
+                                    <div className="px-3 py-2 typo-caption text-muted-foreground">
                                         {t('terminal.noBackendsAvailable')}
                                     </div>
                                 )}
                             </>
                         ) : (
-                            <div className="px-3 py-2 text-xs text-muted-foreground">
+                            <div className="px-3 py-2 typo-caption text-muted-foreground">
                                 {t('terminal.noShellsFound')}
                             </div>
                         )}

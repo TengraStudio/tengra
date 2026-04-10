@@ -87,7 +87,7 @@ export const SSHDashboard: React.FC<SSHDashboardProps> = ({ connectionId, active
                     {Array.isArray(stats.disk) && stats.disk.map((disk: SSHDiskStat, idx: number) => (
                         <div key={idx} className="space-y-1">
                             <div className="flex justify-between text-sm">
-                                <span className="font-mono text-xs text-muted-foreground">{disk.filesystem}</span>
+                                <span className="font-mono typo-caption text-muted-foreground">{disk.filesystem}</span>
                                 <span className="text-foreground">{disk.used} / {disk.total} ({disk.percent})</span>
                             </div>
                             <div className="w-full bg-muted/30 h-1.5 rounded-full overflow-hidden">
@@ -101,7 +101,7 @@ export const SSHDashboard: React.FC<SSHDashboardProps> = ({ connectionId, active
                 </div>
             </div>
 
-            <div className="text-xs text-muted-foreground text-right">
+            <div className="typo-caption text-muted-foreground text-right">
                 {t('ssh.uptime')}: {stats.uptime}
             </div>
         </div>

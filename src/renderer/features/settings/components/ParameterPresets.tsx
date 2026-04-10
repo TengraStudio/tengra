@@ -1,4 +1,4 @@
-﻿import { Check, Plus } from 'lucide-react';
+import { Check, Plus } from 'lucide-react';
 import { useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
@@ -91,7 +91,7 @@ export function ParameterPresets({
                             key={preset.id}
                             onClick={() => onSelectPreset(preset)}
                             className={cn(
-                                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all",
+                                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border typo-caption font-medium transition-all",
                                 getPresetColor(preset.icon, isActive)
                             )}
                             title={`${resolvePresetName(preset)}: temp=${preset.temperature}, top_p=${preset.topP}`}
@@ -112,7 +112,7 @@ export function ParameterPresets({
                 <h3 className="text-sm font-semibold text-foreground">{t('ssh.presets.title')}</h3>
                 <button
                     onClick={handleCreateCustom}
-                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/20 border border-border/50 text-xs text-muted-foreground/60 hover:text-foreground hover:bg-muted/30 transition-colors"
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/20 border border-border/50 typo-caption text-muted-foreground/60 hover:text-foreground hover:bg-muted/30 transition-colors"
                 >
                     <Plus size={12} />
                     {t('ssh.presets.custom')}

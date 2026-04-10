@@ -83,7 +83,7 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-muted-foreground">{t('ssh.nginx.domain')}</label>
+                        <label className="typo-caption font-bold text-muted-foreground">{t('ssh.nginx.domain')}</label>
                         <div className="relative">
                             <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <input
@@ -95,7 +95,7 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-muted-foreground">{t('ssh.nginx.port')}</label>
+                        <label className="typo-caption font-bold text-muted-foreground">{t('ssh.nginx.port')}</label>
                         <input
                             type="number"
                             value={backendPort}
@@ -109,7 +109,7 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
                 <div className="flex justify-between items-center pt-2">
                     <button
                         onClick={generateConfig}
-                        className="text-xs font-medium text-primary hover:underline flex items-center gap-1"
+                        className="typo-caption font-medium text-primary hover:underline flex items-center gap-1"
                     >
                         <Play className="w-3 h-3" />
                         {t('ssh.nginx.preview')}
@@ -136,8 +136,8 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
 
                 {config && (
                     <div className="space-y-2 pt-4">
-                        <label className="text-xs font-bold text-muted-foreground">{t('ssh.nginx.configPreview')}</label>
-                        <pre className="p-4 bg-muted/30 border border-border/50 rounded-xl font-mono text-xs overflow-x-auto text-primary/80">
+                        <label className="typo-caption font-bold text-muted-foreground">{t('ssh.nginx.configPreview')}</label>
+                        <pre className="p-4 bg-muted/30 border border-border/50 rounded-xl font-mono typo-caption overflow-x-auto text-primary/80">
                             {config}
                         </pre>
                     </div>

@@ -222,9 +222,14 @@ export const processStreamChunk = (
     toolCallFallbackPrefix?: string
 ): StreamChunkResult => {
     const chunkType = chunk.type;
+    const hasToolCalls = Array.isArray(chunk.tool_calls) && chunk.tool_calls.length > 0;
 
     if (chunkType === 'error') {
         return { updated: true, streamError: chunk.content ?? defaultStreamError };
+    }
+
+    if (hasToolCalls) {
+        return handleToolCallsChunk(chunk, current, streamStartTime, toolCallFallbackPrefix);
     }
 
     // Handle explicit type if present

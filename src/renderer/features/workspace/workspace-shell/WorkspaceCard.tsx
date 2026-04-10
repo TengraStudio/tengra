@@ -143,7 +143,7 @@ const WorkspaceCardInfo: React.FC<{ workspace: Workspace }> = ({ workspace }) =>
         <h3 className="text-base font-bold text-foreground truncate">
             {workspace.title}
         </h3>
-        <p className="text-xs text-muted-foreground/60 truncate mt-1 font-mono">
+        <p className="typo-caption text-muted-foreground/60 truncate mt-1 font-mono">
             {workspace.path}
         </p>
     </div>
@@ -157,7 +157,7 @@ const WorkspaceCardFooter: React.FC<{ workspace: Workspace }> = ({ workspace }) 
         draft: 'workspaces.statusDraft'
     };
     return (
-        <div className="pt-4 border-t border-border/40 mt-auto flex items-center justify-between text-xs text-muted-foreground">
+        <div className="pt-4 border-t border-border/40 mt-auto flex items-center justify-between typo-caption text-muted-foreground">
             <span className="flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5" />
                 {new Date(workspace.createdAt).toLocaleDateString()}

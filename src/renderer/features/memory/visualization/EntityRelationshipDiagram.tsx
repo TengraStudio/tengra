@@ -16,7 +16,6 @@ import { useTranslation } from '@/i18n';
 
 import { appLogger } from '../../../utils/renderer-logger';
 
-import '@xyflow/react/dist/style.css';
 
 // Node type for Entities
 const EntityNode = ({ data }: { data: { name: string; type: string; properties: Record<string, string> } }) => {
@@ -32,7 +31,7 @@ const EntityNode = ({ data }: { data: { name: string; type: string; properties: 
                 {Object.entries(data.properties).map(([key, value]) => (
                     <div key={key} className="flex flex-col gap-0.5 border-t border-border/40 pt-1.5 first:border-0 first:pt-0">
                         <span className="text-xxxs text-muted-foreground">{key}</span>
-                        <span className="text-xs text-foreground/80 line-clamp-2">{value}</span>
+                        <span className="typo-caption text-foreground/80 line-clamp-2">{value}</span>
                     </div>
                 ))}
             </div>

@@ -3,7 +3,6 @@ import React from 'react';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-import './ssh-connection-form.css';
 
 /** SSH connection form data shape */
 export interface SSHFormData {

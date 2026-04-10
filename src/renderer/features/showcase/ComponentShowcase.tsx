@@ -60,14 +60,14 @@ const StorySidebar: React.FC<{
       <nav className="p-2">
         {Object.entries(grouped).map(([category, items]) => (
           <div key={category} className="mb-3">
-            <p className="px-2 py-1 text-xs font-bold text-muted-foreground">
+            <p className="px-2 py-1 typo-caption font-bold text-muted-foreground">
               {t(category)}
             </p>
             {items.map((s) => (
               <button
                 key={s.name}
                 onClick={() => onSelect(s.name)}
-                className={`w-full text-left px-3 py-1.5 rounded-md text-xs transition-colors flex items-center gap-1.5 ${
+                className={`w-full text-left px-3 py-1.5 rounded-md typo-caption transition-colors flex items-center gap-1.5 ${
                   selected === s.name
                     ? 'bg-primary/10 text-primary font-semibold'
                     : 'text-muted-foreground hover:bg-muted/40'
@@ -101,7 +101,7 @@ const StoryPreview: React.FC<{ story: ComponentStory }> = ({ story }) => {
             <div className="flex items-baseline justify-between mb-3">
               <h3 className="text-sm font-semibold">{t(variant.name)}</h3>
               {variant.description && (
-                <span className="text-xs text-muted-foreground">{t(variant.description)}</span>
+                <span className="typo-caption text-muted-foreground">{t(variant.description)}</span>
               )}
             </div>
             <div className="flex flex-wrap items-center gap-3">

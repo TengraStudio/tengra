@@ -24,7 +24,7 @@ export const PresetEditor: React.FC<PresetEditorProps> = ({
             />
             <div className="grid grid-cols-2 gap-3">
                 <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">{t('ssh.presets.labels.temperature')}</label>
+                    <label className="typo-caption text-muted-foreground mb-1 block">{t('ssh.presets.labels.temperature')}</label>
                     <input
                         type="range"
                         min="0"
@@ -34,10 +34,10 @@ export const PresetEditor: React.FC<PresetEditorProps> = ({
                         onChange={(e) => onUpdate({ ...preset, temperature: parseFloat(e.target.value) })}
                         className="w-full"
                     />
-                    <div className="text-xs text-center">{preset.temperature}</div>
+                    <div className="typo-caption text-center">{preset.temperature}</div>
                 </div>
                 <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">{t('ssh.presets.labels.topP')}</label>
+                    <label className="typo-caption text-muted-foreground mb-1 block">{t('ssh.presets.labels.topP')}</label>
                     <input
                         type="range"
                         min="0"
@@ -47,19 +47,19 @@ export const PresetEditor: React.FC<PresetEditorProps> = ({
                         onChange={(e) => onUpdate({ ...preset, topP: parseFloat(e.target.value) })}
                         className="w-full"
                     />
-                    <div className="text-xs text-center">{preset.topP}</div>
+                    <div className="typo-caption text-center">{preset.topP}</div>
                 </div>
             </div>
             <div className="flex gap-2">
                 <button
                     onClick={onCancel}
-                    className="flex-1 py-1.5 rounded-lg bg-muted/30 hover:bg-muted/50 text-muted-foreground text-xs font-medium transition-colors"
+                    className="flex-1 py-1.5 rounded-lg bg-muted/30 hover:bg-muted/50 text-muted-foreground typo-caption font-medium transition-colors"
                 >
                     {t('common.cancel')}
                 </button>
                 <button
                     onClick={onSave}
-                    className="flex-1 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-xs font-bold transition-colors"
+                    className="flex-1 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 typo-caption font-bold transition-colors"
                 >
                     {t('common.save')}
                 </button>

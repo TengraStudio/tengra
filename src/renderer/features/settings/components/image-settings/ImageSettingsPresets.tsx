@@ -60,7 +60,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                             value={presetName}
                             onChange={event => setPresetName(event.target.value)}
                             placeholder={t('settings.images.presetName')}
-                            className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 text-xs font-bold placeholder:text-muted-foreground/30 shadow-inner group-hover:bg-muted/30 transition-all"
+                            className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 typo-caption font-bold placeholder:text-muted-foreground/30 shadow-inner group-hover:bg-muted/30 transition-all"
                         />
                     </div>
                     <div className="space-y-2">
@@ -69,7 +69,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                             value={presetPromptPrefix}
                             onChange={event => setPresetPromptPrefix(event.target.value)}
                             placeholder={t('settings.images.promptPrefix')}
-                            className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 text-xs font-bold placeholder:text-muted-foreground/30 shadow-inner group-hover:bg-muted/30 transition-all"
+                            className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 typo-caption font-bold placeholder:text-muted-foreground/30 shadow-inner group-hover:bg-muted/30 transition-all"
                         />
                     </div>
                 </div>

@@ -50,14 +50,14 @@ export const MermaidDiagram = memo(({ code, t }: MermaidDiagramProps) => {
 
     if (error) {
         return (
-            <pre className="text-xs text-destructive bg-destructive/10 p-2 rounded">{error}</pre>
+            <pre className="typo-caption text-destructive bg-destructive/10 p-2 rounded">{error}</pre>
         );
     }
 
     if (!svg) {
         return (
             <div className="my-4 h-32 flex items-center justify-center bg-accent/10 rounded-xl border border-border/40 animate-pulse">
-                <div className="text-xs text-muted-foreground">
+                <div className="typo-caption text-muted-foreground">
                     {t('messageBubble.renderingDiagram')}
                 </div>
             </div>

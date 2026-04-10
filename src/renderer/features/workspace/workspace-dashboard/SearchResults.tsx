@@ -106,7 +106,7 @@ const FileGroup = React.memo(({
                     : <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
                 }
                 <FileCode2 className="h-3.5 w-3.5 shrink-0 text-info/70" />
-                <span className="truncate text-xs font-medium text-foreground">
+                <span className="truncate typo-caption font-medium text-foreground">
                     {fileName}
                 </span>
                 {dirPath && (
@@ -135,7 +135,7 @@ const FileGroup = React.memo(({
                             <span className="mt-px shrink-0 rounded bg-muted/50 px-1.5 py-0.5 text-xxxs font-semibold text-muted-foreground/80">
                                 {getSearchResultBadge(result)}
                             </span>
-                            <span className="min-w-0 flex-1 truncate font-mono text-xs leading-5 text-foreground/85">
+                            <span className="min-w-0 flex-1 truncate font-mono typo-caption leading-5 text-foreground/85">
                                 {renderHighlightedSnippet(
                                     (isFileResult(result) ? result.name : result.text)?.trim() || result.text.trim(),
                                     searchQuery
@@ -181,7 +181,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
 
     if (normalizedResults.length === 0) {
         return (
-            <div className="flex items-center justify-center p-6 text-xs text-muted-foreground/60">
+            <div className="flex items-center justify-center p-6 typo-caption text-muted-foreground/60">
                 {t('workspaceDashboard.noResults')}
             </div>
         );

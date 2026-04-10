@@ -4,8 +4,9 @@ import React, { useMemo } from 'react';
 
 import logoBlack from '@/assets/tengra_black.png';
 import logoWhite from '@/assets/tengra_white.png';
+import { Button } from '@/components/ui/button';
 import { useThemeDetection } from '@/hooks/useTheme';
-import { cn } from '@/lib/utils'; 
+import { cn } from '@/lib/utils';
 
 interface WelcomeScreenProps {
     t: (key: string) => string;
@@ -24,37 +25,39 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
     templates,
     onSelectTemplate
 }) => {
-    const { isLight} = useThemeDetection();
+    const { isLight } = useThemeDetection();
 
     const logo = useMemo(() => isLight ? logoBlack : logoWhite, [isLight]);
 
     return (
-        <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center max-w-2xl mx-auto space-y-8">
-            <div className="w-20 h-20 flex items-center justify-center">
+        <div className="mx-auto flex h-full w-full max-w-2xl flex-col items-center justify-center space-y-6 p-4 text-center">
+            <div className="flex h-16 w-16 items-center justify-center">
                 <img src={logo} alt={t('welcome.logoAlt')} />
             </div>
-            <div className="space-y-3 shadow-sm">
-                <h1 className="text-4xl font-bold text-foreground mb-2">{t('welcome.title')}</h1>
-                <p className="text-muted-foreground text-base max-w-md mx-auto">{t('welcome.tagline')}</p>
+            <div className="space-y-2">
+                <h1 className="mb-1 text-3xl font-semibold text-foreground">{t('welcome.title')}</h1>
+                <p className="mx-auto max-w-md text-sm text-muted-foreground">{t('welcome.tagline')}</p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl mt-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+            <div className="mt-4 grid w-full max-w-2xl grid-cols-1 gap-2.5 animate-in fade-in duration-500 sm:grid-cols-2">
                 {templates.map((template) => (
-                    <button
+                    <Button
                         key={template.id}
+                        type="button"
+                        variant="outline"
                         onClick={() => onSelectTemplate(template.prompt ?? '')}
-                        className="group p-4 bg-foreground/[0.03] hover:bg-foreground/[0.08] border border-border/50 hover:border-primary/30 rounded-xl transition-all duration-300 text-left flex items-start gap-3 hover:shadow-2xl active:scale-95"
+                        className="h-auto items-start justify-start gap-3 rounded-md border-border/50 px-3 py-3 text-left font-normal"
                     >
-                        <div className={cn("p-2.5 rounded-lg bg-primary/5 group-hover:bg-primary/10 transition-colors", template.iconColor)}>
+                        <div className={cn("flex h-8 w-8 items-center justify-center rounded-md bg-muted/60", template.iconColor)}>
                             {template.id === 'code' ? <Code className="w-4 h-4" /> :
                                 template.id === 'write' ? <PenTool className="w-4 h-4" /> :
                                     template.id === 'debug' ? <Activity className="w-4 h-4" /> :
                                         <Search className="w-4 h-4" />}
                         </div>
                         <div className="space-y-0.5">
-                            <div className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">{template.title}</div>
-                            <div className="text-xxs text-muted-foreground leading-relaxed">{template.description}</div>
+                            <div className="text-sm font-medium text-foreground">{template.title}</div>
+                            <div className="typo-caption leading-relaxed text-muted-foreground">{template.description}</div>
                         </div>
-                    </button>
+                    </Button>
                 ))}
             </div>
         </div>

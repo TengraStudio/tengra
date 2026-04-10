@@ -7,7 +7,6 @@ import { cn } from '@/lib/utils';
 import { normalizeDirectorySelectionResult } from '@/utils/directory-selection.util';
 import { appLogger } from '@/utils/renderer-logger';
 
-import './gallery-view.css';
 
 interface GalleryItemMetadata {
     prompt?: string;

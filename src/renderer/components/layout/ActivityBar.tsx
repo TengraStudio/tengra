@@ -20,7 +20,6 @@ import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { setActivityBarState, useUiLayoutStore } from '@/store/ui-layout.store';
 
-import './activity-bar.css';
 
 export interface ActivityItem {
     id: string

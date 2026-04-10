@@ -141,7 +141,7 @@ export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
 
                 <div className="flex items-center gap-1 p-1 rounded-lg border border-border/40 bg-muted/20">
                     <Select value={listPreset} onValueChange={onListPresetChange}>
-                        <SelectTrigger className="h-9 w-[140px] px-2 text-xs bg-background/70 border-border/40 text-muted-foreground focus:ring-0">
+                        <SelectTrigger className="h-9 w-[140px] px-2 typo-caption bg-background/70 border-border/40 text-muted-foreground focus:ring-0">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

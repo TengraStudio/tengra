@@ -133,7 +133,7 @@ export const ChatSearchOverlay: React.FC<ChatSearchOverlayProps> = ({
                 className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none w-48"
             />
             {matchLabel && (
-                <span className="text-xs text-muted-foreground whitespace-nowrap">{matchLabel}</span>
+                <span className="typo-caption text-muted-foreground whitespace-nowrap">{matchLabel}</span>
             )}
             <button
                 onClick={goToPrev}

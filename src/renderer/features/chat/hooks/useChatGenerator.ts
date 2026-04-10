@@ -1,7 +1,7 @@
 import {
     classifyAiIntent,
 } from '@shared/utils/ai-runtime.util';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { generateId } from '@/lib/utils';
 import { AppSettings, Chat, ChatError, Message, ToolDefinition } from '@/types';
@@ -12,6 +12,10 @@ import {
     buildAssistantPresentationMetadata,
     deduplicateMessages,
 } from './ai-runtime-chat.util';
+import {
+    getActiveAntigravityAccount,
+    shouldConfirmAntigravityCreditUsage,
+} from './antigravity-credit-usage.util';
 import {
     createModelToolList,
     extractImageRequestCount,
@@ -48,6 +52,15 @@ interface UseChatGeneratorProps {
     handleSpeak: (id: string, content: string) => void;
     autoReadEnabled: boolean;
     formatChatError: (err: CatchError) => string;
+    quotas?: { accounts: import('@/types/quota').QuotaResponse[] } | null | undefined;
+    linkedAccounts?: Array<import('@renderer/electron.d').LinkedAccountInfo> | undefined;
+}
+
+interface AntigravityCreditConfirmationState {
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmLabel: string;
 }
 
 const logRendererError = (message: string, error: Error): void => {
@@ -68,6 +81,9 @@ export const useChatGenerator = (
     clearChatError: () => void;
     generateResponse: (chatId: string, userMessage: Message, retryModel?: string) => Promise<void>;
     stopGeneration: () => Promise<void>;
+    antigravityCreditConfirmation: AntigravityCreditConfirmationState;
+    confirmAntigravityCreditUsage: () => void;
+    cancelAntigravityCreditUsage: () => void;
 } => {
     const {
         chats,
@@ -85,11 +101,88 @@ export const useChatGenerator = (
         autoReadEnabled,
         formatChatError,
         systemMode,
+        quotas,
+        linkedAccounts,
     } = props;
 
     const [streamingStates, setStreamingStates] = useState<Record<string, StreamStreamingState>>({});
     const [lastChatError, setLastChatError] = useState<ChatError | null>(null);
+    const [antigravityCreditConfirmation, setAntigravityCreditConfirmation] = useState<AntigravityCreditConfirmationState>({
+        isOpen: false,
+        title: '',
+        message: '',
+        confirmLabel: '',
+    });
+    const pendingCreditConfirmationRef = useRef<((confirmed: boolean) => void) | null>(null);
     const clearChatError = useCallback(() => setLastChatError(null), []);
+    const clearCreditConfirmation = useCallback(() => {
+        setAntigravityCreditConfirmation({
+            isOpen: false,
+            title: '',
+            message: '',
+            confirmLabel: '',
+        });
+    }, []);
+    const resolveCreditConfirmation = useCallback((confirmed: boolean) => {
+        const resolver = pendingCreditConfirmationRef.current;
+        pendingCreditConfirmationRef.current = null;
+        clearCreditConfirmation();
+        resolver?.(confirmed);
+    }, [clearCreditConfirmation]);
+    const confirmAntigravityCreditUsage = useCallback(() => {
+        resolveCreditConfirmation(true);
+    }, [resolveCreditConfirmation]);
+    const cancelAntigravityCreditUsage = useCallback(() => {
+        resolveCreditConfirmation(false);
+    }, [resolveCreditConfirmation]);
+
+    const requestAntigravityCreditConfirmation = useCallback(async (
+        model: string,
+        provider: string
+    ): Promise<boolean> => {
+        const confirmation = shouldConfirmAntigravityCreditUsage({
+            provider,
+            model,
+            settings: appSettings,
+            linkedAccounts,
+            quotaData: quotas,
+        });
+        if (!confirmation) {
+            return true;
+        }
+
+        const accountLabel = confirmation.account.email ?? confirmation.account.displayName ?? confirmation.account.id;
+        const interpolations: Record<string, string | number> = {
+            account: accountLabel,
+            credits: confirmation.creditAmount ?? 0,
+            minimum: confirmation.minimumCreditAmountForUsage ?? 0,
+        };
+        setAntigravityCreditConfirmation({
+            isOpen: true,
+            title: t('chat.antigravityCreditsConfirmTitle'),
+            message: t('chat.antigravityCreditsConfirmMessage', interpolations),
+            confirmLabel: t('chat.antigravityCreditsConfirmAction'),
+        });
+
+        return await new Promise<boolean>(resolve => {
+            pendingCreditConfirmationRef.current = resolve;
+        });
+    }, [appSettings, linkedAccounts, quotas, t]);
+    const buildProviderOptions = useCallback((provider: string, baseOptions: Record<string, RendererDataValue>) => {
+        if (provider.trim().toLowerCase() !== 'antigravity') {
+            return baseOptions;
+        }
+
+        const activeAccountId = getActiveAntigravityAccount(linkedAccounts)?.id;
+        if (!activeAccountId) {
+            return baseOptions;
+        }
+
+        return {
+            ...baseOptions,
+            accountId: activeAccountId,
+        };
+    }, [linkedAccounts]);
 
     const createAssistantPlaceholder = useCallback((params: {
         assistantId: string;
@@ -153,6 +246,14 @@ export const useChatGenerator = (
             && (systemMode === 'agent' || intentClassification.requiresTooling);
 
         try {
+            for (const modelInfo of modelsToUse) {
+                const approved = await requestAntigravityCreditConfirmation(modelInfo.model, modelInfo.provider);
+                if (!approved) {
+                    setChats(prev => prev.map(c => c.id === chatId ? { ...c, isGenerating: false } : c));
+                    return;
+                }
+            }
+
             createAssistantPlaceholder({
                 assistantId,
                 chatId,
@@ -194,15 +295,16 @@ export const useChatGenerator = (
                 });
 
                 const reasoningEffort = getReasoningEffort(activeModel, appSettings);
-                const fullOptions = {
+                const fullOptions = buildProviderOptions(selectedProvider, {
                     ...presetOptions, workspaceRoot: activeWorkspacePath, systemMode, thinking: systemMode === 'thinking',
                     agentToolsEnabled: shouldEnableTools, reasoningEffort
-                };
+                });
                 await executeToolTurnLoop({
                     initialMessages: allMessages,
                     chatId, assistantId, activeModel, selectedProvider, tools, fullOptions, workspaceId,
                     autoReadEnabled, handleSpeak, t, language, setStreamingStates, setChats, activeWorkspacePath, systemMode,
-                    intentClassification
+                    intentClassification,
+                    confirmAntigravityCreditUsage: requestAntigravityCreditConfirmation,
                 });
             }
         } catch (e) {
@@ -233,6 +335,7 @@ export const useChatGenerator = (
     const stopGeneration = async (): Promise<void> => {
         try {
             for (const activeChatId of Object.keys(streamingStates)) {
+                appLogger.warn('useChatGenerator', `stopGeneration abort requested chatId=${activeChatId}`);
                 window.electron.session.conversation.abort(activeChatId);
             }
             setStreamingStates({});
@@ -241,5 +344,14 @@ export const useChatGenerator = (
         }
     };
 
-    return { streamingStates, lastChatError, clearChatError, generateResponse, stopGeneration };
+    return {
+        streamingStates,
+        lastChatError,
+        clearChatError,
+        generateResponse,
+        stopGeneration,
+        antigravityCreditConfirmation,
+        confirmAntigravityCreditUsage,
+        cancelAntigravityCreditUsage,
+    };
 };

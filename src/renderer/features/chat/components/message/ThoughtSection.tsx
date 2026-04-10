@@ -2,11 +2,13 @@ import { Brain, Sparkles } from 'lucide-react';
 import { memo, useEffect, useState } from 'react';
 
 import { cn } from '@/lib/utils';
+import { appLogger } from '@/utils/renderer-logger';
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
 
 export interface ThoughtSectionProps {
     thought: string | null;
+    thoughtDurationMs?: number;
     initiallyExpanded?: boolean;
     segmentIndex?: number;
     isStreaming?: boolean;
@@ -22,15 +24,19 @@ export interface ThoughtSectionProps {
 export const ThoughtSection = memo(
     ({
         thought,
+        thoughtDurationMs,
         initiallyExpanded = false,
         segmentIndex,
         isStreaming = false,
         t,
     }: ThoughtSectionProps) => {
         const [isThoughtExpanded, setIsThoughtExpanded] = useState(initiallyExpanded);
-        const title = typeof segmentIndex === 'number'
+        const baseTitle = typeof segmentIndex === 'number'
             ? t('workspaceAgent.thoughtStep', { index: segmentIndex + 1 })
             : t('messageBubble.showThought');
+        const title = typeof thoughtDurationMs === 'number' && Number.isFinite(thoughtDurationMs)
+            ? `${baseTitle} • ${(thoughtDurationMs / 1000).toFixed(1)}${t('messageBubble.secondsShort')}`
+            : baseTitle;
 
         // Auto-expand if the prop changes to true (e.g. during streaming)
         useEffect(() => {
@@ -43,7 +49,19 @@ export const ThoughtSection = memo(
             return undefined;
         }, [initiallyExpanded]);
 
-        if (!thought) {
+        useEffect(() => {
+            const thoughtLength = typeof thought === 'string' ? thought.trim().length : 0;
+            appLogger.info(
+                'ThoughtSection',
+                `render segment=${segmentIndex ?? -1}, thoughtLen=${thoughtLength}, initiallyExpanded=${String(initiallyExpanded)}, expanded=${String(isThoughtExpanded)}, streaming=${String(isStreaming)}`
+            );
+        }, [segmentIndex, thought, initiallyExpanded, isThoughtExpanded, isStreaming]);
+
+        if (!thought || thought.trim().length === 0) {
+            appLogger.info(
+                'ThoughtSection',
+                `skip-empty segment=${segmentIndex ?? -1}, streaming=${String(isStreaming)}`
+            );
             return null;
         }
         return (
@@ -57,10 +75,10 @@ export const ThoughtSection = memo(
                 >
                     <div
                         className={cn(
-                            'flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-300 select-none',
+                            'flex items-center gap-2 px-1.5 py-1 rounded-md border border-transparent transition-all duration-300 select-none',
                             isThoughtExpanded
-                                ? 'bg-primary/10 border-primary/20 text-primary shadow-sm shadow-primary/10'
-                                : 'bg-accent/30 border-border/50 text-muted-foreground/60 hover:bg-accent/50 hover:border-border hover:text-primary/70'
+                                ? 'text-primary'
+                                : 'text-muted-foreground/70 hover:text-primary/70'
                         )}
                     >
                         <div
@@ -97,8 +115,8 @@ export const ThoughtSection = memo(
                     <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                         <div className="relative ps-4 border-s-2 border-primary/20 py-1">
                             <div className="absolute -start-0.5 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary/40 via-primary/10 to-transparent" />
-                            <div className="bg-gradient-to-br from-primary/[0.03] to-transparent rounded-2xl p-4 border border-border/20">
-                                <div className="whitespace-pre-wrap font-mono text-xxs leading-relaxed text-muted-foreground/80 selection:bg-primary/20 drop-shadow-sm">
+                            <div className="rounded-2xl p-2 border border-border/20 bg-transparent">
+                                <div className="whitespace-pre-wrap font-mono text-xxs leading-relaxed text-muted-foreground/80 selection:bg-primary/20 drop-shadow-sm max-h-72 overflow-y-auto pe-2">
                                     {thought}
                                 </div>
                             </div>

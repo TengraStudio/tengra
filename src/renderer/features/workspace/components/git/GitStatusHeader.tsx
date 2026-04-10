@@ -34,7 +34,7 @@ export const GitStatusHeader: React.FC<StatusHeaderProps> = ({ gitData, branches
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-muted/30 rounded-xl p-4">
-                <div className="text-xs text-muted-foreground mb-2">{t('workspaceDashboard.branch')}</div>
+                <div className="typo-caption text-muted-foreground mb-2">{t('workspaceDashboard.branch')}</div>
                 <GitBranchSelect
                     branch={gitData.branch}
                     branches={branches}
@@ -43,19 +43,19 @@ export const GitStatusHeader: React.FC<StatusHeaderProps> = ({ gitData, branches
                 />
             </div>
             <div className="bg-muted/30 rounded-xl p-4">
-                <div className="text-xs text-muted-foreground mb-1">{t('workspaceDashboard.status')}</div>
+                <div className="typo-caption text-muted-foreground mb-1">{t('workspaceDashboard.status')}</div>
                 <div className={cn("text-sm font-semibold", gitData.isClean ? "text-success" : "text-warning")}>
                     {gitData.isClean ? t('workspaceDashboard.clean') : t('workspaceDashboard.dirty')}
                 </div>
             </div>
             <div className="bg-muted/30 rounded-xl p-4">
-                <div className="text-xs text-muted-foreground mb-1">{t('workspaceDashboard.lastCommit')}</div>
+                <div className="typo-caption text-muted-foreground mb-1">{t('workspaceDashboard.lastCommit')}</div>
                 <div className="text-sm font-semibold text-foreground">
                     {gitData.lastCommit?.relativeTime ?? 'N/A'}
                 </div>
             </div>
             <div className="bg-muted/30 rounded-xl p-4">
-                <div className="text-xs text-muted-foreground mb-1">{t('workspaceDashboard.tracking')}</div>
+                <div className="typo-caption text-muted-foreground mb-1">{t('workspaceDashboard.tracking')}</div>
                 <GitTrackingStatus trackingInfo={trackingInfo} t={t} />
             </div>
         </div>

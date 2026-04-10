@@ -17,7 +17,7 @@ export const ShortcutHelpOverlay: React.FC<ShortcutHelpOverlayProps> = ({ visibl
                 <h3 className="text-sm font-semibold">
                     {t('workspace.shortcutHelpTitle')}
                 </h3>
-                <ul className="text-xs text-muted-foreground space-y-2">
+                <ul className="typo-caption text-muted-foreground space-y-2">
                     <li>{t('workspace.shortcutCombos.commandPalette')} — {t('shortcuts.commandPalette')}</li>
                     <li>{t('workspace.shortcutCombos.quickSwitch')} — {t('workspace.quickSwitch')}</li>
                     <li>{t('workspace.shortcutCombos.closeTab')} — {t('workspace.closeTab')}</li>

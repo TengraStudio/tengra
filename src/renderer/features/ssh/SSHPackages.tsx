@@ -45,7 +45,7 @@ export const SSHPackages: React.FC<SSHPackagesProps> = ({ connectionId, active }
                     <h3 className="font-semibold">{t('ssh.installedPackages')}</h3>
                     <button
                         onClick={() => void loadPackages()}
-                        className="text-xs px-2 py-1 bg-muted hover:bg-muted/80 rounded"
+                        className="typo-caption px-2 py-1 bg-muted hover:bg-muted/80 rounded"
                         disabled={loading}
                     >
                         {loading ? t('ssh.refreshing') : t('ssh.refresh')}
@@ -80,7 +80,7 @@ export const SSHPackages: React.FC<SSHPackagesProps> = ({ connectionId, active }
                             filtered.map((pkg, i) => (
                                 <tr key={i} className="hover:bg-muted/10 transition-colors">
                                     <td className="p-3 font-medium">{pkg.name}</td>
-                                    <td className="p-3 text-muted-foreground font-mono text-xs">{pkg.version}</td>
+                                    <td className="p-3 text-muted-foreground font-mono typo-caption">{pkg.version}</td>
                                     <td className="p-3">
                                         <span className="px-2 py-0.5 rounded-full bg-success/10 text-success text-xxs font-bold border border-success/20">
                                             {pkg.status}

@@ -101,7 +101,7 @@ export const MonacoBlock = memo<MonacoBlockProps>(
                                         {...getLineProps({ line })}
                                         className="flex min-w-max"
                                     >
-                                        <span className="mr-4 inline-block w-6 shrink-0 select-none text-right text-xs text-muted-foreground/30">
+                                        <span className="mr-4 inline-block w-6 shrink-0 select-none text-right typo-caption text-muted-foreground/30">
                                             {index + 1}
                                         </span>
                                         <div className="flex-1">

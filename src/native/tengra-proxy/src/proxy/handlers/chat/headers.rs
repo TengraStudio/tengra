@@ -8,21 +8,34 @@ pub fn apply_headers(
     provider: &str,
     auth_token: &str,
     is_stream: bool,
-    active_key_row: &Value,
+    active_key_row: &serde_json::Value,
+    session_id: Option<&str>,
+    prior_signature: Option<&str>,
 ) -> RequestBuilder {
     match provider {
         "claude" => {
             builder = builder
                 .header("X-Api-Key", auth_token)
                 .header("Anthropic-Version", "2023-06-01")
-                .header("Anthropic-Beta", "claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14")
+                .header(
+                    "Anthropic-Beta",
+                    "claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14,ccr-byoc-2025-07-29"
+                )
                 .header("Anthropic-Dangerous-Direct-Browser-Access", "true")
-                .header("User-Agent", "claude-cli/1.0.83 (external, cli)")
+                .header("User-Agent", "claude-code/0.2.29 (Windows; x64)")
+                .header("x-anthropic-billing-header", build_anthropic_billing_header())
                 .header("X-App", "claude-code")
                 .header("X-Stainless-Runtime", "node")
                 .header("X-Stainless-Lang", "js")
                 .header("Connection", "keep-alive")
                 .header("Accept", "application/json");
+
+            if let Some(sid) = session_id {
+                builder = builder.header("X-Claude-Code-Session-Id", sid);
+            }
+            if let Some(sig) = prior_signature {
+                builder = builder.header("X-Anthropic-Prior-Signature", sig);
+            }
         }
         "antigravity" => {
             builder = builder
@@ -233,6 +246,16 @@ pub fn apply_headers(
     }
 
     builder
+}
+
+fn build_anthropic_billing_header() -> String {
+    let version = "0.2.29.tengra";
+    let entrypoint = "cli";
+    let cch = "00000"; // Placeholder for Bun-style attestation
+    format!(
+        "cc_version={}; cc_entrypoint={}; cch={};",
+        version, entrypoint, cch
+    )
 }
 
 fn antigravity_user_agent(row: &Value) -> String {

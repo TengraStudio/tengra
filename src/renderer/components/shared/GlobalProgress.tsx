@@ -7,7 +7,6 @@ import React, { useMemo } from 'react';
 import { useTranslation } from '@/i18n';
 import { type ProgressItem,useProgressStore } from '@/store/progress.store';
 
-import './global-progress.css';
 
 /** Aggregate multiple progress items into a single percentage. */
 function aggregatePercent(items: ProgressItem[]): number {

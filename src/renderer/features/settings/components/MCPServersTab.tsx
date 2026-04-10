@@ -98,7 +98,7 @@ function ServerItem({
                             </span>
                         ) : null}
                     </div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="mt-0.5 typo-caption text-muted-foreground">
                         {server.description ??
                             `${server.command ?? ''} ${(server.args ?? []).join(' ')}`.trim()}
                     </p>
@@ -157,7 +157,7 @@ function ServerItem({
                     ) : (
                         <div className="h-2 w-2 rounded-full bg-muted" />
                     )}
-                    <span className="text-xs capitalize">
+                    <span className="typo-caption capitalize">
                         {server.enabled
                             ? t('settings.mcp.status.active')
                             : t('settings.mcp.status.inactive')}
@@ -335,7 +335,7 @@ export function MCPServersTab(): JSX.Element {
                         {t('settings.mcp.servers.subtitle')}
                     </p>
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="typo-caption text-muted-foreground">
                     {enabledCount} / {servers.length} {t('settings.mcp.servers.enabled')}
                 </div>
             </div>
@@ -365,7 +365,7 @@ export function MCPServersTab(): JSX.Element {
                         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/50 py-12 text-muted-foreground/50">
                             <Server className="mb-3 h-10 w-10 opacity-20" />
                             <p className="mb-1">{t('settings.mcp.servers.empty')}</p>
-                            <p className="text-xs">{t('settings.mcp.servers.subtitle')}</p>
+                            <p className="typo-caption">{t('settings.mcp.servers.subtitle')}</p>
                         </div>
                     ) : null}
                 </div>
@@ -379,14 +379,14 @@ export function MCPServersTab(): JSX.Element {
                             variant="ghost"
                             size="sm"
                             onClick={() => setEditingServer(null)}
-                            className="rounded-md bg-muted/40 px-3 py-1.5 text-xs hover:bg-muted/60 transition-colors h-8"
+                            className="rounded-md bg-muted/40 px-3 py-1.5 typo-caption hover:bg-muted/60 transition-colors h-8"
                         >
                             {t('common.cancel')}
                         </Button>
                     </div>
                     <div className="space-y-4">
                         <div className="grid gap-1.5">
-                            <Label className="text-xs text-muted-foreground">
+                            <Label className="typo-caption text-muted-foreground">
                                 {t('mcp.command')}
                             </Label>
                             <Input
@@ -398,7 +398,7 @@ export function MCPServersTab(): JSX.Element {
                             />
                         </div>
                         <div className="grid gap-1.5">
-                            <Label className="text-xs text-muted-foreground">
+                            <Label className="typo-caption text-muted-foreground">
                                 {t('settings.mcp.permissions.profile')}
                             </Label>
                             <Select
@@ -436,7 +436,7 @@ export function MCPServersTab(): JSX.Element {
                             onClick={() => {
                                 void handleSaveEdit();
                             }}
-                            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors h-8"
+                            className="rounded-md bg-primary px-3 py-1.5 typo-caption font-medium text-primary-foreground hover:bg-primary/90 transition-colors h-8"
                         >
                             {t('common.save')}
                         </Button>

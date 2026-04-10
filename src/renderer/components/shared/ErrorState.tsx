@@ -4,7 +4,6 @@ import type { ReactNode } from 'react';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-import './error-state.css';
 
 /** Props for the ErrorState component */
 interface ErrorStateProps {

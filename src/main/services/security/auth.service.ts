@@ -11,7 +11,7 @@ import { BaseService } from '@main/services/base.service';
 import { DatabaseService, LinkedAccount } from '@main/services/data/database.service';
 import { SecurityService } from '@main/services/security/security.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
-import { JsonObject } from '@shared/types/common';
+import { JsonObject, JsonValue } from '@shared/types/common';
 import { AppErrorCode, getErrorMessage, TengraError, ValidationError } from '@shared/utils/error.util';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -136,6 +136,25 @@ const CREDENTIAL_EXPORT_PACKAGE_SCHEMA_VERSION = 'credentials-export-package-v1'
 const EXPORT_PASSWORD_MIN_LENGTH = 12;
 const DEFAULT_EXPORT_EXPIRY_HOURS = 24;
 const MAX_EXPORT_EXPIRY_HOURS = 168;
+const SENSITIVE_METADATA_KEYS = new Set([
+    'access_token',
+    'accesstoken',
+    'refresh_token',
+    'refreshtoken',
+    'session_token',
+    'sessiontoken',
+    'id_token',
+    'idtoken',
+    'authorization',
+    'code',
+    'token',
+    'secret',
+    'key',
+    'apikey',
+    'api_key',
+    'password',
+    'passphrase',
+]);
 
 /**
  * AuthService - Simplified multi-account authentication service.
@@ -169,6 +188,7 @@ export class AuthService extends BaseService {
         // Proactively migrate all tokens in DB to new encryption format
         await this.migrateExistingTokens();
         await this.refreshLinkedAccountsCache();
+        await this.scrubSensitiveMetadataFromLinkedAccounts();
         await this.cleanupMirroredOAuthAccounts();
     }
 
@@ -204,6 +224,32 @@ export class AuthService extends BaseService {
         } catch (error) {
             appLogger.error('AuthService', `Proactive migration failed: ${getErrorMessage(error)}`);
         }
+    }
+
+    private async scrubSensitiveMetadataFromLinkedAccounts(): Promise<void> {
+        const accounts = await this.getAllLinkedAccountsCached();
+        let changed = false;
+
+        for (const account of accounts) {
+            const sanitizedMetadata = this.sanitizeAccountMetadata(account.metadata);
+            if (JSON.stringify(sanitizedMetadata ?? null) === JSON.stringify(account.metadata ?? null)) {
+                continue;
+            }
+
+            await this.databaseService.saveLinkedAccount({
+                ...account,
+                metadata: sanitizedMetadata,
+                updatedAt: Date.now()
+            });
+            changed = true;
+        }
+
+        if (!changed) {
+            return;
+        }
+
+        await this.refreshLinkedAccountsCache();
+        appLogger.info('AuthService', 'Removed sensitive token fields from linked-account metadata.');
     }
 
     // --- Provider Methods ---
@@ -448,19 +494,62 @@ export class AuthService extends BaseService {
         existing: JsonObject | undefined,
         incoming: JsonObject | undefined
     ): JsonObject | undefined {
-        if (!existing && !incoming) {
+        const sanitizedExisting = this.sanitizeAccountMetadata(existing);
+        const sanitizedIncoming = this.sanitizeAccountMetadata(incoming);
+
+        if (!sanitizedExisting && !sanitizedIncoming) {
             return undefined;
         }
-        if (!existing) {
-            return incoming;
+        if (!sanitizedExisting) {
+            return sanitizedIncoming;
         }
-        if (!incoming) {
-            return existing;
+        if (!sanitizedIncoming) {
+            return sanitizedExisting;
         }
         return {
-            ...existing,
-            ...incoming
+            ...sanitizedExisting,
+            ...sanitizedIncoming
         };
+    }
+
+    private sanitizeAccountMetadata(metadata: JsonObject | undefined): JsonObject | undefined {
+        if (!metadata) {
+            return undefined;
+        }
+
+        const sanitized = this.sanitizeMetadataValue(metadata);
+        if (!sanitized || typeof sanitized !== 'object' || Array.isArray(sanitized)) {
+            return undefined;
+        }
+
+        return sanitized;
+    }
+
+    private sanitizeMetadataValue(value: JsonValue): JsonValue | undefined {
+        if (Array.isArray(value)) {
+            const sanitizedArray = value
+                .map(entry => this.sanitizeMetadataValue(entry))
+                .filter((entry): entry is JsonValue => entry !== undefined);
+            return sanitizedArray;
+        }
+
+        if (!value || typeof value !== 'object') {
+            return value;
+        }
+
+        const sanitizedEntries: Array<[string, JsonValue]> = [];
+        for (const [key, entry] of Object.entries(value)) {
+            if (SENSITIVE_METADATA_KEYS.has(key.toLowerCase())) {
+                continue;
+            }
+
+            const sanitizedEntry = this.sanitizeMetadataValue(entry as JsonValue);
+            if (sanitizedEntry !== undefined) {
+                sanitizedEntries.push([key, sanitizedEntry]);
+            }
+        }
+
+        return Object.fromEntries(sanitizedEntries);
     }
 
     private async ensureActivation(provider: string, account: LinkedAccount, hadExisting: boolean): Promise<void> {

@@ -375,7 +375,7 @@ export const MemoryInspector: React.FC = () => {
                         <span>{t('memory.contextUsage')}</span>
                     </div>
                     {showReplaceImport && (
-                        <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <label className="flex items-center gap-2 typo-caption text-muted-foreground">
                             <input
                                 type="checkbox"
                                 checked={replaceOnImport}
@@ -387,19 +387,19 @@ export const MemoryInspector: React.FC = () => {
                 </div>
                 <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div className="rounded-md bg-muted/30 p-3">
-                        <p className="text-xs text-muted-foreground">{t('memory.contextPreviewCount')}</p>
+                        <p className="typo-caption text-muted-foreground">{t('memory.contextPreviewCount')}</p>
                         <p className="text-lg font-bold">{memoryData.contextPreview.length}</p>
                     </div>
                     <div className="rounded-md bg-muted/30 p-3">
-                        <p className="text-xs text-muted-foreground">{t('memory.totalSearchQueries')}</p>
+                        <p className="typo-caption text-muted-foreground">{t('memory.totalSearchQueries')}</p>
                         <p className="text-lg font-bold">{memoryData.searchAnalytics?.totalQueries ?? 0}</p>
                     </div>
                     <div className="rounded-md bg-muted/30 p-3">
-                        <p className="text-xs text-muted-foreground">{t('memory.hybridSearchQueries')}</p>
+                        <p className="typo-caption text-muted-foreground">{t('memory.hybridSearchQueries')}</p>
                         <p className="text-lg font-bold">{memoryData.searchAnalytics?.hybridQueries ?? 0}</p>
                     </div>
                     <div className="rounded-md bg-muted/30 p-3">
-                        <p className="text-xs text-muted-foreground">{t('memory.avgSearchResults')}</p>
+                        <p className="typo-caption text-muted-foreground">{t('memory.avgSearchResults')}</p>
                         <p className="text-lg font-bold">{(memoryData.searchAnalytics?.averageResults ?? 0).toFixed(1)}</p>
                     </div>
                 </div>

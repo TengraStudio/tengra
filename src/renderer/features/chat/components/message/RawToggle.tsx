@@ -21,7 +21,7 @@ export const RawToggle = memo(({ active, onClick, t }: RawToggleProps) => (
         <button
             onClick={onClick}
             className={cn(
-                'flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-colors',
+                'flex items-center gap-1.5 px-2 py-1 rounded-lg typo-caption font-medium transition-colors',
                 active
                     ? 'bg-primary/20 text-primary'
                     : 'bg-accent/30 text-muted-foreground hover:text-foreground hover:bg-accent/50'

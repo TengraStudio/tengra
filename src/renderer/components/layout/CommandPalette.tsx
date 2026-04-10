@@ -20,7 +20,6 @@ import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import type { ModelInfo } from '@/types';
 import { Chat, Workspace } from '@/types';
 
-import './command-palette.css';
 
 export interface CommandItem {
     id: string;

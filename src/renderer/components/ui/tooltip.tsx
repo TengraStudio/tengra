@@ -11,7 +11,6 @@ import {
     TooltipSide,
 } from './tooltip-utils';
 
-import './tooltip.css';
 
 export interface TooltipProps {
     children: React.ReactElement;

@@ -35,7 +35,7 @@ export const MessageSources = memo(
                         <button
                             key={idx}
                             onClick={() => onSourceClick?.(path)}
-                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent/30 border border-border/30 hover:border-primary/50 hover:bg-primary/5 transition-all text-xs text-muted-foreground hover:text-foreground group/chip"
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent/30 border border-border/30 hover:border-primary/50 hover:bg-primary/5 transition-all typo-caption text-muted-foreground hover:text-foreground group/chip"
                             title={path}
                         >
                             <FileCode className="w-3.5 h-3.5 text-primary/60 group-hover/chip:text-primary" />

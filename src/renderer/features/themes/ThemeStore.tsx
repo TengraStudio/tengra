@@ -82,9 +82,9 @@ const ThemeCard: React.FC<{
             <div className="p-3 bg-card/40 backdrop-blur-sm">
                 <div className="flex items-center justify-between mb-1">
                     <h3 className="font-medium text-sm truncate">{theme.name}</h3>
-                    <div className="flex items-center gap-1 text-warning"><Star className="w-3 h-3 fill-current" /><span className="text-xs">{theme.rating}</span></div>
+                    <div className="flex items-center gap-1 text-warning"><Star className="w-3 h-3 fill-current" /><span className="typo-caption">{theme.rating}</span></div>
                 </div>
-                <p className="text-xs text-muted-foreground truncate">{theme.author}</p>
+                <p className="typo-caption text-muted-foreground truncate">{theme.author}</p>
                 <div className="flex items-center justify-between mt-2">
                     <span className="text-xxs text-muted-foreground/60"><Download className="w-3 h-3 inline mr-1" />{theme.downloads.toLocaleString()}</span>
                     {!isActive && (
@@ -196,7 +196,7 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                     <Palette className="w-6 h-6 text-primary" />
                     <div>
                         <h1 className="text-lg font-bold">{t('themeStore.title')}</h1>
-                        <p className="text-xs text-muted-foreground">{t('themeStore.subtitle')}</p>
+                        <p className="typo-caption text-muted-foreground">{t('themeStore.subtitle')}</p>
                     </div>
                 </div>
 
@@ -224,7 +224,7 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                             key={id}
                             onClick={() => setFilter(id as typeof filter)}
                             className={cn(
-                                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg typo-caption font-medium transition-colors",
                                 filter === id
                                     ? "bg-primary text-primary-foreground"
                                     : "bg-muted/30 text-muted-foreground hover:bg-muted/50"

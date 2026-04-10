@@ -46,7 +46,7 @@ export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({
                         {t('settings.browserClosure.description', { provider: providerName })}
                     </p>
                     <div className="p-4 rounded-lg bg-warning/10 border border-warning/20">
-                        <p className="text-xs font-medium text-warning">
+                        <p className="typo-caption font-medium text-warning">
                             {t('settings.browserClosure.warningPrefix')}{' '}
                             <span className="underline decoration-2 underline-offset-2">
                                 {t('settings.browserClosure.warningEmphasis')}

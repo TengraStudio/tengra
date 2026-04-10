@@ -10,7 +10,6 @@ import remarkMath from 'remark-math';
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-import 'katex/dist/katex.min.css';
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
 
@@ -71,7 +70,7 @@ const MermaidDiagram = ({ code, t }: { code: string; t: TranslationFn }) => {
         );
     }
 
-    if (error) { return <pre className="text-xs text-destructive bg-destructive/10 p-2 rounded">{error}</pre>; }
+    if (error) { return <pre className="typo-caption text-destructive bg-destructive/10 p-2 rounded">{error}</pre>; }
     return <div dangerouslySetInnerHTML={{ __html: svg }} className="my-4 flex justify-center bg-muted/30 p-4 rounded-xl border border-border/50" />;
 };
 
@@ -124,14 +123,14 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                     img: ({ src, alt }) => (
                         <span className="block my-2 relative group/image">
                             <img src={src} alt={alt ?? t('messageBubble.imageAlt')} className="max-w-full max-h-96 rounded-lg border border-border/50 cursor-pointer hover:opacity-90 transition-opacity whitespace-pre-wrap" onClick={() => { if (src) { window.electron.openExternal(src); } }} />
-                            {alt && <span className="text-xs text-muted-foreground mt-1 block font-medium">{alt}</span>}
+                            {alt && <span className="typo-caption text-muted-foreground mt-1 block font-medium">{alt}</span>}
                             {src && !isUser && onCodeConvert && (
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onCodeConvert(src);
                                     }}
-                                    className="absolute top-2 right-2 bg-background/85 hover:bg-background/90 backdrop-blur-md border border-border/50 text-foreground px-3 py-1.5 rounded-lg text-xs font-bold opacity-0 group/image:opacity-100 transition-all flex items-center gap-2 transform translate-y-2 group-hover/image:translate-y-0"
+                                    className="absolute top-2 right-2 bg-background/85 hover:bg-background/90 backdrop-blur-md border border-border/50 text-foreground px-3 py-1.5 rounded-lg typo-caption font-bold opacity-0 group/image:opacity-100 transition-all flex items-center gap-2 transform translate-y-2 group-hover/image:translate-y-0"
                                 >
                                     <Code2 className="w-3.5 h-3.5" />
                                     {t('workspace.convertToCode')}

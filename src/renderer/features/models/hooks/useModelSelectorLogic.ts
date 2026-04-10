@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import type { GroupedModels } from '@/types';
 import { AppSettings, ClaudeQuota, CodexUsage, CopilotQuota, QuotaResponse } from '@/types';
+import type { ModelQuotaItem } from '@/types/quota';
 
 interface UseModelSelectorLogicProps {
     settings?: AppSettings;
@@ -82,6 +83,26 @@ function findAntigravityQuotaModel(quotas: { accounts: QuotaResponse[] }, lowerM
     return matches.reduce((lowest, current) => current.percentage < lowest.percentage ? current : lowest);
 }
 
+function canUseAntigravityCredits(modelQuotaItem: ModelQuotaItem | null): boolean {
+    const aiCredits = modelQuotaItem?.quotaInfo?.aiCredits;
+    if (aiCredits?.useAICredits !== true) {
+        return false;
+    }
+    if (aiCredits.canUseCredits === true) {
+        return true;
+    }
+    if (aiCredits.hasSufficientCredits === false) {
+        return false;
+    }
+    if (
+        typeof aiCredits.creditAmount === 'number'
+        && typeof aiCredits.minimumCreditAmountForUsage === 'number'
+    ) {
+        return aiCredits.creditAmount >= aiCredits.minimumCreditAmountForUsage;
+    }
+    return false;
+}
+
 function checkAntigravityUserDefinedLimit(modelId: string, lowerModelId: string, quotas: { accounts: QuotaResponse[] } | null, settings?: AppSettings) {
     if (!quotas) { return false; }
     const antigravityLimits = settings?.modelUsageLimits?.antigravity;
@@ -101,7 +122,10 @@ function checkAntigravityGeneralQuota(modelId: string, lowerModelId: string, quo
     const modelQuotaItem = findAntigravityQuotaModel(quotas, lowerModelId, modelId);
     if (!modelQuotaItem) { return false; }
 
-    return modelQuotaItem.percentage <= 0;
+    if (modelQuotaItem.percentage > 0) {
+        return false;
+    }
+    return !canUseAntigravityCredits(modelQuotaItem);
 }
 
 function isGroupQuotaExhausted(gQuota: Record<string, RendererDataValue> | { exhausted?: boolean; remaining: number; percentage?: number }): boolean {

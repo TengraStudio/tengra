@@ -113,14 +113,14 @@ export function TerminalContextMenu({
         >
             <button
                 onClick={onCopy}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground"
+                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground"
             >
                 {labels.copy}
             </button>
             {onCopyWithFormatting && (
                 <button
                     onClick={onCopyWithFormatting}
-                    className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground"
+                    className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground"
                 >
                     {labels.copyWithFormatting}
                 </button>
@@ -128,7 +128,7 @@ export function TerminalContextMenu({
             {onCopyStripAnsi && (
                 <button
                     onClick={onCopyStripAnsi}
-                    className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground"
+                    className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground"
                 >
                     {labels.copyStripAnsi}
                 </button>
@@ -136,14 +136,14 @@ export function TerminalContextMenu({
             <button
                 onClick={onPaste}
                 disabled={!hasActiveSession}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
             >
                 {labels.paste}
             </button>
             {onTestPaste && (
                 <button
                     onClick={onTestPaste}
-                    className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground"
+                    className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground"
                 >
                     {labels.pasteTest}
                 </button>
@@ -158,7 +158,7 @@ export function TerminalContextMenu({
                             key={`${index}-${entry.slice(0, 16)}`}
                             onClick={() => onPasteHistory(entry)}
                             disabled={!hasActiveSession}
-                            className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed truncate"
+                            className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed truncate"
                             title={entry}
                         >
                             {entry.replace(/\s+/g, ' ').slice(0, 70)}
@@ -169,21 +169,21 @@ export function TerminalContextMenu({
             <button
                 onClick={onSelectAll}
                 disabled={!hasActiveSession}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
             >
                 {labels.selectAll}
             </button>
             <button
                 onClick={onSearch}
                 disabled={!hasActiveSession}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
             >
                 {labels.search}
             </button>
             <button
                 onClick={onSemanticToggle}
                 disabled={!hasActiveSession}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-between gap-2"
+                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-between gap-2"
             >
                 <span>{labels.semanticIssues}</span>
                 {semanticIssueCount > 0 && (
@@ -195,55 +195,55 @@ export function TerminalContextMenu({
             <button
                 onClick={onGalleryToggle}
                 disabled={!canUseGallery}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
             >
                 {isGalleryView ? labels.exitGalleryView : labels.galleryView}
             </button> 
             <button
                 onClick={onHistoryToggle}
                 disabled={!hasActiveSession}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
             >
                 {labels.commandHistory}
             </button> 
             <button
                 onClick={onRecordingToggle}
                 disabled={!hasActiveSession}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
             >
                 {isRecordingActive ? labels.stopRecording : labels.startRecording}
             </button>
             <button
                 onClick={onOpenRecordings}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground"
+                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground"
             >
                 {labels.sessionRecordings}
             </button>
             <button
                 onClick={onTaskRunnerToggle}
                 disabled={!hasActiveSession || !workspacePath}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground"
+                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground"
             >
                 {labels.runTask}
             </button>
             <button
                 onClick={onClearOutput}
                 disabled={!hasActiveSession}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
             >
                 {labels.clearOutput}
             </button>
             <button
                 onClick={onSplit}
                 disabled={!hasActiveSession}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
             >
                 {labels.split}
             </button>
             <button
                 onClick={onDetach}
                 disabled={!hasActiveSession}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
             >
                 {labels.detach}
             </button>
@@ -251,7 +251,7 @@ export function TerminalContextMenu({
                 <button
                     onClick={onToggleSynchronizedInput}
                     disabled={!hasActiveSession}
-                    className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                     {isSynchronizedInputEnabled
                         ? labels.synchronizedInputOn
@@ -262,13 +262,13 @@ export function TerminalContextMenu({
                 <>
                     <button
                         onClick={onToggleSplitOrientation}
-                        className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground"
+                        className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground"
                     >
                         {labels.toggleSplitOrientation}
                     </button>
                     <button
                         onClick={onCloseSplit}
-                        className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground"
+                        className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground"
                     >
                         {labels.closeSplit}
                     </button>
@@ -277,13 +277,13 @@ export function TerminalContextMenu({
             <div className="h-px bg-border/60 my-1 mx-2" />
             <button
                 onClick={onNewTerminal}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground"
+                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground"
             >
                 {labels.newTerminal}
             </button>
             <button
                 onClick={onHidePanel}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground"
+                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground"
             >
                 {labels.hide}
             </button>

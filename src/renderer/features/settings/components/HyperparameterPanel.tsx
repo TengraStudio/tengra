@@ -95,10 +95,10 @@ export function HyperparameterPanel({
                     {sliders.map((slider) => (
                         <div key={slider.labelKey} className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <label className="text-xs font-medium text-muted-foreground">
+                                <label className="typo-caption font-medium text-muted-foreground">
                                     {t(slider.labelKey)}
                                 </label>
-                                <span className="text-xs font-mono bg-muted/30 px-2 py-0.5 rounded">
+                                <span className="typo-caption font-mono bg-muted/30 px-2 py-0.5 rounded">
                                     {slider.value.toFixed(slider.step < 1 ? 2 : 0)}
                                 </span>
                             </div>

@@ -32,7 +32,7 @@ export const CodexLimitsSection: React.FC<CodexLimitsSectionProps> = ({
                     <h3 className="text-sm font-bold text-foreground">
                         {t('settings.usageLimits.codex.title')}
                     </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="typo-caption text-muted-foreground mt-0.5">
                         {t('settings.usageLimits.codex.description')}
                     </p>
                 </div>
@@ -94,7 +94,7 @@ export const CodexLimitsSection: React.FC<CodexLimitsSectionProps> = ({
                                             className="bg-background/50 border-border/50 h-10 font-mono text-sm pr-10 focus:ring-success/20"
                                             placeholder={t('settings.usageLimits.maxPercentPlaceholder')}
                                         />
-                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/40 font-bold text-xs">
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/40 font-bold typo-caption">
                                             %
                                         </div>
                                     </div>

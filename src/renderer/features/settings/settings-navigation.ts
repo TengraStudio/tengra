@@ -8,6 +8,7 @@ import {
     LucideIcon,
     MonitorCog,
     Palette,
+    Puzzle,
     Rocket,
     Settings,
     Share2,
@@ -85,12 +86,6 @@ export function getSettingsNavigationItems(t: SettingsTranslationFn): SettingsNa
             icon: Sparkles,
         },
         {
-            id: 'skills',
-            label: t('settings.tabs.skills'),
-            sectionLabel: t('settings.categories.ai'),
-            icon: Sparkles,
-        },
-        {
             id: 'quotas',
             label: t('statistics.connectedAppsUsage'),
             sectionLabel: t('settings.categories.ai'),
@@ -143,6 +138,12 @@ export function getSettingsNavigationItems(t: SettingsTranslationFn): SettingsNa
             label: t('settings.tabs.about'),
             sectionLabel: t('settings.categories.app'),
             icon: Rocket,
+        },
+        {
+            id: 'extensions',
+            label: t('settings.tabs.extensions'),
+            sectionLabel: t('settings.categories.tools'),
+            icon: Puzzle,
         },
     ];
 }

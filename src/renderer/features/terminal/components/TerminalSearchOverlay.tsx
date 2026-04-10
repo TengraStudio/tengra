@@ -81,7 +81,7 @@ export function TerminalSearchOverlay({
                         }
                     }}
                     placeholder={t('common.search')}
-                    className="h-6 w-44 bg-transparent text-xs outline-none text-foreground placeholder:text-muted-foreground"
+                    className="h-6 w-44 bg-transparent typo-caption outline-none text-foreground placeholder:text-muted-foreground"
                 />
                 <button
                     onClick={() => {

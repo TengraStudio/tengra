@@ -71,7 +71,7 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
                                 size="sm"
                                 onClick={() => updateCopilotLimit(period, 'type', 'requests')}
                                 className={cn(
-                                    'h-8 rounded-md px-3 text-xs font-bold transition-all',
+                                    'h-8 rounded-md px-3 typo-caption font-bold transition-all',
                                     periodLimit.type === 'requests'
                                         ? 'shadow-sm'
                                         : 'text-muted-foreground hover:text-foreground'
@@ -85,7 +85,7 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
                                 size="sm"
                                 onClick={() => updateCopilotLimit(period, 'type', 'percentage')}
                                 className={cn(
-                                    'h-8 rounded-md px-3 text-xs font-bold transition-all',
+                                    'h-8 rounded-md px-3 typo-caption font-bold transition-all',
                                     periodLimit.type === 'percentage'
                                         ? 'shadow-sm'
                                         : 'text-muted-foreground hover:text-foreground'
@@ -123,7 +123,7 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
                                         : t('settings.usageLimits.maxPercentagePlaceholder')
                                 }
                             />
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/40 font-bold text-xs">
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/40 font-bold typo-caption">
                                 {periodLimit.type === 'requests' ? 'REQ' : '%'}
                             </div>
                         </div>

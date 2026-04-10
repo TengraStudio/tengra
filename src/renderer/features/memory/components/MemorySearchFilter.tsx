@@ -132,13 +132,13 @@ export const MemorySearchFilter: React.FC<MemorySearchFilterProps> = ({
 
             {searchHistory.length > 0 && (
                 <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">{t('common.search')}:</span>
+                    <span className="typo-caption text-muted-foreground">{t('common.search')}:</span>
                     <div className="flex flex-wrap gap-1">
                         {searchHistory.map(query => (
                             <button
                                 key={query}
                                 type="button"
-                                className="rounded-md border border-border/50 bg-muted/30 px-2 py-0.5 text-xs text-muted-foreground transition hover:bg-muted/40 hover:text-foreground"
+                                className="rounded-md border border-border/50 bg-muted/30 px-2 py-0.5 typo-caption text-muted-foreground transition hover:bg-muted/40 hover:text-foreground"
                                 onClick={() => onSearchChange(query)}
                             >
                                 {query}

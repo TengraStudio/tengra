@@ -4,7 +4,6 @@ import React from 'react';
 
 import { cn } from '@/lib/utils';
 
-import './results-list.css';
 
 interface ResultsListProps {
     groupedCommands: Record<string, CommandItem[]>;
@@ -103,7 +102,7 @@ export const ResultsList: React.FC<ResultsListProps> = ({
                     <div className="text-foreground font-semibold mb-1">
                         {t('commandPalette.noResults')}
                     </div>
-                    <div className="text-muted-foreground/50 text-xs">
+                    <div className="text-muted-foreground/50 typo-caption">
                         {t('commandPalette.noResultsHint')}
                     </div>
                 </div>

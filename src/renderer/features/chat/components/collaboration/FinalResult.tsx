@@ -38,7 +38,7 @@ export const FinalResult = memo(({ results, t }: FinalResultProps) => {
                             <span className="text-sm font-bold text-primary">{t('chat.collaboration.bestResponse')}</span>
                         </div>
                         <p className="text-sm leading-relaxed text-foreground">{results.bestResponse.content}</p>
-                        <p className="text-xs text-muted-foreground pt-1 border-t border-primary/10">
+                        <p className="typo-caption text-muted-foreground pt-1 border-t border-primary/10">
                             {t('chat.collaboration.from', {
                                 provider: results.bestResponse.provider,
                                 model: results.bestResponse.model

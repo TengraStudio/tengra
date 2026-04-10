@@ -34,7 +34,7 @@ export function TerminalSemanticPanel({
     return (
         <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 min-w-80 max-w-lg">
             <div className="flex items-center justify-between gap-3 mb-2">
-                <div className="flex items-center gap-2 text-xs font-semibold">
+                <div className="flex items-center gap-2 typo-caption font-semibold">
                     <AlertTriangle className="w-3.5 h-3.5 text-warning" />
                     {t('terminal.semanticIssues')}
                 </div>
@@ -54,7 +54,7 @@ export function TerminalSemanticPanel({
                 </div>
             </div>
             {activeSemanticIssues.length === 0 ? (
-                <div className="px-1 py-2 text-xs text-muted-foreground">
+                <div className="px-1 py-2 typo-caption text-muted-foreground">
                     {t('terminal.semanticNoIssues')}
                 </div>
             ) : (
@@ -111,7 +111,7 @@ export function TerminalSemanticPanel({
                                 }}
                                 className="w-full text-left"
                             >
-                                <div className="text-xs text-foreground/90 mt-0.5 line-clamp-2">
+                                <div className="typo-caption text-foreground/90 mt-0.5 line-clamp-2">
                                     {issue.message}
                                 </div>
                             </button>

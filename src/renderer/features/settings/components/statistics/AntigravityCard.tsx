@@ -100,6 +100,10 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({
                     const statusText = acc.success === false 
                         ? (acc.authExpired ? t('errors.quota.authExpired') : t(`statistics.status${acc.status ?? 'Error'}`)) 
                         : t('statistics.active');
+                    const creditAmount = acc.antigravityAiCredits?.creditAmount;
+                    const creditLabel = typeof creditAmount === 'number'
+                        ? `${t('models.creditsLeft')}: ${Math.max(0, Math.round(creditAmount))}`
+                        : null;
 
                     return (
                         <div key={acc.accountId ?? idx} className={cn('space-y-3 rounded-xl border border-border/15 bg-muted/4 px-4 py-3', idx > 0 && 'mt-2')}>
@@ -109,6 +113,11 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({
                                 </div>
                                 {acc.success === false && <StatusBadge status={status} text={statusText} />}
                                 {acc.success !== false && isActiveAccount && <StatusBadge status={status} text={statusText} />}
+                                {creditLabel && (
+                                    <div className="tw-text-9 rounded-full border border-border/20 bg-background/70 px-2.5 py-0.5 font-bold text-muted-foreground">
+                                        {creditLabel}
+                                    </div>
+                                )}
                             </div>
 
                             {acc.success !== false && (

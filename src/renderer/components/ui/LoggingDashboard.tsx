@@ -31,7 +31,7 @@ const levelBadgeColors = {
 };
 
 const LogTableHeader: React.FC<{ t: (key: string) => string }> = ({ t }) => (
-    <div className="sticky top-0 z-10 bg-muted text-muted-foreground flex font-semibold text-xs">
+    <div className="sticky top-0 z-10 bg-muted text-muted-foreground flex font-semibold typo-caption">
         <div className="px-3 py-2 w-32 shrink-0">{t('logging.time')}</div>
         <div className="px-3 py-2 w-20 shrink-0">{t('logging.level')}</div>
         <div className="px-3 py-2 w-32 shrink-0">{t('logging.source')}</div>
@@ -48,7 +48,7 @@ const LogRow: React.FC<{ log: LogEntry }> = React.memo(({ log }) => (
         </div>
         <div className="px-3 py-1.5 w-20 shrink-0">
             <span
-                className={`px-2 py-0.5 rounded text-xs font-medium ${levelBadgeColors[log.level]}`}
+                className={`px-2 py-0.5 rounded typo-caption font-medium ${levelBadgeColors[log.level]}`}
             >
                 {log.level.toUpperCase()}
             </span>
@@ -181,7 +181,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(
                                 </svg>
                                 {t('logging.title')}
                             </h2>
-                            <span className="text-xs text-muted-foreground bg-accent px-2 py-1 rounded">
+                            <span className="typo-caption text-muted-foreground bg-accent px-2 py-1 rounded">
                                 {filteredLogs.length} {t('logging.entries')}
                             </span>
                         </div>
@@ -253,7 +253,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(
                             </button>
                         </div>
                     </div>
-                    <div className="flex-1 overflow-hidden font-mono text-xs flex flex-col">
+                    <div className="flex-1 overflow-hidden font-mono typo-caption flex flex-col">
                         {filteredLogs.length === 0 ? (
                             <div className="flex items-center justify-center h-full text-muted-foreground">
                                 <div className="text-center">
@@ -271,7 +271,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(
                                         />
                                     </svg>
                                     <p>{t('logging.noLogs')}</p>
-                                    <p className="text-xs mt-1">{t('logging.noLogsDesc')}</p>
+                                    <p className="typo-caption mt-1">{t('logging.noLogsDesc')}</p>
                                 </div>
                             </div>
                         ) : (
@@ -294,7 +294,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(
                             </>
                         )}
                     </div>
-                    <div className="px-4 py-2 border-t border-border bg-muted/30 text-xs text-muted-foreground flex justify-between">
+                    <div className="px-4 py-2 border-t border-border bg-muted/30 typo-caption text-muted-foreground flex justify-between">
                         <span>
                             {t('logging.lastUpdated')}: {new Date().toLocaleTimeString()}
                         </span>

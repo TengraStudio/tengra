@@ -173,7 +173,7 @@ export function ManagedRuntimeStatusPanel({
                         <button
                             onClick={onRefresh}
                             disabled={isLoading || isRepairing}
-                            className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-muted-foreground transition hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 typo-caption font-semibold text-muted-foreground transition hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
                             {t('common.refresh')}
@@ -181,7 +181,7 @@ export function ManagedRuntimeStatusPanel({
                         <button
                             onClick={onRepair}
                             disabled={isLoading || isRepairing}
-                            className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 typo-caption font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             <Download className={`h-3.5 w-3.5 ${isRepairing ? 'animate-bounce' : ''}`} />
                             {t('runtime.repairAction')}
@@ -215,7 +215,7 @@ export function ManagedRuntimeStatusPanel({
                                         <div className="text-sm font-semibold text-foreground">{entry.displayName}</div>
                                     </div>
                                     {entry.detail && (
-                                        <div className="text-xs text-muted-foreground">{entry.detail}</div>
+                                        <div className="typo-caption text-muted-foreground">{entry.detail}</div>
                                     )}
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -233,7 +233,7 @@ export function ManagedRuntimeStatusPanel({
                                     {entry.canInstall && entry.installUrl && (
                                         <button
                                             onClick={() => handleOpenInstallUrl(entry.installUrl ?? '')}
-                                            className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition hover:bg-muted/40"
+                                            className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 typo-caption font-semibold text-muted-foreground transition hover:bg-muted/40"
                                         >
                                             <Download className="h-3.5 w-3.5" />
                                             {t('runtime.installAction')}
@@ -245,7 +245,7 @@ export function ManagedRuntimeStatusPanel({
                                                 void handleStartExternal(entry.componentId);
                                             }}
                                             disabled={startingComponentId === entry.componentId}
-                                            className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-60"
+                                            className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 typo-caption font-semibold text-muted-foreground transition hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-60"
                                         >
                                             <Play className="h-3.5 w-3.5" />
                                             {t('runtime.startAction')}

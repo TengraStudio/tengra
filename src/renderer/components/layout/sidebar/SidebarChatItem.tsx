@@ -6,7 +6,6 @@ import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { Chat } from '@/types';
 
-import './sidebar-chat-item.css';
 
 interface SidebarChatItemProps {
     chat: Chat;

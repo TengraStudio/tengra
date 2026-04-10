@@ -2,7 +2,6 @@ import { Loader2 } from 'lucide-react';
 
 import { useTranslation } from '@/i18n';
 
-import './retry-indicator.css';
 
 /** Props for the RetryIndicator component */
 interface RetryIndicatorProps {

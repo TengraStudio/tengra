@@ -5,7 +5,6 @@ import { useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 
-import './workspace-details-form.css';
 
 /** Category configuration for workspace type selection */
 export interface WorkspaceCategoryConfig {

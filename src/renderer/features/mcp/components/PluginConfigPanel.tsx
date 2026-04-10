@@ -44,7 +44,7 @@ const ConfigField: React.FC<{
                 />
                 <span className="text-sm font-medium text-foreground">{label}</span>
                 {field.description && (
-                    <span className="text-xs text-muted-foreground">{field.description}</span>
+                    <span className="typo-caption text-muted-foreground">{field.description}</span>
                 )}
             </label>
         );
@@ -55,7 +55,7 @@ const ConfigField: React.FC<{
             <div className="flex flex-col gap-1 py-2">
                 <label className="text-sm font-medium text-foreground">{label}</label>
                 {field.description && (
-                    <span className="text-xs text-muted-foreground">{field.description}</span>
+                    <span className="typo-caption text-muted-foreground">{field.description}</span>
                 )}
                 <select
                     value={String(value ?? '')}
@@ -75,7 +75,7 @@ const ConfigField: React.FC<{
             <div className="flex flex-col gap-1 py-2">
                 <label className="text-sm font-medium text-foreground">{label}</label>
                 {field.description && (
-                    <span className="text-xs text-muted-foreground">{field.description}</span>
+                    <span className="typo-caption text-muted-foreground">{field.description}</span>
                 )}
                 <input
                     type="number"
@@ -92,7 +92,7 @@ const ConfigField: React.FC<{
         <div className="flex flex-col gap-1 py-2">
             <label className="text-sm font-medium text-foreground">{label}</label>
             {field.description && (
-                <span className="text-xs text-muted-foreground">{field.description}</span>
+                <span className="typo-caption text-muted-foreground">{field.description}</span>
             )}
             <input
                 type="text"
@@ -102,7 +102,7 @@ const ConfigField: React.FC<{
                 className="rounded border border-border bg-background px-2 py-1 text-sm"
             />
             {field.required && !value && (
-                <span className="text-xs text-destructive">{t('mcp.pluginConfig.fieldRequired')}</span>
+                <span className="typo-caption text-destructive">{t('mcp.pluginConfig.fieldRequired')}</span>
             )}
         </div>
     );

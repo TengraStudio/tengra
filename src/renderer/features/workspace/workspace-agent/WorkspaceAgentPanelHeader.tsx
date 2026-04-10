@@ -224,7 +224,7 @@ export const WorkspaceAgentPanelHeader: React.FC<WorkspaceAgentPanelHeaderProps>
             </div>
 
             <div className="mt-4 rounded-2xl border border-border/50 bg-muted/30 p-3">
-                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                <div className="flex items-center justify-between gap-2 typo-caption text-muted-foreground">
                     <span>{formatTokens(telemetry?.usedTokens)} / {formatTokens(telemetry?.contextWindow)}</span>
                     <span>{formatTokens(telemetry?.remainingTokens)}</span>
                 </div>

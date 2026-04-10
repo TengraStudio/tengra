@@ -87,7 +87,7 @@ export const WorkspaceStatsCards: React.FC<WorkspaceStatsCardsProps> = ({ stats,
                                 className="flex items-center justify-between gap-4 rounded-lg border border-border/40 bg-muted/10 px-3 py-2"
                             >
                                 <div className="min-w-0">
-                                    <div className="truncate font-mono text-xs text-foreground">
+                                    <div className="truncate font-mono typo-caption text-foreground">
                                         {entry.path}
                                     </div>
                                     <div className="tw-text-10 text-muted-foreground/70">

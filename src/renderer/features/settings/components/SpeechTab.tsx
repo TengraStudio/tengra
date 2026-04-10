@@ -267,7 +267,7 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({
                         </div>
                     </div>
                 </div>
-                <p className="text-xs text-muted-foreground/60 leading-relaxed max-w-2xl font-medium px-1">
+                <p className="typo-caption text-muted-foreground/60 leading-relaxed max-w-2xl font-medium px-1">
                     {t('speech.subtitle')}
                 </p>
             </div>
@@ -306,7 +306,7 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({
                                     </div>
                                     <div>
                                         <p className="typo-body font-bold text-muted-foreground/40 mb-2">{t('speech.auralPreview')}</p>
-                                        <p className="text-xs leading-relaxed text-foreground font-medium opacity-80">
+                                        <p className="typo-caption leading-relaxed text-foreground font-medium opacity-80">
                                             "{t('speech.previewText')}"
                                         </p>
                                     </div>

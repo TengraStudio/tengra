@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-import './error-fallback.css';
 
 export const ErrorFallback = ({
     error,

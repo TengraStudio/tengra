@@ -108,7 +108,7 @@ export function WorkspaceExplorerBulkActions({
                             }
                         }}
                         autoFocus
-                        className="h-8 flex-1 rounded-md border border-border/50 bg-background/70 px-2 text-xs text-foreground outline-none transition-colors focus:border-primary/40"
+                        className="h-8 flex-1 rounded-md border border-border/50 bg-background/70 px-2 typo-caption text-foreground outline-none transition-colors focus:border-primary/40"
                         placeholder={
                             bulkAction.type === 'rename'
                                 ? t('workspace.placeholders.name')

@@ -205,7 +205,7 @@ export function ModelsPage({ language = 'en' }: ModelsPageProps): React.ReactEle
                     {/* Tabs */}
                     <div className="flex items-center gap-2">
                         <div className={cn(
-                            'rounded-full border border-primary/30 bg-primary/20 px-5 py-2.5 text-xs font-bold text-primary shadow-sm'
+                            'rounded-full border border-primary/30 bg-primary/20 px-5 py-2.5 typo-caption font-bold text-primary shadow-sm'
                         )}>
                             {t('modelsPage.installedModels')}
                         </div>

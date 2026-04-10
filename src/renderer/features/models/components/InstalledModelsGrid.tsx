@@ -235,7 +235,7 @@ const AccountTabs: React.FC<AccountTabsProps> = memo(({
                         key={account.id}
                         onClick={() => onSetActiveAccount(provider, account.id)}
                         className={cn(
-                            "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap",
+                            "flex items-center gap-2 px-3 py-1.5 rounded-lg typo-caption font-medium transition-all whitespace-nowrap",
                             isActive
                                 ? cn(config.bgColor, config.color, "border", config.borderColor)
                                 : "bg-muted/30 text-muted-foreground hover:bg-muted/50 border border-transparent"
@@ -349,7 +349,7 @@ const InstalledModelCard = memo(({
 
             {/* Description */}
             {model.description && (
-                <p className="text-xs text-muted-foreground mb-3 line-clamp-2 leading-relaxed">
+                <p className="typo-caption text-muted-foreground mb-3 line-clamp-2 leading-relaxed">
                     {model.description}
                 </p>
             )}
@@ -509,7 +509,7 @@ const ProviderSection = memo(({
                         <h2 className="font-bold text-base text-foreground group-hover:text-primary transition-colors">
                             {t(config.labelKey)}
                         </h2>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="typo-caption text-muted-foreground">
                             {visibleModels.length} {t('modelsPage.modelsCount')}
                             {accounts.length > 1 && ` · ${accounts.length} ${t('modelsPage.accounts')}`}
                         </p>
@@ -649,7 +649,7 @@ export function InstalledModelsGrid({
                     <button
                         onClick={() => setShowHidden(!showHidden)}
                         className={cn(
-                            "flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all",
+                            "flex items-center gap-2 px-3 py-2 rounded-xl typo-caption font-bold transition-all",
                             showHidden
                                 ? "bg-muted/50 text-foreground border border-border"
                                 : "bg-muted/30 text-muted-foreground border border-border/50 hover:bg-muted/50"
@@ -661,7 +661,7 @@ export function InstalledModelsGrid({
 
                     <button
                         onClick={onRefresh}
-                        className="flex items-center gap-2 px-4 py-2 bg-muted/30 border border-border/50 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all"
+                        className="flex items-center gap-2 px-4 py-2 bg-muted/30 border border-border/50 rounded-xl typo-caption font-bold text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all"
                     >
                         <RefreshCw className="w-3.5 h-3.5" />
                         {t('modelsPage.refresh')}

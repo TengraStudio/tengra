@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 
 import { parseChatErrorFromText } from '@/features/chat/utils/chat-error-normalizer.util';
 import { ChatError, Message } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 export type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
 
@@ -13,11 +14,11 @@ export interface ParsedMessageSections {
 
 const messageContentParseCache = new Map<string, ParsedMessageSections>();
 const TOOL_TRACE_PATTERNS = [
-    /<function_calls>/i,
-    /<\/function_calls>/i,
-    /"tool_call"/i,
-    /"tool_calls"/i,
-    /"tool_results"/i,
+    /^<function_calls>$/i,
+    /^<\/function_calls>$/i,
+    /^\s*\{"tool_call"/i,
+    /^\s*\{"tool_calls"/i,
+    /^\s*\{"tool_results"/i,
 ];
 
 function stripPatternPreservingWordBoundary(content: string, pattern: RegExp): string {
@@ -56,6 +57,17 @@ const PROMPT_LEAK_PATTERNS = [
 ];
 
 const PROMPT_BLOCK_START = /(?:^|\n)\s*(?:system prompt|prompt to ai|internal prompt|developer prompt)\s*[:-]\s*/i;
+const STRUCTURED_STREAM_MARKUP_PATTERNS = [
+    /<think>/i,
+    /<plan>/i,
+    /<function_calls>/i,
+    /<thinking>/i,
+    /<planing>/i,
+    /"tool_call"/i,
+    /"tool_calls"/i,
+    /"tool_results"/i,
+    /function:\s*[\w\-_]+/i,
+];
 
 function stripLeakedPrompt(content: string): string {
     if (content.trim().length === 0) {
@@ -92,6 +104,47 @@ function stripToolTraceReasoning(reasoning: string | null): string | null {
     });
     const normalized = filteredLines.join('\n').trim();
     return normalized.length > 0 ? normalized : null;
+}
+
+function hasStructuredStreamMarkup(content: string): boolean {
+    if (content.trim().length === 0) {
+        return false;
+    }
+    return STRUCTURED_STREAM_MARKUP_PATTERNS.some(pattern => pattern.test(content))
+        || PROMPT_LEAK_PATTERNS.some(pattern => pattern.test(content));
+}
+
+function stripDuplicatedThoughtFromDisplay(displayContent: string, thought: string | null): string {
+    if (!thought || thought.trim().length === 0) {
+        return displayContent;
+    }
+
+    const normalizedThought = thought.trim();
+    if (normalizedThought.length < 24) {
+        return displayContent;
+    }
+
+    const normalizedDisplay = displayContent.trim();
+    if (normalizedDisplay.length === 0) {
+        return displayContent;
+    }
+
+    if (normalizedDisplay === normalizedThought) {
+        return '';
+    }
+
+    if (normalizedDisplay.startsWith(normalizedThought)) {
+        return normalizedDisplay.slice(normalizedThought.length).trimStart();
+    }
+
+    const duplicateIndex = normalizedDisplay.indexOf(normalizedThought);
+    if (duplicateIndex >= 0) {
+        const before = normalizedDisplay.slice(0, duplicateIndex).trimEnd();
+        const after = normalizedDisplay.slice(duplicateIndex + normalizedThought.length).trimStart();
+        return `${before}${before.length > 0 && after.length > 0 ? '\n\n' : ''}${after}`.trim();
+    }
+
+    return displayContent;
 }
 
 const parseTagSection = (
@@ -132,11 +185,40 @@ const parseMessageTaggedSections = (
     for (const pattern of cleanupPatterns) {
         filteredContent = stripPatternPreservingWordBoundary(filteredContent, pattern);
     }
-    filteredContent = filteredContent.trim();
+    const parsedThought = stripToolTraceReasoning(reasoningSource);
+    filteredContent = stripDuplicatedThoughtFromDisplay(filteredContent.trim(), parsedThought);
+    appLogger.info(
+        'MessageUtils',
+        `parseMessageTaggedSections contentLen=${content.length}, reasoningLen=${reasoning?.length ?? 0}, streamingLen=${streaming?.length ?? 0}, thoughtLen=${parsedThought?.length ?? 0}, planLen=${planSection.value?.length ?? 0}, displayLen=${filteredContent.length}`
+    );
 
     return {
-        thought: stripToolTraceReasoning(reasoningSource),
+        thought: parsedThought,
         plan: planSection.value,
+        displayContent: filteredContent,
+    };
+};
+
+const parseStreamingFastPath = (
+    content: string,
+    reasoning: string | undefined,
+    streaming: string | undefined
+): ParsedMessageSections => {
+    const reasoningSource = streaming ?? reasoning;
+    const parsedThought = stripToolTraceReasoning(reasoningSource ?? null);
+    const filteredContent = stripDuplicatedThoughtFromDisplay(
+        stripLeakedPrompt(content).trim(),
+        parsedThought
+    );
+
+    appLogger.info(
+        'MessageUtils',
+        `parseStreamingFastPath contentLen=${content.length}, reasoningLen=${reasoning?.length ?? 0}, streamingLen=${streaming?.length ?? 0}, thoughtLen=${parsedThought?.length ?? 0}, displayLen=${filteredContent.length}`
+    );
+
+    return {
+        thought: parsedThought,
+        plan: null,
         displayContent: filteredContent,
     };
 };
@@ -169,6 +251,9 @@ export const useMessageContent = (
             if (cached) {
                 return cached;
             }
+        }
+        if (streaming && !hasStructuredStreamMarkup(content)) {
+            return parseStreamingFastPath(content, reasoning, streaming);
         }
         const parsed = parseMessageTaggedSections(content, reasoning, streaming);
         if (!streaming) {

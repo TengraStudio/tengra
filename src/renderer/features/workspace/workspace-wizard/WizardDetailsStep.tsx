@@ -52,7 +52,7 @@ export const WizardDetailsStep: React.FC<WizardDetailsStepProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
                 >
-                    <Label className="text-xs font-bold text-muted-foreground mb-2 block ml-1">
+                    <Label className="typo-caption font-bold text-muted-foreground mb-2 block ml-1">
                         {t('workspaceWizard.workspaceName')}
                     </Label>
                     <div className="relative group">
@@ -73,7 +73,7 @@ export const WizardDetailsStep: React.FC<WizardDetailsStepProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: 0.1 }}
                 >
-                    <Label className="text-xs font-bold text-muted-foreground mb-3 block ml-1">
+                    <Label className="typo-caption font-bold text-muted-foreground mb-3 block ml-1">
                         {t('workspaces.categoryLabel')}
                     </Label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -147,7 +147,7 @@ export const WizardDetailsStep: React.FC<WizardDetailsStepProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: 0.2 }}
                 >
-                    <Label className="text-xs font-bold text-muted-foreground mb-2 block ml-1">
+                    <Label className="typo-caption font-bold text-muted-foreground mb-2 block ml-1">
                         {t('workspaceWizard.selectFolder')}
                     </Label>
                     <Input
@@ -165,7 +165,7 @@ export const WizardDetailsStep: React.FC<WizardDetailsStepProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: 0.25 }}
                 >
-                    <Label className="text-xs font-bold text-muted-foreground mb-2 block ml-1">
+                    <Label className="typo-caption font-bold text-muted-foreground mb-2 block ml-1">
                         {t('workspaceWizard.description')}
                     </Label>
                     <Textarea

@@ -19,7 +19,7 @@ export const StatsPanel = ({ stats }: { stats: MemoryStatistics }) => {
                             const percentage = (count / stats.total) * 100;
                             return (
                                 <div key={category} className="space-y-1">
-                                    <div className="flex justify-between text-xs font-medium">
+                                    <div className="flex justify-between typo-caption font-medium">
                                         <div className="flex items-center gap-2">
                                             <config.icon className="w-3 h-3" />
                                             {t(config.labelKey)}
@@ -39,7 +39,7 @@ export const StatsPanel = ({ stats }: { stats: MemoryStatistics }) => {
                         {/* Placeholder for a chart or visualization */}
                         <div className="text-center">
                             <p className="text-2xl font-bold text-primary">{stats.total}</p>
-                            <p className="text-xs text-muted-foreground font-bold">{t('memory.stats.totalActiveFragments')}</p>
+                            <p className="typo-caption text-muted-foreground font-bold">{t('memory.stats.totalActiveFragments')}</p>
                         </div>
                     </div>
                 </Card>

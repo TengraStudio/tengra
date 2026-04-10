@@ -373,7 +373,7 @@ async fn build_auth_url(
                 .ok_or_else(|| anyhow::anyhow!("Missing PKCE verifier for claude auth"))?;
             Ok(ClaudeClient::new().await?.generate_auth_url(state, &pkce))
         }
-        "antigravity" => Ok(AntigravityClient::new().await?.generate_auth_url(state)),
+        "antigravity" => Ok(AntigravityClient::new(None).await?.generate_auth_url(state)),
         "ollama" => build_ollama_auth_url(account_id).await,
         _ => Err(anyhow::anyhow!("Unsupported auth provider: {}", provider)),
     }

@@ -163,18 +163,18 @@ export const SSHKeyManagement: React.FC<SSHKeyManagementProps> = ({ t }) => {
                 <div className="space-y-2 max-h-56 overflow-auto pr-1">
                     {keys.map(key => (
                         <div key={key.id} className="flex items-center justify-between border border-border rounded px-2 py-1">
-                            <div className="text-xs">
+                            <div className="typo-caption">
                                 <div className="font-medium">{key.name}</div>
                                 <div className="text-muted-foreground">{key.fingerprint}</div>
                             </div>
                             <div className="flex gap-1">
-                                <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void runAction(async () => { const backup = await window.electron.ssh.backupManagedKey(key.id); if (backup) { await window.electron.saveFile(backup.privateKey, backup.filename); } }, t('ssh.keyBackedUp')); }}>{t('ssh.backup')}</button>
-                                <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void runAction(async () => { await window.electron.ssh.rotateManagedKey({ id: key.id }); }, t('ssh.keyRotated')); }}>{t('ssh.rotate')}</button>
-                                <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void runAction(async () => { await window.electron.ssh.deleteManagedKey(key.id); }, t('ssh.keyDeleted')); }}>{t('common.delete')}</button>
+                                <button className="secondary-btn typo-caption px-2 py-1" onClick={() => { void runAction(async () => { const backup = await window.electron.ssh.backupManagedKey(key.id); if (backup) { await window.electron.saveFile(backup.privateKey, backup.filename); } }, t('ssh.keyBackedUp')); }}>{t('ssh.backup')}</button>
+                                <button className="secondary-btn typo-caption px-2 py-1" onClick={() => { void runAction(async () => { await window.electron.ssh.rotateManagedKey({ id: key.id }); }, t('ssh.keyRotated')); }}>{t('ssh.rotate')}</button>
+                                <button className="secondary-btn typo-caption px-2 py-1" onClick={() => { void runAction(async () => { await window.electron.ssh.deleteManagedKey(key.id); }, t('ssh.keyDeleted')); }}>{t('common.delete')}</button>
                             </div>
                         </div>
                     ))}
-                    {keys.length === 0 ? <div className="text-xs text-muted-foreground">{t('ssh.noManagedKeys')}</div> : null}
+                    {keys.length === 0 ? <div className="typo-caption text-muted-foreground">{t('ssh.noManagedKeys')}</div> : null}
                 </div>
             </section>
 
@@ -182,9 +182,9 @@ export const SSHKeyManagement: React.FC<SSHKeyManagementProps> = ({ t }) => {
                 <h4 className="font-medium">{t('ssh.trustCenter')}</h4>
                 {reviewQueue.length > 0 ? (
                     <div className="space-y-2">
-                        <div className="text-xs text-warning">{t('ssh.trustReviewRequired', { count: reviewQueue.length })}</div>
+                        <div className="typo-caption text-warning">{t('ssh.trustReviewRequired', { count: reviewQueue.length })}</div>
                         {reviewQueue.map((entry, index) => (
-                            <div key={`${entry.host}-${entry.keyType}-${index}`} className="border border-warning/40 rounded px-2 py-2 text-xs space-y-1">
+                            <div key={`${entry.host}-${entry.keyType}-${index}`} className="border border-warning/40 rounded px-2 py-2 typo-caption space-y-1">
                                 <div>{entry.host} ({entry.keyType})</div>
                                 <div>{t('ssh.trustFingerprintCurrent')}: {entry.fingerprint}</div>
                                 {entry.previousFingerprint && (
@@ -192,13 +192,13 @@ export const SSHKeyManagement: React.FC<SSHKeyManagementProps> = ({ t }) => {
                                 )}
                                 <div className="flex gap-2">
                                     <button
-                                        className="secondary-btn text-xs px-2 py-1"
+                                        className="secondary-btn typo-caption px-2 py-1"
                                         onClick={() => applyTrustDecision(entry, entry.fingerprint, 'trusted')}
                                     >
                                         {t('ssh.trustApprove')}
                                     </button>
                                     <button
-                                        className="secondary-btn text-xs px-2 py-1"
+                                        className="secondary-btn typo-caption px-2 py-1"
                                         onClick={() => applyTrustDecision(entry, entry.fingerprint, 'rejected')}
                                     >
                                         {t('ssh.trustReject')}
@@ -208,11 +208,11 @@ export const SSHKeyManagement: React.FC<SSHKeyManagementProps> = ({ t }) => {
                         ))}
                     </div>
                 ) : (
-                    <div className="text-xs text-muted-foreground">{t('ssh.trustNoAlerts')}</div>
+                    <div className="typo-caption text-muted-foreground">{t('ssh.trustNoAlerts')}</div>
                 )}
                 <div className="space-y-1 max-h-32 overflow-auto pr-1">
                     {trustRecords.map(record => (
-                        <div key={`${record.host}-${record.keyType}`} className="text-xs border border-border/40 rounded px-2 py-1">
+                        <div key={`${record.host}-${record.keyType}`} className="typo-caption border border-border/40 rounded px-2 py-1">
                             {record.host} ({record.keyType}) • {record.decision} • {record.fingerprint}
                         </div>
                     ))}
@@ -230,11 +230,11 @@ export const SSHKeyManagement: React.FC<SSHKeyManagementProps> = ({ t }) => {
                 <div className="space-y-2 max-h-40 overflow-auto pr-1">
                     {knownHosts.map((entry, index) => (
                         <div key={`${entry.host}-${index}`} className="flex items-center justify-between border border-border rounded px-2 py-1">
-                            <div className="text-xs">{entry.host} ({entry.keyType})</div>
-                            <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void runAction(async () => { await window.electron.ssh.removeKnownHost({ host: entry.host, keyType: entry.keyType }); }, t('ssh.knownHostRemoved')); }}>{t('common.delete')}</button>
+                            <div className="typo-caption">{entry.host} ({entry.keyType})</div>
+                            <button className="secondary-btn typo-caption px-2 py-1" onClick={() => { void runAction(async () => { await window.electron.ssh.removeKnownHost({ host: entry.host, keyType: entry.keyType }); }, t('ssh.knownHostRemoved')); }}>{t('common.delete')}</button>
                         </div>
                     ))}
-                    {knownHosts.length === 0 ? <div className="text-xs text-muted-foreground">{t('ssh.noKnownHosts')}</div> : null}
+                    {knownHosts.length === 0 ? <div className="typo-caption text-muted-foreground">{t('ssh.noKnownHosts')}</div> : null}
                 </div>
             </section>
         </div>

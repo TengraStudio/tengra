@@ -123,14 +123,14 @@ export const PromptTemplateLibrary: React.FC = () => {
                             <h3 className="text-xl font-bold text-foreground">
                                 {t('prompts.library.title')}
                             </h3>
-                            <p className="text-xs text-muted-foreground font-medium opacity-80">
+                            <p className="typo-caption text-muted-foreground font-medium opacity-80">
                                 {t('prompts.library.subtitle')}
                             </p>
                         </div>
                     </div>
                     <Button
                         onClick={startCreate}
-                        className="h-11 px-5 rounded-xl text-xs font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+                        className="h-11 px-5 rounded-xl typo-caption font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
                     >
                         <Plus className="w-4 h-4 mr-2" /> {t('prompts.library.newPrompt')}
                     </Button>
@@ -150,14 +150,14 @@ export const PromptTemplateLibrary: React.FC = () => {
                     </div>
                     {categories.length > 0 && (
                         <Select value={filterCategory} onValueChange={setFilterCategory}>
-                            <SelectTrigger className="h-12 w-full sm:w-[240px] bg-background/50 border-border/40 rounded-2xl text-xs font-bold px-4 focus:ring-primary/20">
+                            <SelectTrigger className="h-12 w-full sm:w-[240px] bg-background/50 border-border/40 rounded-2xl typo-caption font-bold px-4 focus:ring-primary/20">
                                 <SelectValue placeholder={t('prompts.library.allCategories')} />
                             </SelectTrigger>
                             <SelectContent className="rounded-2xl border-border/40 shadow-2xl">
                                 <SelectItem
                                     value="all"
                                     onClick={() => setFilterCategory('')}
-                                    className="text-xs font-bold"
+                                    className="typo-caption font-bold"
                                 >
                                     {t('prompts.library.allCategories')}
                                 </SelectItem>
@@ -165,7 +165,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                                     <SelectItem
                                         key={c}
                                         value={c}
-                                        className="text-xs font-bold"
+                                        className="typo-caption font-bold"
                                     >
                                         {c}
                                     </SelectItem>
@@ -246,7 +246,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                     <div className="flex flex-col sm:flex-row gap-3 pt-2">
                         <Button
                             onClick={() => void handleSave()}
-                            className="flex-1 h-12 rounded-xl text-xs font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/10 hover:scale-[1.01] active:scale-95 transition-all"
+                            className="flex-1 h-12 rounded-xl typo-caption font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/10 hover:scale-[1.01] active:scale-95 transition-all"
                         >
                             {t('common.save')}
                         </Button>
@@ -256,7 +256,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                                 setEditingId(null);
                                 setDraft(EMPTY_DRAFT);
                             }}
-                            className="flex-1 h-12 rounded-xl text-xs font-bold bg-muted/30 text-muted-foreground hover:bg-muted/50 hover:text-foreground border border-border/40 transition-all"
+                            className="flex-1 h-12 rounded-xl typo-caption font-bold bg-muted/30 text-muted-foreground hover:bg-muted/50 hover:text-foreground border border-border/40 transition-all"
                         >
                             <X className="w-4 h-4 mr-2" />
                             {t('common.cancel')}
@@ -293,7 +293,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                                         </Badge>
                                     )}
                                 </div>
-                                <div className="text-xs text-muted-foreground font-medium line-clamp-2 leading-relaxed opacity-80">
+                                <div className="typo-caption text-muted-foreground font-medium line-clamp-2 leading-relaxed opacity-80">
                                     {tp.description || t('prompts.library.noDescription')}
                                 </div>
                             </div>
@@ -330,7 +330,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                                             MONO
                                         </div>
                                     </div>
-                                    <pre className="p-5 bg-background shadow-inner rounded-xl text-xs text-foreground/90 font-mono whitespace-pre-wrap overflow-auto max-h-64 border border-border/40 custom-scrollbar leading-relaxed">
+                                    <pre className="p-5 bg-background shadow-inner rounded-xl typo-caption text-foreground/90 font-mono whitespace-pre-wrap overflow-auto max-h-64 border border-border/40 custom-scrollbar leading-relaxed">
                                         {selected.template}
                                     </pre>
                                 </div>

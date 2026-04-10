@@ -182,10 +182,10 @@ export const SSHEnvSyncProfiles: React.FC<SSHEnvSyncProfilesProps> = ({ connecti
                 <button className="primary-btn" onClick={() => { void handleApply(); }} disabled={!selectedProfile}>{t('ssh.syncApply')}</button>
                 <button className="secondary-btn" onClick={() => { void handleRollback(); }} disabled={!selectedProfile}>{t('ssh.syncRollback')}</button>
             </div>
-            <div className="text-xs text-muted-foreground">
+            <div className="typo-caption text-muted-foreground">
                 {t('ssh.syncDiffSummary', { added: diffSummary.added, removed: diffSummary.removed })}
             </div>
-            {statusMessage && <div className="text-xs text-muted-foreground">{statusMessage}</div>}
+            {statusMessage && <div className="typo-caption text-muted-foreground">{statusMessage}</div>}
         </div>
     );
 };

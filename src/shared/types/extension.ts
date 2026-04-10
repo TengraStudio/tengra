@@ -23,6 +23,8 @@ export interface ExtensionManifest {
     keywords: string[];
     /** Extension entry point */
     main: string;
+    /** Extension UI entry point (renderer bundle) */
+    ui?: string;
     /** Extension icon path */
     icon?: string;
     /** Extension README path */

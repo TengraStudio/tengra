@@ -230,7 +230,7 @@ function AgentCard({
                         <div className="truncate text-sm font-semibold text-foreground">
                             {agent.name}
                         </div>
-                        <div className="mt-1 text-xs text-muted-foreground">
+                        <div className="mt-1 typo-caption text-muted-foreground">
                             {agent.provider} · {agent.model}
                         </div>
                     </div>
@@ -238,7 +238,7 @@ function AgentCard({
                         {agent.status}
                     </Badge>
                 </div>
-                <div className="mt-3 space-y-2 text-xs text-muted-foreground">
+                <div className="mt-3 space-y-2 typo-caption text-muted-foreground">
                     <div className="inline-flex items-center gap-1">
                         <GitBranch className="h-3.5 w-3.5" />
                         {agent.workspaceId}
@@ -293,7 +293,7 @@ function ReviewQueueCard({
                         drafts.map(draft => (
                             <div key={draft.id} className="rounded-2xl border border-border/50 bg-muted/30 p-3">
                                 <div className="text-sm text-foreground">{draft.workspaceId}</div>
-                                <div className="mt-1 text-xs text-muted-foreground">
+                                <div className="mt-1 typo-caption text-muted-foreground">
                                     {t('workspaceAgent.filesCount', { count: draft.changedFiles.length })} ·{' '}
                                     {draft.patchSummary || draft.baseRevision}
                                 </div>
@@ -560,7 +560,7 @@ export const WorkspaceAgentCouncilBoard: React.FC<WorkspaceAgentCouncilBoardProp
                             <UserRoundCog className="h-4 w-4 text-info" />
                             {runtime.chairman?.name ?? t('workspaceAgent.chairmanFallback')}
                         </div>
-                        <div className="mt-1 text-xs text-muted-foreground">
+                        <div className="mt-1 typo-caption text-muted-foreground">
                             {runtime.chairman?.provider ?? session.strategy} ·{' '}
                             {runtime.chairman?.model ?? session.contextTelemetry?.model ?? t('workspaceAgent.sessionFallback')}
                         </div>

@@ -141,9 +141,9 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
                         onClick={handleScrollToBottom}
-                        className="absolute bottom-32 right-8 p-3 rounded-full bg-primary text-primary-foreground shadow-2xl hover:scale-110 active:scale-95 transition-all z-20"
+                        className="absolute bottom-28 right-5 z-20 flex h-9 w-9 items-center justify-center rounded-md border border-border/50 bg-background text-foreground transition-colors hover:bg-accent"
                     >
-                        <ChevronDown className="w-5 h-5" />
+                        <ChevronDown className="h-4 w-4" />
                     </motion.button>
                 )}
             </AnimatePresence>

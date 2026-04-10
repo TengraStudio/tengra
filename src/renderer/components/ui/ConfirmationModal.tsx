@@ -5,7 +5,6 @@ import React from 'react';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-import './confirmation-modal.css';
 
 interface ConfirmationModalProps {
     isOpen: boolean;

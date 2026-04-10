@@ -4,7 +4,6 @@ import { type CSSProperties, type ReactNode, useCallback, useEffect, useMemo, us
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-import './title-bar.css';
 
 
 type AppRegionStyle = CSSProperties & { WebkitAppRegion?: 'drag' | 'no-drag' };

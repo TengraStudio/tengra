@@ -125,9 +125,9 @@ const HFFileCard: React.FC<{
             <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                     <BadgeQ quantization={file.quantization} />
-                    <span className="text-xs text-muted-foreground truncate">{file.path}</span>
+                    <span className="typo-caption text-muted-foreground truncate">{file.path}</span>
                 </div>
-                <span className="text-xs font-mono font-bold">{formatSize(file.size)}</span>
+                <span className="typo-caption font-mono font-bold">{formatSize(file.size)}</span>
             </div>
 
             {isDownloading && progress.total > 0 && (
@@ -363,7 +363,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                 <p className="text-sm text-muted-foreground leading-relaxed">
                     {selectedModel.description || t('modelExplorer.defaultDescription')}
                 </p>
-                <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="grid grid-cols-2 gap-3 typo-caption">
                     <div className="rounded-lg border border-border/30 p-3">
                         <div className="text-muted-foreground">{t('modelExplorer.provider')}</div>
                         <div className="font-bold">{selectedModel.provider}</div>
@@ -475,7 +475,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                                     })}
 
                                     {files.length === 0 && (
-                                        <div className="text-center text-xs text-muted-foreground/50 py-10 border-2 border-dashed border-border/20 rounded-2xl">
+                                        <div className="text-center typo-caption text-muted-foreground/50 py-10 border-2 border-dashed border-border/20 rounded-2xl">
                                             {t('modelExplorer.noCompatible')}
                                         </div>
                                     )}
@@ -498,7 +498,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                             </h3>
 
                             <div className="rounded-xl border border-border/40 overflow-hidden">
-                                <table className="w-full text-xs">
+                                <table className="w-full typo-caption">
                                     <thead className="bg-muted/30">
                                         <tr className="text-left">
                                             <th className="px-3 py-2">{t('common.version')}</th>
@@ -564,7 +564,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                                     >
                                         {t('common.previous')}
                                     </button>
-                                    <span className="text-xs text-muted-foreground">
+                                    <span className="typo-caption text-muted-foreground">
                                         {t('common.pageOf', { current: safeOllamaPage, total: ollamaTotalPages })}
                                     </span>
                                     <button

@@ -103,7 +103,7 @@ export const PendingMemoryCard = memo(({
                     <button
                         type="button"
                         aria-label={t('memory.confirm')}
-                        className="flex items-center gap-2 px-3 py-1 bg-success/10 text-success rounded-md text-xs font-bold"
+                        className="flex items-center gap-2 px-3 py-1 bg-success/10 text-success rounded-md typo-caption font-bold"
                         onClick={onConfirm}
                     >
                         {t('memory.confirm')}
@@ -111,7 +111,7 @@ export const PendingMemoryCard = memo(({
                     <button
                         type="button"
                         aria-label={t('memory.reject')}
-                        className="flex items-center gap-2 px-3 py-1 bg-destructive/10 text-destructive rounded-md text-xs font-bold"
+                        className="flex items-center gap-2 px-3 py-1 bg-destructive/10 text-destructive rounded-md typo-caption font-bold"
                         onClick={onReject}
                     >
                         {t('memory.reject')}

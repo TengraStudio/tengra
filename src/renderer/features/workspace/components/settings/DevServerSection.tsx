@@ -16,7 +16,7 @@ export const DevServerSection: React.FC<SettingsSectionProps> = ({ formData, set
 
         <div className="grid grid-cols-1 gap-6">
             <div className="space-y-2">
-                <Label className="text-xs font-medium text-muted-foreground">
+                <Label className="typo-caption font-medium text-muted-foreground">
                     {t('workspaces.startCommand')}
                 </Label>
                 <div className="relative">
@@ -35,7 +35,7 @@ export const DevServerSection: React.FC<SettingsSectionProps> = ({ formData, set
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label className="text-xs font-medium text-muted-foreground">
+                    <Label className="typo-caption font-medium text-muted-foreground">
                         {t('workspaces.port')}
                     </Label>
                     <Input

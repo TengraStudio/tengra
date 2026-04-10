@@ -12,7 +12,7 @@ import { registerContractIpc } from '@main/ipc/contract';
 import { registerDbIpc } from '@main/ipc/db';
 import { registerDialogIpc } from '@main/ipc/dialog';
 import { registerExportIpc } from '@main/ipc/export';
-import { registerExtensionIpc } from '@main/ipc/extension';
+
 import { registerFilesIpc } from '@main/ipc/files';
 import { registerGalleryIpc } from '@main/ipc/gallery';
 import { registerGitIpc } from '@main/ipc/git';
@@ -236,7 +236,10 @@ export function registerPostStartupIpcHandlers(
 ): void {
     const sharedPromptsService = new SharedPromptsService(services.databaseService);
 
-    registerExtensionIpc();
+    const window = getMainWindow();
+    if (window) {
+        services.extensionService.setMainWindow(window);
+    }
     registerProxyEmbedIpc(services.proxyService);
     registerExportIpc(getMainWindow, services.exportService);
     registerPromptTemplatesIpc(getMainWindow, services.promptTemplatesService);

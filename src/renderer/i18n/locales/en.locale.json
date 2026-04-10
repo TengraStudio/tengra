@@ -770,6 +770,9 @@
       "errorRetry": "Retry",
       "errorSwitchModel": "Switch Model",
       "errorDismiss": "Dismiss",
+      "antigravityCreditsConfirmTitle": "Use Antigravity AI Credits?",
+      "antigravityCreditsConfirmMessage": "The base quota for {{account}} is exhausted. Continue with Antigravity AI Credits? Available credits: {{credits}}. Minimum required: {{minimum}}.",
+      "antigravityCreditsConfirmAction": "Use Credits",
       "toolArgumentsTooLarge": "Tool arguments exceed the maximum size limit.",
       "imageGenerationNoImages": "Image generation returned no images.",
       "attachmentPrompt": {
@@ -2007,6 +2010,7 @@
       },
       "tabs": {
         "mcp": "MCP Modules",
+        "extensions": "Extensions",
         "skills": "Skills",
         "themes": "Visual Themes",
         "personas": "Agent Personalities",
@@ -2902,6 +2906,8 @@
         "appearance": "Appearance",
         "system": "System",
         "models": "Models",
+        "extensions": "Extensions",
+        "plugins": "Plugins",
         "skills": "Skills",
         "accounts": "Connected Accounts",
         "personas": "Personas",
@@ -2913,7 +2919,7 @@
         "images": "Media",
         "mcpServers": "MCP Servers",
         "accessibility": "Accessibility",
-      "socialMedia": "Social Media"
+        "socialMedia": "Social Media"
       },
       "skills": {
         "description": "Enable, edit, and install reusable skills that are injected into model prompts.",
@@ -2934,6 +2940,20 @@
           "description": "Description",
           "content": "Prompt Content",
           "enabled": "Enabled"
+        }
+      },
+      "extensions": {
+        "description": "Manage plugins, MCP servers, and skills from a single settings area.",
+        "plugins": {
+          "title": "Installed Plugins",
+          "empty": "No plugins installed yet.",
+          "select": "Select a plugin to view details and settings.",
+          "configTitle": "Plugin Settings",
+          "noConfig": "This plugin does not expose configurable settings.",
+          "complexConfigHint": "This setting type is not editable in-app yet.",
+          "configSaved": "Plugin settings saved.",
+          "configSaveError": "Failed to save plugin settings.",
+          "configLoadError": "Failed to load plugin settings."
         }
       },
       "categories": {
@@ -4495,6 +4515,12 @@
       "terminalShell": "zsh",
       "stderrLabel": "stderr:",
       "errorLabel": "error:",
+      "analyzingProject": "Analyzing project structure...",
+      "mappingFiles": "Mapping files and folders...",
+      "listDirSummary": "Found {{count}} items in {{path}}",
+      "readFileSummary": "Read {{count}} lines from {{path}}",
+      "writeFileSummary": "File successfully updated: {{path}}",
+      "editFileSummary": "Modified file: {{path}}",
       "taskTitlePlaceholder": "Task title (optional)",
       "taskDescriptionPlaceholder": "Describe what you want to build..."
     },

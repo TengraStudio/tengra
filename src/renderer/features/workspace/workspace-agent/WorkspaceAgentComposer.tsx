@@ -192,7 +192,7 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                             title={t('workspaceAgent.permissions.profile')}
                             className="h-10 w-10 shrink-0 flex items-center justify-center rounded-xl border-border/10 bg-background/30 hover:bg-background/40 transition-colors p-0"
                         >
-                            <span className="text-xs font-bold text-muted-foreground/60">
+                            <span className="typo-caption font-bold text-muted-foreground/60">
                                 {selectedPreset.value === 'default-agent' ? 'A' : selectedPreset.value === 'plan' ? 'P' : 'E'}
                             </span>
                         </Button>

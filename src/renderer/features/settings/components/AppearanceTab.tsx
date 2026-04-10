@@ -136,7 +136,7 @@ function AppearanceRow({
                     {icon}
                     {title}
                 </div>
-                <div className="max-w-[32rem] text-xs leading-relaxed text-muted-foreground/70">
+                <div className="max-w-[32rem] typo-caption leading-relaxed text-muted-foreground/70">
                     {description}
                 </div>
             </div>
@@ -243,7 +243,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
 
                     <div className="space-y-6">
                         <div className="space-y-2">
-                            <div className="px-1 text-xs font-medium text-muted-foreground">{t('settings.theme')}</div>
+                            <div className="px-1 typo-caption font-medium text-muted-foreground">{t('settings.theme')}</div>
                             <Select
                                 value={settings?.general.theme ?? 'graphite'}
                                 onValueChange={value => {
@@ -270,7 +270,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
 
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
                             <div className="space-y-2">
-                                <div className="px-1 text-xs font-medium text-muted-foreground">{t('settings.baseFontSize')}</div>
+                                <div className="px-1 typo-caption font-medium text-muted-foreground">{t('settings.baseFontSize')}</div>
                                 <Input
                                     type="number"
                                     min={12}
@@ -285,7 +285,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                                 />
                             </div>
                             <div className="space-y-2">
-                                <div className="px-1 text-xs font-medium text-muted-foreground">{t('settings.typographyScale')}</div>
+                                <div className="px-1 typo-caption font-medium text-muted-foreground">{t('settings.typographyScale')}</div>
                                 <Select
                                     value={settings?.general.typographyScale ?? 'balanced'}
                                     onValueChange={value => {
@@ -335,11 +335,11 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
 
                     <div className="mt-6 flex flex-col gap-3 border-t border-border/10 px-1 pt-6 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                            <div className="text-xs font-medium text-primary">
+                            <div className="typo-caption font-medium text-primary">
                                 {themeOptions.find(option => option.value === (settings?.general.theme ?? 'graphite'))?.label}
                             </div>
                             <div className="h-1 w-1 rounded-full bg-border/40" />
-                            <div className="text-xs text-muted-foreground/60">{resolvedAppFont.label}</div>
+                            <div className="typo-caption text-muted-foreground/60">{resolvedAppFont.label}</div>
                         </div>
                         <Badge variant="outline" className="h-6 border-border/40 bg-muted/20 px-3 typo-body text-muted-foreground/60">
                             {settings?.general.fontSize}px
@@ -367,7 +367,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                     <div className="space-y-8">
                         <div className="space-y-6">
                             <div className="space-y-2">
-                                <div className="px-1 text-xs font-medium text-muted-foreground">{t('terminal.theme')}</div>
+                                <div className="px-1 typo-caption font-medium text-muted-foreground">{t('terminal.theme')}</div>
                                 <Select
                                     value={terminalAppearance.themePresetId}
                                     onValueChange={value => {
@@ -392,7 +392,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                             </div>
 
                             <div className="space-y-2">
-                                <div className="px-1 text-xs font-medium text-muted-foreground">{t('terminal.cursorStyle')}</div>
+                                <div className="px-1 typo-caption font-medium text-muted-foreground">{t('terminal.cursorStyle')}</div>
                                 <Select
                                     value={terminalAppearance.cursorStyle}
                                     onValueChange={value => {
@@ -418,7 +418,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
 
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
-                                    <div className="px-1 text-xs font-medium text-muted-foreground">{t('settings.terminalFontSize')}</div>
+                                    <div className="px-1 typo-caption font-medium text-muted-foreground">{t('settings.terminalFontSize')}</div>
                                     <Input
                                         type="number"
                                         min={8}
@@ -436,7 +436,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <div className="px-1 text-xs font-medium text-muted-foreground">{t('terminal.lineHeight')}</div>
+                                    <div className="px-1 typo-caption font-medium text-muted-foreground">{t('terminal.lineHeight')}</div>
                                     <Input
                                         type="number"
                                         min={1}

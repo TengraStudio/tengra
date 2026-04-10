@@ -484,7 +484,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
                 >
                     ↻ {t('ssh.refresh')}
                 </button>
-                <label className="text-xs flex items-center gap-1">
+                <label className="typo-caption flex items-center gap-1">
                     <input
                         type="checkbox"
                         checked={watcherEnabled}
@@ -494,7 +494,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
                 </label>
             </div>
             {(watcherUnavailable || reconnectDiagnostics.state !== 'connected') && (
-                <div className="px-2 py-1 text-xs border-b border-border/40 bg-muted/20">
+                <div className="px-2 py-1 typo-caption border-b border-border/40 bg-muted/20">
                     <div>
                         {t('ssh.reconnectStatus', {
                             state: getReconnectStateLabel(reconnectDiagnostics.state),
@@ -506,7 +506,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
                     </div>
                     {reconnectDiagnostics.lastError && <div className="text-destructive">{reconnectDiagnostics.lastError}</div>}
                     {watcherUnavailable && (
-                        <button className="secondary-btn text-xs mt-1" onClick={() => refreshDirectory(true)}>
+                        <button className="secondary-btn typo-caption mt-1" onClick={() => refreshDirectory(true)}>
                             {t('ssh.refresh')}
                         </button>
                     )}
@@ -573,50 +573,50 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
             )}
             </div>
             <div className="w-96 border-l border-border/40 p-3 space-y-2 bg-muted/10">
-                <div className="text-xs font-semibold">{t('ssh.remoteEditor')}</div>
-                <div className="text-xs text-muted-foreground">
+                <div className="typo-caption font-semibold">{t('ssh.remoteEditor')}</div>
+                <div className="typo-caption text-muted-foreground">
                     {t('ssh.editorLatency', { latency: latencyMs, debounce: dynamicDebounceMs })}
                 </div>
                 {selectedFilePath ? (
                     <>
-                        <div className="text-xs truncate">{selectedFilePath}</div>
+                        <div className="typo-caption truncate">{selectedFilePath}</div>
                         <textarea
                             value={editorContent}
                             onChange={event => setEditorContent(event.target.value)}
-                            className="w-full h-80 text-xs p-2 rounded border border-border/40 bg-background"
+                            className="w-full h-80 typo-caption p-2 rounded border border-border/40 bg-background"
                         />
-                        <div className="text-xs text-muted-foreground">
+                        <div className="typo-caption text-muted-foreground">
                             {isSaving ? t('ssh.editorSaving') : editorStatus}
                         </div>
                         {saveQueue.length > 0 && (
-                            <div className="text-xs text-warning">
+                            <div className="typo-caption text-warning">
                                 {t('ssh.editorQueuedCount', { count: saveQueue.length })}
                             </div>
                         )}
-                        <button className="secondary-btn text-xs" onClick={() => { void flushQueuedSaves(); }}>
+                        <button className="secondary-btn typo-caption" onClick={() => { void flushQueuedSaves(); }}>
                             {t('ssh.editorFlushQueue')}
                         </button>
                     </>
                 ) : (
-                    <div className="text-xs text-muted-foreground">{t('ssh.editorSelectFile')}</div>
+                    <div className="typo-caption text-muted-foreground">{t('ssh.editorSelectFile')}</div>
                 )}
                 <div className="border-t border-border/40 pt-2 space-y-2">
-                    <div className="text-xs font-semibold">{t('ssh.transfers')}</div>
+                    <div className="typo-caption font-semibold">{t('ssh.transfers')}</div>
                     <div className="flex gap-1">
                         <input
                             value={uploadLocalPath}
                             onChange={event => setUploadLocalPath(event.target.value)}
                             placeholder={t('placeholder.sftpLocalPath')}
-                            className="w-full px-1 py-1 border border-border/40 rounded bg-background text-xs"
+                            className="w-full px-1 py-1 border border-border/40 rounded bg-background typo-caption"
                         />
-                        <button className="secondary-btn text-xs" onClick={() => { void handleUpload(); }}>
+                        <button className="secondary-btn typo-caption" onClick={() => { void handleUpload(); }}>
                             ↑
                         </button>
                     </div>
                     <select
                         value={conflictPolicy}
                         onChange={event => setConflictPolicy(event.target.value as 'overwrite' | 'rename' | 'skip')}
-                        className="w-full px-1 py-1 border border-border/40 rounded bg-background text-xs"
+                        className="w-full px-1 py-1 border border-border/40 rounded bg-background typo-caption"
                     >
                         <option value="overwrite">{t('ssh.conflictOverwrite')}</option>
                         <option value="rename">{t('ssh.conflictRename')}</option>
@@ -624,12 +624,12 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
                     </select>
                     <div className="max-h-28 overflow-auto space-y-1">
                         {transferItems.map(item => (
-                            <div key={item.id} className="text-xs rounded border border-border/40 px-2 py-1">
+                            <div key={item.id} className="typo-caption rounded border border-border/40 px-2 py-1">
                                 <div>{getTransferDirectionLabel(item.direction)}: {item.remotePath}</div>
                                 <div className="text-muted-foreground">{getTransferStatusLabel(item.status)}</div>
                                 {item.error && <div className="text-destructive">{item.error}</div>}
                                 {item.status === 'failed' && (
-                                    <button className="secondary-btn text-xs mt-1" onClick={() => retryTransfer(item.id)}>
+                                    <button className="secondary-btn typo-caption mt-1" onClick={() => retryTransfer(item.id)}>
                                         {t('ssh.retryResume')}
                                     </button>
                                 )}

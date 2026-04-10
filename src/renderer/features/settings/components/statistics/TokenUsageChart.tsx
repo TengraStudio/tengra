@@ -49,7 +49,7 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                         {t('statistics.activity')}
                     </span>
                     <div className="text-2xl font-bold tabular-nums text-foreground">
-                        {sortedData.filter(d => (d.promptTokens + d.completionTokens) > 0).length} <span className="text-xs text-muted-foreground font-medium">{t('statistics.sessions')}</span>
+                        {sortedData.filter(d => (d.promptTokens + d.completionTokens) > 0).length} <span className="typo-caption text-muted-foreground font-medium">{t('statistics.sessions')}</span>
                     </div>
                 </div>
             </div>
@@ -91,7 +91,7 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                                 >
                                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50">
                                         <div className="tw-min-w-140 rounded-xl border border-border/50 bg-popover p-3 tw-shadow-elevated">
-                                            <div className="text-xs font-bold text-foreground mb-2 pb-2 border-b border-border/30 text-center">
+                                            <div className="typo-caption font-bold text-foreground mb-2 pb-2 border-b border-border/30 text-center">
                                                 {new Date(data.timestamp).toLocaleDateString()}
                                                 <span className="block text-xxxs font-normal text-muted-foreground capitalize mt-0.5 opacity-70">
                                                     {getLabel(data.timestamp, period, true)}
@@ -100,11 +100,11 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                                             <div className="space-y-1.5">
                                                 <div className="flex justify-between items-center gap-3">
                                                     <span className="text-xxs font-bold text-primary">{t('statistics.input')}</span>
-                                                    <span className="text-xs font-mono font-bold">{formatNumber(data.promptTokens)}</span>
+                                                    <span className="typo-caption font-mono font-bold">{formatNumber(data.promptTokens)}</span>
                                                 </div>
                                                 <div className="flex justify-between items-center gap-3">
                                                     <span className="text-xxs font-bold text-success">{t('statistics.output')}</span>
-                                                    <span className="text-xs font-mono font-bold">{formatNumber(data.completionTokens)}</span>
+                                                    <span className="typo-caption font-mono font-bold">{formatNumber(data.completionTokens)}</span>
                                                 </div>
                                                 {data.modelBreakdown && Object.keys(data.modelBreakdown).length > 0 && (
                                                     <div className="mt-2 pt-2 border-t border-border/20 space-y-1">

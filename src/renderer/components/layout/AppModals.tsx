@@ -7,7 +7,6 @@ import React, { Suspense } from 'react';
 
 import { AnimatePresence } from '@/lib/framer-motion-compat';
 
-import './app-modals.css';
 
 // Lazy load heavy components
 const SSHManager = React.lazy(() => import('@renderer/features/ssh/SSHManager').then(m => ({ default: m.SSHManager })));

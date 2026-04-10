@@ -60,7 +60,7 @@ export const EditWorkspaceModal: React.FC<EditWorkspaceModalProps> = ({
                 <Modal isOpen={!!workspace} onClose={onClose} title={t('workspaces.editWorkspace')}>
                     <div className="space-y-4 pt-2">
                         <div className="space-y-2">
-                            <label className="text-xs font-medium text-muted-foreground">
+                            <label className="typo-caption font-medium text-muted-foreground">
                                 {t('workspaces.nameLabel')}
                             </label>
                             <input
@@ -80,7 +80,7 @@ export const EditWorkspaceModal: React.FC<EditWorkspaceModalProps> = ({
                             )}
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-medium text-muted-foreground">
+                            <label className="typo-caption font-medium text-muted-foreground">
                                 {t('workspaces.description')}
                             </label>
                             <textarea

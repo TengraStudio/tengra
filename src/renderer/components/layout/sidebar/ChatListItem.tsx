@@ -49,7 +49,7 @@ export const ChatListItem = memo<ChatListItemProps>(({
                         <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full animate-pulse" />
                     )}
                 </div>
-                <span className="truncate text-xs flex-1 font-medium">{chat.title || t('sidebar.newChat')}</span>
+                <span className="truncate typo-caption flex-1 font-medium">{chat.title || t('sidebar.newChat')}</span>
             </button>
 
             <div className="opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all flex items-center gap-1 absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-l from-background to-transparent pl-2">
@@ -58,7 +58,7 @@ export const ChatListItem = memo<ChatListItemProps>(({
                         <div className="p-1 hover:text-primary rounded-md cursor-pointer"><CornerUpRight className="w-3 h-3" /></div>
                         <div className="hidden group-hover/folder:block absolute right-0 top-full z-50 w-32 py-1 bg-card border border-border/40 rounded-md shadow-xl -mt-1">
                             {folders.map(f => (
-                                <div key={f.id} onClick={(e) => { e.stopPropagation(); onMoveToFolder(chat.id, f.id); }} className="px-2 py-1.5 hover:bg-primary/20 hover:text-primary cursor-pointer text-xs truncate flex items-center gap-2">
+                                <div key={f.id} onClick={(e) => { e.stopPropagation(); onMoveToFolder(chat.id, f.id); }} className="px-2 py-1.5 hover:bg-primary/20 hover:text-primary cursor-pointer typo-caption truncate flex items-center gap-2">
                                     <FolderIcon className="w-3 h-3 opacity-50" /> {f.name}
                                 </div>
                             ))}

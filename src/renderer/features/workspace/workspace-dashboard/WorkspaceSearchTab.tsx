@@ -97,7 +97,7 @@ export const WorkspaceSearchTab = ({
                         <input
                             type="text"
                             placeholder={t('workspaceDashboard.searchInWorkspace')}
-                            className="min-w-0 flex-1 bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground/60"
+                            className="min-w-0 flex-1 bg-transparent typo-caption text-foreground outline-none placeholder:text-muted-foreground/60"
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
                             onKeyDown={handleKeyDown}
@@ -171,7 +171,7 @@ export const WorkspaceSearchTab = ({
                 {trimmedQuery.length < 2 && !isSearching ? (
                     <div className="flex h-full flex-col items-center justify-center px-6 text-center">
                         <Search className="mb-3 h-8 w-8 text-muted-foreground/30" />
-                        <p className="text-xs text-muted-foreground/60">
+                        <p className="typo-caption text-muted-foreground/60">
                             {t('workspaceDashboard.searchInWorkspace')}
                         </p>
                     </div>
@@ -231,7 +231,7 @@ const FilterInput = ({ placeholder, value, onChange }: FilterInputProps) => (
         placeholder={placeholder}
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="rounded-sm border border-border/40 bg-input/30 px-2 py-0.5 text-xs text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-info/40"
+        className="rounded-sm border border-border/40 bg-input/30 px-2 py-0.5 typo-caption text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-info/40"
     />
 );
 

@@ -20,7 +20,7 @@ interface EditorTabContextMenuProps {
 }
 
 const MENU_ITEM_CLASS =
-    'w-full text-left px-3 py-2 text-xs transition-colors text-foreground hover:bg-accent/50 disabled:opacity-40 disabled:cursor-not-allowed';
+    'w-full text-left px-3 py-2 typo-caption transition-colors text-foreground hover:bg-accent/50 disabled:opacity-40 disabled:cursor-not-allowed';
 
 export const EditorTabContextMenu: React.FC<EditorTabContextMenuProps> = ({
     position,

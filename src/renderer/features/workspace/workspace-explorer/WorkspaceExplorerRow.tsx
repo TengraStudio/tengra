@@ -122,7 +122,7 @@ const MountRowView: React.FC<{
             <Folder className="w-3.5 h-3.5 text-success" />
         )}
         <div className="flex-1 min-w-0 flex items-center gap-2">
-            <div className="text-xs font-bold truncate text-muted-foreground/70">
+            <div className="typo-caption font-bold truncate text-muted-foreground/70">
                 {row.mount.name}
             </div>
             {row.loading && <Loader2 className="w-3 h-3 text-muted-foreground/60 animate-spin" />}
@@ -241,7 +241,7 @@ const EntryRowView: React.FC<{
             ) : (
                 <FileIcon fileName={row.entry.name} className="w-3.5 h-3.5" />
             )}
-            <span className="flex-1 min-w-0 truncate text-xs font-normal">
+            <span className="flex-1 min-w-0 truncate typo-caption font-normal">
                 {row.entry.name}
             </span>
             <WorkspaceExplorerDiagnosticsBadges diagnostics={row.diagnostics} />

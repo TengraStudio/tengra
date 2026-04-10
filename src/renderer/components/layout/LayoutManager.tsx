@@ -5,7 +5,6 @@ import React, { useRef } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
 
-import './layout-manager.css';
 
 interface LayoutManagerProps {
     sidebarContent: React.ReactNode;

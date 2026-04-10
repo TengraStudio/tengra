@@ -47,7 +47,7 @@ export const WorkspaceNotifications: React.FC<WorkspaceNotificationsProps> = ({ 
             {summary && (
                 <div className="px-4 py-3 rounded-xl border shadow-2xl pointer-events-auto tw-min-w-300 flex items-center gap-3 bg-primary/10 border-primary/20 text-primary">
                     <Activity className="w-4 h-4" />
-                    <span className="text-xs font-bold">{summary}</span>
+                    <span className="typo-caption font-bold">{summary}</span>
                 </div>
             )}
             {(summary ? groupedNotifications.slice(-1) : groupedNotifications).map(n => (
@@ -58,7 +58,7 @@ export const WorkspaceNotifications: React.FC<WorkspaceNotificationsProps> = ({ 
                             "bg-primary/10 border-primary/20 text-primary"
                 )}>
                     {n.type === 'success' ? <Activity className="w-4 h-4" /> : n.type === 'error' ? <X className="w-4 h-4" /> : <Activity className="w-4 h-4" />}
-                    <span className="text-xs font-bold">
+                    <span className="typo-caption font-bold">
                         {n.message}
                         {n.count > 1 ? ` (${n.count}x)` : ''}
                     </span>

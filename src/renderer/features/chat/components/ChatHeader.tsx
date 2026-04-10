@@ -63,7 +63,7 @@ export const ChatHeader = memo(({
                     </div>
                     <button
                         onClick={onClearMessages}
-                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border/40 px-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border/40 px-2.5 typo-caption font-semibold text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
                         title={t('chat.clear')}
                         aria-label={t('chat.clear')}
                     >

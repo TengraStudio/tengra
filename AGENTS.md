@@ -225,15 +225,21 @@ Uses external store pattern with `useSyncExternalStore`:
 - ❌ **NEVER** delete entire files to edit them
 - ❌ **NEVER** use `while(true)` without bounds
 - ❌ **NEVER** hardcode user-facing strings
+- ❌ **NEVER** use Tailwind utility classes directly in renderer JSX (typography, spacing, layout, color, radius, border, shadow, transition)
+- ❌ **NEVER** create or import extra renderer CSS files; use only `src/renderer/index.css`
+- ❌ **NEVER** explain which internal rules were applied in user-facing outputs
+- ❌ **NEVER** use slang, mocking, or low-signal filler in assistant responses
 
 ### Required Actions
 
 - ✅ **ALWAYS** run `npm run build && npm run lint` before committing
-- ✅ **ALWAYS** update `docs/TODO.md` after completing tasks
+- ✅ **ALWAYS** update `TODO.md` after completing tasks
 - ✅ **ALWAYS** use `t('key')` for translations
 - ✅ **ALWAYS** check return values
 - ✅ **ALWAYS** handle Promise rejections
 - ✅ **ALWAYS** use JSDoc for public methods
+- ✅ **ALWAYS** use semantic classes defined in `src/renderer/index.css` for renderer UI styling
+- ✅ **ALWAYS** define reusable design values under `:root` tokens in `src/renderer/index.css`
 
 ### NASA Power of Ten Rules
 
@@ -259,9 +265,8 @@ npm run test         # Run tests
 2. Make changes
 3. `npm run build && npm run lint`
 4. Update TODO.md (mark `[x]`, don't delete)
-5. Update `docs/changelog/data/changelog.entries.json`
-6. Run `npm run changelog:sync`
-7. Commit and push
+5. Update relevant markdown docs if user-facing behavior changed
+6. Commit and push
 
 ## Logging
 

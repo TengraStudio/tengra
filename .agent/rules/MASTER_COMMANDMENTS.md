@@ -10,33 +10,34 @@ As an AI Agent on Tengra, you ARE these rules. They are your core logic.
 > **TERMINATION WARNING**: Violating these rules results in immediate session termination. No exceptions.
 
 1.  **LOGGING**: No `console.log`. Use `appLogger`.
-2.  **TYPES**: No `any` or `unknown`. Strictly forbidden. Use explicit interfaces. NEVER use `as any` or `as unknown` unless accompanied by a `// SAFETY: <reason>` comment justifying it.
-
+2.  **TYPES**: No `any` or `unknown`. Strictly forbidden. Use explicit interfaces. NEVER use `as any` or `as unknown`.
 3.  **SILENCE**: No `@ts-ignore` or `eslint-disable`. Fix the root cause.
 4.  **LAZINESS**: No placeholders (`// ...`). No truncated logic.
 5.  **DESTRUCTION**: No full file overwrites for minor changes. Use targeted edits.
 6.  **MESS**: No relative paths for internal modules. Use `@/` aliases.
 7.  **CLUTTER**: No debug files in root/src. Use `logs/` for all temporary output.
-8.  **LOGGING LOCATION**: All temporary files (logs, debug dumps, txt) MUST be created in the `logs/` directory. Root directory clutter is forbidden.
-8.  **BLINDNESS**: No commits without building- [ ] Is my function under 150 lines?
-- [ ] Have I validated against [Advanced Hardening Rules](./advanced-hardening.md)?
-- [ ] Did I run `npm run lint`?
-), and PASSING ALL TESTS (`npm run test`). NO EXCEPTIONS. If tests fail, you MUST fix them before proceeding.
-9.  **PROCRASTINATION**: No uncommitted changes. Commit after every TODO completion.
-10. **FRIDAY FORBIDDEN**: NO COMMITS OR MAJOR DEPLOYMENTS ON FRIDAYS. Fridays are for testing, documentation, and review ONLY.
+8.  **CHECK SKIP**: No delivery or commit without `npm run build && npm run lint && npm run type-check && npm run test` passing.
+9.  **PROCRASTINATION**: No uncommitted changes after completed tasks.
+10. **FRIDAY FORBIDDEN**: No commits or major deployments on Fridays.
 11. **TRANSLATION OVERLOAD**: No locale updates on weekdays.
-13. **IGNORANCE**: No coding without first reading ALL active rules and commandments. You MUST call `view_file` on rule files (`MASTER_COMMANDMENTS.md`, `AI_RULES.md`, `advanced-hardening.md`) at the start of every session.
-14. **HARDENING**: Strictly adhere to the [Advanced Hardening Rules](./advanced-hardening.md). Ignorance of architectural standards is a fatal error.
+12. **IGNORANCE**: No coding without reading `MASTER_COMMANDMENTS.md`, `AI_RULES.md`, and `advanced-hardening.md` at session start.
+13. **HARDENING**: Strictly adhere to [Advanced Hardening Rules](./advanced-hardening.md).
+14. **STYLE CHAOS**: No direct Tailwind utility chains in renderer JSX (including `src/renderer/components/ui`). Use semantic class names only.
+15. **SINGLE STYLESHEET RULE**: Do not create or import additional renderer CSS files. Use `src/renderer/index.css` only.
+16. **RULE THEATER**: Never mention "which rules were applied" in delivery messages.
+17. **NOISE**: No slang, sarcastic, or low-signal language. Use clear, concise, professional communication only.
 
 
 ## 🟢 THE DIVINE VIRTUES (ALWAYS DO)
 1.  **BOY SCOUT RULE**: Leave the code cleaner. If you edit a file, you MUST fix at least one existing lint warning or type issue in that file.
-2.  **PLANNING**: Read `docs/AI_RULES.md` and `docs/TODO.md` first.
+2.  **PLANNING**: Read `AI_RULES.md` and `TODO.md` first.
 3.  **PERFORMANCE**: Use `useMemo`, `useCallback`, and `React.lazy`. Optimize for speed.
 4.  **CLEANUP**: Strictly implement `dispose()` and React effect cleanups.
 5.  **BATCHING**: Batch IPC calls. Never call IPC in loops.
 6.  **INTELLIGENCE**: Utilize specialized **Skills** and **MCP Tools** for complex operations.
 7.  **NASA**: Follow the Power of Ten rules for safety and simplicity.
+8.  **CSS-FIRST UI**: In renderer, use semantic classes defined in `src/renderer/index.css` only, and keep design values tokenized under `:root`.
+9.  **OUTPUT QUALITY**: Report concrete result, risk, and verification; avoid process narration and motivational filler.
 
 ## 🛠 AVAILABLE SKILLS
 Access these via `view_file` on `.{agent}/skills/{skill_name}/SKILL.md`:

@@ -14,9 +14,7 @@ import {
     StreamChunkResult
 } from './utils';
 
-const MAX_STREAMED_MESSAGE_CONTENT = 180000;
 const MAX_REASONING_SEGMENT_CONTENT = 60000;
-const STREAM_CONTENT_TRUNCATION_NOTICE = '\n\n[Stream stopped: response exceeded Tengra safety limit.]';
 const STREAM_LOG_PREVIEW_LENGTH = 140;
 
 function buildLogPreview(value: string): string {
@@ -29,6 +27,19 @@ function buildLogPreview(value: string): string {
 
 function buildStreamTraceId(chatId: string, assistantId: string): string {
     return `${chatId.slice(0, 8)}:${assistantId.slice(0, 8)}`;
+}
+
+function summarizeStreamingStateForLog(state: StreamStreamingState | undefined): string {
+    if (!state) {
+        return 'none';
+    }
+    const contentLen = typeof state.content === 'string' ? state.content.length : 0;
+    const reasoningLen = typeof state.reasoning === 'string' ? state.reasoning.length : 0;
+    const toolCallCount = Array.isArray(state.toolCalls) ? state.toolCalls.length : 0;
+    const sourceCount = Array.isArray(state.sources) ? state.sources.length : 0;
+    const variantCount = state.variants ? Object.keys(state.variants).length : 0;
+    const hasError = Boolean(state.error);
+    return `contentLen=${contentLen}, reasoningLen=${reasoningLen}, toolCalls=${toolCallCount}, sources=${sourceCount}, variants=${variantCount}, hasError=${String(hasError)}`;
 }
 
 function summarizeChunkForLog(chunk: StreamChunk): string {
@@ -65,6 +76,16 @@ export function extractReasoning(
         );
         return effectiveReasoning;
     }
+
+    return extractReasoningFromTags(content, options);
+}
+
+export function extractReasoningFromTags(
+    content: string,
+    options: { trim?: boolean } = {}
+): string {
+    const shouldTrim = options.trim ?? true;
+    const normalize = (value: string): string => shouldTrim ? value.trim() : value;
 
     // Extract from <think> tags
     const thinkStart = content.toLowerCase().lastIndexOf('<think>');
@@ -137,6 +158,7 @@ interface StateUpdateContext {
 interface ReasoningSegmentState {
     segments: string[];
     isClosed: boolean;
+    processedReasoningLen: number;
 }
 
 interface StreamingStateUpdate extends Omit<StateUpdateContext, 'result'> {
@@ -258,8 +280,18 @@ const processChunkIteration = (params: ChunkIterationParams): {
     return { index, result, current };
 };
 
-const shouldUpdateChatsState = (now: number, lastSaveTime: number): boolean => {
-    return now - lastSaveTime >= 50;
+const getChatStateUpdateIntervalMs = (contentLength: number): number => {
+    if (contentLength >= 60000) {
+        return 180;
+    }
+    if (contentLength >= 12000) {
+        return 120;
+    }
+    return 50;
+};
+
+const shouldUpdateChatsState = (now: number, lastSaveTime: number, contentLength: number): boolean => {
+    return now - lastSaveTime >= getChatStateUpdateIntervalMs(contentLength);
 };
 
 const shouldSaveToDb = (now: number, lastDbSaveTime: number, finalContent: string): boolean => {
@@ -311,8 +343,23 @@ const mergeReasoningSegments = (
 const isReasoningStreamChunk = (chunk: StreamChunk): boolean =>
     chunk.type === 'reasoning' || typeof chunk.reasoning === 'string';
 
-const shouldCloseReasoningSegment = (chunk: StreamChunk): boolean =>
-    chunk.type === 'content'
+const hasOpenReasoningTag = (content: string): boolean => {
+    const latestThinkStart = content.toLowerCase().lastIndexOf('<think>');
+    const latestThinkingStart = content.toLowerCase().lastIndexOf('<thinking>');
+    const latestStart = Math.max(latestThinkStart, latestThinkingStart);
+    if (latestStart === -1) {
+        return false;
+    }
+
+    const closingTag = latestThinkingStart > latestThinkStart ? '</thinking>' : '</think>';
+    return content.toLowerCase().indexOf(closingTag, latestStart) === -1;
+};
+
+const shouldCloseReasoningSegment = (chunk: StreamChunk, content: string): boolean =>
+    (chunk.type === 'content'
+        && typeof chunk.content === 'string'
+        && chunk.content.trim().length > 0
+        && !hasOpenReasoningTag(content))
     || chunk.type === 'tool_calls'
     || chunk.type === 'error'
     || (Array.isArray(chunk.tool_calls) && chunk.tool_calls.length > 0);
@@ -322,30 +369,80 @@ const truncateReasoningSegment = (value: string): string =>
         ? value
         : `${value.slice(0, MAX_REASONING_SEGMENT_CONTENT)}\n\n[Reasoning truncated by Tengra.]`;
 
-const appendReasoningSegment = (
-    state: ReasoningSegmentState,
-    reasoning: string
-): ReasoningSegmentState => {
-    if (reasoning.trim().length === 0) {
-        return state;
+const getVisibleReasoningSegment = (segments: string[]): string => {
+    for (let index = segments.length - 1; index >= 0; index -= 1) {
+        const segment = segments[index];
+        if (segment && segment.trim().length > 0) {
+            return segment;
+        }
     }
-    const segments = [...state.segments];
-    if (segments.length === 0 || state.isClosed) {
-        segments.push('');
-    }
-    const lastIndex = segments.length - 1;
-    segments[lastIndex] = truncateReasoningSegment(reasoning);
-    return { segments, isClosed: false };
+    return '';
 };
 
-const clampStreamedContent = (content: string): { content: string; truncated: boolean } => {
-    if (content.length <= MAX_STREAMED_MESSAGE_CONTENT) {
-        return { content, truncated: false };
+const getReasoningReplayPrefixLength = (segments: string[], reasoning: string): number => {
+    const visibleSegments = segments.filter(segment => segment.trim().length > 0);
+    if (visibleSegments.length === 0 || reasoning.length === 0) {
+        return 0;
     }
-    const availableLength = Math.max(0, MAX_STREAMED_MESSAGE_CONTENT - STREAM_CONTENT_TRUNCATION_NOTICE.length);
-    return {
-        content: `${content.slice(0, availableLength)}${STREAM_CONTENT_TRUNCATION_NOTICE}`,
-        truncated: true,
+
+    const replayCandidates = new Set<string>([
+        visibleSegments[visibleSegments.length - 1],
+        visibleSegments.join(''),
+        visibleSegments.join('\n'),
+    ]);
+
+    let matchedPrefixLength = 0;
+    for (const candidate of replayCandidates) {
+        if (candidate.length > matchedPrefixLength && reasoning.startsWith(candidate)) {
+            matchedPrefixLength = candidate.length;
+        }
+    }
+
+    return matchedPrefixLength;
+};
+
+const appendReasoningSegment = (
+    state: ReasoningSegmentState,
+    reasoning: string,
+    isAccumulated: boolean = true
+): ReasoningSegmentState => {
+    if (reasoning.length === 0) {
+        return state;
+    }
+    if (reasoning.trim().length === 0 && state.segments.length === 0) {
+        return state;
+    }
+
+    const segments = [...state.segments];
+    let processedReasoningLen = state.processedReasoningLen;
+    const isOpeningSegment = segments.length === 0 || state.isClosed;
+
+    if (isOpeningSegment) {
+        segments.push('');
+        processedReasoningLen = isAccumulated
+            ? getReasoningReplayPrefixLength(state.segments, reasoning)
+            : 0;
+    }
+
+    const lastIndex = segments.length - 1;
+    let contentToAppend = reasoning;
+
+    if (isAccumulated && processedReasoningLen > 0 && reasoning.length >= processedReasoningLen) {
+        contentToAppend = reasoning.slice(processedReasoningLen);
+    }
+
+    if (contentToAppend.length > 0) {
+        segments[lastIndex] = truncateReasoningSegment(`${segments[lastIndex]}${contentToAppend}`);
+    }
+
+    if (isAccumulated) {
+        processedReasoningLen = reasoning.length;
+    }
+
+    return { 
+        segments, 
+        isClosed: false, 
+        processedReasoningLen 
     };
 };
 
@@ -482,7 +579,12 @@ const handleChunkUpdate = (params: {
     const updateData: StreamingStateUpdate = { index, chatId, result, finalSources, finalReasoning, finalContent, finalToolCalls, finalVariants, finalImages, activeModel };
     setStreamingStates((prev) => {
         const state = prev[chatId] ?? {};
-        return { ...prev, [chatId]: buildNewStreamingState(updateData, state) };
+        const nextState = buildNewStreamingState(updateData, state);
+        appLogger.info(
+            'processChatStream',
+            `[${chatId.slice(0, 8)}] streaming-state apply index=${index}, prev={${summarizeStreamingStateForLog(state)}}, next={${summarizeStreamingStateForLog(nextState)}}`
+        );
+        return { ...prev, [chatId]: nextState };
     });
 };
 
@@ -529,7 +631,9 @@ const handleThrottledUpdates = (params: {
         reasoningSegments,
     } = params;
 
-    const effectiveReasoning = extractReasoning(finalContent, finalReasoning, { trim: false });
+    const effectiveReasoning = finalReasoning.trim().length > 0
+        ? finalReasoning
+        : extractReasoning(finalContent, '', { trim: false });
 
     let updatedLastSaveTime = lastSaveTime;
     let updatedLastDbSaveTime = lastDbSaveTime;
@@ -538,8 +642,13 @@ const handleThrottledUpdates = (params: {
         ? mergeReasoningSegments(params.initialReasonings, reasoningSegments)
         : mergeReasoningHistory(params.initialReasonings, effectiveReasoning);
 
-    if (shouldUpdateChatsState(now, lastSaveTime)) {
+    if (shouldUpdateChatsState(now, lastSaveTime, finalContent.length)) {
         updatedLastSaveTime = now;
+        const mergedToolCalls = mergeToolCallHistory(initialToolCalls || [], finalToolCalls);
+        appLogger.info(
+            'processChatStream',
+            `[${chatId.slice(0, 8)}] chat-state throttle-update contentLen=${finalContent.length}, reasoningLen=${effectiveReasoning.length}, mergedToolCalls=${mergedToolCalls.length}, reasonings=${currentReasonings?.length ?? 0}, intervalMs=${getChatStateUpdateIntervalMs(finalContent.length)}`
+        );
         updateChatsState({
             setChats,
             chatId,
@@ -553,7 +662,7 @@ const handleThrottledUpdates = (params: {
             variants: finalVariants,
             sources: finalSources,
             images: finalImages,
-            toolCalls: mergeToolCallHistory(initialToolCalls || [], finalToolCalls),
+            toolCalls: mergedToolCalls,
         });
     }
 
@@ -585,6 +694,7 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
     } = options;
 
     let finalContent = typeof initialContent === 'string' ? initialContent : '';
+    let providerReasoningBuffer = '';
     let finalReasoning = '';
     let finalSources: string[] = [];
     let finalImages: string[] = [];
@@ -598,10 +708,10 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
     let pendingDbSave: Promise<void> | null = null;
     let queuedDbSave: SaveToDbOptions | null = null;
     let hasPrimaryContentChunk = false;
-    let streamContentTruncated = false;
     let reasoningState: ReasoningSegmentState = { 
         segments: [...(initialReasonings ?? [])], 
-        isClosed: Boolean(initialReasonings && initialReasonings.length > 0)
+        isClosed: Boolean(initialReasonings && initialReasonings.length > 0),
+        processedReasoningLen: 0
     };
     const traceId = buildStreamTraceId(chatId, assistantId);
     let chunkCount = 0;
@@ -645,7 +755,7 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
         chunkCount += 1;
         appLogger.info('processChatStream', `[${traceId}] chunk#${chunkCount} ${summarizeChunkForLog(chunk)}`);
         const isReasoningChunk = isReasoningStreamChunk(chunk);
-        const iterationReasoning = isReasoningChunk && reasoningState.isClosed ? '' : finalReasoning;
+        const iterationReasoning = isReasoningChunk && reasoningState.isClosed ? '' : providerReasoningBuffer;
         const { index, result } = processChunkIteration({
             chunk,
             finalVariants,
@@ -688,11 +798,12 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
                 finalSources = updates.finalSources;
             }
             if (updates.finalReasoning) {
-                finalReasoning = updates.finalReasoning;
-                reasoningState = appendReasoningSegment(reasoningState, finalReasoning);
+                providerReasoningBuffer = updates.finalReasoning;
+                reasoningState = appendReasoningSegment(reasoningState, providerReasoningBuffer, true);
+                finalReasoning = getVisibleReasoningSegment(reasoningState.segments);
                 appLogger.info(
                     'processChatStream',
-                    `[${traceId}] explicit reasoning update len=${finalReasoning.length}, segments=${reasoningState.segments.length}, preview=${buildLogPreview(finalReasoning)}`
+                    `[${traceId}] explicit reasoning update len=${providerReasoningBuffer.length}, visibleLen=${finalReasoning.length}, segments=${reasoningState.segments.length}, preview=${buildLogPreview(finalReasoning)}`
                 );
             }
             if (updates.finalContent !== undefined) {
@@ -704,12 +815,9 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
                 } else {
                     finalContent = updates.finalContent;
                 }
-                const clamped = clampStreamedContent(finalContent);
-                finalContent = clamped.content;
-                streamContentTruncated = streamContentTruncated || clamped.truncated;
                 appLogger.info(
                     'processChatStream',
-                    `[${traceId}] content update len=${finalContent.length}, truncated=${String(clamped.truncated)}, preview=${buildLogPreview(finalContent)}`
+                    `[${traceId}] content update len=${finalContent.length}, preview=${buildLogPreview(finalContent)}`
                 );
             }
             if (updates.finalImages) {
@@ -724,16 +832,29 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
             }
 
             // Extract reasoning from content if not explicitly provided
-            const newlyExtractedReasoning = extractReasoning(finalContent, updates.finalReasoning || finalReasoning, { trim: false });
-            if (updates.finalReasoning || (newlyExtractedReasoning && newlyExtractedReasoning !== finalReasoning)) {
-                finalReasoning = newlyExtractedReasoning;
-                reasoningState = appendReasoningSegment(reasoningState, finalReasoning);
+            if (!updates.finalReasoning) {
+                const newlyExtractedReasoning = extractReasoningFromTags(finalContent, { trim: false });
+                if (newlyExtractedReasoning && newlyExtractedReasoning !== providerReasoningBuffer) {
+                    providerReasoningBuffer = newlyExtractedReasoning;
+                    reasoningState = appendReasoningSegment(reasoningState, providerReasoningBuffer, true);
+                    finalReasoning = getVisibleReasoningSegment(reasoningState.segments);
+                    appLogger.info(
+                        'processChatStream',
+                        `[${traceId}] tag reasoning update len=${providerReasoningBuffer.length}, visibleLen=${finalReasoning.length}, segments=${reasoningState.segments.length}, preview=${buildLogPreview(finalReasoning)}`
+                    );
+                } else {
+                    providerReasoningBuffer = newlyExtractedReasoning;
+                    finalReasoning = getVisibleReasoningSegment(reasoningState.segments);
+                }
+            } else {
+                finalReasoning = getVisibleReasoningSegment(reasoningState.segments);
+            }
+
+            if (updates.finalReasoning) {
                 appLogger.info(
                     'processChatStream',
-                    `[${traceId}] post-extraction reasoning len=${finalReasoning.length}, segments=${reasoningState.segments.length}, preview=${buildLogPreview(finalReasoning)}`
+                    `[${traceId}] visible reasoning sync len=${finalReasoning.length}, segments=${reasoningState.segments.length}, preview=${buildLogPreview(finalReasoning)}`
                 );
-            } else {
-                finalReasoning = newlyExtractedReasoning;
             }
 
             if (result.usage) {
@@ -748,7 +869,7 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
                 index, result, chatId, finalSources, finalReasoning, finalContent, finalToolCalls, finalVariants, finalImages, activeModel, setStreamingStates
             });
         }
-        if (shouldCloseReasoningSegment(chunk)) {
+        if (shouldCloseReasoningSegment(chunk, finalContent)) {
             reasoningState = { ...reasoningState, isClosed: true };
             appLogger.info(
                 'processChatStream',
@@ -782,13 +903,6 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
         });
         lastSaveTime = throttleResult.lastSaveTime;
         lastDbSaveTime = throttleResult.lastDbSaveTime;
-        if (streamContentTruncated) {
-            appLogger.warn(
-                'processChatStream',
-                `[${traceId}] stream terminated early due to safety content truncation len=${finalContent.length}`
-            );
-            break;
-        }
     }
 
     const pendingSave = pendingDbSave;
@@ -796,7 +910,9 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
         await Promise.resolve(pendingSave);
     }
 
-    const effectiveFinalReasoning = extractReasoning(finalContent, finalReasoning);
+    const effectiveFinalReasoning = finalReasoning.trim().length > 0
+        ? finalReasoning
+        : extractReasoning(finalContent, providerReasoningBuffer);
 
     const allReasonings = mergeReasoningSegments(
         initialReasonings,

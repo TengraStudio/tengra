@@ -77,7 +77,7 @@ const ConnectionCard = memo(({
                         e.stopPropagation();
                         onDisconnect(conn.id);
                     }}
-                    className="text-xs px-2 py-0.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded border border-destructive/20"
+                    className="typo-caption px-2 py-0.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded border border-destructive/20"
                 >
                     {t('ssh.disconnect')}
                 </button>
@@ -88,7 +88,7 @@ const ConnectionCard = memo(({
                             e.stopPropagation();
                             onConnect(conn);
                         }}
-                        className="text-xs px-2 py-0.5 bg-primary/10 hover:bg-primary/20 text-primary rounded border border-primary/20"
+                        className="typo-caption px-2 py-0.5 bg-primary/10 hover:bg-primary/20 text-primary rounded border border-primary/20"
                     >
                         {t('ssh.connect')}
                     </button>
@@ -97,7 +97,7 @@ const ConnectionCard = memo(({
                             e.stopPropagation();
                             onDeleteRequest(conn.id);
                         }}
-                        className="text-xs px-2 py-0.5 hover:bg-destructive/10 hover:text-destructive text-muted-foreground rounded transition-colors"
+                        className="typo-caption px-2 py-0.5 hover:bg-destructive/10 hover:text-destructive text-muted-foreground rounded transition-colors"
                         title={t('ssh.deleteProfile')}
                     >
                         ×

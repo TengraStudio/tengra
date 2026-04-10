@@ -2,7 +2,6 @@ import { AlertTriangle } from 'lucide-react';
 
 import { useTranslation } from '@/i18n';
 
-import './failover-indicator.css';
 
 /** Props for the FailoverIndicator component */
 interface FailoverIndicatorProps {

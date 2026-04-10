@@ -48,7 +48,7 @@ export const TipOfTheDay: React.FC<TipOfTheDayProps> = ({ language = 'en' }) => 
                     </div>
                     <div className="flex-1">
                         <h4 className="text-sm font-bold text-foreground mb-1">{t('tips.title')}</h4>
-                        <p className="text-xs text-muted-foreground leading-relaxed">{TIPS[tipIndex]}</p>
+                        <p className="typo-caption text-muted-foreground leading-relaxed">{TIPS[tipIndex]}</p>
                     </div>
                     <button
                         onClick={() => setIsOpen(false)}

@@ -129,7 +129,7 @@ export const PerformanceDashboard: React.FC = () => {
     if (loading && !data) {
         return (
             <div className="flex items-center justify-center p-8 animate-pulse">
-                <div className="text-xs font-bold text-muted-foreground flex items-center gap-2">
+                <div className="typo-caption font-bold text-muted-foreground flex items-center gap-2">
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                     {t('common.loading')}
                 </div>
@@ -139,7 +139,7 @@ export const PerformanceDashboard: React.FC = () => {
 
     if (error && !data) {
         return (
-            <div className="p-4 premium-glass border-destructive/20 text-destructive text-xs font-medium flex items-center gap-2">
+            <div className="p-4 premium-glass border-destructive/20 text-destructive typo-caption font-medium flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4" />
                 {error}
             </div>
@@ -158,7 +158,7 @@ export const PerformanceDashboard: React.FC = () => {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h3 className="text-xs font-bold text-muted-foreground flex items-center gap-2">
+                    <h3 className="typo-caption font-bold text-muted-foreground flex items-center gap-2">
                         <Activity className="w-3.5 h-3.5 text-primary" />
                         {t('settings.performanceDashboard.title')}
                     </h3>

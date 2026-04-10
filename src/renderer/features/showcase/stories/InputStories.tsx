@@ -36,7 +36,7 @@ const InputWrapper: React.FC<Record<string, RendererDataValue>> = (props) => {
           type={type}
         />
         {variant === 'error' && (
-          <p className="text-xs text-destructive">{t('showcase.input.validation.required')}</p>
+          <p className="typo-caption text-destructive">{t('showcase.input.validation.required')}</p>
         )}
       </div>
     );

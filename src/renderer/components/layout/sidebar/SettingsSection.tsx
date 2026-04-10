@@ -7,6 +7,7 @@ import {
     Info,
     LayoutGrid,
     Mic,
+    Puzzle,
     Settings,
     Terminal,
     TrendingUp,
@@ -31,7 +32,7 @@ const SettingsMenuItem: React.FC<{
     <button
         onClick={onClick}
         className={cn(
-            'w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs font-medium transition-all duration-200',
+            'w-full flex items-center gap-3 px-3 py-2 rounded-md typo-caption font-medium transition-all duration-200',
             isActive
                 ? 'text-primary bg-primary/5'
                 : 'text-muted-foreground hover:bg-muted/10 hover:text-foreground'
@@ -90,6 +91,8 @@ export const SettingsSectionComponent: React.FC<SettingsSectionProps> = ({
                 return t('settings.tabs.about');
             case 'images':
                 return t('settings.tabs.images');
+            case 'extensions':
+                return t('marketplace.tabs.extensions');
             default:
                 return t('settings.tabs.general');
         }
@@ -148,6 +151,7 @@ export const SettingsSectionComponent: React.FC<SettingsSectionProps> = ({
                                     'developer',
                                     'statistics',
                                     'images',
+                                    'extensions',
                                     'about',
                                 ] as SettingsCategory[]
                             ).map(id => (
@@ -214,6 +218,8 @@ const getIconForId = (id: SettingsCategory) => {
             return Activity;
         case 'usage-limits':
             return TrendingUp;
+        case 'extensions':
+            return Puzzle;
         default:
             return LayoutGrid;
     }

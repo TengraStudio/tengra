@@ -3,6 +3,7 @@ import { classifyAiIntent } from '@shared/utils/ai-runtime.util';
 import { useCallback, useRef, useState } from 'react';
 
 import { ChatError, Message } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 import {
     prepareConversationMessages,
@@ -53,6 +54,7 @@ export function useSessionConversationStream(
     const stopStreaming = useCallback(() => {
         abortedRef.current = true;
         if (activeSessionId) {
+            appLogger.warn('useSessionConversationStream', `stopStreaming abort requested sessionId=${activeSessionId}`);
             window.electron.session.conversation.abort(activeSessionId);
         }
         setIsStreaming(false);

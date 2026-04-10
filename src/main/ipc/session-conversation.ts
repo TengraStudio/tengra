@@ -25,6 +25,7 @@ import {
 } from '@main/ipc/session-conversation-stream-evidence.util';
 import { safeSendConversationChunk } from '@main/ipc/session-conversation-stream-ipc.util';
 import {
+    extractConversationAccountId,
     extractConversationReasoningEffort,
     sanitizeConversationRequestParams,
     sanitizeConversationStreamInputs,
@@ -84,6 +85,7 @@ interface ConversationStreamParams {
     optionsJson: JsonObject | undefined; 
     chatId: string; 
     assistantId?: string;
+    streamId?: string;
     workspaceId?: string; 
     systemMode?: SystemMode; 
 }
@@ -246,13 +248,17 @@ class SessionConversationIpcManager {
             } catch (error) {
                 const msg = `Rate limit exceeded: ${getErrorMessage(error as Error)}`;
                 appLogger.warn('Chat', msg);
-                safeSendConversationChunk(event.sender, { chatId: params.chatId, type: 'error', content: msg });
-                safeSendConversationChunk(event.sender, { chatId: params.chatId, done: true });
+                safeSendConversationChunk(event.sender, { chatId: params.chatId, streamId: params.streamId, type: 'error', content: msg });
+                safeSendConversationChunk(event.sender, { chatId: params.chatId, streamId: params.streamId, done: true });
                 return;
             }
         }
 
         const sanitized = sanitizeConversationStreamInputs(params);
+        appLogger.info(
+            'Chat',
+            `[ChatStream] start chatId=${sanitized.chatId} provider=${sanitized.provider} model=${sanitized.model} messages=${sanitized.messages.length} tools=${sanitized.tools?.length ?? 0}`
+        );
         await this.startChatSession({
             sessionId: sanitized.chatId,
             mode: sanitized.workspaceId ? 'workspace' : 'chat',
@@ -271,18 +277,20 @@ class SessionConversationIpcManager {
         });
         await this.chatSessionRegistryService.markPreparing(sanitized.chatId);
         const reasoningEffort = extractConversationReasoningEffort(params.optionsJson);
+        const accountId = extractConversationAccountId(params.optionsJson);
         const settings = this.options.settingsService.getSettings();
         const ollamaSettings = settings['ollama'] as JsonObject | undefined;
         const orchestrationPolicy = (ollamaSettings?.['orchestrationPolicy'] as OrchestrationPolicy | undefined) ?? 'auto';
         chatQueueManager.setPolicy(orchestrationPolicy);
 
-        let finalMessages = await this.injectRAGContextForStream(
-            sanitized.messages,
-            sanitized.workspaceId,
-            sanitized.chatId,
-            sanitized.provider,
-            event
-        );
+        let finalMessages = await this.injectRAGContextForStream({
+            messages: sanitized.messages,
+            workspaceId: sanitized.workspaceId,
+            chatId: sanitized.chatId,
+            provider: sanitized.provider,
+            event,
+            streamId: sanitized.streamId,
+        });
         finalMessages = injectConversationSystemPrompt({
             messages: finalMessages,
             provider: sanitized.provider,
@@ -298,6 +306,7 @@ class SessionConversationIpcManager {
 
         const cancelHandler = (_event: IpcMainEvent, { chatId }: { chatId: string }) => {
             if (chatId === params.chatId) {
+                appLogger.warn('Chat', `[ChatStream] cancel event received chatId=${chatId}`);
                 controller.abort();
             }
         };
@@ -319,6 +328,7 @@ class SessionConversationIpcManager {
                     signal,
                     systemMode: sanitized.systemMode,
                     assistantId: sanitized.assistantId,
+                    streamId: sanitized.streamId,
                 });
             } else {
                 await this.handleProxyStream({
@@ -333,7 +343,9 @@ class SessionConversationIpcManager {
                     workspaceId: sanitized.workspaceId,
                     signal,
                     reasoningEffort,
+                    accountId,
                     assistantId: sanitized.assistantId,
+                    streamId: sanitized.streamId,
                 });
             }
         } catch (error) {
@@ -344,9 +356,10 @@ class SessionConversationIpcManager {
                 const msg = getErrorMessage(error as Error);
                 appLogger.error('Chat', `[ChatStream] Error: ${msg}`);
                 await this.chatSessionRegistryService.markFailed(sanitized.chatId, msg);
-                safeSendConversationChunk(event.sender, { chatId: sanitized.chatId, type: 'error', content: msg });
+                safeSendConversationChunk(event.sender, { chatId: sanitized.chatId, streamId: sanitized.streamId, type: 'error', content: msg });
             }
         } finally {
+            appLogger.info('Chat', `[ChatStream] finalize chatId=${sanitized.chatId}`);
             for (const cancelChannel of cancelChannels) {
                 ipcMain.removeListener(cancelChannel, cancelHandler);
             }
@@ -354,7 +367,7 @@ class SessionConversationIpcManager {
             if (snapshot?.status === 'streaming') {
                 await this.chatSessionRegistryService.markCompleted(sanitized.chatId);
             }
-            safeSendConversationChunk(event.sender, { chatId: sanitized.chatId, done: true });
+            safeSendConversationChunk(event.sender, { chatId: sanitized.chatId, streamId: sanitized.streamId, done: true });
         }
     }
 
@@ -439,13 +452,15 @@ class SessionConversationIpcManager {
         });
     }
 
-    private async injectRAGContextForStream(
-        messages: Message[],
-        workspaceId: string | undefined,
-        chatId: string,
-        provider: string,
-        event: IpcMainInvokeEvent
-    ): Promise<Message[]> {
+    private async injectRAGContextForStream(params: {
+        messages: Message[];
+        workspaceId?: string;
+        chatId: string;
+        provider: string;
+        event: IpcMainInvokeEvent;
+        streamId?: string;
+    }): Promise<Message[]> {
+        const { messages, workspaceId, chatId, provider, event, streamId } = params;
         if (!workspaceId || messages.length === 0) { return messages; }
         if (!this.shouldInjectRAGContext(provider)) { return messages; }
 
@@ -460,7 +475,7 @@ class SessionConversationIpcManager {
             if (!contextString) { return messages; }
 
             safeSendConversationChunk(event.sender, {
-                chatId, type: 'metadata', sources: sources.map(src => sanitizeString(src, { maxLength: 500, allowNewlines: false }))
+                chatId, streamId, type: 'metadata', sources: sources.map(src => sanitizeString(src, { maxLength: 500, allowNewlines: false }))
             });
 
             injectConversationContext(messages, contextString);
@@ -485,17 +500,35 @@ class SessionConversationIpcManager {
         signal?: AbortSignal,
         systemMode?: SystemMode,
         assistantId?: string,
+        streamId?: string,
     }) {
-        const { messages, originalMessages, model, tools, chatId, event, signal, systemMode, assistantId } = params;
+        const { messages, originalMessages, model, tools, chatId, event, signal, systemMode, assistantId, streamId } = params;
         const evidence = createSessionStreamEvidenceState();
+        let streamChunkCount = 0;
+        let forwardedChunkCount = 0;
 
         try {
+            appLogger.info(
+                'Chat',
+                `[ChatStream:OpenCode] stream-start chatId=${chatId} model=${model} messages=${messages.length} tools=${tools?.length ?? 0}`
+            );
             for await (const chunk of this.options.llmService.chatOpenCodeStream(messages, model, tools, signal)) {
+                streamChunkCount++;
                 applySessionStreamChunk(evidence, chunk);
-
-                if (!safeSendConversationChunk(event.sender, { ...chunk, chatId, provider: 'opencode', model })) { break; }
+                if (!safeSendConversationChunk(event.sender, { ...chunk, chatId, streamId, provider: 'opencode', model })) {
+                    appLogger.warn(
+                        'Chat',
+                        `[ChatStream:OpenCode] sender dropped chunk chatId=${chatId} chunk=${streamChunkCount}`
+                    );
+                    break;
+                }
+                forwardedChunkCount++;
             }
         } finally {
+            appLogger.info(
+                'Chat',
+                `[ChatStream:OpenCode] stream-end chatId=${chatId} chunks=${streamChunkCount} forwarded=${forwardedChunkCount} contentLen=${evidence.fullContent.length} reasoningLen=${evidence.fullReasoning.length} toolCalls=${evidence.toolCalls.length}`
+            );
             // Save partial response if aborted or finished
             if (evidence.fullContent || evidence.fullReasoning) {
                 await this.persistStreamedAssistantMessage({
@@ -543,9 +576,11 @@ class SessionConversationIpcManager {
         workspaceId?: string,
         signal?: AbortSignal,
         reasoningEffort?: string,
+        accountId?: string,
         assistantId?: string,
+        streamId?: string,
     }) {
-        const { messages, originalMessages, model, tools: providedTools, provider, chatId, event, systemMode, workspaceId, signal, reasoningEffort, assistantId } = params;
+        const { messages, originalMessages, model, tools: providedTools, provider, chatId, event, systemMode, workspaceId, signal, reasoningEffort, accountId, assistantId, streamId } = params;
 
         let runtimeWorkspaceRoot: string | undefined;
         if (!workspaceId) {
@@ -553,19 +588,37 @@ class SessionConversationIpcManager {
         }
 
         const evidence = createSessionStreamEvidenceState();
+        let streamChunkCount = 0;
+        let forwardedChunkCount = 0;
 
         try {
+            appLogger.info(
+                'Chat',
+                `[ChatStream:Proxy] stream-start chatId=${chatId} provider=${provider} model=${model} messages=${messages.length} tools=${providedTools?.length ?? 0}`
+            );
             for await (const chunk of this.options.llmService.chatStream(messages, model, providedTools, provider, {
                 systemMode,
                 workspaceRoot: runtimeWorkspaceRoot,
                 signal,
-                reasoningEffort
+                reasoningEffort,
+                accountId,
             })) {
+                streamChunkCount++;
                 applySessionStreamChunk(evidence, chunk);
-
-                if (!safeSendConversationChunk(event.sender, { ...chunk, chatId, provider, model })) { break; }
+                if (!safeSendConversationChunk(event.sender, { ...chunk, chatId, streamId, provider, model })) {
+                    appLogger.warn(
+                        'Chat',
+                        `[ChatStream:Proxy] sender dropped chunk chatId=${chatId} chunk=${streamChunkCount}`
+                    );
+                    break;
+                }
+                forwardedChunkCount++;
             }
         } finally {
+            appLogger.info(
+                'Chat',
+                `[ChatStream:Proxy] stream-end chatId=${chatId} provider=${provider} chunks=${streamChunkCount} forwarded=${forwardedChunkCount} contentLen=${evidence.fullContent.length} reasoningLen=${evidence.fullReasoning.length} toolCalls=${evidence.toolCalls.length}`
+            );
             // Save partial response if aborted or finished
             if (evidence.fullContent || evidence.fullReasoning) {
                 await this.persistStreamedAssistantMessage({

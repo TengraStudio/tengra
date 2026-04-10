@@ -62,6 +62,15 @@ pub async fn handle_completions(
                 .get("reasoning_effort")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string()),
+            thinking_level: payload
+                .get("thinking_level")
+                .or_else(|| payload.get("thinkingLevel"))
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string()),
+            thinking_budget: payload
+                .get("thinking_budget")
+                .or_else(|| payload.get("thinkingBudget"))
+                .and_then(|v| v.as_i64()),
             tools: payload.get("tools").and_then(Value::as_array).cloned(),
             tool_choice: payload.get("tool_choice").cloned(),
             response_format: payload.get("response_format").cloned(),

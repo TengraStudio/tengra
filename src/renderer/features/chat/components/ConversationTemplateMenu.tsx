@@ -29,7 +29,7 @@ export const ConversationTemplateMenu: React.FC<ConversationTemplateMenuProps> =
         <div className="relative">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/20 transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg typo-caption font-medium text-muted-foreground hover:text-foreground hover:bg-muted/20 transition-colors"
                 title={t('conversationTemplates.newFromTemplate')}
             >
                 <Plus className="w-3.5 h-3.5" />
@@ -40,7 +40,7 @@ export const ConversationTemplateMenu: React.FC<ConversationTemplateMenuProps> =
                     <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
                     <div className="absolute bottom-full left-0 mb-1 z-50 w-72 max-h-80 overflow-y-auto rounded-xl border border-border bg-card shadow-2xl">
                         <div className="p-2.5 border-b border-border">
-                            <span className="text-xs font-bold text-foreground">{t('conversationTemplates.title')}</span>
+                            <span className="typo-caption font-bold text-foreground">{t('conversationTemplates.title')}</span>
                             <p className="text-xxs text-muted-foreground mt-0.5">{t('conversationTemplates.subtitle')}</p>
                         </div>
                         <div className="p-1.5 space-y-0.5">
@@ -61,7 +61,7 @@ export const ConversationTemplateMenu: React.FC<ConversationTemplateMenuProps> =
                                             {t(`conversationTemplates.categories.${tmpl.category}`)}
                                         </span>
                                     </div>
-                                    <p className="text-xs text-muted-foreground mt-1 ml-7 line-clamp-1">
+                                    <p className="typo-caption text-muted-foreground mt-1 ml-7 line-clamp-1">
                                         {t(tmpl.description)}
                                     </p>
                                 </button>

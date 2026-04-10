@@ -80,6 +80,34 @@ function buildQuotaWindow(
     };
 }
 
+function resolveAntigravityWindowQuota(model: QuotaResponse['models'][number]): {
+    remaining: number;
+    total: number;
+} {
+    const quotaInfo = model.quotaInfo;
+    const baseRemaining =
+        quotaInfo?.remainingQuota
+        ?? Math.max(0, Math.round((quotaInfo?.remainingFraction ?? 0) * (quotaInfo?.totalQuota ?? 100)));
+    const baseTotal = quotaInfo?.totalQuota ?? 100;
+    const aiCredits = quotaInfo?.aiCredits;
+    const canUseCredits = aiCredits?.canUseCredits === true;
+
+    if (!canUseCredits || baseRemaining > 0) {
+        return {
+            remaining: baseRemaining,
+            total: baseTotal,
+        };
+    }
+
+    const creditRemaining = typeof aiCredits.creditAmount === 'number'
+        ? Math.max(1, Math.round(aiCredits.creditAmount))
+        : 1;
+    return {
+        remaining: creditRemaining,
+        total: Math.max(creditRemaining, 1),
+    };
+}
+
 function buildAntigravityBuckets(quotas?: { accounts: QuotaResponse[] } | null): QuotaBucket[] {
     if (!quotas?.accounts) {
         return [];
@@ -90,10 +118,7 @@ function buildAntigravityBuckets(quotas?: { accounts: QuotaResponse[] } | null):
         for (const model of account.models) {
             const bucketId = normalizeBucketKey('antigravity', model.id);
             const existing = bucketMap.get(bucketId);
-            const quotaInfo = model.quotaInfo;
-            const remaining =
-                quotaInfo?.remainingQuota ?? Math.max(0, Math.round((quotaInfo?.remainingFraction ?? 0) * (quotaInfo?.totalQuota ?? 100)));
-            const total = quotaInfo?.totalQuota ?? 100;
+            const { remaining, total } = resolveAntigravityWindowQuota(model);
             if (existing) {
                 existing.models.push(model.id);
                 continue;
@@ -110,7 +135,7 @@ function buildAntigravityBuckets(quotas?: { accounts: QuotaResponse[] } | null):
                         'shared',
                         remaining,
                         total,
-                        quotaInfo?.resetTime ?? account.next_reset
+                        model.quotaInfo?.resetTime ?? account.next_reset
                     ),
                 ],
             });

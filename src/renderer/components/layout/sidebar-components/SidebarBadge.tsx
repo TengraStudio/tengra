@@ -33,7 +33,7 @@ const VARIANT_CLASSES: Record<BadgeVariant, string> = {
 
 const SIZE_CLASSES: Record<BadgeSize, { dot: string; badge: string }> = {
     sm: { dot: 'w-2 h-2', badge: 'min-w-4 h-4 px-1.5 text-xxs' },
-    md: { dot: 'w-2.5 h-2.5', badge: 'min-w-6 h-6 px-2 text-xs' }
+    md: { dot: 'w-2.5 h-2.5', badge: 'min-w-6 h-6 px-2 typo-caption' }
 };
 
 function formatBadgeValue(value: number | string, max: number): string | number {

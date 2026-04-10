@@ -48,7 +48,7 @@ export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({
 
                 <div className="space-y-4">
                     <div>
-                        <label className="text-xs font-bold text-muted-foreground/60">{t('memory.contentLabel')}</label>
+                        <label className="typo-caption font-bold text-muted-foreground/60">{t('memory.contentLabel')}</label>
                         <textarea
                             value={content}
                             onChange={(e) => onContentChange(e.target.value)}
@@ -59,7 +59,7 @@ export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="text-xs font-bold text-muted-foreground/60">{t('memory.categoryLabel')}</label>
+                            <label className="typo-caption font-bold text-muted-foreground/60">{t('memory.categoryLabel')}</label>
                             <Select value={category} onValueChange={(v) => onCategoryChange(v as MemoryCategory)}>
                                 <SelectTrigger className="mt-1 bg-muted/50 border-border/40">
                                     <SelectValue />
@@ -78,7 +78,7 @@ export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({
                         </div>
 
                         <div>
-                            <label className="text-xs font-bold text-muted-foreground/60">{t('memory.tagsLabel')}</label>
+                            <label className="typo-caption font-bold text-muted-foreground/60">{t('memory.tagsLabel')}</label>
                             <Input
                                 value={tags}
                                 onChange={(e) => onTagsChange(e.target.value)}

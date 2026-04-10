@@ -150,11 +150,11 @@ const ModelSelectorReasoningPanel: React.FC<ModelSelectorReasoningPanelProps> = 
                             {t('modelSelector.selectReasoningLevel')}
                         </span>
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="typo-caption text-muted-foreground">
                         {t('modelSelector.reasoningRequired')}
                     </p>
                 </div>
-                <div className="mb-3 text-xs font-medium text-muted-foreground">
+                <div className="mb-3 typo-caption font-medium text-muted-foreground">
                     {categories
                         .flatMap(category => (Array.isArray(category.models) ? category.models : []))
                         .find(model => model.id === pendingModel.id)?.label ?? pendingModel.id}
@@ -224,7 +224,7 @@ const ModelSelectorReasoningPanel: React.FC<ModelSelectorReasoningPanelProps> = 
                                 onThinkingLevelChange?.(currentModelInfo?.id ?? selectedModel, level)
                             }
                             className={cn(
-                                'rounded-xl border px-4 py-2 text-xs font-bold transition-all duration-200',
+                                'rounded-xl border px-4 py-2 typo-caption font-bold transition-all duration-200',
                                 isActive
                                     ? 'bg-primary/10 text-primary border-primary/40 shadow-sm scale-105'
                                     : 'border-border/40 text-muted-foreground/70 hover:bg-muted/50 hover:text-foreground'
@@ -811,7 +811,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                 </div>
 
                 {/* Footer */}
-                <div className="px-4 py-3 border-t border-border/50 bg-muted/20 text-xs text-muted-foreground flex items-center justify-between">
+                <div className="px-4 py-3 border-t border-border/50 bg-muted/20 typo-caption text-muted-foreground flex items-center justify-between">
                     {requiresReasoningSelection && !canConfirm ? (
                         <span className="text-warning">
                             {t('modelSelector.mustSelectReasoning')}

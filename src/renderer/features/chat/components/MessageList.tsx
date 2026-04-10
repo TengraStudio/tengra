@@ -1,3 +1,4 @@
+import { compactToolCallsForDisplay } from '@renderer/features/chat/components/message/tool-call-display.util';
 import { MessageBubble } from '@renderer/features/chat/components/MessageBubble';
 import { MessageSkeleton } from '@renderer/features/chat/components/MessageSkeleton';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
@@ -5,6 +6,7 @@ import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 
 import { Language, useTranslation } from '@/i18n';
 import { Message } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface MessageListProps {
     messages: Message[];
@@ -38,71 +40,179 @@ interface DisplayMessageEntry {
     message: Message;
 }
 
-function isThoughtOnlyMessage(message: Message): boolean {
-    return Boolean(message.metadata?.thoughtOnly === true);
+function getMessageText(message: Message): string {
+    if (typeof message.content === 'string') {
+        return message.content.trim();
+    }
+    return '';
 }
 
-function hasRenderableAssistantPayload(message: Message): boolean {
-    const textContent = typeof message.content === 'string'
-        ? message.content.trim()
-        : message.content.length > 0
-            ? '[multipart]'
-            : '';
-    return textContent.length > 0
-        || (message.images?.length ?? 0) > 0
-        || (message.sources?.length ?? 0) > 0
-        || (message.toolCalls?.length ?? 0) > 0
-        || (Array.isArray(message.toolResults) && message.toolResults.length > 0);
+function mergeUniqueReasonings(previous: string[], incoming: string[]): string[] {
+    const merged = [...previous];
+    for (const segment of incoming) {
+        const normalized = segment.trim();
+        if (normalized.length === 0) {
+            continue;
+        }
+        if (merged.includes(normalized)) {
+            continue;
+        }
+        merged.push(normalized);
+    }
+    return merged;
 }
 
-function buildDisplayMessages(messages: Message[]): DisplayMessageEntry[] {
+function mergeToolCalls(previous: Message['toolCalls'], incoming: Message['toolCalls']): Message['toolCalls'] {
+    const base = Array.isArray(previous) ? [...previous] : [];
+    for (const toolCall of incoming ?? []) {
+        const existingIndex = base.findIndex(existing => existing.id === toolCall.id);
+        if (existingIndex >= 0) {
+            base[existingIndex] = toolCall;
+            continue;
+        }
+        base.push(toolCall);
+    }
+    return compactToolCallsForDisplay(base);
+}
+
+function mergeToolResults(previous: Message['toolResults'], incoming: Message['toolResults']): Message['toolResults'] {
+    if (!Array.isArray(previous) && !Array.isArray(incoming)) {
+        return incoming ?? previous;
+    }
+
+    const previousResults = Array.isArray(previous) ? previous : [];
+    const incomingResults = Array.isArray(incoming) ? incoming : [];
+    const merged = new Map<string, typeof previousResults[number]>();
+    for (const toolResult of previousResults) {
+        if (!toolResult) {
+            continue;
+        }
+        if (typeof toolResult.toolCallId !== 'string' || toolResult.toolCallId.trim().length === 0) {
+            continue;
+        }
+        merged.set(toolResult.toolCallId, toolResult);
+    }
+    for (const toolResult of incomingResults) {
+        if (!toolResult) {
+            continue;
+        }
+        if (typeof toolResult.toolCallId !== 'string' || toolResult.toolCallId.trim().length === 0) {
+            continue;
+        }
+        merged.set(toolResult.toolCallId, toolResult);
+    }
+    return merged.size > 0 ? Array.from(merged.values()) : undefined;
+}
+
+function shouldCollapseAssistantEntry(previousMessage: Message, currentMessage: Message, reasoningSegments: string[]): boolean {
+    if (previousMessage.role !== 'assistant' || currentMessage.role !== 'assistant') {
+        return false;
+    }
+    if (reasoningSegments.length === 0) {
+        return false;
+    }
+    const currentText = getMessageText(currentMessage);
+    if (currentText.length > 0) {
+        return false;
+    }
+    const previousText = getMessageText(previousMessage);
+    return previousText.length === 0 || Array.isArray(currentMessage.toolCalls);
+}
+
+function readReasoningSegments(message: Message): string[] {
+    const directSegments = Array.isArray(message.reasonings)
+        ? message.reasonings.filter(
+            (segment): segment is string =>
+                typeof segment === 'string' && segment.trim().length > 0
+        )
+        : [];
+    if (directSegments.length > 0) {
+        return directSegments;
+    }
+
+    if (typeof message.reasoning === 'string' && message.reasoning.trim().length > 0) {
+        return [message.reasoning];
+    }
+
+    const aiPresentation = message.metadata?.aiPresentation;
+    if (!aiPresentation || typeof aiPresentation !== 'object' || Array.isArray(aiPresentation)) {
+        return [];
+    }
+    const maybeSegments = (aiPresentation as Record<string, unknown>).reasoningSegments;
+    if (!Array.isArray(maybeSegments)) {
+        return [];
+    }
+    return maybeSegments.filter(
+        (segment): segment is string =>
+            typeof segment === 'string' && segment.trim().length > 0
+    );
+}
+
+function readStickyReasoningSegments(
+    message: Message,
+    stickyReasoningMap: Map<string, string[]>
+): string[] {
+    const currentSegments = readReasoningSegments(message);
+    if (currentSegments.length > 0) {
+        stickyReasoningMap.set(message.id, [...currentSegments]);
+        return currentSegments;
+    }
+    const stickySegments = stickyReasoningMap.get(message.id);
+    if (stickySegments && stickySegments.length > 0) {
+        return [...stickySegments];
+    }
+    return [];
+}
+
+function buildDisplayMessages(
+    messages: Message[],
+    stickyReasoningMap: Map<string, string[]>
+): DisplayMessageEntry[] {
     const entries: DisplayMessageEntry[] = [];
+    let collapsedAssistantCount = 0;
     for (const message of messages) {
-        if (message.role !== 'assistant' || isThoughtOnlyMessage(message)) {
+        if (message.role !== 'assistant') {
             entries.push({ id: message.id, sourceMessageId: message.id, message });
             continue;
         }
 
-        const reasoningSegments = (message.reasonings ?? [])
-            .filter(segment => typeof segment === 'string' && segment.trim().length > 0);
-
-        reasoningSegments.forEach((segment, index) => {
-            entries.push({
-                id: `${message.id}::thought::${index}`,
-                sourceMessageId: message.id,
+        const reasoningSegments = readStickyReasoningSegments(message, stickyReasoningMap);
+        const previousEntry = entries.length > 0 ? entries[entries.length - 1] : undefined;
+        if (previousEntry && shouldCollapseAssistantEntry(previousEntry.message, message, reasoningSegments)) {
+            collapsedAssistantCount += 1;
+            const previousReasonings = Array.isArray(previousEntry.message.reasonings)
+                ? previousEntry.message.reasonings
+                : [];
+            const mergedReasonings = mergeUniqueReasonings(previousReasonings, reasoningSegments);
+            entries[entries.length - 1] = {
+                ...previousEntry,
                 message: {
-                    ...message,
-                    id: `${message.id}::thought::${index}`,
-                    content: '',
-                    reasoning: segment,
-                    reasonings: undefined,
-                    toolCalls: undefined,
-                    toolResults: undefined,
-                    images: undefined,
-                    sources: undefined,
-                    variants: undefined,
-                    metadata: {
-                        ...(message.metadata ?? {}),
-                        thoughtOnly: true,
-                        sourceMessageId: message.id,
-                        thoughtIndex: index,
-                    },
+                    ...previousEntry.message,
+                    reasonings: mergedReasonings.length > 0 ? mergedReasonings : previousEntry.message.reasonings,
+                    reasoning: mergedReasonings.length > 0
+                        ? mergedReasonings[mergedReasonings.length - 1]
+                        : previousEntry.message.reasoning,
+                    toolCalls: mergeToolCalls(previousEntry.message.toolCalls, message.toolCalls),
+                    toolResults: mergeToolResults(previousEntry.message.toolResults, message.toolResults),
+                    metadata: message.metadata ?? previousEntry.message.metadata,
                 },
-            });
-        });
-
-        if (hasRenderableAssistantPayload(message) || reasoningSegments.length === 0) {
-            entries.push({
-                id: message.id,
-                sourceMessageId: message.id,
-                message: {
-                    ...message,
-                    reasoning: undefined,
-                    reasonings: undefined,
-                },
-            });
+            };
+            continue;
         }
+        entries.push({
+            id: message.id,
+            sourceMessageId: message.id,
+            message: {
+                ...message,
+                reasonings: reasoningSegments.length > 0 ? reasoningSegments : message.reasonings,
+                toolCalls: compactToolCallsForDisplay(message.toolCalls),
+            },
+        });
     }
+    appLogger.info(
+        'MessageList',
+        `display-build sourceMessages=${messages.length}, displayEntries=${entries.length}, collapsedAssistants=${collapsedAssistantCount}`
+    );
     return entries;
 }
 
@@ -124,7 +234,20 @@ export const MessageList = memo(({
     const [focusedIndex, setFocusedIndex] = useState<number>(-1);
     const { t } = useTranslation(language);
     const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
-    const displayMessages = useMemo(() => buildDisplayMessages(messages), [messages]);
+    const [stickyReasoningMap] = useState<Map<string, string[]>>(() => new Map<string, string[]>());
+    const displayMessages = useMemo(
+        () => buildDisplayMessages(messages, stickyReasoningMap),
+        [messages, stickyReasoningMap]
+    );
+
+    useEffect(() => {
+        const assistantCount = messages.filter(message => message.role === 'assistant').length;
+        const thoughtOnlyCount = 0;
+        appLogger.info(
+            'MessageList',
+            `display-map messages=${messages.length}, assistants=${assistantCount}, displayEntries=${displayMessages.length}, thoughtOnlyEntries=${thoughtOnlyCount}, streaming=${String(isLoading)}`
+        );
+    }, [messages, displayMessages, isLoading]);
 
     const effectiveFocusedIndex =
         displayMessages.length === 0
@@ -153,24 +276,15 @@ export const MessageList = memo(({
             handlers.set(id, {
                 onSpeak: (text) => onSpeak(text, sourceMessageId),
                 onReact: (emoji) => {
-                    if (isThoughtOnlyMessage(message)) {
-                        return;
-                    }
                     void window.electron.db.updateMessage(sourceMessageId, { reactions: [emoji] });
                 },
                 onBookmark: (isBookmarked) => {
-                    if (isThoughtOnlyMessage(message)) {
-                        return;
-                    }
                     void window.electron.db.updateMessage(sourceMessageId, { isBookmarked });
                 },
                 onRate: (rating) => {
-                    if (isThoughtOnlyMessage(message)) {
-                        return;
-                    }
                     void window.electron.db.updateMessage(sourceMessageId, { rating });
                 },
-                onRegenerate: message.role === 'assistant' && !isThoughtOnlyMessage(message)
+                onRegenerate: message.role === 'assistant'
                     ? () => {
                         void onRegenerate?.(sourceMessageId);
                     }
@@ -219,7 +333,7 @@ export const MessageList = memo(({
 
             if (event.key.toLowerCase() === 'r' && effectiveFocusedIndex >= 0) {
                 const focusedEntry = displayMessages[effectiveFocusedIndex];
-                if (focusedEntry.message.role === 'assistant' && !isThoughtOnlyMessage(focusedEntry.message)) {
+                if (focusedEntry.message.role === 'assistant') {
                     event.preventDefault();
                     void onRegenerate?.(focusedEntry.sourceMessageId);
                 }
@@ -229,7 +343,7 @@ export const MessageList = memo(({
     );
 
     const renderMessageItem = useCallback((index: number, entry: DisplayMessageEntry) => {
-        const { message, sourceMessageId } = entry;
+        const { message } = entry;
         const isStreamingCurrent =
             isLoading && index === displayMessages.length - 1 && message.role === 'assistant';
         const isLast = index === displayMessages.length - 1;
@@ -266,11 +380,7 @@ export const MessageList = memo(({
                     onRegenerate={handlers.onRegenerate}
                     onApprovePlan={() => { }}
                     streamingSpeed={isStreamingCurrent ? streamingSpeed : null}
-                    streamingReasoning={
-                        isStreamingCurrent && sourceMessageId === messages[messages.length - 1]?.id
-                            ? streamingReasoning
-                            : undefined
-                    }
+                    streamingReasoning={isStreamingCurrent ? streamingReasoning : undefined}
                 />
                 {isLast && <div className="h-4" />}
             </div>
@@ -281,7 +391,6 @@ export const MessageList = memo(({
         effectiveFocusedIndex,
         selectedMessageId,
         messageActionHandlers,
-        messages,
         language,
         selectedProvider,
         onStopSpeak,
@@ -334,8 +443,8 @@ export const MessageList = memo(({
                 ref={virtuosoRef}
                 style={{ height: '100%', width: '100%' }}
                 data={displayMessages}
-                // Follow output only if currently streaming the last message
-                followOutput={isLoading ? 'smooth' : 'auto'}
+                // Avoid queuing smooth-scroll animations on every streamed chunk.
+                followOutput="auto"
                 atBottomStateChange={onAtBottomStateChange}
                 initialTopMostItemIndex={displayMessages.length - 1}
                 alignToBottom={true} // Start at bottom for chat feel

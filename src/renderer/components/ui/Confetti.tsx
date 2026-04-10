@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 
-import './confetti.css';
 
 interface ConfettiPiece {
     id: number

@@ -32,14 +32,14 @@ export const NewTerminalMenu: React.FC<NewTerminalMenuProps> = ({
                     <button
                         key={shell.id}
                         onClick={() => onCreateTerminal(shell.id)}
-                        className="w-full px-3 py-2 text-left text-xs font-medium hover:bg-accent/50 transition-colors flex items-center gap-2 text-foreground"
+                        className="w-full px-3 py-2 text-left typo-caption font-medium hover:bg-accent/50 transition-colors flex items-center gap-2 text-foreground"
                     >
                         <span className="opacity-50">&gt;_</span>
                         {shell.name}
                     </button>
                 ))
             ) : (
-                <div className="px-3 py-2 text-xs text-muted-foreground">
+                <div className="px-3 py-2 typo-caption text-muted-foreground">
                     {t('terminal.noShellsFound')}
                 </div>
             )}

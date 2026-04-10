@@ -20,9 +20,9 @@ export const GitRemotes: React.FC<RemotesProps> = ({ remotes, t }) => {
                     <div key={remote.name} className="bg-muted/30 rounded-xl p-3 flex items-center justify-between">
                         <div>
                             <div className="text-sm font-semibold text-foreground">{remote.name}</div>
-                            <div className="text-xs text-muted-foreground">{remote.url}</div>
+                            <div className="typo-caption text-muted-foreground">{remote.url}</div>
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2 typo-caption text-muted-foreground">
                             {remote.fetch && <span>{t('workspaceDashboard.fetch')}</span>}
                             {remote.push && <span>{t('workspaceDashboard.push')}</span>}
                         </div>

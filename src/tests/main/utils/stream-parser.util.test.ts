@@ -131,6 +131,141 @@ describe('StreamParser', () => {
         expect(chunks[0]?.tool_calls?.[0]?.function.arguments).toBe('{"scope":"system"}');
     });
 
+    it('should parse response.reasoning_text.delta events as reasoning chunks', async () => {
+        const stream = new ReadableStream({
+            start(controller) {
+                controller.enqueue(new TextEncoder().encode('data: {"type":"response.reasoning_text.delta","delta":"thinking..."}\n\n'));
+                controller.close();
+            }
+        });
+        const mockResponse = { body: stream } as never;
+
+        const chunks = [];
+        for await (const chunk of StreamParser.parseChatStream(mockResponse)) {
+            chunks.push(chunk);
+        }
+
+        expect(chunks).toHaveLength(1);
+        expect(chunks[0]?.reasoning).toBe('thinking...');
+    });
+
+    it('should emit output text from response.output_text.done when no deltas were streamed', async () => {
+        const stream = new ReadableStream({
+            start(controller) {
+                controller.enqueue(new TextEncoder().encode('data: {"type":"response.output_text.done","item_id":"msg_1","text":"Final text"}\n\n'));
+                controller.close();
+            }
+        });
+        const mockResponse = { body: stream } as never;
+
+        const chunks = [];
+        for await (const chunk of StreamParser.parseChatStream(mockResponse)) {
+            chunks.push(chunk);
+        }
+
+        expect(chunks).toHaveLength(1);
+        expect(chunks[0]?.content).toBe('Final text');
+    });
+
+    it('should avoid duplicating content when response.output_text.done follows streamed deltas', async () => {
+        const stream = new ReadableStream({
+            start(controller) {
+                controller.enqueue(new TextEncoder().encode('data: {"type":"response.output_text.delta","item_id":"msg_2","delta":"Hello"}\n\n'));
+                controller.enqueue(new TextEncoder().encode('data: {"type":"response.output_text.done","item_id":"msg_2","text":"Hello"}\n\n'));
+                controller.close();
+            }
+        });
+        const mockResponse = { body: stream } as never;
+
+        const chunks = [];
+        for await (const chunk of StreamParser.parseChatStream(mockResponse)) {
+            chunks.push(chunk);
+        }
+
+        expect(chunks).toHaveLength(1);
+        expect(chunks[0]?.content).toBe('Hello');
+    });
+
+    it('should avoid duplicating content when response.output_text.done has no item id', async () => {
+        const stream = new ReadableStream({
+            start(controller) {
+                controller.enqueue(new TextEncoder().encode('data: {"type":"response.output_text.delta","delta":"I\'ll use the Desktop folder by default."}\n\n'));
+                controller.enqueue(new TextEncoder().encode('data: {"type":"response.output_text.done","text":"I\'ll use the Desktop folder by default."}\n\n'));
+                controller.close();
+            }
+        });
+        const mockResponse = { body: stream } as never;
+
+        const chunks = [];
+        for await (const chunk of StreamParser.parseChatStream(mockResponse)) {
+            chunks.push(chunk);
+        }
+
+        expect(chunks).toHaveLength(1);
+        expect(chunks[0]?.content).toBe('I\'ll use the Desktop folder by default.');
+    });
+
+    it('should suppress duplicate text when response.output_item.done follows response.output_text.done', async () => {
+        const stream = new ReadableStream({
+            start(controller) {
+                controller.enqueue(new TextEncoder().encode('data: {"type":"response.output_text.done","item_id":"msg_3","text":"Hello from done"}\n\n'));
+                controller.enqueue(new TextEncoder().encode('data: {"type":"response.output_item.done","item":{"id":"msg_3","type":"message","content":[{"type":"output_text","text":"Hello from done"}]}}\n\n'));
+                controller.close();
+            }
+        });
+        const mockResponse = { body: stream } as never;
+
+        const chunks = [];
+        for await (const chunk of StreamParser.parseChatStream(mockResponse)) {
+            chunks.push(chunk);
+        }
+
+        expect(chunks).toHaveLength(1);
+        expect(chunks[0]?.content).toBe('Hello from done');
+    });
+
+    it('should parse response.reasoning_text.done events as reasoning chunks', async () => {
+        const stream = new ReadableStream({
+            start(controller) {
+                controller.enqueue(new TextEncoder().encode('data: {"type":"response.reasoning_text.done","text":"final reasoning"}\n\n'));
+                controller.close();
+            }
+        });
+        const mockResponse = { body: stream } as never;
+
+        const chunks = [];
+        for await (const chunk of StreamParser.parseChatStream(mockResponse)) {
+            chunks.push(chunk);
+        }
+
+        expect(chunks).toHaveLength(1);
+        expect(chunks[0]?.reasoning).toBe('final reasoning');
+    });
+
+    it('should assemble mcp call arguments deltas into tool_calls', async () => {
+        const stream = new ReadableStream({
+            start(controller) {
+                controller.enqueue(new TextEncoder().encode('data: {"type":"response.output_item.added","item":{"id":"mcp_1","call_id":"mcp_1","name":"web.search"}}\n\n'));
+                controller.enqueue(new TextEncoder().encode('data: {"type":"response.mcp_call_arguments.delta","call_id":"mcp_1","delta":"{\\"q\\":\\"ope"}\n\n'));
+                controller.enqueue(new TextEncoder().encode('data: {"type":"response.mcp_call_arguments.delta","call_id":"mcp_1","delta":"nai\\"}"}\n\n'));
+                controller.enqueue(new TextEncoder().encode('data: {"type":"response.mcp_call_arguments.done","call_id":"mcp_1"}\n\n'));
+                controller.close();
+            }
+        });
+        const mockResponse = { body: stream } as never;
+
+        const chunks = [];
+        for await (const chunk of StreamParser.parseChatStream(mockResponse)) {
+            chunks.push(chunk);
+        }
+
+        expect(chunks).toHaveLength(1);
+        expect(chunks[0]?.type).toBe('tool_calls');
+        expect(chunks[0]?.tool_calls?.[0]?.id).toBe('mcp_1');
+        expect(chunks[0]?.tool_calls?.[0]?.function.name).toBe('web.search');
+        expect(chunks[0]?.tool_calls?.[0]?.function.arguments).toBe('{"q":"openai"}');
+    });
+
     it('should finalize opencode function calls from response.output_item.done events', async () => {
         const stream = new ReadableStream({
             start(controller) {
@@ -149,6 +284,29 @@ describe('StreamParser', () => {
         expect(chunks).toHaveLength(1);
         expect(chunks[0]?.type).toBe('tool_calls');
         expect(chunks[0]?.tool_calls?.[0]?.id).toBe('tool-0');
+        expect(chunks[0]?.tool_calls?.[0]?.function.name).toBe('list_directory');
+        expect(chunks[0]?.tool_calls?.[0]?.function.arguments).toBe('{"path":"C:/Users"}');
+    });
+
+    it('should flush pending function_call deltas when response.completed arrives without done events', async () => {
+        const stream = new ReadableStream({
+            start(controller) {
+                controller.enqueue(new TextEncoder().encode('data: {"type":"response.output_item.added","item":{"id":"call_2","call_id":"call_2","name":"list_directory"}}\n\n'));
+                controller.enqueue(new TextEncoder().encode('data: {"type":"response.function_call_arguments.delta","call_id":"call_2","delta":"{\\"path\\":\\"C:/Users\\"}"}\n\n'));
+                controller.enqueue(new TextEncoder().encode('data: {"type":"response.completed","response":{"id":"resp_1","status":"completed"}}\n\n'));
+                controller.close();
+            }
+        });
+        const mockResponse = { body: stream } as never;
+
+        const chunks = [];
+        for await (const chunk of StreamParser.parseChatStream(mockResponse)) {
+            chunks.push(chunk);
+        }
+
+        expect(chunks).toHaveLength(1);
+        expect(chunks[0]?.type).toBe('tool_calls');
+        expect(chunks[0]?.tool_calls?.[0]?.id).toBe('call_2');
         expect(chunks[0]?.tool_calls?.[0]?.function.name).toBe('list_directory');
         expect(chunks[0]?.tool_calls?.[0]?.function.arguments).toBe('{"path":"C:/Users"}');
     });

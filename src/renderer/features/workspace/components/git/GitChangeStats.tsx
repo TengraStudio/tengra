@@ -17,31 +17,31 @@ export const GitChangeStats: React.FC<ChangeStatsProps> = ({ diffStats, gitData,
 
         <div className="grid grid-cols-3 gap-4">
             <div className="bg-muted/30 rounded-xl p-4">
-                <div className="text-xs text-muted-foreground mb-1">{t('workspaceDashboard.filesChanged')}</div>
+                <div className="typo-caption text-muted-foreground mb-1">{t('workspaceDashboard.filesChanged')}</div>
                 <div className="text-2xl font-bold text-foreground">{diffStats.total.files}</div>
             </div>
             <div className="bg-muted/30 rounded-xl p-4">
-                <div className="text-xs text-muted-foreground mb-1">{t('workspaceDashboard.linesAdded')}</div>
+                <div className="typo-caption text-muted-foreground mb-1">{t('workspaceDashboard.linesAdded')}</div>
                 <div className="text-2xl font-bold text-success">+{diffStats.total.added}</div>
             </div>
             <div className="bg-muted/30 rounded-xl p-4">
-                <div className="text-xs text-muted-foreground mb-1">{t('workspaceDashboard.linesDeleted')}</div>
+                <div className="typo-caption text-muted-foreground mb-1">{t('workspaceDashboard.linesDeleted')}</div>
                 <div className="text-2xl font-bold text-destructive">-{diffStats.total.deleted}</div>
             </div>
         </div>
 
         {gitData.changedFiles.length > 0 && (
             <div className="flex flex-col gap-4">
-                <h4 className="text-xs font-bold text-muted-foreground">{t('workspaceDashboard.changedFiles')}</h4>
+                <h4 className="typo-caption font-bold text-muted-foreground">{t('workspaceDashboard.changedFiles')}</h4>
 
                 {gitData.stagedFiles.length > 0 && (
                     <div className="space-y-2">
-                        <div className="text-xs font-semibold text-success px-2">{t('workspaceDashboard.stagedFiles')}</div>
+                        <div className="typo-caption font-semibold text-success px-2">{t('workspaceDashboard.stagedFiles')}</div>
                         <div className="space-y-1">
                             {gitData.stagedFiles.map((file: GitFile, i: number) => (
                                 <div
                                     key={`staged-${file.path}-${i}`}
-                                    className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors text-xs"
+                                    className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors typo-caption"
                                 >
                                     {getStatusIcon(file.status)}
                                     <span className="flex-1 truncate text-foreground">{file.path}</span>
@@ -63,12 +63,12 @@ export const GitChangeStats: React.FC<ChangeStatsProps> = ({ diffStats, gitData,
 
                 {gitData.unstagedFiles.length > 0 && (
                     <div className="space-y-2">
-                        <div className="text-xs font-semibold text-warning px-2">{t('workspaceDashboard.unstagedFiles')}</div>
+                        <div className="typo-caption font-semibold text-warning px-2">{t('workspaceDashboard.unstagedFiles')}</div>
                         <div className="space-y-1">
                             {gitData.unstagedFiles.map((file: GitFile, i: number) => (
                                 <div
                                     key={`unstaged-${file.path}-${i}`}
-                                    className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors text-xs"
+                                    className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors typo-caption"
                                 >
                                     {getStatusIcon(file.status)}
                                     <span className="flex-1 truncate text-foreground">{file.path}</span>

@@ -14,7 +14,7 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
 
         <div className="grid grid-cols-1 gap-6">
             <div className="space-y-2">
-                <Label className="text-xs font-medium text-muted-foreground">
+                <Label className="typo-caption font-medium text-muted-foreground">
                     {t('workspaces.buildCommand')}
                 </Label>
                 <div className="relative">
@@ -32,7 +32,7 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
             </div>
 
             <div className="space-y-2">
-                <Label className="text-xs font-medium text-muted-foreground">
+                <Label className="typo-caption font-medium text-muted-foreground">
                     {t('workspaces.testCommand')}
                 </Label>
                 <div className="relative">
@@ -50,7 +50,7 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
             </div>
 
             <div className="space-y-2">
-                <Label className="text-xs font-medium text-muted-foreground">
+                <Label className="typo-caption font-medium text-muted-foreground">
                     {t('workspaces.lintCommand')}
                 </Label>
                 <div className="relative">
@@ -69,7 +69,7 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label className="text-xs font-medium text-muted-foreground">
+                    <Label className="typo-caption font-medium text-muted-foreground">
                         {t('workspaces.outputDir')}
                     </Label>
                     <Input
@@ -83,7 +83,7 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label className="text-xs font-medium text-muted-foreground">
+                    <Label className="typo-caption font-medium text-muted-foreground">
                         {t('workspaces.envFile')}
                     </Label>
                     <Input

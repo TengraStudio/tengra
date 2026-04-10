@@ -3,6 +3,7 @@ import {
     calculateToolCallSignature,
     classifyAiIntent,
     composeDeterministicAnswer,
+    doesEvidenceSatisfyIntent,
     getAiToolLoopBudget,
     isLowSignalProgressContent,
 } from '@shared/utils/ai-runtime.util';
@@ -69,6 +70,7 @@ describe('ai-runtime.util', () => {
 
     it('marks low-signal in-progress text as recoverable', () => {
         expect(isLowSignalProgressContent('masaüstünüzdeki dosyaları kontrol ediyorum')).toBe(true);
+        expect(isLowSignalProgressContent('to verify or determine where to place the project. I\'ll use the Desktop folder by default.')).toBe(true);
         expect(isLowSignalProgressContent('Masaüstünüzde 12 dosya var.')).toBe(false);
     });
 
@@ -119,6 +121,39 @@ describe('ai-runtime.util', () => {
 
         expect(directoryAnswer).toContain('1 dosya ve 3 klasor');
         expect(writeAnswer).toBe('Completed tool work: Wrote 47 bytes to C:/repo/app/page.tsx');
+    });
+
+    it('treats resolve_path as solid filesystem evidence for single lookup', () => {
+        const resolvePathAnswer = composeDeterministicAnswer({
+            intent: 'single_lookup',
+            content: '',
+            language: 'en',
+            toolResults: [{
+                toolCallId: 'call-rp-1',
+                name: 'resolve_path',
+                result: {
+                    path: 'C:/Users/agnes/Desktop/projects/todo-app',
+                    pathExists: false,
+                    parentExists: true,
+                },
+                success: true,
+            }],
+        });
+
+        const satisfaction = doesEvidenceSatisfyIntent('single_lookup', [{
+            id: 'ev-1',
+            timestamp: Date.now(),
+            kind: 'tool_result',
+            toolName: 'resolve_path',
+            summary: 'Resolved path: C:/Users/agnes/Desktop/projects/todo-app',
+            scope: 'turn',
+            sourceSurface: 'chat',
+            isReusable: true,
+            satisfactionScore: 0.7,
+        }]);
+
+        expect(resolvePathAnswer).toContain('does not exist yet');
+        expect(satisfaction).toBe('complete');
     });
 
     it('builds consistent presentation metadata from tool evidence', () => {

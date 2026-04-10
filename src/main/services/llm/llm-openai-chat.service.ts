@@ -40,6 +40,7 @@ export interface OpenAIBodyOptions {
     systemMode?: SystemMode;
     reasoningEffort?: string;
     workspaceRoot?: string;
+    accountId?: string;
 }
 
 /** Request context for OpenAI-compatible calls. */
@@ -50,6 +51,7 @@ export interface OpenAIRequestContext {
     provider?: string;
     includeProviderHint?: boolean;
     workspaceRoot?: string;
+    accountId?: string;
 }
 
 const OPENAI_RETRY_POLICY = {
@@ -122,13 +124,19 @@ export class LLMOpenAIChatService {
         options: OpenAIBodyOptions,
         requestContext: OpenAIRequestContext
     ): Promise<OpenAIResponse> {
-        const { endpoint, apiKey, signal, provider, includeProviderHint, workspaceRoot } = requestContext;
+        const { endpoint, apiKey, signal, provider, includeProviderHint, workspaceRoot, accountId } = requestContext;
         const body = this.buildOpenAIBody(messages, options);
         if (includeProviderHint && provider) {
             body.provider = provider;
         }
         if (includeProviderHint && typeof workspaceRoot === 'string' && workspaceRoot.trim().length > 0) {
             body.workspaceRoot = workspaceRoot;
+        }
+        if (includeProviderHint && typeof accountId === 'string' && accountId.trim().length > 0) {
+            body.metadata = {
+                ...(body.metadata && typeof body.metadata === 'object' ? body.metadata as Record<string, RuntimeValue> : {}),
+                accountId,
+            };
         }
         const requestInit = this.createOpenAIRequest(body, apiKey);
         if (signal) { requestInit.signal = signal; }
@@ -171,13 +179,19 @@ export class LLMOpenAIChatService {
         options: OpenAIBodyOptions,
         requestContext: OpenAIRequestContext
     ): AsyncGenerator<OpenAIStreamYield> {
-        const { endpoint, apiKey, signal, provider, includeProviderHint, workspaceRoot } = requestContext;
+        const { endpoint, apiKey, signal, provider, includeProviderHint, workspaceRoot, accountId } = requestContext;
         const body = this.buildOpenAIBody(messages, options);
         if (includeProviderHint && provider) {
             body.provider = provider;
         }
         if (includeProviderHint && typeof workspaceRoot === 'string' && workspaceRoot.trim().length > 0) {
             body.workspaceRoot = workspaceRoot;
+        }
+        if (includeProviderHint && typeof accountId === 'string' && accountId.trim().length > 0) {
+            body.metadata = {
+                ...(body.metadata && typeof body.metadata === 'object' ? body.metadata as Record<string, RuntimeValue> : {}),
+                accountId,
+            };
         }
         const acceptHeader = provider === 'nvidia' ? 'application/json' : 'text/event-stream';
         const requestInit = this.createOpenAIRequest(body, apiKey, { 'Accept': acceptHeader });

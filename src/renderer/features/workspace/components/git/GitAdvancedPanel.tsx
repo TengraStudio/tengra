@@ -117,7 +117,7 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ workspacePat
                         <button
                             onClick={() => void handleCreateBranch()}
                             disabled={!newBranchName.trim()}
-                            className="inline-flex items-center gap-1.5 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 disabled:opacity-50"
+                            className="inline-flex items-center gap-1.5 px-3 rounded-lg bg-primary text-primary-foreground typo-caption font-medium hover:bg-primary/90 disabled:opacity-50"
                         >
                             <Plus className="w-3.5 h-3.5" />
                             {t('common.create')}
@@ -125,7 +125,7 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ workspacePat
                     </div>
 
                     <div className="rounded-lg border border-border/40 bg-muted/20 p-3 space-y-2">
-                        <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center justify-between typo-caption">
                             <span className="text-muted-foreground">{t('git.branch')}</span>
                             <div className="flex gap-1">
                                 <button
@@ -152,12 +152,12 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ workspacePat
             <Card title={t('git.advanced.repositoryStatistics')} icon={<GitCompareArrows className="w-4 h-4 text-primary" />} className="xl:col-span-2">
                 <div className="flex flex-wrap items-center gap-2">
                     <Field value={statsDays} onChange={setStatsDays} placeholder={t('placeholder.days')} className="w-28" />
-                    <button onClick={() => void git.fetchStats(Number(statsDays) || 365)} className="px-3 h-9 rounded-lg border border-border/40 hover:bg-muted/40 text-xs">{t('git.advanced.refreshStats')}</button>
-                    <button onClick={() => void git.exportStats(Number(statsDays) || 365)} className="px-3 h-9 rounded-lg border border-border/40 hover:bg-muted/40 text-xs">{t('git.advanced.export')}</button>
+                    <button onClick={() => void git.fetchStats(Number(statsDays) || 365)} className="px-3 h-9 rounded-lg border border-border/40 hover:bg-muted/40 typo-caption">{t('git.advanced.refreshStats')}</button>
+                    <button onClick={() => void git.exportStats(Number(statsDays) || 365)} className="px-3 h-9 rounded-lg border border-border/40 hover:bg-muted/40 typo-caption">{t('git.advanced.export')}</button>
                 </div>
                 {git.stats ? (
                     <>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 typo-caption">
                             <div className="rounded-lg border border-border/40 bg-muted/20 p-3">
                                 <div className="text-muted-foreground">{t('git.advanced.totalCommits')}</div>
                                 <div className="text-xl font-semibold text-foreground">{git.stats.totalCommits}</div>
@@ -171,7 +171,7 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ workspacePat
                                 <div className="text-xl font-semibold text-foreground">{git.stats.fileStats.length}</div>
                             </div>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 typo-caption">
                             <div className="rounded-lg border border-border/40 bg-muted/20 p-3 space-y-1">
                                 <div className="font-semibold text-muted-foreground">{t('git.advanced.topAuthors')}</div>
                                 {topAuthors.map(item => (
@@ -195,12 +195,12 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ workspacePat
                         </div>
                     </>
                 ) : (
-                    <div className="text-xs text-muted-foreground rounded-lg border border-border/40 bg-muted/20 p-3">{t('git.advanced.statsNotLoaded')}</div>
+                    <div className="typo-caption text-muted-foreground rounded-lg border border-border/40 bg-muted/20 p-3">{t('git.advanced.statsNotLoaded')}</div>
                 )}
             </Card>
 
             {git.isLoading && (
-                <div className="xl:col-span-2 text-xs text-muted-foreground inline-flex items-center gap-2">
+                <div className="xl:col-span-2 typo-caption text-muted-foreground inline-flex items-center gap-2">
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" /> {t('git.advanced.refreshingData')}
                 </div>
             )}

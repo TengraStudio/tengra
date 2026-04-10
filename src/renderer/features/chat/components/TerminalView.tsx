@@ -99,7 +99,7 @@ function TerminalTextOutput({
     t: (key: string) => string;
 }) {
     return (
-        <div className="space-y-3 font-mono text-xs leading-5">
+        <div className="space-y-3 font-mono typo-caption leading-5">
             {stdout && <pre className="whitespace-pre-wrap text-emerald-200">{stdout}</pre>}
             {stderr && (
                 <pre className="whitespace-pre-wrap rounded-md border border-amber-400/30 bg-amber-400/10 p-2 text-amber-200">
@@ -167,8 +167,8 @@ export const TerminalView = React.memo(({
             >
                 <div className="flex min-w-0 items-center gap-2">
                     <SquareTerminal className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-xs font-semibold text-muted-foreground">{t('tools.command')}</span>
-                    <span className="truncate font-mono text-xs text-foreground/90">{command}</span>
+                    <span className="typo-caption font-semibold text-muted-foreground">{t('tools.command')}</span>
+                    <span className="truncate font-mono typo-caption text-foreground/90">{command}</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <Badge variant={getStatusVariant(statusType)} className="text-xxs">
@@ -180,7 +180,7 @@ export const TerminalView = React.memo(({
 
             {!expanded && (
                 <div className="px-4 pb-4">
-                    <pre className="max-h-24 overflow-hidden whitespace-pre-wrap font-mono text-xs text-muted-foreground">
+                    <pre className="max-h-24 overflow-hidden whitespace-pre-wrap font-mono typo-caption text-muted-foreground">
                         {preview || (isExecuting ? t('tools.executingCommand') : t('tools.noOutput'))}
                     </pre>
                 </div>
@@ -232,7 +232,7 @@ export const TerminalView = React.memo(({
                             </div>
                         </div>
                         <div className="max-h-80 overflow-y-auto p-3">
-                            <div className="mb-3 flex flex-wrap items-center gap-2 font-mono text-xs text-emerald-300">
+                            <div className="mb-3 flex flex-wrap items-center gap-2 font-mono typo-caption text-emerald-300">
                                 <span>&gt;</span>
                                 <span className="break-all">{command}</span>
                                 {typeof exitCode === 'number' && (
@@ -240,7 +240,7 @@ export const TerminalView = React.memo(({
                                 )}
                             </div>
                             {isExecuting && (
-                                <div className="mb-3 flex items-center gap-2 text-xs text-slate-300">
+                                <div className="mb-3 flex items-center gap-2 typo-caption text-slate-300">
                                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                     <span>{t('tools.executingCommand')}</span>
                                 </div>

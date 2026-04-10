@@ -144,7 +144,7 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
                     </SettingsField>
 
                     <SettingsField label={t('workspaceWizard.selectRootDesc')}>
-                        <div className="flex h-11 items-center rounded-2xl border border-border/20 bg-background px-4 text-xs text-muted-foreground">
+                        <div className="flex h-11 items-center rounded-2xl border border-border/20 bg-background px-4 typo-caption text-muted-foreground">
                             <Folder className="mr-2 h-3.5 w-3.5 text-primary/50" />
                             <span className="truncate">
                                 {settings.general.workspacesBasePath || t('common.auto')}
@@ -164,7 +164,7 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
                         <div className="typo-body font-medium text-foreground">
                             {t('workspaceWizard.selectFolder')}
                         </div>
-                        <div className="mt-2 text-xs leading-5 text-muted-foreground">
+                        <div className="mt-2 typo-caption leading-5 text-muted-foreground">
                             {settings.general.workspacesBasePath || t('workspaceWizard.selectRootDesc')}
                         </div>
                     </div>
@@ -172,7 +172,7 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
                         <div className="typo-body font-medium text-foreground">
                             {t('general.terminalBackend')}
                         </div>
-                        <div className="mt-2 text-xs leading-5 text-muted-foreground">
+                        <div className="mt-2 typo-caption leading-5 text-muted-foreground">
                             {settings.general.defaultTerminalBackend ?? t('general.terminalBackendIntegrated')}
                         </div>
                     </div>

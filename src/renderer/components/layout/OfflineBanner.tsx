@@ -2,7 +2,6 @@ import { useTranslation } from '@renderer/i18n';
 import { WifiOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import './offline-banner.css';
 
 /**
  * Persistent banner displayed when the app loses network connectivity.

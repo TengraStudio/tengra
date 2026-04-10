@@ -56,13 +56,13 @@ export const Collaborators: React.FC<CollaboratorsProps> = ({ awareness }) => {
                 <div
                     key={clientId}
                     title={user.name}
-                    className="inline-block h-8 w-8 rounded-full ring-2 ring-background flex items-center justify-center text-xs font-bold text-foreground shadow-sm"
+                    className="inline-block h-8 w-8 rounded-full ring-2 ring-background flex items-center justify-center typo-caption font-bold text-foreground shadow-sm"
                     style={{ backgroundColor: user.color }}
                 >
                     {user.name.charAt(0).toUpperCase()}
                 </div>
             ))}
-            <span className="pl-4 text-xs font-medium text-muted-foreground">
+            <span className="pl-4 typo-caption font-medium text-muted-foreground">
                 {list.length} {list.length === 1 ? 'collaborator' : 'collaborators'}
             </span>
         </div>

@@ -28,12 +28,12 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
                     <Bot className="w-4 h-4 text-primary" />
                     {t('workspaces.councilAI')}
                 </h3>
-                <p className="text-xs text-muted-foreground">{t('workspaces.councilAIDesc')}</p>
+                <p className="typo-caption text-muted-foreground">{t('workspaces.councilAIDesc')}</p>
             </div>
             <div className="flex items-center gap-3 bg-muted/40 p-1 rounded-full border border-border/40 px-3 py-1">
                 <Label
                     htmlFor="council-enabled"
-                    className="text-xs font-medium text-muted-foreground cursor-pointer"
+                    className="typo-caption font-medium text-muted-foreground cursor-pointer"
                 >
                     {t('workspaces.councilEnabledLabel')}
                 </Label>
@@ -93,7 +93,7 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
                             <div className="flex items-center gap-3">
                                 <div
                                     className={cn(
-                                        'w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs  transition-colors',
+                                        'w-8 h-8 rounded-full flex items-center justify-center font-bold typo-caption  transition-colors',
                                         formData.councilMembers.includes(agent.id)
                                             ? 'bg-primary text-primary-foreground'
                                             : 'bg-muted/30'

@@ -71,6 +71,7 @@ export const sessionConversationStreamRequestSchema =
     sessionConversationCompleteRequestSchema.extend({
         chatId: z.string(),
         assistantId: z.string().optional(),
+        streamId: z.string().optional(),
         optionsJson: z.record(z.string(), z.unknown()).optional(),
     });
 

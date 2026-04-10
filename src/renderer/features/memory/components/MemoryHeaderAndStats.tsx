@@ -123,7 +123,7 @@ const StatCardContent = ({
         <>
             <div className="flex items-center gap-2">
                 <Icon className={cn('w-4 h-4', color)} />
-                <span className="text-xs font-bold text-muted-foreground/60">
+                <span className="typo-caption font-bold text-muted-foreground/60">
                     {t(label)}
                 </span>
             </div>

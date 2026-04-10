@@ -120,6 +120,30 @@ fn extract_gemini_parts(v: &Value) -> (String, String, Value) {
             }));
         }
     }
+    if let Some(step) = v.get("step").and_then(Value::as_object) {
+        let case = step.get("case").and_then(Value::as_str).unwrap_or_default();
+        let value = step.get("value").unwrap_or(&Value::Null);
+        if case == "plannerResponse" {
+            if let Some(thinking) = value.get("thinking").and_then(Value::as_str) {
+                reasoning.push_str(thinking);
+            }
+            if let Some(modified) = value.get("modifiedResponse").and_then(Value::as_str) {
+                content.push_str(modified);
+            }
+            if let Some(step_tools) = value.get("toolCalls").and_then(Value::as_array) {
+                for tool in step_tools {
+                    tool_calls.push(json!({
+                        "id": format!("gemini-tool-{}", tool_calls.len()),
+                        "type": "function",
+                        "function": {
+                            "name": tool.get("name").and_then(Value::as_str).unwrap_or("tool"),
+                            "arguments": tool.get("arguments").cloned().unwrap_or_else(|| json!({})).to_string()
+                        }
+                    }));
+                }
+            }
+        }
+    }
     let tool_calls = if tool_calls.is_empty() {
         Value::Null
     } else {
@@ -230,5 +254,35 @@ mod tests {
             Some("hello")
         );
         assert_eq!(translated["model"].as_str(), Some("gemini-3-flash"));
+    }
+
+    #[test]
+    fn translates_antigravity_planner_response_payload() {
+        let value = json!({
+            "response": {
+                "modelVersion": "gemini-3-flash",
+                "step": {
+                    "case": "plannerResponse",
+                    "value": {
+                        "thinking": "planning...",
+                        "modifiedResponse": "final answer"
+                    }
+                },
+                "usageMetadata": {
+                    "promptTokenCount": 1,
+                    "candidatesTokenCount": 2,
+                    "totalTokenCount": 3
+                }
+            }
+        });
+        let translated = translate_gemini_response(value);
+        assert_eq!(
+            translated["choices"][0]["message"]["reasoning_content"].as_str(),
+            Some("planning...")
+        );
+        assert_eq!(
+            translated["choices"][0]["message"]["content"].as_str(),
+            Some("final answer")
+        );
     }
 }

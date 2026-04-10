@@ -18,7 +18,7 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({ formData, setF
                         <div className="text-sm font-medium text-foreground">
                             {t('workspaces.fileWatching')}
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="typo-caption text-muted-foreground">
                             {t('workspaces.fileWatchingDesc')}
                         </div>
                     </div>
@@ -37,7 +37,7 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({ formData, setF
                         <div className="text-sm font-medium text-foreground">
                             {t('workspaces.indexing')}
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="typo-caption text-muted-foreground">
                             {t('workspaces.indexingDesc')}
                         </div>
                     </div>
@@ -56,7 +56,7 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({ formData, setF
                         <div className="text-sm font-medium text-foreground">
                             {t('workspaces.autoSave')}
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="typo-caption text-muted-foreground">
                             {t('workspaces.autoSaveDesc')}
                         </div>
                     </div>

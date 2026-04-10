@@ -17,7 +17,6 @@ import {
     terminalWriteResponseSchema
 } from '../utils/terminal-ipc';
 
-import '@xterm/xterm/css/xterm.css';
 
 export function DetachedTerminalWindow() {
     const { t } = useTranslation();
@@ -168,7 +167,7 @@ export function DetachedTerminalWindow() {
         <div className="h-screen w-screen bg-background flex flex-col overflow-hidden">
             <div className="h-10 border-b border-border flex items-center justify-between px-3 bg-card/70">
                 <div className="min-w-0">
-                    <div className="text-xs font-medium truncate">{title}</div>
+                    <div className="typo-caption font-medium truncate">{title}</div>
                     <div className="tw-text-10 text-muted-foreground truncate">
                         {[shell, cwd].filter(Boolean).join(' - ')}
                     </div>
@@ -193,7 +192,7 @@ export function DetachedTerminalWindow() {
             <div className="flex-1 min-h-0 relative">
                 <div ref={containerRef} className="h-full w-full" />
                 {isExited && (
-                    <div className="absolute inset-x-0 bottom-0 bg-background/80 border-t border-border px-3 py-2 text-xs text-muted-foreground">
+                    <div className="absolute inset-x-0 bottom-0 bg-background/80 border-t border-border px-3 py-2 typo-caption text-muted-foreground">
                         {t('terminal.detachedExited')}
                     </div>
                 )}

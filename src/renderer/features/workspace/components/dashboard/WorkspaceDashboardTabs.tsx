@@ -101,7 +101,7 @@ export const WorkspaceDashboardTabsContent: React.FC<WorkspaceDashboardTabsProps
                     <button
                         onClick={() => { void handleSearch(); }}
                         disabled={isSearching || searchQuery.trim().length < 2}
-                        className="px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:bg-primary/90 disabled:opacity-50"
+                        className="px-4 py-1.5 bg-primary text-primary-foreground rounded-lg typo-caption font-medium hover:bg-primary/90 disabled:opacity-50"
                     >
                         {isSearching ? t('common.searching') : t('common.search')}
                     </button>
