@@ -1,5 +1,5 @@
 import { appLogger } from '@main/logging/logger';
-import { HuggingFaceService } from '@main/services/llm/huggingface.service';
+import { HuggingFaceService, HFConversionProgress } from '@main/services/llm/huggingface.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
@@ -412,7 +412,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
                     preset: typeof options?.preset === 'string' ? options.preset as 'balanced' | 'quality' | 'speed' | 'tiny' : undefined,
                     modelId: validateModelId(options?.modelId ?? '') ?? undefined
                 },
-                (progress) => {
+                (progress: HFConversionProgress) => {
                     event.sender.send('hf:conversion-progress', progress);
                 }
             );

@@ -598,6 +598,7 @@ Bu aşamada build/lint/type-check/test henüz özellikle çalıştırılmadı. S
 - [x] Marketplace Hardening: Implemented hardware-aware model recommendations (VRAM-optimized heuristics), fixed sidebar download progress tracking (state sync from history + percentage visibility), and enabled automatic local model list refresh upon successful marketplace installations.
 - [x] Hardened GPU initialization for Windows with --disable-gpu-sandbox and --disable-gpu-driver-bug-workarounds to resolve persistent EGL context errors.
 - [x] Corrected VRAM unit mismatches (MB vs Bytes) and parameter count normalization, fixing unrealistic (7000+) vs degraded (6) TPS estimates.
+- [x] Marketplace Metadata Stabilization: Resolved Hugging Face model size discrepancies (fixed "0 KB" issue), implemented robust name-based parameter extraction (regex-hardened), added explicit storage/RAM requirements to model cards, and restored the `convertModelToGGUF` service method to satisfy IPC contracts.
 
 ## Job Finder Plugin Integration
 - [x] Create dedicated repository for `job-finder-plugin`

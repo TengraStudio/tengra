@@ -2,8 +2,7 @@ import type {
     MarketplaceItem,
     MarketplaceLanguage,
     MarketplaceModel,
-    MarketplaceModelPerformanceEstimate,
-    MarketplaceTheme
+    MarketplaceModelPerformanceEstimate 
 } from '@shared/types/marketplace';
 import { compareVersions } from '@shared/utils/extension.util';
 import { 
@@ -63,7 +62,6 @@ export function MarketCard({
     onActivateLanguage?: (item: MarketplaceLanguage) => void;
 }) {
     const { t } = useTranslation();
-    const themeItem = item.itemType === 'theme' ? (item as MarketplaceTheme) : null;
     const languageItem = item.itemType === 'language' ? (item as MarketplaceLanguage) : null;
     const modelItem = item.itemType === 'model' ? (item as MarketplaceModel) : null;
     const installedVersion = typeof item.installedVersion === 'string' ? item.installedVersion : null;
@@ -162,9 +160,8 @@ export function MarketCard({
                         </div>
                     </div>
 
-                    {/* Action Buttons - Premium Floating Style */}
                     <div className="flex items-start gap-2.5 h-fit shrink-0">
-                        {item.installed && !hasUpdate && onUninstall && (item as any).removable !== false && (
+                        {item.installed && !hasUpdate && onUninstall && item.removable !== false && (
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -230,27 +227,38 @@ export function MarketCard({
                 <div className="mt-auto pt-5">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            {/* Downloads Count */}
-                            {(item as any).downloads !== undefined && (item as any).downloads > 0 && (
-                                <div className="flex items-center gap-1.5 opacity-40 group-hover:opacity-70 transition-opacity">
-                                    <Download className="h-3.5 w-3.5" />
-                                    <span className="text-[11px] font-black tracking-tight">{formatNumber((item as any).downloads)}</span>
-                                </div>
-                            )}
-
                             {/* Performance metrics for models */}
                             {performance && (
                                 <div className="flex items-center gap-3">
+                                    {/* Disk Requirement */}
+                                    {performance.estimatedDiskBytes > 0 && (
+                                        <div className="flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-opacity" title={t('marketplace.estimatedDisk')}>
+                                            <Package className="h-3.5 w-3.5 text-blue-500/80" />
+                                            <span className="text-[11px] font-black tracking-tight">{formatBytes(performance.estimatedDiskBytes)}</span>
+                                        </div>
+                                    )}
+
+                                    {/* RAM Requirement */}
                                     {performance.estimatedMemoryBytes > 0 && (
-                                        <div className="flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-opacity">
-                                            <Zap className="h-3.5 w-3.5 text-amber-500" />
+                                        <div className="flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-opacity" title={t('marketplace.estimatedRam')}>
+                                            <Zap className="h-3.5 w-3.5 text-amber-500/80" />
                                             <span className="text-[11px] font-black tracking-tight">{formatBytes(performance.estimatedMemoryBytes)}</span>
                                         </div>
                                     )}
-                                    <div className="flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-opacity">
-                                        <RefreshCw className="h-3.5 w-3.5 text-primary" />
+
+                                    {/* TPS info */}
+                                    <div className="flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-opacity" title={t('marketplace.estimatedTps')}>
+                                        <RefreshCw className="h-3.5 w-3.5 text-primary/80" />
                                         <span className="text-[11px] font-black tracking-tight">{performance.estimatedTokensPerSecond.toFixed(0)} t/s</span>
                                     </div>
+                                </div>
+                            )}
+
+                            {/* Downloads Count */}
+                            {(item as any).downloads !== undefined && (item as any).downloads > 0 && !performance && (
+                                <div className="flex items-center gap-1.5 opacity-40 group-hover:opacity-70 transition-opacity">
+                                    <Download className="h-3.5 w-3.5" />
+                                    <span className="text-[11px] font-black tracking-tight">{formatNumber((item as any).downloads)}</span>
                                 </div>
                             )}
                         </div>

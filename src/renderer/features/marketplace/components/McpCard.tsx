@@ -1,4 +1,4 @@
-import { CircleDot, Package, Shield, Trash2, CheckCircle2, Zap } from 'lucide-react';
+import { Package, Shield, Trash2, CheckCircle2, Zap } from 'lucide-react';
 
 interface McpAction {
     name: string;

@@ -12,6 +12,7 @@ export interface MarketplaceItem {
     installed?: boolean;
     installedVersion?: string;
     updateAvailable?: boolean;
+    removable?: boolean;
 }
 
 export interface MarketplaceTheme extends MarketplaceItem {
