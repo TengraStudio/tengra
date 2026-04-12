@@ -1,52 +1,47 @@
-# Tengra 🏮
+# Tengra
 
-Tengra is a powerful, open-source AI assistant designed to streamline your development workflow by integrating various LLM providers (Ollama, Antigravity, GitHub Copilot) into a unified, high-performance desktop application.
+Tengra is a professional, high-performance desktop AI assistant designed for enterprise-grade development workflows. It integrates advanced LLM providers, including Ollama, Antigravity, and GitHub Copilot, into a unified and secure orchestration environment.
 
-> [!IMPORTANT]
-> **LEGAL DISCLAIMER**: This project is an unofficial client and is not affiliated with, endorsed by, or connected to GitHub, Microsoft, Google, Anthropic, or any of their subsidiaries. All trademarks and brand names are the property of their respective owners. Tengra provides interoperability layers for research and educational purposes. **Users are responsible for ensuring their usage of third-party APIs complies with the respective providers' Terms of Service.**
+## Critical Notice
+This project is an unofficial client and is not affiliated with, endorsed by, or connected to GitHub, Microsoft, Google, Anthropic, or any of their subsidiaries. All trademarks and brand names are the property of their respective owners. Tengra provides interoperability layers for research and educational purposes. Users are responsible for ensuring their usage of third-party APIs complies with the respective providers' Terms of Service.
 
-## ✨ Key Features
+## Core Capabilities
 
-- **Multi-Model Support**: Chat with Ollama (Local), Antigravity, Copilot, and more.
-- **Agent Council**: Multi-agent collaboration (Planner, Executor, Critic) for complex tasks.
-- **Browser Extension**: AI-powered browser control with DOM manipulation and content extraction.
-- **SSH Workspaces**: Edit files and manage projects on remote servers directly via SSH.
-- **Project Management**: Built-in task tracking and `TODO.md` integration.
-- **Offline First**: Optimized for privacy and local-first data storage.
+- **Multi-Provider Integration**: Native support for Ollama (local), Antigravity (cloud), and GitHub Copilot.
+- **Agent Orchestration**: Advanced multi-agent collaboration system utilizing Planner, Executor, and Critic roles for complex reasoning tasks.
+- **Integrated Development Environment**: Seamless interaction with local and remote workspaces, featuring file system management and terminal integration.
+- **Remote Workspaces**: Direct SSH integration for managing projects and executing operations on remote infrastructure.
+- **Privacy and Security**: Local-first architecture with encrypted sensitive data storage and zero-telemetry by default for core AI interactions.
 
-## 🔌 Provider Compatibility Notes (Research)
+## Technical Architecture
 
-- **Groq**: Supported through OpenAI-compatible chat completions (`https://api.groq.com/openai/v1/chat/completions`).
-- **Kimi (Moonshot)**: Prototype OpenAI-compatible routing is available via `https://api.moonshot.ai/v1` with provider id `kimi`.
-- **Cursor**: Compatibility route exists as a proxy integration point (`provider: cursor`), but Cursor private auth/session protocols are **not** reverse-engineered in this project.
-  - Only lawful black-box compatibility is in scope.
-  - Users must provide valid credentials/tokens through supported account/proxy flows.
+Tengra is built on a robust, multi-process architecture based on Electron 40 and React 18. Performance-critical operations are delegated to native services written in Rust and Go, ensuring low latency and high reliability.
 
----
+- **Main Process**: Node.js-based orchestration layer for service management and system integration.
+- **Renderer Process**: High-density React application utilizing specialized stores for state management and an IPC-bridge for secure communication.
+- **Native Microservices**: Rust-based services for database operations (PGlite/SQLite) and Go-based proxy for optimized network routing.
+- **Local Inference**: Native integration with Ollama and Llama.cpp for high-performance local LLM execution.
 
-## 📚 Documentation Index
+## Documentation Index
 
 | Document | Description |
 |----------|-------------|
-| [AI_RULES.md](./AI_RULES.md) | **MANDATORY**: Coding standards and AI agent guidelines. |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | System design, project structure, and database schema. |
-| [API.md](./API.md) | IPC channels and internal REST API. |
-| [CONTRIBUTING.md](./CONTRIBUTING.md) | Development guide, setup instructions, and contribution rules. |
-| [SECURITY.md](./SECURITY.md) | Security policy, encryption standards, and vulnerability reporting. |
-| [GUIDE.md](./GUIDE.md) | User guide, model connection, and troubleshooting. |
-| [TODO.md](./TODO.md) | Project backlog and priority tasks. |
-| [IPC_CHANNELS.md](./IPC_CHANNELS.md) | Full reference of all 600+ IPC channels. |
+| [AI_RULES.md](./AI_RULES.md) | Mandatory coding standards and agent behavioral guidelines. |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Comprehensive system design, process model, and database schemas. |
+| [API.md](./API.md) | IPC contract definitions and internal communication protocols. |
+| [CONTRIBUTING.md](./CONTRIBUTING.md) | Development setup instructions and contribution standards. |
+| [SECURITY.md](./SECURITY.md) | Security policy, encryption protocols, and vulnerability reporting. |
+| [GUIDE.md](./GUIDE.md) | Technical usage guide and connectivity troubleshooting. |
+| [TODO.md](./TODO.md) | Project roadmap and prioritized backlog. |
 
----
-
-## 🚀 Getting Started
+## Installation and Setup
 
 ### Prerequisites
-- **Node.js**: v20+
-- **Go**: v1.21+ (for native proxy)
-- **Rust**: Latest stable (for native token/model services)
+- Node.js v20.x or higher
+- Go v1.21+ (for native proxy infrastructure)
+- Rust (latest stable) for core native services
 
-### Installation
+### Initial Setup
 ```bash
 git clone https://github.com/TengraStudio/tengra.git
 cd tengra
@@ -54,28 +49,20 @@ npm install
 npm run setup-build-env
 ```
 
-### Running the App
+### Execution
 ```bash
-# Development mode
+# Start development environment
 npm run dev
 
-# Build for production
+# Compile production build
 npm run build
 
-# Package installers
-npm run build:exe    # Windows
-npm run build:mac    # macOS
-npm run build:linux  # Linux
+# Generate platform-specific installers
+npm run build:exe    # Windows (x64)
+npm run build:mac    # macOS (Universal)
+npm run build:linux  # Linux (AppImage/deb)
 ```
 
-## 🤝 Contributing
+## Governance and Licensing
 
-We welcome contributions! Please see our [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines and our code of conduct.
-
-## 🛡️ Security & Privacy
-
-Tengra is built with privacy in mind. It uses a "Bring Your Own Key" (BYOK) model. No API keys or personal data are stored on our servers; everything remains on your local machine. See [SECURITY.md](./SECURITY.md) for more.
-
-## 📄 License
-
-This project is licensed under the **GNU General Public License v3.0 (GPLv3)** - see the [LICENSE](LICENSE) file for details.
+Tengra is an open-source project licensed under the GNU General Public License v3.0 (GPLv3). Contributions are subject to the project's standards of type safety and performance as outlined in the documentation.

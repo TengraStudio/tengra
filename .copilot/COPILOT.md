@@ -1,12 +1,12 @@
 # TENGRA AGENT COMMANDMENTS (COPILOT EDITION)
 
-> **STRICT ADHERENCE REQUIRED.** Failure to follow rules results in termination of the session.
+STRICT ADHERENCE REQUIRED. Failure to follow rules results in termination of the session.
 
 ## MANDATORY: Read Documentation First
 
 1. Read [AGENTS.md](../../AGENTS.md) - Complete project guide
-2. Read [docs/AI_RULES.md](../../docs/AI_RULES.md) - Comprehensive coding standards
-3. Check [docs/TODO.md](../../docs/TODO.md) - Current tasks and priorities
+2. Read [AI_RULES.md](../../AI_RULES.md) - Comprehensive coding standards
+3. Check [TODO.md](../../TODO.md) - Current tasks and priorities
 
 ## Quick Reference
 
@@ -20,30 +20,27 @@ npm run test         # Run tests
 ```
 
 ### Workflow
-1. Read docs/AI_RULES.md
+1. Read AI_RULES.md
 2. Make changes
-3. `npm run build && npm run lint`
-4. Update docs/TODO.md (mark `[x]`, don't delete)
-5. Update `docs/changelog/data/changelog.entries.json`
-6. Run `npm run changelog:sync`
-7. Commit and push
+3. npm run build && npm run lint
+4. Update TODO.md (mark [x], don't delete)
+5. Commit and push
 
 ## Forbidden Actions
 
-### Never Use
-- `any` type - FORBIDDEN
-- `console.log` - Use `appLogger` instead
-- `@ts-ignore` - NEVER
-- `// eslint-disable` - NEVER
+### NEVER USE
+- any type - FORBIDDEN
+- console.log - Use appLogger instead
+- @ts-ignore - NEVER
+- // eslint-disable - NEVER
 - Full file deletion to edit
-- `while(true)` without bounds
-- Placeholders or TODO comments in code
+- while(true) without bounds
 
 ### Protected Paths (Never Modify)
-- `.git/`
-- `node_modules/`
-- `vendor/`
-- `.env`, `.env.local`
+- .git/
+- node_modules/
+- vendor/
+- .env, .env.local
 
 ## Code Standards
 
@@ -55,113 +52,32 @@ npm run test         # Run tests
 5. Minimal variable scope
 
 ### Type Safety
-- Strict types, no `any`
+- Strict types, no any
 - All public methods need JSDoc
 - Check all return values
 - Handle all Promise rejections
 
 ### Performance
-1. Lazy Loading: `React.lazy()` for heavy components
-2. Memoization: `useMemo`/`useCallback` for computations
+1. Lazy Loading: React.lazy() for heavy components
+2. Memoization: useMemo/useCallback for computations
 3. IPC Batching: Combine IPC calls to minimize overhead
 4. Virtualization: Virtualize lists > 50 items
 5. Lazy Services: Main services use lazy instantiation
 6. Indexing: Mandatory indexes for query-critical fields
-7. Disposal: Call `dispose()`/cleanup for all resources
+7. Disposal: Call dispose()/cleanup for all resources
 
 ### i18n
 - Never hardcode user-facing strings
-- Use `t('key')` for translations
-- Update both `en.ts` and `tr.ts`
+- Use t('key') for translations
 
 ## Project Structure
 
 ```
 src/
 ├── main/           # Electron main process
-│   ├── services/   # Backend services (by domain)
-│   ├── ipc/        # IPC handlers
-│   └── mcp/        # MCP tools
 ├── renderer/       # React frontend
-│   ├── features/   # Feature modules
-│   └── components/ # UI components
 ├── shared/         # Shared types/utils
+├── native/         # Native services (Rust)
+├── services/       # Native services (cliproxy)
 └── tests/          # All tests
 ```
-
-## Service Pattern
-
-```typescript
-import { BaseService } from '@main/services/base.service'
-import { appLogger } from '@main/logging/logger'
-import { getErrorMessage } from '@shared/utils/error.util'
-
-export class MyService extends BaseService {
-    constructor(
-        private dependency1: Dependency1,
-        private dependency2: Dependency2
-    ) {
-        super('MyService')
-    }
-
-    async initialize(): Promise<void> {
-        appLogger.info('MyService', 'Initializing...')
-    }
-
-    async doWork(input: Input): Promise<Result> {
-        if (!input) {
-            throw new Error('Input is required')
-        }
-
-        try {
-            const result = await this.dependency1.process(input)
-            return { success: true, data: result }
-        } catch (error) {
-            appLogger.error('MyService', 'doWork failed', error as Error)
-            throw error
-        }
-    }
-}
-```
-
-## IPC Handler Pattern
-
-```typescript
-import { createIpcHandler } from '@main/utils/ipc-wrapper.util'
-
-export const registerMyHandler = createIpcHandler(
-    'my:action',
-    async (_event, param: string) => {
-        // Implementation
-        return result
-    }
-)
-```
-
-## Logging
-
-```typescript
-import { appLogger } from '@main/logging/logger'
-
-// Correct usage
-appLogger.info('ServiceName', 'Operation completed')
-appLogger.warn('ServiceName', 'Resource low', { remaining: 10 })
-appLogger.error('ServiceName', 'Operation failed', error as Error)
-
-// NEVER use
-console.log('message')
-```
-
-## Checklist Before Committing
-
-- [ ] Code compiles without errors (`npm run build`)
-- [ ] No lint warnings (`npm run lint`)
-- [ ] No TypeScript errors (`npm run type-check`)
-- [ ] All tests pass (`npm run test`)
-- [ ] TODO.md updated
-- [ ] Changelog updated
-- [ ] No `any` types used
-- [ ] No `console.log` used
-- [ ] All public methods have JSDoc
-- [ ] User-facing strings use `t()`
-

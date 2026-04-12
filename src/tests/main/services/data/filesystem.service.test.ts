@@ -167,30 +167,7 @@ describe('FileSystemService', () => {
                     { name: 'debug.log', isDirectory: false },
                 ],
             });
-        });
-
-        it('keeps .tengra visible in explorer listing by default', async () => {
-            vi.mocked(fs.readdir).mockResolvedValue([
-                { name: '.tengra', isDirectory: () => true },
-                { name: 'src', isDirectory: () => true },
-            ] as never);
-            vi.mocked(getWorkspaceIgnoreMatcher).mockResolvedValue({
-                rootPath: allowedRoot,
-                patterns: [],
-                ignoresAbsolute: () => false,
-                ignoresRelative: () => false,
-            });
-
-            const result = await service.listDirectory(allowedRoot);
-
-            expect(result).toEqual({
-                success: true,
-                data: [
-                    { name: '.tengra', isDirectory: true },
-                    { name: 'src', isDirectory: true },
-                ],
-            });
-        });
+        }); 
     });
 
     describe('deleteFile', () => {

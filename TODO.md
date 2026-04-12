@@ -1,4 +1,4 @@
-# Tengra performance Optimization TODO
+# Tengra Performance Optimization TODO
 
 ## Build-Time Optimizations
 - [x] Configure Terser for production minification (2 passes, mangle toplevel)

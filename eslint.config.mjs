@@ -10,8 +10,7 @@ export default tseslint.config(
         ignores: [
             'dist/**',
             'logs/**',
-            'node_modules/**',
-            'vendor/**',
+            'node_modules/**', 
             'scripts/audit-i18n.ts',
             'scripts/debug-i18n.ts',
             'scripts/extension-cli.ts',

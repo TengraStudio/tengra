@@ -1,26 +1,26 @@
 # AI Agent Rules & Guidelines for Tengra
 
-> **STOP!** Read the [MASTER COMMANDMENTS](.agent/rules/MASTER_COMMANDMENTS.md) first.
+STOP! Read the [MASTER COMMANDMENTS](.agent/rules/MASTER_COMMANDMENTS.md) first.
 
-> **CRITICAL**: The [MASTER COMMANDMENTS](.agent/rules/MASTER_COMMANDMENTS.md) are your core logic. You MUST also follow the **Boy Scout Rule**: Every edit MUST fix at least one existing lint warning or type issue in the file. NO EXCEPTIONS. FAILURE TO DO SO RESULTS IN IMMEDIATE TERMINATION.
+CRITICAL: The [MASTER COMMANDMENTS](.agent/rules/MASTER_COMMANDMENTS.md) are your core logic. You MUST also follow the Boy Scout Rule: Every edit MUST fix at least one existing lint warning or type issue in the file. NO EXCEPTIONS. FAILURE TO DO SO RESULTS IN IMMEDIATE TERMINATION.
 
-## 🚨 CRITICAL SUMMARY (TL;DR)
-> **DANGER**: Failure to strictly follow these rules will result in immediate disqualification and task termination.
+## CRITICAL SUMMARY (TL;DR)
+DANGER: Failure to strictly follow these rules will result in immediate disqualification and task termination.
 
-1.  **NO `any` / `unknown`**: TypeScript errors are critical failures. NO EXCEPTIONS.
-2.  **NO `console.log`**: Use `appLogger`. All stdout must be clean.
-3.  **NO PLACEHOLDERS**: Write final, production-ready code with complete logic.
-4.  **BUILD & LINT**: Never deliver code that fails `npm run build`, `npm run lint`, or `npm run type-check`.
-5.  **NASA RULES**: Max 150 lines per function. Fixed loop bounds mandatory.
-6.  **BOY SCOUT RULE**: Mandatory. Every edit MUST fix at least one existing lint/type issue.
-7.  **ADVANCED HARDENING**: Strictly follow [Advanced Agent Hardening Rules](.agent/rules/advanced-hardening.md).
-8.  **FRIDAY FORBIDDEN**: NO COMMITS OR MAJOR DEPLOYMENTS ON FRIDAYS. Fridays are for testing, documentation, and review ONLY.
-9. **TEST PASS MANDATORY**: Never commit code that fails any test. `npm run test` must pass 100%.
-10. **READ RULES FIRST**: You MUST read rule files (`MASTER_COMMANDMENTS.md`, `AI_RULES.md`, `advanced-hardening.md`) using `view_file` at the start of every session before coding. (Locations: `.agent/rules/`, root).
-11. **CSS-FIRST UI**: In all renderer JSX, use semantic class names only; do not use Tailwind utility chains directly.
-12. **SINGLE STYLESHEET**: All renderer styles must live in `src/renderer/index.css`. Do not create or import extra renderer CSS files.
-13. **ROOT TOKEN SYSTEM**: Spacing, radius, border, shadow, transition, and typography values must be defined under `:root` in `src/renderer/index.css`.
-14. **CLEAN COMMUNICATION**: Never use slang/noise, and never narrate which internal rules were applied.
+1.  NO any / unknown: TypeScript errors are critical failures. NO EXCEPTIONS.
+2.  NO console.log: Use appLogger. All stdout must be clean.
+3.  NO PLACEHOLDERS: Write final, production-ready code with complete logic.
+4.  BUILD & LINT: Never deliver code that fails npm run build, npm run lint, or npm run type-check.
+5.  NASA RULES: Max 150 lines per function. Fixed loop bounds mandatory.
+6.  BOY SCOUT RULE: Mandatory. Every edit MUST fix at least one existing lint/type issue.
+7.  ADVANCED HARDENING: Strictly follow [Advanced Agent Hardening Rules](.agent/rules/advanced-hardening.md).
+8.  FRIDAY FORBIDDEN: NO COMMITS OR MAJOR DEPLOYMENTS ON FRIDAYS. Fridays are for testing, documentation, and review ONLY.
+9. TEST PASS MANDATORY: Never commit code that fails any test. npm run test must pass 100%.
+10. READ RULES FIRST: You MUST read rule files (MASTER_COMMANDMENTS.md, AI_RULES.md, advanced-hardening.md) using view_file at the start of every session before coding. (Locations: .agent/rules/, root).
+11. CSS-FIRST UI: In all renderer JSX, use semantic class names only; do not use Tailwind utility chains directly.
+12. SINGLE STYLESHEET: All renderer styles must live in src/renderer/index.css. Do not create or import extra renderer CSS files.
+13. ROOT TOKEN SYSTEM: Spacing, radius, border, shadow, transition, and typography values must be defined under :root in src/renderer/index.css.
+14. CLEAN COMMUNICATION: Never use slang/noise, and never narrate which internal rules were applied.
 
 ---
 
@@ -46,28 +46,26 @@
 
 ### What is Tengra?
 
-Tengra is a **desktop AI assistant application** built with Electron, React, and TypeScript. It provides:
+Tengra is a desktop AI assistant application built with Electron, React, and TypeScript. It provides:
 
-- **Multi-LLM Support**: Connects to multiple AI providers (OpenAI, Anthropic, Google, GitHub Copilot, Ollama)
-- **Local AI**:
+- Multi-LLM Support: Connects to multiple AI providers (OpenAI, Anthropic, Google, GitHub Copilot, Ollama, Antigravity)
+- Local AI:
   - Ollama: Core local LLM provider.
   - Llama.cpp: High-performance C++ inference.
   - SD-CPP (Stable Diffusion C++): Local image generation.
-    - **Fallback**: Automatic fallback to Pollinations if SD-CPP fails.
-    - **Readiness**: Non-blocking readiness check on startup if enabled.
-- **Project Management**: Analyzes and manages code projects
-- **Agent System**: Multi-agent collaboration for complex tasks
-- **Secure Token Management**: Encrypted storage with automatic refresh
+- Project Management: Analyzes and manages code projects
+- Agent System: Multi-agent collaboration for complex tasks
+- Secure Token Management: Encrypted storage with automatic refresh
 
 ### Technology Stack
 
 | Layer | Technology |
 |-------|------------|
-| Desktop Framework | Electron 33+ |
+| Desktop Framework | Electron 40+ |
 | Frontend | React 18, TypeScript, Tailwind CSS |
 | Backend | Node.js (Main Process) |
 | Database | PGlite (PostgreSQL in-process) |
-| Local AI | Ollama, Llama.cpp |
+| Local AI | Ollama, Llama.cpp, SD-CPP |
 | IPC | Electron IPC with typed bridge |
 
 ---
@@ -77,7 +75,7 @@ Tengra is a **desktop AI assistant application** built with Electron, React, and
 These rules, derived from NASA/JPL's "Power of 10" guidelines, are adapted for this project:
 
 ### Rule 1: Simple Control Flow
-- Avoid `goto`, `setjmp`, `longjmp`, and direct/indirect recursion.
+- Avoid goto, setjmp, longjmp, and direct/indirect recursion.
 - Keep control flow simple and verifiable.
 
 ### Rule 2: Fixed Loop Bounds
@@ -118,7 +116,7 @@ function processMessage(msg: Message): void {
 
 ### Rule 6: Minimal Variable Scope
 - Declare variables at the smallest possible scope.
-- Prefer `const` over `let`, never use `var`.
+- Prefer const over let, never use var.
 
 ### Rule 7: Check Return Values
 - Every function call with a return value must be checked.
@@ -140,15 +138,15 @@ await service.doSomething(); // Ignored return
 - Keep type definitions simple and readable.
 
 ### Rule 9: Restrict Pointer Use
-- In TypeScript: Avoid `any` and `unknown` types completely.
+- In TypeScript: Avoid any and unknown types completely.
 - Use explicit interfaces or generics with constraints.
-- Use strict null checks (`strictNullChecks: true`).
+- Use strict null checks (strictNullChecks: true).
 
 ### Rule 10: Compile with All Warnings
-- All code must pass `tsc --noEmit` without errors.
+- All code must pass tsc --noEmit without errors.
 - ESLint must pass with zero warnings.
-- Never use `// @ts-ignore` or `// eslint-disable`.
-- **Boy Scout Rule**: Every time you edit a file, you MUST fix at least one existing lint warning or type issue in that file.
+- Never use // @ts-ignore or // eslint-disable.
+- Boy Scout Rule: Every time you edit a file, you MUST fix at least one existing lint warning or type issue in that file.
 
 ---
 
@@ -160,37 +158,21 @@ await service.doSomething(); // Ignored return
 tengra/
 ├── src/
 │   ├── main/                 # Electron main process
-│   │   ├── services/         # Backend services (by domain)
-│   │   │   ├── llm/          # AI model services
-│   │   │   ├── data/         # Data persistence
-│   │   │   ├── project/      # Project management
-│   │   │   ├── security/     # Auth, encryption
-│   │   │   ├── system/       # System utilities
-│   │   │   ├── analysis/     # Metrics, telemetry
-│   │   │   ├── ui/           # Notifications, themes
-│   │   │   └── proxy/        # Proxy management
+│   │   ├── services/         # Backend services
 │   │   ├── ipc/              # IPC handlers
-│   │   ├── startup/          # App initialization
-│   │   ├── logging/          # Logger infrastructure
-│   │   └── utils/            # Utility functions
+│   │   ├── mcp/              # MCP system
+│   │   └── logging/          # Logger
 │   ├── renderer/             # React frontend
 │   │   ├── features/         # Feature modules
-│   │   ├── components/       # Reusable components
-│   │   ├── contexts/         # React contexts
-│   │   ├── hooks/            # Custom hooks
-│   │   └── styles/           # Global styles
-│   ├── shared/               # Shared code
-│   │   ├── types/            # TypeScript types
-│   │   └── utils/            # Shared utilities
-│   ├── scripts/              # Build scripts
-│   └── tests/                # All tests
-│       ├── unit/             # Unit tests
-│       ├── integration/      # Integration tests
-│       └── e2e/              # End-to-end tests
-├── ARCHITECTURE.md           # System design and technologies (Consolidated)
-├── API.md                    # IPC and API contracts (Consolidated)
-├── AI_RULES.md               # Rules, onboarding, and standard guides
-├── TODO.md                   # Backlog and TODOs
+│   │   └── components/       # UI components
+│   ├── shared/               # Shared code (types, utils, schemas)
+│   ├── native/               # Native microservices (Rust)
+│   ├── services/             # Native microservices (cliproxy)
+│   └── tests/                # All tests (unit, main, renderer, shared, e2e)
+├── resources/          # Static assets
+├── scripts/            # Build scripts
+├── logs/               # Application logs
+└── package.json        # Configuration
 ```
 
 ### 3.2 Service Placement Guide
@@ -203,7 +185,6 @@ tengra/
 | Security | `services/security/` | TokenService, KeyRotationService, RateLimitService |
 | System | `services/system/` | CommandService, SystemService |
 | Analysis | `services/analysis/` | TelemetryService, PerformanceService |
-| UI | `services/ui/` | NotificationService, ClipboardService |
 | Proxy | `services/proxy/` | ProxyService, QuotaService |
 
 ### 3.3 File Naming Conventions
@@ -271,12 +252,12 @@ export class MyService extends BaseService {
 
 ### 5.1 Mandatory Rules
 
-1.  **Log files** MUST be placed in `logs/` directory only
-2.  **Test scripts** that create log files MUST be placed in `scripts/testScripts/` directory
-3.  **Files WITHOUT extensions are FORBIDDEN**
-4.  Valid log extensions: `.log`, `.txt`, `.json`
-5.  Log file format: `{service}_{date}.log`
-6.  **Debugging Logs**: When an AI/agent/LLM creates a log file for debugging (format: .txt, .json, or .log), it MUST be created in the `logs/` folder at the project root. This folder is gitignored.
+1.  Log files MUST be placed in logs/ directory only
+2.  Test scripts that create log files MUST be placed in scripts/testScripts/ directory
+3.  Files WITHOUT extensions are FORBIDDEN
+4.  Valid log extensions: .log, .txt, .json
+5.  Log file format: {service}_{date}.log
+6.  Debugging Logs: When an AI/agent/LLM creates a log file for debugging (format: .txt, .json, or .log), it MUST be created in the logs/ folder at the project root. This folder is gitignored.
 
 ### 5.2 Logger Usage
 
@@ -328,7 +309,7 @@ async function riskyOperation(): Promise<Result> {
 
 ### 7.1 JobSchedulerService Usage
 
-For recurring tasks, ALWAYS use `JobSchedulerService`:
+For recurring tasks, ALWAYS use JobSchedulerService:
 
 ```typescript
 // In service constructor or init
@@ -351,7 +332,7 @@ this.jobScheduler.registerRecurringJob(
 ## 8. Authentication & Tokens
 
 1. NEVER log tokens or secrets
-2. Always use `SecurityService.encryptSync()` for storage
+2. Always use SecurityService.encryptSync() for storage
 3. Validate tokens before use
 4. Handle expired tokens gracefully
 
@@ -361,14 +342,16 @@ this.jobScheduler.registerRecurringJob(
 
 ### 9.1 Test Location
 
-All tests MUST be in `tests/` at the root:
+All tests MUST be in src/tests/:
+
 
 ```
-tests/
-├── unit/               # Unit tests (isolated)
-├── integration/        # Integration tests (multiple units)
-├── e2e/                # End-to-end tests (full app)
-└── fixtures/           # Test data and mocks
+src/tests/
+├── unit/               # Unit tests
+├── main/               # Main process tests
+├── renderer/           # Renderer process tests
+├── shared/             # Shared code tests
+└── e2e/                # End-to-end tests
 ```
 
 ---
@@ -402,7 +385,7 @@ type Status = 'pending' | 'complete' | 'failed';
 
 ### 10.2 Import Rules - Use Path Aliases
 
-**ALWAYS use path aliases instead of relative paths (`../..`)**
+ALWAYS use path aliases instead of relative paths (../..)
 
 | Alias | Maps To | Usage |
 |-------|---------|-------|
@@ -413,11 +396,11 @@ type Status = 'pending' | 'complete' | 'failed';
 
 ### 10.3 UI Styling Rules (CSS-First, Strict)
 
-1. All renderer JSX must use semantic class names defined in `src/renderer/index.css`.
-2. Tailwind utility chains are forbidden in renderer JSX, including `src/renderer/components/ui/`.
-3. Forbidden tokens include (not limited to): `text-*`, `font-*`, `leading-*`, `tracking-*`, `p*`, `m*`, `w-*`, `h-*`, `flex*`, `grid*`, `gap-*`, `items-*`, `justify-*`, `rounded-*`, `border-*`, `shadow-*`, `ring-*`, `bg-*`, `opacity-*`, `transition*`.
-4. Design primitives (typography, spacing, radius, border width, shadow, transition timing, z-index) must be declared under `:root` in `src/renderer/index.css`.
-5. Do not add new renderer CSS files; extend `src/renderer/index.css`.
+1. All renderer JSX must use semantic class names defined in src/renderer/index.css.
+2. Tailwind utility chains are forbidden in renderer JSX, including src/renderer/components/ui/.
+3. Forbidden tokens include (not limited to): text-*, font-*, leading-*, tracking-*, p*, m*, w-*, h-*, flex*, grid*, gap-*, items-*, justify-*, rounded-*, border-*, shadow-*, ring-*, bg-*, opacity-*, transition*.
+4. Design primitives (typography, spacing, radius, border width, shadow, transition timing, z-index) must be declared under :root in src/renderer/index.css.
+5. Do not add new renderer CSS files; extend src/renderer/index.css.
 6. When touching JSX with utility classes, migrate that block to semantic classes in the same change.
 
 ---
@@ -426,20 +409,20 @@ type Status = 'pending' | 'complete' | 'failed';
 
 1. Do not create files without extensions
 2. Do not create files in root directory (except configs)
-3. Do not use `console.log` (use `appLogger`)
-4. Do not use `any` and `unknown` type
-5. Do not use `// @ts-ignore` or `// eslint-disable`
+3. Do not use console.log (use appLogger)
+4. Do not use any and unknown type
+5. Do not use // @ts-ignore or // eslint-disable
 6. Do not swallow errors silently
 7. Do not log tokens or secrets
 8. Do not create circular dependencies
-9. Do not use `var` keyword
+9. Do not use var keyword
 10. Do not leave TODO comments in production code
 11. Do not commit commented-out code
 12. Do not use synchronous file operations in main thread
 13. Do not create memory leaks (event listeners without cleanup)
 14. Do not use deprecated APIs
 15. Do not use utility class tokens directly in renderer JSX
-16. Do not create/import additional renderer CSS files outside `src/renderer/index.css`
+16. Do not create/import additional renderer CSS files outside src/renderer/index.css
 17. Do not explain to the user which internal rules were applied
 18. Do not use slang, mocking, or low-signal filler in assistant messages
 
@@ -462,8 +445,8 @@ type Status = 'pending' | 'complete' | 'failed';
 3. Batch related tool calls in parallel when safe; avoid redundant command reruns.
 4. Validate in this order unless the task requires otherwise:
    1. Targeted lint/type checks for touched files.
-   2. Full `npm run type-check`.
-   3. Full `npm run lint`.
-   4. Full `npm run build`.
+   2. Full npm run type-check.
+   3. Full npm run lint.
+   4. Full npm run build.
 5. If a command fails, stop, capture root cause, fix, then re-run only required checks.
 6. Every response must include verification status (passed/failed/not-run) for executed checks.

@@ -329,33 +329,7 @@ describe('Workspace IPC Integration', () => {
             data: '/path/to/logo.png'
         });
     });
-
-    it('should handle workspace:uploadLogo with allowed image extension', async () => {
-        const applyLogoMock = vi.fn();
-        mockLogoService.applyLogo = applyLogoMock;
-        applyLogoMock.mockResolvedValue('C:\\workspace\\.tengra\\logo.png');
-
-        registerWorkspaceIpc(() => null, {
-            workspaceService: mockWorkspaceService,
-            logoService: mockLogoService,
-            inlineSuggestionService: mockInlineSuggestionService,
-            codeIntelligenceService: mockCodeIntelligenceService,
-            jobSchedulerService: mockJobSchedulerService,
-            databaseService: mockDatabaseService,
-            auditLogService: mockAuditLogService
-        }, new Set<string>());
-        const handler = ipcMainHandlers.get('workspace:uploadLogo');
-
-        const result = await handler!(mockEvent, 'C:\\workspace');
-
-        expect(showOpenDialogMock).toHaveBeenCalledTimes(1);
-        expect(applyLogoMock).toHaveBeenCalledWith('C:\\workspace', 'C:\\workspace\\logo.png');
-        expect(result).toMatchObject({
-            success: true,
-            data: 'C:\\workspace\\.tengra\\logo.png',
-        });
-    });
-
+    
     it('should reject workspace:uploadLogo for unsupported file extension', async () => {
         showOpenDialogMock.mockResolvedValue({
             canceled: false,

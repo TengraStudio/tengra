@@ -49,7 +49,6 @@ function initializeWorkspaceServiceTestState(): void {
         const normalizedPath = String(filePath).replace(/\\/g, '/');
         if (
             normalizedPath.endsWith('/.gitignore') ||
-            normalizedPath.endsWith('/.tengraignore') ||
             normalizedPath.endsWith('/.git/info/exclude')
         ) {
             const missingFileError = new Error('ENOENT') as NodeJS.ErrnoException;
@@ -459,7 +458,6 @@ describe('WorkspaceService diagnostics and LSP behavior', () => {
                 return 'ignored/\n';
             }
             if (
-                normalizedPath.endsWith('/.tengraignore') ||
                 normalizedPath.endsWith('/.git/info/exclude')
             ) {
                 const missingFileError = new Error('ENOENT') as NodeJS.ErrnoException;

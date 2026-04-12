@@ -177,12 +177,9 @@ export class ExternalRuntimeDependencyService extends BaseService {
 
     private getSdCppCandidatePaths(): string[] {
         const localAppData = process.env['LOCALAPPDATA'] ?? '';
-        const userProfile = process.env['USERPROFILE'] ?? '';
-        const home = process.env['HOME'] ?? userProfile;
         const executableName = process.platform === 'win32' ? 'sd.exe' : 'sd';
         return [
             path.join(localAppData, 'Programs', 'Tengra', 'runtime', 'bin', executableName),
-            path.join(home, '.tengra', 'runtime', 'bin', executableName),
             executableName,
         ];
     }

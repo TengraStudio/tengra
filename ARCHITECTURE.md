@@ -26,7 +26,7 @@ The Main process serves as the central hub. It manages the application's lifecyc
 - Native microservice coordination
 
 ### Utility Process (Background Tasks)
-Introduced for offloading CPU-intensive or long-running Node.js tasks (e.g., Log rotation, Telemetry, Heavy Data Processing) from the Main process. It runs in a separate, isolated Worker thread with its own event loop and V8 instance.
+Introduced for offloading CPU-intensive or long-running Node.js tasks (e.g., Log rotation, Telemetry, Heavy Data Processing) from the Main process. It runs in a separate, isolated worker process with its own event loop and V8 instance.
 
 ### Inter-Process Communication (IPC)
 Communication between the Renderer and Main process occurs over a secure IPC bridge.
@@ -48,27 +48,29 @@ Tengra follows a strict organizational pattern to manage its multi-process archi
 
 ```text
 tengra/
-├── src/                # Primary source code
-│   ├── main/           # Electron Main process
-│   ├── renderer/       # Electron Renderer process
-│   ├── shared/         # Universal types and constants
-│   └── services/       # Native microservices (Rust and Go)
-├── resources/          # Static assets and native binaries
-├── scripts/            # Automation scripts
-├── tests/              # Centralized test suites
-├── vendor/             # External source trees
-├── logs/               # Application logs (gitignored)
-└── AI_RULES.md         # AI agent guidelines (Consolidated)
+├── src/
+│   ├── main/                 # Electron main process
+│   ├── renderer/             # React frontend
+│   │   ├── features/         # Feature modules
+│   │   └── components/       # UI components
+│   ├── shared/               # Shared code (types, utils, schemas)
+│   ├── native/               # Native microservices (Rust)
+│   ├── services/             # Native microservices (cliproxy)
+│   └── tests/                # All tests (unit, main, renderer, shared, e2e)
+├── resources/          # Static assets
+├── scripts/            # Build scripts
+├── logs/               # Application logs
+└── package.json        # Configuration
 ```
 
-### Main Process Source (`src/main`)
-- `ipc/`: IPC handlers (50+ handlers)
-- `services/`: Domain-organized services (LLM, Data, Project, Security, System, Analysis, Proxy)
+### Main Process Source (src/main)
+- `ipc/`: IPC handlers (over 50 handlers)
+- `services/`: Domain-organized services
 - `startup/`: Application initialization
 - `logging/`: Logger infrastructure
 - `repositories/`: Data repositories
 
-### Renderer Process Source (`src/renderer`)
+### Renderer Process Source (src/renderer)
 - `features/`: Feature modules (Chat, Settings, Projects, Terminal, Models, MCP, Memory)
 - `components/`: Reusable UI components
 - `context/`: React contexts
@@ -79,26 +81,26 @@ tengra/
 
 ## 3. Database Schema Reference
 
-Tengra uses a standalone Rust-based database service (SQLite) and PGlite for internal state.
+Tengra utilizes specialized database services for different persistence requirements.
 
 ### Chat Domain
-- **`chats`**: Stores chat conversations.
-- **`messages`**: Stores individual messages with vector embeddings for semantic search.
-- **`folders`**: Organizes chats into named folders.
+- **chats**: Stores chat conversations.
+- **messages**: Stores individual messages with vector embeddings for semantic search.
+- **folders**: Organizes chats into named folders.
 
 ### Project Domain
-- **`projects`**: Stores development project configurations and workspace details.
-- **`council_sessions`**: Stores AI council deliberation sessions.
+- **projects**: Stores development project configurations and workspace details.
+- **council_sessions**: Stores AI council deliberation sessions.
 
 ### Knowledge & Memory Domain
-- **`advanced_memories`**: Long-term memory system with validation and decay.
-- **`code_symbols`**: Indexed code symbols for code intelligence.
-- **`semantic_fragments`**: Vector search fragments.
+- **advanced_memories**: Long-term memory system with validation and decay.
+- **code_symbols**: Indexed code symbols for code intelligence.
+- **semantic_fragments**: Vector search fragments.
 
 ### System Domain
-- **`token_usage`**: Tracks LLM token consumption and cost.
-- **`audit_logs`**: Security and operations audit trail.
-- **`linked_accounts`**: OAuth/authentication linked account storage.
+- **token_usage**: Tracks LLM token consumption and cost.
+- **audit_logs**: Security and operations audit trail.
+- **linked_accounts**: OAuth/authentication linked account storage.
 
 ---
 
@@ -106,14 +108,15 @@ Tengra uses a standalone Rust-based database service (SQLite) and PGlite for int
 
 Tengra delegates performance-critical tasks to specialized microservices.
 
-### Go Proxy (CLIProxy-Embed)
-- Request routing for external LLMs.
-- Auth header injection.
-- Streaming optimization.
+### Go Proxy (cliproxy-runtime)
+- Request routing for external LLM providers.
+- Authentication header injection and security scrubbing.
+- Specialized streaming optimization for high concurrency.
 
-### Rust Token Service
-- Monitors token expiration.
-- Executes automated refresh flows.
+### Rust Native Services
+- **Storage Service**: High-performance SQLite/PGlite management.
+- **Memory Service**: Native vector search and embedding management.
+- **Token Service**: Security monitoring and automated refresh flows.
 
 ---
 
@@ -123,4 +126,4 @@ Tengra delegates performance-critical tasks to specialized microservices.
 - **Circuit Breaker**: Resilience pattern for external service calls.
 - **Repository Pattern**: Data access abstraction.
 - **Event-Driven Architecture**: Loose coupling via EventBus.
-- **Lazy Loading**: On-demand service creation to reduce startup time.
+- **Lazy Loading**: On-demand service creation to optimize startup time.

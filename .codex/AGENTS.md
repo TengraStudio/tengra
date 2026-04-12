@@ -1,24 +1,24 @@
 # AI Agent Guide for Tengra
 
-> **CRITICAL**: Read this document completely before making any changes to the codebase.
+CRITICAL: Read this document completely before making any changes to the codebase.
 
 ## Quick Start
 
-1. **READ RULES FIRST**: Call `view_file` on [.agent/rules/MASTER_COMMANDMENTS.md](.agent/rules/MASTER_COMMANDMENTS.md) and [docs/AI_RULES.md](docs/AI_RULES.md) before ANY code work.
-2. Check [docs/TODO.md](docs/TODO.md) - Current tasks and priorities.
-3. **VALIDATE**: Run `npm run build && npm run lint && npm run type-check && npm run test` before every commit.
-4. **FRIDAY BAN**: No commits on Fridays. NO EXCEPTIONS.
+1. READ RULES FIRST: Call view_file on [.agent/rules/MASTER_COMMANDMENTS.md](.agent/rules/MASTER_COMMANDMENTS.md) and AI_RULES.md before ANY code work.
+2. Check TODO.md - Current tasks and priorities.
+3. VALIDATE: Run npm run build && npm run lint && npm run type-check && npm run test before every commit.
+4. FRIDAY BAN: No commits on Fridays. NO EXCEPTIONS.
 
 
 ## Project Overview
 
-**Tengra** is a desktop AI assistant application built with Electron, React, and TypeScript. It provides multi-LLM support, project management, terminal integration, and extensibility via MCP (Model Context Protocol) plugins.
+Tengra is a desktop AI assistant application built with Electron, React, and TypeScript. It provides multi-LLM support, project management, terminal integration, and extensibility via MCP (Model Context Protocol) plugins.
 
 ### Technology Stack
 
 | Layer | Technology |
 |-------|------------|
-| Desktop Framework | Electron 33+ |
+| Desktop Framework | Electron 40+ |
 | Frontend | React 18, TypeScript, Tailwind CSS |
 | Backend | Node.js (Main Process) |
 | Database | PGlite (PostgreSQL in-process) |
@@ -60,43 +60,31 @@
 tengra/
 ├── src/
 │   ├── main/                 # Electron main process
-│   │   ├── services/         # Backend services (by domain)
-│   │   │   ├── llm/          # AI model services
-│   │   │   ├── data/         # Data persistence
-│   │   │   ├── project/      # Project management
-│   │   │   ├── security/     # Auth, encryption
-│   │   │   ├── system/       # System utilities
-│   │   │   ├── analysis/     # Metrics, telemetry
-│   │   │   ├── proxy/        # Proxy management
-│   │   │   └── external/     # External services
+│   │   ├── services/         # Backend services
 │   │   ├── ipc/              # IPC handlers
-│   │   ├── startup/          # App initialization
-│   │   ├── logging/          # Logger infrastructure
-│   │   ├── mcp/              # MCP plugin system
-│   │   └── utils/            # Utility functions
+│   │   ├── mcp/              # MCP system
+│   │   └── logging/          # Logger
 │   ├── renderer/             # React frontend
 │   │   ├── features/         # Feature modules
-│   │   ├── components/       # Reusable components
-│   │   ├── contexts/         # React contexts
-│   │   ├── hooks/            # Custom hooks
-│   │   ├── store/            # State management
-│   │   ├── i18n/             # Translations (8 languages)
-│   │   └── themes/           # Theme system
-│   ├── shared/               # Shared code
-│   └── services/             # Native microservices (Rust, Go)
-├── docs/                     # Documentation
-├── scripts/                  # Build scripts
-└── tests/                    # Test suites
+│   │   └── components/       # UI components
+│   ├── shared/               # Shared code (types, utils, schemas)
+│   ├── native/               # Native microservices (Rust)
+│   ├── services/             # Native microservices (cliproxy)
+│   └── tests/                # All tests (unit, main, renderer, shared, e2e)
+├── resources/          # Static assets
+├── scripts/            # Build scripts
+├── logs/               # Application logs
+└── package.json        # Configuration
 ```
 
 ## Service Architecture
 
 ### Core Principles
 
-1. **BaseService Pattern**: All services extend `BaseService`
-2. **Dependency Injection**: Services are managed by DI container
-3. **Domain Organization**: Services grouped by responsibility
-4. **Lifecycle Hooks**: `initialize()` and `cleanup()` methods
+1. BaseService Pattern: All services extend BaseService
+2. Dependency Injection: Services are managed by DI container
+3. Domain Organization: Services grouped by responsibility
+4. Lifecycle Hooks: initialize() and cleanup() methods
 
 ### Service Template
 
@@ -177,12 +165,12 @@ export const registerValidatedHandler = createValidatedIpcHandler(
 
 ### IPC Categories
 
-- **Window/System**: `window:`, `process:`, `health:`
-- **Auth/Security**: `auth:`, `key-rotation:`, `audit:`
-- **AI/LLM**: `chat:`, `ollama:`, `llama:`, `memory:`
-- **Project**: `project:`, `git:`, `terminal:`, `ssh:`
-- **Data**: `db:`, `files:`, `backup:`
-- **UI**: `settings:`, `theme:`, `clipboard:`
+- Window/System: `window:`, `process:`, `health:`
+- Auth/Security: `auth:`, `key-rotation:`, `audit:`
+- AI/LLM: `chat:`, `ollama:`, `llama:`, `memory:`
+- Project: `project:`, `git:`, `terminal:`, `ssh:`
+- Data: `db:`, `files:`, `backup:`
+- UI: `settings:`, `theme:`, `clipboard:`
 
 ## Frontend Architecture
 
@@ -194,7 +182,7 @@ SettingsProvider → LanguageProvider → AuthProvider → ThemeProvider → Mod
 
 ### State Management
 
-Uses external store pattern with `useSyncExternalStore`:
+Uses external store pattern with useSyncExternalStore:
 
 - `theme.store` - Theme persistence
 - `settings.store` - App settings
@@ -219,21 +207,21 @@ Uses external store pattern with `useSyncExternalStore`:
 
 ### Forbidden Actions
 
-- ❌ **NEVER** use `any` type
-- ❌ **NEVER** use `console.log` - Use `appLogger`
-- ❌ **NEVER** use `@ts-ignore`
-- ❌ **NEVER** delete entire files to edit them
-- ❌ **NEVER** use `while(true)` without bounds
-- ❌ **NEVER** hardcode user-facing strings
+- NEVER use any type
+- NEVER use console.log - Use appLogger
+- NEVER use @ts-ignore
+- NEVER delete entire files to edit them
+- NEVER use while(true) without bounds
+- NEVER hardcode user-facing strings
 
 ### Required Actions
 
-- ✅ **ALWAYS** run `npm run build && npm run lint` before committing
-- ✅ **ALWAYS** update `docs/TODO.md` after completing tasks
-- ✅ **ALWAYS** use `t('key')` for translations
-- ✅ **ALWAYS** check return values
-- ✅ **ALWAYS** handle Promise rejections
-- ✅ **ALWAYS** use JSDoc for public methods
+- ALWAYS run npm run build && npm run lint before committing
+- ALWAYS update TODO.md after completing tasks
+- ALWAYS use t('key') for translations
+- ALWAYS check return values
+- ALWAYS handle Promise rejections
+- ALWAYS use JSDoc for public methods
 
 ### NASA Power of Ten Rules
 
@@ -255,13 +243,11 @@ npm run test         # Run tests
 
 ## Workflow
 
-1. Read docs/AI_RULES.md
+1. Read AI_RULES.md
 2. Make changes
-3. `npm run build && npm run lint`
-4. Update docs/TODO.md (mark `[x]`, don't delete)
-5. Update `docs/changelog/data/changelog.entries.json`
-6. Run `npm run changelog:sync`
-7. Commit and push
+3. npm run build && npm run lint
+4. Update TODO.md (mark [x], don't delete)
+5. Commit and push
 
 ## Logging
 
@@ -287,9 +273,9 @@ appLogger.debug('ServiceName', 'Debug info', { data: someData });
 
 ### Log File Rules
 
-- Log files MUST be placed in `logs/` directory only
-- Valid extensions: `.log`, `.txt`, `.json`
-- Format: `{service}_{date}.log`
+- Log files MUST be placed in logs/ directory only
+- Valid extensions: .log, .txt, .json
+- Format: {service}_{date}.log
 
 ## i18n
 
@@ -322,19 +308,19 @@ const items = t('items.count', { count: 5 });
 ## Protected Paths
 
 Never modify these paths:
-- `.git/`
-- `node_modules/`
-- `vendor/`
-- `.env`, `.env.local`
+- .git/
+- node_modules/
+- vendor/
+- .env, .env.local
 
 ## Performance Guidelines
 
-1. **Lazy Loading**: Use `React.lazy()` for heavy components
-2. **Memoization**: Use `useMemo`/`useCallback` for computations
-3. **IPC Batching**: Combine IPC calls to minimize overhead
-4. **Virtualization**: Virtualize lists > 50 items
-5. **Indexing**: Mandatory indexes for query-critical fields
-6. **Disposal**: Call `dispose()`/cleanup for all resources
+1. Lazy Loading: Use React.lazy() for heavy components
+2. Memoization: Use useMemo/useCallback for computations
+3. IPC Batching: Combine IPC calls to minimize overhead
+4. Virtualization: Virtualize lists > 50 items
+5. Indexing: Mandatory indexes for query-critical fields
+6. Disposal: Call dispose()/cleanup for all resources
 
 ## Testing
 
@@ -347,9 +333,9 @@ npm run test:e2e          # E2E tests
 
 ### Test File Location
 
-- Unit tests: `tests/renderer/`, `tests/main/`
-- Integration tests: `tests/integration/`
-- E2E tests: `tests/e2e/`
+- Unit tests: `src/tests/unit/`, `src/tests/main/`, `src/tests/renderer/`
+- Integration tests: `src/tests/integration/`
+- E2E tests: `src/tests/e2e/`
 
 ## MCP Plugin System
 
@@ -370,14 +356,13 @@ Located in `src/main/mcp/templates/server.template.ts`
 
 ### Common Issues
 
-1. **Build fails**: Check TypeScript errors with `npm run type-check`
-2. **Lint errors**: Run `npm run lint -- --fix` for auto-fixable issues
-3. **Database issues**: Check PGlite logs in `logs/` directory
-4. **Proxy issues**: Verify proxy process is running on expected port
+1. Build fails: Check TypeScript errors with npm run type-check
+2. Lint errors: Run npm run lint -- --fix for auto-fixable issues
+3. Database issues: Check PGlite logs in logs/ directory
+4. Proxy issues: Verify proxy process is running on expected port
 
 ### Getting Help
 
-- Check [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
-- Review [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- Check [docs/API_REFERENCE.md](docs/API_REFERENCE.md)
-
+- Check TODO.md
+- Review ARCHITECTURE.md
+- Check API.md
