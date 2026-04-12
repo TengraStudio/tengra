@@ -14,6 +14,9 @@ import { getErrorMessage } from '@shared/utils/error.util';
 
 import type { FileChangeTracker } from './file-change-tracker.service';
 
+type PdfParseResult = { text?: string };
+type PdfParseFunction = (dataBuffer: Buffer) => Promise<PdfParseResult>;
+
 export class FileSystemService {
     private static readonly MAX_SEARCH_DIRECTORIES = 100000;
     private allowedRoots: string[] = [];
@@ -228,6 +231,26 @@ export class FileSystemService {
             }
         } catch {
             return false;
+        }
+    }
+
+    async readPdf(filePath: string): Promise<{ success: boolean; text?: string; error?: string }> {
+        try {
+            const expandedPath = this.expandEnvVars(filePath);
+            this.validatePath(expandedPath);
+            const absolutePath = path.resolve(expandedPath);
+            const pdfBuffer = await fs.readFile(absolutePath);
+            const pdfParseModule = (await import('pdf-parse')).default as PdfParseFunction;
+            const parsed = await pdfParseModule(pdfBuffer);
+            const text = parsed.text?.trim() ?? '';
+
+            if (!text) {
+                return { success: false, error: 'The selected PDF did not contain readable text.' };
+            }
+
+            return { success: true, text };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
         }
     }
 

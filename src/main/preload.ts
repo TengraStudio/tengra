@@ -95,6 +95,17 @@ const api = {
 
     invoke: (channel: string, ...args: IpcValue[]) => ipcRenderer.invoke(channel, ...args),
 
+    getModels: async () => {
+        const response = await ipcRenderer.invoke('proxy:getModels') as { data?: IpcValue; antigravityError?: string };
+        if (Array.isArray(response.data)) {
+            return response.data;
+        }
+        if (typeof response.antigravityError === 'string' && response.antigravityError.trim().length > 0) {
+            return { antigravityError: response.antigravityError };
+        }
+        return [];
+    },
+
     openExternal: (url: string) => {
         void ipcRenderer.invoke('shell:openExternal', url);
     },
@@ -157,6 +168,7 @@ const api = {
     lazyServices: createLazyServicesBridge(ipcRenderer),
     ipcContract: createIpcContractBridge(ipcRenderer),
     files: createFilesBridge(ipcRenderer),
+    readPdf: (filePath: string) => ipcRenderer.invoke('files:readPdf', filePath),
     selectDirectory: () => ipcRenderer.invoke('files:selectDirectory'),
     selectFile: (options?: { title?: string; filters?: { name: string; extensions: string[] }[] }) =>
         ipcRenderer.invoke('files:selectFile', options),

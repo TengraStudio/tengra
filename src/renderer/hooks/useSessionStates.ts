@@ -20,30 +20,32 @@ export function useSessionStates(sessionIds: string[]): SessionState[] {
 
     const lastResultRef = useRef<SessionState[]>([]);
 
-    const states = useSyncExternalStore(
-        subscribeSessionRuntime,
-        useMemo(() => () => {
-            const next = normalizedSessionIds
-                .map(sessionId => getSessionStateSnapshot(sessionId))
-                .filter((state): state is SessionState => state !== null);
+    const getSnapshot = useMemo(() => () => {
+        const next = normalizedSessionIds
+            .map(sessionId => getSessionStateSnapshot(sessionId))
+            .filter((state): state is SessionState => state !== null);
 
-            // Maintain stable array reference if contents are shallowly equal
-            const last = lastResultRef.current;
-            if (next.length !== last.length) {
+        // Maintain stable array reference if contents are shallowly equal
+        const last = lastResultRef.current;
+        if (next.length !== last.length) {
+            lastResultRef.current = next;
+            return next;
+        }
+
+        for (let i = 0; i < next.length; i++) {
+            if (next[i] !== last[i]) {
                 lastResultRef.current = next;
                 return next;
             }
+        }
 
-            for (let i = 0; i < next.length; i++) {
-                if (next[i] !== last[i]) {
-                    lastResultRef.current = next;
-                    return next;
-                }
-            }
+        return last;
+    }, [normalizedSessionIds]);
 
-            return last;
-        }, [normalizedSessionIds]),
-        () => []
+    const states = useSyncExternalStore(
+        subscribeSessionRuntime,
+        getSnapshot,
+        getSnapshot
     );
     const stateKey = normalizedSessionIds.join('|');
 

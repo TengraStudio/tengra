@@ -15,6 +15,7 @@ import { useChatHeader } from '@/context/ChatContext';
 import { AppView } from '@/hooks/useAppState';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { useMarketplaceStore } from '@/store/marketplace.store';
 
 
 interface AppHeaderProps {
@@ -29,6 +30,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     const { currentChatTitle } = useChatHeader();
     const { language } = useAuthLanguage();
     const { t } = useTranslation(language);
+    const updateCount = useMarketplaceStore(s => s.updateCount);
 
     const viewIcons: Record<AppView, React.ElementType> = {
         chat: MessageSquare,
@@ -84,6 +86,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                         aria-label={t('nav.settings')}
                     >
                         <SettingsIcon className="tengra-app-header__settings-icon" />
+                        {updateCount > 0 && (
+                            <span className="tengra-app-header__update-badge">
+                                {updateCount}
+                            </span>
+                        )}
                     </button>
 
                     <div className="tengra-app-header__divider" />

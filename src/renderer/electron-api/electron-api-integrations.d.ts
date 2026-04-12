@@ -644,7 +644,10 @@ export interface ElectronApiIntegrationsDomain {
     marketplace: {
         fetch: () => Promise<MarketplaceRegistry>;
         getRuntimeProfile: () => Promise<MarketplaceRuntimeProfile>;
+        getUpdateCount: () => Promise<number>;
+        checkLiveUpdates: () => Promise<number>;
         install: (request: InstallRequest) => Promise<InstallResult>;
+        fetchReadme: (extensionId: string, repository?: string) => Promise<string | null>;
     };
     locale: {
         getAll: () => Promise<LocalePack[]>;
@@ -865,7 +868,7 @@ export interface ElectronApiIntegrationsDomain {
             };
         }>;
         install: (extensionPath: string) => Promise<{ success: boolean; extensionId?: string; error?: string }>;
-        uninstall: (extensionId: string) => Promise<{ success: boolean; error?: string }>;
+        uninstall: (extensionId: string) => Promise<{ success: boolean; error?: string; messageKey?: string; messageParams?: Record<string, string | number> }>;
         activate: (extensionId: string) => Promise<{ success: boolean; error?: string }>;
         deactivate: (extensionId: string) => Promise<{ success: boolean; error?: string }>;
         devStart: (options: import('@shared/types/extension').ExtensionDevOptions) => Promise<{ success: boolean; error?: string }>;

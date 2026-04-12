@@ -96,12 +96,10 @@ export function createComponentHealthStore(
     return {
         subscribe,
         getSnapshot,
-        useSnapshot: <T>(selector: (state: ComponentHealthSnapshot) => T): T =>
-            useSyncExternalStore(
-                subscribe,
-                () => selector(getSnapshot()),
-                () => selector(getSnapshot())
-            ),
+        useSnapshot: <T>(selector: (state: ComponentHealthSnapshot) => T): T => {
+            const snapshotValue = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+            return selector(snapshotValue);
+        },
         setUiState(next) {
             snapshot = {
                 ...snapshot,

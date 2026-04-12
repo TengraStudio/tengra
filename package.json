@@ -143,6 +143,7 @@
         "mermaid": "^10.9.5",
         "monaco-editor": "^0.55.1",
         "node-pty": "^1.1.0",
+        "pdf-parse": "^1.1.4",
         "prism-react-renderer": "^2.4.1",
         "pyright": "^1.1.408",
         "re-resizable": "^6.11.2",

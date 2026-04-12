@@ -12,7 +12,7 @@
  * return <PlanningPanel />;
  * ```
  */
-import { useSyncExternalStore } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 
 /** State returned by the useFeatureFlag hook */
 export interface FeatureFlagState {
@@ -87,17 +87,19 @@ function fetchFlag(featureId: string): void {
  * @param featureId - The identifier of the feature flag to evaluate
  */
 export function useFeatureFlag(featureId: string): FeatureFlagState {
+    const getSnapshot = useCallback(() => {
+        const existing = flagState.get(featureId);
+        if (existing) {
+            return existing;
+        }
+        fetchFlag(featureId);
+        return DEFAULT_STATE;
+    }, [featureId]);
+
     const state = useSyncExternalStore(
         subscribe,
-        () => {
-            const existing = flagState.get(featureId);
-            if (existing) {
-                return existing;
-            }
-            fetchFlag(featureId);
-            return DEFAULT_STATE;
-        },
-        () => DEFAULT_STATE
+        getSnapshot,
+        getSnapshot
     );
     return state;
 }

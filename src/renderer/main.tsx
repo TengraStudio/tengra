@@ -1,17 +1,19 @@
 import App from '@renderer/App';
 import { AppProviders } from '@renderer/context/AppProviders';
+import { registerExtensionComponent } from '@renderer/features/extensions/components/ExtensionViewHost';
+import { registerLocalExtensions } from '@renderer/features/extensions/extension-renderers';
 import { installRendererLogger } from '@renderer/logging';
 import { translateErrorMessage } from '@renderer/utils/error-handler.util';
 import { performanceMonitor } from '@renderer/utils/performance';
 import React from 'react';
-import ReactDOM from 'react-dom/client';
+import * as ReactDOM from 'react-dom';
+import * as ReactDOMClient from 'react-dom/client';
 
 import '@renderer/index.css';
 
-import { registerLocalExtensions } from '@renderer/features/extensions/extension-renderers';
-import { registerExtensionComponent } from '@renderer/features/extensions/components/ExtensionViewHost';
-
 // Expose extension SDK to the global window object
+window.React = React;
+window.ReactDOM = ReactDOM;
 window.Tengra = {
     registerExtensionComponent,
 };
@@ -42,7 +44,7 @@ if (!window.electron) {
 
 const rootElement = document.getElementById('root');
 if (rootElement) {
-    ReactDOM.createRoot(rootElement).render(
+    ReactDOMClient.createRoot(rootElement).render(
         <React.StrictMode>
             <AppProviders>
                 <App />

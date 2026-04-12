@@ -157,8 +157,10 @@ export function createChannelHealthStore<TChannel extends string>(
             };
             emit();
         },
-        useStore: <T>(selector: (s: ChannelHealthSnapshot<TChannel>) => T): T =>
-            useSyncExternalStore(subscribe, () => selector(getSnapshot()), () => selector(getSnapshot())),
+        useStore: <T>(selector: (s: ChannelHealthSnapshot<TChannel>) => T): T => {
+            const snapshotValue = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+            return selector(snapshotValue);
+        },
         resetForTests() {
             snapshot = { ...initial, metrics: { ...initial.metrics, channels: buildChannelMap() }, events: [] };
             emit();

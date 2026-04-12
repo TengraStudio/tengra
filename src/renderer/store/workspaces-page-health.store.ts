@@ -192,11 +192,12 @@ export function subscribeWorkspacesPageHealth(listener: Listener): () => void {
 export function useWorkspacesPageHealthStore<T>(
     selector: (state: WorkspacesPageHealthSnapshot) => T
 ): T {
-    return useSyncExternalStore(
+    const snapshotValue = useSyncExternalStore(
         subscribeWorkspacesPageHealth,
-        () => selector(getWorkspacesPageHealthSnapshot()),
-        () => selector(getWorkspacesPageHealthSnapshot())
+        getWorkspacesPageHealthSnapshot,
+        getWorkspacesPageHealthSnapshot
     );
+    return selector(snapshotValue);
 }
 
 export function __resetWorkspacesPageHealthForTests(): void {

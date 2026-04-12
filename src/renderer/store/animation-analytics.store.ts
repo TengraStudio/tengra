@@ -205,11 +205,12 @@ export function subscribeAnimationAnalytics(listener: Listener): () => void {
 export function useAnimationAnalyticsStore<T>(
     selector: (state: AnimationAnalyticsSnapshot) => T
 ): T {
-    return useSyncExternalStore(
+    const snapshot = useSyncExternalStore(
         subscribeAnimationAnalytics,
-        () => selector(getAnimationAnalyticsSnapshot()),
-        () => selector(getAnimationAnalyticsSnapshot())
+        getAnimationAnalyticsSnapshot,
+        getAnimationAnalyticsSnapshot
     );
+    return selector(snapshot);
 }
 
 export function __resetAnimationAnalyticsForTests(): void {

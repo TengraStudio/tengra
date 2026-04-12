@@ -12,10 +12,12 @@ import {
 import { Switch } from '@renderer/components/ui/switch';
 import type { IpcValue } from '@shared/types/common';
 import type { ConfigurationProperty, ExtensionManifest } from '@shared/types/extension';
-import { Package, RefreshCw, Settings2 } from 'lucide-react';
+import { MarketplaceExtension } from '@shared/types/marketplace';
+import { Info, Package, RefreshCw, Settings2, Trash2, TriangleAlert } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useExtensionStore } from '@/store/extension.store';
+import { marketplaceStore, useMarketplaceStore } from '@/store/marketplace.store';
 import { pushNotification } from '@/store/notification-center.store';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -39,15 +41,39 @@ function resolveFieldValue(
 }
 
 export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) => {
-    const { extensions, isLoading, error, fetchExtensions, activateExtension, deactivateExtension } = useExtensionStore();
+    const { 
+        extensions, 
+        isLoading, 
+        error, 
+        fetchExtensions, 
+        activateExtension, 
+        deactivateExtension,
+        uninstallExtension 
+    } = useExtensionStore();
+    
     const [selectedExtensionId, setSelectedExtensionId] = useState<string | null>(null);
     const [draftByExtensionId, setDraftByExtensionId] = useState<Record<string, Record<string, IpcValue>>>({});
     const [loadingConfigId, setLoadingConfigId] = useState<string | null>(null);
     const [savingConfig, setSavingConfig] = useState(false);
+    const [isUninstalling, setIsUninstalling] = useState<string | null>(null);
+
+    const registry = useMarketplaceStore(s => s.registry);
+    const [isUpdating, setIsUpdating] = useState<string | null>(null);
+
+    const extensionsWithUpdates = useMemo(() => {
+        return extensions.map(ext => {
+            const mItem = (registry?.extensions || []).find((m: MarketplaceExtension) => m.id === ext.manifest.id);
+            return {
+                ...ext,
+                updateAvailable: mItem?.updateAvailable ?? false,
+                latestVersion: mItem?.version
+            };
+        });
+    }, [extensions, registry]);
 
     const selectedExtension = useMemo(
-        () => extensions.find(extension => extension.manifest.id === selectedExtensionId) ?? null,
-        [extensions, selectedExtensionId]
+        () => extensionsWithUpdates.find(extension => extension.manifest.id === selectedExtensionId) ?? null,
+        [extensionsWithUpdates, selectedExtensionId]
     );
 
     const configProperties = useMemo(
@@ -111,6 +137,22 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
         await activateExtension(extensionId);
     }, [activateExtension, deactivateExtension]);
 
+    const handleUninstallExtension = useCallback(async (extensionId: string): Promise<void> => {
+        if (isUninstalling) return;
+        
+        setIsUninstalling(extensionId);
+        try {
+            await uninstallExtension(extensionId);
+            pushNotification({ type: 'success', message: t('settings.extensions.plugins.uninstallSuccess') || 'Extension uninstalled successfully' });
+            setSelectedExtensionId(null);
+        } catch (err) {
+            appLogger.error('ExtensionPluginsTab', `Failed to uninstall extension ${extensionId}`, err as Error);
+            pushNotification({ type: 'error', message: t('settings.extensions.plugins.uninstallError') || 'Failed to uninstall extension' });
+        } finally {
+            setIsUninstalling(null);
+        }
+    }, [isUninstalling, uninstallExtension, t]);
+
     const handleFieldChange = useCallback((key: string, value: IpcValue): void => {
         if (!selectedExtensionId) {
             return;
@@ -151,155 +193,347 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
         }
     }, [draftByExtensionId, selectedExtensionId, t]);
 
+    const handleUpdate = useCallback(async (extensionId: string): Promise<void> => {
+        setIsUpdating(extensionId);
+        try {
+            const mItem = (registry?.extensions || []).find((m: MarketplaceExtension) => m.id === extensionId);
+            if (!mItem) {
+                throw new Error('Extension not found in registry');
+            }
+
+            const result = await window.electron.marketplace.install({
+                type: 'extension',
+                id: extensionId,
+                downloadUrl: mItem.downloadUrl,
+                name: mItem.name,
+                description: mItem.description,
+                author: mItem.author,
+                version: mItem.version,
+            });
+            if (result.success) {
+                pushNotification({ type: 'success', message: t('settings.extensions.plugins.updateSuccess') });
+                await Promise.all([
+                    fetchExtensions(),
+                    marketplaceStore.checkLiveUpdates()
+                ]);
+            } else {
+                throw new Error(result.message ?? 'Update failed');
+            }
+        } catch (error) {
+            appLogger.error('ExtensionPluginsTab', `Failed to update extension ${extensionId}`, error as Error);
+            pushNotification({ type: 'error', message: t('settings.extensions.plugins.updateError') });
+        } finally {
+            setIsUpdating(null);
+        }
+    }, [fetchExtensions, registry?.extensions, t]);
+
     const selectedDraft = selectedExtensionId ? (draftByExtensionId[selectedExtensionId] ?? {}) : {};
 
     return (
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
-            <section className="rounded-xl border border-border/30 bg-card/60 p-4">
-                <div className="mb-3 flex items-center justify-between">
-                    <h3 className="text-sm font-semibold">{t('settings.extensions.plugins.title')}</h3>
-                    <Button variant="ghost" size="sm" onClick={() => void fetchExtensions()}>
-                        <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                    </Button>
+        <div className="grid gap-6 xl:grid-cols-[380px,1fr] h-[calc(100vh-200px)]">
+            {/* Left Sidebar: Extension List */}
+            <section className="flex flex-col rounded-2xl border border-border/40 bg-card/30 overflow-hidden shadow-sm">
+                <div className="p-4 border-b border-border/20 bg-muted/20 flex items-center justify-between">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground/70">
+                        {t('settings.extensions.plugins.title')}
+                    </h3>
+                    <Badge variant="secondary" className="font-mono">{extensions.length}</Badge>
                 </div>
-                {error && (
-                    <p className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 typo-caption text-destructive">
-                        {error}
-                    </p>
-                )}
-                {isLoading && extensions.length === 0 ? (
-                    <p className="typo-caption text-muted-foreground">{t('common.loading')}</p>
-                ) : extensions.length === 0 ? (
-                    <div className="rounded-md border border-dashed border-border/40 px-3 py-6 text-center typo-caption text-muted-foreground">
-                        {t('settings.extensions.plugins.empty')}
-                    </div>
-                ) : (
-                    <div className="space-y-2">
-                        {extensions.map(extension => {
-                            const isSelected = extension.manifest.id === selectedExtensionId;
-                            return (
-                                <button
-                                    key={extension.manifest.id}
-                                    type="button"
-                                    onClick={() => setSelectedExtensionId(extension.manifest.id)}
-                                    className={`w-full rounded-lg border px-3 py-2 text-left transition-colors ${
-                                        isSelected
-                                            ? 'border-primary/40 bg-primary/10'
-                                            : 'border-border/30 bg-background/60 hover:border-border/60'
-                                    }`}
-                                >
-                                    <div className="flex items-center justify-between gap-2">
-                                        <p className="truncate text-sm font-semibold">{extension.manifest.name}</p>
-                                        <Badge variant="outline" className="typo-caption uppercase">
-                                            {extension.status}
-                                        </Badge>
+                
+                <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                    {error && (
+                        <div className="m-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs animate-in fade-in duration-300">
+                             <p className="font-bold flex items-center gap-2"><Info className="w-3 h-3" /> Error</p>
+                             <p className="mt-1 opacity-80">{error}</p>
+                        </div>
+                    )}
+                    
+                    {isLoading && extensions.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-12 space-y-3 opacity-50">
+                            <RefreshCw className="w-6 h-6 animate-spin text-primary" />
+                            <p className="text-xs font-bold text-muted-foreground">{t('common.loading')}</p>
+                        </div>
+                    ) : extensions.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 space-y-4 opacity-40 grayscale">
+                            <Package className="w-12 h-12" />
+                            <p className="text-xs font-bold text-muted-foreground text-center px-8">
+                                {t('settings.extensions.plugins.empty')}
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {extensionsWithUpdates.map(extension => {
+                                const isSelected = extension.manifest.id === selectedExtensionId;
+                                const isActive = extension.status === 'active';
+                                
+                                return (
+                                    <div
+                                        key={extension.manifest.id}
+                                        onClick={() => setSelectedExtensionId(extension.manifest.id)}
+                                        className={`group relative flex items-center gap-4 w-full cursor-pointer rounded-xl border p-3.5 transition-all duration-300
+                                            ${isSelected
+                                                ? 'border-primary/40 bg-primary/10 shadow-[0_0_15px_rgba(var(--primary-rgb),0.1)] ring-1 ring-primary/20'
+                                                : 'border-transparent bg-transparent hover:bg-muted/40 hover:border-border/40 hover:shadow-sm'
+                                            }`}
+                                    >
+                                        <div className={`p-2.5 rounded-xl shrink-0 transition-all duration-300 shadow-inner
+                                            ${isActive 
+                                                ? 'bg-primary/20 text-primary ring-1 ring-inset ring-primary/30 group-hover:scale-110' 
+                                                : 'bg-muted/50 text-muted-foreground/40 grayscale opacity-60'
+                                            }`}>
+                                            <Package className="w-6 h-6" />
+                                        </div>
+                                        
+                                        <div className="min-w-0 flex-1 space-y-1">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <p className={`truncate text-sm font-black tracking-tight leading-none ${isActive ? 'text-foreground' : 'text-muted-foreground/60'}`}>
+                                                        {extension.manifest.name}
+                                                    </p>
+                                                    {isActive && (
+                                                        <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-success shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                                                    )}
+                                                </div>
+                                                {extension.updateAvailable && (
+                                                    <div className="h-2 w-2 shrink-0 rounded-full bg-destructive shadow-[0_0_8px_rgba(var(--destructive-rgb),0.5)] animate-pulse" />
+                                                )}
+                                            </div>
+                                            
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant="outline" className={`text-[9px] h-4 leading-none font-bold tracking-tighter uppercase px-1.5 ${isActive ? 'border-primary/30 text-primary bg-primary/5' : 'opacity-30'}`}>
+                                                    V{extension.manifest.version}
+                                                </Badge>
+                                                {!isActive && (
+                                                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/30">{t('common.disabled')}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        {isSelected && (
+                                            <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-primary rounded-r-full shadow-[2px_0_8px_rgba(var(--primary-rgb),0.5)]" />
+                                        )}
                                     </div>
-                                    <p className="mt-1 truncate typo-caption text-muted-foreground">{extension.manifest.id}</p>
-                                </button>
-                            );
-                        })}
-                    </div>
-                )}
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
             </section>
 
-            <section className="rounded-xl border border-border/30 bg-card/60 p-4">
+            {/* Right Panel: Extension Details & Config */}
+            <section className="flex flex-col rounded-2xl border border-border/40 bg-card/30 overflow-hidden shadow-sm">
                 {!selectedExtension ? (
-                    <div className="flex min-h-[220px] items-center justify-center rounded-md border border-dashed border-border/30 text-sm text-muted-foreground">
-                        {t('settings.extensions.plugins.select')}
+                    <div className="flex flex-col items-center justify-center p-12 flex-1 text-center space-y-6">
+                        <div className="w-20 h-20 rounded-full bg-muted/30 flex items-center justify-center animate-in zoom-in-50 duration-500">
+                             <Settings2 className="w-10 h-10 text-muted-foreground/30" />
+                        </div>
+                        <div className="space-y-1">
+                            <h3 className="text-base font-bold text-muted-foreground/50">{t('settings.extensions.plugins.select')}</h3>
+                            <p className="text-xs text-muted-foreground/30 max-w-[280px]">Select an extension from the list to manage its configuration and lifecycle.</p>
+                        </div>
                     </div>
                 ) : (
-                    <div className="space-y-4">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div className="space-y-1">
-                                <h3 className="text-lg font-semibold">{selectedExtension.manifest.name}</h3>
-                                <p className="typo-caption text-muted-foreground">{selectedExtension.manifest.description}</p>
-                                <p className="typo-caption text-muted-foreground">{selectedExtension.extensionPath}</p>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <Badge variant="outline">v{selectedExtension.manifest.version}</Badge>
-                                <Switch
-                                    checked={selectedExtension.status === 'active'}
-                                    onCheckedChange={() => {
-                                        void handleToggleExtension(selectedExtension.manifest.id, selectedExtension.status);
-                                    }}
-                                />
+                    <div className="flex flex-col h-full overflow-hidden animate-in fade-in slide-in-from-right-4 duration-300">
+                        {/* Header Section */}
+                        <div className="p-8 border-b border-border/20 bg-muted/10">
+                            <div className="flex flex-col gap-6">
+                                <div className="flex items-start justify-between gap-6">
+                                    <div className="flex gap-6">
+                                        <div className="relative group">
+                                            <div className="p-5 rounded-2xl bg-primary/10 text-primary shadow-inner ring-1 ring-inset ring-primary/20 transition-all group-hover:scale-105 group-hover:shadow-[0_0_20px_rgba(var(--primary-rgb),0.2)]">
+                                                <Package className="w-10 h-10" />
+                                            </div>
+                                            {selectedExtension.status === 'active' && (
+                                                <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-success border-2 border-background shadow-[0_0_10px_rgba(34,197,94,0.6)]" />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-2xl font-black text-foreground tracking-tight leading-none mb-2">
+                                                {selectedExtension.manifest.name}
+                                            </h3>
+                                            <div className="flex flex-wrap items-center gap-3">
+                                                <span className="text-xs font-bold text-muted-foreground/40 italic uppercase tracking-wider">
+                                                    {selectedExtension.manifest.author.name}
+                                                </span>
+                                                <span className="h-1 w-1 rounded-full bg-border/40" />
+                                                <Badge variant="outline" className="font-black text-[10px] border-primary/20 text-primary bg-primary/5 uppercase tracking-widest px-2 h-5">
+                                                    V{selectedExtension.manifest.version}
+                                                </Badge>
+                                                {selectedExtension.updateAvailable && (
+                                                    <Badge variant="destructive" className="h-5 px-2 text-[10px] font-black uppercase tracking-widest animate-pulse shadow-lg shadow-destructive/20">
+                                                        Update Available: v{selectedExtension.latestVersion}
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3">
+                                        {selectedExtension.updateAvailable && (
+                                            <Button
+                                                size="sm"
+                                                variant="destructive"
+                                                className="h-9 px-4 gap-2 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-destructive/20 active:scale-95"
+                                                onClick={() => void handleUpdate(selectedExtension.manifest.id)}
+                                                disabled={isUpdating === selectedExtension.manifest.id}
+                                            >
+                                                <RefreshCw className={`h-3.5 w-3.5 ${isUpdating === selectedExtension.manifest.id ? 'animate-spin' : ''}`} />
+                                                {t('common.update')}
+                                            </Button>
+                                        )}
+                                        
+                                        <div className="bg-muted px-4 py-1.5 rounded-xl border border-border/20 flex items-center gap-4 shadow-sm ring-1 ring-inset ring-white/5">
+                                            <span className={`text-[10px] font-black uppercase tracking-widest ${selectedExtension.status === 'active' ? 'text-primary' : 'text-muted-foreground/50'}`}>
+                                                {selectedExtension.status === 'active' ? t('common.active') : t('common.disabled')}
+                                            </span>
+                                            <Switch
+                                                checked={selectedExtension.status === 'active'}
+                                                onCheckedChange={() => {
+                                                    void handleToggleExtension(selectedExtension.manifest.id, selectedExtension.status);
+                                                }}
+                                            />
+                                        </div>
+                                        
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-9 w-9 rounded-xl border-destructive/20 text-destructive/60 hover:text-destructive hover:bg-destructive/10 hover:border-destructive/40 transition-all active:scale-90 shadow-sm"
+                                            title={t('marketplace.uninstall')}
+                                            onClick={() => {
+                                                if (confirm(`Are you sure you want to uninstall ${selectedExtension.manifest.name}? This action cannot be undone.`)) {
+                                                    void handleUninstallExtension(selectedExtension.manifest.id);
+                                                }
+                                            }}
+                                            disabled={isUninstalling === selectedExtension.manifest.id}
+                                        >
+                                            <Trash2 className={`w-4 h-4 ${isUninstalling === selectedExtension.manifest.id ? 'animate-pulse' : ''}`} />
+                                        </Button>
+                                    </div>
+                                </div>
+                                
+                                <p className="text-sm font-medium text-muted-foreground/80 leading-relaxed max-w-2xl border-l-2 border-primary/20 pl-4 py-1 italic">
+                                    {selectedExtension.manifest.description}
+                                </p>
                             </div>
                         </div>
 
-                        <div className="rounded-lg border border-border/30 bg-background/40 p-3">
-                            <div className="mb-3 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Settings2 className="h-4 w-4 text-primary" />
-                                    <h4 className="text-sm font-semibold">{t('settings.extensions.plugins.configTitle')}</h4>
+                        {/* Configuration & Scroll Area */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-8 CustomScrollbar">
+                            <div className="space-y-6 max-w-3xl">
+                                <div className="flex items-center justify-between gap-4 sticky top-0 z-10 bg-card/60 backdrop-blur-md pb-4 pt-1 border-b border-border/5 mb-2">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                                            <Settings2 className="w-4 h-4" />
+                                        </div>
+                                        <h4 className="text-sm font-black uppercase tracking-widest text-foreground/80">
+                                            {t('settings.extensions.plugins.configTitle')}
+                                        </h4>
+                                    </div>
+                                    <Button
+                                        size="sm"
+                                        className="h-8 rounded-lg font-bold px-4 shadow-md shadow-primary/10"
+                                        onClick={() => void handleSaveConfig()}
+                                        disabled={savingConfig || loadingConfigId === selectedExtension.manifest.id || Object.keys(configProperties).length === 0}
+                                    >
+                                        {savingConfig ? (
+                                            <RefreshCw className="w-3.5 h-3.5 mr-2 animate-spin" />
+                                        ) : null}
+                                        {savingConfig ? t('common.saving') : t('common.save')}
+                                    </Button>
                                 </div>
-                                <Button
-                                    size="sm"
-                                    onClick={() => void handleSaveConfig()}
-                                    disabled={savingConfig || loadingConfigId === selectedExtension.manifest.id || Object.keys(configProperties).length === 0}
-                                >
-                                    {savingConfig ? t('common.saving') : t('common.save')}
-                                </Button>
-                            </div>
 
-                            {loadingConfigId === selectedExtension.manifest.id ? (
-                                <p className="typo-caption text-muted-foreground">{t('common.loading')}</p>
-                            ) : Object.keys(configProperties).length === 0 ? (
-                                <p className="typo-caption text-muted-foreground">{t('settings.extensions.plugins.noConfig')}</p>
-                            ) : (
-                                <div className="space-y-3">
-                                    {Object.entries(configProperties).map(([key, property]) => {
-                                        const fieldValue = resolveFieldValue(selectedDraft, key, property);
-                                        const fieldLabel = property.title.trim().length > 0 ? property.title : key;
-                                        return (
-                                            <div key={key} className="grid gap-2 rounded-md border border-border/20 bg-background/50 p-3">
-                                                <Label className="typo-caption text-muted-foreground">{fieldLabel}</Label>
-                                                <p className="typo-caption text-muted-foreground/80">{property.description}</p>
-                                                {property.type === 'boolean' ? (
-                                                    <Switch
-                                                        checked={Boolean(fieldValue)}
-                                                        onCheckedChange={checked => handleFieldChange(key, checked)}
-                                                    />
-                                                ) : property.type === 'number' ? (
-                                                    <Input
-                                                        type="number"
-                                                        value={typeof fieldValue === 'number' ? String(fieldValue) : ''}
-                                                        onChange={event => {
-                                                            const parsed = Number(event.target.value);
-                                                            if (Number.isFinite(parsed)) {
-                                                                handleFieldChange(key, parsed);
-                                                            }
-                                                        }}
-                                                    />
-                                                ) : property.enum && property.enum.length > 0 ? (
-                                                    <Select
-                                                        value={typeof fieldValue === 'string' ? fieldValue : ''}
-                                                        onValueChange={value => handleFieldChange(key, value)}
-                                                    >
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder={key} />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {property.enum.map(option => (
-                                                                <SelectItem key={option} value={option}>{option}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                ) : property.type === 'string' ? (
-                                                    <Input
-                                                        value={typeof fieldValue === 'string' ? fieldValue : ''}
-                                                        onChange={event => handleFieldChange(key, event.target.value)}
-                                                    />
-                                                ) : (
-                                                    <div className="flex items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 typo-caption text-warning">
-                                                        <Package className="h-3.5 w-3.5" />
-                                                        {t('settings.extensions.plugins.complexConfigHint')}
+                                {loadingConfigId === selectedExtension.manifest.id ? (
+                                    <div className="py-12 flex flex-col items-center justify-center space-y-4 opacity-50">
+                                        <RefreshCw className="w-8 h-8 animate-spin text-primary" />
+                                        <p className="text-xs font-bold uppercase tracking-widest">{t('common.loading')}</p>
+                                    </div>
+                                ) : Object.keys(configProperties).length === 0 ? (
+                                    <div className="py-12 px-6 rounded-2xl border border-dashed border-border/40 bg-muted/5 flex flex-col items-center justify-center text-center space-y-3">
+                                        <div className="p-3 rounded-full bg-muted/20">
+                                            <Info className="w-6 h-6 text-muted-foreground/30" />
+                                        </div>
+                                        <p className="text-sm font-bold text-muted-foreground/60">{t('settings.extensions.plugins.noConfig')}</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid gap-4">
+                                        {Object.entries(configProperties).map(([key, property]) => {
+                                            const fieldValue = resolveFieldValue(selectedDraft, key, property);
+                                            const fieldLabel = property.title.trim().length > 0 ? property.title : key;
+                                            
+                                            return (
+                                                <div key={key} className="group relative grid gap-2 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-all duration-200 hover:bg-muted/10 hover:border-border/40">
+                                                    <div className="flex items-center justify-between gap-4">
+                                                        <div className="space-y-1">
+                                                            <Label className="text-[13px] font-black text-foreground/90 uppercase tracking-tight">
+                                                                {fieldLabel}
+                                                            </Label>
+                                                            <p className="text-xs font-medium text-muted-foreground/60 leading-relaxed max-w-xl">
+                                                                {property.description}
+                                                            </p>
+                                                        </div>
+                                                        
+                                                        <div className="shrink-0 flex items-center justify-end min-w-[100px]">
+                                                            {property.type === 'boolean' ? (
+                                                                <Switch
+                                                                    checked={Boolean(fieldValue)}
+                                                                    onCheckedChange={checked => handleFieldChange(key, checked)}
+                                                                />
+                                                            ) : property.enum && property.enum.length > 0 ? (
+                                                                <Select
+                                                                    value={typeof fieldValue === 'string' ? fieldValue : ''}
+                                                                    onValueChange={value => handleFieldChange(key, value)}
+                                                                >
+                                                                    <SelectTrigger className="w-[180px] h-9 rounded-xl border-border/30 bg-background/50 font-bold overflow-hidden">
+                                                                        <SelectValue className="truncate" placeholder={key} />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent className="rounded-xl border-border/40 bg-card shadow-2xl">
+                                                                        {property.enum.map(option => (
+                                                                            <SelectItem key={option} value={option} className="px-3 py-2 font-medium">
+                                                                                {option}
+                                                                            </SelectItem>
+                                                                        ))}
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            ) : null}
+                                                        </div>
                                                     </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
+
+                                                    {property.type !== 'boolean' && !(property.enum && property.enum.length > 0) && (
+                                                        <div className="mt-2 animate-in slide-in-from-top-1 duration-200">
+                                                            {property.type === 'number' ? (
+                                                                <Input
+                                                                    type="number"
+                                                                    value={typeof fieldValue === 'number' ? String(fieldValue) : ''}
+                                                                    className="h-10 rounded-xl border-border/30 bg-background/50 px-4 font-bold shadow-inner focus:ring-primary/20 transition-all font-mono"
+                                                                    onChange={event => {
+                                                                        const parsed = Number(event.target.value);
+                                                                        if (Number.isFinite(parsed)) {
+                                                                            handleFieldChange(key, parsed);
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            ) : property.type === 'string' ? (
+                                                                <Input
+                                                                    value={typeof fieldValue === 'string' ? fieldValue : ''}
+                                                                    className="h-10 rounded-xl border-border/30 bg-background/50 px-4 font-bold shadow-inner focus:ring-primary/20 transition-all"
+                                                                    onChange={event => handleFieldChange(key, event.target.value)}
+                                                                />
+                                                            ) : (
+                                                                <div className="flex items-center gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-warning">
+                                                                    <TriangleAlert className="h-4 w-4 shrink-0" />
+                                                                    <p className="text-[11px] font-bold uppercase tracking-tight">
+                                                                        {t('settings.extensions.plugins.complexConfigHint')}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -307,4 +541,3 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
         </div>
     );
 };
-

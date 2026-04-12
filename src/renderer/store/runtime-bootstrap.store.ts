@@ -110,11 +110,12 @@ export function __resetRuntimeBootstrapStoreForTests(): void {
 export function useRuntimeBootstrapStore<T>(
     selector: (snapshot: RuntimeBootstrapStoreState) => T
 ): T {
-    return useSyncExternalStore(
+    const snapshotValue = useSyncExternalStore(
         subscribeRuntimeBootstrapStore,
-        () => selector(getRuntimeBootstrapSnapshot()),
-        () => selector(getRuntimeBootstrapSnapshot())
+        getRuntimeBootstrapSnapshot,
+        getRuntimeBootstrapSnapshot
     );
+    return selector(snapshotValue);
 }
 
 export function hasBlockingRuntimeIssue(status: RuntimeBootstrapExecutionResult | null): boolean {

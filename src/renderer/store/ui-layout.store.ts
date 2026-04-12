@@ -371,11 +371,8 @@ export function exportUiLayoutState(): {
 }
 
 export function useUiLayoutStore<T>(selector: (snapshot: UiLayoutState) => T): T {
-    return useSyncExternalStore(
-        subscribeUiLayout,
-        () => selector(getUiLayoutSnapshot()),
-        () => selector(getUiLayoutSnapshot())
-    );
+    const snapshot = useSyncExternalStore(subscribeUiLayout, getUiLayoutSnapshot);
+    return selector(snapshot);
 }
 
 export function __resetUiLayoutStoreForTests(): void {

@@ -35,12 +35,12 @@ import {
 } from '@/context/ChatContext';
 import { useModel } from '@/context/ModelContext';
 import { useWorkspaceLibrary, useWorkspaceSelection } from '@/context/WorkspaceContext';
+import { useMarketplaceStore } from '@/store/marketplace.store';
 
 
 // Lazy load heavy layout components
 const CommandPalette = lazy(() => import('@renderer/components/layout/CommandPalette').then(m => ({ default: m.CommandPalette })));
 const UpdateNotification = lazy(() => import('@renderer/components/layout/UpdateNotification').then(m => ({ default: m.UpdateNotification })));
-const QuickActionBar = lazy(() => import('@renderer/components/layout/QuickActionBar').then(m => ({ default: m.QuickActionBar })));
 const VoiceOverlay = lazy(() => import('@renderer/features/voice/components/VoiceOverlay').then(m => ({ default: m.VoiceOverlay })));
 const DetachedTerminalWindow = lazy(() => import('@renderer/features/terminal/components/DetachedTerminalWindow').then(m => ({ default: m.DetachedTerminalWindow })));
 
@@ -302,29 +302,7 @@ const KeyboardShortcutsConnector: React.FC<{
         useKeyboardShortcuts(keyboardShortcutsConfig);
         return null;
     };
-
-const QuickActionBarConnector: React.FC<{
-    language: ReturnType<typeof useLanguage>['language'];
-    explainPrefix: string;
-    translatePrefix: string;
-}> = ({ language, explainPrefix, translatePrefix }) => {
-    const { handleSend, setInput } = useChatComposer();
-
-    return (
-        <QuickActionBar
-            onExplain={text => {
-                setInput(`${explainPrefix}${text}`);
-                void handleSend();
-            }}
-            onTranslate={text => {
-                setInput(`${translatePrefix}${text}`);
-                void handleSend();
-            }}
-            language={language}
-        />
-    );
-};
-
+ 
 const CommandPaletteConnector: React.FC<{
     isOpen: boolean;
     onClose: () => void;
@@ -520,7 +498,13 @@ function MainApp() {
     } = appState;
     const breakpoint = useBreakpoint();
     const settingsSearchQuery = '';
+    const updateCount = useMarketplaceStore(s => s.updateCount);
+    const setSettingsCategoryRef = React.useRef(setSettingsCategory);
+    useEffect(() => {
+        setSettingsCategoryRef.current = setSettingsCategory;
+    }, [setSettingsCategory]);
 
+    const hasNavigatedToUpdates = React.useRef(false);
 
     const nonCriticalUiReady = useDeferredNonCriticalUi();
     useAppInitialization();
@@ -532,12 +516,16 @@ function MainApp() {
         }
     }, [currentView, isSidebarCollapsed, setIsSidebarCollapsed]);
 
+    const lastBreakpoint = React.useRef(breakpoint);
     useEffect(() => {
-        trackResponsiveBreakpoint({
-            breakpoint,
-            width: window.innerWidth,
-            height: window.innerHeight,
-        });
+        if (lastBreakpoint.current !== breakpoint || !isSidebarCollapsed) {
+          trackResponsiveBreakpoint({
+              breakpoint,
+              width: window.innerWidth,
+              height: window.innerHeight,
+          });
+          lastBreakpoint.current = breakpoint;
+        }
         document.documentElement.setAttribute('data-breakpoint', breakpoint);
         if (breakpoint === 'mobile' && !isSidebarCollapsed) {
             setIsSidebarCollapsed(true);
@@ -561,6 +549,24 @@ function MainApp() {
         }
         setCurrentView('settings');
     }, [setCurrentView, setSettingsCategory]);
+
+    // Auto-navigate to extensions if updates are available on startup
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+        if (nonCriticalUiReady && updateCount > 0 && !hasNavigatedToUpdates.current) {
+            hasNavigatedToUpdates.current = true;
+            // Delay slightly to ensure UI is ready
+            timer = setTimeout(() => {
+                setSettingsCategoryRef.current('extensions');
+                setCurrentView('settings');
+            }, 500); // Increased delay for stability
+        }
+        return () => {
+            if (timer) {
+                clearTimeout(timer);
+            }
+        };
+    }, [nonCriticalUiReady, updateCount, setCurrentView]);
 
     const chatTemplates = useMemo(() => getChatTemplates(t), [t]);
 
@@ -666,14 +672,7 @@ function MainApp() {
                             setCurrentView={setCurrentView}
                             onToggleSidebar={handleToggleSidebar}
                             onOpenSettings={openSettings}
-                        />
-                        <Suspense fallback={null}>
-                            <QuickActionBarConnector
-                                explainPrefix={t('quickAction.explainPrefix')}
-                                translatePrefix={t('quickAction.translatePrefix')}
-                                language={language}
-                            />
-                        </Suspense>
+                        /> 
                         <Suspense fallback={null}>
                             <UpdateNotification />
                         </Suspense>

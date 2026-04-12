@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 
 import { WorkspaceEntry } from '@/types';
 
@@ -109,11 +109,10 @@ export function useWorkspaceExplorerStore<T>(
     workspaceId: string,
     selector: (snapshot: WorkspaceExplorerStoreState) => T
 ): T {
-    return useSyncExternalStore(
-        listener => subscribeWorkspaceExplorerStore(workspaceId, listener),
-        () => selector(getWorkspaceExplorerSnapshot(workspaceId)),
-        () => selector(getWorkspaceExplorerSnapshot(workspaceId))
-    );
+    const subscribe = useCallback((listener: () => void) => subscribeWorkspaceExplorerStore(workspaceId, listener), [workspaceId]);
+    const getSnapshot = useCallback(() => getWorkspaceExplorerSnapshot(workspaceId), [workspaceId]);
+    const state = useSyncExternalStore(subscribe, getSnapshot);
+    return selector(state);
 }
 
 export function setWorkspaceExplorerSelectedEntries(

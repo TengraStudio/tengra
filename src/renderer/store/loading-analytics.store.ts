@@ -300,11 +300,12 @@ export function getLoadingAnalyticsSnapshot(): LoadingAnalyticsSnapshot {
 export function useLoadingAnalyticsStore<T>(
     selector: (state: LoadingAnalyticsSnapshot) => T
 ): T {
-    return useSyncExternalStore(
+    const snapshotValue = useSyncExternalStore(
         subscribeLoadingAnalytics,
-        () => selector(getLoadingAnalyticsSnapshot()),
-        () => selector(getLoadingAnalyticsSnapshot())
+        getLoadingAnalyticsSnapshot,
+        getLoadingAnalyticsSnapshot
     );
+    return selector(snapshotValue);
 }
 
 export function __resetLoadingAnalyticsForTests(): void {

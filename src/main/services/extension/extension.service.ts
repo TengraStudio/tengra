@@ -19,6 +19,7 @@ import {
     ExtensionProfileData,
     ExtensionPublishOptions,
     ExtensionPublishResult,
+    ExtensionRuntimeInfo,
     ExtensionStatus,
     ExtensionTestOptions,
     ExtensionTestResult,
@@ -175,6 +176,21 @@ export class ExtensionService extends BaseService {
                 }
 
                 const extPath = path.join(this.state.extensionsPath, entry.name);
+                
+                // Skip if marked as uninstalled (Windows file lock fallback)
+                const markerPath = path.join(extPath, '.uninstalled');
+                if (fs.existsSync(markerPath)) {
+                    this.logInfo(`Skipping uninstalled extension folder: ${extPath}. Attempting cleanup...`);
+                    try {
+                        // Try again to delete it, maybe the lock is gone now.
+                        await fs.promises.rm(extPath, { recursive: true, force: true });
+                        this.logInfo(`Delayed cleanup successful for ${extPath}`);
+                    } catch (cleanupErr) {
+                        this.logWarn(`Delayed cleanup still failing for ${extPath}`);
+                    }
+                    continue;
+                }
+
                 const result = await this.installExtension(extPath);
                 if (!result.success || !result.extensionId) {
                     continue;
@@ -279,17 +295,18 @@ export class ExtensionService extends BaseService {
 
     // IPC Handlers
 
-    private handleGetAll(): { success: boolean; extensions: Array<{ manifest: ExtensionManifest; status: ExtensionStatus; extensionPath: string; isDev: boolean }> } {
+    private handleGetAll(): { success: boolean; extensions: ExtensionRuntimeInfo[] } {
         const extensions = Array.from(this.state.extensions.values()).map((instance) => ({
             manifest: instance.manifest,
             status: instance.status,
             extensionPath: instance.context.extensionPath,
             isDev: this.state.watchers.has(instance.manifest.id),
+            uiBundleStamp: this.getExtensionUiBundleStamp(instance),
         }));
         return { success: true, extensions };
     }
 
-    private handleGet(_event: Electron.IpcMainInvokeEvent, extensionId: string): { success: boolean; extension?: { manifest: ExtensionManifest; status: ExtensionStatus; extensionPath: string; isDev: boolean } } {
+    private handleGet(_event: Electron.IpcMainInvokeEvent, extensionId: string): { success: boolean; extension?: ExtensionRuntimeInfo } {
         const instance = this.state.extensions.get(extensionId);
         if (!instance) {
             return { success: false };
@@ -301,6 +318,7 @@ export class ExtensionService extends BaseService {
                 status: instance.status,
                 extensionPath: instance.context.extensionPath,
                 isDev: this.state.watchers.has(extensionId),
+                uiBundleStamp: this.getExtensionUiBundleStamp(instance),
             },
         };
     }
@@ -313,7 +331,7 @@ export class ExtensionService extends BaseService {
         }
     }
 
-    private async handleUninstall(_event: Electron.IpcMainInvokeEvent, extensionId: string): Promise<{ success: boolean; error?: string }> {
+    private async handleUninstall(_event: Electron.IpcMainInvokeEvent, extensionId: string): Promise<{ success: boolean; error?: string; messageKey?: string; messageParams?: Record<string, string | number> }> {
         try {
             return await this.uninstallExtension(extensionId);
         } catch (error) {
@@ -634,7 +652,7 @@ export class ExtensionService extends BaseService {
     /** Uninstall an extension */
     async uninstallExtension(extensionId: string): Promise<{
         success: boolean;
-        error?: string;
+        error?: string; 
         messageKey?: string;
         messageParams?: Record<string, string | number>;
     }> {
@@ -665,6 +683,69 @@ export class ExtensionService extends BaseService {
                 disposable.dispose();
             } catch (error) {
                 this.logError('Failed to dispose subscription', error as Error);
+            }
+        }
+
+        // Delete from disk if it's in the managed extensions folder
+        const extensionPath = instance.context.extensionPath;
+        if (this.state.extensionsPath && extensionPath.startsWith(this.state.extensionsPath)) {
+            try {
+                // Give some time for OS to release file handles after watcher/process closure
+                await new Promise(resolve => setTimeout(resolve, 200));
+
+                const stats = fs.lstatSync(extensionPath);
+                if (stats.isSymbolicLink()) {
+                    fs.unlinkSync(extensionPath);
+                    this.logInfo(`Extension symlink removed: ${extensionPath}`);
+                } else {
+                    // Optimized deletion for Windows: try to rename first if possible
+                    // as it releases the lock on the original path name immediately
+                    const trashPath = `${extensionPath}.trash-${Date.now()}`;
+                    try {
+                        fs.renameSync(extensionPath, trashPath);
+                        await fs.promises.rm(trashPath, { recursive: true, force: true });
+                    } catch {
+                        // If rename fails, try direct deletion with retries
+                        let lastErr: Error | null = null;
+                        for (let i = 0; i < 5; i++) {
+                            try {
+                                await fs.promises.rm(extensionPath, { recursive: true, force: true });
+                                lastErr = null;
+                                break;
+                            } catch (err) {
+                                lastErr = err as Error;
+                                await new Promise(resolve => setTimeout(resolve, 150 * (i + 1)));
+                            }
+                        }
+                        if (lastErr) { throw lastErr; }
+                    }
+                    this.logInfo(`Extension folder deleted: ${extensionPath}`);
+                }
+            } catch (err) {
+                this.logError(`Failed to delete extension folder: ${extensionPath}`, err as Error);
+                
+                // On Windows, EPERM often means a file is locked. 
+                // CRITICAL IMPROVEMENT: Create a .uninstalled marker file so we know to skip this 
+                // folder on next start if deletion failed.
+                try {
+                    const markerPath = path.join(extensionPath, '.uninstalled');
+                    fs.writeFileSync(markerPath, JSON.stringify({
+                        uninstalledAt: new Date().toISOString(),
+                        reason: (err as Error).message
+                    }));
+                } catch (markerErr) {
+                    this.logError('Failed to create .uninstalled marker', markerErr as Error);
+                }
+
+                this.state.extensions.delete(extensionId);
+                this.state.extensionConfigs.delete(extensionId);
+                this.state.configListeners.delete(extensionId);
+                this.emitStateChange('uninstalled', extensionId);
+
+                return {
+                    success: true, // Mark as success because we've removed it from the active session
+                    messageKey: 'extension.uninstall.partial_success'
+                };
             }
         }
 
@@ -1011,6 +1092,31 @@ export class ExtensionService extends BaseService {
         }
 
         return null;
+    }
+
+    private getExtensionUiBundleStamp(instance: ExtensionInstance): string | undefined {
+        const uiPath = instance.manifest.ui;
+        if (typeof uiPath !== 'string' || uiPath.trim().length === 0) {
+            return undefined;
+        }
+
+        const resolvedUiPath = this.resolveSafeChildPath(
+            instance.context.extensionPath,
+            path.join(instance.context.extensionPath, uiPath)
+        );
+        if (!resolvedUiPath || !fs.existsSync(resolvedUiPath)) {
+            return instance.manifest.version;
+        }
+
+        try {
+            const stats = fs.statSync(resolvedUiPath);
+            return `${instance.manifest.version}:${Math.trunc(stats.mtimeMs)}:${stats.size}`;
+        } catch (error) {
+            this.logWarn(`Failed to inspect extension UI bundle stamp for ${instance.manifest.id}`, {
+                error: error instanceof Error ? error.message : String(error),
+            });
+            return instance.manifest.version;
+        }
     }
 
     private async loadSandboxedExtensionModule(extensionId: string, modulePath: string): Promise<ExtensionModule> {

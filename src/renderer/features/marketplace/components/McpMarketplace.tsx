@@ -1,10 +1,11 @@
 import { formatBytes } from '@renderer/utils/format.util';
-import type { InstallRequest, MarketplaceItem, MarketplaceLanguage, MarketplaceMcp, MarketplaceModel, MarketplaceRegistry, MarketplaceRuntimeProfile } from '@shared/types/marketplace';
+import type { InstallRequest, MarketplaceExtension, MarketplaceItem, MarketplaceLanguage, MarketplaceMcp, MarketplaceModel, MarketplaceRegistry, MarketplaceRuntimeProfile } from '@shared/types/marketplace';
 import { Package, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useModel } from '@/context/ModelContext';
 import { useLanguage, useTranslation } from '@/i18n';
+import { marketplaceStore } from '@/store/marketplace.store';
 import { pushNotification } from '@/store/notification-center.store';
 import type { ModelInfo } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
@@ -25,6 +26,7 @@ export interface McpPlugin {
     isEnabled: boolean;
     isAlive: boolean;
     source: 'core' | 'user' | 'remote';
+    version?: string;
     actions: Array<{ name: string; description: string }>;
 }
 
@@ -206,6 +208,8 @@ export function McpMarketplace({
     const [hfReadmeByModelId, setHfReadmeByModelId] = useState<Record<string, string>>({});
     const [hfPreviewByModelId, setHfPreviewByModelId] = useState<Record<string, HFPreviewData>>({});
     const [hfPreviewLoadingId, setHfPreviewLoadingId] = useState<string | null>(null);
+    const [extensionReadmes, setExtensionReadmes] = useState<Record<string, string>>({});
+    const [extReadmeLoadingId, setExtReadmeLoadingId] = useState<string | null>(null);
     const fetchedHfIdsRef = useRef<Set<string>>(new Set());
     const fetchingHfIdsRef = useRef<Set<string>>(new Set());
 
@@ -388,6 +392,44 @@ export function McpMarketplace({
         };
     }, [hfPreviewByModelId, hfReadmeByModelId, selectedStoreModel]);
 
+    useEffect(() => {
+        if (selectedStoreItem?.itemType !== 'extension') {
+            return;
+        }
+
+        const extension = selectedStoreItem as MarketplaceExtension;
+        const repoUrl = extension.repository;
+        if (!repoUrl || extensionReadmes[extension.id]) {
+            return;
+        }
+
+        let active = true;
+        setExtReadmeLoadingId(extension.id);
+        
+        void marketplaceStore.fetchReadme(extension.id, repoUrl)
+            .then((readme: string | null) => {
+                if (!active || !readme) {
+                    return;
+                }
+                setExtensionReadmes(prev => ({
+                    ...prev,
+                    [extension.id]: readme
+                }));
+            })
+            .catch((err: Error) => {
+                appLogger.warn('McpMarketplace', `Failed to fetch extension readme for ${extension.id}`, err);
+            })
+            .finally(() => {
+                if (active) {
+                    setExtReadmeLoadingId(null);
+                }
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [extensionReadmes, selectedStoreItem]);
+
     const selectedItem = useMemo<MarketplaceInfoItem | null>(() => {
         const entry = selectedEntry;
         if (!entry) { return null; }
@@ -397,9 +439,9 @@ export function McpMarketplace({
                 name: entry.plugin.name,
                 description: entry.plugin.description,
                 author: 'System',
-                version: '1.0.0',
+                version: entry.plugin.version || '1.0.0',
                 installed: true,
-                installedVersion: '1.0.0',
+                installedVersion: entry.plugin.version || '1.0.0',
                 itemType: 'mcp',
             };
         }
@@ -436,7 +478,7 @@ export function McpMarketplace({
             installed: Boolean(item.installed),
             installedVersion: item.installedVersion,
             itemType: item.itemType,
-            readme: resolvedReadme,
+            readme: resolvedReadme || extensionReadmes[item.id],
             totalSize: displaySize,
             downloads: modelItem?.downloads,
             pullCount: modelItem?.pullCount,
@@ -444,11 +486,10 @@ export function McpMarketplace({
             submodels: modelItem?.submodels,
             performance,
             provider: modelItem?.provider,
-            isReadmeLoading: isHf
-                && !resolvedReadme
-                && hfPreviewLoadingId === modelItem.id,
+            isReadmeLoading: (isHf && !resolvedReadme && hfPreviewLoadingId === modelItem.id) || 
+                             (item.itemType === 'extension' && !extensionReadmes[item.id] && extReadmeLoadingId === item.id),
         };
-    }, [hfPreviewLoadingId, hfReadmeByModelId, hfPreviewByModelId, selectedEntry]);
+    }, [hfPreviewLoadingId, hfReadmeByModelId, hfPreviewByModelId, extensionReadmes, extReadmeLoadingId, selectedEntry]);
 
     const enrichedPagedItems = useMemo(() => {
         return pagedItems.map(entry => {
@@ -483,6 +524,38 @@ export function McpMarketplace({
             };
         });
     }, [pagedItems, hfPreviewByModelId]);
+
+    const handleUninstall = useCallback(async (item: MarketplaceItem) => {
+        if (installingId) { return; }
+        setInstallingId(item.id);
+        try {
+            const result = await window.electron.extension.uninstall(item.id);
+            if (!result.success) {
+                throw new Error(result.error || t('marketplace.uninstallFailure'));
+            }
+
+            if (item.itemType === 'mcp') {
+                await onRefreshMcpPlugins();
+            }
+            await onRefreshRegistry();
+
+            // Determine notification message
+            let successMessage = t('marketplace.uninstallSuccess', { name: item.name });
+            if (result.messageKey) {
+                successMessage = t(result.messageKey, { name: item.name });
+            }
+
+            pushNotification({ 
+                type: result.messageKey === 'extension.uninstall.partial_success' ? 'warning' : 'success', 
+                message: successMessage 
+            });
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : t('marketplace.uninstallFailure');
+            pushNotification({ type: 'error', message });
+        } finally {
+            setInstallingId(null);
+        }
+    }, [installingId, onRefreshMcpPlugins, onRefreshRegistry, t]);
 
     if (loading) { return <Loader t={t} />; }
 
@@ -528,6 +601,7 @@ export function McpMarketplace({
                                     <McpCard
                                         plugin={entry.plugin}
                                         t={t}
+                                        onUninstall={(id, name) => void handleUninstall({ id, name, itemType: 'mcp' } as MarketplaceItem)}
                                     />
                                 ) : (
                                     <MarketCard
@@ -535,6 +609,7 @@ export function McpMarketplace({
                                         isActive={entry.item.itemType === 'language' && (entry.item as MarketplaceLanguage).locale === activeLanguage}
                                         isInstalling={installingId === entry.item.id}
                                         onInstall={(it) => void handleInstall(it)}
+                                        onUninstall={(it) => void handleUninstall(it)}
                                         onActivateLanguage={(it) => void handleActivateLanguage(it)}
                                     />
                                 )}

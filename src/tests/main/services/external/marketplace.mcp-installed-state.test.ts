@@ -1,8 +1,9 @@
+import path from 'path';
+
 import { MarketplaceService } from '@main/services/external/marketplace.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { MarketplaceItem } from '@shared/types/marketplace';
 import fs from 'fs-extra';
-import path from 'path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const mockedUserDataPath = 'C:\\Users\\agnes\\AppData\\Roaming\\Tengra';

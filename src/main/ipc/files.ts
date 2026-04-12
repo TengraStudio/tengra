@@ -370,6 +370,15 @@ export function registerFilesIpc(
         argsSchema: z.tuple([PathSchema])
     }));
 
+    ipcMain.handle('files:readPdf', createValidatedIpcHandler('files:readPdf', async (_event, filePath: string) => {
+        return await runWithFileAudit('files.readPdf', filePath, async () => {
+            return await fileSystemService.readPdf(filePath);
+        });
+    }, {
+        defaultValue: { success: false, text: '' },
+        argsSchema: z.tuple([PathSchema])
+    }));
+
     ipcMain.handle('files:writeFile', createValidatedIpcHandler<WriteFileResponse, [string, string, z.infer<typeof WriteContextSchema>]>(
         'files:writeFile',
         async (_event, filePath: string, content: string, context?: z.infer<typeof WriteContextSchema>) => {

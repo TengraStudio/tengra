@@ -200,11 +200,12 @@ export function subscribeSettingsPageHealth(listener: Listener): () => void {
 export function useSettingsPageHealthStore<T>(
     selector: (state: SettingsPageHealthSnapshot) => T
 ): T {
-    return useSyncExternalStore(
+    const snapshotValue = useSyncExternalStore(
         subscribeSettingsPageHealth,
-        () => selector(getSettingsPageHealthSnapshot()),
-        () => selector(getSettingsPageHealthSnapshot())
+        getSettingsPageHealthSnapshot,
+        getSettingsPageHealthSnapshot
     );
+    return selector(snapshotValue);
 }
 
 export function __resetSettingsPageHealthForTests(): void {

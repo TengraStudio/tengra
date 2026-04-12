@@ -12,7 +12,7 @@ export function useSessionState(sessionId: string | null): SessionState | null {
     const state = useSyncExternalStore(
         subscribeSessionRuntime,
         getSnapshot,
-        () => null
+        getSnapshot
     );
 
     useEffect(() => {

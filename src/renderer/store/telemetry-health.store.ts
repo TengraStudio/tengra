@@ -209,11 +209,12 @@ export function subscribeTelemetryHealth(listener: Listener): () => void {
 export function useTelemetryHealthStore<T>(
     selector: (state: TelemetryHealthSnapshot) => T
 ): T {
-    return useSyncExternalStore(
+    const snapshotValue = useSyncExternalStore(
         subscribeTelemetryHealth,
-        () => selector(getTelemetryHealthSnapshot()),
-        () => selector(getTelemetryHealthSnapshot())
+        getTelemetryHealthSnapshot,
+        getTelemetryHealthSnapshot
     );
+    return selector(snapshotValue);
 }
 
 /** Resets store state for testing */

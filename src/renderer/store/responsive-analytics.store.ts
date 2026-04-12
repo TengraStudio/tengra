@@ -201,11 +201,8 @@ export function getResponsiveAnalyticsSnapshot(): ResponsiveAnalyticsSnapshot {
 export function useResponsiveAnalyticsStore<T>(
     selector: (state: ResponsiveAnalyticsSnapshot) => T
 ): T {
-    return useSyncExternalStore(
-        subscribeResponsiveAnalytics,
-        () => selector(getResponsiveAnalyticsSnapshot()),
-        () => selector(getResponsiveAnalyticsSnapshot())
-    );
+    const state = useSyncExternalStore(subscribeResponsiveAnalytics, getResponsiveAnalyticsSnapshot);
+    return selector(state);
 }
 
 export function __resetResponsiveAnalyticsForTests(): void {

@@ -15,6 +15,7 @@ interface ExtensionViewHostProps {
  * Global registry for extension components
  */
 const extensionComponentRegistry: Record<string, React.ComponentType<Record<string, unknown>>> = {};
+const extensionBundleScriptRegistry: Record<string, HTMLScriptElement | undefined> = {};
 
 /**
  * Register a component for an extension view
@@ -75,7 +76,12 @@ export const ExtensionViewHost: React.FC<ExtensionViewHostProps> = ({ viewId }) 
             return;
         }
 
-        const viewSignature = `${activeExtension.manifest.id}:${activeExtension.extensionPath}:${activeExtension.manifest.ui ?? ''}`;
+        const viewSignature = [
+            activeExtension.manifest.id,
+            activeExtension.extensionPath,
+            activeExtension.uiBundleStamp ?? activeExtension.manifest.version,
+            activeExtension.manifest.ui ?? '',
+        ].join(':');
         const shouldReloadBundle = lastLoadedSignatureRef.current !== viewSignature || lastLoadedNonceRef.current !== reloadNonce;
 
         const loadView = async () => {
@@ -100,6 +106,13 @@ export const ExtensionViewHost: React.FC<ExtensionViewHostProps> = ({ viewId }) 
             setLoading(true);
             setError(null);
             try {
+                if (shouldReloadBundle) {
+                    delete extensionComponentRegistry[viewId];
+                    extensionBundleScriptRegistry[viewId]?.remove();
+                    delete extensionBundleScriptRegistry[viewId];
+                    setComponent(null);
+                }
+
                 // Construct safe-file URL for the UI bundle
                 const scriptPath = activeExtension.extensionPath.endsWith(path.sep) 
                     ? `${activeExtension.extensionPath}${ui}` 
@@ -107,7 +120,9 @@ export const ExtensionViewHost: React.FC<ExtensionViewHostProps> = ({ viewId }) 
 
                 // Convert to safe-file protocol URL
                 // On Windows, safe-file://C:/path...
-                const safeUrl = `safe-file://${scriptPath.replace(/\\/g, '/')}?v=${reloadNonce}`;
+                const bundleStamp = activeExtension.uiBundleStamp ?? activeExtension.manifest.version ?? '0';
+                const bundleVersion = encodeURIComponent(`${bundleStamp}-${reloadNonce}`);
+                const safeUrl = `safe-file://${scriptPath.replace(/\\/g, '/')}?v=${bundleVersion}`;
 
                 appLogger.info('ExtensionViewHost', `Loading UI bundle for ${activeExtension.manifest.id}: ${safeUrl}`);
 
@@ -122,6 +137,7 @@ export const ExtensionViewHost: React.FC<ExtensionViewHostProps> = ({ viewId }) 
                     script.onerror = () => reject(new Error(`Failed to load script: ${safeUrl}`));
                 });
 
+                extensionBundleScriptRegistry[viewId] = script;
                 document.head.appendChild(script);
                 await scriptPromise;
 

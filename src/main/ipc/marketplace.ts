@@ -40,6 +40,24 @@ export function registerMarketplaceIpc(
             return await marketplaceService.getRuntimeProfile();
         }
     ));
+    
+    ipcMain.handle('marketplace:get-update-count', createIpcHandler('marketplace:get-update-count',
+        async () => {
+            return await marketplaceService.getUpdateCount();
+        }
+    ));
+
+    ipcMain.handle('marketplace:check-live-updates', createIpcHandler('marketplace:check-live-updates',
+        async () => {
+            return await marketplaceService.checkLiveExtensionUpdates();
+        }
+    ));
+
+    ipcMain.handle('marketplace:fetch-readme', createIpcHandler('marketplace:fetch-readme',
+        async (_event: IpcMainInvokeEvent, extensionId: string, repository?: string) => {
+            return await marketplaceService.fetchExtensionReadme(extensionId, repository);
+        }
+    ));
 
     // Tema veya eklenti yükle
     ipcMain.handle('marketplace:install', createIpcHandler('marketplace:install',

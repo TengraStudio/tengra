@@ -15,6 +15,7 @@ import { FileChangeTracker } from '@main/services/data/file-change-tracker.servi
 import { FileSystemService } from '@main/services/data/filesystem.service';
 import { ImagePersistenceService } from '@main/services/data/image-persistence.service';
 import { ExportService } from '@main/services/export/export.service';
+import { ExtensionService } from '@main/services/extension/extension.service';
 import { CronSchedulerService } from '@main/services/external/cron-scheduler.service';
 import { FeatureFlagService } from '@main/services/external/feature-flag.service';
 import { HttpService } from '@main/services/external/http.service';
@@ -62,7 +63,6 @@ import { AuthAPIService } from '@main/services/security/auth-api.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
 import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { SecurityService } from '@main/services/security/security.service';
-import { SecurityScanService } from '@main/services/security/security-scan.service';
 import { TokenService } from '@main/services/security/token.service';
 import { CouncilCapabilityService } from '@main/services/session/capabilities/council-capability.service';
 import { ChatSessionRegistryService } from '@main/services/session/chat-session-registry.service';
@@ -100,7 +100,6 @@ import type { SSHService } from '@main/services/workspace/ssh.service';
 import { TerminalService } from '@main/services/workspace/terminal.service';
 import { TerminalSmartService } from '@main/services/workspace/terminal-smart.service';
 import type { WorkspaceService } from '@main/services/workspace/workspace.service';
-import { ExtensionService } from '@main/services/extension/extension.service';
 import {
     bootstrapCoreData,
     initDeferredServices,
@@ -201,8 +200,7 @@ export interface Services {
     configService: ConfigService;
     keyRotationService: KeyRotationService;
     rateLimitService: RateLimitService;
-    tokenService: TokenService;
-    securityScanService: SecurityScanService;
+    tokenService: TokenService; 
     auditLogService: AuditLogService;
     promptTemplatesService: PromptTemplatesService;
     performanceService: PerformanceService;
@@ -485,12 +483,7 @@ function registerSecurityServices() {
             });
         },
         ['tokenDepsBase', 'jobSchedulerService']
-    );
-    container.register(
-        'securityScanService',
-        (ebs, js) => new SecurityScanService(ebs as EventBusService, js as JobSchedulerService),
-        ['eventBusService', 'jobSchedulerService']
-    );
+    ); 
 }
 
 function registerLLMServices() {
@@ -1000,7 +993,6 @@ function buildServicesMap(
         keyRotationService: container.resolve<KeyRotationService>('keyRotationService'),
         rateLimitService: container.resolve<RateLimitService>('rateLimitService'),
         tokenService: container.resolve<TokenService>('tokenService'),
-        securityScanService: container.resolve<SecurityScanService>('securityScanService'),
         auditLogService: createDeferredContainerProxy<AuditLogService>('auditLogService'),
         promptTemplatesService: createDeferredContainerProxy<PromptTemplatesService>('promptTemplatesService'),
         modelCollaborationService: createDeferredContainerProxy<ModelCollaborationService>('modelCollaborationService'),

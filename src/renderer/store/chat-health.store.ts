@@ -189,11 +189,12 @@ export function subscribeChatHealth(listener: Listener): () => void {
 }
 
 export function useChatHealthStore<T>(selector: (state: ChatHealthSnapshot) => T): T {
-    return useSyncExternalStore(
+    const snapshotValue = useSyncExternalStore(
         subscribeChatHealth,
-        () => selector(getChatHealthSnapshot()),
-        () => selector(getChatHealthSnapshot())
+        getChatHealthSnapshot,
+        getChatHealthSnapshot
     );
+    return selector(snapshotValue);
 }
 
 export function __resetChatHealthForTests(): void {

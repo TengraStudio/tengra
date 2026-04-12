@@ -1,13 +1,14 @@
-import { ExternalLink } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
+import React, { useEffect, useState } from 'react'; 
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { marketplaceStore, useMarketplaceStore } from '@/store/marketplace.store';
 
 import { SettingsSharedProps } from '../types';
 
 import { ExtensionPluginsTab } from './ExtensionPluginsTab';
-import { MCPServersTab } from './MCPServersTab';
+import { MCPServersTab } from './MCPServersTab'; 
 import { SkillsTab } from './SkillsTab';
 
 export type ExtensionSettingsSection = 'mcp' | 'skills' | 'plugins';
@@ -21,6 +22,7 @@ export const ExtensionsTab: React.FC<ExtensionsTabProps> = ({
     initialSection = 'plugins',
 }) => {
     const [section, setSection] = useState<ExtensionSettingsSection>(initialSection);
+    const registry = useMarketplaceStore(s => s.registry);
 
     useEffect(() => {
         setSection(initialSection);
@@ -32,10 +34,14 @@ export const ExtensionsTab: React.FC<ExtensionsTabProps> = ({
                 <div>
                     <h3 className="text-lg font-semibold">{t('settings.tabs.extensions')}</h3>
                     <p className="text-sm text-muted-foreground">{t('settings.extensions.description')}</p>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => window.open('https://tengra.ai/market', '_blank')}>
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    {t('sidebar.marketplace')}
+                </div> 
+                <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => void marketplaceStore.checkLiveUpdates()}
+                    className="h-8 gap-2"
+                >
+                    <RefreshCw className="h-4 w-4" /> 
                 </Button>
             </div>
 
@@ -44,21 +50,32 @@ export const ExtensionsTab: React.FC<ExtensionsTabProps> = ({
                     ['plugins', t('settings.tabs.plugins')],
                     ['mcp', t('settings.tabs.mcpServers')],
                     ['skills', t('settings.tabs.skills')],
-                ] as Array<[ExtensionSettingsSection, string]>).map(([id, label]) => (
-                    <button
-                        key={id}
-                        type="button"
-                        onClick={() => setSection(id)}
-                        className={cn(
-                            'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                            section === id
-                                ? 'bg-background text-foreground shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground'
-                        )}
-                    >
-                        {label}
-                    </button>
-                ))}
+                ] as Array<[ExtensionSettingsSection, string]>).map(([id, label]) => {
+                    const hasUpdate = (registry?.[id === 'plugins' ? 'extensions' : id === 'mcp' ? 'mcp' : 'skills'] || [])
+                        .some(item => item.updateAvailable);
+
+                    return (
+                        <button
+                            key={id}
+                            type="button"
+                            onClick={() => setSection(id)}
+                            className={cn(
+                                'relative rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                                section === id
+                                    ? 'bg-background text-foreground shadow-sm'
+                                    : 'text-muted-foreground hover:text-foreground'
+                            )}
+                        >
+                            {label}
+                            {hasUpdate && (
+                                <span className="absolute -right-0.5 -top-0.5 flex h-2 w-2">
+                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75"></span>
+                                    <span className="relative inline-flex h-2 w-2 rounded-full bg-destructive"></span>
+                                </span>
+                            )}
+                        </button>
+                    );
+                })}
             </div>
 
             {section === 'plugins' ? (

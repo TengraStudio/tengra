@@ -12,9 +12,9 @@ import { appLogger } from '@/utils/renderer-logger';
 export const RuntimeThemeManager: React.FC = () => {
     const { theme } = useTheme();
     useSyncExternalStore(
-        listener => themeRegistry.subscribe(listener),
-        () => themeRegistry.getSnapshot(),
-        () => themeRegistry.getSnapshot()
+        themeRegistry.subscribe,
+        themeRegistry.getSnapshot,
+        themeRegistry.getSnapshot
     );
     
     // Get manifest from registry based on current theme ID

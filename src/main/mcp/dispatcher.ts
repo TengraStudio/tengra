@@ -42,7 +42,8 @@ export class McpDispatcher {
             isEnabled: !disabled.includes(p.name)
                 && (userServers.find(server => server.id === p.id || server.name === p.name)?.enabled ?? true),
             isAlive: p.isAlive,
-            actions: p.actions
+            actions: p.actions,
+            version: (p as any).version
         }));
     }
 

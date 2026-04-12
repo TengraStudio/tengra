@@ -479,11 +479,8 @@ export function getNotificationCenterSnapshot(): NotificationCenterSnapshot {
 export function useNotificationCenterStore<T>(
     selector: (state: NotificationCenterSnapshot) => T
 ): T {
-    return useSyncExternalStore(
-        subscribeNotificationCenter,
-        () => selector(getNotificationCenterSnapshot()),
-        () => selector(getNotificationCenterSnapshot())
-    );
+    const state = useSyncExternalStore(subscribeNotificationCenter, getNotificationCenterSnapshot);
+    return selector(state);
 }
 
 function updateHistoryRecord(

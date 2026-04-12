@@ -192,11 +192,12 @@ export function getTooltipAnalyticsSnapshot(): TooltipAnalyticsSnapshot {
 export function useTooltipAnalyticsStore<T>(
     selector: (state: TooltipAnalyticsSnapshot) => T
 ): T {
-    return useSyncExternalStore(
+    const snapshotValue = useSyncExternalStore(
         subscribeTooltipAnalytics,
-        () => selector(getTooltipAnalyticsSnapshot()),
-        () => selector(getTooltipAnalyticsSnapshot())
+        getTooltipAnalyticsSnapshot,
+        getTooltipAnalyticsSnapshot
     );
+    return selector(snapshotValue);
 }
 
 export function __resetTooltipAnalyticsForTests(): void {

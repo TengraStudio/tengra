@@ -1,29 +1,23 @@
-import { ExtensionManifest, ExtensionStatus } from '@shared/types/extension';
+import { ExtensionRuntimeInfo } from '@shared/types/extension';
 import { create } from 'zustand';
 
 import { appLogger } from '@/utils/renderer-logger';
 
 interface ExtensionStoreState {
-    extensions: Array<{ manifest: ExtensionManifest; status: ExtensionStatus; extensionPath: string; isDev: boolean }>;
+    extensions: ExtensionRuntimeInfo[];
     isLoading: boolean;
     error: string | null;
     fetchExtensions: () => Promise<void>;
     activateExtension: (id: string) => Promise<void>;
     deactivateExtension: (id: string) => Promise<void>;
+    uninstallExtension: (id: string) => Promise<void>;
 }
 
 const EXTENSION_STATE_CHANNEL = 'extension:state-changed';
 
-type ExtensionListItem = {
-    manifest: ExtensionManifest;
-    status: ExtensionStatus;
-    extensionPath: string;
-    isDev: boolean;
-};
-
 type ExtensionGetAllResponse = {
     success: boolean;
-    extensions: ExtensionListItem[];
+    extensions: ExtensionRuntimeInfo[];
 };
 
 const fetchExtensionsFromBridge = async (): Promise<ExtensionGetAllResponse> => {
@@ -45,6 +39,13 @@ const deactivateExtensionFromBridge = async (id: string): Promise<{ success: boo
         return window.electron.extension.deactivate(id) as Promise<{ success: boolean; error?: string }>;
     }
     return window.electron.invoke<{ success: boolean; error?: string }>('extension:deactivate', id);
+};
+
+const uninstallExtensionFromBridge = async (id: string): Promise<{ success: boolean; error?: string }> => {
+    if (window.electron.extension?.uninstall) {
+        return window.electron.extension.uninstall(id) as Promise<{ success: boolean; error?: string }>;
+    }
+    return window.electron.invoke<{ success: boolean; error?: string }>('extension:uninstall', id);
 };
 
 export const useExtensionStore = create<ExtensionStoreState>((set) => ({
@@ -80,6 +81,17 @@ export const useExtensionStore = create<ExtensionStoreState>((set) => ({
             const result = await deactivateExtensionFromBridge(id);
             if (!result.success) {
                 throw new Error(result.error ?? 'Failed to deactivate extension');
+            }
+            await useExtensionStore.getState().fetchExtensions();
+        } catch (err) {
+            set({ error: (err as Error).message });
+        }
+    },
+    uninstallExtension: async (id: string) => {
+        try {
+            const result = await uninstallExtensionFromBridge(id);
+            if (!result.success) {
+                throw new Error(result.error ?? 'Failed to uninstall extension');
             }
             await useExtensionStore.getState().fetchExtensions();
         } catch (err) {

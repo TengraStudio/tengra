@@ -222,11 +222,10 @@ export function getSettingsSnapshot(): SettingsStoreState {
     return state;
 }
 
+/**
+ * useSettingsStore hook properly provides stable getSnapshot and selector pattern.
+ */
 export function useSettingsStore<T>(selector: (snapshot: SettingsStoreState) => T): T {
-    return useSyncExternalStore(
-        subscribeSettings,
-        () => selector(getSettingsSnapshot()),
-        () => selector(getSettingsSnapshot())
-    );
+    const snapshot = useSyncExternalStore(subscribeSettings, getSettingsSnapshot);
+    return selector(snapshot);
 }
-

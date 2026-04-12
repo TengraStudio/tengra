@@ -20,7 +20,7 @@ export interface FilesBridge {
     exists: (path: string) => Promise<FileExistsResponse>;
 
     // Extended operations (mostly top-level in original preload)
-    readPdf: (path: string) => Promise<string>;
+    readPdf: (path: string) => Promise<{ success: boolean; text?: string; error?: string }>;
     selectDirectory: () => Promise<string | null>;
     selectFile: (options?: {
         title?: string;

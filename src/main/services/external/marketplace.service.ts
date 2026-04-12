@@ -103,6 +103,7 @@ export class MarketplaceService extends BaseService {
     private readonly USER_LOCALES_PATH = path.join(app.getPath('userData'), 'runtime', 'locales');
     private readonly USER_SKILLS_PATH = path.join(app.getPath('userData'), 'runtime', 'skills');
     private readonly USER_EXTENSIONS_PATH = path.join(app.getPath('userData'), 'extensions');
+    private readonly liveUpdates = new Set<string>();
 
     constructor(
         private readonly localeService?: LocaleService,
@@ -150,6 +151,106 @@ export class MarketplaceService extends BaseService {
             appLogger.error('MarketplaceService', 'Failed to fetch registry', error as Error);
             throw new Error('Marketplace registry could not be loaded.');
         }
+    }
+
+    /**
+     * Toplam güncelleme sayısını döner.
+     */
+    async getUpdateCount(): Promise<number> {
+        const registry = await this.fetchRegistry();
+        let count = 0;
+
+        registry.extensions?.forEach(item => {
+            if (item.updateAvailable) {count++;}
+        });
+        registry.mcp?.forEach(item => {
+            if (item.updateAvailable) {count++;}
+        });
+        registry.themes?.forEach(item => {
+            if (item.updateAvailable) {count++;}
+        });
+        registry.models?.forEach(model => {
+            if (model.updateAvailable) {count++;}
+        });
+        registry.personas?.forEach(item => {
+            if (item.updateAvailable) {count++;}
+        });
+        registry.skills?.forEach(item => {
+            if (item.updateAvailable) {count++;}
+        });
+        registry.languages?.forEach(item => {
+            if (item.updateAvailable) {count++;}
+        });
+        registry.prompts?.forEach(item => {
+            if (item.updateAvailable) {count++;}
+        });
+
+        return count;
+    }
+
+    /**
+     * Eklentiler için canlı versiyon kontrolü yapar.
+     */
+    async checkLiveExtensionUpdates(): Promise<number> {
+        appLogger.info('MarketplaceService', 'Checking for extension updates...');
+        let count = 0;
+        try {
+            const registry = await this.fetchRegistry();
+            
+            // Check GitHub raw for each installed extension to find stealth updates (not yet in registry.json)
+            for (const item of registry.extensions || []) {
+                if (item.installed && item.repository) {
+                    try {
+                        const baseUrl = item.repository.replace(/\.git$/, '');
+                        if (baseUrl.includes('github.com')) {
+                            const rawBase = baseUrl.replace('github.com', 'raw.githubusercontent.com');
+                            
+                            // Try main branch first, then fallback to master
+                            const branches = ['main', 'master'];
+                            let remoteVersion: string | undefined;
+
+                            for (const branch of branches) {
+                                try {
+                                    const pkgUrl = `${rawBase}/${branch}/package.json`;
+                                    const response = await axios.get(pkgUrl, { timeout: 2000 });
+                                    remoteVersion = response.data?.version;
+                                    if (remoteVersion) {break;}
+                                } catch {
+                                    continue;
+                                }
+                            }
+
+                            if (remoteVersion && this.isNewerVersion(item.installedVersion || '0.0.0', remoteVersion)) {
+                                item.updateAvailable = true;
+                                this.liveUpdates.add(item.id);
+                                appLogger.info('MarketplaceService', `Live update detected for ${item.id}: ${item.installedVersion} -> ${remoteVersion}`);
+                            }
+                        }
+                    } catch (e) {
+                        // ignore individual fetch errors
+                        appLogger.error('MarketplaceService', `Failed to fetch live update for ${item.id}`, e as Error);
+                    }
+                }
+            }
+
+            // Calculate count from the modified registry object
+            const allItems = [
+                ...(registry.models || []),
+                ...(registry.themes || []),
+                ...(registry.mcp || []),
+                ...(registry.personas || []),
+                ...(registry.prompts || []),
+                ...(registry.languages || []),
+                ...(registry.skills || []),
+                ...(registry.extensions || []),
+            ];
+
+            count = allItems.filter(item => item.updateAvailable).length;
+        } catch (error) {
+            appLogger.error('MarketplaceService', 'Live update check failed', error as Error);
+        }
+        
+        return count;
     }
 
     /**
@@ -272,6 +373,8 @@ export class MarketplaceService extends BaseService {
                 const extensionPath = path.join(targetPath, sanitizedId);
                 const gitPayload = payload as { type?: string; url?: string };
 
+                await this.deactivateExtensionBeforeDiskUpdate(item.id);
+
                 if (gitPayload.type === 'git' && gitPayload.url) {
                     appLogger.info('MarketplaceService', `Cloning extension from git: ${gitPayload.url}`);
                     // Use a helper or direct exec to clone
@@ -294,6 +397,7 @@ export class MarketplaceService extends BaseService {
                     }
                 }
 
+                this.liveUpdates.delete(item.id);
                 appLogger.info('MarketplaceService', `${item.itemType} installed successfully at: ${extensionPath}`);
                 return { success: true, path: extensionPath };
             }
@@ -322,6 +426,24 @@ export class MarketplaceService extends BaseService {
 
     async dispose(): Promise<void> {
         appLogger.info('MarketplaceService', 'Disposing Marketplace service...');
+    }
+
+    private async deactivateExtensionBeforeDiskUpdate(extensionId: string): Promise<void> {
+        if (!this.extensionService) {
+            return;
+        }
+
+        const installedExtension = this.extensionService.getExtension(extensionId);
+        if (installedExtension.extension?.status !== 'active') {
+            return;
+        }
+
+        const deactivation = await this.extensionService.deactivateExtension(extensionId);
+        if (!deactivation.success) {
+            throw new Error(deactivation.error ?? `Failed to deactivate extension before update: ${extensionId}`);
+        }
+
+        appLogger.info('MarketplaceService', `Extension deactivated before marketplace update: ${extensionId}`);
     }
 
     private sanitizeMcpFileName(fileName?: string): string {
@@ -1077,6 +1199,7 @@ export class MarketplaceService extends BaseService {
 
         const annotatedModels = (registry.models ?? []).map(model => {
             const isInstalled = installedVersions.model.has(model.id);
+            const installedVersion = installedVersions.model.get(model.id);
             const ollamaName = this.resolveOllamaModelName(model).toLowerCase();
 
             // Also check submodels
@@ -1100,7 +1223,8 @@ export class MarketplaceService extends BaseService {
             return {
                 ...model,
                 installed: finalInstalled,
-                installedVersion: installedVersions.model.get(model.id),
+                installedVersion,
+                updateAvailable: isInstalled && installedVersion ? this.isNewerVersion(installedVersion, model.version) : false,
                 submodels: annotatedSubmodels,
             };
         });
@@ -1125,12 +1249,35 @@ export class MarketplaceService extends BaseService {
         return items.map(item => {
             const installedVersion =
                 installedById.get(item.id) ?? installedById.get(item.id.toLowerCase());
+            
+            const isInstalled = typeof installedVersion === 'string';
+            const hasUpdate = (isInstalled && this.isNewerVersion(installedVersion, item.version)) || this.liveUpdates.has(item.id);
+
             return {
                 ...item,
-                installed: typeof installedVersion === 'string',
+                installed: isInstalled,
                 installedVersion,
+                updateAvailable: hasUpdate,
             };
         });
+    }
+
+    private isNewerVersion(current: string, latest: string): boolean {
+        try {
+            const cur = current.split('.').map(Number);
+            const lat = latest.split('.').map(Number);
+            for (let i = 0; i < Math.max(cur.length, lat.length); i++) {
+                const c = cur[i] || 0;
+                const l = lat[i] || 0;
+                if (l > c) {return true;}
+                if (l < c) {return false;}
+            }
+        } catch (e) {
+            // Fallback to simple string comparison if split fails
+            appLogger.error('MarketplaceService', `Failed to compare versions ${current} and ${latest}`, e as Error);
+            return current !== latest;
+        }
+        return false;
     }
 
     private async readInstalledVersions(): Promise<Record<MarketplaceItem['itemType'], Map<string, string>>> {
@@ -1177,7 +1324,15 @@ export class MarketplaceService extends BaseService {
         const installedDirectories = await fs.readdir(this.USER_EXTENSIONS_PATH);
 
         for (const directoryName of installedDirectories) {
-            const packageJsonPath = path.join(this.USER_EXTENSIONS_PATH, directoryName, 'package.json');
+            const extPath = path.join(this.USER_EXTENSIONS_PATH, directoryName);
+            const markerPath = path.join(extPath, '.uninstalled');
+            
+            // Skip folders marked as uninstalled (Windows file lock fallback)
+            if (await fs.pathExists(markerPath)) {
+                continue;
+            }
+
+            const packageJsonPath = path.join(extPath, 'package.json');
             if (!(await fs.pathExists(packageJsonPath))) {
                 continue;
             }
@@ -1482,7 +1637,9 @@ export class MarketplaceService extends BaseService {
                         await execAsync('git pull --ff-only', { cwd: targetPath });
                         return;
                     } catch (pullError) {
-                        appLogger.warn('MarketplaceService', `Git pull failed in ${targetPath}, reinstalling clean copy.`, pullError as Error);
+                        appLogger.warn('MarketplaceService', `Git pull failed in ${targetPath}; reinstalling a clean copy.`, {
+                            reason: pullError instanceof Error ? pullError.message : String(pullError),
+                        });
                     }
                 } else {
                     appLogger.warn('MarketplaceService', `Extension directory ${targetPath} is not a git repository, reinstalling clean copy.`);
@@ -1494,6 +1651,40 @@ export class MarketplaceService extends BaseService {
         } catch (error) {
             appLogger.error('MarketplaceService', `Failed to clone extension repository: ${url}`, error as Error);
             throw new Error(`Git operations failed for extension: ${(error as Error).message}`);
+        }
+    }
+
+    async fetchExtensionReadme(extensionId: string, repository?: string): Promise<string | null> {
+        try {
+            if (!repository) {
+                const registry = await this.fetchRegistry();
+                const extension = registry.extensions?.find(e => e.id === extensionId);
+                repository = extension?.repository;
+            }
+
+            if (!repository || !repository.includes('github.com')) {
+                return null;
+            }
+
+            const baseUrl = repository.replace(/\.git$/, '');
+            const rawBase = baseUrl.replace('github.com', 'raw.githubusercontent.com');
+            const branches = ['main', 'master'];
+
+            for (const branch of branches) {
+                try {
+                    const readmeUrl = `${rawBase}/${branch}/README.md`;
+                    const response = await axios.get(readmeUrl, { timeout: 3000 });
+                    if (response.data && typeof response.data === 'string') {
+                        return response.data;
+                    }
+                } catch {
+                    continue;
+                }
+            }
+            return null;
+        } catch (error) {
+            appLogger.warn('MarketplaceService', `Failed to fetch readme for ${extensionId}`, error as Error);
+            return null;
         }
     }
 }

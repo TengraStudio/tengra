@@ -44,6 +44,8 @@ export function useMarketplaceItems({ mode, registry, localPlugins, query, insta
         return ids;
     }, [localPlugins]);
 
+    
+
     const getStoreItems = useCallback((): MarketplaceItem[] => {
         if (!registry) {
             return [];
@@ -84,12 +86,24 @@ export function useMarketplaceItems({ mode, registry, localPlugins, query, insta
                     ...enrichMarketplaceModel(model, runtimeProfile),
                 };
             }
-            if (mode === 'mcp' && item.itemType === 'mcp') {
-                const mcpItem = item as MarketplaceMcp;
-                const normalizedId = mcpItem.id.toLowerCase();
+            if (item.itemType === 'mcp' || item.itemType === 'extension') {
+                const normalizedId = item.id.toLowerCase();
+                const isMcpInstalled = installedMcpIds.has(normalizedId);
+                
+                // For MCP, check if it's a core plugin (not removable)
+                const localPlugin = localPlugins.find(p => 
+                    p.id.toLowerCase() === normalizedId || p.name.toLowerCase() === normalizedId
+                );
+                const isRemovable = item.itemType === 'extension' || (localPlugin && localPlugin.source !== 'core');
+
+                if (item.itemType === 'mcp') {
+                    return { ...item, installed: isMcpInstalled, removable: isRemovable };
+                }
+                
                 return {
                     ...item,
-                    installed: installedMcpIds.has(normalizedId) || Boolean(item.installed),
+                    installed: Boolean(item.installed),
+                    removable: true
                 };
             }
             return item;

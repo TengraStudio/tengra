@@ -1,3 +1,4 @@
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@renderer/components/ui/button';
 import { Input } from '@renderer/components/ui/input';
 import { Label } from '@renderer/components/ui/label';
@@ -10,12 +11,16 @@ import {
 } from '@renderer/components/ui/select';
 import { useTranslation } from '@renderer/i18n';
 import { cn } from '@renderer/lib/utils';
+import { marketplaceStore, useMarketplaceStore } from '@renderer/store/marketplace.store';
+import { pushNotification } from '@renderer/store/notification-center.store';
 import { appLogger } from '@renderer/utils/renderer-logger';
+import { MarketplaceMcp, MarketplaceRegistry } from '@shared/types/marketplace';
 import { McpPermissionProfile } from '@shared/types/settings';
 import {
     CheckCircle2,
     Edit2,
     Power,
+    RefreshCw,
     Server,
     Shield,
     Trash2,
@@ -37,6 +42,7 @@ interface MCPServer {
     status?: string;
     type?: string;
     permissionProfile?: McpPermissionProfile;
+    updateAvailable?: boolean;
 }
 
 interface ServerItemProps {
@@ -53,77 +59,76 @@ function ServerItem({
     onToggle,
     onDelete,
     onEdit,
-}: ServerItemProps) {
+    registry,
+}: ServerItemProps & { registry: MarketplaceRegistry }) {
     const isInternal = server.category === 'Internal';
 
     return (
         <div
             className={cn(
-                'group flex items-center justify-between rounded-xl border p-4 transition-all',
+                'group flex items-center justify-between rounded-2xl border p-5 transition-all duration-300',
                 server.enabled
-                    ? 'border-primary/30 bg-primary/5'
-                    : 'border-border/50 bg-muted/30 hover:border-border/80'
+                    ? 'border-primary/40 bg-card/10 shadow-[0_0_15px_rgba(var(--primary-rgb),0.1)] ring-1 ring-primary/20'
+                    : 'border-border/30 bg-muted/20 hover:border-border/60'
             )}
         >
-            <div className="flex flex-1 items-center gap-4">
+            <div className="flex flex-1 items-center gap-5">
                 <div
                     className={cn(
-                        'rounded-lg p-2.5',
+                        'rounded-xl p-3 transition-all duration-300 shadow-inner',
                         server.enabled
-                            ? 'bg-success/10 text-success'
-                            : 'bg-muted/10 text-muted-foreground'
+                            ? 'bg-primary/20 text-primary ring-1 ring-inset ring-primary/30 group-hover:scale-110'
+                            : 'bg-muted/40 text-muted-foreground/40 opacity-50'
                     )}
                 >
-                    <Server className="h-5 w-5" />
+                    <Server className="h-6 w-6" />
                 </div>
-                <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                        <h3 className="font-medium">{server.name}</h3>
-                        {server.isOfficial ? <Shield className="h-3.5 w-3.5 text-primary" /> : null}
-                        {server.category ? (
-                            <span
-                                className={cn(
-                                    'rounded border px-1.5 py-0.5 text-xxs ',
-                                    isInternal
-                                        ? 'border-primary/30 bg-primary/10 text-primary'
-                                        : 'bg-muted text-muted-foreground'
-                                )}
-                            >
-                                {server.category}
-                            </span>
-                        ) : null}
-                        {server.version ? (
-                            <span className="text-xxs text-muted-foreground">
-                                v{server.version}
-                            </span>
-                        ) : null}
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3">
+                        <h3 className="font-black tracking-tight text-foreground leading-none">{server.name}</h3>
+                        {server.isOfficial ? <Shield className="h-4 w-4 text-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.4)]" /> : null}
+                        <div className="flex items-center gap-1.5 overflow-hidden">
+                            {server.category ? (
+                                <Badge
+                                    variant="outline"
+                                    className={cn(
+                                        'text-[9px] h-4 font-black uppercase tracking-widest px-1.5',
+                                        isInternal
+                                            ? 'border-primary/30 bg-primary/10 text-primary'
+                                            : 'bg-muted/20 text-muted-foreground/60'
+                                    )}
+                                >
+                                    {server.category}
+                                </Badge>
+                            ) : null}
+                        </div>
                     </div>
-                    <p className="mt-0.5 typo-caption text-muted-foreground">
+                    <p className="mt-1.5 text-xs font-medium text-muted-foreground/70 line-clamp-1">
                         {server.description ??
                             `${server.command ?? ''} ${(server.args ?? []).join(' ')}`.trim()}
                     </p>
-                    {server.publisher ? (
-                        <p className="mt-1 text-xxs text-muted-foreground/60">
-                            {t('mcp.byAuthor', {
-                                author: server.publisher,
-                                version: server.version ?? '1.0.0',
-                            })}
-                        </p>
-                    ) : null}
-                    {server.permissionProfile ? (
-                        <div className="mt-1.5 flex items-center gap-1.5">
-                            <Shield className="h-3 w-3 text-muted-foreground/60" />
-                            <span className="text-xxs font-medium text-muted-foreground/80">
-                                {t(`settings.mcp.profiles.${server.permissionProfile}`)}
-                            </span>
-                        </div>
-                    ) : null}
-                    {server.tools && server.tools.length > 0 ? (
-                        <p className="mt-1 text-xxs text-muted-foreground/60">
-                            {server.tools.length}{' '}
-                            {server.tools.length === 1 ? t('mcp.tool') : t('mcp.tools')}
-                        </p>
-                    ) : null}
+                    <div className="mt-2.5 flex items-center gap-3">
+                         {server.publisher && (
+                             <>
+                                <span className="text-[10px] font-bold text-muted-foreground/30 italic uppercase tracking-wider">
+                                    {server.publisher}
+                                </span>
+                                <span className="h-1 w-1 rounded-full bg-border/40" />
+                             </>
+                         )}
+                         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">V{server.version || '1.0.0'}</span>
+                         {server.permissionProfile && (
+                            <>
+                                <span className="h-1 w-1 rounded-full bg-border/40" />
+                                <div className="flex items-center gap-1.5 text-primary/60">
+                                    <Shield className="h-3 w-3" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">
+                                        {t(`settings.mcp.profiles.${server.permissionProfile}`)}
+                                    </span>
+                                </div>
+                            </>
+                         )}
+                    </div>
                 </div>
             </div>
 
@@ -163,6 +168,38 @@ function ServerItem({
                             : t('settings.mcp.status.inactive')}
                     </span>
                 </div>
+
+                {server.updateAvailable && (
+                    <Button
+                        size="xs"
+                        variant="destructive"
+                        className="h-8 gap-1.5 rounded-full px-3"
+                        onClick={() => {
+                            const mItem = (registry?.mcp || []).find((m: MarketplaceMcp) => m.id === server.id || m.id === server.name);
+                            if (!mItem) {
+                                pushNotification({ type: 'error', message: 'Registry item not found' });
+                                return;
+                            }
+                            void window.electron.marketplace.install({
+                                type: 'mcp',
+                                id: mItem.id,
+                                downloadUrl: mItem.downloadUrl,
+                                name: mItem.name,
+                                description: mItem.description,
+                                author: mItem.author,
+                                version: mItem.version,
+                            }).then(res => {
+                                if (res.success) {
+                                    pushNotification({ type: 'success', message: t('settings.extensions.plugins.updateSuccess') });
+                                    void marketplaceStore.checkLiveUpdates();
+                                }
+                            });
+                        }}
+                    >
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        <span className="text-xs font-bold">{t('common.update')}</span>
+                    </Button>
+                )}
 
                 {!isInternal ? (
                     <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
@@ -236,6 +273,18 @@ export function MCPServersTab(): JSX.Element {
             setLoading(false);
         }
     }, []);
+
+    const registry = useMarketplaceStore(s => s.registry);
+
+    const serversWithUpdates = useMemo(() => {
+        return servers.map(server => {
+            const mItem = (registry?.mcp || []).find((m: MarketplaceMcp) => m.id === server.id || m.id === server.name);
+            return {
+                ...server,
+                updateAvailable: mItem?.updateAvailable ?? false
+            };
+        });
+    }, [servers, registry]);
 
     useEffect(() => {
         void loadServers();
@@ -346,7 +395,7 @@ export function MCPServersTab(): JSX.Element {
                 </div>
             ) : (
                 <div className="grid gap-3">
-                    {servers.map(server => (
+                    {serversWithUpdates.map(server => (
                         <ServerItem
                             key={server.id}
                             server={server}
@@ -358,6 +407,7 @@ export function MCPServersTab(): JSX.Element {
                                 void handleDelete(serverId, isInternal);
                             }}
                             onEdit={handleEdit}
+                            registry={registry as MarketplaceRegistry}
                         />
                     ))}
 

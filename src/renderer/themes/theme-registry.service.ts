@@ -113,16 +113,16 @@ export class ThemeRegistryService {
         return Object.values(this.themes);
     }
 
-    subscribe(listener: () => void): () => void {
+    subscribe = (listener: () => void): () => void => {
         this.listeners.add(listener);
         return () => {
             this.listeners.delete(listener);
         };
-    }
+    };
 
-    getSnapshot(): number {
+    getSnapshot = (): number => {
         return Object.keys(this.themes).length + (this.isLoaded ? 1_000_000 : 0);
-    }
+    };
 
     /**
      * Get themes by type

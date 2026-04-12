@@ -47,8 +47,7 @@
 - [x] Add task/run orchestration for per-workspace commands, dev servers, logs, and grouped processes
 - [x] Add workspace security boundary checks for secrets, dangerous commands, writable paths, and remote trust levels
 - [x] Reorganize workspace settings and add workspace-scoped Monaco editor controls
-- [x] Add app/editor zoom controls via Ctrl/Cmd + plus, minus, and zero while removing appearance font controls
-- [x] Fixed `SecurityScanService` ENOENT error on Windows by enabling shell for `npm audit`
+- [x] Add app/editor zoom controls via Ctrl/Cmd + plus, minus, and zero while removing appearance font controls 
 - [x] Resolved application startup crash by removing duplicate Git IPC handler registrations for `git:getFileHistory` and `git:getLastCommit`
 - [x] Enforce single-instance editor tabs, remove recent files explorer section, move terminal appearance controls into Settings > Appearance, add editor auto-save, and relocate workspace danger zone into settings
 - [x] Fix workspace diagnostics/LSP integration regressions, stabilize Monaco file-model resolution, and restore the full Vitest suite to green
@@ -617,4 +616,14 @@ Bu aşamada build/lint/type-check/test henüz özellikle çalıştırılmadı. S
 
 - [x] Fixed extension configuration IPC crash (`window.electron.invoke` missing) and refactored `ExtensionPluginsTab` to use the typed domain bridge for improved safety.
 
-*Updated on 2026-04-10*
+- [x] Implemented and stabilized automated extension update notification system: added `marketplace:get-update-count` IPC bridge, integrated startup update checks into `useAppInitialization`, implemented a visual update badge in `AppHeader`, and added auto-navigation to the extensions tab on startup. Hardened store selectors and effects to prevent infinite render loops.
+- [x] Harden extension marketplace updates by deactivating active extensions before disk replacement and reloading extension UI bundles with versioned cache keys.
+- [x] Make extension UI bundle cache-busting depend on the actual UI file stamp (mtime + size) so marketplace updates with unchanged package versions still refresh the renderer.
+- [x] Finalized the extension management interface: added dynamic README fetching from GitHub for marketplace items, implemented a Shadcn-based VS Code-inspired two-pane manager in Settings, and stabilized the extension uninstallation flow with state synchronization.
+
+- [x] Redesigned marketplace expansion cards (extensions/MCP) with a premium VS Code-inspired UI, fixed double-versioning display conflicts, and resolved "Installed" status desync for uninstalled extensions.
+
+- [x] Internationalized the `job-finder-plugin` by implementing a standalone i18n utility with support for English and Turkish locales, refactored `JobFinderView.tsx` to handle dynamic translations and parameter interpolation. 
+- [x] Performed a safe, systematic cleanup of `en.locale.json` by removing 666 reliably identified orphaned keys while preserving dynamic marketplace and model-registry strings.
+- [x] Validated that critical marketplace alerts (e.g., `uninstallSuccess`) remain intact to prevent N/A notification issues in the UI.
+

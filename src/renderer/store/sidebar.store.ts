@@ -86,10 +86,7 @@ export function setSidebarActiveSection(section: SidebarState['activeSection']):
 }
 
 export function useSidebarStore<T>(selector: (snapshot: SidebarState) => T): T {
-    return useSyncExternalStore(
-        subscribeSidebar,
-        () => selector(getSidebarSnapshot()),
-        () => selector(getSidebarSnapshot())
-    );
+    const snapshot = useSyncExternalStore(subscribeSidebar, getSidebarSnapshot);
+    return selector(snapshot);
 }
 

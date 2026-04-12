@@ -189,11 +189,12 @@ export function subscribeMemoryInspectorHealth(listener: Listener): () => void {
 export function useMemoryInspectorHealthStore<T>(
     selector: (state: MemoryInspectorHealthSnapshot) => T
 ): T {
-    return useSyncExternalStore(
+    const snapshotValue = useSyncExternalStore(
         subscribeMemoryInspectorHealth,
-        () => selector(getMemoryInspectorHealthSnapshot()),
-        () => selector(getMemoryInspectorHealthSnapshot())
+        getMemoryInspectorHealthSnapshot,
+        getMemoryInspectorHealthSnapshot
     );
+    return selector(snapshotValue);
 }
 
 export function __resetMemoryInspectorHealthForTests(): void {

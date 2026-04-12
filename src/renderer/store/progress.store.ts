@@ -73,9 +73,10 @@ export function completeProgress(id: string): void {
 
 /** React hook to consume progress state. */
 export function useProgressStore<T>(selector: (s: ProgressState) => T): T {
-  return useSyncExternalStore(
+  const snapshotValue = useSyncExternalStore(
     subscribe,
-    () => selector(getSnapshot()),
-    () => selector(getSnapshot())
+    getSnapshot,
+    getSnapshot
   );
+  return selector(snapshotValue);
 }

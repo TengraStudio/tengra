@@ -3,6 +3,7 @@ import { localeRegistry } from '@renderer/i18n/locale-registry.service';
 import { themeRegistry } from '@renderer/themes/theme-registry.service';
 import { useCallback, useEffect, useRef } from 'react';
 
+import { marketplaceStore } from '@/store/marketplace.store';
 import { unwrapSettingsResponse } from '@/utils/app-settings.util';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -39,6 +40,11 @@ export function useAppInitialization() {
     useEffect(() => {
         void themeRegistry.loadThemes().catch(error => {
             appLogger.error('AppInit', 'Failed to load runtime theme registry', error as Error);
+        });
+
+        // Check for marketplace updates on startup (silent)
+        void marketplaceStore.checkLiveUpdates(true).catch(error => {
+            appLogger.error('AppInit', 'Failed to check for marketplace live updates', error as Error);
         });
 
         const loadLocales = async () => {

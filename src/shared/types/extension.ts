@@ -55,6 +55,10 @@ export interface ExtensionManifest {
     settings?: ExtensionSetting[];
     /** Extension status */
     status?: ExtensionStatus;
+    /** Update available from marketplace */
+    updateAvailable?: boolean;
+    /** Latest version available in marketplace */
+    latestVersion?: string;
 }
 
 /** Extension author information */
@@ -208,6 +212,15 @@ export type ExtensionStatus =
     | 'disabled'
     | 'error'
     | 'loading';
+
+/** Extension runtime information exposed to the renderer */
+export interface ExtensionRuntimeInfo {
+    manifest: ExtensionManifest;
+    status: ExtensionStatus;
+    extensionPath: string;
+    isDev: boolean;
+    uiBundleStamp?: string;
+}
 
 /** Extension runtime context */
 export interface ExtensionContext {

@@ -203,11 +203,12 @@ export function subscribeSSHManagerHealth(listener: Listener): () => void {
 export function useSSHManagerHealthStore<T>(
     selector: (state: SSHManagerHealthSnapshot) => T
 ): T {
-    return useSyncExternalStore(
+    const snapshotValue = useSyncExternalStore(
         subscribeSSHManagerHealth,
-        () => selector(getSSHManagerHealthSnapshot()),
-        () => selector(getSSHManagerHealthSnapshot())
+        getSSHManagerHealthSnapshot,
+        getSSHManagerHealthSnapshot
     );
+    return selector(snapshotValue);
 }
 
 export function __resetSSHManagerHealthForTests(): void {

@@ -68,12 +68,10 @@ export function createHealthStore(name: string): HealthStore {
             snapshot = { ...snapshot, ...patch };
             emit();
         },
-        useSnapshot: <T>(selector: (state: HealthStoreSnapshot) => T): T =>
-            useSyncExternalStore(
-                subscribe,
-                () => selector(getSnapshot()),
-                () => selector(getSnapshot())
-            ),
+        useSnapshot: <T>(selector: (state: HealthStoreSnapshot) => T): T => {
+            const snapshotValue = useSyncExternalStore(subscribe, getSnapshot);
+            return selector(snapshotValue);
+        },
         resetForTests() {
             snapshot = { ...initial };
             emit();

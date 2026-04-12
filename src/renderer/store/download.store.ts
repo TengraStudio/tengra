@@ -90,9 +90,6 @@ export const downloadStore = {
 };
 
 export function useDownloadStore<T>(selector: (s: DownloadState) => T): T {
-    return useSyncExternalStore(
-        subscribe,
-        () => selector(getSnapshot()),
-        () => selector(getSnapshot())
-    );
+    const s = useSyncExternalStore(subscribe, getSnapshot);
+    return selector(s);
 }

@@ -217,6 +217,17 @@ export function MarketplaceView(): JSX.Element {
     }, [refreshInstalledSkills, refreshMcpPlugins, refreshRegistry, refreshRuntimeProfile]);
 
     useEffect(() => {
+        const handleStateChange = () => {
+             void refreshRegistry();
+             void refreshMcpPlugins();
+        };
+        const cleanup = window.electron.on('extension:state-changed', handleStateChange);
+        return () => {
+             cleanup();
+        };
+    }, [refreshRegistry, refreshMcpPlugins]);
+
+    useEffect(() => {
         void preloadMarketplace();
     }, [preloadMarketplace]);
 

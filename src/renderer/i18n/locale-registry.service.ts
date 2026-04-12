@@ -53,12 +53,12 @@ export class LocaleRegistryService {
         await this.loadLocales();
     }
 
-    subscribe(listener: LocaleRegistryListener): () => void {
+    subscribe = (listener: LocaleRegistryListener): () => void => {
         this.listeners.add(listener);
         return () => {
             this.listeners.delete(listener);
         };
-    }
+    };
 
     isLocalesLoaded(): boolean {
         return this.isLoaded;

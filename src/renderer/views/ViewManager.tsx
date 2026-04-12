@@ -6,6 +6,7 @@ import {
     useWorkspaceTerminal,
 } from '@renderer/context/WorkspaceContext';
 import { ChatTemplate } from '@renderer/features/chat/types';
+import { ExtensionViewHost } from '@renderer/features/extensions/components/ExtensionViewHost';
 import { AppView } from '@renderer/hooks/useAppState';
 import React, { Suspense, useEffect, useMemo } from 'react';
 
@@ -23,7 +24,6 @@ import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 import { trackAnimationEvent } from '@/store/animation-analytics.store';
 import type { GroupedModels } from '@/types';
-import { ExtensionViewHost } from '@renderer/features/extensions/components/ExtensionViewHost';
 
 import {
     ChatViewWrapperView,

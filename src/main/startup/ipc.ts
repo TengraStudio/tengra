@@ -12,7 +12,6 @@ import { registerContractIpc } from '@main/ipc/contract';
 import { registerDbIpc } from '@main/ipc/db';
 import { registerDialogIpc } from '@main/ipc/dialog';
 import { registerExportIpc } from '@main/ipc/export';
-
 import { registerFilesIpc } from '@main/ipc/files';
 import { registerGalleryIpc } from '@main/ipc/gallery';
 import { registerGitIpc } from '@main/ipc/git';

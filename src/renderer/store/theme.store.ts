@@ -95,10 +95,7 @@ export function resetTheme(): void {
 }
 
 export function useThemeStore<T>(selector: (snapshot: ThemeState) => T): T {
-    return useSyncExternalStore(
-        subscribeTheme,
-        () => selector(getThemeSnapshot()),
-        () => selector(getThemeSnapshot())
-    );
+    const snapshot = useSyncExternalStore(subscribeTheme, getThemeSnapshot);
+    return selector(snapshot);
 }
 

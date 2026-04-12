@@ -99,7 +99,8 @@ function subscribe(listener: Listener): () => void {
 
 /** React hook to select from the offline queue store */
 export function useOfflineQueueStore<T>(selector: (s: OfflineQueueState) => T): T {
-    return useSyncExternalStore(subscribe, () => selector(getSnapshot()), () => selector(getSnapshot()));
+    const snapshotValue = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+    return selector(snapshotValue);
 }
 
 // Listen for browser online/offline events and auto-flush
