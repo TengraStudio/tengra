@@ -108,7 +108,7 @@ export function useMarketplaceItems({ mode, registry, localPlugins, query, insta
             }
             return item;
         });
-    }, [registry, mode, modelTab, installedModelsSet, installedMcpIds, runtimeProfile]);
+    }, [registry, mode, modelTab, installedModelsSet, installedMcpIds, runtimeProfile, localPlugins]);
 
     const storeItems = useMemo(() => getStoreItems(), [getStoreItems]);
 

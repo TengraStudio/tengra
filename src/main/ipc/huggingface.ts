@@ -1,8 +1,8 @@
 import { appLogger } from '@main/logging/logger';
-import { HuggingFaceService, HFConversionProgress } from '@main/services/llm/huggingface.service';
+import { HFConversionProgress,HuggingFaceService } from '@main/services/llm/huggingface.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { withRateLimit } from '@main/utils/rate-limiter.util';
+import { withOperationGuard } from '@main/utils/operation-wrapper.util';
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
 
 /** Maximum query length */
@@ -179,7 +179,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
             const limit = validateLimit(limitRaw);
             const page = validatePage(pageRaw);
             const sort = validateSort(sortRaw);
-            return await withRateLimit('huggingface', async () =>
+            return await withOperationGuard('huggingface', async () =>
                 llmService.searchHFModels(query, limit, page, sort)
             );
         }, { models: [], total: 0 }
@@ -191,7 +191,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
             if (!modelId) {
                 throw new Error('Invalid model ID');
             }
-            return await withRateLimit('huggingface', async () =>
+            return await withOperationGuard('huggingface', async () =>
                 hfService.getModelFiles(modelId)
             );
         }, []
@@ -240,7 +240,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
         async (_event: IpcMainInvokeEvent, limitRaw: RuntimeValue, queryRaw: RuntimeValue) => {
             const limit = validateLimit(limitRaw);
             const query = validateQuery(queryRaw);
-            return await withRateLimit('huggingface', async () => hfService.getRecommendations(limit, query));
+            return await withOperationGuard('huggingface', async () => hfService.getRecommendations(limit, query));
         },
         []
     ));
@@ -252,7 +252,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
             if (!modelId) {
                 throw new Error('Invalid model ID');
             }
-            return await withRateLimit('huggingface', async () => hfService.getModelPreview(modelId));
+            return await withOperationGuard('huggingface', async () => hfService.getModelPreview(modelId));
         },
         null
     ));
@@ -264,7 +264,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
             if (modelIds.length === 0) {
                 return {};
             }
-            return await withRateLimit('huggingface', async () => hfService.getBulkModelPreviews(modelIds));
+            return await withOperationGuard('huggingface', async () => hfService.getBulkModelPreviews(modelIds));
         },
         {}
     ));
@@ -273,7 +273,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
         'hf:compare-models',
         async (_event: IpcMainInvokeEvent, modelIdsRaw: RuntimeValue) => {
             const modelIds = validateModelIdList(modelIdsRaw);
-            return await withRateLimit('huggingface', async () => hfService.compareModels(modelIds));
+            return await withOperationGuard('huggingface', async () => hfService.compareModels(modelIds));
         },
         { previews: [], recommendation: {} }
     ));

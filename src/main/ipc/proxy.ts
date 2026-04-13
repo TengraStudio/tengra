@@ -14,7 +14,7 @@ import { IpcValue } from '@shared/types/common';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
 
-import { providerNameSchema, proxyAccountIdSchema, rateLimitConfigSchema, sessionKeySchema } from './validation';
+import { proxyAccountIdSchema, sessionKeySchema } from './validation';
 
 /**
  * Registers IPC handlers for proxy operations including quota retrieval, authentication, and model listing.
@@ -233,26 +233,6 @@ export function registerProxyIpc(
         return await proxyService.getClaudeQuota();
     }, { accounts: [] }));
 
-    ipcMain.handle('proxy:get-rate-limit-metrics', createSafeIpcHandler('proxy:get-rate-limit-metrics', async () => {
-        return proxyService.getProviderRateLimitMetrics();
-    }, { generatedAt: 0, providers: [] }));
-
-    ipcMain.handle('proxy:get-rate-limit-config', createSafeIpcHandler('proxy:get-rate-limit-config', async () => {
-        return proxyService.getProviderRateLimitConfig();
-    }, {}));
-
-    ipcMain.handle('proxy:set-rate-limit-config', createValidatedIpcHandler('proxy:set-rate-limit-config', async (_event, provider: string, config: {
-        windowMs?: number;
-        maxRequests?: number;
-        warningThreshold?: number;
-        maxQueueSize?: number;
-        allowPremiumBypass?: boolean;
-    }) => {
-        return proxyService.setProviderRateLimitConfig(provider, config);
-    }, {
-        argsSchema: z.tuple([providerNameSchema, rateLimitConfigSchema])
-    }));
-
     ipcMain.handle('proxy:deleteAuthFile', createSafeIpcHandler('proxy:deleteAuthFile', async () => {
         // Legacy file-based auth is now handled via HTTP API
         return { success: true };
@@ -269,12 +249,5 @@ export function registerProxyIpc(
         return { success: false, error: 'Not supported' };
     }, { success: false, error: 'Not supported' }));
 
-    if (eventBus && getMainWindow) {
-        eventBus.onCustom('proxy:rate-limit-warning', (payload) => {
-            const win = getMainWindow();
-            if (win && !win.isDestroyed()) {
-                win.webContents.send('proxy:rate-limit-warning', payload);
-            }
-        });
-    }
+    void eventBus;
 }

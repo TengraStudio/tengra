@@ -28,7 +28,6 @@ function createMockDeps(): McpDeps {
         ollama: {},
         advancedMemory: {},
         modelCollaboration: {},
-        rateLimit: { waitForToken: async () => undefined },
         auditLog: undefined
     } as never as McpDeps;
 }

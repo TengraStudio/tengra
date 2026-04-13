@@ -37,7 +37,7 @@ interface McpMarketplaceProps {
     installedModels?: ModelInfo[];
     runtimeProfile?: MarketplaceRuntimeProfile | null;
     loading: boolean;
-    onRefreshRegistry: () => Promise<void>;
+    onRefreshRegistry: (force?: boolean) => Promise<void>;
     onRefreshMcpPlugins: () => Promise<void>;
     query: MarketplaceQueryState;
     onQueryChange: (updater: (prev: MarketplaceQueryState) => MarketplaceQueryState) => void;
@@ -289,7 +289,7 @@ export function McpMarketplace({
                 await window.electron.mcp.install(mcpConfig);
                 await onRefreshMcpPlugins();
             }
-            await onRefreshRegistry();
+            await onRefreshRegistry(true);
             void refreshModels(); // Background refresh of local models
             pushNotification({ type: 'success', message: t('marketplace.installSuccess', { name: item.name }) });
         } catch (error: unknown) {
@@ -537,7 +537,7 @@ export function McpMarketplace({
             if (item.itemType === 'mcp') {
                 await onRefreshMcpPlugins();
             }
-            await onRefreshRegistry();
+            await onRefreshRegistry(true);
 
             // Determine notification message
             let successMessage = t('marketplace.uninstallSuccess', { name: item.name });
@@ -562,14 +562,14 @@ export function McpMarketplace({
     return (
         <div className="space-y-6">
             {mode === 'models' && (
-                <div className="flex items-center gap-2 border-b border-border/20 pb-4">
+                <div className="flex items-center gap-2 mb-2">
                     {(['ollama', 'huggingface', 'community'] as const).map(tab => (
                         <button
                             key={tab}
                             onClick={() => onQueryChange(prev => ({ ...prev, modelTab: tab, page: 1, selectedItemId: null }))}
-                            className={`px-4 py-1.5 rounded-full typo-body font-bold transition-all ${query.modelTab === tab
-                                ? 'bg-primary text-primary-foreground shadow-md'
-                                : 'bg-muted/30 text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                            className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${query.modelTab === tab
+                                ? 'bg-primary text-primary-foreground shadow-sm'
+                                : 'text-muted-foreground/50 hover:text-foreground hover:bg-muted/20'
                                 }`}
                         >
                             {t(`marketplace.tabs.${tab}`)}
@@ -588,33 +588,46 @@ export function McpMarketplace({
                 mcpView={query.mcpView}
             />
 
-            <div className={`grid grid-cols-1 gap-6 transition-all duration-300 ${selectedItem ? 'xl:grid-cols-[minmax(0,1fr)_460px]' : 'xl:grid-cols-1'}`}>
-                <div className="space-y-6">
-                    <div className={`grid grid-cols-1 gap-6 ${selectedItem ? 'md:grid-cols-1 lg:grid-cols-1 2xl:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-3'}`}>
-                        {enrichedPagedItems.map(entry => (
-                            <div
-                                key={entry.key}
-                                onClick={() => setSelectedItemId(entry.type === 'local' ? entry.plugin.id : entry.item.id)}
-                                className={`cursor-pointer transition-all duration-200 active:scale-[0.98] ${selectedItemId === (entry.type === 'local' ? entry.plugin.id : entry.item.id) ? 'ring-2 ring-primary ring-offset-2 ring-offset-background rounded-xl' : ''}`}
-                            >
-                                {entry.type === 'local' ? (
-                                    <McpCard
-                                        plugin={entry.plugin}
-                                        t={t}
-                                        onUninstall={(id, name) => void handleUninstall({ id, name, itemType: 'mcp' } as MarketplaceItem)}
-                                    />
-                                ) : (
-                                    <MarketCard
-                                        item={entry.item}
-                                        isActive={entry.item.itemType === 'language' && (entry.item as MarketplaceLanguage).locale === activeLanguage}
-                                        isInstalling={installingId === entry.item.id}
-                                        onInstall={(it) => void handleInstall(it)}
-                                        onUninstall={(it) => void handleUninstall(it)}
-                                        onActivateLanguage={(it) => void handleActivateLanguage(it)}
-                                    />
-                                )}
-                            </div>
-                        ))}
+            <div className={`flex flex-col xl:flex-row gap-8 transition-all duration-300`}>
+                <div className={`flex-1 space-y-6`}>
+                    <div className="divide-y divide-muted/10 border-t border-muted/10">
+                        {enrichedPagedItems.map(entry => {
+                            const isSelected = selectedItemId === (entry.type === 'local' ? entry.plugin.id : entry.item.id);
+                            return (
+                                <div
+                                    key={entry.key}
+                                    onClick={() => setSelectedItemId(entry.type === 'local' ? entry.plugin.id : entry.item.id)}
+                                    className={`
+                                        group relative flex items-start cursor-pointer transition-colors duration-200
+                                        ${isSelected ? 'bg-primary/[0.04]' : 'bg-transparent hover:bg-muted/30'}
+                                    `}
+                                >
+                                    {/* Selection indicator */}
+                                    {isSelected && (
+                                        <div className="absolute left-0 top-2 bottom-2 w-0.5 bg-primary rounded-r-full" />
+                                    )}
+
+                                    <div className="flex-1">
+                                        {entry.type === 'local' ? (
+                                            <McpCard
+                                                plugin={entry.plugin}
+                                                t={t}
+                                                onUninstall={(id, name) => void handleUninstall({ id, name, itemType: 'mcp' } as MarketplaceItem)}
+                                            />
+                                        ) : (
+                                            <MarketCard
+                                                item={entry.item}
+                                                isActive={entry.item.itemType === 'language' && (entry.item as MarketplaceLanguage).locale === activeLanguage}
+                                                isInstalling={installingId === entry.item.id}
+                                                onInstall={(it) => void handleInstall(it)}
+                                                onUninstall={(it) => void handleUninstall(it)}
+                                                onActivateLanguage={(it) => void handleActivateLanguage(it)}
+                                            />
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
 
                     {totalCount === 0 && <EmptyState t={t} mode={mode} />}
@@ -630,27 +643,29 @@ export function McpMarketplace({
                 </div>
 
                 {selectedItem && (
-                    <div className="relative">
-                        <MarketplaceInfoPanel
-                            item={selectedItem}
-                            t={t}
-                            onClose={() => setSelectedItemId(null)}
-                            onInstall={(override) => {
-                                if (!selectedStoreItem) {
-                                    return;
-                                }
-                                if (override) {
-                                    void handleInstall({
-                                        ...selectedStoreItem,
-                                        id: override.id || selectedStoreItem.id,
-                                        name: override.name || selectedStoreItem.name,
-                                        downloadUrl: override.downloadUrl || selectedStoreItem.downloadUrl
-                                    });
-                                } else {
-                                    void handleInstall(selectedStoreItem);
-                                }
-                            }}
-                        />
+                    <div className="w-full xl:w-[460px] shrink-0">
+                        <div className="sticky top-6">
+                            <MarketplaceInfoPanel
+                                item={selectedItem}
+                                t={t}
+                                onClose={() => setSelectedItemId(null)}
+                                onInstall={(override) => {
+                                    if (!selectedStoreItem) {
+                                        return;
+                                    }
+                                    if (override) {
+                                        void handleInstall({
+                                            ...selectedStoreItem,
+                                            id: override.id || selectedStoreItem.id,
+                                            name: override.name || selectedStoreItem.name,
+                                            downloadUrl: override.downloadUrl || selectedStoreItem.downloadUrl
+                                        });
+                                    } else {
+                                        void handleInstall(selectedStoreItem);
+                                    }
+                                }}
+                            />
+                        </div>
                     </div>
                 )}
             </div>
@@ -676,9 +691,11 @@ function EmptyState({
         languages: 'marketplace.tabs.languages',
     };
     return (
-        <div className="col-span-full py-20 text-center border border-dashed border-border/40 rounded-xl bg-muted/5">
-            <Package className="w-10 h-10 text-muted-foreground/20 mx-auto mb-4" />
-            <p className="text-sm text-muted-foreground font-bold">{t('marketplace.emptyState', { mode: t(modeKeyByMode[mode]) })}</p>
+        <div className="py-32 flex flex-col items-center justify-center text-center">
+            <Package className="w-12 h-12 text-muted-foreground/10 mb-4" />
+            <p className="text-xs text-muted-foreground/40 font-black uppercase tracking-[0.2em]">
+                {t('marketplace.emptyState', { mode: t(modeKeyByMode[mode]) })}
+            </p>
         </div>
     );
 }
@@ -688,7 +705,9 @@ function Loader({ t }: { t: (key: string) => string }) {
     return (
         <div className="flex flex-col items-center justify-center py-32 space-y-5">
             <RefreshCw className="w-8 h-8 text-primary animate-spin opacity-40" />
-            <p className="typo-caption font-bold text-muted-foreground animate-pulse">{t('marketplace.syncing')}</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 animate-pulse">
+                {t('marketplace.syncing')}
+            </p>
         </div>
     );
 }
@@ -706,27 +725,25 @@ function Pagination({
     t: (key: string, options?: Record<string, string | number>) => string;
 }) {
     return (
-        <div className="flex items-center justify-center gap-3 pt-6 border-t border-border/20">
+        <div className="flex items-center justify-center gap-6 pt-12">
             <button
                 type="button"
                 onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                 disabled={currentPage <= 1}
-                className="inline-flex items-center gap-1 rounded-md border border-border/40 px-3 py-1.5 typo-caption font-semibold text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                className="p-2 rounded-full hover:bg-muted text-muted-foreground/40 hover:text-foreground transition-all active:scale-90 disabled:opacity-10"
             >
-                <ChevronLeft className="h-3.5 w-3.5" />
-                {t('common.previous')}
+                <ChevronLeft className="h-5 w-5" />
             </button>
-            <span className="typo-caption font-semibold text-muted-foreground">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/30">
                 {t('common.pageOf', { current: currentPage, total: totalPages })}
             </span>
             <button
                 type="button"
                 onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage >= totalPages}
-                className="inline-flex items-center gap-1 rounded-md border border-border/40 px-3 py-1.5 typo-caption font-semibold text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                className="p-2 rounded-full hover:bg-muted text-muted-foreground/40 hover:text-foreground transition-all active:scale-90 disabled:opacity-10"
             >
-                {t('common.next')}
-                <ChevronRight className="h-3.5 w-3.5" />
+                <ChevronRight className="h-5 w-5" />
             </button>
         </div>
     );

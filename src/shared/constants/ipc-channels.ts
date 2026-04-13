@@ -987,10 +987,6 @@ export const PROXY_CHANNELS = {
   DELETE_AUTH_FILE: 'proxy:deleteAuthFile',
   /** Download an auth file */
   DOWNLOAD_AUTH_FILE: 'proxy:downloadAuthFile',
-  /** Get rate limit configuration */
-  GET_RATE_LIMIT_CONFIG: 'proxy:get-rate-limit-config',
-  /** Get rate limit metrics */
-  GET_RATE_LIMIT_METRICS: 'proxy:get-rate-limit-metrics',
   /** Get Claude quota */
   GET_CLAUDE_QUOTA: 'proxy:getClaudeQuota',
   /** Get Codex usage */
@@ -1005,8 +1001,6 @@ export const PROXY_CHANNELS = {
   SAVE_CLAUDE_SESSION: 'proxy:saveClaudeSession',
   /** One-click OAuth bridge verification */
   VERIFY_AUTH_BRIDGE: 'proxy:verifyAuthBridge',
-  /** Set rate limit configuration */
-  SET_RATE_LIMIT_CONFIG: 'proxy:set-rate-limit-config',
   /** Sync auth files across devices */
   SYNC_AUTH_FILES: 'proxy:syncAuthFiles',
 } as const;

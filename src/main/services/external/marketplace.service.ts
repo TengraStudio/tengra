@@ -6,19 +6,25 @@ const execAsync = promisify(exec);
 import { appLogger } from '@main/logging/logger';
 import { PerformanceService } from '@main/services/analysis/performance.service';
 import { BaseService } from '@main/services/base.service';
-import { ExtensionService } from '@main/services/extension/extension.service';
+import { ExtensionService } from '@main/services/extension/extension.service'; 
 import { HuggingFaceService } from '@main/services/llm/huggingface.service';
 import { LlamaService } from '@main/services/llm/llama.service';
 import {
     ModelDownloaderService,
-    ModelDownloadResult} from '@main/services/llm/model-downloader.service';
+    ModelDownloadResult
+} from '@main/services/llm/model-downloader.service';
 import { OllamaService } from '@main/services/llm/ollama.service';
 import { LocaleService } from '@main/services/system/locale.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { SystemService } from '@main/services/system/system.service';
 import { localePackSchema } from '@shared/schemas/locale.schema';
-import { marketplaceRegistrySchema } from '@shared/schemas/marketplace.schema';
 import {
+    marketplaceRegistrySchema,
+    remoteModelRecordSchema,
+    remoteModelSourceSchema,
+} from '@shared/schemas/marketplace.schema';
+import {
+    IndexedModel,
     InstallResult,
     MarketplaceExtension,
     MarketplaceItem,
@@ -26,6 +32,7 @@ import {
     MarketplaceModel,
     MarketplaceRegistry,
     MarketplaceRuntimeProfile,
+    RemoteModelSourceConfig,
 } from '@shared/types/marketplace';
 import { MCPServerConfig } from '@shared/types/settings';
 import axios from 'axios';
@@ -33,15 +40,7 @@ import { app } from 'electron';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
-interface RemoteModelSourceConfig {
-    provider: MarketplaceModel['provider'];
-    url: string;
-}
-
-interface IndexedModel {
-    item: MarketplaceModel;
-    order: number;
-}
+import { McpPluginService } from '../mcp/mcp-plugin.service';
 
 type ExtensionPackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
 
@@ -61,31 +60,18 @@ interface MarketplaceExtensionPackageJson {
     manifest?: MarketplaceExtensionManifestMetadata;
 }
 
-const remoteModelRecordSchema = z.object({
-    id: z.string().min(1).max(512),
-    slug: z.string().max(512).optional(),
-    name: z.string().max(512).optional(),
-    description: z.string().max(50000).optional(),
-    author: z.string().max(512).optional(),
-    version: z.string().max(128).optional(),
-    provider: z.enum(['ollama', 'huggingface', 'custom']).optional(),
-    sourceUrl: z.string().max(2048).optional(),
-    downloadUrl: z.string().max(2048).optional(),
-    category: z.string().max(256).optional(),
-    pipelineTag: z.string().max(256).optional(),
-    readme: z.string().optional(),
-    parameters: z.string().optional(),
-    totalSize: z.string().optional(),
-    pullCount: z.number().optional(),
-    downloads: z.number().optional(),
-    likes: z.number().optional(),
-    submodels: z.array(z.any()).optional(),
-});
-
-const remoteModelSourceSchema = z.object({
-    source: z.enum(['ollama', 'huggingface', 'custom']).optional(),
-    models: z.array(z.any()),
-});
+export interface MarketplaceServiceDependencies {
+    localeService?: LocaleService;
+    modelDownloaderService?: ModelDownloaderService;
+    huggingFaceService?: HuggingFaceService;
+    ollamaService?: OllamaService;
+    systemService?: SystemService;
+    performanceService?: PerformanceService;
+    llamaService?: LlamaService;
+    extensionService?: ExtensionService;
+    settingsService?: SettingsService;
+    mcpPluginService?: McpPluginService;
+}
 
 export class MarketplaceService extends BaseService {
     private readonly REGISTRY_URL = 'https://raw.githubusercontent.com/TengraStudio/tengra-market/main/registry.json';
@@ -105,18 +91,29 @@ export class MarketplaceService extends BaseService {
     private readonly USER_EXTENSIONS_PATH = path.join(app.getPath('userData'), 'extensions');
     private readonly liveUpdates = new Set<string>();
 
-    constructor(
-        private readonly localeService?: LocaleService,
-        private readonly modelDownloaderService?: ModelDownloaderService,
-        private readonly huggingFaceService?: HuggingFaceService,
-        private readonly ollamaService?: OllamaService,
-        private readonly systemService?: SystemService,
-        private readonly performanceService?: PerformanceService,
-        private readonly llamaService?: LlamaService,
-        private readonly extensionService?: ExtensionService,
-        private readonly settingsService?: SettingsService
-    ) {
+    private readonly localeService?: LocaleService;
+    private readonly modelDownloaderService?: ModelDownloaderService;
+    private readonly huggingFaceService?: HuggingFaceService;
+    private readonly ollamaService?: OllamaService;
+    private readonly systemService?: SystemService;
+    private readonly performanceService?: PerformanceService;
+    private readonly llamaService?: LlamaService;
+    private readonly extensionService?: ExtensionService;
+    private readonly settingsService?: SettingsService;
+    private readonly mcpPluginService?: McpPluginService;
+
+    constructor(deps: MarketplaceServiceDependencies) {
         super('MarketplaceService');
+        this.localeService = deps.localeService;
+        this.modelDownloaderService = deps.modelDownloaderService;
+        this.huggingFaceService = deps.huggingFaceService;
+        this.ollamaService = deps.ollamaService;
+        this.systemService = deps.systemService;
+        this.performanceService = deps.performanceService;
+        this.llamaService = deps.llamaService;
+        this.extensionService = deps.extensionService;
+        this.settingsService = deps.settingsService;
+        this.mcpPluginService = deps.mcpPluginService;
     }
 
     async initialize(): Promise<void> {
@@ -161,28 +158,28 @@ export class MarketplaceService extends BaseService {
         let count = 0;
 
         registry.extensions?.forEach(item => {
-            if (item.updateAvailable) {count++;}
+            if (item.updateAvailable) { count++; }
         });
         registry.mcp?.forEach(item => {
-            if (item.updateAvailable) {count++;}
+            if (item.updateAvailable) { count++; }
         });
         registry.themes?.forEach(item => {
-            if (item.updateAvailable) {count++;}
+            if (item.updateAvailable) { count++; }
         });
         registry.models?.forEach(model => {
-            if (model.updateAvailable) {count++;}
+            if (model.updateAvailable) { count++; }
         });
         registry.personas?.forEach(item => {
-            if (item.updateAvailable) {count++;}
+            if (item.updateAvailable) { count++; }
         });
         registry.skills?.forEach(item => {
-            if (item.updateAvailable) {count++;}
+            if (item.updateAvailable) { count++; }
         });
         registry.languages?.forEach(item => {
-            if (item.updateAvailable) {count++;}
+            if (item.updateAvailable) { count++; }
         });
         registry.prompts?.forEach(item => {
-            if (item.updateAvailable) {count++;}
+            if (item.updateAvailable) { count++; }
         });
 
         return count;
@@ -196,7 +193,7 @@ export class MarketplaceService extends BaseService {
         let count = 0;
         try {
             const registry = await this.fetchRegistry();
-            
+
             // Check GitHub raw for each installed extension to find stealth updates (not yet in registry.json)
             for (const item of registry.extensions || []) {
                 if (item.installed && item.repository) {
@@ -204,7 +201,7 @@ export class MarketplaceService extends BaseService {
                         const baseUrl = item.repository.replace(/\.git$/, '');
                         if (baseUrl.includes('github.com')) {
                             const rawBase = baseUrl.replace('github.com', 'raw.githubusercontent.com');
-                            
+
                             // Try main branch first, then fallback to master
                             const branches = ['main', 'master'];
                             let remoteVersion: string | undefined;
@@ -214,7 +211,7 @@ export class MarketplaceService extends BaseService {
                                     const pkgUrl = `${rawBase}/${branch}/package.json`;
                                     const response = await axios.get(pkgUrl, { timeout: 2000 });
                                     remoteVersion = response.data?.version;
-                                    if (remoteVersion) {break;}
+                                    if (remoteVersion) { break; }
                                 } catch {
                                     continue;
                                 }
@@ -249,7 +246,7 @@ export class MarketplaceService extends BaseService {
         } catch (error) {
             appLogger.error('MarketplaceService', 'Live update check failed', error as Error);
         }
-        
+
         return count;
     }
 
@@ -326,7 +323,7 @@ export class MarketplaceService extends BaseService {
                     const extensionItem = item as MarketplaceExtension;
                     const extensionInstallPath = path.join(targetPath, sanitizedId);
                     const repoUrl = extensionItem.repository ?? '';
-                    
+
                     if (item.downloadUrl.endsWith('.git') || repoUrl.endsWith('.git')) {
                         payload = { type: 'git', url: item.downloadUrl || repoUrl };
                     } else {
@@ -385,7 +382,7 @@ export class MarketplaceService extends BaseService {
                 }
 
                 await this.ensureExtensionEntrypoint(extensionPath);
-                
+
                 if (this.extensionService) {
                     const installResult = await this.extensionService.installExtension(extensionPath);
                     if (!installResult.success || !installResult.extensionId) {
@@ -421,6 +418,97 @@ export class MarketplaceService extends BaseService {
             appLogger.error('MarketplaceService', `Failed to install item: ${item.name}`, error as Error);
             const installError = this.classifyInstallError(error as Error | z.ZodError | RuntimeValue);
             throw new Error(`${installError.code}:${installError.message}`);
+        }
+    }
+
+    /**
+     * Uninstalls an item from the marketplace based on its type.
+     */
+    async uninstallItem(itemId: string, itemType: MarketplaceItem['itemType']): Promise<{ success: boolean; error?: string; messageKey?: string }> {
+        try {
+            appLogger.info('MarketplaceService', `Uninstalling ${itemType}: ${itemId}`);
+
+            switch (itemType) {
+                case 'extension':
+                    if (this.extensionService) {
+                        return await this.extensionService.uninstallExtension(itemId);
+                    }
+                    throw new Error('Extension service not available');
+
+                case 'mcp': {
+                    if (this.mcpPluginService) {
+                        await this.mcpPluginService.unregisterPlugin(itemId);
+                    }
+                    // Also delete the .mcp.json file if it exists in the runtime folder
+                    const mcpPath = path.join(this.USER_MCP_PATH, `${this.sanitizeFileNameStem(itemId)}.mcp.json`);
+                    if (await fs.pathExists(mcpPath)) {
+                        await fs.remove(mcpPath);
+                    }
+                    return { success: true };
+                }
+
+                case 'theme': {
+                    const themePath = path.join(this.USER_THEMES_PATH, `${this.sanitizeFileNameStem(itemId)}.theme.json`);
+                    if (await fs.pathExists(themePath)) {
+                        await fs.remove(themePath);
+                    }
+                    return { success: true };
+                }
+
+                case 'persona': {
+                    const personaPath = path.join(this.USER_PERSONAS_PATH, `${this.sanitizeFileNameStem(itemId)}.persona.json`);
+                    if (await fs.pathExists(personaPath)) {
+                        await fs.remove(personaPath);
+                    }
+                    return { success: true };
+                }
+
+                case 'prompt': {
+                    const promptPath = path.join(this.USER_PROMPTS_PATH, `${this.sanitizeFileNameStem(itemId)}.prompt.json`);
+                    if (await fs.pathExists(promptPath)) {
+                        await fs.remove(promptPath);
+                    }
+                    return { success: true };
+                }
+
+                case 'language': {
+                    const localePath = path.join(this.USER_LOCALES_PATH, `${this.sanitizeFileNameStem(itemId)}.locale.json`);
+                    if (await fs.pathExists(localePath)) {
+                        await fs.remove(localePath);
+                    }
+                    if (this.localeService) {
+                        await this.localeService.reload();
+                    }
+                    return { success: true };
+                }
+
+                case 'skill': {
+                    const skillPath = path.join(this.USER_SKILLS_PATH, `${this.sanitizeFileNameStem(itemId)}.skill.json`);
+                    if (await fs.pathExists(skillPath)) {
+                        await fs.remove(skillPath);
+                    }
+                    return { success: true };
+                }
+
+                case 'model': {
+                    // We don't usually delete model binaries here as they might be used elsewhere,
+                    // but we can try if there's a corresponding .model.json
+                    const modelJsonPath = path.join(this.USER_MODELS_PATH, `${this.sanitizeFileNameStem(itemId)}.model.json`);
+                    if (await fs.pathExists(modelJsonPath)) {
+                        await fs.remove(modelJsonPath);
+                    }
+                    return { success: true };
+                }
+
+                default:
+                    throw new Error(`Unsupported item type for uninstallation: ${itemType}`);
+            }
+        } catch (error) {
+            appLogger.error('MarketplaceService', `Failed to uninstall item: ${itemId}`, error as Error);
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : String(error)
+            };
         }
     }
 
@@ -1249,7 +1337,7 @@ export class MarketplaceService extends BaseService {
         return items.map(item => {
             const installedVersion =
                 installedById.get(item.id) ?? installedById.get(item.id.toLowerCase());
-            
+
             const isInstalled = typeof installedVersion === 'string';
             const hasUpdate = (isInstalled && this.isNewerVersion(installedVersion, item.version)) || this.liveUpdates.has(item.id);
 
@@ -1269,8 +1357,8 @@ export class MarketplaceService extends BaseService {
             for (let i = 0; i < Math.max(cur.length, lat.length); i++) {
                 const c = cur[i] || 0;
                 const l = lat[i] || 0;
-                if (l > c) {return true;}
-                if (l < c) {return false;}
+                if (l > c) { return true; }
+                if (l < c) { return false; }
             }
         } catch (e) {
             // Fallback to simple string comparison if split fails
@@ -1326,7 +1414,7 @@ export class MarketplaceService extends BaseService {
         for (const directoryName of installedDirectories) {
             const extPath = path.join(this.USER_EXTENSIONS_PATH, directoryName);
             const markerPath = path.join(extPath, '.uninstalled');
-            
+
             // Skip folders marked as uninstalled (Windows file lock fallback)
             if (await fs.pathExists(markerPath)) {
                 continue;
@@ -1662,7 +1750,7 @@ export class MarketplaceService extends BaseService {
                 repository = extension?.repository;
             }
 
-            if (!repository || !repository.includes('github.com')) {
+            if (!repository?.includes('github.com')) {
                 return null;
             }
 

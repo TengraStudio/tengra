@@ -160,6 +160,7 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
     };
 
     const handleDeleteModel = async (modelId: string, provider: string) => {
+        // eslint-disable-next-line no-alert
         if (!window.confirm(t('modelsPage.confirmDelete'))) { return; }
         try {
             let res;
@@ -258,7 +259,7 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
                         defaultProvider={defaultProvider}
                         setDefault={setDefault}
                         updateHidden={updateHidden}
-                        onDelete={handleDeleteModel}
+                        onDelete={(id, prov) => { void handleDeleteModel(id, prov); }}
                         t={t}
                     />
                 ) : (

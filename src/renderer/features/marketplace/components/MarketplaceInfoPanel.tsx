@@ -1,7 +1,7 @@
 import type { MarketplaceModelPerformanceEstimate, MarketplaceModelTag } from '@shared/types/marketplace';
 import { compareVersions } from '@shared/utils/extension.util';
 import DOMPurify from 'dompurify';
-import { Download, Heart, Package, TriangleAlert, X } from 'lucide-react';
+import { Download, TriangleAlert, X } from 'lucide-react';
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -86,151 +86,100 @@ export function MarketplaceInfoPanel({
     const paginatedSubmodels = item.submodels?.slice((currentPage - 1) * pageSize, currentPage * pageSize) || [];
 
     return (
-        <aside className="rounded-2xl border border-border/40 bg-card p-6 sticky top-6 self-start max-h-[calc(100vh-8rem)] overflow-y-auto shadow-2xl animate-in slide-in-from-right-4 duration-300 w-full lg:w-[460px]">
-            <div className="flex items-center justify-between mb-4 border-b border-border/10 pb-3">
-                <p className="typo-body font-bold uppercase tracking-widest text-muted-foreground/50">{t('common.info')}</p>
+        <aside className="sticky top-6 self-start max-h-[calc(100vh-8rem)] overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-500 w-full lg:w-[480px] px-8">
+            <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                    <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/30">{t('common.info')}</p>
+                </div>
                 <button
                     onClick={onClose}
-                    className="p-1 px-2 rounded-lg hover:bg-muted/50 text-muted-foreground/60 hover:text-foreground transition-colors"
+                    className="p-1 rounded-full hover:bg-muted text-muted-foreground/40 hover:text-foreground transition-all active:scale-90"
                 >
-                    <X className="w-4 h-4" />
+                    <X className="w-5 h-5" />
                 </button>
             </div>
 
-            <div className="space-y-4">
-                <div>
-                    <h3 className="text-base font-bold text-foreground leading-tight">{item.name}</h3>
-                    <p className="mt-2 typo-caption leading-relaxed text-muted-foreground/90 font-medium">{item.description}</p>
+            <div className="space-y-10">
+                <div className="space-y-3">
+                    <h3 className="text-3xl font-black tracking-tighter text-foreground/90 leading-none">{item.name}</h3>
+                    <p className="text-sm leading-relaxed text-muted-foreground/60 font-medium max-w-[90%]">{item.description}</p>
                 </div>
 
                 {hasUpdate && item.installedVersion && (
-                    <div className="inline-flex items-center gap-2 rounded-lg border border-warning/35 bg-warning/10 px-3 py-1.5 typo-caption font-semibold text-warning">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 px-4 py-2 text-[10px] font-black uppercase tracking-wider text-amber-500">
                         <TriangleAlert className="h-3.5 w-3.5" />
-                        {`${t('common.update')}: v${item.installedVersion} -> v${item.version}`}
+                        {`${t('common.update')}: v${item.installedVersion} → v${item.version}`}
                     </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4 pt-2">
-                    <div className="space-y-2">
-                        <div className="flex flex-col">
-                            <span className="typo-body font-bold text-muted-foreground/40 uppercase tracking-tight">{t('common.type')}</span>
-                            <span className="typo-body font-bold text-foreground/80">{item.itemType}</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="typo-body font-bold text-muted-foreground/40 uppercase tracking-tight">{t('marketplace.author')}</span>
-                            <span className="typo-body font-bold text-foreground/80">{item.author}</span>
-                        </div>
+                <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+                    <div className="space-y-1">
+                        <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.2em]">{t('common.type')}</span>
+                        <p className="text-xs font-bold text-foreground/70 uppercase tracking-widest">{item.itemType}</p>
                     </div>
-                    <div className="space-y-2">
-                        <div className="flex flex-col">
-                            <span className="typo-body font-bold text-muted-foreground/40 uppercase tracking-tight">{t('mcp.version')}</span>
-                            <span className="typo-body font-bold text-foreground/80">{item.version}</span>
-                        </div>
-                        <div className="flex flex-wrap gap-3 mt-2">
-                            {item.downloads !== undefined && item.downloads > 0 && (
-                                <div className="flex items-center gap-1.5 typo-body text-muted-foreground/70 font-semibold" title={t('marketplace.downloads')}>
-                                    <Download className="w-3.5 h-3.5" />
-                                    {formatNumber(item.downloads)}
-                                </div>
-                            )}
-                            {item.pullCount !== undefined && item.pullCount > 0 && (
-                                <div className="flex items-center gap-1.5 typo-body text-muted-foreground/70 font-semibold" title={t('marketplace.pullCount')}>
-                                    <Download className="w-3.5 h-3.5" />
-                                    {formatNumber(item.pullCount)}
-                                </div>
-                            )}
-                            {item.likes !== undefined && item.likes > 0 && (
-                                <div className="flex items-center gap-1.5 typo-body text-muted-foreground/70 font-semibold" title="Likes">
-                                    <Heart className="w-3.5 h-3.5 text-red-500/60" />
-                                    {formatNumber(item.likes)}
-                                </div>
-                            )}
-                            {item.totalSize && (
-                                <div className="flex items-center gap-1.5 typo-body text-primary font-bold bg-primary/10 px-2 py-0.5 rounded-md" title={t('modelExplorer.diskRam')}>
-                                    <Package className="w-3.5 h-3.5" />
-                                    {item.totalSize}
-                                </div>
-                            )}
+                    <div className="space-y-1">
+                        <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.2em]">{t('mcp.version')}</span>
+                        <p className="text-xs font-bold text-foreground/70">{item.version}</p>
+                    </div>
+                    <div className="space-y-1">
+                        <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.2em]">{t('marketplace.author')}</span>
+                        <p className="text-xs font-bold text-foreground/70">{item.author}</p>
+                    </div>
+                    <div className="space-y-1">
+                        <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.2em]">{t('marketplace.downloads')}</span>
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-foreground/70">
+                            <Download className="w-3.5 h-3.5 opacity-40" />
+                            {formatNumber(item.downloads || item.pullCount || 0)}
                         </div>
                     </div>
                 </div>
 
                 {item.performance && (
-                    <div className="rounded-2xl border border-primary/15 bg-primary/5 p-4 space-y-3">
-                        <div className="flex items-center justify-between gap-2">
-                            <span className="typo-body font-bold uppercase tracking-tight text-muted-foreground/40">
-                                {t('marketplace.performance')}
-                            </span>
-                            <span className="rounded-full bg-background/80 px-2 py-0.5 typo-body font-bold uppercase text-primary">
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.2em]">{t('marketplace.performance')}</span>
+                            <div className="h-[1px] flex-1 bg-muted/20" />
+                            <span className="text-[9px] font-black text-primary uppercase tracking-wider">
                                 {t(`marketplace.modelFit.${item.performance.fit}`)}
                             </span>
                         </div>
-                        {item.performance.selectedVariant && (
-                            <div className="rounded-xl bg-background/70 px-3 py-2 typo-caption font-bold text-foreground">
-                                {item.performance.selectedVariant.name}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-muted/20 rounded-xl p-4 transition-colors hover:bg-muted/30">
+                                <span className="text-[8px] font-black text-muted-foreground/40 uppercase tracking-widest">{t('marketplace.tokensPerSecond')}</span>
+                                <p className="text-lg font-black text-foreground/80 mt-1">{item.performance.estimatedTokensPerSecond.toFixed(1)} <span className="text-[10px] text-muted-foreground/40">t/s</span></p>
                             </div>
-                        )}
-                        <div className="grid grid-cols-2 gap-3 typo-caption">
-                            <div className="rounded-xl bg-background/70 px-3 py-2">
-                                <div className="typo-body uppercase text-muted-foreground/50 font-bold">{t('marketplace.tokensPerSecond')}</div>
-                                <div className="font-bold text-foreground">{item.performance.estimatedTokensPerSecond.toFixed(1)}</div>
+                            <div className="bg-muted/20 rounded-xl p-4 transition-colors hover:bg-muted/30">
+                                <span className="text-[8px] font-black text-muted-foreground/40 uppercase tracking-widest">{t('marketplace.ram')}</span>
+                                <p className="text-lg font-black text-foreground/80 mt-1">{formatBytes(item.performance.estimatedMemoryBytes)}</p>
                             </div>
-                            <div className="rounded-xl bg-background/70 px-3 py-2">
-                                <div className="typo-body uppercase text-muted-foreground/50 font-bold">{t('marketplace.ram')}</div>
-                                <div className="font-bold text-foreground">{formatBytes(item.performance.estimatedMemoryBytes)}</div>
-                            </div>
-                            <div className="rounded-xl bg-background/70 px-3 py-2">
-                                <div className="typo-body uppercase text-muted-foreground/50 font-bold">{t('marketplace.vram')}</div>
-                                <div className="font-bold text-foreground">{item.performance.estimatedVramBytes ? formatBytes(item.performance.estimatedVramBytes) : '-'}</div>
-                            </div>
-                            <div className="rounded-xl bg-background/70 px-3 py-2">
-                                <div className="typo-body uppercase text-muted-foreground/50 font-bold">{t('marketplace.disk')}</div>
-                                <div className="font-bold text-foreground">{formatBytes(item.performance.estimatedDiskBytes)}</div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {item.provider && (
-                    <div className="bg-muted/10 p-2 rounded-lg border border-border/10">
-                        <div className="flex items-center justify-between">
-                            <div className="flex flex-col">
-                                <span className="typo-body font-bold text-muted-foreground/40 uppercase">{t('modelExplorer.provider')}</span>
-                                <span className="typo-body font-bold text-primary uppercase">{item.provider}</span>
-                            </div>
-                            {item.provider === 'ollama' && !item.installed && onInstall && (
-                                <button
-                                    onClick={() => onInstall()}
-                                    className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all flex items-center gap-2 typo-body font-bold shadow-sm"
-                                >
-                                    <Download className="w-3 h-3" />
-                                    {t('marketplace.install')}
-                                </button>
-                            )}
                         </div>
                     </div>
                 )}
 
                 {item.readme && (
-                    <div className="mt-6 border-t border-border/20 pt-6 prose prose-invert prose-sm max-w-full overflow-hidden typo-caption leading-relaxed">
-                        <p className="mb-4 font-bold uppercase tracking-widest text-muted-foreground/30 typo-body">{t('common.info')} (README)</p>
-                        <div className="text-muted-foreground/90 readme-content bg-muted/5 p-4 rounded-xl border border-border/5">
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3">
+                            <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.2em]">Documentation</span>
+                            <div className="h-[1px] flex-1 bg-muted/20" />
+                        </div>
+                        <div className="prose prose-invert prose-sm max-w-full text-muted-foreground/60 leading-relaxed font-medium">
                             {((item.provider === 'ollama' || item.provider === 'huggingface') && (item.readme.includes('<h2') || item.readme.includes('<li>') || item.readme.includes('<p>') || item.readme.includes('<h1>'))) ? (
                                 <div
-                                    className={`${item.provider}-readme rich-text overflow-hidden`}
+                                    className={`${item.provider}-readme rich-text`}
                                     dangerouslySetInnerHTML={{ __html: sanitizedReadme }}
                                 />
                             ) : (
                                 <ReactMarkdown
                                     remarkPlugins={[remarkGfm]}
                                     components={{
-                                        h1: ({ ...props }) => <h1 className="text-sm font-bold mt-4 mb-2 first:mt-0" {...props} />,
-                                        h2: ({ ...props }) => <h2 className="typo-caption font-bold mt-4 mb-2 first:mt-0" {...props} />,
-                                        p: ({ ...props }) => <p className="mb-3 last:mb-0" {...props} />,
-                                        ul: ({ ...props }) => <ul className="list-disc ml-4 mb-3" {...props} />,
-                                        li: ({ ...props }) => <li className="mb-1" {...props} />,
-                                        code: ({ ...props }) => <code className="bg-muted/40 px-1 py-0.5 rounded font-mono typo-body" {...props} />,
-                                        pre: ({ ...props }) => <pre className="bg-background/50 p-2 rounded-lg border border-border/20 overflow-x-auto mb-3" {...props} />,
+                                        h1: ({ ...props }) => <h1 className="text-base font-black mt-8 mb-4 text-foreground/80 first:mt-0 tracking-tight" {...props} />,
+                                        h2: ({ ...props }) => <h2 className="text-sm font-black mt-6 mb-3 text-foreground/70 first:mt-0 tracking-tight" {...props} />,
+                                        p: ({ ...props }) => <p className="mb-4 last:mb-0" {...props} />,
+                                        ul: ({ ...props }) => <ul className="list-disc ml-4 mb-4 space-y-1" {...props} />,
+                                        li: ({ ...props }) => <li className="pl-1" {...props} />,
+                                        code: ({ ...props }) => <code className="bg-muted/50 px-1.5 py-0.5 rounded-md font-mono text-xs text-primary/80" {...props} />,
+                                        pre: ({ ...props }) => <pre className="bg-muted/20 p-4 rounded-xl overflow-x-auto mb-4 scrollbar-hide" {...props} />,
                                     }}
                                 >
                                     {item.readme}
@@ -239,70 +188,74 @@ export function MarketplaceInfoPanel({
                         </div>
                     </div>
                 )}
+
                 {item.isReadmeLoading && !item.readme && (
-                    <div className="mt-6 border-t border-border/20 pt-6">
-                        <p className="typo-caption text-muted-foreground/70 font-medium">{t('marketplace.syncing')}</p>
+                    <div className="mt-8 pt-8 border-t border-muted/10">
+                        <div className="flex items-center gap-3 text-muted-foreground/30 animate-pulse">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">{t('marketplace.syncing')}</span>
+                            <div className="h-[1px] flex-1 bg-muted/20" />
+                        </div>
                     </div>
                 )}
 
                 {item.provider === 'ollama' && paginatedSubmodels.length > 0 && (
-                    <div className="mt-6 border-t border-border/20 pt-6">
-                        <div className="flex items-center justify-between mb-3">
-                            <p className="font-bold uppercase tracking-widest text-muted-foreground/30 typo-body">
-                                {t('mcp.version')}s ({totalSubmodels})
-                            </p>
+                    <div className="mt-10 pt-10 border-t border-muted/10 space-y-6">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.2em]">{t('mcp.version')}s</span>
+                                <span className="text-[9px] font-black text-muted-foreground/20">({totalSubmodels})</span>
+                            </div>
                             {totalPages > 1 && (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-3">
                                     <button
                                         disabled={currentPage === 1}
                                         onClick={() => setCurrentPage(prev => prev - 1)}
-                                        className="typo-body font-bold text-primary disabled:text-muted-foreground hover:underline"
+                                        className="text-[10px] font-black uppercase tracking-widest text-primary disabled:opacity-20 transition-opacity"
                                     >
                                         Prev
                                     </button>
-                                    <span className="typo-body text-muted-foreground font-mono">{currentPage}/{totalPages}</span>
+                                    <span className="text-[10px] font-black text-muted-foreground/20">{currentPage} / {totalPages}</span>
                                     <button
                                         disabled={currentPage === totalPages}
                                         onClick={() => setCurrentPage(prev => prev + 1)}
-                                        className="typo-body font-bold text-primary disabled:text-muted-foreground hover:underline"
+                                        className="text-[10px] font-black uppercase tracking-widest text-primary disabled:opacity-20 transition-opacity"
                                     >
                                         Next
                                     </button>
                                 </div>
                             )}
                         </div>
-                        <div className="grid grid-cols-1 gap-2">
+                        <div className="space-y-3">
                             {paginatedSubmodels.map(tag => (
-                                <div key={tag.id} className="flex flex-col gap-1 bg-muted/10 px-3 py-2 rounded-lg border border-border/5 hover:border-primary/20 transition-all hover:bg-muted/20 relative group/tag">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <div className="flex items-center gap-2 truncate">
-                                            <span className="font-bold text-foreground/70 typo-body truncate">{tag.name}</span>
+                                <div 
+                                    key={tag.id} 
+                                    className="group/tag relative flex items-center justify-between p-4 rounded-xl bg-muted/20 hover:bg-muted/30 transition-all"
+                                >
+                                    <div className="space-y-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-black text-foreground/80 truncate">{tag.name}</span>
                                             {tag.installed && (
-                                                <span className="typo-body bg-green-500/10 text-green-500 px-1 rounded font-bold uppercase tracking-tighter">Installed</span>
+                                                <div className="h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
                                             )}
                                         </div>
-                                        <div className="flex items-center gap-1.5 shrink-0">
-                                            <span className="text-muted-foreground/60 font-mono bg-background/50 px-1.5 py-0.5 rounded typo-body border border-border/10 leading-none">{tag.size || tag.contextWindow}</span>
-                                            {item.provider === 'ollama' && !tag.installed && onInstall && (
-                                                <button
-                                                    onClick={() => onInstall({
-                                                        id: tag.id,
-                                                        name: `${item.name} (${tag.name})`,
-                                                        downloadUrl: tag.downloadUrl // If available
-                                                    })}
-                                                    className="p-1 rounded-md hover:bg-primary/20 text-primary transition-colors"
-                                                    title={t('marketplace.install')}
-                                                >
-                                                    <Download className="w-3 h-3" />
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                    {(tag.modelSize || tag.tensorType) && (
-                                        <div className="flex gap-2 typo-body text-muted-foreground/40 font-bold uppercase tracking-tighter">
+                                        <div className="flex gap-3 text-[9px] font-black text-muted-foreground/40 uppercase tracking-tighter">
                                             {tag.modelSize && <span>{tag.modelSize} Params</span>}
                                             {tag.tensorType && <span>{tag.tensorType}</span>}
+                                            <span>{tag.size || tag.contextWindow}</span>
                                         </div>
+                                    </div>
+
+                                    {!tag.installed && item.provider === 'ollama' && onInstall && (
+                                        <button
+                                            onClick={() => onInstall({
+                                                id: tag.id,
+                                                name: `${item.name} (${tag.name})`,
+                                                downloadUrl: tag.downloadUrl
+                                            })}
+                                            className="opacity-0 group-hover/tag:opacity-100 p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all active:scale-95"
+                                        >
+                                            <Download className="w-4 h-4" />
+                                        </button>
                                     )}
                                 </div>
                             ))}

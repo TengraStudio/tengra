@@ -177,3 +177,29 @@ export const marketplaceInstallRequestSchema = z.object({
 }) satisfies z.ZodType<InstallRequest>;
 
 export const marketplaceRuntimeProfileResponseSchema = marketplaceRuntimeProfileSchema;
+
+export const remoteModelRecordSchema = z.object({
+    id: z.string().min(1).max(512),
+    slug: z.string().max(512).optional(),
+    name: z.string().max(512).optional(),
+    description: z.string().max(50000).optional(),
+    author: z.string().max(512).optional(),
+    version: z.string().max(128).optional(),
+    provider: z.enum(['ollama', 'huggingface', 'custom']).optional(),
+    sourceUrl: z.string().max(2048).optional(),
+    downloadUrl: z.string().max(2048).optional(),
+    category: z.string().max(256).optional(),
+    pipelineTag: z.string().max(256).optional(),
+    readme: z.string().optional(),
+    parameters: z.string().optional(),
+    totalSize: z.string().optional(),
+    pullCount: z.number().optional(),
+    downloads: z.number().optional(),
+    likes: z.number().optional(),
+    submodels: z.array(z.any()).optional(),
+});
+
+export const remoteModelSourceSchema = z.object({
+    source: z.enum(['ollama', 'huggingface', 'custom']).optional(),
+    models: z.array(remoteModelRecordSchema),
+});

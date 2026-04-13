@@ -78,10 +78,7 @@ describe('SSH IPC Handlers', () => {
             importSshKey: vi.fn(async () => ({ success: true })),
             deleteSshKey: vi.fn(async () => true)
         };
-        const rateLimitService = {
-            waitForToken: vi.fn(async () => undefined)
-        };
-        return { sshService, rateLimitService };
+        return { sshService };
     };
 
     beforeEach(() => {
@@ -90,8 +87,8 @@ describe('SSH IPC Handlers', () => {
     });
 
     it('registers and executes connection/profile handlers', async () => {
-        const { sshService, rateLimitService } = makeServices();
-        const dispose = registerSshIpc(() => null, sshService as never, rateLimitService as never);
+        const { sshService } = makeServices();
+        const dispose = registerSshIpc(() => null, sshService as never);
         expect(ipcMain.handle).toHaveBeenCalled();
 
         const connectResult = await handlers.get('ssh:connect')?.({}, {
@@ -110,13 +107,12 @@ describe('SSH IPC Handlers', () => {
         expect(sshService.off).toHaveBeenCalled();
     });
 
-    it('handles execute with rate limit and returns safe fallback on error', async () => {
-        const { sshService, rateLimitService } = makeServices();
-        registerSshIpc(() => null, sshService as never, rateLimitService as never);
+    it('handles execute and returns safe fallback on error', async () => {
+        const { sshService } = makeServices();
+        registerSshIpc(() => null, sshService as never);
 
         const execute = handlers.get('ssh:execute');
         const ok = await execute?.({}, 'c1', 'ls');
-        expect(rateLimitService.waitForToken).toHaveBeenCalledWith('ssh:execute');
         expect(ok).toMatchObject({ success: true, code: 0 });
 
         sshService.executeCommand.mockRejectedValueOnce(new Error('boom'));

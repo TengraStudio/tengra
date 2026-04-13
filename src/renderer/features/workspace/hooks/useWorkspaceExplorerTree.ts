@@ -186,17 +186,22 @@ function buildVisibleRows(
         loadingMounts,
     } = snapshot;
 
-    const appendChildren = (mount: WorkspaceMount, nodeKey: string, depth: number) => {
+    const appendChildren = (mount: WorkspaceMount, nodeKey: string, depth: number, isParentIgnored = false) => {
         const record = nodeRecords[nodeKey];
         if (!record) {
             return;
         }
 
+        const isActuallyIgnored = isParentIgnored || record.node.isGitIgnored === true;
+
         rows.push({
             type: 'entry',
             key: nodeKey,
             mount,
-            entry: makeWorkspaceEntry(mount.id, record.node),
+            entry: {
+                ...makeWorkspaceEntry(mount.id, record.node),
+                isGitIgnored: isActuallyIgnored,
+            },
             depth,
             expanded: Boolean(expandedTreeNodes[nodeKey]),
             loading: record.loading,
@@ -209,7 +214,7 @@ function buildVisibleRows(
         }
 
         for (const childKey of record.childKeys) {
-            appendChildren(mount, childKey, depth + 1);
+            appendChildren(mount, childKey, depth + 1, isActuallyIgnored);
         }
     };
 

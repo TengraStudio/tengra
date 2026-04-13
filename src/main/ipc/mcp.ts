@@ -2,7 +2,7 @@ import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { McpDispatcher } from '@main/mcp/dispatcher';
 import { createIpcHandler as baseCreateIpcHandler, createSafeIpcHandler as baseCreateSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { withRateLimit } from '@main/utils/rate-limiter.util';
+import { withOperationGuard } from '@main/utils/operation-wrapper.util';
 import { MCPServerConfig } from '@shared/types';
 import { JsonObject } from '@shared/types/common';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
@@ -86,7 +86,7 @@ export function registerMcpIpc(mcpDispatcher: McpDispatcher, getMainWindow: () =
                 throw new Error('Invalid service or action name');
             }
             const args = validateArgs(argsRaw);
-            const result = await withRateLimit('mcp', async () =>
+            const result = await withOperationGuard('mcp', async () =>
                 mcpDispatcher.dispatch(service, action, args)
             );
             event.sender.send('mcp:result', result);

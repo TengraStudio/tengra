@@ -40,7 +40,7 @@ export function registerMarketplaceIpc(
             return await marketplaceService.getRuntimeProfile();
         }
     ));
-    
+
     ipcMain.handle('marketplace:get-update-count', createIpcHandler('marketplace:get-update-count',
         async () => {
             return await marketplaceService.getUpdateCount();
@@ -119,6 +119,12 @@ export function registerMarketplaceIpc(
                     downloadIds: [],
                 };
             }
+        }
+    ));
+
+    ipcMain.handle('marketplace:uninstall', createIpcHandler('marketplace:uninstall',
+        async (_event: IpcMainInvokeEvent, itemId: string, itemType: MarketplaceItem['itemType']) => {
+            return await marketplaceService.uninstallItem(itemId, itemType);
         }
     ));
 }

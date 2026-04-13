@@ -9,7 +9,7 @@ import { BrainService } from '@main/services/llm/brain.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { GitService } from '@main/services/workspace/git.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { withRateLimit } from '@main/utils/rate-limiter.util';
+import { withOperationGuard } from '@main/utils/operation-wrapper.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { ipcMain } from 'electron';
 import { z } from 'zod';
@@ -252,16 +252,16 @@ function registerConflictHandlers(gitService: GitService, validateSender: Sender
         validateSender(event);
         const safePath = shellEscapeQuoted(filePath);
         if (strategy === 'ours') {
-            await withRateLimit('git', () =>
+            await withOperationGuard('git', () =>
                 gitService.executeRaw(cwd, `checkout --ours -- "${safePath}"`)
             );
         } else if (strategy === 'theirs') {
-            await withRateLimit('git', () =>
+            await withOperationGuard('git', () =>
                 gitService.executeRaw(cwd, `checkout --theirs -- "${safePath}"`)
             );
         }
 
-        const addResult = await withRateLimit('git', () =>
+        const addResult = await withOperationGuard('git', () =>
             gitService.executeRaw(cwd, `add -- "${safePath}"`)
         );
         return { success: addResult.success, error: addResult.error };
@@ -275,7 +275,7 @@ function registerConflictHandlers(gitService: GitService, validateSender: Sender
         const command = filePath
             ? `mergetool -- "${shellEscapeQuoted(filePath)}"`
             : 'mergetool';
-        const result = await withRateLimit('git', () => gitService.executeRaw(cwd, command));
+        const result = await withOperationGuard('git', () => gitService.executeRaw(cwd, command));
         return {
             success: result.success,
             stdout: result.stdout,
@@ -332,7 +332,7 @@ function registerStashHandlers(gitService: GitService, validateSender: SenderVal
         const msg = message ? message.trim() : '';
         const messageArg = msg ? ` -m "${shellEscapeQuoted(msg)}"` : '';
         const untrackedArg = includeUntracked ? ' -u' : '';
-        const result = await withRateLimit('git', () =>
+        const result = await withOperationGuard('git', () =>
             gitService.executeRaw(cwd, `stash push${untrackedArg}${messageArg}`)
         );
         return { success: result.success, error: result.error, stdout: result.stdout };
@@ -344,7 +344,7 @@ function registerStashHandlers(gitService: GitService, validateSender: SenderVal
     ipcMain.handle('git:applyStash', createValidatedIpcHandler('git:applyStash', async (event, cwd: string, stashRef: string, pop?: boolean) => {
         validateSender(event);
         const command = pop ? `stash pop ${stashRef}` : `stash apply ${stashRef}`;
-        const result = await withRateLimit('git', () => gitService.executeRaw(cwd, command));
+        const result = await withOperationGuard('git', () => gitService.executeRaw(cwd, command));
         return {
             success: result.success,
             error: result.error,
@@ -363,7 +363,7 @@ function registerStashHandlers(gitService: GitService, validateSender: SenderVal
 
     ipcMain.handle('git:dropStash', createValidatedIpcHandler('git:dropStash', async (event, cwd: string, stashRef: string) => {
         validateSender(event);
-        const result = await withRateLimit('git', () =>
+        const result = await withOperationGuard('git', () =>
             gitService.executeRaw(cwd, `stash drop ${stashRef}`)
         );
         return { success: result.success, error: result.error, stdout: result.stdout };
@@ -544,7 +544,7 @@ function registerRebaseHandlers(gitService: GitService, validateSender: SenderVa
 
     ipcMain.handle('git:startRebase', createValidatedIpcHandler('git:startRebase', async (event, cwd: string, baseBranch: string) => {
         validateSender(event);
-        const result = await withRateLimit('git', () =>
+        const result = await withOperationGuard('git', () =>
             gitService.executeRaw(cwd, `rebase ${baseBranch}`)
         );
         return {
@@ -565,7 +565,7 @@ function registerRebaseHandlers(gitService: GitService, validateSender: SenderVa
 
     ipcMain.handle('git:continueRebase', createValidatedIpcHandler('git:continueRebase', async (event, cwd: string) => {
         validateSender(event);
-        const result = await withRateLimit('git', () =>
+        const result = await withOperationGuard('git', () =>
             gitService.executeRaw(cwd, 'rebase --continue')
         );
         return {
@@ -586,7 +586,7 @@ function registerRebaseHandlers(gitService: GitService, validateSender: SenderVa
 
     ipcMain.handle('git:abortRebase', createValidatedIpcHandler('git:abortRebase', async (event, cwd: string) => {
         validateSender(event);
-        const result = await withRateLimit('git', () =>
+        const result = await withOperationGuard('git', () =>
             gitService.executeRaw(cwd, 'rebase --abort')
         );
         return {
@@ -651,7 +651,7 @@ function registerSubmoduleHandlers(gitService: GitService, validateSender: Sende
 
     ipcMain.handle('git:initSubmodules', createValidatedIpcHandler('git:initSubmodules', async (event, cwd: string, recursive?: boolean) => {
         validateSender(event);
-        const result = await withRateLimit('git', () =>
+        const result = await withOperationGuard('git', () =>
             gitService.executeRaw(
                 cwd,
                 recursive
@@ -667,7 +667,7 @@ function registerSubmoduleHandlers(gitService: GitService, validateSender: Sende
 
     ipcMain.handle('git:updateSubmodules', createValidatedIpcHandler('git:updateSubmodules', async (event, cwd: string, remote?: boolean) => {
         validateSender(event);
-        const result = await withRateLimit('git', () =>
+        const result = await withOperationGuard('git', () =>
             gitService.executeRaw(
                 cwd,
                 remote
@@ -683,7 +683,7 @@ function registerSubmoduleHandlers(gitService: GitService, validateSender: Sende
 
     ipcMain.handle('git:syncSubmodules', createValidatedIpcHandler('git:syncSubmodules', async (event, cwd: string) => {
         validateSender(event);
-        const result = await withRateLimit('git', () =>
+        const result = await withOperationGuard('git', () =>
             gitService.executeRaw(cwd, 'submodule sync --recursive')
         );
         return { success: result.success, error: result.error };
@@ -695,7 +695,7 @@ function registerSubmoduleHandlers(gitService: GitService, validateSender: Sende
     ipcMain.handle('git:addSubmodule', createValidatedIpcHandler('git:addSubmodule', async (event, cwd: string, url: string, submodulePath: string, branch?: string) => {
         validateSender(event);
         const branchArg = branch ? ` -b ${branch}` : '';
-        const result = await withRateLimit('git', () =>
+        const result = await withOperationGuard('git', () =>
             gitService.executeRaw(
                 cwd,
                 `submodule add${branchArg} ${url} "${shellEscapeQuoted(submodulePath)}"`
@@ -710,10 +710,10 @@ function registerSubmoduleHandlers(gitService: GitService, validateSender: Sende
     ipcMain.handle('git:removeSubmodule', createValidatedIpcHandler('git:removeSubmodule', async (event, cwd: string, submodulePath: string) => {
         validateSender(event);
         const safePath = shellEscapeQuoted(submodulePath);
-        await withRateLimit('git', () =>
+        await withOperationGuard('git', () =>
             gitService.executeRaw(cwd, `submodule deinit -f -- "${safePath}"`)
         );
-        const result = await withRateLimit('git', () =>
+        const result = await withOperationGuard('git', () =>
             gitService.executeRaw(cwd, `rm -f "${safePath}"`)
         );
         return { success: result.success, error: result.error };
@@ -761,7 +761,7 @@ function registerFlowHandlers(gitService: GitService, validateSender: SenderVali
         validateSender(event);
         const base = baseRaw ?? 'develop';
         const branchName = `${type}/${name.replace(/\s+/g, '-')}`;
-        const checkoutBase = await withRateLimit('git', () =>
+        const checkoutBase = await withOperationGuard('git', () =>
             gitService.executeRaw(cwd, `checkout ${base}`)
         );
         if (!checkoutBase.success) {
@@ -771,7 +771,7 @@ function registerFlowHandlers(gitService: GitService, validateSender: SenderVali
             };
         }
 
-        const createBranchResult = await withRateLimit('git', () =>
+        const createBranchResult = await withOperationGuard('git', () =>
             gitService.executeRaw(cwd, `checkout -b ${branchName}`)
         );
         return { success: createBranchResult.success, branch: branchName, error: createBranchResult.error };
@@ -784,7 +784,7 @@ function registerFlowHandlers(gitService: GitService, validateSender: SenderVali
         validateSender(event);
         const target = targetRaw ?? 'develop';
         const shouldDelete = deleteRaw !== false;
-        const checkoutTarget = await withRateLimit('git', () =>
+        const checkoutTarget = await withOperationGuard('git', () =>
             gitService.executeRaw(cwd, `checkout ${target}`)
         );
         if (!checkoutTarget.success) {
@@ -794,7 +794,7 @@ function registerFlowHandlers(gitService: GitService, validateSender: SenderVali
             };
         }
 
-        const mergeResult = await withRateLimit('git', () =>
+        const mergeResult = await withOperationGuard('git', () =>
             gitService.executeRaw(cwd, `merge --no-ff ${branch}`)
         );
         if (!mergeResult.success) {
@@ -802,7 +802,7 @@ function registerFlowHandlers(gitService: GitService, validateSender: SenderVali
         }
 
         if (shouldDelete) {
-            await withRateLimit('git', () => gitService.executeRaw(cwd, `branch -d ${branch}`));
+            await withOperationGuard('git', () => gitService.executeRaw(cwd, `branch -d ${branch}`));
         }
 
         return { success: true };
@@ -1157,7 +1157,7 @@ export function registerGitAdvancedIpc(
                 };
             }
 
-            const result = await withRateLimit('git', () =>
+            const result = await withOperationGuard('git', () =>
                 gitService.executeRaw(cwd, command, { operationId, timeoutMs })
             );
             appLogger.debug('GitAdvanced', `[git:runControlledOperation] Success in ${Date.now() - startTime}ms`);

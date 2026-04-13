@@ -2,7 +2,7 @@ import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { LlamaService } from '@main/services/llm/llama.service';
 import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { withRateLimit } from '@main/utils/rate-limiter.util';
+import { withOperationGuard } from '@main/utils/operation-wrapper.util';
 import { IpcValue } from '@shared/types/common';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
@@ -140,7 +140,7 @@ export function registerLlamaIpc(getMainWindow: () => BrowserWindow | null, llam
                 }
                 const systemPrompt = validateSystemPrompt(systemPromptRaw);
 
-                const response = await withRateLimit('llama', async () =>
+                const response = await withOperationGuard('llama', async () =>
                     llamaService.chat(message, systemPrompt)
                 );
                 return { success: true, response };

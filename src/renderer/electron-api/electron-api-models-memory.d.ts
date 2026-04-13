@@ -228,7 +228,14 @@ export interface ElectronApiModelsMemoryDomain {
         }>>;
         getFiles: (
             modelId: string
-        ) => Promise<{ path: string; size: number; oid: string; quantization: string }[]>;
+        ) => Promise<{
+            path: string;
+            size: number;
+            oid: string;
+            quantization: string;
+            fileFormat?: 'gguf' | 'safetensors' | 'ckpt' | 'unknown';
+            runtimeProvider?: 'llama.cpp' | 'hf-native';
+        }[]>;
         getModelPreview: (modelId: string) => Promise<IpcValue>;
         getBulkModelPreviews: (modelIds: string[]) => Promise<Record<string, IpcValue>>;
         compareModels: (modelIds: string[]) => Promise<IpcValue>;
@@ -294,6 +301,8 @@ export interface ElectronApiModelsMemoryDomain {
             createdAt: number;
             notes?: string;
             pinned?: boolean;
+            fileFormat?: 'gguf' | 'safetensors' | 'ckpt' | 'unknown';
+            runtimeProvider?: 'llama.cpp' | 'hf-native';
             metadata?: { architecture?: string; contextLength?: number };
         }>>;
         registerModelVersion: (modelId: string, filePath: string, notes?: string) => Promise<IpcValue>;

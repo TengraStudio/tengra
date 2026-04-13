@@ -7,7 +7,7 @@ import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
 import { serializeToIpc, validatedAs, validatedToJsonObject } from '@main/utils/ipc-serializer.util';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { withRateLimit } from '@main/utils/rate-limiter.util';
+import { withOperationGuard } from '@main/utils/operation-wrapper.util';
 import { DB_CHANNELS } from '@shared/constants/ipc-channels';
 import { DetailedStatsSchema, StatsPeriodSchema, TokenStatsSchema } from '@shared/schemas/statistics.schema';
 import { Chat, Folder, Message, Prompt } from '@shared/types/chat';
@@ -165,7 +165,7 @@ function registerBatchHandlers(databaseService: DatabaseService, validateSender:
 
     registerBatchableHandler('db:updateChat', createValidatedIpcHandler('db:updateChat', async (event, chatId: string, updates: Partial<Chat>) => {
         validateSender(event);
-        return await withRateLimit('db', () => databaseService.chats.updateChat(chatId, validatedAs<Partial<DbChat>>({ ...updates })));
+        return await withOperationGuard('db', () => databaseService.chats.updateChat(chatId, validatedAs<Partial<DbChat>>({ ...updates })));
     }, {
         defaultValue: { success: false },
         argsSchema: z.tuple([IdSchema, z.record(z.string(), z.unknown())])
@@ -173,7 +173,7 @@ function registerBatchHandlers(databaseService: DatabaseService, validateSender:
 
     registerBatchableHandler('db:deleteChat', createValidatedIpcHandler('db:deleteChat', async (event, chatId: string) => {
         validateSender(event);
-        await withRateLimit('db', () => databaseService.chats.deleteChat(chatId));
+        await withOperationGuard('db', () => databaseService.chats.deleteChat(chatId));
         return { success: true };
     }, {
         defaultValue: { success: false },
@@ -182,7 +182,7 @@ function registerBatchHandlers(databaseService: DatabaseService, validateSender:
 
     registerBatchableHandler('db:addMessage', createValidatedIpcHandler('db:addMessage', async (event, message: Message) => {
         validateSender(event);
-        const result = await withRateLimit('db', () => databaseService.chats.addMessage(validatedToJsonObject({ ...message })));
+        const result = await withOperationGuard('db', () => databaseService.chats.addMessage(validatedToJsonObject({ ...message })));
         return result;
     }, {
         defaultValue: { success: false, id: '' },
@@ -191,7 +191,7 @@ function registerBatchHandlers(databaseService: DatabaseService, validateSender:
 
     registerBatchableHandler('db:updateMessage', createValidatedIpcHandler('db:updateMessage', async (event, messageId: string, updates: Partial<Message>) => {
         validateSender(event);
-        return await withRateLimit('db', () => databaseService.chats.updateMessage(messageId, validatedToJsonObject({ ...updates })));
+        return await withOperationGuard('db', () => databaseService.chats.updateMessage(messageId, validatedToJsonObject({ ...updates })));
     }, {
         defaultValue: { success: false },
         argsSchema: z.tuple([IdSchema, z.record(z.string(), z.unknown())])
@@ -204,7 +204,7 @@ function registerBatchHandlers(databaseService: DatabaseService, validateSender:
 function registerChatHandlers(databaseService: DatabaseService, validateSender: SenderValidator, _auditLogService?: AuditLogService) {
     ipcMain.handle('db:createChat', createValidatedIpcHandler('db:createChat', async (event, chat: Chat) => {
         validateSender(event);
-        return await withRateLimit('db', () => databaseService.chats.createChat(validatedAs<DbChat>({ ...chat })));
+        return await withOperationGuard('db', () => databaseService.chats.createChat(validatedAs<DbChat>({ ...chat })));
     }, {
         defaultValue: null,
         argsSchema: z.tuple([ChatSchema])
@@ -248,7 +248,7 @@ function registerChatHandlers(databaseService: DatabaseService, validateSender: 
 
     ipcMain.handle('db:deleteMessages', createValidatedIpcHandler('db:deleteMessages', async (event, chatId: string) => {
         validateSender(event);
-        return await withRateLimit('db', () => databaseService.deleteMessagesByChatId(chatId));
+        return await withOperationGuard('db', () => databaseService.deleteMessagesByChatId(chatId));
     }, {
         defaultValue: { success: false },
         argsSchema: z.tuple([IdSchema])
@@ -264,19 +264,19 @@ function registerChatHandlers(databaseService: DatabaseService, validateSender: 
 
     ipcMain.handle('db:clearHistory', createValidatedIpcHandler('db:clearHistory', async (event) => {
         validateSender(event);
-        await withRateLimit('db', () => databaseService.chats.deleteAllChats());
+        await withOperationGuard('db', () => databaseService.chats.deleteAllChats());
         return { success: true };
     }, { defaultValue: { success: false } }));
 
     ipcMain.handle('db:deleteAllChats', createValidatedIpcHandler('db:deleteAllChats', async (event) => {
         validateSender(event);
-        await withRateLimit('db', () => databaseService.deleteAllChats());
+        await withOperationGuard('db', () => databaseService.deleteAllChats());
         return { success: true };
     }, { defaultValue: { success: false } }));
 
     ipcMain.handle('db:deleteChatsByTitle', createValidatedIpcHandler('db:deleteChatsByTitle', async (event, title: string) => {
         validateSender(event);
-        return await withRateLimit('db', () => databaseService.deleteChatsByTitle(title));
+        return await withOperationGuard('db', () => databaseService.deleteChatsByTitle(title));
     }, {
         defaultValue: { success: false },
         argsSchema: z.tuple([z.string().min(1)])
@@ -284,7 +284,7 @@ function registerChatHandlers(databaseService: DatabaseService, validateSender: 
 
     ipcMain.handle('db:bulkDeleteChats', createValidatedIpcHandler('db:bulkDeleteChats', async (event, ids: string[]) => {
         validateSender(event);
-        await withRateLimit('db', () => databaseService.bulkDeleteChats(ids));
+        await withOperationGuard('db', () => databaseService.bulkDeleteChats(ids));
         return { success: true };
     }, {
         defaultValue: { success: false },
@@ -293,7 +293,7 @@ function registerChatHandlers(databaseService: DatabaseService, validateSender: 
 
     ipcMain.handle('db:bulkArchiveChats', createValidatedIpcHandler('db:bulkArchiveChats', async (event, ids: string[], isArchived: boolean) => {
         validateSender(event);
-        await withRateLimit('db', () => databaseService.bulkArchiveChats(ids, isArchived));
+        await withOperationGuard('db', () => databaseService.bulkArchiveChats(ids, isArchived));
         return { success: true };
     }, {
         defaultValue: { success: false },
@@ -377,7 +377,7 @@ function registerWorkspaceHandlers(
             }
         }
 
-        const createdWorkspace = await withRateLimit('db', () => databaseService.createWorkspace(
+        const createdWorkspace = await withOperationGuard('db', () => databaseService.createWorkspace(
             workspace.title,
             workspace.path,
             workspace.description,
@@ -420,7 +420,7 @@ function registerWorkspaceHandlers(
 
     ipcMain.handle('db:updateWorkspace', createValidatedIpcHandler('db:updateWorkspace', async (event, id: string, updates: Partial<Workspace>) => {
         validateSender(event);
-        const updatedWorkspace = await withRateLimit('db', () => databaseService.workspaces.updateWorkspace(id, updates as JsonObject));
+        const updatedWorkspace = await withOperationGuard('db', () => databaseService.workspaces.updateWorkspace(id, updates as JsonObject));
         if (updatedWorkspace) {
             addWorkspaceAllowedRoots(updatedWorkspace);
         }
@@ -434,7 +434,7 @@ function registerWorkspaceHandlers(
 
     ipcMain.handle('db:deleteWorkspace', createValidatedIpcHandler('db:deleteWorkspace', async (event, id: string, deleteFiles: boolean = false) => {
         validateSender(event);
-        await withRateLimit('db', () => databaseService.workspaces.deleteWorkspace(id, deleteFiles));
+        await withOperationGuard('db', () => databaseService.workspaces.deleteWorkspace(id, deleteFiles));
         event.sender.send(DB_CHANNELS.WORKSPACE_UPDATED_EVENT, { id });
         return { success: true };
     }, {
@@ -444,7 +444,7 @@ function registerWorkspaceHandlers(
 
     ipcMain.handle('db:archiveWorkspace', createValidatedIpcHandler('db:archiveWorkspace', async (event, id: string, isArchived: boolean) => {
         validateSender(event);
-        await withRateLimit('db', () => databaseService.archiveWorkspace(id, isArchived));
+        await withOperationGuard('db', () => databaseService.archiveWorkspace(id, isArchived));
         event.sender.send(DB_CHANNELS.WORKSPACE_UPDATED_EVENT, { id });
         return { success: true };
     }, {
@@ -454,7 +454,7 @@ function registerWorkspaceHandlers(
 
     ipcMain.handle('db:bulkDeleteWorkspaces', createValidatedIpcHandler('db:bulkDeleteWorkspaces', async (event, ids: string[], deleteFiles: boolean = false) => {
         validateSender(event);
-        await withRateLimit('db', () => databaseService.bulkDeleteWorkspaces(ids, deleteFiles));
+        await withOperationGuard('db', () => databaseService.bulkDeleteWorkspaces(ids, deleteFiles));
         event.sender.send(DB_CHANNELS.WORKSPACE_UPDATED_EVENT, {});
         return { success: true };
     }, {
@@ -464,7 +464,7 @@ function registerWorkspaceHandlers(
 
     ipcMain.handle('db:bulkArchiveWorkspaces', createValidatedIpcHandler('db:bulkArchiveWorkspaces', async (event, ids: string[], isArchived: boolean) => {
         validateSender(event);
-        await withRateLimit('db', () => databaseService.bulkArchiveWorkspaces(ids, isArchived));
+        await withOperationGuard('db', () => databaseService.bulkArchiveWorkspaces(ids, isArchived));
         event.sender.send(DB_CHANNELS.WORKSPACE_UPDATED_EVENT, {});
         return { success: true };
     }, {
@@ -479,7 +479,7 @@ function registerWorkspaceHandlers(
 function registerFolderHandlers(databaseService: DatabaseService, validateSender: (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => void) {
     ipcMain.handle('db:createFolder', createValidatedIpcHandler('db:createFolder', async (event, folder: { name: string; color?: string }) => {
         validateSender(event);
-        return await withRateLimit('db', () => databaseService.system.createFolder(folder.name, folder.color));
+        return await withOperationGuard('db', () => databaseService.system.createFolder(folder.name, folder.color));
     }, {
         defaultValue: null,
         argsSchema: z.tuple([z.object({ name: z.string().min(1), color: z.string().optional() })])
@@ -492,7 +492,7 @@ function registerFolderHandlers(databaseService: DatabaseService, validateSender
 
     ipcMain.handle('db:updateFolder', createValidatedIpcHandler('db:updateFolder', async (event, id: string, updates: Partial<Folder>) => {
         validateSender(event);
-        return await withRateLimit('db', () => databaseService.system.updateFolder(id, validatedAs<Partial<DbFolder>>({ ...updates })));
+        return await withOperationGuard('db', () => databaseService.system.updateFolder(id, validatedAs<Partial<DbFolder>>({ ...updates })));
     }, {
         defaultValue: null,
         argsSchema: z.tuple([IdSchema, z.record(z.string(), z.unknown())])
@@ -500,7 +500,7 @@ function registerFolderHandlers(databaseService: DatabaseService, validateSender
 
     ipcMain.handle('db:deleteFolder', createValidatedIpcHandler('db:deleteFolder', async (event, id: string) => {
         validateSender(event);
-        await withRateLimit('db', () => databaseService.system.deleteFolder(id));
+        await withOperationGuard('db', () => databaseService.system.deleteFolder(id));
         return { success: true };
     }, {
         defaultValue: { success: false },
@@ -523,7 +523,7 @@ function registerFolderHandlers(databaseService: DatabaseService, validateSender
 function registerUsageHandlers(databaseService: DatabaseService, validateSender: (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => void) {
     ipcMain.handle('db:recordUsage', createValidatedIpcHandler('db:recordUsage', async (event, usage: z.infer<typeof TokenUsageRecordSchema>) => {
         validateSender(event);
-        await withRateLimit('db', () => databaseService.system.addTokenUsage(usage));
+        await withOperationGuard('db', () => databaseService.system.addTokenUsage(usage));
         return { success: true };
     }, {
         defaultValue: { success: false },
@@ -569,7 +569,7 @@ function registerVectorHandlers(databaseService: DatabaseService, embeddingServi
 function registerPromptHandlers(databaseService: DatabaseService, validateSender: (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => void) {
     ipcMain.handle('db:createPrompt', createValidatedIpcHandler('db:createPrompt', async (event, title: string, content: string, tags: string[]) => {
         validateSender(event);
-        return await withRateLimit('db', () => databaseService.system.createPrompt(title, content, tags));
+        return await withOperationGuard('db', () => databaseService.system.createPrompt(title, content, tags));
     }, {
         defaultValue: null,
         argsSchema: z.tuple([z.string().min(1), z.string().min(1), z.array(z.string())])
@@ -577,7 +577,7 @@ function registerPromptHandlers(databaseService: DatabaseService, validateSender
 
     ipcMain.handle('db:deletePrompt', createValidatedIpcHandler('db:deletePrompt', async (event, id: string) => {
         validateSender(event);
-        await withRateLimit('db', () => databaseService.system.deletePrompt(id));
+        await withOperationGuard('db', () => databaseService.system.deletePrompt(id));
         return { success: true };
     }, {
         defaultValue: { success: false },
@@ -586,7 +586,7 @@ function registerPromptHandlers(databaseService: DatabaseService, validateSender
 
     ipcMain.handle('db:updatePrompt', createValidatedIpcHandler('db:updatePrompt', async (event, id: string, updates: Partial<Prompt>) => {
         validateSender(event);
-        return await withRateLimit('db', () => databaseService.system.updatePrompt(id, validatedAs<Partial<DbPrompt>>({ ...updates })));
+        return await withOperationGuard('db', () => databaseService.system.updatePrompt(id, validatedAs<Partial<DbPrompt>>({ ...updates })));
     }, {
         defaultValue: null,
         argsSchema: z.tuple([IdSchema, z.record(z.string(), z.unknown())])

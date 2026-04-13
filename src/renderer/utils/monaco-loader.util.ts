@@ -48,9 +48,11 @@ function ensureMonacoEnvironment(): void {
     if (monacoEnvironmentConfigured) {
         return;
     }
-    globalThis.MonacoEnvironment = {
-        getWorker: (_workerId: string, label: string) => getMonacoWorker(label),
-    };
+    Object.assign(globalThis, {
+        MonacoEnvironment: {
+            getWorker: (_workerId: string, label: string) => getMonacoWorker(label),
+        },
+    });
     monacoEnvironmentConfigured = true;
 }
 

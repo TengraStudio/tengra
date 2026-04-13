@@ -1,8 +1,8 @@
 import type { MarketplaceRegistry, MarketplaceRuntimeProfile, MarketplaceSkill } from '@shared/types/marketplace';
 import type { ProxySkill } from '@shared/types/skill';
 import {
+    CheckCircle2,
     Globe,
-    Grid3X3,
     MessageSquare,
     Package,
     Palette,
@@ -111,7 +111,6 @@ export function MarketplaceView(): JSX.Element {
         + (registryItems.prompts?.length ?? 0)
         + (registryItems.languages?.length ?? 0)
         + marketplaceSkills.length;
-    const totalExternalMcp = localPlugins.filter(plugin => plugin.source !== 'core').length;
     const updateActiveQuery = (updater: (prev: MarketplaceQueryState) => MarketplaceQueryState): void => {
         setQueries(prev => ({
             ...prev,
@@ -123,8 +122,8 @@ export function MarketplaceView(): JSX.Element {
         tRef.current = t;
     }, [t]);
 
-    const refreshRegistry = useCallback(async () => {
-        if (registryInFlightRef.current) {
+    const refreshRegistry = useCallback(async (force = false) => {
+        if (!force && registryInFlightRef.current) {
             await registryInFlightRef.current;
             return;
         }
@@ -218,12 +217,12 @@ export function MarketplaceView(): JSX.Element {
 
     useEffect(() => {
         const handleStateChange = () => {
-             void refreshRegistry();
-             void refreshMcpPlugins();
+            void refreshRegistry();
+            void refreshMcpPlugins();
         };
         const cleanup = window.electron.on('extension:state-changed', handleStateChange);
         return () => {
-             cleanup();
+            cleanup();
         };
     }, [refreshRegistry, refreshMcpPlugins]);
 
@@ -232,92 +231,92 @@ export function MarketplaceView(): JSX.Element {
     }, [preloadMarketplace]);
 
     return (
-        <div className="flex flex-col h-full bg-background">
-            <div className="flex flex-col h-full">
-                {/* Header Section */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-border/50">
-                    <div className="flex items-center gap-3">
-                        <Grid3X3 className="w-5 h-5 text-primary" />
-                        <div>
-                            <h1 className="text-lg font-bold leading-none">
-                                {t('marketplace.title')}
-                            </h1>
-                            <p className="typo-caption text-muted-foreground mt-1 font-medium">
-                                {t('marketplace.subtitle')}
-                            </p>
-                            <div className="mt-2 flex flex-wrap items-center gap-2">
-                                <span className="rounded-full bg-muted/40 px-2.5 py-1 typo-body font-semibold text-muted-foreground">
-                                    {`${t('marketplace.results')}: ${totalAvailable}`}
-                                </span>
-                                <span className="rounded-full bg-primary/10 px-2.5 py-1 typo-body font-semibold text-primary">
-                                    {`${t('modelExplorer.installed')}: ${totalInstalled}`}
-                                </span>
-                                <span className="rounded-full bg-muted/40 px-2.5 py-1 typo-body font-semibold text-muted-foreground">
-                                    {`${t('marketplace.tabs.mcp')} ${t('marketplace.mcp.filters.user')}: ${totalExternalMcp}`}
-                                </span>
-                            </div>
-                        </div>
+        <div className="flex flex-col h-full bg-background overflow-hidden">
+            {/* Header Section */}
+            <header className="shrink-0 px-8 pt-8 pb-4">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    <div className="space-y-1">
+                        <h1 className="text-3xl font-black tracking-tighter text-foreground">
+                            {t('marketplace.title')}
+                        </h1>
+                        <p className="text-xs font-medium text-muted-foreground/50 uppercase tracking-[0.2em]">
+                            {t('marketplace.subtitle')}
+                        </p>
                     </div>
 
-                    {/* Navigation Tabs */}
-                    <nav className="flex items-center gap-1 bg-muted/30 p-1 rounded-lg border border-border/40">
+                    {/* Navigation Tabs - More elegant and minimal */}
+                    <nav className="flex items-center gap-1">
                         {tabs.map((tab) => {
-                            const isEnabled = true;
+                            const isActive = activeTab === tab.id;
                             return (
                                 <button
                                     key={tab.id}
-                                    disabled={!isEnabled}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`flex items-center gap-2 px-4 py-1.5 rounded-md typo-caption font-semibold transition-all ${activeTab === tab.id
-                                        ? 'bg-background text-foreground shadow-sm'
-                                        : isEnabled
-                                            ? 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-                                            : 'text-muted-foreground/30 cursor-not-allowed grayscale pointer-events-none'
-                                        }`}
+                                    className={`
+                                        relative px-4 py-2 text-xs font-black uppercase tracking-widest transition-all
+                                        ${isActive
+                                            ? 'text-primary'
+                                            : 'text-muted-foreground/40 hover:text-foreground/70'}
+                                    `}
                                 >
-                                    <tab.icon className="w-3.5 h-3.5" />
-                                    <span>{tabLabels[tab.id]}</span>
+                                    {tabLabels[tab.id]}
+                                    {isActive && (
+                                        <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-primary rounded-full" />
+                                    )}
                                 </button>
                             );
                         })}
                     </nav>
                 </div>
 
-                {/* Content Area */}
-                <main className="flex-1 overflow-y-auto p-6 scroll-smooth">
-                    <div className="max-w-6xl mx-auto">
-                        {activeTab === 'skills' ? (
-                            <SkillsMarketplace
-                                skills={installedSkills}
-                                marketplaceSkills={marketplaceSkills}
-                                loading={isSyncing}
-                                onRefreshSkills={refreshInstalledSkills}
-                                onRefreshRegistry={refreshRegistry}
-                                query={queries.skills}
-                                onQueryChange={(updater) => {
-                                    setQueries(prev => ({
-                                        ...prev,
-                                        skills: updater(prev.skills),
-                                    }));
-                                }}
-                            />
-                        ) : (
-                            <McpMarketplace
-                                mode={activeTab}
-                                registry={registry}
-                                localPlugins={localPlugins}
-                                installedModels={installedModels}
-                                runtimeProfile={runtimeProfile}
-                                loading={isSyncing}
-                                onRefreshRegistry={refreshRegistry}
-                                onRefreshMcpPlugins={refreshMcpPlugins}
-                                query={queries[activeTab]}
-                                onQueryChange={updateActiveQuery}
-                            />
-                        )}
+                {/* Status Bar - Refined Typography */}
+                <div className="mt-8 flex items-center gap-6 px-1 border-b border-muted/10 pb-4">
+                    <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.15em]">
+                        <Package className="w-3.5 h-3.5 opacity-30" />
+                        <span>{totalAvailable} {t('marketplace.results')}</span>
                     </div>
-                </main>
-            </div>
+                    <div className="h-1 w-1 rounded-full bg-muted/20" />
+                    <div className="flex items-center gap-2 text-[10px] font-black text-primary/60 uppercase tracking-[0.15em]">
+                        <CheckCircle2 className="w-3.5 h-3.5 opacity-60" />
+                        <span>{totalInstalled} {t('modelExplorer.installed')}</span>
+                    </div>
+                </div>
+            </header>
+
+            {/* Content Area */}
+            <main className="flex-1 overflow-y-auto px-8 py-6 scroll-smooth custom-scrollbar">
+                <div className="max-w-6xl mx-auto pb-12">
+                    {activeTab === 'skills' ? (
+                        <SkillsMarketplace
+                            skills={installedSkills}
+                            marketplaceSkills={marketplaceSkills}
+                            loading={isSyncing}
+                            onRefreshSkills={refreshInstalledSkills}
+                            onRefreshRegistry={refreshRegistry}
+                            query={queries.skills}
+                            onQueryChange={(updater) => {
+                                setQueries(prev => ({
+                                    ...prev,
+                                    skills: updater(prev.skills),
+                                }));
+                            }}
+                        />
+                    ) : (
+                        <McpMarketplace
+                            mode={activeTab}
+                            registry={registry}
+                            localPlugins={localPlugins}
+                            installedModels={installedModels}
+                            runtimeProfile={runtimeProfile}
+                            loading={isSyncing}
+                            onRefreshRegistry={refreshRegistry}
+                            onRefreshMcpPlugins={refreshMcpPlugins}
+                            query={queries[activeTab]}
+                            onQueryChange={updateActiveQuery}
+                        />
+                    )}
+                </div>
+            </main>
         </div>
     );
 }

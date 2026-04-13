@@ -1,5 +1,5 @@
 /**
- * Edge case unit tests for ProxyService rate limiting, cleanup, and status.
+ * Edge case unit tests for ProxyService cleanup, status, and telemetry.
  */
 import { DataService } from '@main/services/data/data.service';
 import { DatabaseService } from '@main/services/data/database.service';
@@ -92,68 +92,6 @@ function createProxyService() {
 describe('ProxyService edge cases', () => {
     beforeEach(() => { vi.clearAllMocks(); });
 
-    describe('rate limiting', () => {
-        it('should track allowed requests per provider', async () => {
-            const { proxyService } = createProxyService();
-            await proxyService.initialize();
-            const metrics = proxyService.getProviderRateLimitMetrics();
-            expect(metrics.generatedAt).toBeTypeOf('number');
-            expect(metrics.providers.length).toBeGreaterThan(0);
-            for (const p of metrics.providers) {
-                expect(p.allowed).toBe(0);
-                expect(p.blocked).toBe(0);
-            }
-        });
-
-        it('should return config for all default providers', async () => {
-            const { proxyService } = createProxyService();
-            await proxyService.initialize();
-            const config = proxyService.getProviderRateLimitConfig();
-            expect(config).toHaveProperty('github');
-            expect(config).toHaveProperty('claude');
-            expect(config).toHaveProperty('codex');
-            expect(config).toHaveProperty('antigravity');
-            expect(config).toHaveProperty('proxy');
-            expect(config).toHaveProperty('default');
-        });
-
-        it('should enforce windowMs minimum of 1000ms', () => {
-            const { proxyService } = createProxyService();
-            const result = proxyService.setProviderRateLimitConfig('github', { windowMs: 100 });
-            expect(result.windowMs).toBe(1000);
-        });
-
-        it('should enforce maxRequests minimum of 1', () => {
-            const { proxyService } = createProxyService();
-            const result = proxyService.setProviderRateLimitConfig('github', { maxRequests: 0 });
-            expect(result.maxRequests).toBe(1);
-        });
-
-        it('should clamp warningThreshold between 0.1 and 0.99', () => {
-            const { proxyService } = createProxyService();
-            const low = proxyService.setProviderRateLimitConfig('github', { warningThreshold: 0.01 });
-            expect(low.warningThreshold).toBe(0.1);
-            const high = proxyService.setProviderRateLimitConfig('github', { warningThreshold: 1.5 });
-            expect(high.warningThreshold).toBe(0.99);
-        });
-
-        it('should normalize provider names for rate limits', () => {
-            const { proxyService } = createProxyService();
-            const r1 = proxyService.setProviderRateLimitConfig('GitHub Copilot', { maxRequests: 50 });
-            expect(r1.maxRequests).toBe(50);
-            const config = proxyService.getProviderRateLimitConfig();
-            expect(config.github.maxRequests).toBe(50);
-        });
-
-        it('should report queued count of 0 when no requests blocked', () => {
-            const { proxyService } = createProxyService();
-            const metrics = proxyService.getProviderRateLimitMetrics();
-            for (const p of metrics.providers) {
-                expect(p.queued).toBe(0);
-            }
-        });
-    });
-
     describe('getEmbeddedProxyStatus', () => {
         it('should return status from process manager', () => {
             const { proxyService, mockProcessManager } = createProxyService();
@@ -182,8 +120,7 @@ describe('ProxyService edge cases', () => {
                 running: true, port: 9999
             });
             proxyService.getEmbeddedProxyStatus();
-            const metrics = proxyService.getProviderRateLimitMetrics();
-            expect(metrics.generatedAt).toBeTypeOf('number');
+            expect(proxyService.getEmbeddedProxyStatus().port).toBe(9999);
         });
     });
 

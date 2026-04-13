@@ -1,10 +1,14 @@
 import type { Monaco } from '@monaco-editor/react';
 import type { FileSearchResult } from '@shared/types/common';
 import type { WorkspaceDefinitionLocation } from '@shared/types/workspace';
-import type { editor, IPosition, IRange, languages } from 'monaco-editor';
+import type { editor, IMarkdownString, IPosition, IRange, languages } from 'monaco-editor';
 import React from 'react';
 
 import { appLogger } from '@/utils/renderer-logger';
+
+type MonacoWithMarkdown = Monaco & {
+    MarkdownString: new (value: string) => IMarkdownString;
+};
 
 const GO_TO_DEFINITION_ACTION_ID = 'tengra.workspace.openSymbol';
 const FIND_REFERENCES_ACTION_ID = 'tengra.workspace.symbolHistory';
@@ -202,8 +206,8 @@ function buildDefinitionHoverContents(
             navigationTarget.range.endColumn
         ),
         contents: [
-            new monaco.MarkdownString(`**${navigationTarget.word}**`),
-            new monaco.MarkdownString(`\`${relativePath}:${normalizeLineNumber(firstDefinition.line)}\``),
+            new (monaco as unknown as MonacoWithMarkdown).MarkdownString(`**${navigationTarget.word}**`),
+            new (monaco as unknown as MonacoWithMarkdown).MarkdownString(`\`${relativePath}:${normalizeLineNumber(firstDefinition.line)}\``),
         ],
     };
 }
@@ -236,11 +240,11 @@ function buildHoverContents(
     definition: FileSearchResult | null,
     relationships: FileSearchResult[]
 ): languages.Hover['contents'] {
-    const contents: languages.Hover['contents'] = [new monaco.MarkdownString(`**${symbol}**`)];
+    const contents: languages.Hover['contents'] = [new (monaco as unknown as MonacoWithMarkdown).MarkdownString(`**${symbol}**`)];
 
     if (definition) {
         const definitionPath = normalizeDisplayPath(workspacePath, definition.file);
-        contents.push(new monaco.MarkdownString(`\`${definitionPath}:${normalizeLineNumber(definition.line)}\``));
+        contents.push(new (monaco as unknown as MonacoWithMarkdown).MarkdownString(`\`${definitionPath}:${normalizeLineNumber(definition.line)}\``));
     }
 
     if (relationships.length > 0) {
@@ -251,7 +255,7 @@ function buildHoverContents(
                 return `- \`${relativePath}:${normalizeLineNumber(item.line)}\``;
             })
             .join('\n');
-        contents.push(new monaco.MarkdownString(preview));
+        contents.push(new (monaco as unknown as MonacoWithMarkdown).MarkdownString(preview));
     }
 
     return contents;
@@ -536,7 +540,7 @@ export function useWorkspaceEditorIntelligence({
                     dispose: () => {},
                 };
             },
-        });
+        } as unknown as languages.CodeActionProvider);
 
         const goToDefinitionAction = editorInstance.addAction({
             id: GO_TO_DEFINITION_ACTION_ID,

@@ -446,6 +446,21 @@ fn openai_chat_to_responses(chat_response: Value) -> Value {
         }
     }
 
+    if let Some(images) = message.get("images").and_then(Value::as_array) {
+        for image in images {
+            if let Some(url) = image.get("image_url").and_then(|v| v.get("url")).and_then(Value::as_str) {
+                if let Some(msg) = output.iter_mut().find(|i| i["type"] == "message") {
+                    if let Some(content) = msg["content"].as_array_mut() {
+                        content.push(json!({
+                            "type": "output_image",
+                            "image_url": url
+                        }));
+                    }
+                }
+            }
+        }
+    }
+
     if let Some(reasoning) = reasoning {
         output.insert(
             0,

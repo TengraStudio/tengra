@@ -86,6 +86,8 @@ export interface HFFile {
     size: number
     oid: string
     quantization: string
+    fileFormat?: 'gguf' | 'safetensors' | 'ckpt' | 'unknown'
+    runtimeProvider?: 'llama.cpp' | 'hf-native'
     compatibility?: {
         compatible: boolean
         reasons: string[]

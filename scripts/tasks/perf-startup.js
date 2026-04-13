@@ -16,8 +16,8 @@ console.log('--- Startup Benchmark ---');
 console.log(`Target Budget: ${BUDGET_MS}ms`);
 
 const startTime = Date.now();
-const electronPath = path.resolve(__dirname, '..', 'node_modules', '.bin', os.platform() === 'win32' ? 'electron.cmd' : 'electron');
-const mainPath = path.resolve(__dirname, '..', 'dist', 'main', 'main.js');
+const electronPath = path.resolve(__dirname, '../../node_modules', '.bin', os.platform() === 'win32' ? 'electron.cmd' : 'electron');
+const mainPath = path.resolve(__dirname, '../../dist', 'main', 'main.js');
 
 // We run the compiled app
 const proc = spawn(electronPath, [mainPath], {

@@ -5,7 +5,7 @@ import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { ProxyEmbedStatus, ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
-import { validateInterval, validateOAuthTimeoutMs, validatePort, validateProvider, validateToken } from '@main/services/proxy/proxy-validation.util';
+import { validateInterval, validateOAuthTimeoutMs, validatePort, validateToken } from '@main/services/proxy/proxy-validation.util';
 import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { SecurityService } from '@main/services/security/security.service';
@@ -54,13 +54,6 @@ export type ProxyRequestResponse<T = JsonObject> = T | {
   error?: string;
   raw?: JsonValue;
   sessionKey?: string;
-  rateLimit?: {
-    provider: string;
-    limit: number;
-    remaining: number;
-    resetAt: number;
-    queued: number;
-  };
 }
 
 /**
@@ -147,7 +140,6 @@ interface ProxyRequestExecutionOptions {
   apiKey?: string;
   method?: 'GET' | 'POST' | 'DELETE';
   body?: RuntimeValue;
-  rateLimit?: { provider: string; priority?: number; isPremiumBypass?: boolean };
 }
 
 interface BrowserAuthUrlResponse {
@@ -197,46 +189,8 @@ export interface ProxyServiceOptions {
   databaseService: DatabaseService;
 }
 
-interface ProviderRateLimitConfig {
-  windowMs: number;
-  maxRequests: number;
-  warningThreshold: number; // 0..1
-  maxQueueSize: number;
-  allowPremiumBypass: boolean;
-}
-
-interface ProviderRateLimitSnapshot {
-  provider: string;
-  limit: number;
-  remaining: number;
-  resetAt: number;
-  queued: number;
-  blocked: number;
-  allowed: number;
-  bypassed: number;
-  warnings: number;
-}
-
-interface QueuedRateLimitRequest {
-  id: string;
-  priority: number;
-  enqueuedAt: number;
-  resolve: () => void;
-  reject: (error: Error) => void;
-}
-
-interface RateLimitAcquireOptions {
-  priority?: number;
-  isPremiumBypass?: boolean;
-}
-
 export class ProxyService extends BaseService {
   private currentPort: number = 8317;
-  private providerRateConfigs = new Map<string, ProviderRateLimitConfig>();
-  private providerWindows = new Map<string, number[]>();
-  private providerQueues = new Map<string, QueuedRateLimitRequest[]>();
-  private providerQueueTimers = new Map<string, NodeJS.Timeout>();
-  private providerStats = new Map<string, { blocked: number; allowed: number; bypassed: number; warnings: number }>();
   private operationLock: Promise<void> = Promise.resolve();
 
   constructor(private options: ProxyServiceOptions) {
@@ -276,7 +230,6 @@ export class ProxyService extends BaseService {
 
     await this.ensureAuthStoreKey();
     await this.ensureProxyKey();
-    this.initializeProviderRateLimits();
 
     const elapsed = performance.now() - start;
     if (elapsed > PROXY_PERFORMANCE_BUDGETS.INITIALIZE_MS) {
@@ -286,279 +239,11 @@ export class ProxyService extends BaseService {
 
   override async cleanup(): Promise<void> {
     try {
-      this.clearProviderQueueTimers();
       this.logInfo('Proxy service cleanup completed; background proxy remains available');
     } catch (e) {
       this.logError('Failed to clean proxy service during cleanup:', e as Error);
     }
   }
-
-  private initializeProviderRateLimits(): void {
-    const defaults: Record<string, ProviderRateLimitConfig> = {
-      github: { windowMs: 60_000, maxRequests: 60, warningThreshold: 0.85, maxQueueSize: 100, allowPremiumBypass: false },
-      codex: { windowMs: 60_000, maxRequests: 80, warningThreshold: 0.85, maxQueueSize: 120, allowPremiumBypass: true },
-      claude: { windowMs: 60_000, maxRequests: 70, warningThreshold: 0.85, maxQueueSize: 100, allowPremiumBypass: true },
-      antigravity: { windowMs: 60_000, maxRequests: 80, warningThreshold: 0.85, maxQueueSize: 120, allowPremiumBypass: true },
-      ollama: { windowMs: 60_000, maxRequests: 90, warningThreshold: 0.9, maxQueueSize: 140, allowPremiumBypass: true },
-      proxy: { windowMs: 60_000, maxRequests: 120, warningThreshold: 0.9, maxQueueSize: 200, allowPremiumBypass: true },
-      default: { windowMs: 60_000, maxRequests: 60, warningThreshold: 0.85, maxQueueSize: 100, allowPremiumBypass: false }
-    };
-
-    for (const [provider, cfg] of Object.entries(defaults)) {
-      this.providerRateConfigs.set(provider, cfg);
-    }
-  }
-
-  private clearProviderQueueTimers(): void {
-    for (const timer of this.providerQueueTimers.values()) {
-      clearTimeout(timer);
-    }
-    this.providerQueueTimers.clear();
-  }
-
-  private getProviderConfig(provider: string): ProviderRateLimitConfig {
-    if (this.providerRateConfigs.size === 0) {
-      this.initializeProviderRateLimits();
-    }
-    const config = this.providerRateConfigs.get(provider) ?? this.providerRateConfigs.get('default');
-    if (!config) {
-      throw new ProxyServiceError('Default provider rate limit config not found', AppErrorCode.PROXY_INVALID_CONFIG, false);
-    }
-    return config;
-  }
-
-  private getProviderWindow(provider: string): number[] {
-    if (!this.providerWindows.has(provider)) {
-      this.providerWindows.set(provider, []);
-    }
-    const window = this.providerWindows.get(provider);
-    if (!window) {
-      throw new ProxyServiceError(`Provider window not found for ${provider}`, AppErrorCode.PROXY_NOT_INITIALIZED, false);
-    }
-    return window;
-  }
-
-  private getProviderQueue(provider: string): QueuedRateLimitRequest[] {
-    if (!this.providerQueues.has(provider)) {
-      this.providerQueues.set(provider, []);
-    }
-    const queue = this.providerQueues.get(provider);
-    if (!queue) {
-      throw new ProxyServiceError(`Provider queue not found for ${provider}`, AppErrorCode.PROXY_NOT_INITIALIZED, false);
-    }
-    return queue;
-  }
-
-  private getProviderStats(provider: string) {
-    const existing = this.providerStats.get(provider);
-    if (existing) { return existing; }
-    const init = { blocked: 0, allowed: 0, bypassed: 0, warnings: 0 };
-    this.providerStats.set(provider, init);
-    return init;
-  }
-
-  private normalizeProviderForRateLimit(provider: string): string {
-    const p = provider.trim().toLowerCase();
-    if (!p) { return 'default'; }
-    if (p.includes('github') || p.includes('copilot')) { return 'github'; }
-    if (p.includes('anthropic') || p.includes('claude')) { return 'claude'; }
-    if (p.includes('antigravity') || p.includes('google') || p.includes('gemini')) { return 'antigravity'; }
-    if (p.includes('codex') || p.includes('openai')) { return 'codex'; }
-    if (p.includes('ollama')) { return 'ollama'; }
-    if (p.includes('proxy')) { return 'proxy'; }
-    return p;
-  }
-
-  private compactWindow(provider: string, now = Date.now()): number[] {
-    const cfg = this.getProviderConfig(provider);
-    const windowStart = now - cfg.windowMs;
-    const timestamps = this.getProviderWindow(provider);
-    while (timestamps.length > 0 && timestamps[0] < windowStart) {
-      timestamps.shift();
-    }
-    return timestamps;
-  }
-
-  private calculateResetAt(provider: string, now = Date.now()): number {
-    const cfg = this.getProviderConfig(provider);
-    const timestamps = this.compactWindow(provider, now);
-    if (timestamps.length < cfg.maxRequests) {
-      return now;
-    }
-    const oldest = timestamps[0] ?? now;
-    return oldest + cfg.windowMs;
-  }
-
-  private buildSnapshot(provider: string): ProviderRateLimitSnapshot {
-    const normalized = this.normalizeProviderForRateLimit(provider);
-    const cfg = this.getProviderConfig(normalized);
-    const now = Date.now();
-    const timestamps = this.compactWindow(normalized, now);
-    const remaining = Math.max(0, cfg.maxRequests - timestamps.length);
-    const stats = this.getProviderStats(normalized);
-    const queued = this.getProviderQueue(normalized).length;
-    return {
-      provider: normalized,
-      limit: cfg.maxRequests,
-      remaining,
-      resetAt: this.calculateResetAt(normalized, now),
-      queued,
-      blocked: stats.blocked,
-      allowed: stats.allowed,
-      bypassed: stats.bypassed,
-      warnings: stats.warnings
-    };
-  }
-
-  private emitRateLimitWarning(provider: string, snapshot: ProviderRateLimitSnapshot): void {
-    this.getProviderStats(provider).warnings += 1;
-    this.eventBus.emitCustom('proxy:rate-limit-warning', {
-      provider,
-      limit: snapshot.limit,
-      remaining: snapshot.remaining,
-      queued: snapshot.queued,
-      resetAt: snapshot.resetAt,
-      timestamp: Date.now()
-    });
-  }
-
-  private scheduleQueueDrain(provider: string): void {
-    const existing = this.providerQueueTimers.get(provider);
-    if (existing) {
-      clearTimeout(existing);
-    }
-
-    const now = Date.now();
-    const delay = Math.max(10, this.calculateResetAt(provider, now) - now);
-    const timer = setTimeout(() => {
-      this.providerQueueTimers.delete(provider);
-      this.drainProviderQueue(provider);
-    }, delay);
-
-    this.providerQueueTimers.set(provider, timer);
-  }
-
-  private drainProviderQueue(provider: string): void {
-    const normalized = this.normalizeProviderForRateLimit(provider);
-    const cfg = this.getProviderConfig(normalized);
-    const queue = this.getProviderQueue(normalized);
-    const timestamps = this.compactWindow(normalized);
-
-    queue.sort((a, b) => {
-      if (a.priority === b.priority) {
-        return a.enqueuedAt - b.enqueuedAt;
-      }
-      return b.priority - a.priority;
-    });
-
-    while (queue.length > 0 && timestamps.length < cfg.maxRequests) {
-      const next = queue.shift();
-      if (!next) { break; }
-      timestamps.push(Date.now());
-      this.getProviderStats(normalized).allowed += 1;
-      next.resolve();
-    }
-
-    if (queue.length > 0) {
-      this.scheduleQueueDrain(normalized);
-    }
-  }
-
-  private async waitForRateLimit(providerRaw: string, options: RateLimitAcquireOptions = {}): Promise<ProviderRateLimitSnapshot> {
-    const provider = this.normalizeProviderForRateLimit(providerRaw);
-    const cfg = this.getProviderConfig(provider);
-    const isPremiumBypass = options.isPremiumBypass === true;
-
-    if (isPremiumBypass && cfg.allowPremiumBypass) {
-      this.getProviderStats(provider).bypassed += 1;
-      return this.buildSnapshot(provider);
-    }
-
-    const timestamps = this.compactWindow(provider);
-    if (timestamps.length < cfg.maxRequests) {
-      timestamps.push(Date.now());
-      this.getProviderStats(provider).allowed += 1;
-      const snapshot = this.buildSnapshot(provider);
-      const usedRatio = snapshot.limit > 0 ? (snapshot.limit - snapshot.remaining) / snapshot.limit : 0;
-      if (usedRatio >= cfg.warningThreshold) {
-        this.emitRateLimitWarning(provider, snapshot);
-      }
-      return snapshot;
-    }
-
-    this.getProviderStats(provider).blocked += 1;
-    const queue = this.getProviderQueue(provider);
-    if (queue.length >= cfg.maxQueueSize) {
-      throw new ProxyServiceError(`Rate limit queue full for provider ${provider}`, AppErrorCode.RATE_LIMIT, false);
-    }
-
-    await new Promise<void>((resolve, reject) => {
-      const request: QueuedRateLimitRequest = {
-        id: `${provider}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        priority: options.priority ?? 0,
-        enqueuedAt: Date.now(),
-        resolve,
-        reject
-      };
-      queue.push(request);
-      this.scheduleQueueDrain(provider);
-    });
-
-    return this.buildSnapshot(provider);
-  }
-
-  /** Returns rate limit snapshots for all configured providers. @returns Object with generatedAt timestamp and provider snapshots */
-  getProviderRateLimitMetrics(): {
-    generatedAt: number;
-    providers: ProviderRateLimitSnapshot[];
-  } {
-    const providers = Array.from(this.providerRateConfigs.keys())
-      .map((provider) => this.buildSnapshot(provider))
-      .sort((a, b) => a.provider.localeCompare(b.provider));
-
-    return {
-      generatedAt: Date.now(),
-      providers
-    };
-  }
-
-  /** Returns rate limit configuration for all providers. @returns Map of provider name to config */
-  getProviderRateLimitConfig(): Record<string, ProviderRateLimitConfig> {
-    const output: Record<string, ProviderRateLimitConfig> = {};
-    for (const [provider, config] of this.providerRateConfigs.entries()) {
-      output[provider] = { ...config };
-    }
-    return output;
-  }
-
-  /**
-   * Updates rate limit config for a provider.
-   * @param providerRaw - Provider identifier
-   * @param config - Partial config to merge
-   * @returns Merged config
-   * @throws ValidationError if provider is invalid
-   */
-  setProviderRateLimitConfig(providerRaw: string, config: Partial<ProviderRateLimitConfig>): ProviderRateLimitConfig {
-    const providerError = validateProvider(providerRaw);
-    if (providerError) {
-      throw new ValidationError(`setProviderRateLimitConfig: ${providerError}`);
-    }
-
-    const provider = this.normalizeProviderForRateLimit(providerRaw);
-    const current = this.getProviderConfig(provider);
-    const merged: ProviderRateLimitConfig = {
-      windowMs: Math.max(1_000, config.windowMs ?? current.windowMs),
-      maxRequests: Math.max(1, config.maxRequests ?? current.maxRequests),
-      warningThreshold: Math.min(0.99, Math.max(0.1, config.warningThreshold ?? current.warningThreshold)),
-      maxQueueSize: Math.max(1, config.maxQueueSize ?? current.maxQueueSize),
-      allowPremiumBypass: config.allowPremiumBypass ?? current.allowPremiumBypass
-    };
-    this.providerRateConfigs.set(provider, merged);
-    return merged;
-  }
-
-
-
 
   /**
    * Initiates GitHub device code OAuth flow.
@@ -578,8 +263,7 @@ export class ProxyService extends BaseService {
       '/v0/auth/github/login',
       await this.getRuntimeProxyApiKey(),
       'GET',
-      undefined,
-      { provider: 'github', priority: 2 }
+      undefined
     );
 
     if (typeof response === 'object' && response !== null && 'error' in response && response.error) {
@@ -638,8 +322,7 @@ export class ProxyService extends BaseService {
         `/v0/auth/github/poll?device_code=${encodeURIComponent(deviceCode)}&provider=${encodeURIComponent(appId)}`,
         await this.getRuntimeProxyApiKey(),
         'GET',
-        undefined,
-        { provider: 'github', priority: 3 }
+        undefined
       );
 
       if (typeof response === 'object' && response !== null && 'success' in response && response.success && 'access_token' in response) {
@@ -711,8 +394,7 @@ export class ProxyService extends BaseService {
         timeoutMs: this.getOAuthTimeoutMs('ollama'),
         apiKey: await this.getRuntimeProxyApiKey(),
         method: 'POST',
-        body: accountId ? { account_id: accountId } : {},
-        rateLimit: { provider: 'ollama', priority: 2, isPremiumBypass: true }
+        body: accountId ? { account_id: accountId } : {}
       });
 
       if ('success' in response && response.success === true) {
@@ -780,8 +462,7 @@ export class ProxyService extends BaseService {
         {
           timeoutMs: this.getOAuthTimeoutMs(provider),
           apiKey: await this.getRuntimeProxyApiKey(),
-          method: 'GET',
-          rateLimit: { provider, priority: 2, isPremiumBypass: true }
+          method: 'GET'
         }
       );
 
@@ -841,8 +522,7 @@ export class ProxyService extends BaseService {
     const response = await this.makeRequestWithTimeout<BrowserAuthUrlResponse>(requestPath, {
       timeoutMs: this.getOAuthTimeoutMs(provider),
       apiKey: await this.getRuntimeProxyApiKey(),
-      method: 'GET',
-      rateLimit: { provider, priority: 2, isPremiumBypass: true }
+      method: 'GET'
     });
     appLogger.debug('ProxyService', `getBrowserAuthUrl: response keys=${Object.keys(response).join(',')}, url=${'url' in response ? 'present' : 'missing'}, state=${'state' in response ? 'present' : 'missing'}`);
 
@@ -877,8 +557,7 @@ export class ProxyService extends BaseService {
         provider,
         state,
         account_id: accountId
-      },
-      { provider, priority: 2, isPremiumBypass: true }
+      }
     );
 
     if ('success' in response && response.success === true) {
@@ -896,8 +575,7 @@ export class ProxyService extends BaseService {
       {
         timeoutMs: this.getOAuthTimeoutMs(provider),
         apiKey: await this.getRuntimeProxyApiKey(),
-        method: 'GET',
-        rateLimit: { provider, priority: 2, isPremiumBypass: true }
+        method: 'GET'
       }
     );
     if ('status' in response && typeof response.status === 'string') {
@@ -1164,8 +842,7 @@ export class ProxyService extends BaseService {
       '/v0/skills',
       await this.getRuntimeProxyApiKey(),
       'GET',
-      undefined,
-      { provider: 'proxy', priority: 1, isPremiumBypass: true }
+      undefined
     );
     if (!('items' in response) || !Array.isArray(response.items)) {
       return [];
@@ -1179,8 +856,7 @@ export class ProxyService extends BaseService {
       '/v0/skills',
       await this.getRuntimeProxyApiKey(),
       'POST',
-      input as unknown as RuntimeValue,
-      { provider: 'proxy', priority: 2, isPremiumBypass: true }
+      input as unknown as RuntimeValue
     );
     if ('item' in response && response.item) {
       return response.item;
@@ -1197,8 +873,7 @@ export class ProxyService extends BaseService {
       `/v0/skills/${encodeURIComponent(skillId)}/toggle`,
       await this.getRuntimeProxyApiKey(),
       'POST',
-      input as unknown as RuntimeValue,
-      { provider: 'proxy', priority: 2, isPremiumBypass: true }
+      input as unknown as RuntimeValue
     );
     if ('item' in response && response.item) {
       return response.item;
@@ -1215,8 +890,7 @@ export class ProxyService extends BaseService {
       `/v0/skills/${encodeURIComponent(skillId)}`,
       await this.getRuntimeProxyApiKey(),
       'DELETE',
-      undefined,
-      { provider: 'proxy', priority: 2, isPremiumBypass: true }
+      undefined
     );
     return 'success' in response && response.success === true;
   }
@@ -1227,8 +901,7 @@ export class ProxyService extends BaseService {
       '/v0/skills/marketplace',
       await this.getRuntimeProxyApiKey(),
       'GET',
-      undefined,
-      { provider: 'proxy', priority: 1, isPremiumBypass: true }
+      undefined
     );
     if (!('items' in response) || !Array.isArray(response.items)) {
       return [];
@@ -1242,8 +915,7 @@ export class ProxyService extends BaseService {
       '/v0/skills/marketplace/install',
       await this.getRuntimeProxyApiKey(),
       'POST',
-      input as unknown as RuntimeValue,
-      { provider: 'proxy', priority: 2, isPremiumBypass: true }
+      input as unknown as RuntimeValue
     );
     if ('item' in response && response.item) {
       return response.item;
@@ -1257,7 +929,7 @@ export class ProxyService extends BaseService {
   private async getProxyModels(apiKey: string): Promise<ModelItem[]> {
     try {
       this.logDebug(`getProxyModels: Fetching from http://127.0.0.1:${this.currentPort}/v1/models`);
-      const res = await this.makeRequest('/v1/models', apiKey, 'GET', undefined, { provider: 'proxy', priority: 1 });
+      const res = await this.makeRequest('/v1/models', apiKey, 'GET', undefined);
       if ('data' in res && Array.isArray(res.data)) {
         return res.data as ModelItem[];
       }
@@ -1445,15 +1117,13 @@ export class ProxyService extends BaseService {
     path: string,
     apiKey?: string,
     method: 'GET' | 'POST' | 'DELETE' = 'GET',
-    body?: RuntimeValue,
-    rateLimit?: { provider: string; priority?: number; isPremiumBypass?: boolean }
+    body?: RuntimeValue
   ): Promise<ProxyRequestResponse<T>> {
     return this.makeRequestWithTimeout(path, {
       timeoutMs: PROXY_REQUEST_TIMEOUT_MS,
       apiKey,
       method,
-      body,
-      rateLimit
+      body
     });
   }
 
@@ -1468,13 +1138,6 @@ export class ProxyService extends BaseService {
     const requestStart = performance.now();
     return new Promise((resolve, reject) => {
       const run = async () => {
-        const snapshot = options.rateLimit
-          ? await this.waitForRateLimit(options.rateLimit.provider, {
-            priority: options.rateLimit.priority,
-            isPremiumBypass: options.rateLimit.isPremiumBypass
-          })
-          : undefined;
-
         const requestOptions = {
           method,
           protocol: 'http:' as const,
@@ -1508,13 +1171,6 @@ export class ProxyService extends BaseService {
           request.setHeader('Content-Type', 'application/json');
         }
 
-        if (snapshot) {
-          request.setHeader('X-Proxy-RateLimit-Limit', String(snapshot.limit));
-          request.setHeader('X-Proxy-RateLimit-Remaining', String(snapshot.remaining));
-          request.setHeader('X-Proxy-RateLimit-Reset', String(snapshot.resetAt));
-          request.setHeader('X-Proxy-RateLimit-Provider', snapshot.provider);
-        }
-
         request.on('response', (res) => {
           let d = '';
           res.on('data', chunk => d += chunk);
@@ -1532,19 +1188,8 @@ export class ProxyService extends BaseService {
               appLogger.warn('ProxyService', `makeRequest exceeded budget: ${requestElapsed.toFixed(1)}ms > ${PROXY_PERFORMANCE_BUDGETS.REQUEST_MS}ms (${method} ${path})`);
             }
             this.eventBus.emitCustom(ProxyTelemetryEvent.REQUEST_SENT, { method, path, elapsedMs: requestElapsed, statusCode: res.statusCode });
-            const rateLimitInfo = snapshot ? {
-              provider: snapshot.provider,
-              limit: snapshot.limit,
-              remaining: snapshot.remaining,
-              resetAt: snapshot.resetAt,
-              queued: snapshot.queued
-            } : undefined;
-
             const parsed = safeJsonParse<JsonObject | null>(d, null);
             if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-              if (rateLimitInfo) {
-                parsed['rateLimit'] = rateLimitInfo;
-              }
               if (res.statusCode && res.statusCode >= 400) {
                 parsed['success'] = false;
                 // If there's no error field but it's a 400+, set a default
@@ -1559,10 +1204,10 @@ export class ProxyService extends BaseService {
             if (res.statusCode && res.statusCode >= 400) {
               // Not JSON, but still an error. Use the raw body as the error message if it exists.
               const errorText = d.trim() || `HTTP ${res.statusCode}`;
-              resolve({ success: false, error: errorText, raw: d, rateLimit: rateLimitInfo });
+              resolve({ success: false, error: errorText, raw: d });
               return;
             }
-            resolve({ success: false, error: 'Invalid JSON', raw: d, rateLimit: rateLimitInfo });
+            resolve({ success: false, error: 'Invalid JSON', raw: d });
           });
         });
 
@@ -1647,7 +1292,6 @@ export class ProxyService extends BaseService {
       return {};
     }
 
-    await this.waitForRateLimit('github', { priority: 2 });
     appLogger.info('ProxyService', 'Fetching GitHub user profile...');
     return new Promise((resolve) => {
       const request = net.request({
@@ -1701,7 +1345,6 @@ export class ProxyService extends BaseService {
       return undefined;
     }
 
-    await this.waitForRateLimit('github', { priority: 2 });
     appLogger.info('ProxyService', 'Fetching GitHub user emails...');
     return new Promise((resolve) => {
       const request = net.request({

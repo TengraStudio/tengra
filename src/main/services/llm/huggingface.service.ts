@@ -4,6 +4,12 @@ import { CircuitBreaker } from '@main/core/circuit-breaker';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { HttpService } from '@main/services/external/http.service';
+import {
+    LocalModelFileFormat,
+    LocalModelRuntimeProvider,
+    resolveLocalModelFileFormat,
+    resolveRuntimeProviderForLocalModel,
+} from '@main/services/llm/local-runtime.types';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { app } from 'electron';
 
@@ -67,6 +73,8 @@ export interface HFModelFile {
     size: number;
     oid: string | undefined;
     quantization: string;
+    fileFormat?: LocalModelFileFormat;
+    runtimeProvider?: LocalModelRuntimeProvider;
 }
 
 export interface HFCompatibilityReport {
@@ -142,6 +150,8 @@ export interface HFModelVersionRecord {
     createdAt: number;
     notes?: string;
     pinned?: boolean;
+    fileFormat?: LocalModelFileFormat;
+    runtimeProvider?: LocalModelRuntimeProvider;
     metadata?: { architecture?: string; contextLength?: number };
 }
 
@@ -160,6 +170,8 @@ export interface HFInstalledModel {
     modelId: string;
     path: string;
     createdAt: number;
+    fileFormat?: LocalModelFileFormat;
+    runtimeProvider?: LocalModelRuntimeProvider;
     architecture?: string;
     contextLength?: number;
 }
@@ -346,7 +358,9 @@ export class HuggingFaceService extends BaseService {
                     path: f.path,
                     size: f.size,
                     oid: f.lfs?.oid ?? f.oid,
-                    quantization: this.extractQuantization(f.path)
+                    quantization: this.extractQuantization(f.path),
+                    fileFormat: resolveLocalModelFileFormat(f.path),
+                    runtimeProvider: resolveRuntimeProviderForLocalModel(f.path)
                 }));
         } catch (error) {
             appLogger.error('HuggingFaceService', `Failed to fetch files for ${modelId}: ${getErrorMessage(error as Error)}`);
@@ -689,6 +703,8 @@ export class HuggingFaceService extends BaseService {
             createdAt: Date.now(),
             notes,
             pinned: false,
+            fileFormat: resolveLocalModelFileFormat(filePath),
+            runtimeProvider: resolveRuntimeProviderForLocalModel(filePath),
             metadata: {
                 architecture: typeof metadataRaw.architecture === 'string' ? metadataRaw.architecture : undefined,
                 contextLength: typeof metadataRaw.contextLength === 'number' ? metadataRaw.contextLength : undefined
@@ -736,6 +752,8 @@ export class HuggingFaceService extends BaseService {
                     modelId,
                     path: version.path,
                     createdAt: version.createdAt,
+                    fileFormat: version.fileFormat ?? resolveLocalModelFileFormat(version.path),
+                    runtimeProvider: version.runtimeProvider ?? resolveRuntimeProviderForLocalModel(version.path),
                     architecture: version.metadata?.architecture,
                     contextLength: version.metadata?.contextLength,
                 });

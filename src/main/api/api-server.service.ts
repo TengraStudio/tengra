@@ -63,10 +63,6 @@ const CORS_ALLOWED_ORIGINS = new Set([
 // AUD-SEC-036: WebSocket limits
 const WS_MAX_PAYLOAD_SIZE = 10 * 1024 * 1024; // 10MB
 
-// AUD-SEC-035: Rate limit tracking per IP+token
-const ipTokenRequestCounts = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX_REQUESTS = 100; // per window per IP+token
 const TOKEN_CHALLENGE_TTL_MS = 30 * 1000; // 30 seconds
 const tokenChallenges = new Map<string, number>();
 
@@ -78,7 +74,6 @@ const tokenChallenges = new Map<string, number>();
  * @property toolExecutor - Executor for MCP tool invocations
  * @property llmService - Service for LLM chat interactions
  * @property modelRegistry - Optional model registry for listing available models
- * @property rateLimitService - Rate limiter for API request throttling
  */
 export interface ApiServerOptions {
     port?: number;
@@ -87,7 +82,6 @@ export interface ApiServerOptions {
     toolExecutor: ToolExecutor;
     llmService: LLMService;
     modelRegistry?: import('@main/services/llm/model-registry.service').ModelRegistryService;
-    rateLimitService: import('@main/services/security/rate-limit.service').RateLimitService;
 }
 
 /**
@@ -244,32 +238,6 @@ export class ApiServerService extends BaseService {
         }
 
         if (!this.checkAuth(req, res)) {
-            return;
-        }
-
-        // AUD-SEC-035: Per-IP + token combined rate limiting
-        const clientIp = req.socket.remoteAddress?.replace('::ffff:', '') ?? 'unknown';
-        const token = this.extractTokenFromRequest(req) ?? 'anonymous';
-        const rateLimitKey = `${clientIp}:${token}`;
-
-        if (!this.checkIpTokenRateLimit(rateLimitKey)) {
-            appLogger.warn(this.name, `Rate limit exceeded for ${clientIp}`);
-            this.sendJson(res, 429, {
-                success: false,
-                error: 'Too Many Requests',
-                message: 'Rate limit exceeded'
-            });
-            return;
-        }
-
-        // SEC-009-3: API Rate Limiting (global fallback)
-        if (!this.options.rateLimitService.tryAcquire('api:request')) {
-            appLogger.warn(this.name, `Global API rate limit exceeded`);
-            this.sendJson(res, 429, {
-                success: false,
-                error: 'Too Many Requests',
-                message: 'Rate limit exceeded'
-            });
             return;
         }
 
@@ -556,26 +524,6 @@ export class ApiServerService extends BaseService {
             'X-Frame-Options': 'DENY'
         });
         res.end(JSON.stringify(data));
-    }
-
-    /**
-     * AUD-SEC-035: Check per-IP + token combined rate limiting
-     */
-    private checkIpTokenRateLimit(key: string): boolean {
-        const now = Date.now();
-        const record = ipTokenRequestCounts.get(key);
-
-        if (!record || now > record.resetTime) {
-            ipTokenRequestCounts.set(key, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
-            return true;
-        }
-
-        if (record.count >= RATE_LIMIT_MAX_REQUESTS) {
-            return false;
-        }
-
-        record.count++;
-        return true;
     }
 
     /**

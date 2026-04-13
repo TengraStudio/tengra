@@ -7,6 +7,8 @@ export interface ModelInfo {
     provider?: string;
     providerCategory?: string;
     sourceProvider?: string;
+    runtimeProvider?: string;
+    fileFormat?: string;
     quotaInfo?: {
         remainingQuota?: number;
         totalQuota?: number;

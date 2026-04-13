@@ -8,7 +8,7 @@ import { LLMService } from '@main/services/llm/llm.service';
 import { GitService } from '@main/services/workspace/git.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { withRateLimit } from '@main/utils/rate-limiter.util';
+import { withOperationGuard } from '@main/utils/operation-wrapper.util';
 import {
     gitTreeStatusPreviewArgsSchema,
     gitTreeStatusPreviewResponseSchema,
@@ -537,7 +537,7 @@ function registerDiffHandlers(gitService: GitService, validateSender: SenderVali
 
     ipcMain.handle('git:stageFile', createValidatedIpcHandler('git:stageFile', async (event, cwd: string, filePath: string) => {
         validateSender(event);
-        const result = await withRateLimit('git', () => gitService.stageFile(cwd, filePath));
+        const result = await withOperationGuard('git', () => gitService.stageFile(cwd, filePath));
         return { success: result.success, error: result.error };
     }, {
         defaultValue: { success: false, error: 'Failed to stage file' },
@@ -546,7 +546,7 @@ function registerDiffHandlers(gitService: GitService, validateSender: SenderVali
 
     ipcMain.handle('git:unstageFile', createValidatedIpcHandler('git:unstageFile', async (event, cwd: string, filePath: string) => {
         validateSender(event);
-        const result = await withRateLimit('git', () => gitService.unstageFile(cwd, filePath));
+        const result = await withOperationGuard('git', () => gitService.unstageFile(cwd, filePath));
         return { success: result.success, error: result.error };
     }, {
         defaultValue: { success: false, error: 'Failed to unstage file' },
@@ -663,7 +663,7 @@ function registerDiffHandlers(gitService: GitService, validateSender: SenderVali
 function registerActionHandlers(gitService: GitService, validateSender: SenderValidator) {
     ipcMain.handle('git:checkout', createValidatedIpcHandler('git:checkout', async (event, cwd: string, branch: string) => {
         validateSender(event);
-        const result = await withRateLimit('git', () => gitService.checkout(cwd, branch));
+        const result = await withOperationGuard('git', () => gitService.checkout(cwd, branch));
         return { success: result.success, error: result.error };
     }, {
         defaultValue: { success: false, error: 'Failed to checkout branch' },
@@ -672,7 +672,7 @@ function registerActionHandlers(gitService: GitService, validateSender: SenderVa
 
     ipcMain.handle('git:commit', createValidatedIpcHandler('git:commit', async (event, cwd: string, message: string) => {
         validateSender(event);
-        const result = await withRateLimit('git', () => gitService.commit(cwd, message));
+        const result = await withOperationGuard('git', () => gitService.commit(cwd, message));
         return { success: result.success, error: result.error };
     }, {
         defaultValue: { success: false, error: 'Failed to commit' },
@@ -693,7 +693,7 @@ function registerActionHandlers(gitService: GitService, validateSender: SenderVa
                     ? branchResult.stdout.trim()
                     : 'main';
         }
-        const result = await withRateLimit('git', async () =>
+        const result = await withOperationGuard('git', async () =>
             gitService.push(cwd, remote, branch as string)
         );
         return {
@@ -709,7 +709,7 @@ function registerActionHandlers(gitService: GitService, validateSender: SenderVa
 
     ipcMain.handle('git:pull', createValidatedIpcHandler('git:pull', async (event, cwd: string) => {
         validateSender(event);
-        const result = await withRateLimit('git', () => gitService.pull(cwd));
+        const result = await withOperationGuard('git', () => gitService.pull(cwd));
         return {
             success: result.success,
             error: result.error,

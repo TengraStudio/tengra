@@ -128,24 +128,30 @@ export class FileSystemService {
         }
     }
 
-    private ignorePatterns: string[] = [
-        'node_modules',
-        '.git',
-        'dist',
-        'build',
-        '.DS_Store',
-    ];
+    private ignorePatterns: string[] = [];
+
 
     updateIgnorePatterns(patterns: string[]) {
         this.ignorePatterns = [...new Set([...this.ignorePatterns, ...patterns])];
     }
 
     private shouldIgnore(filePath: string): boolean {
-        // Simple string inclusion checker for now, should be replaced with proper minimatch/glob later
-        return this.ignorePatterns.some(
-            pattern =>
-                filePath.includes(path.sep + pattern) || filePath.endsWith(path.sep + pattern)
-        );
+        if (this.ignorePatterns.length === 0) {
+            return false;
+        }
+
+        const normalizedPath = filePath.replace(/\\/g, '/');
+        return this.ignorePatterns.some(pattern => {
+            const normalizedPattern = pattern.replace(/\\/g, '/');
+            // If the pattern starts with /, check for absolute prefix match
+            if (normalizedPattern.startsWith('/')) {
+                return normalizedPath.includes(normalizedPattern);
+            }
+            // Otherwise check for segment match (e.g. "node_modules")
+            return normalizedPath.split('/').includes(normalizedPattern) ||
+                   normalizedPath.includes(`/${normalizedPattern}/`) ||
+                   normalizedPath.endsWith(`/${normalizedPattern}`);
+        });
     }
 
     // --- Core Operations ---
@@ -153,23 +159,18 @@ export class FileSystemService {
     async readFile(filePath: string): Promise<ServiceResponse<string>> {
         try {
             const expandedPath = this.expandEnvVars(filePath); 
-            const absolutePath = path.resolve(expandedPath);
-            const stats = await fs.stat(absolutePath);
+            const absolutePath = path.resolve(expandedPath); 
 
-            // 10MB limit
-            if (stats.size > 10 * 1024 * 1024) {
-                return { success: false, error: 'File too large (>10MB)' };
-            }
-
-            // Read the file and check for binary content in one go if possible
+            // Read the file
             const content = await fs.readFile(absolutePath);
 
-            // Check first 1024 bytes for null character
-            const checkBuffer = content.subarray(0, Math.min(content.length, 1024));
-            if (checkBuffer.includes(0)) {
-                return { success: false, error: 'File is binary' };
+            // UTF-16 LE BOM detection (common on Windows/PowerShell)
+            // We keep this to ensure the file renders correctly instead of showing nulls between letters
+            if (content.length >= 2 && content[0] === 0xFF && content[1] === 0xFE) {
+                return { success: true, data: content.toString('utf16le') };
             }
 
+            // Default to UTF-8 and let Monaco handle any unusual characters
             return { success: true, data: content.toString('utf-8') };
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };
@@ -180,12 +181,7 @@ export class FileSystemService {
         try {
             const expandedPath = this.expandEnvVars(filePath);
             this.validatePath(expandedPath);
-            const absolutePath = path.resolve(expandedPath);
-            const stats = await fs.stat(absolutePath);
-            if (stats.size > 20 * 1024 * 1024) {
-                // 20MB limit for images
-                return { success: false, error: 'Image too large (>20MB)' };
-            }
+            const absolutePath = path.resolve(expandedPath); 
             const buffer = await fs.readFile(absolutePath);
             const base64 = buffer.toString('base64');
 

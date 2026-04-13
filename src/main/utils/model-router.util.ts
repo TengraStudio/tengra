@@ -4,7 +4,6 @@
  */
 
 import { getHealthCheckService } from '@main/services/system/health-check.service';
-import { getRateLimiter } from '@main/utils/rate-limiter.util';
 
 export interface ModelInfo {
     id: string
@@ -139,7 +138,7 @@ export class ModelRouter {
     private handleDirectMatch(directMatch: ModelInfo, modelId: string, options: RouterOptions): RouteResult | null {
         return this.checkPreferredProvider(directMatch, modelId, options)
             ?? this.checkHealthAndFallback(directMatch, modelId, options)
-            ?? this.checkQuotaAndFallback(directMatch, modelId, options);
+            ?? this.checkQuotaAndFallback();
     }
 
     private checkPreferredProvider(directMatch: ModelInfo, modelId: string, options: RouterOptions): RouteResult | null {
@@ -172,18 +171,7 @@ export class ModelRouter {
         return null;
     }
 
-    private checkQuotaAndFallback(directMatch: ModelInfo, modelId: string, options: RouterOptions): RouteResult | null {
-        if (options.checkQuota && options.fallbackEnabled && this.isProviderRateLimited(directMatch.provider)) {
-            const fallback = this.findFallback(modelId, directMatch.provider);
-            if (fallback) {
-                return {
-                    provider: fallback.provider,
-                    model: fallback.model,
-                    originalModel: modelId,
-                    reason: 'Rate limited, using fallback'
-                };
-            }
-        }
+    private checkQuotaAndFallback(): RouteResult | null {
         return null;
     }
 
@@ -192,11 +180,6 @@ export class ModelRouter {
         const status = health.getStatus();
         const providerHealth = status.services.find(s => s.name.toLowerCase() === provider.toLowerCase());
         return providerHealth?.status === 'unhealthy';
-    }
-
-    private isProviderRateLimited(provider: string): boolean {
-        const limiter = getRateLimiter(provider);
-        return limiter.getAvailableTokens() < 1;
     }
 
     /**

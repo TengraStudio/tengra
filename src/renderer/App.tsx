@@ -124,12 +124,6 @@ const getChatTemplates = (t: (key: string) => string): ChatTemplate[] => [
 
 const isDetachedTerminalWindow = new URLSearchParams(window.location.search).get('detachedTerminal') === '1';
 
-interface RateLimitWarningPayload {
-    provider?: string
-    remaining?: number
-    limit?: number
-}
-
 const SidebarConnector: React.FC<{
     currentView: AppView;
     isCollapsed: boolean;
@@ -579,27 +573,6 @@ function MainApp() {
             window.removeEventListener('app:open-command-palette', openPalette as EventListener);
         };
     }, [setShowCommandPalette]);
-
-    useEffect(() => {
-        const remove = window.electron.ipcRenderer.on(
-            'proxy:rate-limit-warning',
-            (_event, payload: RateLimitWarningPayload | null | undefined) => {
-                const data = payload ?? {};
-                const provider = data.provider ?? 'provider';
-                const remaining = typeof data.remaining === 'number' ? data.remaining : 0;
-                const limit = typeof data.limit === 'number' ? data.limit : 0;
-                addToast({
-                    type: 'warning',
-                    message: t('errors.rateLimitWarning', { provider, remaining, limit })
-                });
-            }
-        );
-        return () => {
-            if (typeof remove === 'function') {
-                remove();
-            }
-        };
-    }, [addToast, t]);
 
     return (
         <ErrorBoundary

@@ -71,9 +71,6 @@ describe('ApiServerService – AUD-2026-02-27-02 hardening', () => {
             execute: vi.fn().mockResolvedValue({ success: true }),
         } as never as ApiServerOptions['toolExecutor'],
         llmService: {} as ApiServerOptions['llmService'],
-        rateLimitService: {
-            tryAcquire: vi.fn().mockReturnValue(true),
-        } as never as ApiServerOptions['rateLimitService'],
     };
 
     beforeEach(async () => {

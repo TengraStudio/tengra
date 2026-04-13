@@ -44,16 +44,12 @@ describe('Model Registry IPC Integration', () => {
         getInstalledModels: vi.fn().mockResolvedValue(mockInstalledModels)
     };
 
-    const mockRateLimitService = {
-        waitForToken: vi.fn().mockResolvedValue(undefined)
-    };
-
     beforeEach(() => {
         ipcMainHandlers.clear();
         vi.clearAllMocks();
     });
 
-    describe('without rate limiting', () => {
+    describe('model registry handlers', () => {
         beforeEach(() => {
             registerModelRegistryIpc(mockModelRegistryService as never);
         });
@@ -134,61 +130,5 @@ describe('Model Registry IPC Integration', () => {
         });
     });
 
-    describe('with rate limiting', () => {
-        beforeEach(() => {
-            registerModelRegistryIpc(mockModelRegistryService as never, mockRateLimitService as never);
-        });
-
-        it('applies rate limit to get-all', async () => {
-            const handler = ipcMainHandlers.get('model-registry:get-all')!;
-            await handler({} as IpcMainInvokeEvent);
-
-            expect(mockRateLimitService.waitForToken).toHaveBeenCalledWith('model-registry');
-            expect(mockModelRegistryService.getAllModels).toHaveBeenCalledTimes(1);
-        });
-
-        it('applies rate limit to get-remote', async () => {
-            const handler = ipcMainHandlers.get('model-registry:get-remote')!;
-            await handler({} as IpcMainInvokeEvent);
-
-            expect(mockRateLimitService.waitForToken).toHaveBeenCalledWith('model-registry');
-            expect(mockModelRegistryService.getRemoteModels).toHaveBeenCalledTimes(1);
-        });
-
-        it('applies rate limit to get-installed', async () => {
-            const handler = ipcMainHandlers.get('model-registry:get-installed')!;
-            await handler({} as IpcMainInvokeEvent);
-
-            expect(mockRateLimitService.waitForToken).toHaveBeenCalledWith('model-registry');
-            expect(mockModelRegistryService.getInstalledModels).toHaveBeenCalledTimes(1);
-        });
-
-        it('waits for rate limit token before fetching models', async () => {
-            const callOrder: string[] = [];
-            mockRateLimitService.waitForToken.mockImplementation(async () => {
-                callOrder.push('rate-limit');
-            });
-            mockModelRegistryService.getAllModels.mockImplementation(async () => {
-                callOrder.push('fetch-models');
-                return mockModelProviders;
-            });
-
-            const handler = ipcMainHandlers.get('model-registry:get-all')!;
-            await handler({} as IpcMainInvokeEvent);
-
-            expect(callOrder).toEqual(['rate-limit', 'fetch-models']);
-        });
-
-        it('returns default value if rate limiting throws error', async () => {
-            mockRateLimitService.waitForToken.mockRejectedValue(new Error('Rate limit exceeded'));
-
-            const handler = ipcMainHandlers.get('model-registry:get-all')!;
-            const result = await handler({} as IpcMainInvokeEvent);
-
-            expect(result).toEqual([]);
-            expect(mockRateLimitService.waitForToken).toHaveBeenCalledWith('model-registry');
-            expect(mockModelRegistryService.getAllModels).not.toHaveBeenCalled();
-        });
-    });
 });
 

@@ -16,8 +16,8 @@ vi.mock('electron', () => ({
 }));
 
 
-vi.mock('@main/utils/rate-limiter.util', () => ({
-    withRateLimit: vi.fn(async (_bucket: string, fn: () => Promise<TestValue>) => await fn()),
+vi.mock('@main/utils/operation-wrapper.util', () => ({
+    withOperationGuard: vi.fn(async (_bucket: string, fn: () => Promise<TestValue>) => await fn()),
 }));
 
 

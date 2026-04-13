@@ -35,7 +35,6 @@ import type { LocalAIService } from '@main/services/llm/local-ai.service';
 import type { OllamaService } from '@main/services/llm/ollama.service';
 import type { OllamaHealthService } from '@main/services/llm/ollama-health.service';
 import type { ProxyService } from '@main/services/proxy/proxy.service';
-import type { RateLimitService } from '@main/services/security/rate-limit.service';
 import type { SettingsService } from '@main/services/system/settings.service';
 import { SESSION_CONVERSATION_CHANNELS } from '@shared/constants/ipc-channels';
 
@@ -44,7 +43,6 @@ describe('Ollama IPC Handlers', () => {
     let mockLocalAIService: LocalAIService;
     let mockOllamaService: OllamaService;
     let mockOllamaHealthService: OllamaHealthService;
-    let mockRateLimitService: RateLimitService;
     let mockSettingsService: SettingsService;
     let mockLLMService: LLMService;
     let mockProxyService: ProxyService;
@@ -110,10 +108,6 @@ describe('Ollama IPC Handlers', () => {
             on: vi.fn()
         } as never as OllamaHealthService;
 
-        mockRateLimitService = {
-            waitForToken: vi.fn().mockResolvedValue(undefined)
-        } as never as RateLimitService;
-
         mockSettingsService = {} as SettingsService;
         mockLLMService = {} as LLMService;
         mockProxyService = {} as ProxyService;
@@ -131,8 +125,7 @@ describe('Ollama IPC Handlers', () => {
             llmService: mockLLMService,
             ollamaService: mockOllamaService,
             ollamaHealthService: mockOllamaHealthService,
-            proxyService: mockProxyService,
-            rateLimitService: mockRateLimitService
+            proxyService: mockProxyService
         });
     });
 
@@ -185,8 +178,7 @@ describe('Ollama IPC Handlers', () => {
                 getMainWindow: () => null,
                 localAIService: mockLocalAIService,
                 settingsService: mockSettingsService,
-                llmService: mockLLMService,
-                rateLimitService: mockRateLimitService
+                llmService: mockLLMService
             });
 
             const newHandler = ipcMainHandlers.get('ollama:isRunning');
@@ -273,7 +265,6 @@ describe('Ollama IPC Handlers', () => {
             const messages = [{ role: 'user' as const, content: 'Hello' }];
             const result = await handler!(mockEvent, messages, 'llama2');
 
-            expect(mockRateLimitService.waitForToken).toHaveBeenCalledWith('ollama:chat');
             expect(mockOllamaService.chat).toHaveBeenCalledWith(messages, 'llama2');
             expect(result).toEqual({ message: { content: 'Response', role: 'assistant' } });
         });
@@ -331,7 +322,6 @@ describe('Ollama IPC Handlers', () => {
             const messages = [{ role: 'user' as const, content: 'Stream test' }];
             await handler!(mockEvent, messages, 'llama2');
 
-            expect(mockRateLimitService.waitForToken).toHaveBeenCalledWith('ollama:chat');
             expect(mockOllamaService.chatStream).toHaveBeenCalled();
             expect(mockEvent.sender.send).toHaveBeenCalledWith(SESSION_CONVERSATION_CHANNELS.STREAM_CHUNK, {
                 content: 'Response',
@@ -356,7 +346,6 @@ describe('Ollama IPC Handlers', () => {
 
             const result = await handler!(mockEvent, 'llama2');
 
-            expect(mockRateLimitService.waitForToken).toHaveBeenCalledWith('ollama:operation');
             expect(mockOllamaService.pullModel).toHaveBeenCalled();
             expect(result).toEqual({ success: true });
         });
@@ -396,8 +385,7 @@ describe('Ollama IPC Handlers', () => {
                 getMainWindow: () => null,
                 localAIService: mockLocalAIService,
                 settingsService: mockSettingsService,
-                llmService: mockLLMService,
-                rateLimitService: mockRateLimitService
+                llmService: mockLLMService
             });
 
             const newHandler = ipcMainHandlers.get('ollama:pull');
@@ -474,7 +462,6 @@ describe('Ollama IPC Handlers', () => {
 
             const result = await handler!(mockEvent);
 
-            expect(mockRateLimitService.waitForToken).toHaveBeenCalledWith('ollama:operation');
             expect(mockOllamaService.getLibraryModels).toHaveBeenCalled();
             expect(result).toEqual([{ name: 'llama2', description: 'A great model', tags: ['latest'] }]);
         });

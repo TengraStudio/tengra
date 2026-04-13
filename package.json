@@ -7,8 +7,6 @@
     "scripts": {
         "dev": "node scripts/dev-vite.js",
         "build": "node scripts/build-all.js",
-        "build:legacy": "tsc && npm run lint && vite build && node scripts/compile-native.js",
-        "build:check": "tsc --noEmit && vite build",
         "electron:build": "npm run build && electron-builder",
         "build:exe": "npm run build && electron-builder --win --x64",
         "build:mac": "npm run build && electron-builder --mac",
@@ -21,15 +19,15 @@
         "test:watch": "vitest",
         "test:coverage": "vitest run --coverage && vitest run --coverage --config vitest.config.renderer.ts",
         "test:e2e": "playwright test",
-        "perf:contract": "node scripts/audit-perf-contract.js",
+        "perf:contract": "node scripts/cli.js perf:contract",
         "lint": "npm run lint:eslint && npm run lint:stylelint",
         "lint:eslint": "eslint . --cache --cache-location node_modules/.cache/.eslintcache",
         "lint:stylelint": "stylelint \"src/**/*.{css,scss}\"",
         "lint:secretlint": "secretlint \"src/**\"",
         "lint:fix": "npm run lint:eslint -- --fix && npm run lint:stylelint -- --fix",
         "type-check": "tsc --noEmit",
-        "verify": "node scripts/build-verify.js",
-        "verify:full": "npm run verify && npm run perf:contract",
+        "verify": "node scripts/cli.js verify",
+        "verify:full": "node scripts/cli.js verify:full",
         "format": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
         "format:all": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
         "tool": "node scripts/cli.js",
@@ -38,15 +36,11 @@
         "secrets": "node scripts/cli.js secrets",
         "mcp": "node scripts/cli.js mcp",
         "docs": "node scripts/cli.js docs",
-        "db:migrate:plan": "node scripts/db/migration-cli.cjs migrate",
-        "db:migrate:rollback": "node scripts/db/migration-cli.cjs rollback",
         "preinstall": "node scripts/build-env-setup.js || node -e \"process.exit(0)\"",
         "postinstall": "node scripts/build-env-setup.js && electron-builder install-app-deps || node -e \"process.exit(0)\"",
         "setup-build-env": "node scripts/build-env-setup.js",
         "prepare": "node -e \"try { require('husky').install() } catch (e) { process.exit(0) }\"",
-        "gh:cleanup": "node scripts/gh-workflow-cleanup.js",
-        "gh:cleanup:all": "node scripts/gh-workflow-cleanup.js --status=all --older-than=7",
-        "gh:cleanup:dry": "node scripts/gh-workflow-cleanup.js --dry-run"
+        "gh:cleanup": "node scripts/cli.js gh:cleanup"
     },
     "keywords": [
         "ai",
@@ -125,7 +119,7 @@
         "@xterm/xterm": "^6.0.0",
         "@xyflow/react": "^12.10.0",
         "axios": "^1.13.5",
-        "bash-language-server": "^5.6.0",
+        "bash-language-server": "^5.4.3",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "date-fns": "^4.1.0",
@@ -141,7 +135,7 @@
         "lib0": "^0.2.117",
         "lucide-react": "^0.563.0",
         "mermaid": "^10.9.5",
-        "monaco-editor": "^0.55.1",
+        "monaco-editor": "^0.53.0",
         "node-pty": "^1.1.0",
         "pdf-parse": "^1.1.4",
         "prism-react-renderer": "^2.4.1",
@@ -167,7 +161,7 @@
         "vscode-languageserver-protocol": "^3.17.5",
         "ws": "8.19.0",
         "y-protocols": "^1.0.7",
-        "yaml-language-server": "^1.21.0",
+        "yaml-language-server": "^1.11.0",
         "yjs": "^13.6.29",
         "zod": "^4.3.6"
     },
@@ -187,12 +181,12 @@
                 "to": "utility-workers"
             },
             {
-                "from": "scripts/win-services-register.ps1",
-                "to": "scripts/win-services-register.ps1"
+                "from": "scripts/tasks/win-services-register.ps1",
+                "to": "scripts/tasks/win-services-register.ps1"
             },
             {
-                "from": "scripts/win-db-install.ps1",
-                "to": "scripts/win-db-install.ps1"
+                "from": "scripts/tasks/win-db-install.ps1",
+                "to": "scripts/tasks/win-db-install.ps1"
             }
         ],
         "win": {

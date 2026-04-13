@@ -13,7 +13,7 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 
-const DIST_DIR = path.resolve(__dirname, '..', 'dist');
+const DIST_DIR = path.resolve(__dirname, '../../dist');
 
 const MB = 1024 * 1024;
 const KB = 1024;

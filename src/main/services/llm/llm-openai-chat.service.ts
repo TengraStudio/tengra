@@ -3,7 +3,6 @@ import { appLogger } from '@main/logging/logger';
 import { ImagePersistenceService } from '@main/services/data/image-persistence.service';
 import { HttpRequestOptions, HttpService } from '@main/services/external/http.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
-import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { TokenService } from '@main/services/security/token.service';
 import { ChatMessage, OpenAIResponse, ToolCall } from '@main/types/llm.types';
 import { MessageNormalizer } from '@main/utils/message-normalizer.util';
@@ -25,7 +24,6 @@ import { applyReasoningEffort } from './llm-reasoning.service';
 export interface OpenAIChatDeps {
     httpService: HttpService;
     keyRotationService: KeyRotationService;
-    rateLimitService: RateLimitService;
     tokenService?: TokenService;
 }
 

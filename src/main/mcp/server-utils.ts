@@ -12,7 +12,6 @@ import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.servic
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service';
 import { OllamaService } from '@main/services/llm/ollama.service';
-import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { SecurityService } from '@main/services/security/security.service';
 import { CommandService } from '@main/services/system/command.service';
 import { NetworkService } from '@main/services/system/network.service';
@@ -43,7 +42,6 @@ export interface McpDeps {
     ollama: OllamaService;
     advancedMemory: AdvancedMemoryService;
     modelCollaboration: ModelCollaborationService;
-    rateLimit: RateLimitService;
     auditLog: AuditLogService;
     workspace: WorkspaceService;
 }
@@ -345,16 +343,16 @@ export const validateCommand = (value: RuntimeValue): string => {
 };
 
 /**
- * Wraps a handler with rate limiting protection
+ * Compatibility wrapper for MCP operation execution.
  * @param deps - MCP dependencies
- * @param serviceName - The MCP service name (e.g., 'git', 'docker', 'filesystem')
+ * @param serviceName - The MCP service name
  * @param handler - The async handler function
- * @returns Wrapped handler with rate limiting
+ * @returns Handler result
  */
-export const withRateLimit = <T>(
-    deps: McpDeps,
-    serviceName: string,
+export const withOperationGuard = <T>(
+    _deps: McpDeps,
+    _serviceName: string,
     handler: () => Promise<T>
 ): Promise<T> => {
-    return deps.rateLimit.waitForToken(`mcp:${serviceName}`).then(() => handler());
+    return handler();
 };

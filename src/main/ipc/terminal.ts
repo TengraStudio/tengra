@@ -16,7 +16,7 @@ import {
     TerminalSmartService,
 } from '@main/services/workspace/terminal-smart.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { withRateLimit } from '@main/utils/rate-limiter.util';
+import { withOperationGuard } from '@main/utils/operation-wrapper.util';
 import {
     terminalGetBackendsResponseSchema,
     terminalGetDiscoverySnapshotArgsSchema,
@@ -491,7 +491,7 @@ function registerSessionIOIpc(terminalService: TerminalService) {
         createValidatedIpcHandler(
             'terminal:write',
             async (_event, sessionId: string, data: string) => {
-                return withRateLimit('terminal', async () =>
+                return withOperationGuard('terminal', async () =>
                     terminalService.write(sessionId, data)
                 );
             },
@@ -980,7 +980,7 @@ function registerSmartIpc(smartService: TerminalSmartService) {
         createValidatedIpcHandler(
             'terminal:explainCommand',
             async (_event, options: ExplainCommandOptions) => {
-                return withRateLimit('terminal', async () => smartService.explainCommand(options));
+                return withOperationGuard('terminal', async () => smartService.explainCommand(options));
             },
             {
                 defaultValue: { explanation: 'Service unavailable', breakdown: [] },
@@ -994,7 +994,7 @@ function registerSmartIpc(smartService: TerminalSmartService) {
         createValidatedIpcHandler(
             'terminal:explainError',
             async (_event, options: ExplainErrorOptions) => {
-                return withRateLimit('terminal', async () => smartService.explainError(options));
+                return withOperationGuard('terminal', async () => smartService.explainError(options));
             },
             {
                 defaultValue: { summary: 'Service unavailable', cause: 'Unknown', solution: 'Please try again later' },
@@ -1008,7 +1008,7 @@ function registerSmartIpc(smartService: TerminalSmartService) {
         createValidatedIpcHandler(
             'terminal:fixError',
             async (_event, options: FixErrorOptions) => {
-                return withRateLimit('terminal', async () => smartService.fixError(options));
+                return withOperationGuard('terminal', async () => smartService.fixError(options));
             },
             {
                 defaultValue: { suggestedCommand: '', explanation: 'Service unavailable', confidence: 'low' as const },

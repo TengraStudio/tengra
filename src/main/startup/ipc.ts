@@ -79,7 +79,7 @@ export function registerIpcHandlers(
     registerLazyServicesIpc();
     registerContractIpc();
     registerCodeSandboxIpc(getMainWindow);
-    registerModelRegistryIpc(services.modelRegistryService, services.rateLimitService);
+    registerModelRegistryIpc(services.modelRegistryService);
     registerModelDownloaderIpc(services.modelDownloaderService);
     registerAuditIpc(services.auditLogService);
     registerPerformanceIpc(services.performanceService);
@@ -119,7 +119,6 @@ export function registerIpcHandlers(
         databaseService: services.databaseService,
         localeService: services.localeService,
         chatSessionRegistryService: services.chatSessionRegistryService,
-        rateLimitService: services.rateLimitService,
     });
 
     registerOllamaIpc({
@@ -130,7 +129,6 @@ export function registerIpcHandlers(
         ollamaService: services.ollamaService,
         ollamaHealthService: services.ollamaHealthService,
         proxyService: services.proxyService,
-        rateLimitService: services.rateLimitService,
     });
 
     registerWorkspaceIpc(getMainWindow, {
@@ -261,6 +259,6 @@ export async function registerDeferredIpcHandlers(
     getMainWindow: () => BrowserWindow | null
 ): Promise<void> {
     const sshService = await services.sshService.resolve();
-    registerSshIpc(getMainWindow, sshService, services.rateLimitService);
+    registerSshIpc(getMainWindow, sshService);
 }
 

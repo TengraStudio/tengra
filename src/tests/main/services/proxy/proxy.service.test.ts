@@ -802,18 +802,4 @@ describe('ProxyService input validation', () => {
         });
     });
 
-    describe('setProviderRateLimitConfig validation', () => {
-        it('should reject empty provider', () => {
-            expect(() => proxyService.setProviderRateLimitConfig('', {})).toThrow('Provider');
-        });
-
-        it('should reject whitespace-only provider', () => {
-            expect(() => proxyService.setProviderRateLimitConfig('   ', {})).toThrow('Provider');
-        });
-
-        it('should accept valid provider', () => {
-            const result = proxyService.setProviderRateLimitConfig('github', { maxRequests: 100 });
-            expect(result.maxRequests).toBe(100);
-        });
-    });
 });

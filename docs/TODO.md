@@ -628,3 +628,10 @@ Bu aşamada build/lint/type-check/test henüz özellikle çalıştırılmadı. S
 - [x] Performed a safe, systematic cleanup of `en.locale.json` by removing 666 reliably identified orphaned keys while preserving dynamic marketplace and model-registry strings.
 - [x] Validated that critical marketplace alerts (e.g., `uninstallSuccess`) remain intact to prevent N/A notification issues in the UI.
 
+
+
+## Managed Runtime & Documentation Stabilization
+- [x] Decommissioned legacy resources/bin directory and centralized all native binaries in the managed runtime (%APPDATA%/Tengra/runtime/bin).
+- [x] Consolidated project documentation: gathered scattered Markdown files into a central docs/ directory.
+- [x] Hardened documentation links: updated relative paths in all core rule files (MASTER_COMMANDMENTS.md, AI_RULES.md, AGENTS.md, etc.) to reflect the unified docs/ structure.
+- [x] Updated scripts/build-env-setup.js to align with the single-runtime-root architecture.

@@ -3,7 +3,6 @@ import { randomUUID } from 'crypto';
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { sshConnectionSchema, sshProfileSchema, validateIpc } from '@main/ipc/validation';
 import { appLogger } from '@main/logging/logger';
-import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { SSHConnection, SSHService } from '@main/services/workspace/ssh.service';
 import { IPC_PERFORMANCE_BUDGETS,ipcMetricsStore } from '@main/utils/ipc-telemetry.util';
 import { IpcValue, JsonValue } from '@shared/types/common';
@@ -50,7 +49,7 @@ function sanitizeConnectionForRenderer(connection: SSHConnection): Omit<SSHConne
     return safeConnection;
 }
 
-export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshService: SSHService, rateLimitService: RateLimitService) {
+export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshService: SSHService) {
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'ssh operation');
     const secureHandle = <Args extends RuntimeValue[]>(
         channel: string,
@@ -110,13 +109,13 @@ export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshSer
     sshService.on('error', listeners.error);
 
     registerConnectionHandlers(sshService, secureHandle);
-    registerCommandHandlers(sshService, rateLimitService, send, secureHandle);
+    registerCommandHandlers(sshService, send, secureHandle);
     registerFileSystemHandlers(sshService, send, secureHandle);
     registerSystemHandlers(sshService, secureHandle);
     registerTunnelHandlers(sshService, secureHandle);
     registerAdvancedSshHandlers(sshService, secureHandle);
     registerKeyManagementHandlers(sshService, secureHandle);
-    registerHealthHandlers(sshService, rateLimitService, secureHandle);
+    registerHealthHandlers(sshService, secureHandle);
 
     // Return dispose function
     return () => {
@@ -219,7 +218,6 @@ function registerConnectionHandlers(
 
 function registerCommandHandlers(
     sshService: SSHService,
-    rateLimitService: RateLimitService,
     send: (channel: string, data: JsonValue) => void,
     secureHandle: <Args extends RuntimeValue[]>(
         channel: string,
@@ -230,7 +228,6 @@ function registerCommandHandlers(
         try {
             validateSshCommand(command);
             appLogger.info('SSH', `[ssh:execute] Executing command on ${connectionId}`);
-            await rateLimitService.waitForToken('ssh:execute');
             return await sshService.executeCommand(connectionId, command, options);
         } catch (error) {
             const message = getErrorMessage(error as Error);
@@ -632,7 +629,6 @@ function registerKeyManagementHandlers(
 
 function registerHealthHandlers(
     sshService: SSHService,
-    _rateLimitService: RateLimitService,
     secureHandle: <Args extends RuntimeValue[]>(
         channel: string,
         handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<RuntimeValue>

@@ -125,8 +125,9 @@ fn gemini_payload_to_openai_chunk(value: Value, state: &mut GeminiStreamState) -
     let mut full_content = String::new();
     let mut full_reasoning = String::new();
     let mut tool_calls = Vec::new();
+    let mut images = Vec::new();
 
-    // 1. Process standard Gemini parts (Text, Thoughts, FunctionCalls)
+    // 1. Process standard Gemini parts (Text, Thoughts, FunctionCalls, Images)
     for part in parts {
         let is_thought_flag = part.get("thought").and_then(Value::as_bool) == Some(true)
             || part.get("thinking").and_then(Value::as_bool) == Some(true);
@@ -147,6 +148,20 @@ fn gemini_payload_to_openai_chunk(value: Value, state: &mut GeminiStreamState) -
 
         if let Some(text) = part.get("text").and_then(Value::as_str) {
             full_content.push_str(text);
+            continue;
+        }
+
+        if let Some(inline_data) = part.get("inlineData") {
+            let mime_type = inline_data.get("mimeType").and_then(Value::as_str).unwrap_or("image/png");
+            let data = inline_data.get("data").and_then(Value::as_str).unwrap_or_default();
+            if !data.is_empty() {
+                images.push(json!({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": format!("data:{};base64,{}", mime_type, data)
+                    }
+                }));
+            }
             continue;
         }
 
@@ -234,7 +249,8 @@ fn gemini_payload_to_openai_chunk(value: Value, state: &mut GeminiStreamState) -
             "delta": {
                 "content": if delta_content.is_empty() { Value::Null } else { Value::String(delta_content) },
                 "reasoning_content": if delta_reasoning.is_empty() { Value::Null } else { Value::String(delta_reasoning) },
-                "tool_calls": if tool_calls.is_empty() { Value::Null } else { Value::Array(tool_calls) }
+                "tool_calls": if tool_calls.is_empty() { Value::Null } else { Value::Array(tool_calls) },
+                "images": if images.is_empty() { Value::Null } else { Value::Array(images) }
             },
             "finish_reason": finish_reason
         }]

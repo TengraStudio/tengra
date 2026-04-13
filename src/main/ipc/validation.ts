@@ -150,10 +150,3 @@ export const keyRotationKeysSchema = z.string().trim().min(1).max(4096);
 
 export const sessionKeySchema = z.string().min(1).max(512);
 export const proxyAccountIdSchema = z.string().min(1).max(128).optional();
-export const rateLimitConfigSchema = z.object({
-    windowMs: z.number().int().positive().optional(),
-    maxRequests: z.number().int().positive().optional(),
-    warningThreshold: z.number().min(0).max(1).optional(),
-    maxQueueSize: z.number().int().nonnegative().optional(),
-    allowPremiumBypass: z.boolean().optional()
-}).optional();

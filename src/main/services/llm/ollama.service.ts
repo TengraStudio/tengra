@@ -304,8 +304,9 @@ export class OllamaService {
         
         // 1. Check for per-model override
         const modelKey = `ollama/${model}`;
-        if (settings.modelSettings?.[modelKey]?.numCtx) {
-            return settings.modelSettings[modelKey].numCtx!;
+        const modelCtx = settings.modelSettings?.[modelKey]?.numCtx;
+        if (modelCtx) {
+            return modelCtx;
         }
 
         // 2. Resolve based on known model limits if global is set to default or a low value

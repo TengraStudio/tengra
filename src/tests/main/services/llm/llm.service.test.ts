@@ -24,10 +24,6 @@ const mockKeyRotationService = {
     getCurrentKey: vi.fn().mockReturnValue(null),
     rotateKey: vi.fn()
 };
-const mockRateLimitService = {
-    checkRateLimit: vi.fn(),
-    waitForToken: vi.fn().mockResolvedValue(undefined)
-};
 const mockHuggingFaceService = {
     searchModels: vi.fn(),
     getModelVersions: vi.fn(),
@@ -61,7 +57,6 @@ describe('LLMService', () => {
             httpService: mockHttpService as never as LlmDeps['httpService'],
             configService: mockConfigService as never as LlmDeps['configService'],
             keyRotationService: mockKeyRotationService as never as LlmDeps['keyRotationService'],
-            rateLimitService: mockRateLimitService as never as LlmDeps['rateLimitService'],
             settingsService: { getSettings: vi.fn().mockReturnValue({}) } as never as LlmDeps['settingsService'],
             proxyService: { getEmbeddedProxyStatus: vi.fn().mockReturnValue({}), getProxyKey: vi.fn().mockResolvedValue('test-key') } as never as LlmDeps['proxyService'],
             tokenService: mockTokenService as never as LlmDeps['tokenService'],
@@ -309,7 +304,7 @@ describe('LLMService', () => {
             expect(mockHttpService.fetch).toHaveBeenCalledWith(
                 'http://127.0.0.1:8080/v1/chat/completions',
                 expect.objectContaining({
-                    body: expect.stringContaining('"max_tokens":512'),
+                    body: expect.stringContaining('"max_tokens":16384'),
                 })
             );
         });

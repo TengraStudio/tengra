@@ -270,8 +270,7 @@ app.whenReady().then(async () => {
         proxyProcessManager: proxyProcessManager,
         toolExecutor: toolExecutor,
         llmService: services.llmService,
-        modelRegistry: services.modelRegistryService,
-        rateLimitService: services.rateLimitService
+        modelRegistry: services.modelRegistryService
     });
     services.apiServerService = apiServerService;
 

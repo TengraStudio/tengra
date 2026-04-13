@@ -46,6 +46,7 @@ export interface WorkspaceTreeItemProps {
     expandedTreeNodes?: Record<string, boolean>;
     onExpandedTreeNodeChange?: (nodeKey: string, expanded: boolean) => void;
     t: (key: string) => string;
+    isParentIgnored?: boolean;
 }
 
 function mapFileEntries(
@@ -73,6 +74,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
     expandedTreeNodes,
     onExpandedTreeNodeChange,
     t,
+    isParentIgnored = false,
 }) => {
     const expandedNodeKey = `${mount.id}:${node.path}`;
     const [expanded, setExpanded] = useState(
@@ -208,8 +210,9 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
     const isSelected = Boolean(
         selectedEntries?.some(e => e.mountId === mount.id && e.path === node.path)
     );
-    const ignoredEntryClassName = node.isGitIgnored === true
-        ? 'opacity-55 text-amber-300/80 hover:text-amber-200/90'
+    const isActuallyIgnored = isParentIgnored || node.isGitIgnored === true;
+    const ignoredEntryClassName = isActuallyIgnored
+        ? 'opacity-30 grayscale brightness-90 saturate-50'
         : '';
 
     const gitBadgeClass =
@@ -303,6 +306,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
                             expandedTreeNodes={expandedTreeNodes}
                             onExpandedTreeNodeChange={onExpandedTreeNodeChange}
                             t={t}
+                            isParentIgnored={isActuallyIgnored}
                         />
                     ))}
                     {children.length === 0 && loaded && (

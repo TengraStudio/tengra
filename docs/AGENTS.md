@@ -4,8 +4,8 @@ CRITICAL: Read this document completely before making any changes to the codebas
 
 ## Quick Start
 
-1. READ RULES FIRST: Call view_file on [.agent/rules/MASTER_COMMANDMENTS.md](.agent/rules/MASTER_COMMANDMENTS.md) and AI_RULES.md before ANY code work.
-2. Check TODO.md - Current tasks and priorities.
+1. READ RULES FIRST: Call view_file on [MASTER_COMMANDMENTS.md](MASTER_COMMANDMENTS.md) and [AI_RULES.md](AI_RULES.md) before ANY code work.
+2. Check [TODO.md](TODO.md) - Current tasks and priorities.
 3. VALIDATE: Run npm run build && npm run lint && npm run type-check && npm run test before every commit.
 4. FRIDAY BAN: No commits on Fridays. NO EXCEPTIONS.
 

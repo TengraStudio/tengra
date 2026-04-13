@@ -109,13 +109,24 @@ function setMSVSVersion(version) {
         const isWindows = process.platform === 'win32';
         
         if (isWindows) {
+            // Unset any existing VS environment variables that might interfere with detection
+            delete process.env.VCINSTALLDIR;
+            delete process.env.VSCMD_VER;
+            delete process.env.VSINSTALLDIR;
+            delete process.env.DevEnvDir;
+            delete process.env.VCToolsVersion;
+            delete process.env.VCToolsInstallDir;
+
             // Set for current process (critical for npm install in the current shell).
             process.env.GYP_MSVS_VERSION = version;
             process.env.msvs_version = version;
+            // Disable Spectre mitigation requirement to avoid MSB8040 error if libraries are missing
+            process.env.SpectreMitigation = 'false';
             
             // Also try to set it in user environment (persistent for future sessions)
             try {
                 execSync(`setx GYP_MSVS_VERSION ${version}`, { stdio: 'ignore' });
+                execSync(`setx SpectreMitigation false`, { stdio: 'ignore' });
             } catch (err) {
                 // setx might fail, but that's okay
             }
@@ -127,9 +138,10 @@ function setMSVSVersion(version) {
         
         console.log(`✓ Set environment variable GYP_MSVS_VERSION to ${version}`);
         console.log(`✓ Set environment variable msvs_version to ${version}`);
+        console.log(`✓ Set environment variable SpectreMitigation to false`);
         console.log(`\n⚠️  Note: You may need to restart your terminal for the changes to take full effect.`);
-        console.log(`   Or run: $env:GYP_MSVS_VERSION="${version}" (PowerShell)`);
-        console.log(`   Or run: set GYP_MSVS_VERSION=${version} (CMD)`);
+        console.log(`   Or run: $env:GYP_MSVS_VERSION="${version}"; $env:SpectreMitigation="false" (PowerShell)`);
+        console.log(`   Or run: set GYP_MSVS_VERSION=${version} && set SpectreMitigation=false (CMD)`);
         
         return true;
     } catch (err) {

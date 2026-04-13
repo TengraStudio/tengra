@@ -138,7 +138,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
     }, [activateExtension, deactivateExtension]);
 
     const handleUninstallExtension = useCallback(async (extensionId: string): Promise<void> => {
-        if (isUninstalling) return;
+        if (isUninstalling) {return;}
         
         setIsUninstalling(extensionId);
         try {
@@ -374,7 +374,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                                                 size="sm"
                                                 variant="destructive"
                                                 className="h-9 px-4 gap-2 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-destructive/20 active:scale-95"
-                                                onClick={() => void handleUpdate(selectedExtension.manifest.id)}
+                                                onClick={() => { void handleUpdate(selectedExtension.manifest.id); }}
                                                 disabled={isUpdating === selectedExtension.manifest.id}
                                             >
                                                 <RefreshCw className={`h-3.5 w-3.5 ${isUpdating === selectedExtension.manifest.id ? 'animate-spin' : ''}`} />
@@ -400,6 +400,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                                             className="h-9 w-9 rounded-xl border-destructive/20 text-destructive/60 hover:text-destructive hover:bg-destructive/10 hover:border-destructive/40 transition-all active:scale-90 shadow-sm"
                                             title={t('marketplace.uninstall')}
                                             onClick={() => {
+                                                // eslint-disable-next-line no-alert
                                                 if (confirm(`Are you sure you want to uninstall ${selectedExtension.manifest.name}? This action cannot be undone.`)) {
                                                     void handleUninstallExtension(selectedExtension.manifest.id);
                                                 }

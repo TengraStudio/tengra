@@ -28,17 +28,9 @@ describe('MarketplaceService MCP installed-state mapping', () => {
                 ],
             }),
         };
-        const service = new MarketplaceService(
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            settingsServiceMock as SettingsService
-        );
+        const service = new MarketplaceService({
+            settingsService: settingsServiceMock as SettingsService
+        });
         const readInstalledMcpVersionsFromSettings = Reflect.get(
             service,
             'readInstalledMcpVersionsFromSettings'
@@ -55,7 +47,7 @@ describe('MarketplaceService MCP installed-state mapping', () => {
     });
 
     it('annotates installed items with case-insensitive IDs', () => {
-        const service = new MarketplaceService();
+        const service = new MarketplaceService({});
         const annotateInstalledItems = Reflect.get(
             service,
             'annotateInstalledItems'
@@ -80,27 +72,29 @@ describe('MarketplaceService MCP installed-state mapping', () => {
     });
 
     it('reads installed extension versions from extension package manifests', async () => {
-        const service = new MarketplaceService();
+        const service = new MarketplaceService({});
         const extensionDirectory = 'tengrastudio.job-finder';
         const extensionRoot = path.join(mockedUserDataPath, 'extensions');
         const packageJsonPath = path.join(extensionRoot, extensionDirectory, 'package.json');
 
         vi.spyOn(fs, 'readdir').mockResolvedValue([extensionDirectory] as never);
-        vi.spyOn(fs, 'pathExists').mockImplementation(async candidatePath =>
-            String(candidatePath) === packageJsonPath
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+        vi.spyOn(fs, 'pathExists').mockImplementation(candidatePath =>
+            Promise.resolve(String(candidatePath) === packageJsonPath)
         );
-        vi.spyOn(fs, 'readJson').mockImplementation(async candidatePath => {
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+        vi.spyOn(fs, 'readJson').mockImplementation(candidatePath => {
             if (String(candidatePath) !== packageJsonPath) {
-                throw new Error('Unexpected extension package lookup');
+                return Promise.reject(new Error('Unexpected extension package lookup'));
             }
-            return {
+            return Promise.resolve({
                 id: 'tengrastudio.job-finder',
                 name: 'job-finder-plugin',
                 version: '1.1.0',
                 tengra: {
                     id: 'tengrastudio.job-finder',
                 },
-            };
+            });
         });
 
         const readInstalledExtensionVersions = Reflect.get(

@@ -449,6 +449,87 @@ function createFallbackProfile(): MarketplaceRuntimeProfile {
     };
 }
 
+function calculateSpeeds(context: {
+    parameterBillions?: number;
+    cpuBoost: number;
+    gpuBoost: number;
+    memoryPenalty: number;
+    storagePenalty: number;
+    cpuHeadroomPercent: number;
+    gpuAvailable: boolean;
+}): { tps: number; promptTps: number } {
+    const { parameterBillions, cpuBoost, gpuBoost, memoryPenalty, storagePenalty, cpuHeadroomPercent, gpuAvailable } = context;
+    const unknownModelBase = (gpuAvailable ? 12 : 4) * clamp(cpuHeadroomPercent / 100, 0.2, 1.0);
+    const baseTps = parameterBillions ? (34 / Math.pow(parameterBillions, 0.78)) : unknownModelBase;
+    const rawTps = baseTps * cpuBoost * gpuBoost * memoryPenalty * storagePenalty;
+    const tps = clamp(rawTps, 0.1, parameterBillions ? 180 : 45);
+    const promptTps = clamp(tps * 3.2, 0.1, parameterBillions ? 720 : 180);
+    return { tps, promptTps };
+}
+
+function calculateModelScore(context: {
+    hasKnownModelData: boolean;
+    memoryFits: boolean;
+    hasMemoryEstimate: boolean;
+    storageFits: boolean;
+    hasStorageEstimate: boolean;
+    vramFits: boolean | undefined;
+    gpuAvailable: boolean;
+    tps: number;
+    cpuLoadPercent: number;
+}): number {
+    const {
+        hasKnownModelData,
+        memoryFits,
+        hasMemoryEstimate,
+        storageFits,
+        hasStorageEstimate,
+        vramFits,
+        gpuAvailable,
+        tps,
+        cpuLoadPercent
+    } = context;
+    return clamp(
+        (hasKnownModelData ? 20 : 5)
+            + (memoryFits ? 24 : (hasMemoryEstimate ? -25 : -6))
+            + (storageFits ? 16 : (hasStorageEstimate ? -18 : -4))
+            + (vramFits ? 14 : (gpuAvailable && hasMemoryEstimate ? -12 : 0))
+            + clamp(tps * (hasKnownModelData ? 0.5 : 0.2), 0, hasKnownModelData ? 32 : 10)
+            - (hasKnownModelData ? 0 : 18)
+            - (cpuLoadPercent * 0.2),
+        0,
+        100
+    );
+}
+
+function resolveModelParameters(
+    model: MarketplaceModel,
+    selectedVariant?: MarketplaceModelVariantCandidate,
+    storageBytes: number = 0
+): number {
+    return selectedVariant?.parameterCount 
+        ?? parseParameters(model.parameters) 
+        ?? extractParametersFromName(model.name)
+        ?? estimateParameterCountFromBytes(storageBytes)
+        ?? 0;
+}
+
+function estimateModelMemory(context: {
+    selectedVariant?: MarketplaceModelVariantCandidate;
+    parameterCount: number;
+    kvCacheBytes: number;
+    storageBytes: number;
+    parameterBasedWeightsBytes: number;
+}): number {
+    const { selectedVariant, kvCacheBytes, storageBytes, parameterBasedWeightsBytes } = context;
+    const modelBytes = selectedVariant?.memoryBytes ?? 0;
+    return Math.round(modelBytes > 0
+        ? modelBytes
+        : (storageBytes > 0
+            ? storageBytes + kvCacheBytes + DEFAULT_RAM_OVERHEAD_BYTES
+            : (parameterBasedWeightsBytes > 0 ? parameterBasedWeightsBytes + kvCacheBytes + DEFAULT_RAM_OVERHEAD_BYTES : 0)));
+}
+
 function calculatePerformanceMetrics(
     model: MarketplaceModel,
     profile: MarketplaceRuntimeProfile,
@@ -475,21 +556,19 @@ function calculatePerformanceMetrics(
         ? parseContextWindow(selectedVariant.contextWindow) ?? resolveContextTokens(model)
         : resolveContextTokens(model);
     
-    const parameterCount = selectedVariant?.parameterCount 
-        ?? parseParameters(model.parameters) 
-        ?? extractParametersFromName(model.name)
-        ?? estimateParameterCountFromBytes(storageBytes)
-        ?? 0;
+    const parameterCount = resolveModelParameters(model, selectedVariant, storageBytes);
     const parameterBasedWeightsBytes = parameterCount > 0
         ? estimateWeightsFromParameters(parameterCount, model, selectedVariant?.name ?? model.pipelineTag)
         : 0;
     
     const kvCacheBytes = estimateKvCacheBytes(parameterCount, contextTokens);
-    const estimatedMemoryBytes = Math.round(modelBytes > 0
-        ? modelBytes
-        : (storageBytes > 0
-            ? storageBytes + kvCacheBytes + DEFAULT_RAM_OVERHEAD_BYTES
-            : (parameterBasedWeightsBytes > 0 ? parameterBasedWeightsBytes + kvCacheBytes + DEFAULT_RAM_OVERHEAD_BYTES : 0)));
+    const estimatedMemoryBytes = estimateModelMemory({
+        selectedVariant,
+        parameterCount,
+        kvCacheBytes,
+        storageBytes,
+        parameterBasedWeightsBytes,
+    });
         
     const estimatedDiskBytes = Math.round(storageBytes > 0
         ? storageBytes * 1.05
@@ -510,11 +589,10 @@ function calculatePerformanceMetrics(
     
     const cpuHeadroomPercent = clamp(100 - profile.system.cpuLoadPercent, 0, 100);
     
-    // Parameter normalization: ensure we are dealing with actual counts
-    // Some models might report "1" meaning 1B or 1,000,000,000 raw.
+    // Parameter normalization
     let normalizedParamCount = parameterCount ?? 0;
     if (normalizedParamCount > 0 && normalizedParamCount < 1000) {
-        normalizedParamCount *= 1_000_000_000; // Assume Billions if very small
+        normalizedParamCount *= 1_000_000_000;
     }
 
     const inferredParamCount = normalizedParamCount > 0
@@ -523,16 +601,15 @@ function calculatePerformanceMetrics(
     const parameterBillions = inferredParamCount > 0
         ? Math.max(inferredParamCount / 1_000_000_000, 0.2)
         : undefined;
-    const cpuBoost = clamp((profile.system.cpuCores / 8) * (cpuHeadroomPercent / 100), 0.3, 3.0);
 
+    const cpuBoost = clamp((profile.system.cpuCores / 8) * (cpuHeadroomPercent / 100), 0.3, 3.0);
     let gpuBoost = 1.0;
     if (profile.gpu.available) {
         if (vramFits) {
             const fitRatio = vramCapacity / Math.max(estimatedMemoryBytes, BYTES_IN_GB);
             gpuBoost = clamp(1.6 + Math.log2(1 + fitRatio), 1.4, 4.5);
         } else if (memoryFits && hasMemoryEstimate && estimatedMemoryBytes > 0) {
-            const spillRatio = clamp(vramCapacity / estimatedMemoryBytes, 0.1, 1.0);
-            gpuBoost = clamp(0.35 + spillRatio, 0.2, 1.2);
+            gpuBoost = clamp(0.35 + clamp(vramCapacity / estimatedMemoryBytes, 0.1, 1.0), 0.2, 1.2);
         } else {
             gpuBoost = 0.2;
         }
@@ -541,23 +618,27 @@ function calculatePerformanceMetrics(
     const memoryPenalty = memoryFits ? 1.0 : (hasMemoryEstimate ? 0.25 : 0.45);
     const storagePenalty = storageFits ? 1.0 : (hasStorageEstimate ? 0.35 : 0.6);
 
-    const unknownModelBase = (profile.gpu.available ? 12 : 4) * clamp(cpuHeadroomPercent / 100, 0.2, 1.0);
-    const baseTps = parameterBillions ? (34 / Math.pow(parameterBillions, 0.78)) : unknownModelBase;
-    const rawTps = baseTps * cpuBoost * gpuBoost * memoryPenalty * storagePenalty;
-    const estimatedTokensPerSecond = clamp(rawTps, 0.1, parameterBillions ? 180 : 45);
-    const estimatedPromptTokensPerSecond = clamp(estimatedTokensPerSecond * 3.2, 0.1, parameterBillions ? 720 : 180);
+    const { tps, promptTps } = calculateSpeeds({
+        parameterBillions,
+        cpuBoost,
+        gpuBoost,
+        memoryPenalty,
+        storagePenalty,
+        cpuHeadroomPercent,
+        gpuAvailable: profile.gpu.available
+    });
 
-    const score = clamp(
-        (hasKnownModelData ? 20 : 5)
-            + (memoryFits ? 24 : (hasMemoryEstimate ? -25 : -6))
-            + (storageFits ? 16 : (hasStorageEstimate ? -18 : -4))
-            + (vramFits ? 14 : (profile.gpu.available && hasMemoryEstimate ? -12 : 0))
-            + clamp(estimatedTokensPerSecond * (hasKnownModelData ? 0.5 : 0.2), 0, hasKnownModelData ? 32 : 10)
-            - (hasKnownModelData ? 0 : 18)
-            - (profile.system.cpuLoadPercent * 0.2),
-        0,
-        100
-    );
+    const score = calculateModelScore({
+        hasKnownModelData,
+        memoryFits,
+        hasMemoryEstimate,
+        storageFits,
+        hasStorageEstimate,
+        vramFits,
+        gpuAvailable: profile.gpu.available,
+        tps,
+        cpuLoadPercent: profile.system.cpuLoadPercent
+    });
 
     return {
         estimatedMemoryBytes,
@@ -567,8 +648,8 @@ function calculatePerformanceMetrics(
         storageFits,
         vramFits,
         cpuHeadroomPercent,
-        estimatedTokensPerSecond,
-        estimatedPromptTokensPerSecond,
+        estimatedTokensPerSecond: tps,
+        estimatedPromptTokensPerSecond: promptTps,
         score,
         backend: (profile.gpu.available && (hasKnownModelData ? Boolean(vramFits || memoryFits) : true)) ? 'gpu' : 'cpu',
         hasKnownModelData,

@@ -13,6 +13,7 @@ export interface MarketplaceBridge {
     getUpdateCount: () => Promise<number>;
     checkLiveUpdates: () => Promise<number>;
     fetchReadme: (extensionId: string, repository?: string) => Promise<string | null>;
+    uninstall: (itemId: string, itemType: MarketplaceItem['itemType']) => Promise<{ success: boolean; error?: string; messageKey?: string }>;
 }
 
 export function createMarketplaceBridge(ipc: IpcRenderer): MarketplaceBridge {
@@ -23,5 +24,6 @@ export function createMarketplaceBridge(ipc: IpcRenderer): MarketplaceBridge {
         getUpdateCount: () => ipc.invoke('marketplace:get-update-count'),
         checkLiveUpdates: () => ipc.invoke('marketplace:check-live-updates'),
         fetchReadme: (extensionId: string, repository?: string) => ipc.invoke('marketplace:fetch-readme', extensionId, repository),
+        uninstall: (itemId, itemType) => ipc.invoke('marketplace:uninstall', itemId, itemType),
     };
 }

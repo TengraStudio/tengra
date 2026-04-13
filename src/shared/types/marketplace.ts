@@ -13,6 +13,8 @@ export interface MarketplaceItem {
     installedVersion?: string;
     updateAvailable?: boolean;
     removable?: boolean;
+    downloads?: number;
+    pullCount?: number;
 }
 
 export interface MarketplaceTheme extends MarketplaceItem {
@@ -196,4 +198,14 @@ export interface InstallResult {
     mcpConfig?: MCPServerConfig;
     queuedDownloads?: number;
     downloadIds?: string[];
+}
+
+export interface RemoteModelSourceConfig {
+    provider: MarketplaceModel['provider'];
+    url: string;
+}
+
+export interface IndexedModel {
+    item: MarketplaceModel;
+    order: number;
 }

@@ -64,7 +64,27 @@ export const WorkspaceExplorerPanel = React.memo(({
         if (!source || !target?.isDirectory) {
             return;
         }
+
+        // 1. Cross-mount moves are not supported yet via DND
         if (source.mountId !== target.mountId) {
+            return;
+        }
+
+        // 2. Prevent dropping onto self
+        if (source.path === target.path) {
+            return;
+        }
+
+        // 3. Prevent dropping into own children (circular move)
+        const normalizedSource = source.path.replace(/\\/g, '/').replace(/\/+$/, '');
+        const normalizedTarget = target.path.replace(/\\/g, '/').replace(/\/+$/, '');
+        if (normalizedTarget.startsWith(`${normalizedSource}/`)) {
+            return;
+        }
+
+        // 4. Prevent dropping into own parent (no-op)
+        const parentPath = source.path.split(/[\\/]/).slice(0, -1).join(source.path.includes('\\') ? '\\' : '/');
+        if (parentPath === target.path) {
             return;
         }
 

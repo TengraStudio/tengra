@@ -36,7 +36,6 @@ import { DatabaseService } from '@main/services/data/database.service';
 import { ContextRetrievalService } from '@main/services/llm/context-retrieval.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
-import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { ChatSessionRegistryService } from '@main/services/session/chat-session-registry.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { LocaleService } from '@main/services/system/locale.service';
@@ -108,7 +107,6 @@ interface SessionConversationIpcOptions {
     contextRetrievalService: ContextRetrievalService;
     databaseService: DatabaseService;
     chatSessionRegistryService?: ChatSessionRegistryService;
-    rateLimitService?: RateLimitService;
 }
 
 class SessionConversationIpcManager {
@@ -242,18 +240,6 @@ class SessionConversationIpcManager {
     }
 
     async handleChatStream(event: IpcMainInvokeEvent, params: ConversationStreamParams) {
-        if (this.options.rateLimitService) {
-            try {
-                await this.options.rateLimitService.waitForToken(SESSION_CONVERSATION_CHANNELS.STREAM);
-            } catch (error) {
-                const msg = `Rate limit exceeded: ${getErrorMessage(error as Error)}`;
-                appLogger.warn('Chat', msg);
-                safeSendConversationChunk(event.sender, { chatId: params.chatId, streamId: params.streamId, type: 'error', content: msg });
-                safeSendConversationChunk(event.sender, { chatId: params.chatId, streamId: params.streamId, done: true });
-                return;
-            }
-        }
-
         const sanitized = sanitizeConversationStreamInputs(params);
         appLogger.info(
             'Chat',

@@ -1,4 +1,4 @@
-import { buildActions, McpDeps, validateNumber, validateString, withRateLimit,withTimeout } from '@main/mcp/server-utils';
+import { buildActions, McpDeps, validateNumber, validateString, withOperationGuard,withTimeout } from '@main/mcp/server-utils';
 import { McpService } from '@main/mcp/types';
 
 /**
@@ -66,7 +66,7 @@ export function buildGitServer(deps: McpDeps): McpService {
         actions: buildActions([
             {
                 name: 'status', 
-                handler: ({ cwd }) => withRateLimit(
+                handler: ({ cwd }) => withOperationGuard(
                     deps,
                     'git',
                     () => withTimeout(
@@ -77,7 +77,7 @@ export function buildGitServer(deps: McpDeps): McpService {
             },
             {
                 name: 'diff', 
-                handler: ({ cwd, file, staged }) => withRateLimit(
+                handler: ({ cwd, file, staged }) => withOperationGuard(
                     deps,
                     'git',
                     () => withTimeout(
@@ -97,7 +97,7 @@ export function buildGitServer(deps: McpDeps): McpService {
                         ? validateNumber(count, 1, 100)
                         : 10;
 
-                    return withRateLimit(
+                    return withOperationGuard(
                         deps,
                         'git',
                         () => withTimeout(
@@ -109,7 +109,7 @@ export function buildGitServer(deps: McpDeps): McpService {
             },
             {
                 name: 'commit', 
-                handler: ({ cwd, message }) => withRateLimit(
+                handler: ({ cwd, message }) => withOperationGuard(
                     deps,
                     'git',
                     () => withTimeout(
@@ -128,7 +128,7 @@ export function buildGitServer(deps: McpDeps): McpService {
                         ? validateFilePath(files)
                         : '.';
 
-                    return withRateLimit(
+                    return withOperationGuard(
                         deps,
                         'git',
                         () => withTimeout(
@@ -148,7 +148,7 @@ export function buildGitServer(deps: McpDeps): McpService {
                         ? validateBranchName(branch)
                         : 'main';
 
-                    return withRateLimit(
+                    return withOperationGuard(
                         deps,
                         'git',
                         () => withTimeout(
@@ -164,7 +164,7 @@ export function buildGitServer(deps: McpDeps): McpService {
             },
             {
                 name: 'pull', 
-                handler: ({ cwd }) => withRateLimit(
+                handler: ({ cwd }) => withOperationGuard(
                     deps,
                     'git',
                     () => withTimeout(
@@ -175,7 +175,7 @@ export function buildGitServer(deps: McpDeps): McpService {
             },
             {
                 name: 'checkout', 
-                handler: ({ cwd, branch }) => withRateLimit(
+                handler: ({ cwd, branch }) => withOperationGuard(
                     deps,
                     'git',
                     () => withTimeout(
@@ -189,7 +189,7 @@ export function buildGitServer(deps: McpDeps): McpService {
             },
             {
                 name: 'branches', 
-                handler: ({ cwd }) => withRateLimit(
+                handler: ({ cwd }) => withOperationGuard(
                     deps,
                     'git',
                     () => withTimeout(

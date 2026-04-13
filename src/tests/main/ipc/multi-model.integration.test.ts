@@ -11,8 +11,8 @@ vi.mock('@main/logging/logger', () => ({
 }));
 
 
-vi.mock('@main/utils/rate-limiter.util', () => ({
-    withRateLimit: vi.fn(async (_key, fn) => await fn())
+vi.mock('@main/utils/operation-wrapper.util', () => ({
+    withOperationGuard: vi.fn(async (_key, fn) => await fn())
 }));
 
 vi.mock('electron', () => ({
@@ -218,9 +218,9 @@ describe('Multi-Model IPC Handlers', () => {
             await expect(handler!(mockEvent, request)).rejects.toThrow('Invalid comparison request');
         });
 
-        it('should apply rate limiting', async () => {
+        it('should use the operation guard', async () => {
             const handler = ipcMainHandlers.get('llm:compare-models');
-            const { withRateLimit } = await import('@main/utils/rate-limiter.util');
+            const { withOperationGuard } = await import('@main/utils/operation-wrapper.util');
 
             const request = {
                 chatId: 'chat-123',
@@ -230,7 +230,7 @@ describe('Multi-Model IPC Handlers', () => {
 
             await handler!(mockEvent, request);
 
-            expect(withRateLimit).toHaveBeenCalledWith('llm', expect.any(Function));
+            expect(withOperationGuard).toHaveBeenCalledWith('llm', expect.any(Function));
         });
     });
 });

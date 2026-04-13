@@ -45,7 +45,6 @@ const mockCodeIntelligenceService = { queryIndexedSymbols: vi.fn().mockResolvedV
 
 const mockContextRetrievalService = { retrieveContext: vi.fn().mockResolvedValue({ contextString: '', sources: [] }) };
 const mockLocaleService = { getLocalePack: vi.fn().mockReturnValue(undefined) };
-const mockRateLimitService = { waitForToken: vi.fn() };
 const mockDatabaseService = {
     addTokenUsage: vi.fn(),
     addMessage: vi.fn(),
@@ -370,47 +369,6 @@ describe('Session conversation IPC integration', () => {
         );
     });
 
-    it('should emit rate-limit error and done when token wait fails', async () => {
-        mockRateLimitService.waitForToken.mockRejectedValue(new Error('limit reached'));
-        initIPC({ rateLimitService: mockRateLimitService });
-        const handler = ipcMainHandlers.get('session:conversation:stream');
-
-        const result = await handler!(mockEvent, createStreamRequest());
-
-        expect(result).toMatchObject({ success: true });
-        expect(mockEvent.sender.send).toHaveBeenCalledWith(
-            'session:conversation:stream-chunk',
-            expect.objectContaining({ type: 'error', content: expect.stringContaining('Rate limit exceeded') })
-        );
-        expect(mockEvent.sender.send).toHaveBeenCalledWith(
-            'session:conversation:stream-chunk',
-            expect.objectContaining({ chatId: 'chat-1', done: true })
-        );
-        expect(mockLLMService.chatStream).not.toHaveBeenCalled();
-    });
-
-    it('should return before cancel listener registration on rate-limit failure', async () => {
-        mockRateLimitService.waitForToken.mockRejectedValue(new Error('limit reached'));
-        initIPC({ rateLimitService: mockRateLimitService });
-        const handler = ipcMainHandlers.get('session:conversation:stream');
-
-        await handler!(mockEvent, createStreamRequest());
-
-        expect(ipcMain.on).not.toHaveBeenCalledWith('session:conversation:cancel', expect.any(Function));
-        expect(ipcMain.removeListener).not.toHaveBeenCalledWith('session:conversation:cancel', expect.any(Function));
-    });
-
-    it('should stream without calling waitForToken when rateLimitService is not configured', async () => {
-        initIPC();
-        const handler = ipcMainHandlers.get('session:conversation:stream');
-        mockLLMService.chatStream.mockReturnValue((async function* () { })());
-
-        await handler!(mockEvent, createStreamRequest());
-
-        expect(mockRateLimitService.waitForToken).not.toHaveBeenCalled();
-        expect(mockLLMService.chatStream).toHaveBeenCalled();
-    });
-
     it('should forward reasoningEffort to llmService.chatStream options', async () => {
         initIPC();
         const handler = ipcMainHandlers.get('session:conversation:stream');
@@ -473,18 +431,6 @@ describe('Session conversation IPC integration', () => {
 
         expect(result).toMatchObject({ success: true });
         expect(mockEvent.sender.send).not.toHaveBeenCalled();
-    });
-
-    it('should call rateLimitService waitForToken before streaming', async () => {
-        initIPC({ rateLimitService: mockRateLimitService });
-        const handler = ipcMainHandlers.get('session:conversation:stream');
-        mockRateLimitService.waitForToken.mockResolvedValue(undefined);
-        mockLLMService.chatStream.mockReturnValue((async function* () { })());
-
-        await handler!(mockEvent, createStreamRequest());
-
-        expect(mockRateLimitService.waitForToken).toHaveBeenCalledWith('session:conversation:stream');
-        expect(mockLLMService.chatStream).toHaveBeenCalled();
     });
 
     it('should stream copilot provider through llmService.chatStream', async () => {

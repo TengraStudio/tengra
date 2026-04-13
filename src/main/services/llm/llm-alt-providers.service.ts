@@ -2,7 +2,6 @@ import { CircuitBreaker } from '@main/core/circuit-breaker';
 import { appLogger } from '@main/logging/logger';
 import { HttpService } from '@main/services/external/http.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
-import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { ChatMessage, OpenAIResponse, ToolCall } from '@main/types/llm.types';
 import { MessageNormalizer } from '@main/utils/message-normalizer.util';
 import { StreamParser } from '@main/utils/stream-parser.util';
@@ -22,7 +21,6 @@ const DEFAULT_MODELS = {
 export interface AltProvidersDeps {
     httpService: HttpService;
     keyRotationService: KeyRotationService;
-    rateLimitService: RateLimitService;
 }
 
 /** API key getter callbacks for alternate LLM providers. */
@@ -63,7 +61,6 @@ export class LLMAltProvidersService {
     async chatAnthropic(messages: Array<Message | ChatMessage>, model: string = DEFAULT_MODELS.ANTHROPIC): Promise<OpenAIResponse> {
         const key = this.deps.keyRotationService.getCurrentKey('anthropic') ?? this.keyGetters.getAnthropicApiKey();
         if (!key) { throw new AuthenticationError('Anthropic API Key not set'); }
-        await this.deps.rateLimitService.waitForToken('anthropic');
 
         try {
             const body = this.buildAnthropicBody(messages, model);
@@ -97,7 +94,6 @@ export class LLMAltProvidersService {
     ): Promise<OpenAIResponse> {
         const key = this.getGroqKey();
         if (!key) { throw new AuthenticationError('Groq API Key not set'); }
-        await this.deps.rateLimitService.waitForToken('groq');
 
         try {
             const body = buildOpenAIBody(messages, { model, provider: 'groq' });

@@ -546,22 +546,35 @@ export class SettingsService extends BaseService {
         authAccounts: LinkedAccount[],
         loaded?: Partial<AppSettings['remoteAccounts']>
     ): AppSettings['remoteAccounts'] {
-        const def = DEFAULT_SETTINGS.remoteAccounts!;
+        const fallback = {
+            discord: { enabled: false, token: '', allowedUserIds: [] as string[], notifications: false },
+            telegram: { enabled: false, token: '', allowedUserIds: [] as string[], notifications: false },
+            whatsapp: { enabled: false, mode: 'qr' as const, token: '', botId: '', allowedUserIds: [] as string[], notifications: false },
+        };
+        const defDiscord = DEFAULT_SETTINGS.remoteAccounts?.discord ?? fallback.discord;
+        const defTelegram = DEFAULT_SETTINGS.remoteAccounts?.telegram ?? fallback.telegram;
+        const defWhatsapp = DEFAULT_SETTINGS.remoteAccounts?.whatsapp ?? fallback.whatsapp;
+
         const res: AppSettings['remoteAccounts'] = {
             discord: {
-                ...def.discord!,
-                ...(loaded?.discord ?? {}),
-                token: this.findTokenInAuth(authAccounts, 'remote_discord') || (loaded?.discord?.token ?? ''),
+                enabled: loaded?.discord?.enabled ?? defDiscord.enabled,
+                token: this.findTokenInAuth(authAccounts, 'remote_discord') || (loaded?.discord?.token ?? defDiscord.token),
+                allowedUserIds: loaded?.discord?.allowedUserIds ?? defDiscord.allowedUserIds,
+                notifications: loaded?.discord?.notifications ?? defDiscord.notifications,
             },
             telegram: {
-                ...def.telegram!,
-                ...(loaded?.telegram ?? {}),
-                token: this.findTokenInAuth(authAccounts, 'remote_telegram') || (loaded?.telegram?.token ?? ''),
+                enabled: loaded?.telegram?.enabled ?? defTelegram.enabled,
+                token: this.findTokenInAuth(authAccounts, 'remote_telegram') || (loaded?.telegram?.token ?? defTelegram.token),
+                allowedUserIds: loaded?.telegram?.allowedUserIds ?? defTelegram.allowedUserIds,
+                notifications: loaded?.telegram?.notifications ?? defTelegram.notifications,
             },
             whatsapp: {
-                ...def.whatsapp!,
-                ...(loaded?.whatsapp ?? {}),
-                token: this.findTokenInAuth(authAccounts, 'remote_whatsapp') || (loaded?.whatsapp?.token ?? ''),
+                enabled: loaded?.whatsapp?.enabled ?? defWhatsapp.enabled,
+                mode: loaded?.whatsapp?.mode ?? defWhatsapp.mode,
+                token: this.findTokenInAuth(authAccounts, 'remote_whatsapp') || (loaded?.whatsapp?.token ?? defWhatsapp.token ?? ''),
+                botId: loaded?.whatsapp?.botId ?? defWhatsapp.botId ?? '',
+                allowedUserIds: loaded?.whatsapp?.allowedUserIds ?? defWhatsapp.allowedUserIds,
+                notifications: loaded?.whatsapp?.notifications ?? defWhatsapp.notifications,
             },
         };
         return res;

@@ -1,8 +1,6 @@
 import type {
     MarketplaceItem,
-    MarketplaceLanguage,
-    MarketplaceModel,
-    MarketplaceModelPerformanceEstimate 
+    MarketplaceLanguage
 } from '@shared/types/marketplace';
 import { compareVersions } from '@shared/utils/extension.util';
 import { 
@@ -23,12 +21,6 @@ import type { ElementType } from 'react';
 import { useTranslation } from '@/i18n';
 import { useDownloadStore } from '@/store/download.store';
 
-const formatNumber = (num: number): string => {
-    if (num >= 1000000000) { return (num / 1000000000).toFixed(1) + 'B'; }
-    if (num >= 1000000) { return (num / 1000000).toFixed(1) + 'M'; }
-    if (num >= 1000) { return (num / 1000).toFixed(1) + 'K'; }
-    return num.toString();
-};
 
 const formatBytes = (bytes: number): string => {
     if (bytes <= 0) {
@@ -63,7 +55,6 @@ export function MarketCard({
 }) {
     const { t } = useTranslation();
     const languageItem = item.itemType === 'language' ? (item as MarketplaceLanguage) : null;
-    const modelItem = item.itemType === 'model' ? (item as MarketplaceModel) : null;
     const installedVersion = typeof item.installedVersion === 'string' ? item.installedVersion : null;
     const hasUpdate = Boolean(
         item.installed
@@ -81,8 +72,6 @@ export function MarketCard({
         skill: Sparkles,
         extension: Puzzle,
     } as Record<string, ElementType>)[item.itemType] || Package);
-
-    const performance = modelItem?.performance as MarketplaceModelPerformanceEstimate | undefined;
 
     const versionDisplay = (
         <div className="flex items-center gap-1.5 font-black select-none">
@@ -112,65 +101,46 @@ export function MarketCard({
 
     return (
         <div className={`
-            group relative flex h-full min-h-[170px] flex-col overflow-hidden rounded-xl border transition-all duration-300
-            ${item.installed 
-                ? 'border-primary/50 bg-card/10 shadow-[0_0_20px_rgba(var(--primary-rgb),0.1)] ring-1 ring-primary/20' 
-                : 'border-border/40 bg-card/20 hover:border-primary/30 hover:bg-card/40'}
-            p-5 hover:shadow-[0_12px_50px_rgba(0,0,0,0.4)] hover:scale-[1.01] active:scale-[0.995]
+            group relative flex items-start gap-4 p-4 transition-colors duration-200
+            ${item.installed ? 'bg-primary/[0.03]' : 'bg-transparent hover:bg-muted/30'}
         `}>
-            {/* Visual glow on install */}
+            {/* Visual indicator for installed */}
             {item.installed && (
-                <div className="absolute -inset-px rounded-xl border border-primary/40 opacity-50 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                <div className="absolute left-0 top-4 bottom-4 w-0.5 bg-primary rounded-r-full" />
             )}
-            
-            {/* Subtle background gradient */}
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-            <div className="relative z-10 flex flex-1 flex-col">
-                <div className="flex gap-5">
-                    {/* Icon Container - Ultra Premium */}
-                    <div className={`
-                        flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl shadow-inner transition-all duration-500
-                        ${item.installed 
-                            ? 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30' 
-                            : 'bg-muted/30 text-muted-foreground/50 ring-1 ring-inset ring-white/5 group-hover:bg-primary/20 group-hover:text-primary group-hover:ring-primary/40'}
-                    `}>
-                        <Icon className="h-10 w-10 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3" />
+            {/* Icon - Smaller and more integrated */}
+            <div className={`
+                flex h-12 w-12 shrink-0 items-center justify-center rounded-lg transition-transform
+                ${item.installed 
+                    ? 'bg-primary/10 text-primary' 
+                    : 'bg-muted/50 text-muted-foreground group-hover:scale-105'}
+            `}>
+                <Icon className="h-6 w-6" />
+            </div>
+
+            <div className="flex flex-1 flex-col min-w-0 py-0.5">
+                <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <h3 className="truncate text-base font-semibold text-foreground/90">
+                            {item.name}
+                        </h3>
+                        {item.installed && (
+                            <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success opacity-80" />
+                        )}
                     </div>
-
-                    <div className="flex flex-col justify-center min-w-0 flex-1">
-                        <div className="flex items-center gap-2.5">
-                            <h3 className="truncate text-[19px] font-black tracking-tighter text-foreground transition-colors group-hover:text-primary">
-                                {item.name}
-                            </h3>
-                            {item.installed && (
-                                <div 
-                                    className="h-2.5 w-2.5 shrink-0 rounded-full bg-success shadow-[0_0_15px_rgba(34,197,94,0.8)] animate-pulse" 
-                                    title={t('modelExplorer.installed')} 
-                                />
-                            )}
-                        </div>
-                        
-                        <div className="mt-2 flex items-center gap-3">
-                            <span className="truncate max-w-[140px] text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">
-                                {item.author || t('marketplace.authorPrefix')}
-                            </span>
-                            <span className="h-1 w-1 rounded-full bg-border/40" />
-                            {versionDisplay}
-                        </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5 h-fit shrink-0">
+                    
+                    <div className="flex items-center gap-1.5 shrink-0">
                         {item.installed && !hasUpdate && onUninstall && item.removable !== false && (
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     onUninstall(item);
                                 }}
-                                title={t('marketplace.uninstall')}
-                                className="group/btn h-10 w-10 flex items-center justify-center rounded-xl bg-destructive/10 text-destructive ring-1 ring-inset ring-destructive/20 hover:bg-destructive hover:text-white transition-all duration-200 active:scale-90 shadow-sm"
+                                className="h-8 px-2 flex items-center gap-1.5 rounded-md text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95 text-[10px] font-bold uppercase tracking-wider"
                             >
-                                <Trash2 className="h-5 w-5 transition-transform group-hover/btn:rotate-12" />
+                                <Trash2 className="h-3.5 w-3.5" />
+                                {t('marketplace.uninstall')}
                             </button>
                         )}
 
@@ -180,17 +150,11 @@ export function MarketCard({
                                     e.stopPropagation();
                                     onInstall(item);
                                 }}
-                                title={t('marketplace.update')}
-                                className="group/btn h-10 w-10 flex items-center justify-center rounded-xl bg-amber-500/10 text-amber-500 ring-1 ring-inset ring-amber-500/20 hover:bg-amber-500 hover:text-white transition-all duration-200 active:scale-90 shadow-sm"
+                                className="h-8 px-3 flex items-center gap-2 rounded-md bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white transition-all active:scale-95 text-[10px] font-bold uppercase tracking-wider"
                             >
-                                <RefreshCw className="h-4.5 w-4.5 transition-transform group-hover/btn:rotate-180 duration-500" />
+                                <RefreshCw className="h-3.5 w-3.5" />
+                                {t('marketplace.update')}
                             </button>
-                        )}
-
-                        {item.installed && !hasUpdate && (
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10 text-success ring-1 ring-inset ring-success/20 shadow-sm">
-                                <CheckCircle2 className="h-6 w-6" />
-                            </div>
                         )}
 
                         {!item.installed && (
@@ -201,82 +165,44 @@ export function MarketCard({
                                 }}
                                 disabled={isInstalling}
                                 className={`
-                                    flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 active:scale-90 shadow-sm
+                                    h-8 px-4 flex items-center gap-2 rounded-md transition-all active:scale-95 text-[10px] font-bold uppercase tracking-wider
                                     ${isInstalling 
-                                        ? 'bg-muted text-muted-foreground animate-pulse cursor-not-allowed' 
-                                        : 'bg-primary/20 text-primary ring-1 ring-inset ring-primary/30 hover:bg-primary hover:text-white'}
+                                        ? 'bg-muted text-muted-foreground animate-pulse' 
+                                        : 'bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground'}
                                 `}
                             >
                                 {isInstalling ? (
-                                    <RefreshCw className="h-4.5 w-4.5 animate-spin" />
+                                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
                                 ) : (
-                                    <Download className="h-4.5 w-4.5" />
+                                    <Download className="h-3.5 w-3.5" />
                                 )}
+                                {t('marketplace.install')}
                             </button>
                         )}
                     </div>
                 </div>
 
+                <div className="mt-1 flex items-center gap-2 text-[11px] font-medium text-muted-foreground/60">
+                    <span className="truncate">{item.author || t('marketplace.authorPrefix')}</span>
+                    <span className="opacity-30">•</span>
+                    {versionDisplay}
+                    <span className="opacity-30">•</span>
+                    <span className="uppercase tracking-widest text-[9px] font-black">{item.itemType}</span>
+                </div>
+
+                <p className="mt-2 line-clamp-1 text-sm text-muted-foreground/50 group-hover:text-muted-foreground/70 transition-colors">
+                    {item.description}
+                </p>
+
                 {isInstalling && item.itemType === 'model' && (
-                    <div className="my-3">
+                    <div className="mt-4">
                         <ModelDownloadProgress modelId={item.id} />
                     </div>
                 )}
 
-                {/* Tags and Stats Section */}
-                <div className="mt-auto pt-5">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            {/* Performance metrics for models */}
-                            {performance && (
-                                <div className="flex items-center gap-3">
-                                    {/* Disk Requirement */}
-                                    {performance.estimatedDiskBytes > 0 && (
-                                        <div className="flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-opacity" title={t('marketplace.estimatedDisk')}>
-                                            <Package className="h-3.5 w-3.5 text-blue-500/80" />
-                                            <span className="text-[11px] font-black tracking-tight">{formatBytes(performance.estimatedDiskBytes)}</span>
-                                        </div>
-                                    )}
-
-                                    {/* RAM Requirement */}
-                                    {performance.estimatedMemoryBytes > 0 && (
-                                        <div className="flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-opacity" title={t('marketplace.estimatedRam')}>
-                                            <Zap className="h-3.5 w-3.5 text-amber-500/80" />
-                                            <span className="text-[11px] font-black tracking-tight">{formatBytes(performance.estimatedMemoryBytes)}</span>
-                                        </div>
-                                    )}
-
-                                    {/* TPS info */}
-                                    <div className="flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-opacity" title={t('marketplace.estimatedTps')}>
-                                        <RefreshCw className="h-3.5 w-3.5 text-primary/80" />
-                                        <span className="text-[11px] font-black tracking-tight">{performance.estimatedTokensPerSecond.toFixed(0)} t/s</span>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Downloads Count */}
-                            {(item as any).downloads !== undefined && (item as any).downloads > 0 && !performance && (
-                                <div className="flex items-center gap-1.5 opacity-40 group-hover:opacity-70 transition-opacity">
-                                    <Download className="h-3.5 w-3.5" />
-                                    <span className="text-[11px] font-black tracking-tight">{formatNumber((item as any).downloads)}</span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Category Tag */}
-                        <div className="flex h-6 items-center rounded-full bg-white/5 px-2.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground/40 ring-1 ring-inset ring-white/5 transition-all group-hover:bg-primary/10 group-hover:text-primary/60 group-hover:ring-primary/20">
-                            {item.itemType}
-                        </div>
-                    </div>
-
-                    <p className="mt-4 line-clamp-2 text-[13px] font-medium leading-relaxed text-muted-foreground/50 transition-colors group-hover:text-muted-foreground/80">
-                        {item.description}
-                    </p>
-                </div>
-
                 {languageItem && item.installed && !isActive && (
-                    <div className="mt-3 pt-3 border-t border-border/10 flex items-center justify-between">
-                        <span className="text-[11px] font-black text-muted-foreground/60 uppercase tracking-widest">{languageItem.nativeName}</span>
+                    <div className="mt-3 flex items-center justify-between">
+                        <span className="text-[10px] font-black text-muted-foreground/30 uppercase tracking-widest">{languageItem.nativeName}</span>
                         <button
                             onClick={(event) => {
                                 event.stopPropagation();
@@ -284,7 +210,7 @@ export function MarketCard({
                                     onActivateLanguage(languageItem);
                                 }
                             }}
-                            className="rounded-lg bg-secondary/80 px-3 py-1.5 text-[11px] font-black text-secondary-foreground transition-all hover:bg-secondary active:scale-95 shadow-sm ring-1 ring-inset ring-white/5"
+                            className="bg-primary/5 text-primary hover:bg-primary hover:text-primary-foreground px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
                         >
                             {t('common.activate')}
                         </button>
@@ -300,7 +226,7 @@ function ModelDownloadProgress({ modelId }: { modelId: string }) {
     const activeDownloads = useDownloadStore(s => s.activeDownloads);
 
     // Find the task by modelId
-    const task = Object.values(activeDownloads).find(task => task.modelRef && task.modelRef.includes(modelId));
+    const task = Object.values(activeDownloads).find(task => task.modelRef?.includes(modelId));
 
     if (!task) { return null; }
 

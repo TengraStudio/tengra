@@ -6,7 +6,7 @@ import { DatabaseService } from '@main/services/data/database.service';
 import { CommandService } from '@main/services/system/command.service';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { createSafeIpcHandler, createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { withRateLimit } from '@main/utils/rate-limiter.util';
+import { withOperationGuard } from '@main/utils/operation-wrapper.util';
 import { TOOLS_CHANNELS } from '@shared/constants/ipc-channels';
 import { JsonObject, RuntimeValue } from '@shared/types/common';
 import type { WorkspaceAgentPermissionPolicy } from '@shared/types/workspace-agent-session';
@@ -461,7 +461,7 @@ export function registerToolsIpc(
             return permissionResult;
         }
 
-        const result = await withRateLimit('tools', () => toolExecutor.execute(payload.toolName, payload.args));
+        const result = await withOperationGuard('tools', () => toolExecutor.execute(payload.toolName, payload.args));
         appLogger.info(
             'tools',
             `execute:finish tool=${payload.toolName}, toolCallId=${payload.toolCallId ?? 'none'}, success=${String(result.success)}, durationMs=${Date.now() - startedAt}, errorType=${result.errorType ?? 'none'}`

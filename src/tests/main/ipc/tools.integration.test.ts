@@ -25,9 +25,9 @@ vi.mock('@main/logging/logger', () => ({
     },
 }));
 
-// Mock rate limiter
-vi.mock('@main/utils/rate-limiter.util', () => ({
-    withRateLimit: vi.fn((_key: string, fn: () => TestValue | Promise<TestValue>) => Promise.resolve(fn())),
+// Mock operation guard
+vi.mock('@main/utils/operation-wrapper.util', () => ({
+    withOperationGuard: vi.fn((_key: string, fn: () => TestValue | Promise<TestValue>) => Promise.resolve(fn())),
 }));
 
 // Mock ToolExecutor
@@ -42,7 +42,7 @@ vi.mock('@main/services/system/command.service', () => ({
 
 // Import the module under test AFTER mocks
 import { registerToolsIpc } from '@main/ipc/tools';
-import { withRateLimit } from '@main/utils/rate-limiter.util';
+import { withOperationGuard } from '@main/utils/operation-wrapper.util';
 
 describe('Tools IPC Integration', () => {
     let mockToolExecutor: Record<string, ReturnType<typeof vi.fn>>;
@@ -96,7 +96,7 @@ describe('Tools IPC Integration', () => {
                 toolCallId: 'tool-1',
             });
 
-            expect(withRateLimit).toHaveBeenCalledWith('tools', expect.any(Function));
+            expect(withOperationGuard).toHaveBeenCalledWith('tools', expect.any(Function));
             expect(mockToolExecutor.execute).toHaveBeenCalledWith('test-tool', { param: 'value' });
             expect(result).toEqual(mockResult);
         });
@@ -124,13 +124,13 @@ describe('Tools IPC Integration', () => {
             await expect(handler!({}, { toolName: 'failing-tool', args: {} })).rejects.toThrow('Tool execution failed');
         });
 
-        it('should apply rate limiting', async () => {
+        it('should use the operation guard', async () => {
             const handler = mockIpcMainHandlers.get('tools:execute');
             vi.mocked(mockToolExecutor.execute).mockResolvedValue({ success: true });
 
             await handler!({}, { toolName: 'test-tool', args: {} });
 
-            expect(withRateLimit).toHaveBeenCalledWith('tools', expect.any(Function));
+            expect(withOperationGuard).toHaveBeenCalledWith('tools', expect.any(Function));
         });
     });
 

@@ -2,6 +2,12 @@ import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { HuggingFaceService } from '@main/services/llm/huggingface.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
+import {
+    LocalModelFileFormat,
+    LocalModelRuntimeProvider,
+    resolveLocalModelFileFormat,
+    resolveRuntimeProviderForLocalModel,
+} from '@main/services/llm/local-runtime.types';
 import { resolveContextWindowForModel } from '@main/services/llm/model-context-window.data';
 import { OllamaService } from '@main/services/llm/ollama.service';
 import { RegionalPreferenceService } from '@main/services/llm/regional-preference.service';
@@ -47,6 +53,8 @@ export interface ModelProviderInfo {
     likes?: number;
     contextWindow?: number;
     parameters?: string;
+    fileFormat?: LocalModelFileFormat;
+    runtimeProvider?: LocalModelRuntimeProvider;
     capabilities?: {
         image_generation?: boolean;
         text_generation?: boolean;
@@ -960,7 +968,9 @@ export class ModelRegistryService extends BaseService {
                 sourceProvider: 'huggingface',
                 contextWindow: model.contextLength,
                 capabilities: { text_generation: true },
-                backend: 'llama.cpp',
+                backend: model.runtimeProvider ?? resolveRuntimeProviderForLocalModel(model.path),
+                runtimeProvider: model.runtimeProvider ?? resolveRuntimeProviderForLocalModel(model.path),
+                fileFormat: model.fileFormat ?? resolveLocalModelFileFormat(model.path),
                 localPath: model.path,
             }));
         } catch (error) {

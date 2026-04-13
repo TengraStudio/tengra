@@ -2,7 +2,6 @@ import { HFFile, HFModel, OllamaLibraryModel, UnifiedModel } from '@renderer/fea
 import { parsePulls } from '@renderer/features/models/utils/explorer-utils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useTranslation } from '@/i18n';
 import type { ModelInfo } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -53,7 +52,6 @@ const getSortedModels = (hfResults: HFModel[], filteredOllama: OllamaLibraryMode
 };
 
 export function useModelExplorer({ onRefreshModels, installedModels }: UseModelExplorerProps) {
-    const { t } = useTranslation();
     const [query, setQuery] = useState('');
     const [activeSource, setActiveSource] = useState<'all' | 'ollama' | 'huggingface'>('all');
     const [sortBy, setSortBy] = useState<'name' | 'popularity' | 'updated'>('popularity');
@@ -70,7 +68,7 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
     const [comparisonResult, setComparisonResult] = useState<RendererDataValue>(null);
     const [comparisonLoading, setComparisonLoading] = useState(false);
     const [lastInstallConfig, setLastInstallConfig] = useState<Record<string, HFInstallOptions>>({});
-    const [installTests, setInstallTests] = useState<Record<string, { success: boolean; message: string }>>({});
+    const [installTests] = useState<Record<string, { success: boolean; message: string }>>({});
 
     const isInstalled = useMemo(() => {
         const ids = new Set(installedModels.map(m => m.id));
@@ -189,33 +187,27 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
     };
 
     const handleDownloadHF = async (file: HFFile, options: HFInstallOptions = {}) => {
-        if (!modelsDir || selectedModel?.provider !== 'huggingface') { return; }
-        const safeName = `${selectedModel.author}-${selectedModel.name}-${file.quantization}.gguf`.replace(/[^a-zA-Z0-9.-]/g, '_').toLowerCase();
-        const universalPath = `${modelsDir}/${safeName}`.replace(/\\/g, '/');
+        if (selectedModel?.provider !== 'huggingface') { return; }
+        const downloadKey = `${selectedModel.id}/${file.path}`;
 
         try {
-            setDownloading(prev => ({ ...prev, [universalPath]: { received: 0, total: file.size } }));
-            const downloadUrl = `https://huggingface.co/${selectedModel.id}/resolve/main/${file.path}`;
-            const res = await window.electron.huggingface.downloadFile(downloadUrl, universalPath, file.size, file.oid, options.scheduleAtMs);
-
-            setDownloading(prev => {
-                const next = { ...prev };
-                delete next[universalPath];
-                return next;
+            setDownloading(prev => ({ ...prev, [downloadKey]: { received: 0, total: file.size } }));
+            const res = await window.electron.modelDownloader.start({
+                provider: 'huggingface',
+                modelId: selectedModel.id,
+                file,
+                scheduleAtMs: options.scheduleAtMs,
             });
+
             if (res.success) {
                 setLastInstallConfig(prev => ({ ...prev, [selectedModel.id]: options }));
-                if (options.testAfterInstall) {
-                    const test = await window.electron.huggingface.testDownloadedModel(universalPath);
-                    setInstallTests(prev => ({
-                        ...prev,
-                        [universalPath]: {
-                            success: !!test.success,
-                            message: test.success ? t('modelsPage.modelValidationSucceeded') : (test.error || t('modelsPage.modelValidationFailed'))
-                        }
-                    }));
-                }
                 onRefreshModels?.(true);
+            } else {
+                setDownloading(prev => {
+                    const next = { ...prev };
+                    delete next[downloadKey];
+                    return next;
+                });
             }
         } catch (e) { appLogger.error('useModelExplorer', `Failed to download HuggingFace file: ${file.path}`, e as Error); }
     };

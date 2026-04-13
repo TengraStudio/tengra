@@ -219,13 +219,16 @@ async function readCodeFile(
     const content = result.success ? extractContentFromResult(result) : '';
 
     if (!result.success && result.error === 'File is binary' && mount.type === 'local') {
-        const imgResult = await window.electron.files.readImage(filePath);
-        if (imgResult.success) {
-            return {
-                content: extractContentFromResult(imgResult),
-                type: 'image',
-                result: imgResult,
-            };
+        // Only fallback to image reading if it actually looks like an image extension
+        if (isImageFile(filePath)) {
+            const imgResult = await window.electron.files.readImage(filePath);
+            if (imgResult.success) {
+                return {
+                    content: extractContentFromResult(imgResult),
+                    type: 'image',
+                    result: imgResult,
+                };
+            }
         }
     }
 
@@ -1163,4 +1166,3 @@ export function useWorkspaceManager({ workspace, notify, logActivity, t }: UseWo
         testConnection,
     };
 }
-

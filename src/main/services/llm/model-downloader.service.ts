@@ -28,6 +28,7 @@ export type ModelDownloadRequest =
         provider: 'huggingface';
         modelId: string;
         file: HFDownloadFileInput;
+        scheduleAtMs?: number;
     };
 
 export interface ModelDownloadProgress {
@@ -868,6 +869,7 @@ export class ModelDownloaderService extends BaseService {
                 {
                     expectedSize: file.size,
                     expectedSha256: checksum,
+                    scheduleAtMs: request.scheduleAtMs,
                     signal: task.abortController?.signal,
                     onProgress: (received, total) => {
                         if (task.state !== 'running') {

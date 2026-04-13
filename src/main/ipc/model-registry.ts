@@ -1,5 +1,4 @@
 import { ModelProviderInfo, ModelRegistryService } from '@main/services/llm/model-registry.service';
-import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { ipcMain } from 'electron';
 
@@ -7,16 +6,9 @@ import { ipcMain } from 'electron';
  * Registers IPC handlers for model registry operations.
  * Exposes channels for querying all, remote, and installed models.
  * @param modelRegistryService - Service for accessing model registry data
- * @param rateLimitService - Optional rate limiter to throttle registry queries (SEC-011)
  */
-export function registerModelRegistryIpc(
-    modelRegistryService: ModelRegistryService,
-    rateLimitService?: RateLimitService
-) {
+export function registerModelRegistryIpc(modelRegistryService: ModelRegistryService) {
     ipcMain.handle('model-registry:get-all', createSafeIpcHandler('model-registry:get-all', async (): Promise<ModelProviderInfo[]> => {
-        if (rateLimitService) {
-            await rateLimitService.waitForToken('model-registry');
-        }
         return await modelRegistryService.getAllModels();
     }, []));
 
@@ -26,16 +18,10 @@ export function registerModelRegistryIpc(
     }, []));
 
     ipcMain.handle('model-registry:get-remote', createSafeIpcHandler('model-registry:get-remote', async (): Promise<ModelProviderInfo[]> => {
-        if (rateLimitService) {
-            await rateLimitService.waitForToken('model-registry');
-        }
         return await modelRegistryService.getRemoteModels();
     }, []));
 
     ipcMain.handle('model-registry:get-installed', createSafeIpcHandler('model-registry:get-installed', async (): Promise<ModelProviderInfo[]> => {
-        if (rateLimitService) {
-            await rateLimitService.waitForToken('model-registry');
-        }
         return await modelRegistryService.getInstalledModels();
     }, []));
 }

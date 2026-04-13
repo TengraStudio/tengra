@@ -706,7 +706,7 @@ const useInlineCompletions = (
                     return { items: [] };
                 }
             },
-            freeInlineCompletions: () => {
+            disposeInlineCompletions: () => {
                 const activeSession = activeSessionRef.current;
                 if (!activeSession || activeSession.accepted) {
                     activeSessionRef.current = null;

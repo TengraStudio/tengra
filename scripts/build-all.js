@@ -95,7 +95,7 @@ async function build() {
         results.push(...parallelResults);
 
         if (ENFORCE_BUNDLE_BUDGET) {
-            results.push(await runCommand('node', ['scripts/audit-bundle-size.js'], 'BundleBudget'));
+            results.push(await runCommand('node', ['scripts/tasks/audit-bundle-size.js'], 'BundleBudget'));
         } else {
             writeStdout('[BundleBudget] Skipped. Set TENGRA_ENFORCE_BUNDLE_BUDGET=true to enforce.');
         }

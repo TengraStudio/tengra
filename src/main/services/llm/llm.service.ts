@@ -6,11 +6,14 @@ import { LlamaService } from '@main/services/llm/llama.service';
 import { LLMAltProvidersService } from '@main/services/llm/llm-alt-providers.service';
 import { LLMEmbeddingsService } from '@main/services/llm/llm-embeddings.service';
 import { LLMOpenAIChatService, OpenAIStreamYield } from '@main/services/llm/llm-openai-chat.service';
+import {
+    resolveHuggingFaceLocalRouteTarget,
+    resolveLocalRuntimeBaseUrl,
+} from '@main/services/llm/local-runtime-router.service';
 import { ModelFallbackService } from '@main/services/llm/model-fallback.service';
 import { ResponseCacheService } from '@main/services/llm/response-cache.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
-import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { TokenService } from '@main/services/security/token.service';
 import { ConfigService } from '@main/services/system/config.service';
 import { SettingsService } from '@main/services/system/settings.service';
@@ -71,7 +74,6 @@ export interface LLMServiceDependencies {
     httpService: HttpService;
     configService: ConfigService;
     keyRotationService: KeyRotationService;
-    rateLimitService: RateLimitService;
     settingsService: SettingsService;
     proxyService: ProxyService;
     tokenService?: TokenService;
@@ -138,14 +140,14 @@ export class LLMService {
         this.opencodeApiKey = configService.get('OPENCODE_API_KEY', 'public');
 
         this.openaiChat = new LLMOpenAIChatService(
-            { httpService: deps.httpService, keyRotationService: deps.keyRotationService, rateLimitService: deps.rateLimitService, tokenService: deps.tokenService },
+            { httpService: deps.httpService, keyRotationService: deps.keyRotationService, tokenService: deps.tokenService },
             this.breakers.openai,
             (model, provider) => this.normalizeModelName(model, provider),
             () => this.getDispatcher()
         );
 
         this.altProviders = new LLMAltProvidersService(
-            { httpService: deps.httpService, keyRotationService: deps.keyRotationService, rateLimitService: deps.rateLimitService },
+            { httpService: deps.httpService, keyRotationService: deps.keyRotationService },
             this.breakers,
             {
                 getAnthropicApiKey: () => this.anthropicApiKey,
@@ -325,7 +327,6 @@ export class LLMService {
 
         const config = this.getOpenAISettings(baseUrlOverride, apiKeyOverride, provider);
         const endpoint = `${config.baseUrl}/chat/completions`;
-        await this.deps.rateLimitService.waitForToken(provider ?? 'openai');
 
         try {
             const parsed = await this.openaiChat.executeChat(
@@ -368,7 +369,6 @@ export class LLMService {
 
         const config = this.getOpenAISettings(baseUrlOverride, apiKeyOverride, provider);
         const endpoint = `${config.baseUrl}/chat/completions`;
-        await this.deps.rateLimitService.waitForToken(provider ?? 'openai');
 
         yield* this.openaiChat.executeChatStream(
             preparedMessages,
@@ -646,45 +646,6 @@ export class LLMService {
         return target;
     }
 
-    private normalizeHuggingFaceLocalModelId(model: string): string {
-        const trimmed = model.trim();
-        if (trimmed.toLowerCase().startsWith('huggingface/')) {
-            return trimmed.slice('huggingface/'.length);
-        }
-        return trimmed;
-    }
-
-    private async resolveHuggingFaceInstalledPath(model: string): Promise<string> {
-        const modelId = this.normalizeHuggingFaceLocalModelId(model);
-        const versions = await this.deps.huggingFaceService.getModelVersions(modelId);
-        const latest = versions[0];
-        if (!latest?.path) {
-            throw new ValidationError(`Installed Hugging Face model not found: ${modelId}`);
-        }
-        return latest.path;
-    }
-
-    private async ensureLlamaRoute(modelPath: string): Promise<string> {
-        const llamaService = this.deps.llamaService;
-        if (!llamaService) {
-            throw new ValidationError('Llama service is unavailable for local Hugging Face models');
-        }
-
-        const loadedModel = llamaService.getLoadedModel();
-        const isRunning = await llamaService.isServerRunning();
-        if (loadedModel !== modelPath || !isRunning) {
-            const result = await llamaService.loadModel(modelPath);
-            if (!result.success) {
-                throw new ValidationError(result.error ?? `Failed to load local Hugging Face model: ${modelPath}`);
-            }
-        }
-
-        const config = llamaService.getConfig();
-        const host = typeof config.host === 'string' && config.host.trim() !== '' ? config.host.trim() : '127.0.0.1';
-        const port = typeof config.port === 'number' && Number.isFinite(config.port) ? config.port : 8080;
-        return `http://${host}:${port}/v1`;
-    }
-
     private resolveProvider(model: string, provider?: string): string {
         const normalizedProvider = provider?.trim().toLowerCase();
         if (normalizedProvider) {
@@ -775,15 +736,15 @@ export class LLMService {
         }
 
         if (p.includes('huggingface')) {
-            const normalizedModelId = this.normalizeHuggingFaceLocalModelId(model);
-            const modelPath = await this.resolveHuggingFaceInstalledPath(normalizedModelId);
-            const llamaBaseUrl = await this.ensureLlamaRoute(modelPath);
+            const target = await resolveHuggingFaceLocalRouteTarget(model, this.deps.huggingFaceService);
+            const baseUrl = await resolveLocalRuntimeBaseUrl(target, this.deps.llamaService);
             return {
-                model: normalizedModelId,
+                model: target.modelId,
                 tools,
-                baseUrl: llamaBaseUrl,
+                baseUrl,
                 apiKey: 'llama-cpp',
                 provider: 'huggingface',
+                runtimeProvider: target.runtimeProvider,
                 temperature: temp,
                 workspaceRoot
             };

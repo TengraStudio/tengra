@@ -10,7 +10,7 @@ pub fn translate_response(provider: &str, upstream_response: Value) -> Value {
 
 fn translate_gemini_response(v: Value) -> Value {
     let gemini_response = unwrap_gemini_response(&v);
-    let (content, reasoning, tool_calls) = extract_gemini_parts(gemini_response);
+    let (content, reasoning, tool_calls, images) = extract_gemini_parts(gemini_response);
     let finish_reason = gemini_response["candidates"][0]["finishReason"]
         .as_str()
         .unwrap_or("stop")
@@ -37,7 +37,8 @@ fn translate_gemini_response(v: Value) -> Value {
                     "role": "assistant",
                     "content": content,
                     "reasoning_content": reasoning,
-                    "tool_calls": tool_calls
+                    "tool_calls": tool_calls,
+                    "images": images
                 },
                 "finish_reason": finish_reason
             }
@@ -55,7 +56,7 @@ fn unwrap_gemini_response<'a>(value: &'a Value) -> &'a Value {
 }
 
 fn translate_claude_response(v: Value) -> Value {
-    let (content, reasoning, tool_calls) = extract_claude_content(&v);
+    let (content, reasoning, tool_calls, images) = extract_claude_content(&v);
     let prompt_tokens = v["usage"]["input_tokens"].as_u64().unwrap_or(0);
     let completion_tokens = v["usage"]["output_tokens"].as_u64().unwrap_or(0);
     let stop_reason = v["stop_reason"].as_str().unwrap_or("stop_sequence");
@@ -79,7 +80,8 @@ fn translate_claude_response(v: Value) -> Value {
                     "role": "assistant",
                     "content": content,
                     "reasoning_content": reasoning,
-                    "tool_calls": tool_calls
+                    "tool_calls": tool_calls,
+                    "images": images
                 },
                 "finish_reason": finish_reason
             }
@@ -92,10 +94,12 @@ fn translate_claude_response(v: Value) -> Value {
     })
 }
 
-fn extract_gemini_parts(v: &Value) -> (String, String, Value) {
+fn extract_gemini_parts(v: &Value) -> (String, String, Value, Value) {
     let mut content = String::new();
     let mut reasoning = String::new();
     let mut tool_calls = Vec::new();
+    let mut images = Vec::new();
+
     let parts = v["candidates"][0]["content"]["parts"]
         .as_array()
         .cloned()
@@ -107,6 +111,19 @@ fn extract_gemini_parts(v: &Value) -> (String, String, Value) {
         }
         if let Some(text) = part.get("text").and_then(Value::as_str) {
             content.push_str(text);
+            continue;
+        }
+        if let Some(inline_data) = part.get("inlineData") {
+            let mime_type = inline_data.get("mimeType").and_then(Value::as_str).unwrap_or("image/png");
+            let data = inline_data.get("data").and_then(Value::as_str).unwrap_or_default();
+            if !data.is_empty() {
+                images.push(json!({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": format!("data:{};base64,{}", mime_type, data)
+                    }
+                }));
+            }
             continue;
         }
         if let Some(function_call) = part.get("functionCall") {
@@ -149,18 +166,40 @@ fn extract_gemini_parts(v: &Value) -> (String, String, Value) {
     } else {
         Value::Array(tool_calls)
     };
-    (content, reasoning, tool_calls)
+    let images = if images.is_empty() {
+        Value::Null
+    } else {
+        Value::Array(images)
+    };
+    (content, reasoning, tool_calls, images)
 }
 
-fn extract_claude_content(v: &Value) -> (String, String, Value) {
+fn extract_claude_content(v: &Value) -> (String, String, Value, Value) {
     let mut content = String::new();
     let mut reasoning = String::new();
     let mut tool_calls = Vec::new();
+    let mut images = Vec::new();
+
     let blocks = v["content"].as_array().cloned().unwrap_or_default();
     for block in blocks {
         match block.get("type").and_then(Value::as_str).unwrap_or_default() {
             "text" => content.push_str(block.get("text").and_then(Value::as_str).unwrap_or_default()),
             "thinking" => reasoning.push_str(block.get("thinking").and_then(Value::as_str).unwrap_or_default()),
+            "image" => {
+                let source = block.get("source").and_then(Value::as_object);
+                if let Some(src) = source {
+                    let media_type = src.get("media_type").and_then(Value::as_str).unwrap_or("image/png");
+                    let data = src.get("data").and_then(Value::as_str).unwrap_or_default();
+                    if !data.is_empty() {
+                        images.push(json!({
+                            "type": "image_url",
+                            "image_url": {
+                                "url": format!("data:{};base64,{}", media_type, data)
+                            }
+                        }));
+                    }
+                }
+            }
             "tool_use" => tool_calls.push(json!({
                 "id": block.get("id").and_then(Value::as_str).unwrap_or_default(),
                 "type": "function",
@@ -177,7 +216,12 @@ fn extract_claude_content(v: &Value) -> (String, String, Value) {
     } else {
         Value::Array(tool_calls)
     };
-    (content, reasoning, tool_calls)
+    let images = if images.is_empty() {
+        Value::Null
+    } else {
+        Value::Array(images)
+    };
+    (content, reasoning, tool_calls, images)
 }
 
 #[cfg(test)]

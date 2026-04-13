@@ -57,7 +57,7 @@ function getGitBadgeClass(gitStatus?: WorkspaceEntryRow['gitStatus']): string {
 }
 
 function getIgnoredEntryClassName(isIgnored?: boolean): string {
-    return isIgnored === true ? 'opacity-55 text-amber-300/80 hover:text-amber-200/90' : '';
+    return isIgnored === true ? 'opacity-30 grayscale brightness-90 saturate-50' : '';
 }
 
 function WorkspaceExplorerDiagnosticsBadges({

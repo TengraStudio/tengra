@@ -12,8 +12,8 @@ vi.mock('@main/logging/logger', () => ({
 }));
 
 
-vi.mock('@main/utils/rate-limiter.util', () => ({
-    withRateLimit: vi.fn(async (_key, fn) => await fn())
+vi.mock('@main/utils/operation-wrapper.util', () => ({
+    withOperationGuard: vi.fn(async (_key, fn) => await fn())
 }));
 
 vi.mock('electron', () => ({

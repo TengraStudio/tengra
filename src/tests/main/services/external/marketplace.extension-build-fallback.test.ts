@@ -30,7 +30,7 @@ describe('MarketplaceService extension build fallback helpers', () => {
     });
 
     it('prefers tengra.main over other main declarations', () => {
-        const service = new MarketplaceService();
+        const service = new MarketplaceService({});
         const internals = service as unknown as MarketplaceServiceInternals;
 
         const entrypoint = internals.resolveExtensionEntrypointRelativePath({
@@ -43,7 +43,7 @@ describe('MarketplaceService extension build fallback helpers', () => {
     });
 
     it('falls back to manifest.main and package main when tengra.main is absent', () => {
-        const service = new MarketplaceService();
+        const service = new MarketplaceService({});
         const internals = service as unknown as MarketplaceServiceInternals;
 
         const manifestEntrypoint = internals.resolveExtensionEntrypointRelativePath({
@@ -59,7 +59,7 @@ describe('MarketplaceService extension build fallback helpers', () => {
     });
 
     it('returns null when no main entrypoint is declared', () => {
-        const service = new MarketplaceService();
+        const service = new MarketplaceService({});
         const internals = service as unknown as MarketplaceServiceInternals;
 
         const entrypoint = internals.resolveExtensionEntrypointRelativePath({
@@ -71,7 +71,7 @@ describe('MarketplaceService extension build fallback helpers', () => {
     });
 
     it('resolves src entrypoint path from a dist main target', async () => {
-        const service = new MarketplaceService();
+        const service = new MarketplaceService({});
         const internals = service as unknown as MarketplaceServiceInternals;
 
         const tempDirectory = path.join(
@@ -91,7 +91,7 @@ describe('MarketplaceService extension build fallback helpers', () => {
     });
 
     it('maps install/build commands for all supported package managers', () => {
-        const service = new MarketplaceService();
+        const service = new MarketplaceService({});
         const internals = service as unknown as MarketplaceServiceInternals;
 
         expect(internals.getExtensionInstallCommand('npm')).toBe('npm install --no-audit --no-fund');
@@ -106,7 +106,7 @@ describe('MarketplaceService extension build fallback helpers', () => {
     });
 
     it('converts alias/dependency JSX build errors into actionable guidance', () => {
-        const service = new MarketplaceService();
+        const service = new MarketplaceService({});
         const internals = service as unknown as MarketplaceServiceInternals;
 
         const converted = internals.createExtensionBuildFailureError(
@@ -118,7 +118,7 @@ describe('MarketplaceService extension build fallback helpers', () => {
     });
 
     it('keeps non-classified build errors unchanged', () => {
-        const service = new MarketplaceService();
+        const service = new MarketplaceService({});
         const internals = service as unknown as MarketplaceServiceInternals;
 
         const original = new Error('Extension command failed: exit code 1');

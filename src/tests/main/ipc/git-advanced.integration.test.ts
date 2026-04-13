@@ -14,8 +14,8 @@ vi.mock('electron', () => ({
 }));
 
 
-vi.mock('@main/utils/rate-limiter.util', () => ({
-    withRateLimit: vi.fn(async (_scope: string, fn: () => Promise<TestValue>) => fn())
+vi.mock('@main/utils/operation-wrapper.util', () => ({
+    withOperationGuard: vi.fn(async (_scope: string, fn: () => Promise<TestValue>) => fn())
 }));
 
 describe('Git Advanced IPC Handlers', () => {

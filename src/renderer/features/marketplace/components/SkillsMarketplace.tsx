@@ -1,5 +1,3 @@
-import { Badge } from '@renderer/components/ui/badge';
-import { Button } from '@renderer/components/ui/button';
 import type { MarketplaceSkill } from '@shared/types/marketplace';
 import type { ProxySkill } from '@shared/types/skill';
 import {
@@ -9,6 +7,8 @@ import {
     RefreshCw,
     Search,
     Sparkles,
+    Trash2,
+    CheckCircle2,
 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 
@@ -31,7 +31,7 @@ interface SkillsMarketplaceProps {
     marketplaceSkills: MarketplaceSkill[];
     loading: boolean;
     onRefreshSkills: () => Promise<void>;
-    onRefreshRegistry: () => Promise<void>;
+    onRefreshRegistry: (force?: boolean) => Promise<void>;
     query: MarketplaceQueryState;
     onQueryChange: (updater: (prev: MarketplaceQueryState) => MarketplaceQueryState) => void;
 }
@@ -98,7 +98,7 @@ export function SkillsMarketplace({
                 downloadUrl: skillSource.downloadUrl
             });
             if (result.success) {
-                await Promise.all([onRefreshRegistry(), onRefreshSkills()]);
+                await Promise.all([onRefreshRegistry(true), onRefreshSkills()]);
                 pushNotification({
                     type: 'success',
                     message: t('marketplace.installSuccess', { name: skillSource.name }),
@@ -163,63 +163,45 @@ export function SkillsMarketplace({
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col gap-3 rounded-xl border border-border/40 bg-muted/10 p-3 md:flex-row md:items-center">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
-                    <input
-                        type="text"
-                        value={search}
-                        placeholder={t('marketplace.search')}
-                        onChange={event => {
-                            onQueryChange(prev => ({ ...prev, search: event.target.value, page: 1 }));
-                        }}
-                        className="w-full rounded border border-border/30 bg-background py-2 pl-10 pr-3 text-sm font-medium outline-none transition-colors focus:border-primary/40"
-                    />
+            <div className="flex flex-col gap-4 px-1 md:flex-row md:items-center justify-between">
+                <div className="flex items-center gap-4 flex-1">
+                    <div className="relative flex-1 max-w-lg">
+                        <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/30" />
+                        <input
+                            type="text"
+                            value={search}
+                            placeholder={t('marketplace.search')}
+                            onChange={event => {
+                                onQueryChange(prev => ({ ...prev, search: event.target.value, page: 1 }));
+                            }}
+                            className="w-full bg-muted/40 rounded-lg px-12 py-2.5 text-sm focus:outline-none transition-all font-medium placeholder:text-muted-foreground/30"
+                        />
+                    </div>
                 </div>
-                <Select
-                    value={filter}
-                    onValueChange={value => {
-                        onQueryChange(prev => ({
-                            ...prev,
-                            filter: value as MarketplaceQueryState['filter'],
-                            page: 1,
-                        }));
-                    }}
-                >
-                    <SelectTrigger className="h-9 w-40 typo-caption">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">{t('marketplace.mcp.filters.all')}</SelectItem>
-                        <SelectItem value="installed">{t('modelExplorer.installed')}</SelectItem>
-                        <SelectItem value="not_installed">{t('marketplace.install')}</SelectItem>
-                    </SelectContent>
-                </Select>
-                <Select
-                    value={sort}
-                    onValueChange={value => {
-                        onQueryChange(prev => ({
-                            ...prev,
-                            sort: value as MarketplaceQueryState['sort'],
-                            page: 1,
-                        }));
-                    }}
-                >
-                    <SelectTrigger className="h-9 w-40 typo-caption">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="name_asc">{t('modelExplorer.name')} ↑</SelectItem>
-                        <SelectItem value="name_desc">{t('modelExplorer.name')} ↓</SelectItem>
-                        <SelectItem value="version_desc">{t('mcp.version')} ↓</SelectItem>
-                    </SelectContent>
-                </Select>
-                <div className="rounded-full bg-muted/30 px-3 py-1 typo-caption font-bold text-muted-foreground">
-                    {filteredSkills.length} {t('marketplace.results')}
+                <div className="flex items-center gap-3">
+                    <Select
+                        value={filter}
+                        onValueChange={value => {
+                            onQueryChange(prev => ({
+                                ...prev,
+                                filter: value as MarketplaceQueryState['filter'],
+                                page: 1,
+                            }));
+                        }}
+                    >
+                        <SelectTrigger className="h-10 w-40 text-[10px] font-black bg-muted/20 border-none rounded-lg uppercase tracking-widest text-muted-foreground/60">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="border-none shadow-2xl">
+                            <SelectItem value="all">{t('marketplace.mcp.filters.all')}</SelectItem>
+                            <SelectItem value="installed">{t('modelExplorer.installed')}</SelectItem>
+                            <SelectItem value="not_installed">{t('marketplace.install')}</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+            <div className="divide-y divide-muted/10 border-t border-muted/10">
                 {pagedSkills.map(item => {
                     const installed = installedSkillIds.has(item.id);
                     const isInstalling = installingId === item.id;
@@ -227,91 +209,113 @@ export function SkillsMarketplace({
                     return (
                         <div
                             key={item.id}
-                            className="group flex flex-col bg-card border border-border/40 rounded-lg p-5 hover:border-primary/30 transition-all duration-300 shadow-sm hover:shadow-md"
+                            className={`
+                                group relative flex items-start gap-4 p-4 transition-colors duration-200
+                                ${installed ? 'bg-primary/[0.03]' : 'bg-transparent hover:bg-muted/30'}
+                            `}
                         >
-                            <div className="flex items-start justify-between gap-4 mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2.5 rounded bg-muted/40 text-muted-foreground group-hover:text-primary transition-colors">
-                                        <Sparkles className="w-4.5 h-4.5" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-sm font-bold text-foreground leading-none mb-1">{item.name}</h3>
-                                        <p className="typo-caption text-muted-foreground font-medium">{item.description}</p>
-                                    </div>
-                                </div>
-                                <Badge variant="outline" className="typo-body uppercase">
-                                    {item.provider}
-                                </Badge>
+                            {/* Icon */}
+                            <div className={`
+                                flex h-12 w-12 shrink-0 items-center justify-center rounded-lg transition-transform
+                                ${installed 
+                                    ? 'bg-primary/10 text-primary' 
+                                    : 'bg-muted/50 text-muted-foreground group-hover:scale-105'}
+                            `}>
+                                <Sparkles className="w-6 h-6" />
                             </div>
-                            <div className="mt-auto flex items-center justify-between gap-3">
-                                <span className="typo-body text-muted-foreground font-semibold">
-                                    v{item.version}
-                                </span>
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        size="sm"
-                                        variant={installed ? 'secondary' : 'outline'}
-                                        disabled={installed || isInstalling || isUninstalling}
-                                        onClick={() => {
-                                            void handleInstall(item.id);
-                                        }}
-                                    >
-                                        {isInstalling ? (
-                                            <RefreshCw className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <Download className="h-4 w-4" />
+
+                            <div className="flex flex-1 flex-col min-w-0 py-0.5">
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <h3 className="truncate text-base font-semibold text-foreground/90">
+                                            {item.name}
+                                        </h3>
+                                        {installed && (
+                                            <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success opacity-80" />
                                         )}
-                                        {installed
-                                            ? t('modelExplorer.installed')
-                                            : t('marketplace.install')}
-                                    </Button>
-                                    {installed ? (
-                                        <Button
-                                            size="sm"
-                                            variant="destructive"
-                                            disabled={isUninstalling || isInstalling}
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <button
+                                            disabled={installed || isInstalling || isUninstalling}
                                             onClick={() => {
-                                                void handleUninstall(item.id);
+                                                void handleInstall(item.id);
                                             }}
+                                            className={`
+                                                h-8 px-4 flex items-center gap-2 rounded-md transition-all active:scale-95 text-[10px] font-bold uppercase tracking-wider
+                                                ${installed 
+                                                    ? 'bg-success/10 text-success' 
+                                                    : isInstalling 
+                                                        ? 'bg-muted text-muted-foreground animate-pulse' 
+                                                        : 'bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground'}
+                                            `}
                                         >
-                                            {isUninstalling ? (
-                                                <RefreshCw className="h-4 w-4 animate-spin" />
-                                            ) : null}
-                                            {t('common.remove')}
-                                        </Button>
-                                    ) : null}
+                                            {isInstalling ? (
+                                                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                            ) : (
+                                                <Download className={`h-3.5 w-3.5 ${installed ? 'hidden' : ''}`} />
+                                            )}
+                                            {installed
+                                                ? t('modelExplorer.installed')
+                                                : t('marketplace.install')}
+                                        </button>
+                                        {installed && (
+                                            <button
+                                                disabled={isUninstalling || isInstalling}
+                                                onClick={() => {
+                                                    void handleUninstall(item.id);
+                                                }}
+                                                className="h-8 px-2 flex items-center gap-1.5 rounded-md text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95 text-[10px] font-bold uppercase tracking-wider"
+                                            >
+                                                {isUninstalling ? (
+                                                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                )}
+                                                {t('common.remove')}
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
+
+                                <div className="mt-1 flex items-center gap-2 text-[11px] font-medium text-muted-foreground/60">
+                                    <span className="truncate">{item.provider}</span>
+                                    <span className="opacity-30">•</span>
+                                    <span className="font-bold">v{item.version}</span>
+                                </div>
+
+                                <p className="mt-2 line-clamp-1 text-sm text-muted-foreground/50 group-hover:text-muted-foreground/70 transition-colors">
+                                    {item.description}
+                                </p>
                             </div>
                         </div>
                     );
                 })}
             </div>
+
             {filteredSkills.length > PAGE_SIZE ? (
-                <div className="flex items-center justify-center gap-3 pt-2">
+                <div className="flex items-center justify-center gap-6 pt-6">
                     <button
                         type="button"
                         onClick={() => onQueryChange(prev => ({ ...prev, page: Math.max(1, activePage - 1) }))}
                         disabled={activePage <= 1}
-                        className="inline-flex items-center gap-1 rounded-md border border-border/40 px-3 py-1.5 typo-caption font-semibold text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                        className="p-2 rounded-full hover:bg-muted text-muted-foreground/40 hover:text-foreground transition-all active:scale-90"
                     >
-                        <ChevronLeft className="h-3.5 w-3.5" />
-                        {t('common.previous')}
+                        <ChevronLeft className="h-5 w-5" />
                     </button>
-                    <span className="typo-caption font-semibold text-muted-foreground">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/30">
                         {t('common.pageOf', { current: activePage, total: totalPages })}
                     </span>
                     <button
                         type="button"
                         onClick={() => onQueryChange(prev => ({ ...prev, page: Math.min(totalPages, activePage + 1) }))}
                         disabled={activePage >= totalPages}
-                        className="inline-flex items-center gap-1 rounded-md border border-border/40 px-3 py-1.5 typo-caption font-semibold text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                        className="p-2 rounded-full hover:bg-muted text-muted-foreground/40 hover:text-foreground transition-all active:scale-90"
                     >
-                        {t('common.next')}
-                        <ChevronRight className="h-3.5 w-3.5" />
+                        <ChevronRight className="h-5 w-5" />
                     </button>
                 </div>
             ) : null}
         </div>
     );
 }
-

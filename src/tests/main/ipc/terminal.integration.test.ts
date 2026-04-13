@@ -1,5 +1,5 @@
 import { registerTerminalIpc } from '@main/ipc/terminal';
-import { withRateLimit } from '@main/utils/rate-limiter.util';
+import { withOperationGuard } from '@main/utils/operation-wrapper.util';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 
@@ -25,8 +25,8 @@ vi.mock('@main/logging/logger', () => ({
 }));
 
 
-vi.mock('@main/utils/rate-limiter.util', () => ({
-    withRateLimit: vi.fn(async (_scope: string, fn: () => Promise<TestValue>) => fn())
+vi.mock('@main/utils/operation-wrapper.util', () => ({
+    withOperationGuard: vi.fn(async (_scope: string, fn: () => Promise<TestValue>) => fn())
 }));
 
 describe('Terminal IPC Integration', () => {
@@ -259,12 +259,12 @@ describe('Terminal IPC Integration', () => {
         expect(mockTerminalService.write).not.toHaveBeenCalled();
     });
 
-    it('applies rate limit and writes for valid payload', async () => {
+    it('uses the operation guard and writes for valid payload', async () => {
         const handler = ipcMainHandlers.get('terminal:write')!;
         const result = await handler(mockEvent, 'term-1', 'echo hello');
 
         expect(result).toBe(true);
-        expect(withRateLimit).toHaveBeenCalledWith('terminal', expect.any(Function));
+        expect(withOperationGuard).toHaveBeenCalledWith('terminal', expect.any(Function));
         expect(mockTerminalService.write).toHaveBeenCalledWith('term-1', 'echo hello');
     });
 

@@ -4,9 +4,9 @@
 
 Tengra uses one managed runtime root for both development and packaged builds.
 
-- Development mode does not execute binaries from `resources/bin`.
-- Packaged builds do not bundle `resources/bin`.
-- Native build outputs seed the managed runtime directory instead of acting as a runtime source.
+- Development mode no longer uses legacy source-tree binary paths.
+- Packaged builds do not include or reference `resources/bin`.
+- Native build outputs seed the managed runtime directory directly.
 
 ## Managed Runtime Root
 
@@ -50,9 +50,9 @@ Managed runtime consumers already wired to the central path contract:
 
 ## Build and Packaging Policy
 
-- `scripts/build-native.js` copies native build outputs into the managed runtime `bin` directory.
+- `scripts/compile-native.js` and `scripts/compile-native.ps1` copy native build outputs directly into the managed runtime `bin` directory.
 - Windows helper scripts resolve binaries from the managed runtime `bin` directory.
-- `package.json` no longer includes `resources/bin` in `extraResources`.
+- `package.json` does not include `resources/bin` in `extraResources` as it has been decommissioned.
 
 This means a local build or release build prepares the same runtime destination that the app will use at execution time.
 
@@ -162,7 +162,7 @@ Current health/action semantics:
 
 ## Contributor Rules
 
-- New native runtime binaries must be added to the managed runtime contract, not `resources/bin`.
+- New native runtime binaries must be added to the managed runtime contract.
 - Services must resolve executable paths through the central runtime path layer.
 - Temp runtime artifacts must live under `runtime/temp` unless a stricter location is required and documented.
 - Build and packaging changes must preserve the one-runtime-root rule across dev and packaged modes.

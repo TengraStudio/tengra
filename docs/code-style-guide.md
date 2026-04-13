@@ -4,13 +4,13 @@ trigger: always_on
 
 # TENGRA AI AGENT: CODE STYLE GUIDE
 
-> **CRITICAL**: Read [AGENTS.md](../../AGENTS.md) completely before making any changes.
+> **CRITICAL**: Read [AGENTS.md](./AGENTS.md) completely before making any changes.
 
 ## Quick Start
 
-1. Read [AGENTS.md](../../AGENTS.md) - Complete project guide
-2. Read [AI_RULES.md](../../AI_RULES.md) - Comprehensive coding standards
-3. Check [TODO.md](../../TODO.md) - Current tasks and priorities
+1. Read [AGENTS.md](./AGENTS.md) - Complete project guide
+2. Read [AI_RULES.md](./AI_RULES.md) - Comprehensive coding standards
+3. Check [TODO.md](./TODO.md) - Current tasks and priorities
 
 ## Forbidden Actions
 
@@ -52,6 +52,6 @@ trigger: always_on
 5. Update the relevant markdown docs if user-facing behavior changed
 6. Commit and push
 
-For complete details, see [AGENTS.md](../../AGENTS.md) and [AI_RULES.md](../../AI_RULES.md).
+For complete details, see [AGENTS.md](./AGENTS.md) and [AI_RULES.md](./AI_RULES.md).
 
 

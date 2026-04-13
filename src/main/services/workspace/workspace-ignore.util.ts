@@ -223,9 +223,10 @@ function compileIgnoreRule(pattern: string): WorkspaceIgnoreRule | null {
 
     const basenameOnly = !normalizedPattern.includes('/');
     const regexSource = buildGlobPattern(normalizedPattern);
+    const flags = process.platform === 'win32' ? 'i' : '';
     const regex = basenameOnly
-        ? new RegExp(`^${regexSource}$`)
-        : new RegExp(`^${regexSource}(?:/.*)?$`);
+        ? new RegExp(`^${regexSource}$`, flags)
+        : new RegExp(`^${regexSource}(?:/.*)?$`, flags);
 
     return {
         basenameOnly,

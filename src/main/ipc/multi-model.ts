@@ -1,7 +1,7 @@
 import { appLogger } from '@main/logging/logger';
 import { ComparisonRequest, MultiModelComparisonService } from '@main/services/llm/multi-model-comparison.service';
 import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { withRateLimit } from '@main/utils/rate-limiter.util';
+import { withOperationGuard } from '@main/utils/operation-wrapper.util';
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
 
 /** Maximum models count */
@@ -73,7 +73,7 @@ export function registerMultiModelIpc(comparisonService: MultiModelComparisonSer
                     throw new Error('Invalid comparison request');
                 }
 
-                return await withRateLimit('llm', async () =>
+                return await withOperationGuard('llm', async () =>
                     comparisonService.compareModels(request)
                 );
             }

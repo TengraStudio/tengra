@@ -5,7 +5,6 @@ import { LocalAIService } from '@main/services/llm/local-ai.service';
 import { OllamaService } from '@main/services/llm/ollama.service';
 import { OllamaHealthService } from '@main/services/llm/ollama-health.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
-import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { createSafeIpcHandler, createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { SESSION_CONVERSATION_CHANNELS } from '@shared/constants/ipc-channels';
@@ -81,10 +80,9 @@ export function registerOllamaIpc(options: {
     ollamaService?: OllamaService
     ollamaHealthService?: OllamaHealthService
     proxyService?: ProxyService
-    rateLimitService?: RateLimitService
 }) {
     appLogger.info('OllamaIPC', 'Registering Ollama IPC handlers');
-    const { localAIService, ollamaService, ollamaHealthService, rateLimitService } = options;
+    const { localAIService, ollamaService, ollamaHealthService } = options;
     const validateSender = createMainWindowSenderValidator(options.getMainWindow, 'ollama operation');
 
     ipcMain.handle('ollama:tags', createSafeIpcHandler('ollama:tags',
@@ -159,11 +157,6 @@ export function registerOllamaIpc(options: {
             if (!model || messages.length === 0) {
                 throw new Error('Invalid model or messages');
             }
-            // SEC-011: Rate limit LLM chat calls
-            if (rateLimitService) {
-                await rateLimitService.waitForToken('ollama:chat');
-            }
-
             if (ollamaService) {
                 // Use robust OllamaService with abort support
                 return await ollamaService.chat(messages, model);
@@ -181,10 +174,6 @@ export function registerOllamaIpc(options: {
             const model = validateModel(modelRaw);
             if (!model || messages.length === 0) {
                 throw new Error('Invalid model or messages');
-            }
-            // SEC-011: Rate limit LLM chat stream calls
-            if (rateLimitService) {
-                await rateLimitService.waitForToken('ollama:chat');
             }
             try {
                 if (ollamaService) {
@@ -232,9 +221,6 @@ export function registerOllamaIpc(options: {
             if (!modelName) {
                 throw new Error('Invalid model name');
             }
-            if (rateLimitService) {
-                await rateLimitService.waitForToken('ollama:operation');
-            }
             if (!ollamaService) {
                 throw new Error('Ollama service unavailable');
             }
@@ -269,10 +255,6 @@ export function registerOllamaIpc(options: {
     ipcMain.handle('ollama:getLibraryModels', createSafeIpcHandler('ollama:getLibraryModels',
         async (event) => {
             validateSender(event);
-            // SEC-011: Rate limit model listing operations
-            if (rateLimitService) {
-                await rateLimitService.waitForToken('ollama:operation');
-            }
             if (ollamaService) {
                 return await ollamaService.getLibraryModels();
             }

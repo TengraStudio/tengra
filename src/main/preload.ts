@@ -38,7 +38,6 @@ import { createProcessBridge } from './preload/domains/process.preload';
 import { createPromptTemplatesBridge } from './preload/domains/prompt-templates.preload';
 import { createProxyBridge } from './preload/domains/proxy.preload';
 import { createProxyEmbedBridge } from './preload/domains/proxy-embed.preload';
-import { createProxyRateLimitBridge } from './preload/domains/proxy-rate-limit.preload';
 import { createRuntimeBridge } from './preload/domains/runtime.preload';
 import { createSdCppBridge } from './preload/domains/sd-cpp.preload';
 import { createSessionBridge } from './preload/domains/session.preload';
@@ -63,7 +62,6 @@ const api = {
     ...createWindowControlsBridge(ipcRenderer),
     ...createAuthBridge(ipcRenderer),
     ...createProxyBridge(ipcRenderer),
-    ...createProxyRateLimitBridge(ipcRenderer),
     ...createAuthSessionBridge(ipcRenderer),
     ...createLinkedAccountsBridge(ipcRenderer),
     ...createAppBridge(ipcRenderer),

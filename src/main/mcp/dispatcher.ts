@@ -43,7 +43,7 @@ export class McpDispatcher {
                 && (userServers.find(server => server.id === p.id || server.name === p.name)?.enabled ?? true),
             isAlive: p.isAlive,
             actions: p.actions,
-            version: (p as any).version
+            version: (p as { version?: string }).version,
         }));
     }
 

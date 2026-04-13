@@ -61,7 +61,6 @@ import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { AuthAPIService } from '@main/services/security/auth-api.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
-import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { SecurityService } from '@main/services/security/security.service';
 import { TokenService } from '@main/services/security/token.service';
 import { CouncilCapabilityService } from '@main/services/session/capabilities/council-capability.service';
@@ -142,6 +141,7 @@ function createDeferredContainerProxy<T extends object>(serviceName: string): T 
 // Define Services interface
 export interface Services {
     settingsService: SettingsService;
+    dataService: DataService;
     authService: AuthService;
     authAPIService: AuthAPIService;
     localAIService: LocalAIService;
@@ -173,6 +173,7 @@ export interface Services {
     inlineSuggestionService: InlineSuggestionService;
     logoService: LazyServiceDependency<LogoService>;
     processService: ProcessService;
+    processManagerService: ProcessManagerService;
     codeIntelligenceService: CodeIntelligenceService;
     contextRetrievalService: ContextRetrievalService;
     modelCollaborationService: ModelCollaborationService;
@@ -184,7 +185,6 @@ export interface Services {
     localImageService: LocalImageService;
     ruleService: RuleService;
     agentService: AgentService;
-    dataService: DataService;
     updateService: UpdateService;
     localeService: LocaleService;
 
@@ -199,13 +199,11 @@ export interface Services {
     httpService: HttpService;
     configService: ConfigService;
     keyRotationService: KeyRotationService;
-    rateLimitService: RateLimitService;
     tokenService: TokenService; 
     auditLogService: AuditLogService;
     promptTemplatesService: PromptTemplatesService;
     performanceService: PerformanceService;
     multiModelComparisonService: MultiModelComparisonService;
-    processManagerService: ProcessManagerService;
     runtimeManifestService: RuntimeManifestService;
     runtimeHealthService: RuntimeHealthService;
     runtimeBootstrapService: RuntimeBootstrapService;
@@ -339,10 +337,6 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
         ['fileChangeTracker']
     );
     container.register('httpService', () => new HttpService());
-    container.register('rateLimitService', () => new RateLimitService());
-
-
-
     // Theme service
     container.register('themeService', ds => new ThemeService(ds as DataService), ['dataService']);
 
@@ -371,18 +365,28 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
     // Marketplace Service
     container.register(
         'marketplaceService',
-        (ls, mds, hfs, os, ss, ps, lls, exts, settings) => new MarketplaceService(
-            ls as LocaleService,
-            mds as ModelDownloaderService,
-            hfs as HuggingFaceService,
-            os as OllamaService,
-            ss as SystemService,
-            ps as PerformanceService,
-            lls as LlamaService,
-            exts as ExtensionService,
-            settings as SettingsService
-        ),
-        ['localeService', 'modelDownloaderService', 'huggingFaceService', 'ollamaService', 'systemService', 'performanceService', 'llamaService', 'extensionService', 'settingsService']
+        (...args: RuntimeValue[]) => {
+            const [
+                ls, mds, hfs, os, ss, ps, lls, exts, settings, mcp
+            ] = args as [
+                LocaleService, ModelDownloaderService, HuggingFaceService,
+                OllamaService, SystemService, PerformanceService,
+                LlamaService, ExtensionService, SettingsService, McpPluginService
+            ];
+            return new MarketplaceService({
+                localeService: ls,
+                modelDownloaderService: mds,
+                huggingFaceService: hfs,
+                ollamaService: os,
+                systemService: ss,
+                performanceService: ps,
+                llamaService: lls,
+                extensionService: exts,
+                settingsService: settings,
+                mcpPluginService: mcp
+            });
+        },
+        ['localeService', 'modelDownloaderService', 'huggingFaceService', 'ollamaService', 'systemService', 'performanceService', 'llamaService', 'extensionService', 'settingsService', 'mcpPluginService']
     );
 
     container.register(
@@ -514,20 +518,18 @@ function registerLLMServices() {
                 httpService: args[0] as HttpService,
                 configService: args[1] as ConfigService,
                 keyRotationService: args[2] as KeyRotationService,
-                rateLimitService: args[3] as RateLimitService,
-                settingsService: args[4] as SettingsService,
-                proxyService: args[5] as ProxyService,
-                tokenService: args[6] as TokenService,
-                huggingFaceService: args[7] as HuggingFaceService,
-                fallbackService: args[8] as ModelFallbackService,
-                cacheService: args[9] as ResponseCacheService,
-                llamaService: args[10] as LlamaService
+                settingsService: args[3] as SettingsService,
+                proxyService: args[4] as ProxyService,
+                tokenService: args[5] as TokenService,
+                huggingFaceService: args[6] as HuggingFaceService,
+                fallbackService: args[7] as ModelFallbackService,
+                cacheService: args[8] as ResponseCacheService,
+                llamaService: args[9] as LlamaService
             }),
         [
             'httpService',
             'configService',
             'keyRotationService',
-            'rateLimitService',
             'settingsService',
             'proxyService',
             'tokenService',
@@ -894,9 +896,8 @@ function registerMcpServices() {
                 ollama: services[13] as OllamaService,
                 advancedMemory: services[14] as AdvancedMemoryService,
                 modelCollaboration: services[15] as ModelCollaborationService,
-                rateLimit: services[16] as RateLimitService,
-                auditLog: services[17] as AuditLogService,
-                workspace: services[18] as WorkspaceService,
+                auditLog: services[16] as AuditLogService,
+                workspace: services[17] as WorkspaceService,
             };
         },
         [
@@ -916,7 +917,6 @@ function registerMcpServices() {
             'ollamaService',
             'advancedMemoryService',
             'modelCollaborationService',
-            'rateLimitService',
             'auditLogService',
             'workspaceService',
         ]
@@ -991,7 +991,6 @@ function buildServicesMap(
         httpService: container.resolve<HttpService>('httpService'),
         configService: container.resolve<ConfigService>('configService'),
         keyRotationService: container.resolve<KeyRotationService>('keyRotationService'),
-        rateLimitService: container.resolve<RateLimitService>('rateLimitService'),
         tokenService: container.resolve<TokenService>('tokenService'),
         auditLogService: createDeferredContainerProxy<AuditLogService>('auditLogService'),
         promptTemplatesService: createDeferredContainerProxy<PromptTemplatesService>('promptTemplatesService'),

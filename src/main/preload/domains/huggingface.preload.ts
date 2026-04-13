@@ -13,7 +13,14 @@ export interface HuggingFaceBridge {
     ) => Promise<{ id: string; downloads: number; likes: number; category: string; recommendationScore: number }[]>;
     getFiles: (
         modelId: string
-    ) => Promise<{ path: string; size: number; oid: string; quantization: string }[]>;
+    ) => Promise<Array<{
+        path: string;
+        size: number;
+        oid: string;
+        quantization: string;
+        fileFormat?: 'gguf' | 'safetensors' | 'ckpt' | 'unknown';
+        runtimeProvider?: 'llama.cpp' | 'hf-native';
+    }>>;
     getModelPreview: (modelId: string) => Promise<RuntimeValue>;
     getBulkModelPreviews: (modelIds: string[]) => Promise<Record<string, RuntimeValue>>;
     compareModels: (modelIds: string[]) => Promise<RuntimeValue>;
@@ -79,6 +86,8 @@ export interface HuggingFaceBridge {
         createdAt: number;
         notes?: string;
         pinned?: boolean;
+        fileFormat?: 'gguf' | 'safetensors' | 'ckpt' | 'unknown';
+        runtimeProvider?: 'llama.cpp' | 'hf-native';
         metadata?: { architecture?: string; contextLength?: number };
     }>>;
     registerModelVersion: (modelId: string, filePath: string, notes?: string) => Promise<RuntimeValue>;
