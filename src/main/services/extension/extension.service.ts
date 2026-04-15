@@ -25,7 +25,7 @@ import {
     ExtensionTestResult,
 } from '@shared/types/extension';
 import { createExtensionLogger, createExtensionState, validateManifest } from '@shared/utils/extension.util';
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow } from 'electron';
 
 /** Extension instance */
 interface ExtensionInstance {
@@ -142,9 +142,8 @@ export class ExtensionService extends BaseService {
     }
 
     override async initialize(): Promise<void> {
-        this.logInfo('Initializing Extension Service...');
-
-        // Set up extensions directory
+        this.logInfo('Initializing Extension Runtime...');
+        
         const userDataPath = app.getPath('userData');
         this.state.extensionsPath = path.join(userDataPath, 'extensions');
 
@@ -154,12 +153,13 @@ export class ExtensionService extends BaseService {
             await fs.promises.mkdir(this.state.extensionsPath, { recursive: true });
         }
 
-        this.setupIpcHandlers();
+        // Extension IPC handlers are now registered centrally in @main/startup/ipc.ts
+        // so that they are available as soon as the app starts.
         
-        // Auto-scan extensions directory
+        // Asynchronously scan the local extensions library
         void this.scanExtensions();
 
-        this.logInfo('Extension Service initialized successfully');
+        this.logInfo('Extension Runtime initialized successfully');
     }
 
     /** Scan extensions directory and install all found extensions */
@@ -244,58 +244,17 @@ export class ExtensionService extends BaseService {
         this.state.extensionConfigs.clear();
         this.state.configListeners.clear();
 
-        this.removeIpcHandlers();
         this.logInfo('Extension Service cleaned up');
     }
 
     /** Set the main window reference */
-    setMainWindow(window: BrowserWindow): void {
+    public setMainWindow(window: BrowserWindow): void {
         this.state.mainWindow = window;
     }
 
-    /** Setup IPC handlers */
-    private setupIpcHandlers(): void {
-        ipcMain.handle('extension:get-all', this.handleGetAll.bind(this));
-        ipcMain.handle('extension:get', this.handleGet.bind(this));
-        ipcMain.handle('extension:install', this.handleInstall.bind(this));
-        ipcMain.handle('extension:uninstall', this.handleUninstall.bind(this));
-        ipcMain.handle('extension:activate', this.handleActivate.bind(this));
-        ipcMain.handle('extension:deactivate', this.handleDeactivate.bind(this));
-        ipcMain.handle('extension:dev-start', this.handleDevStart.bind(this));
-        ipcMain.handle('extension:dev-stop', this.handleDevStop.bind(this));
-        ipcMain.handle('extension:dev-reload', this.handleDevReload.bind(this));
-        ipcMain.handle('extension:test', this.handleTest.bind(this));
-        ipcMain.handle('extension:publish', this.handlePublish.bind(this));
-        ipcMain.handle('extension:get-profile', this.handleGetProfile.bind(this));
-        ipcMain.handle('extension:validate', this.handleValidate.bind(this));
-        ipcMain.handle('extension:get-state', this.handleGetState.bind(this));
-        ipcMain.handle('extension:get-config', this.handleGetConfig.bind(this));
-        ipcMain.handle('extension:update-config', this.handleUpdateConfig.bind(this));
-    }
+    // IPC Handlers - These are now called by @main/ipc/extension.ts
 
-    /** Remove IPC handlers */
-    private removeIpcHandlers(): void {
-        ipcMain.removeHandler('extension:get-all');
-        ipcMain.removeHandler('extension:get');
-        ipcMain.removeHandler('extension:install');
-        ipcMain.removeHandler('extension:uninstall');
-        ipcMain.removeHandler('extension:activate');
-        ipcMain.removeHandler('extension:deactivate');
-        ipcMain.removeHandler('extension:dev-start');
-        ipcMain.removeHandler('extension:dev-stop');
-        ipcMain.removeHandler('extension:dev-reload');
-        ipcMain.removeHandler('extension:test');
-        ipcMain.removeHandler('extension:publish');
-        ipcMain.removeHandler('extension:get-profile');
-        ipcMain.removeHandler('extension:validate');
-        ipcMain.removeHandler('extension:get-state');
-        ipcMain.removeHandler('extension:get-config');
-        ipcMain.removeHandler('extension:update-config');
-    }
-
-    // IPC Handlers
-
-    private handleGetAll(): { success: boolean; extensions: ExtensionRuntimeInfo[] } {
+    public getAllExtensions(): { success: boolean; extensions: ExtensionRuntimeInfo[] } {
         const extensions = Array.from(this.state.extensions.values()).map((instance) => ({
             manifest: instance.manifest,
             status: instance.status,
@@ -306,7 +265,7 @@ export class ExtensionService extends BaseService {
         return { success: true, extensions };
     }
 
-    private handleGet(_event: Electron.IpcMainInvokeEvent, extensionId: string): { success: boolean; extension?: ExtensionRuntimeInfo } {
+    public getExtension(extensionId: string): { success: boolean; extension?: ExtensionRuntimeInfo } {
         const instance = this.state.extensions.get(extensionId);
         if (!instance) {
             return { success: false };
@@ -323,7 +282,7 @@ export class ExtensionService extends BaseService {
         };
     }
 
-    private async handleInstall(_event: Electron.IpcMainInvokeEvent, extensionPath: string): Promise<{ success: boolean; extensionId?: string; error?: string }> {
+    public async handleInstall(_event: Electron.IpcMainInvokeEvent, extensionPath: string): Promise<{ success: boolean; extensionId?: string; error?: string }> {
         try {
             return await this.installExtension(extensionPath);
         } catch (error) {
@@ -331,7 +290,7 @@ export class ExtensionService extends BaseService {
         }
     }
 
-    private async handleUninstall(_event: Electron.IpcMainInvokeEvent, extensionId: string): Promise<{ success: boolean; error?: string; messageKey?: string; messageParams?: Record<string, string | number> }> {
+    public async handleUninstall(_event: Electron.IpcMainInvokeEvent, extensionId: string): Promise<{ success: boolean; error?: string; messageKey?: string; messageParams?: Record<string, string | number> }> {
         try {
             return await this.uninstallExtension(extensionId);
         } catch (error) {
@@ -339,7 +298,7 @@ export class ExtensionService extends BaseService {
         }
     }
 
-    private async handleActivate(_event: Electron.IpcMainInvokeEvent, extensionId: string): Promise<ExtensionActionResult> {
+    public async handleActivate(_event: Electron.IpcMainInvokeEvent, extensionId: string): Promise<ExtensionActionResult> {
         try {
             const result = await this.activateExtension(extensionId);
             if (result.success) {
@@ -354,7 +313,7 @@ export class ExtensionService extends BaseService {
         }
     }
 
-    private async handleDeactivate(_event: Electron.IpcMainInvokeEvent, extensionId: string): Promise<{ success: boolean; error?: string }> {
+    public async handleDeactivate(_event: Electron.IpcMainInvokeEvent, extensionId: string): Promise<{ success: boolean; error?: string }> {
         try {
             const result = await this.deactivateExtension(extensionId);
             if (result.success) {
@@ -370,7 +329,7 @@ export class ExtensionService extends BaseService {
         }
     }
 
-    private async handleDevStart(_event: Electron.IpcMainInvokeEvent, options: ExtensionDevOptions): Promise<{ success: boolean; error?: string }> {
+    public async handleDevStart(_event: Electron.IpcMainInvokeEvent, options: ExtensionDevOptions): Promise<{ success: boolean; error?: string }> {
         try {
             return await this.startDevServer(options);
         } catch (error) {
@@ -378,7 +337,7 @@ export class ExtensionService extends BaseService {
         }
     }
 
-    private async handleDevStop(_event: Electron.IpcMainInvokeEvent, extensionId: string): Promise<{ success: boolean; error?: string }> {
+    public async handleDevStop(_event: Electron.IpcMainInvokeEvent, extensionId: string): Promise<{ success: boolean; error?: string }> {
         try {
             return await this.stopDevServer(extensionId);
         } catch (error) {
@@ -386,7 +345,7 @@ export class ExtensionService extends BaseService {
         }
     }
 
-    private async handleDevReload(_event: Electron.IpcMainInvokeEvent, extensionId: string): Promise<{ success: boolean; error?: string }> {
+    public async handleDevReload(_event: Electron.IpcMainInvokeEvent, extensionId: string): Promise<{ success: boolean; error?: string }> {
         try {
             return await this.reloadExtension(extensionId);
         } catch (error) {
@@ -394,15 +353,15 @@ export class ExtensionService extends BaseService {
         }
     }
 
-    private async handleTest(_event: Electron.IpcMainInvokeEvent, options: ExtensionTestOptions): Promise<ExtensionTestResult> {
+    public async handleTest(_event: Electron.IpcMainInvokeEvent, options: ExtensionTestOptions): Promise<ExtensionTestResult> {
         return await this.runTests(options);
     }
 
-    private async handlePublish(_event: Electron.IpcMainInvokeEvent, options: ExtensionPublishOptions): Promise<ExtensionPublishResult> {
+    public async handlePublish(_event: Electron.IpcMainInvokeEvent, options: ExtensionPublishOptions): Promise<ExtensionPublishResult> {
         return await this.publishExtension(options);
     }
 
-    private handleGetProfile(_event: Electron.IpcMainInvokeEvent, extensionId: string): { success: boolean; profile?: ExtensionProfileData } {
+    public handleGetProfile(_event: Electron.IpcMainInvokeEvent, extensionId: string): { success: boolean; profile?: ExtensionProfileData } {
         const instance = this.state.extensions.get(extensionId);
         if (!instance) {
             return { success: false };
@@ -414,7 +373,7 @@ export class ExtensionService extends BaseService {
         return { success: true, profile: instance.profileData };
     }
 
-    private handleGetState(_event: Electron.IpcMainInvokeEvent, extensionId: string): { success: boolean; state?: { global: Record<string, RuntimeValue>, workspace: Record<string, RuntimeValue> } } {
+    public handleGetState(_event: Electron.IpcMainInvokeEvent, extensionId: string): { success: boolean; state?: { global: Record<string, RuntimeValue>, workspace: Record<string, RuntimeValue> } } {
         const instance = this.state.extensions.get(extensionId);
         if (!instance) {
             return { success: false };
@@ -433,11 +392,11 @@ export class ExtensionService extends BaseService {
         return { success: true, state: { global: globalState, workspace: workspaceState } };
     }
 
-    private handleValidate(_event: Electron.IpcMainInvokeEvent, manifest: RuntimeValue): { valid: boolean; errors: string[] } {
+    public handleValidate(_event: Electron.IpcMainInvokeEvent, manifest: RuntimeValue): { valid: boolean; errors: string[] } {
         return validateManifest(manifest);
     }
 
-    private handleGetConfig(
+    public handleGetConfig(
         _event: Electron.IpcMainInvokeEvent,
         extensionId: string
     ): { success: boolean; config?: Record<string, RuntimeValue>; error?: string } {
@@ -448,7 +407,7 @@ export class ExtensionService extends BaseService {
         return { success: true, config: this.getExtensionConfigSnapshot(extensionId) };
     }
 
-    private async handleUpdateConfig(
+    public async handleUpdateConfig(
         _event: Electron.IpcMainInvokeEvent,
         extensionId: string,
         configPatch: RuntimeValue
@@ -469,24 +428,6 @@ export class ExtensionService extends BaseService {
     }
 
     // Public API Methods
-
-    /** Get all extensions */
-    getAllExtensions(): { success: boolean; extensions: Array<{ manifest: ExtensionManifest; status: ExtensionStatus }> } {
-        const result = this.handleGetAll();
-        return {
-            success: result.success,
-            extensions: result.extensions.map(e => ({ manifest: e.manifest, status: e.status }))
-        };
-    }
-
-    /** Get single extension */
-    getExtension(extensionId: string): { success: boolean; extension?: { manifest: ExtensionManifest; status: ExtensionStatus } } {
-        const result = this.handleGet({} as Electron.IpcMainInvokeEvent, extensionId);
-        return {
-            success: result.success,
-            extension: result.extension ? { manifest: result.extension.manifest, status: result.extension.status } : undefined
-        };
-    }
 
     /** Validate manifest */
     validateManifest(manifest: RuntimeValue): { valid: boolean; errors: string[] } {
@@ -656,8 +597,20 @@ export class ExtensionService extends BaseService {
         messageKey?: string;
         messageParams?: Record<string, string | number>;
     }> {
-        const instance = this.state.extensions.get(extensionId);
-        if (!instance) {
+        let instance = this.state.extensions.get(extensionId);
+        let extensionPath: string | undefined;
+
+        if (instance) {
+            extensionPath = instance.context.extensionPath;
+        } else {
+            // Fallback: try to find it on disk if not in memory (orphan directory)
+            extensionPath = await this.findExtensionDirectoryById(extensionId) ?? undefined;
+            if (extensionPath) {
+                this.logInfo(`Found orphan extension folder for ${extensionId} at ${extensionPath}. Proceeding with cleanup.`);
+            }
+        }
+
+        if (!instance && !extensionPath) {
             return {
                 success: false,
                 error: EXTENSION_ERROR_MESSAGE.EXTENSION_NOT_FOUND,
@@ -666,7 +619,7 @@ export class ExtensionService extends BaseService {
         }
 
         // Deactivate first if active
-        if (instance.status === 'active') {
+        if (instance && instance.status === 'active') {
             await this.deactivateExtension(extensionId);
         }
 
@@ -678,17 +631,18 @@ export class ExtensionService extends BaseService {
         }
 
         // Clean up subscriptions
-        for (const disposable of instance.context.subscriptions) {
-            try {
-                disposable.dispose();
-            } catch (error) {
-                this.logError('Failed to dispose subscription', error as Error);
+        if (instance) {
+            for (const disposable of instance.context.subscriptions) {
+                try {
+                    disposable.dispose();
+                } catch (error) {
+                    this.logError('Failed to dispose subscription', error as Error);
+                }
             }
         }
 
         // Delete from disk if it's in the managed extensions folder
-        const extensionPath = instance.context.extensionPath;
-        if (this.state.extensionsPath && extensionPath.startsWith(this.state.extensionsPath)) {
+        if (extensionPath && this.state.extensionsPath && extensionPath.startsWith(this.state.extensionsPath)) {
             try {
                 // Give some time for OS to release file handles after watcher/process closure
                 await new Promise(resolve => setTimeout(resolve, 200));
@@ -1343,6 +1297,56 @@ export class ExtensionService extends BaseService {
             this.notifyExtensionConfigChanged(extensionId, key);
         }
         return { ...nextConfig };
+    }
+
+    /**
+     * Finds an extension directory by searching for matches against various identifier fields.
+     */
+    private async findExtensionDirectoryById(extensionId: string): Promise<string | null> {
+        if (!this.state.extensionsPath) {
+            return null;
+        }
+
+        try {
+            const entries = await fs.promises.readdir(this.state.extensionsPath, { withFileTypes: true });
+            for (const entry of entries) {
+                if (!entry.isDirectory() && !entry.isSymbolicLink()) {
+                    continue;
+                }
+
+                const extPath = path.join(this.state.extensionsPath, entry.name);
+                
+                // 1. Direct directory name match
+                if (entry.name === extensionId || entry.name.toLowerCase() === extensionId.toLowerCase()) {
+                    return extPath;
+                }
+
+                // 2. Check package.json for ID matches
+                const packageJsonPath = path.join(extPath, 'package.json');
+                if (fs.existsSync(packageJsonPath)) {
+                    try {
+                        const content = await fs.promises.readFile(packageJsonPath, 'utf-8');
+                        const pkg = JSON.parse(content) as ExtensionPackageJson;
+                        const candidateIds = [
+                            pkg.tengra?.id,
+                            pkg.manifest?.id,
+                            pkg.id,
+                            pkg.name
+                        ].filter((id): id is string => typeof id === 'string' && id.length > 0);
+
+                        if (candidateIds.some(id => id === extensionId || id.toLowerCase() === extensionId.toLowerCase())) {
+                            return extPath;
+                        }
+                    } catch {
+                        // ignore parse errors for individual package.json (might be corrupted)
+                    }
+                }
+            }
+        } catch (error) {
+            this.logError('Failed to scan extensions directory for matching ID', error as Error);
+        }
+
+        return null;
     }
 }
 

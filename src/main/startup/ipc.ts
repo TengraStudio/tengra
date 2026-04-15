@@ -12,6 +12,7 @@ import { registerContractIpc } from '@main/ipc/contract';
 import { registerDbIpc } from '@main/ipc/db';
 import { registerDialogIpc } from '@main/ipc/dialog';
 import { registerExportIpc } from '@main/ipc/export';
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { registerFilesIpc } from '@main/ipc/files';
 import { registerGalleryIpc } from '@main/ipc/gallery';
 import { registerGitIpc } from '@main/ipc/git';
@@ -61,7 +62,8 @@ import { container, Services } from '@main/startup/services';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { registerBatchIpc } from '@main/utils/ipc-batch.util';
 import { setIpcEventBus } from '@main/utils/ipc-wrapper.util';
-import { BrowserWindow } from 'electron';
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
+import { createIpcHandler as baseCreateIpcHandler } from '@main/utils/ipc-wrapper.util';
 
 export function registerIpcHandlers(
     services: Services,
@@ -145,6 +147,9 @@ export function registerIpcHandlers(
     setupProcessEvents(services.processService);
     registerCodeIntelligenceIpc(services.codeIntelligenceService);
 
+    // Extension IPC registration (inlined to avoid ReferenceError)
+    registerExtensionIpc(services.extensionService, getMainWindow);
+
     registerDbIpc(getMainWindow, services.databaseService, services.embeddingService, undefined, allowedFileRoots);
     registerLlamaIpc(getMainWindow, services.llamaService);
     registerMemoryIpc(getMainWindow, services.memoryService);
@@ -227,6 +232,90 @@ export function registerIpcHandlers(
     registerBatchIpc();
 }
 
+/**
+ * Registers IPC handlers for Extension operations
+ */
+function registerExtensionIpc(
+    extensionService: any,
+    getMainWindow: () => BrowserWindow | null
+) {
+    appLogger.debug('ExtensionIPC', 'Registering Extension IPC handlers');
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'extension operation');
+
+    const createIpcHandler = <T = RuntimeValue, Args extends RuntimeValue[] = RuntimeValue[]>(
+        channel: string,
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T> | T
+    ) => baseCreateIpcHandler<T, Args>(channel, async (event, ...args) => {
+        validateSender(event);
+        return await handler(event, ...args);
+    });
+
+    ipcMain.handle('extension:get-all', createIpcHandler('extension:get-all',
+        () => extensionService.getAllExtensions()
+    ));
+
+    ipcMain.handle('extension:get', createIpcHandler('extension:get',
+        (_event: IpcMainInvokeEvent, extensionId: string) => extensionService.getExtension(extensionId)
+    ));
+
+    ipcMain.handle('extension:install', createIpcHandler('extension:install',
+        async (_event: IpcMainInvokeEvent, extensionPath: string) => await extensionService.handleInstall(_event, extensionPath)
+    ));
+
+    ipcMain.handle('extension:uninstall', createIpcHandler('extension:uninstall',
+        async (_event: IpcMainInvokeEvent, extensionId: string) => await extensionService.handleUninstall(_event, extensionId)
+    ));
+
+    ipcMain.handle('extension:activate', createIpcHandler('extension:activate',
+        async (_event: IpcMainInvokeEvent, extensionId: string) => await extensionService.handleActivate(_event, extensionId)
+    ));
+
+    ipcMain.handle('extension:deactivate', createIpcHandler('extension:deactivate',
+        async (_event: IpcMainInvokeEvent, extensionId: string) => await extensionService.handleDeactivate(_event, extensionId)
+    ));
+
+    ipcMain.handle('extension:dev-start', createIpcHandler('extension:dev-start',
+        async (_event: IpcMainInvokeEvent, options: any) => await extensionService.handleDevStart(_event, options)
+    ));
+
+    ipcMain.handle('extension:dev-stop', createIpcHandler('extension:dev-stop',
+        async (_event: IpcMainInvokeEvent, extensionId: string) => await extensionService.handleDevStop(_event, extensionId)
+    ));
+
+    ipcMain.handle('extension:dev-reload', createIpcHandler('extension:dev-reload',
+        async (_event: IpcMainInvokeEvent, extensionId: string) => await extensionService.handleDevReload(_event, extensionId)
+    ));
+
+    ipcMain.handle('extension:test', createIpcHandler('extension:test',
+        async (_event: IpcMainInvokeEvent, options: any) => await extensionService.handleTest(_event, options)
+    ));
+
+    ipcMain.handle('extension:publish', createIpcHandler('extension:publish',
+        async (_event: IpcMainInvokeEvent, options: any) => await extensionService.handlePublish(_event, options)
+    ));
+
+    ipcMain.handle('extension:get-profile', createIpcHandler('extension:get-profile',
+        (_event: IpcMainInvokeEvent, extensionId: string) => extensionService.handleGetProfile(_event, extensionId)
+    ));
+
+    ipcMain.handle('extension:validate', createIpcHandler('extension:validate',
+        (_event: IpcMainInvokeEvent, manifest: any) => extensionService.handleValidate(_event, manifest)
+    ));
+
+    ipcMain.handle('extension:get-state', createIpcHandler('extension:get-state',
+        (_event: IpcMainInvokeEvent, extensionId: string) => extensionService.handleGetState(_event, extensionId)
+    ));
+
+    ipcMain.handle('extension:get-config', createIpcHandler('extension:get-config',
+        (_event: IpcMainInvokeEvent, extensionId: string) => extensionService.handleGetConfig(_event, extensionId)
+    ));
+
+    ipcMain.handle('extension:update-config', createIpcHandler('extension:update-config',
+        async (_event: IpcMainInvokeEvent, extensionId: string, config: any) => 
+            await extensionService.handleUpdateConfig(_event, extensionId, config)
+    ));
+}
+
 export function registerPostStartupIpcHandlers(
     services: Services,
     getMainWindow: () => BrowserWindow | null
@@ -261,4 +350,3 @@ export async function registerDeferredIpcHandlers(
     const sshService = await services.sshService.resolve();
     registerSshIpc(getMainWindow, sshService);
 }
-

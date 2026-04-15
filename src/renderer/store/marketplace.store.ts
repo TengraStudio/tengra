@@ -1,5 +1,6 @@
 import { MarketplaceRegistry } from '@shared/types/marketplace';
 import { useSyncExternalStore } from 'react';
+import { appLogger } from '@renderer/utils/renderer-logger';
 
 import { pushNotification } from './notification-center.store';
 
@@ -39,7 +40,7 @@ export const marketplaceStore = {
             marketplaceStore.setRegistry(registry);
             return count;
         } catch (error) {
-            console.error('Failed to check for marketplace updates:', error);
+            appLogger.error('MarketplaceStore', 'Failed to check for marketplace updates:', error as Error);
             return 0;
         }
     },
@@ -66,7 +67,7 @@ export const marketplaceStore = {
             }
             return count;
         } catch (error) {
-            console.error('Failed to check for live marketplace updates:', error);
+            appLogger.error('MarketplaceStore', 'Failed to check for live marketplace updates:', error as Error);
             return 0;
         }
     },
@@ -74,7 +75,7 @@ export const marketplaceStore = {
         try {
             return await window.electron.marketplace.fetchReadme(extensionId, repository);
         } catch (error) {
-            console.error('Failed to fetch extension readme:', error);
+            appLogger.error('MarketplaceStore', 'Failed to fetch extension readme:', error as Error);
             return null;
         }
     }

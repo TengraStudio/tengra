@@ -1,6 +1,7 @@
 import {
     InstallRequest,
     InstallResult,
+    MarketplaceItem,
     MarketplaceRegistry,
     MarketplaceRuntimeProfile,
 } from '@shared/types/marketplace';

@@ -6,7 +6,7 @@ import path from 'path';
 import { promisify } from 'util';
 
 import { LifecycleAware } from '@main/core/container';
-import { appLogger } from '@main/logging/logger';
+import { appLogger, stringToLogLevel } from '@main/logging/logger';
 import { OPERATION_TIMEOUTS } from '@shared/constants/timeouts';
 import { getErrorMessage } from '@shared/utils/error.util';
 import axios from 'axios';
@@ -202,25 +202,40 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
             };
 
             child.stdout.on('data', (data: Buffer) => {
-                const output = data.toString();
-                appLogger.debug('ProcessManager', `[${options.name}] stdout: ${output}`);
-                const parsedPort = this.parseListeningPort(output);
-                if (parsedPort) {
-                    markServiceReady(parsedPort);
+                const output = data.toString().trim();
+                const lines = output.split(/\r?\n/);
+
+                for (const line of lines) {
+                    if (this.tryIngestJsonLog(line, options.name)) {
+                        continue;
+                    }
+
+                    appLogger.debug('ProcessManager', `[${options.name}] stdout: ${line}`);
+                    const parsedPort = this.parseListeningPort(line);
+                    if (parsedPort) {
+                        markServiceReady(parsedPort);
+                    }
                 }
             });
 
             child.stderr.on('data', (data: Buffer) => {
-                const message = data.toString().trim();
-                const lower = message.toLowerCase();
-                const looksLikeError = /\b(error|failed|fatal|panic|exception)\b/.test(lower);
+                const output = data.toString().trim();
+                const lines = output.split(/\r?\n/);
 
-                if (looksLikeError) {
-                    appLogger.error('ProcessManager', `[${options.name}] stderr: ${message}`);
-                    return;
+                for (const line of lines) {
+                    if (this.tryIngestJsonLog(line, options.name)) {
+                        continue;
+                    }
+
+                    const lower = line.toLowerCase();
+                    const looksLikeError = /\b(error|failed|fatal|panic|exception)\b/.test(lower);
+
+                    if (looksLikeError) {
+                        appLogger.error('ProcessManager', `[${options.name}] stderr: ${line}`);
+                    } else {
+                        appLogger.warn('ProcessManager', `[${options.name}] stderr: ${line}`);
+                    }
                 }
-
-                appLogger.warn('ProcessManager', `[${options.name}] stderr: ${message}`);
             });
 
             child.on('error', error => {
@@ -488,5 +503,38 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
             `Managed runtime binary not found for ${executable}: ${binaryPath}`
         );
         return binaryPath;
+    }
+
+    private tryIngestJsonLog(line: string, serviceName: string): boolean {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) {
+            return false;
+        }
+
+        try {
+            const payload = JSON.parse(trimmed);
+            // Support both standard {message: ...} and tracing-subscriber {fields: {message: ...}}
+            const message = payload.message || (payload.fields && payload.fields.message);
+            
+            if (message) {
+                // Clean up context name (Rust often includes module paths)
+                let context = payload.context || payload.target || serviceName;
+                if (context.includes('::')) {
+                    context = context.split('::').pop() || context;
+                }
+
+                appLogger.ingest({
+                    level: payload.level ? stringToLogLevel(payload.level) : undefined,
+                    message: message,
+                    context: context,
+                    data: payload.data || payload.fields,
+                    timestamp: payload.timestamp,
+                });
+                return true;
+            }
+        } catch {
+            /* ignore and fallback */
+        }
+        return false;
     }
 }

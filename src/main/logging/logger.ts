@@ -315,6 +315,23 @@ class AppLogger {
         }
     }
 
+    /**
+     * Ingests a pre-formatted log payload from an external process.
+     * @param payload - The log payload to ingest.
+     */
+    ingest(payload: Partial<LogPayload> & { message: string; context: string }) {
+        const level = payload.level ?? LogLevel.INFO;
+        if (this.currentLevel <= level) {
+            this.write({
+                level,
+                message: payload.message,
+                context: payload.context,
+                data: payload.data,
+                timestamp: payload.timestamp
+            });
+        }
+    }
+
     private sampleCounters = new Map<string, number>();
     private readonly NOISY_CONTEXTS = new Set([
         'TerminalService', 'FileWatcherService', 'TelemetryService', 
@@ -343,38 +360,50 @@ class AppLogger {
         // Console Output (with enhanced visibility and local timestamps)
         if (this.originalConsole) {
             const color = getLevelColor(payload.level);
+            const icon = getLevelIcon(payload.level);
             const reset = '\x1b[0m';
+            const dim = '\x1b[2m';
+            const cyan = '\x1b[36m';
+            const bold = '\x1b[1m';
+            
             const levelStr = LogLevel[payload.level].padEnd(5);
+            const contextStr = payload.context.padEnd(20);
 
-            // Full ISO-ish local timestamp for precision
+            // Time: HH:mm:ss.SSS (Local)
             const now = new Date();
-            const timestamp = `${now.toISOString().split('T')[0]} ${now.toLocaleTimeString('en-GB', { hour12: false })}`;
+            const timeStr = now.toLocaleTimeString('en-GB', { 
+                hour12: false, 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            }) + '.' + now.getMilliseconds().toString().padStart(3, '0');
 
-            let consoleMsg = `${color}[${timestamp}] [${levelStr}] [${payload.context}] ${payload.message}${reset}`;
+            // Header line
+            let consoleMsg = `${dim}${timeStr}${reset} ${color}${bold}${icon} ${levelStr}${reset} ${cyan}[${contextStr}]${reset} ${payload.message}`;
 
             if (payload.data !== undefined) {
-                // Determine if data is an Error or AppError even if across IPC (checking shape)
                 const isErr = payload.data instanceof Error || isAppError(payload.data);
 
                 if (isErr) {
-                    // Use util.inspect for reliable error serialization (includes message, code, stack)
                     const formattedError = util.inspect(payload.data, {
                         colors: true,
                         depth: 5,
-                        breakLength: 100,
+                        breakLength: 80,
                     });
-                    consoleMsg += `\n${formattedError}`;
+                    // Indent stack traces
+                    consoleMsg += `\n${formattedError.split('\n').map(l => '      ' + l).join('\n')}`;
                 } else if (typeof payload.data === 'object' && payload.data !== null) {
                     const formattedData = util.inspect(payload.data, {
                         colors: true,
                         depth: 4,
                         compact: false,
-                        breakLength: 100,
+                        breakLength: 80,
                         showHidden: false,
                     });
-                    consoleMsg += `\n${formattedData}`;
+                    // Indent JSON-like data
+                    consoleMsg += `\n${formattedData.split('\n').map(l => '      ' + l).join('\n')}`;
                 } else {
-                    consoleMsg += ` | Data: ${String(payload.data)}`;
+                    consoleMsg += ` ${dim}|${reset} ${dim}data:${reset} ${String(payload.data)}`;
                 }
             }
 
@@ -628,7 +657,7 @@ function getLevelColor(level: LogLevel): string {
         case LogLevel.TRACE:
             return '\x1b[90m'; // Grey
         case LogLevel.DEBUG:
-            return '\x1b[36m'; // Cyan
+            return '\x1b[35m'; // Magenta
         case LogLevel.INFO:
             return '\x1b[32m'; // Green
         case LogLevel.WARN:
@@ -639,6 +668,42 @@ function getLevelColor(level: LogLevel): string {
             return '\x1b[41m\x1b[37m'; // Red Background, White Text
         default:
             return '';
+    }
+}
+
+function getLevelIcon(level: LogLevel): string {
+    switch (level) {
+        case LogLevel.TRACE:
+            return '🔍';
+        case LogLevel.DEBUG:
+            return '🐛';
+        case LogLevel.INFO:
+            return 'ℹ️ ';
+        case LogLevel.WARN:
+            return '⚠️ ';
+        case LogLevel.ERROR:
+            return '❌';
+        case LogLevel.FATAL:
+            return '💀';
+        default:
+            return '•';
+    }
+}
+
+/**
+ * Maps a string level to LogLevel enum.
+ */
+export function stringToLogLevel(level: string): LogLevel {
+    const uc = level.toUpperCase();
+    switch (uc) {
+        case 'TRACE': return LogLevel.TRACE;
+        case 'DEBUG': return LogLevel.DEBUG;
+        case 'INFO': return LogLevel.INFO;
+        case 'WARN':
+        case 'WARNING': return LogLevel.WARN;
+        case 'ERROR': return LogLevel.ERROR;
+        case 'FATAL': return LogLevel.FATAL;
+        default: return LogLevel.INFO;
     }
 }
 

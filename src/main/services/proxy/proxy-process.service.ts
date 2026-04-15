@@ -496,6 +496,10 @@ export class ProxyProcessManager {
             return;
         }
 
+        if (this.tryIngestJsonLog(line)) {
+            return;
+        }
+
         const level = this.detectLogLevel(line, defaultLevel);
         const message = line.trim();
 
@@ -523,6 +527,39 @@ export class ProxyProcessManager {
             return 'error';
         }
         return defaultLevel;
+    }
+
+    private tryIngestJsonLog(line: string): boolean {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) {
+            return false;
+        }
+
+        try {
+            const payload = JSON.parse(trimmed);
+            // Support both standard {message: ...} and tracing-subscriber {fields: {message: ...}}
+            const message = payload.message || (payload.fields && payload.fields.message);
+            
+            if (message) {
+                // Clean up context name (Rust often includes module paths)
+                let context = payload.context || payload.target || 'Proxy';
+                if (context.includes('::')) {
+                    context = context.split('::').pop() || context;
+                }
+
+                appLogger.ingest({
+                    level: payload.level ? payload.level.toLowerCase() : undefined,
+                    message: message,
+                    context: context,
+                    data: payload.data || payload.fields,
+                    timestamp: payload.timestamp,
+                });
+                return true;
+            }
+        } catch {
+            /* ignore and fallback */
+        }
+        return false;
     }
 
     private async handleAuthUpdateFromProxy(json: string): Promise<void> {

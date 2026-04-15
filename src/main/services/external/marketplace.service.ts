@@ -117,7 +117,7 @@ export class MarketplaceService extends BaseService {
     }
 
     async initialize(): Promise<void> {
-        appLogger.info('MarketplaceService', 'Initializing Marketplace...');
+        this.logInfo('Initializing Marketplace...');
         await fs.ensureDir(this.USER_THEMES_PATH);
         await fs.ensureDir(this.USER_MCP_PATH);
         await fs.ensureDir(this.USER_PERSONAS_PATH);
@@ -133,7 +133,7 @@ export class MarketplaceService extends BaseService {
      */
     async fetchRegistry(): Promise<MarketplaceRegistry> {
         try {
-            appLogger.info('MarketplaceService', 'Fetching marketplace registry from GitHub...');
+            this.logInfo('Fetching marketplace registry from GitHub...');
             const [response, mergedModels] = await Promise.all([
                 axios.get<MarketplaceRegistry>(this.REGISTRY_URL),
                 this.fetchMergedModels(),
@@ -145,7 +145,7 @@ export class MarketplaceService extends BaseService {
             } satisfies MarketplaceRegistry);
             return await this.applyInstalledState(registry);
         } catch (error) {
-            appLogger.error('MarketplaceService', 'Failed to fetch registry', error as Error);
+            this.logError('Failed to fetch registry', error as Error);
             throw new Error('Marketplace registry could not be loaded.');
         }
     }
@@ -189,7 +189,7 @@ export class MarketplaceService extends BaseService {
      * Eklentiler için canlı versiyon kontrolü yapar.
      */
     async checkLiveExtensionUpdates(): Promise<number> {
-        appLogger.info('MarketplaceService', 'Checking for extension updates...');
+        this.logInfo('Checking for extension updates...');
         let count = 0;
         try {
             const registry = await this.fetchRegistry();
@@ -220,12 +220,12 @@ export class MarketplaceService extends BaseService {
                             if (remoteVersion && this.isNewerVersion(item.installedVersion || '0.0.0', remoteVersion)) {
                                 item.updateAvailable = true;
                                 this.liveUpdates.add(item.id);
-                                appLogger.info('MarketplaceService', `Live update detected for ${item.id}: ${item.installedVersion} -> ${remoteVersion}`);
+                                this.logInfo(`Live update detected for ${item.id}: ${item.installedVersion} -> ${remoteVersion}`);
                             }
                         }
                     } catch (e) {
                         // ignore individual fetch errors
-                        appLogger.error('MarketplaceService', `Failed to fetch live update for ${item.id}`, e as Error);
+                        this.logError(`Failed to fetch live update for ${item.id}`, e as Error);
                     }
                 }
             }
@@ -244,7 +244,7 @@ export class MarketplaceService extends BaseService {
 
             count = allItems.filter(item => item.updateAvailable).length;
         } catch (error) {
-            appLogger.error('MarketplaceService', 'Live update check failed', error as Error);
+            this.logError('Live update check failed', error as Error);
         }
 
         return count;
@@ -275,7 +275,7 @@ export class MarketplaceService extends BaseService {
      */
     async installItem(item: MarketplaceItem): Promise<InstallResult> {
         try {
-            appLogger.info('MarketplaceService', `Downloading ${item.itemType}: ${item.name}`);
+            this.logInfo(`Downloading ${item.itemType}: ${item.name}`);
 
             let targetPath = '';
             let fileName = '';
@@ -351,7 +351,7 @@ export class MarketplaceService extends BaseService {
                     await fs.writeJson(filePath, payload, { spaces: 2 });
                 }
 
-                appLogger.info('MarketplaceService', `${item.itemType} processed and queued download(s)`, {
+                this.logInfo(`${item.itemType} processed and queued download(s)`, {
                     provider: modelPayload.provider,
                     queuedDownloads: queued.queuedDownloads,
                 });
@@ -373,7 +373,7 @@ export class MarketplaceService extends BaseService {
                 await this.deactivateExtensionBeforeDiskUpdate(item.id);
 
                 if (gitPayload.type === 'git' && gitPayload.url) {
-                    appLogger.info('MarketplaceService', `Cloning extension from git: ${gitPayload.url}`);
+                    this.logInfo(`Cloning extension from git: ${gitPayload.url}`);
                     // Use a helper or direct exec to clone
                     await this.cloneExtensionRepository(gitPayload.url, extensionPath);
                 } else {
@@ -395,7 +395,7 @@ export class MarketplaceService extends BaseService {
                 }
 
                 this.liveUpdates.delete(item.id);
-                appLogger.info('MarketplaceService', `${item.itemType} installed successfully at: ${extensionPath}`);
+                this.logInfo(`${item.itemType} installed successfully at: ${extensionPath}`);
                 return { success: true, path: extensionPath };
             }
 
@@ -405,17 +405,17 @@ export class MarketplaceService extends BaseService {
                 const filePath = path.join(targetPath, fileName);
                 await fs.writeJson(filePath, { ...mcpPayload, ...mcpConfig }, { spaces: 2 });
 
-                appLogger.info('MarketplaceService', `${item.itemType} installed successfully at: ${filePath}`);
+                this.logInfo(`${item.itemType} installed successfully at: ${filePath}`);
                 return { success: true, path: filePath, mcpConfig };
             }
 
             const filePath = path.join(targetPath, fileName);
             await fs.writeJson(filePath, payload, { spaces: 2 });
 
-            appLogger.info('MarketplaceService', `${item.itemType} installed successfully at: ${filePath}`);
+            this.logInfo(`${item.itemType} installed successfully at: ${filePath}`);
             return { success: true, path: filePath };
         } catch (error) {
-            appLogger.error('MarketplaceService', `Failed to install item: ${item.name}`, error as Error);
+            this.logError(`Failed to install item: ${item.name}`, error as Error);
             const installError = this.classifyInstallError(error as Error | z.ZodError | RuntimeValue);
             throw new Error(`${installError.code}:${installError.message}`);
         }
@@ -426,7 +426,7 @@ export class MarketplaceService extends BaseService {
      */
     async uninstallItem(itemId: string, itemType: MarketplaceItem['itemType']): Promise<{ success: boolean; error?: string; messageKey?: string }> {
         try {
-            appLogger.info('MarketplaceService', `Uninstalling ${itemType}: ${itemId}`);
+            this.logInfo(`Uninstalling ${itemType}: ${itemId}`);
 
             switch (itemType) {
                 case 'extension':
@@ -504,7 +504,7 @@ export class MarketplaceService extends BaseService {
                     throw new Error(`Unsupported item type for uninstallation: ${itemType}`);
             }
         } catch (error) {
-            appLogger.error('MarketplaceService', `Failed to uninstall item: ${itemId}`, error as Error);
+            this.logError(`Failed to uninstall item: ${itemId}`, error as Error);
             return {
                 success: false,
                 error: error instanceof Error ? error.message : String(error)
@@ -513,7 +513,7 @@ export class MarketplaceService extends BaseService {
     }
 
     async dispose(): Promise<void> {
-        appLogger.info('MarketplaceService', 'Disposing Marketplace service...');
+        this.logInfo('Disposing Marketplace service...');
     }
 
     private async deactivateExtensionBeforeDiskUpdate(extensionId: string): Promise<void> {
@@ -531,7 +531,7 @@ export class MarketplaceService extends BaseService {
             throw new Error(deactivation.error ?? `Failed to deactivate extension before update: ${extensionId}`);
         }
 
-        appLogger.info('MarketplaceService', `Extension deactivated before marketplace update: ${extensionId}`);
+        this.logInfo(`Extension deactivated before marketplace update: ${extensionId}`);
     }
 
     private sanitizeMcpFileName(fileName?: string): string {
@@ -596,7 +596,7 @@ export class MarketplaceService extends BaseService {
             const response = await axios.get(source.url);
             const parsedSource = remoteModelSourceSchema.safeParse(response.data);
             if (!parsedSource.success) {
-                appLogger.warn('MarketplaceService', `Model source parse failed for ${source.provider}`, {
+                this.logWarn(`Model source parse failed for ${source.provider}`, {
                     url: source.url,
                     issues: parsedSource.error.issues.map(issue => issue.message).slice(0, 5),
                 });
@@ -609,7 +609,7 @@ export class MarketplaceService extends BaseService {
 
             for (const item of parsedSource.data.models) {
                 if (validModels.length >= MAX_MODELS_PER_SOURCE) {
-                    appLogger.info('MarketplaceService', `Truncated model ingestion for ${source.provider} at ${MAX_MODELS_PER_SOURCE} records (Total: ${totalToProcess})`);
+                    this.logInfo(`Truncated model ingestion for ${source.provider} at ${MAX_MODELS_PER_SOURCE} records (Total: ${totalToProcess})`);
                     break;
                 }
 
@@ -627,7 +627,7 @@ export class MarketplaceService extends BaseService {
             }
 
             if (invalidRecords > 0) {
-                appLogger.info('MarketplaceService', `Skipped ${invalidRecords} invalid model records for ${source.provider} (Likely schema mismatch or incomplete metadata)`, {
+                this.logInfo(`Skipped ${invalidRecords} invalid model records for ${source.provider} (Likely schema mismatch or incomplete metadata)`, {
                     url: source.url,
                 });
             }
@@ -637,7 +637,7 @@ export class MarketplaceService extends BaseService {
                 // Silently skip if source is not found (e.g. custom-models.json)
                 return [];
             }
-            appLogger.warn('MarketplaceService', `Model source fetch failed for ${source.provider}`, {
+            this.logWarn(`Model source fetch failed for ${source.provider}`, {
                 url: source.url,
                 error: error instanceof Error ? error.message : String(error),
             });

@@ -200,6 +200,10 @@
       "extensions": "Extensions",
       "settings": "Settings"
     },
+    "extensions": {
+      "errorTitle": "Extension Error",
+      "noRenderer": "This view is provided by an extension but has no renderer component registered."
+    },
     "advanced": {
       "title": "Advanced Engine",
       "subtitle": "High-Frequency Tuning",
@@ -232,7 +236,13 @@
     },
     "advancedTab": {
       "modelConfiguration": "Model Configuration",
-      "systemPromptPlaceholder": "Enter a custom system prompt for this model…"
+      "neuralParameterTuning": "Neural Parameter Tuning",
+      "systemLogicTemplate": "System Logic Template",
+      "systemPromptPlaceholder": "Enter a custom system prompt for this model…",
+      "inferenceStrategy": "Inference Strategy",
+      "contextWindowOverride": "Context Window (Override)",
+      "contextWindowOverrideDesc": "Overrides global Ollama context for this model. Leave empty for Auto.",
+      "serviceIntervalsSubtitle": "Cycle Synchronization frequency"
     },
     "agent": {
       "waitingActivity": "Waiting for activity...",
@@ -1398,6 +1408,9 @@
         "failed": "Failed",
         "notConfigured": "Not configured"
       },
+      "infoPanel": {
+        "documentation": "Documentation"
+      },
       "reinstall": "Reinstall / repair",
       "reinstallConfirm": "Are you sure you want to reinstall the SD-CPP runtime? This will redownload the binary and default model.",
       "reinstallHelp": "If the image generator is stuck or failing, a reinstall often fixes corrupted binaries or models.",
@@ -1624,6 +1637,7 @@
         "skills": "Skills",
         "themes": "Visual Themes",
         "personas": "Agent Personalities",
+        "documentation": "Documentation",
         "models": "AI Models",
         "prompts": "Prompt Library",
         "languages": "Languages",
@@ -2593,9 +2607,21 @@
           "messageDescription": "The notification text. Use {{date}}, {{time}}, or {{timestamp}} for dynamic values.",
           "messagePlaceholder": "e.g. Good morning! Tengra is online and ready. ({{date}})",
           "platformsLabel": "Platforms:",
+          "platforms": {
+            "telegram": "Telegram",
+            "discord": "Discord"
+          },
           "addButton": "Add Schedule",
           "addNew": "Add scheduled notification",
           "helpTitle": "Cron Expression Reference",
+          "help": {
+            "line1": "┌──── minute (0-59)",
+            "line2": "│ ┌── hour (0-23)",
+            "line3": "│ │ ┌ day of month (1-31)",
+            "line4": "│ │ │ ┌ month (1-12)",
+            "line5": "│ │ │ │ ┌ day of week (0-6)",
+            "line6": "* * * * *"
+          },
           "helpExamples": "Examples: '0 9 * * 1-5' = weekdays at 9am, '*/30 * * * *' = every 30 minutes, '0 0 1 * *' = monthly at midnight"
         }
       },
@@ -2651,6 +2677,29 @@
           "wordWrapColumn": "wordWrapColumn",
           "bounded": "bounded"
         }
+      },
+      "imageSettings": {
+        "templateName": "Template Name",
+        "workflowDefinition": "Workflow Definition (JSON)",
+        "prompt": "Prompt",
+        "scheduledTime": "Scheduled Time",
+        "priority": "Priority",
+        "resourceProfile": "Resource Profile",
+        "profile": "Profile",
+        "presetName": "Preset Name",
+        "promptPrefix": "Prompt Prefix",
+        "sourceImageId": "Source Image ID",
+        "batchPromptsLabel": "Batch Prompts (Line per prompt)",
+        "averageSize": "Average Size",
+        "modelsAnalyzed": "{{count}} Models Analyzed",
+        "resolution": "Resolution",
+        "efficiency": "Efficiency",
+        "comparisonLogicHash": "Comparison Logic Hash",
+        "transformationSettings": "Transformation Settings",
+        "refinementPrompt": "Refinement Prompt",
+        "presetEfficiency": "Preset Efficiency",
+        "editMode": "Edit Mode",
+        "strengthCorrelation": "Strength Correlation"
       },
       "terminalAppearanceTitle": "Terminal appearance",
       "runtimeTitle": "Runtime behavior",

@@ -161,6 +161,12 @@ fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // Initialize tracing with JSON output to stdout
+    tracing_subscriber::fmt()
+        .json()
+        .with_writer(std::io::stdout)
+        .init();
+
     let service = Arc::new(Mutex::new(MemoryService::new()));
 
     let app = Router::new()
@@ -172,7 +178,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let local_addr = listener.local_addr()?;
     let port = local_addr.port();
 
-    println!("Memory service listening on {}", local_addr);
+    tracing::info!("Memory service listening on {}", local_addr);
 
     if let Ok(appdata) = std::env::var("APPDATA") {
         let services_dir = std::path::Path::new(&appdata)

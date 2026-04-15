@@ -79,20 +79,15 @@ fn remove_port_file() {
 
 /// Run the database server
 async fn run_server(db_path_override: Option<PathBuf>, shutdown_rx: Option<oneshot::Receiver<()>>) -> Result<()> {
-    let logs_dir = resolve_logs_dir();
-    let _ = fs::create_dir_all(&logs_dir);
-    let file_appender = tracing_appender::rolling::daily(logs_dir, "tengra-db-service.log");
-    let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
-
-    // Initialize tracing
+    // Initialize tracing with JSON output to stdout
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::from_default_env()
                 .add_directive("tengra_db_service=info".parse().unwrap()),
         )
-        .with_writer(non_blocking)
+        .json()
+        .with_writer(std::io::stdout)
         .init();
-    std::mem::forget(guard);
 
     tracing::info!(
         "Starting Tengra Database Service v{}",
