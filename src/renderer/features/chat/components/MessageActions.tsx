@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { FEEDBACK_TIMEOUTS } from '@shared/constants';
 import {
     Bookmark,
@@ -15,6 +25,11 @@ import React, { useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_MESSAGEACTIONS_1 = "absolute bottom-full mb-2 bg-popover border border-border/50 rounded-full px-2 py-1 shadow-xl flex gap-1 opacity-0 group-hover/react:opacity-100 pointer-events-none group-hover/react:pointer-events-auto transition-all scale-90 group-hover/react:scale-100 origin-bottom";
+const C_MESSAGEACTIONS_2 = "hover:scale-125 transition-transform text-sm p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded";
+
 
 interface ActionButtonProps {
     label: string;
@@ -220,7 +235,7 @@ export const MessageActionsGroup = React.memo(({
                     <Smile className="w-3.5 h-3.5" aria-hidden="true" />
                 </ActionButton>
                 <div
-                    className="absolute bottom-full mb-2 bg-popover border border-border/50 rounded-full px-2 py-1 shadow-xl flex gap-1 opacity-0 group-hover/react:opacity-100 pointer-events-none group-hover/react:pointer-events-auto transition-all scale-90 group-hover/react:scale-100 origin-bottom"
+                    className={C_MESSAGEACTIONS_1}
                     role="group"
                     aria-label={t('messageBubble.emojiReactions')}
                 >
@@ -234,7 +249,7 @@ export const MessageActionsGroup = React.memo(({
                         <button
                             key={emoji}
                             onClick={() => onReact?.(emoji)}
-                            className="hover:scale-125 transition-transform text-sm p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
+                            className={C_MESSAGEACTIONS_2}
                             aria-label={label}
                         >
                             {emoji}

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Check, Trash2 } from 'lucide-react';
 import React from 'react';
 
@@ -6,6 +16,10 @@ import { cn } from '@/lib/utils';
 import { ParameterPreset } from '../ParameterPresets';
 
 import { getPresetColor, presetIconMap } from './utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_PRESETCARD_1 = "absolute top-1 right-1 p-1 rounded bg-destructive/20 text-destructive opacity-0 group-hover:opacity-100 transition-opacity";
+
 
 interface PresetCardProps {
     preset: ParameterPreset
@@ -32,7 +46,7 @@ export const PresetCard: React.FC<PresetCardProps> = ({
             {isCustom && onDelete && (
                 <button
                     onClick={(e) => { e.stopPropagation(); onDelete(preset.id); }}
-                    className="absolute top-1 right-1 p-1 rounded bg-destructive/20 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                    className={C_PRESETCARD_1}
                 >
                     <Trash2 size={10} />
                 </button>

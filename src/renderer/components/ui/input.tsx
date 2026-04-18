@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { cn } from "@renderer/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
@@ -31,11 +41,19 @@ export type InputProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, "size
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, variant, size, type, ...props }, ref) => {
+    const ariaInvalid = props['aria-invalid'] ?? (variant === 'error' ? true : undefined);
+    const ariaDescribedBy = props['aria-describedby']
+      ?? (variant === 'error' && typeof props.id === 'string' && props.id.length > 0
+        ? `${props.id}-error`
+        : undefined);
+
     return (
       <input
         type={type}
         className={cn(inputVariants({ variant, inputSize: size, className }))}
         ref={ref}
+        aria-invalid={ariaInvalid}
+        aria-describedby={ariaDescribedBy}
         {...props}
       />
     );

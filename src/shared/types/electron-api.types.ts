@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import type {
     CollaborationResponse,
     CollaborationSyncUpdate,
@@ -103,6 +113,7 @@ export interface LinkedAccountInfo {
     avatarUrl?: string;
     isActive: boolean;
     createdAt: number;
+    decryptionError?: boolean;
 }
 
 export interface TokenData {
@@ -128,11 +139,17 @@ export interface ElectronAPI {
     maximize: () => void;
     close: () => void;
     resizeWindow: (resolution: string) => void;
+    updateWindow: (patch: Partial<AppSettings['window']>) => Promise<void>;
     toggleCompact: (enabled: boolean) => void;
     getZoomFactor: () => Promise<{ zoomFactor: number }>;
     setZoomFactor: (zoomFactor: number) => Promise<{ zoomFactor: number }>;
     stepZoomFactor: (direction: -1 | 1) => Promise<{ zoomFactor: number }>;
     resetZoomFactor: () => Promise<{ zoomFactor: number }>;
+
+    getAllAccounts: () => Promise<LinkedAccountInfo[]>;
+    security: {
+        resetMasterKey: () => Promise<{ success: boolean; error?: string }>;
+    };
 
     // Auth
     githubLogin: (appId?: 'profile' | 'copilot') => Promise<{
@@ -509,6 +526,7 @@ export interface ElectronAPI {
             seed: number;
             imagePath: string;
             createdAt: number;
+    decryptionError?: boolean;
             source?: string;
         }>>;
         regenerate: (historyId: string) => Promise<string>;
@@ -540,6 +558,7 @@ export interface ElectronAPI {
             cfgScale: number;
             provider?: string;
             createdAt: number;
+    decryptionError?: boolean;
             updatedAt: number;
         }>>;
         savePreset: (preset: {
@@ -561,6 +580,7 @@ export interface ElectronAPI {
             description?: string;
             workflow: Record<string, RuntimeValue>;
             createdAt: number;
+    decryptionError?: boolean;
             updatedAt: number;
         }>>;
         saveWorkflowTemplate: (payload: {
@@ -615,6 +635,7 @@ export interface ElectronAPI {
             seed: number;
             imagePath: string;
             createdAt: number;
+    decryptionError?: boolean;
             source?: string;
         }>>;
         exportHistory: (format?: 'json' | 'csv') => Promise<string>;
@@ -1191,6 +1212,7 @@ export interface ElectronAPI {
             tags: string[];
             author: string;
             createdAt: number;
+    decryptionError?: boolean;
             updatedAt: number;
         }>>;
         create: (input: {
@@ -1207,6 +1229,7 @@ export interface ElectronAPI {
             tags: string[];
             author: string;
             createdAt: number;
+    decryptionError?: boolean;
             updatedAt: number;
         }>;
         update: (id: string, input: {
@@ -1223,6 +1246,7 @@ export interface ElectronAPI {
             tags: string[];
             author: string;
             createdAt: number;
+    decryptionError?: boolean;
             updatedAt: number;
         } | undefined>;
         delete: (id: string) => Promise<boolean>;

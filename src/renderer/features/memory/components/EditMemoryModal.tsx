@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { MemoryCategory } from '@shared/types/advanced-memory';
 import { Edit3 } from 'lucide-react';
 import React from 'react';
@@ -15,6 +25,11 @@ import {
 import { useTranslation } from '@/i18n';
 
 import { CATEGORY_CONFIG } from './constants';
+
+/* Batch-02: Extracted Long Classes */
+const C_EDITMEMORYMODAL_1 = "fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-in fade-in duration-200";
+const C_EDITMEMORYMODAL_2 = "w-full h-24 mt-1 bg-muted/50 border border-border/40 rounded-lg p-3 text-sm focus:border-primary/50 outline-none resize-none transition-colors";
+
 
 interface EditMemoryModalProps {
     content: string;
@@ -47,7 +62,7 @@ export const EditMemoryModal: React.FC<EditMemoryModalProps> = ({
 }) => {
     const { t } = useTranslation();
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div className={C_EDITMEMORYMODAL_1}>
             <Card className="w-full max-w-lg p-6 bg-popover/90 backdrop-blur-2xl border-border/50 shadow-2xl space-y-4">
                 <h2 className="text-xl font-bold flex items-center gap-2">
                     <Edit3 className="w-5 h-5 text-primary" />
@@ -60,7 +75,7 @@ export const EditMemoryModal: React.FC<EditMemoryModalProps> = ({
                         <textarea
                             value={content}
                             onChange={(e) => onContentChange(e.target.value)}
-                            className="w-full h-24 mt-1 bg-muted/50 border border-border/40 rounded-lg p-3 text-sm focus:border-primary/50 outline-none resize-none transition-colors"
+                            className={C_EDITMEMORYMODAL_2}
                         />
                     </div>
 

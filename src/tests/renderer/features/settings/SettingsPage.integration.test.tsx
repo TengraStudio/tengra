@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { useSettingsLogic } from '@renderer/features/settings/hooks/useSettingsLogic';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
@@ -43,6 +53,7 @@ function createLogicMock(overrides: Partial<ReturnType<typeof useSettingsLogic>>
         updateEditor: vi.fn().mockResolvedValue(undefined),
         updateSpeech: vi.fn().mockResolvedValue(undefined),
         updateRemoteAccounts: vi.fn().mockResolvedValue(undefined),
+        updateWindow: vi.fn().mockResolvedValue(undefined),
         handleSave: vi.fn().mockResolvedValue(undefined),
         reloadSettings: vi.fn().mockResolvedValue(undefined),
         startOllama: vi.fn().mockResolvedValue(undefined),

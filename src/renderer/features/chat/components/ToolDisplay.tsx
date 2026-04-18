@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { JsonObject, JsonValue } from '@shared/types/common';
 import {
     ChevronDown,
@@ -14,12 +24,14 @@ import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+import { UI_PRIMITIVES } from '@/constants/ui-primitives';
 import { navigateToWorkspace } from '@/features/workspace/utils/workspace-navigation';
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { ToolResult } from '@/types';
 
 import { TerminalView } from './TerminalView';
+
 
 interface CommandExecutionResult {
     stdout?: string;
@@ -229,7 +241,7 @@ function ToolArguments({ name, args, t }: { name: string; args: JsonObject; t: (
         );
     }
     return (
-        <pre className="max-h-48 overflow-x-auto overflow-y-auto rounded-md border border-border/40 bg-muted/40 p-2 font-mono typo-caption text-muted-foreground">
+        <pre className={UI_PRIMITIVES.CODE_BLOCK}>
             {JSON.stringify(args, null, 2)}
         </pre>
     );
@@ -379,7 +391,7 @@ function FileSystemSummary({ name, args }: { name: string; args: JsonObject }) {
 function FilePreview({ content, t }: { content: string; t: (key: string) => string }) {
     return (
         <div className="space-y-2">
-            <span className="typo-caption font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+            <span className="typo-caption font-semibold uppercase tracking-wider text-muted-foreground/70">
                 {t('tools.filePreview')}
             </span>
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{`\`\`\`\n${content}\n\`\`\``}</ReactMarkdown>
@@ -396,7 +408,7 @@ function JsonOutput({ value }: { value: JsonValue }) {
         }
     })();
     return (
-        <pre className="max-h-52 overflow-x-auto overflow-y-auto rounded-md border border-border/40 bg-muted/40 p-2 font-mono typo-caption text-muted-foreground">
+        <pre className={UI_PRIMITIVES.CODE_BLOCK}>
             {displayStr}
         </pre>
     );
@@ -443,7 +455,7 @@ function ToolOutput({ name, args, result, t }: { name: string; args: JsonObject;
                                         e.stopPropagation();
                                         navigateToWorkspace({ type: 'open_file', path });
                                     }}
-                                    className="flex items-center gap-2 rounded-lg border border-border/30 bg-background/50 px-3 py-2 text-left hover:border-primary/40 hover:bg-primary/5 transition-all group/file"
+                                    className={UI_PRIMITIVES.FILE_LIST_ITEM}
                                 >
                                     <FileText className="h-3.5 w-3.5 text-muted-foreground/50 group-hover/file:text-primary/70" />
                                     <span className="truncate text-xs font-medium text-foreground/80 group-hover/file:text-primary">
@@ -549,7 +561,7 @@ export const ToolDisplay = React.memo(({ toolCall, result, isExecuting, language
             >
                 <div className="flex min-w-0 items-center gap-3">
                     <div className={cn(
-                        'flex items-center justify-center h-8 w-8 rounded-full border transition-all duration-300',
+                        UI_PRIMITIVES.TOOL_STATUS_ICON,
                         status === 'running' ? 'border-primary/30 bg-primary/10 animate-pulse' : 
                         status === 'failed' ? 'border-destructive/30 bg-destructive/10' :
                         'border-border/50 bg-background/50 group-hover/tool:border-primary/30'
@@ -586,7 +598,7 @@ export const ToolDisplay = React.memo(({ toolCall, result, isExecuting, language
 
             {expanded && (
                 <div className="space-y-3 px-1 pb-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="rounded-xl border border-border/40 bg-card/40 p-3 shadow-sm backdrop-blur-sm">
+                    <div className={UI_PRIMITIVES.TOOL_CARD}>
                         {isExecuting && !result && (
                             <div className="flex items-center gap-3 py-1 text-xs text-muted-foreground">
                                 <Loader2 className="h-3 w-3 animate-spin" />

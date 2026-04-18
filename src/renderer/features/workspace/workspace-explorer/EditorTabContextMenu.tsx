@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React from 'react';
 import { createPortal } from 'react-dom';
 
@@ -41,7 +51,7 @@ export const EditorTabContextMenu: React.FC<EditorTabContextMenuProps> = ({
 }) =>
     createPortal(
         <div
-            className="fixed tw-min-w-220 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-xl shadow-2xl py-1 tw-z-99999"
+            className="fixed min-w-220 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-xl shadow-2xl py-1 z-99999"
             style={{ left: position.x, top: position.y }}
             onMouseDown={event => event.stopPropagation()}
             onContextMenu={event => event.preventDefault()}

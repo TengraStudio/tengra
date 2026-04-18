@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Error Rate Monitoring Service (IDEA-065)
  * Tracks errors per service per 5-minute window and emits warnings via EventBus.
  */

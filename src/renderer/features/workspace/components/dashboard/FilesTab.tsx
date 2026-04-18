@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { FileCode, X } from 'lucide-react';
 import React from 'react';
 
@@ -7,6 +17,11 @@ import { cn } from '@/lib/utils';
 
 import { OpenFile } from '../../hooks/useWorkspaceDashboardLogic';
 import { FolderInspector } from '../ide/FolderInspector';
+
+/* Batch-02: Extracted Long Classes */
+const C_FILESTAB_1 = "w-3 h-3 opacity-0 group-hover:opacity-100 hover:text-destructive transition-all p-0.5 rounded-full hover:bg-destructive/10";
+const C_FILESTAB_2 = "absolute inset-0 flex flex-col items-center justify-center p-8 bg-muted/10 rounded-lg m-4 border border-dashed border-border/50 lg:p-10 sm:flex-row";
+
 
 interface FilesTabProps {
     openFiles: OpenFile[];
@@ -54,12 +69,12 @@ export const FilesTab: React.FC<FilesTabProps> = ({
                                         : 'text-muted-foreground/60'
                                 )}
                             />
-                            <span className="truncate tw-max-w-120">{file.name}</span>
+                            <span className="truncate max-w-120">{file.name}</span>
                             {file.isDirty && (
                                 <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                             )}
                             <X
-                                className="w-3 h-3 opacity-0 group-hover:opacity-100 hover:text-destructive transition-all p-0.5 rounded-full hover:bg-destructive/10"
+                                className={C_FILESTAB_1}
                                 onClick={e => closeFile(e, file.path)}
                             />
                         </button>
@@ -91,7 +106,7 @@ export const FilesTab: React.FC<FilesTabProps> = ({
                             />
                         </div>
                     ) : (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-muted/10 rounded-lg m-4 border border-dashed border-border/50">
+                        <div className={C_FILESTAB_2}>
                             <div className="w-16 h-16 rounded-2xl bg-primary/5 flex items-center justify-center mb-6">
                                 <FileCode className="w-8 h-8 text-primary/40" />
                             </div>

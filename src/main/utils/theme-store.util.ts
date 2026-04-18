@@ -1,8 +1,17 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import * as fs from 'fs';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
-import { BUILTIN_THEMES, getThemeById } from '@main/utils/theme-constants';
 import { CustomTheme, DEFAULT_THEME_PRESETS, ThemePreset } from '@shared/types/theme';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { app } from 'electron';
@@ -15,23 +24,20 @@ interface ThemeStoreData {
     preset: ThemePreset | null;
 }
 
-const DEFAULT_THEME_STORE: ThemeStoreData = {
-    currentTheme: 'graphite',
-    customThemes: [],
-    favorites: [],
-    history: ['graphite'],
-    preset: null
-};
-
 class ThemeStore {
     private static instance: ThemeStore | null = null;
     private storePath: string;
-    private store: ThemeStoreData;
+    private store: ThemeStoreData = {
+        currentTheme: 'tengra-white',
+        customThemes: [],
+        favorites: [],
+        history: [''],
+        preset: null
+    };
 
     private constructor() {
         this.storePath = path.join(app.getPath('userData'), 'theme-store.json');
         // Initialize with defaults, call init() for async loading
-        this.store = { ...DEFAULT_THEME_STORE };
         void this.init();
     }
 
@@ -48,12 +54,18 @@ class ThemeStore {
         try {
             await fs.promises.access(this.storePath);
             const data = await fs.promises.readFile(this.storePath, 'utf8');
-            const loaded = safeJsonParse<ThemeStoreData>(data, DEFAULT_THEME_STORE);
-            return { ...DEFAULT_THEME_STORE, ...loaded };
+            const loaded = safeJsonParse<ThemeStoreData>(data, {
+                currentTheme: 'tengra-white',
+                customThemes: [],
+                favorites: [],
+                history: [''],
+                preset: null
+            });
+            return { ...loaded };
         } catch {
             appLogger.warn('ThemeStore', 'Failed to load, using defaults');
         }
-        return { ...DEFAULT_THEME_STORE };
+        return { currentTheme: 'tengra-white', customThemes: [], favorites: [], history: [''], preset: null };
     }
 
     private async saveStore(): Promise<void> {
@@ -71,7 +83,7 @@ class ThemeStore {
     }
 
     async setTheme(themeId: string): Promise<boolean> {
-        const theme = getThemeById(themeId) ?? this.store.customThemes.find(t => t.id === themeId);
+        const theme = this.store.customThemes.find(t => t.id === themeId);
         if (!theme) {
             appLogger.warn('ThemeStore', `Theme not found: ${themeId}`);
             return false;
@@ -97,25 +109,16 @@ class ThemeStore {
     }
 
     getAllThemes(): Array<{ id: string; name: string; isDark: boolean; isCustom?: boolean }> {
-        const builtin = BUILTIN_THEMES.map(t => ({
-            id: t.id,
-            name: t.name,
-            isDark: t.isDark
-        }));
         const custom = this.store.customThemes.map(t => ({
             id: t.id,
             name: t.name,
             isDark: t.isDark,
             isCustom: true
         }));
-        return [...builtin, ...custom];
+        return [...custom];
     }
 
     getThemeDetails(themeId: string) {
-        const builtin = getThemeById(themeId);
-        if (builtin) {
-            return { ...builtin, isBuiltIn: true };
-        }
         const custom = this.store.customThemes.find(t => t.id === themeId);
         if (custom) {
             return { ...custom, isBuiltIn: false };
@@ -263,7 +266,7 @@ class ThemeStore {
                 throw new Error('Missing required theme properties');
             }
 
-            if (getThemeById(theme.id) || this.store.customThemes.some(t => t.id === theme.id)) {
+            if (this.store.customThemes.some(t => t.id === theme.id)) {
                 throw new Error('Theme ID already exists');
             }
 
@@ -306,5 +309,4 @@ const themeStoreProxy = new Proxy({} as ThemeStore, {
     }
 });
 
-export const themeStore = themeStoreProxy;
-export { BUILTIN_THEMES, getThemeById };
+export const themeStore = themeStoreProxy; 

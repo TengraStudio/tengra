@@ -1,8 +1,22 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React from 'react';
 
 import { Modal } from '@/components/ui/modal';
 import { AnimatePresence } from '@/lib/framer-motion-compat';
 import { Workspace } from '@/types';
+
+/* Batch-02: Extracted Long Classes */
+const C_ARCHIVEWORKSPACEMODAL_1 = "px-6 py-2 rounded-lg text-sm font-medium bg-success text-foreground hover:bg-success active:scale-95 transition-all shadow-lg shadow-emerald-900/20";
+
 
 interface ArchiveWorkspaceModalProps {
     workspace: Workspace | null;
@@ -41,7 +55,7 @@ export const ArchiveWorkspaceModal: React.FC<ArchiveWorkspaceModalProps> = ({
                             onClick={() => {
                                 void onSubmit();
                             }}
-                            className="px-6 py-2 rounded-lg text-sm font-medium bg-success text-foreground hover:bg-success active:scale-95 transition-all shadow-lg shadow-emerald-900/20"
+                            className={C_ARCHIVEWORKSPACEMODAL_1}
                         >
                             {workspace.status === 'archived'
                                 ? t('common.unarchive')

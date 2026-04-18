@@ -1,9 +1,23 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Search } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import type { SSHPackageInfo } from '@/types/ssh';
 import { appLogger } from '@/utils/renderer-logger';
+
+/* Batch-02: Extracted Long Classes */
+const C_SSHPACKAGES_1 = "w-full bg-muted/20 border border-border/50 rounded-md pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50";
+
 
 interface SSHPackagesProps {
     connectionId: string
@@ -54,7 +68,7 @@ export const SSHPackages: React.FC<SSHPackagesProps> = ({ connectionId, active }
                 <div className="relative">
                     <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground/50" />
                     <input
-                        className="w-full bg-muted/20 border border-border/50 rounded-md pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
+                        className={C_SSHPACKAGES_1}
                         placeholder={t('ssh.searchPackages')}
                         value={search}
                         onChange={e => setSearch(e.target.value)}

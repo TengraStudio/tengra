@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Pin, X } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
@@ -116,7 +126,7 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                             setContextMenu({ tabId: tab.id, x: event.clientX, y: event.clientY });
                         }}
                         className={cn(
-                            'group flex items-center gap-2 px-3 py-2 typo-caption border-r border-border/30 transition-all tw-min-w-120 tw-max-w-200',
+                            'group flex items-center gap-2 px-3 py-2 typo-caption border-r border-border/30 transition-all min-w-120 max-w-200',
                             isActive
                                 ? 'bg-muted text-success border-t-2 border-t-emerald-500'
                                 : 'text-muted-foreground hover:bg-muted/50 hover:text-muted-foreground border-t-2 border-t-transparent'

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as http from 'http';
@@ -197,6 +207,10 @@ export class ImagePersistenceService {
         return new Promise((resolve, reject) => {
             const client = url.startsWith('https') ? https : http;
             client.get(url, (res) => {
+                if ((res.statusCode ?? 0) >= 400) {
+                    reject(new Error(`HTTP error! status: ${res.statusCode}`));
+                    return;
+                }
                 const data: Buffer[] = [];
                 res.on('data', (chunk) => data.push(chunk));
                 res.on('end', () => resolve(Buffer.concat(data)));

@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Activity Bar Component
  * VSCode-like vertical activity bar with icon buttons for switching views.
  */
@@ -69,16 +79,17 @@ const ActivityButton: React.FC<{
         aria-current={isActive ? 'page' : undefined}
         aria-pressed={isActive}
         className={cn(
-            "tengra-activity-bar__button",
-            isActive && "tengra-activity-bar__button--active",
-            item.disabled && "tengra-activity-bar__button--disabled"
+            'relative flex h-12 w-12 items-center justify-center bg-transparent text-muted-foreground transition-colors hover:text-foreground',
+            isActive && 'text-foreground',
+            item.disabled && 'cursor-not-allowed opacity-50'
         )}
     >
+        {isActive && <span className="absolute inset-y-0 left-0 w-0.5 bg-primary" aria-hidden="true" />}
         {item.icon}
         {item.badge !== undefined && (
             <span className={cn(
-                "tengra-activity-bar__badge",
-                !(typeof item.badge === 'number' && item.badge > 0) && "tengra-activity-bar__badge--empty"
+                'absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-10 font-bold bg-primary text-primary-foreground',
+                !(typeof item.badge === 'number' && item.badge > 0) && 'bg-muted text-muted-foreground'
             )}>
                 {typeof item.badge === 'number' && item.badge > 99 ? '99+' : item.badge}
             </span>
@@ -142,9 +153,9 @@ export const ActivityBar: React.FC<{
     };
 
     return (
-        <div className={cn("tengra-activity-bar", className)}>
+        <div className={cn('flex h-full w-12 flex-col border-r border-border/30 bg-card/50', className)}>
             {/* Top items */}
-            <div className="tengra-activity-bar__top-section">
+            <div className="flex flex-1 flex-col">
                 {resolvedItems.map(item => (
                     <ActivityButton
                         key={item.id}
@@ -156,7 +167,7 @@ export const ActivityBar: React.FC<{
             </div>
 
             {/* Bottom items */}
-            <div className="tengra-activity-bar__bottom-section">
+            <div className="flex flex-col border-t border-border/20">
                 {resolvedBottomItems.map(item => (
                     <ActivityButton
                         key={item.id}
@@ -192,7 +203,7 @@ export const ActivityBarLayout: React.FC<{
     const { t } = useTranslation();
 
     return (
-        <div className={cn("tengra-activity-layout", className)}>
+        <div className={cn('flex h-full w-full', className)}>
             {/* Activity Bar */}
             <ActivityBar
                 items={activityItems}
@@ -202,24 +213,24 @@ export const ActivityBarLayout: React.FC<{
             {/* Sidebar */}
             {activeSidebar && !collapsed && (
                 <div
-                    className="tengra-activity-sidebar"
+                    className="flex h-full flex-col overflow-hidden border-r border-border/30 bg-card/30"
                     style={{ width: sidebarWidth }}
                 >
                     {/* Sidebar header */}
-                    <div className="tengra-activity-sidebar__header">
-                        <span className="tengra-activity-sidebar__title">
+                    <div className="flex items-center justify-between border-b border-border/20 px-4 py-2">
+                        <span className="text-xs font-semibold text-muted-foreground">
                             {activityItems?.find(i => i.id === activeItem)?.label ?? t('common.unknown')}
                         </span>
                         <button
                             onClick={() => setCollapsed(true)}
-                            className="tengra-activity-collapse-toggle"
+                            className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted"
                             aria-label={t('aria.collapseSidebar')}
                         >
-                            <ChevronLeft className="tengra-activity-collapse-toggle__icon" />
+                            <ChevronLeft className="h-4 w-4" />
                         </button>
                     </div>
                     {/* Sidebar content */}
-                    <div className="tengra-activity-sidebar__content">
+                    <div className="flex-1 overflow-auto">
                         {activeSidebar}
                     </div>
                 </div>
@@ -229,15 +240,15 @@ export const ActivityBarLayout: React.FC<{
             {collapsed && activeSidebar && (
                 <button
                     onClick={() => setCollapsed(false)}
-                    className="tengra-activity-collapsed-toggle"
+                    className="flex h-full w-6 items-center justify-center border-r border-border/30 bg-transparent text-muted-foreground transition-colors hover:bg-muted/50"
                     aria-label={t('aria.expandSidebar')}
                 >
-                    <ChevronRight className="tengra-activity-collapse-toggle__icon" />
+                    <ChevronRight className="h-4 w-4" />
                 </button>
             )}
 
             {/* Main content */}
-            <div className="tengra-activity-layout__main">
+            <div className="min-w-0 flex-1 overflow-hidden">
                 {children}
             </div>
         </div>

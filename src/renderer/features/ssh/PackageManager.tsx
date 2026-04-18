@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 
 import { Layers, RefreshCw, Search } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -6,6 +16,11 @@ import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import type { SSHPackageInfo } from '@/types/ssh';
 import { appLogger } from '@/utils/renderer-logger';
+
+/* Batch-02: Extracted Long Classes */
+const C_PACKAGEMANAGER_1 = "w-full bg-muted/30 border border-border/50 rounded-lg py-1.5 pl-9 pr-3 text-sm text-foreground focus:outline-none focus:border-primary/30";
+const C_PACKAGEMANAGER_2 = "bg-card/40 border border-border/50 rounded-lg p-3 flex items-start justify-between hover:bg-card/60 transition-colors group";
+
 
 interface PackageManagerProps {
     connectionId: string
@@ -63,7 +78,7 @@ export function PackageManager({ connectionId }: PackageManagerProps) {
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         placeholder={t('ssh.searchPackages')}
-                        className="w-full bg-muted/30 border border-border/50 rounded-lg py-1.5 pl-9 pr-3 text-sm text-foreground focus:outline-none focus:border-primary/30"
+                        className={C_PACKAGEMANAGER_1}
                     />
                 </div>
 
@@ -83,7 +98,7 @@ export function PackageManager({ connectionId }: PackageManagerProps) {
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                     {filtered.map((pkg, i) => (
-                        <div key={i} className="bg-card/40 border border-border/50 rounded-lg p-3 flex items-start justify-between hover:bg-card/60 transition-colors group">
+                        <div key={i} className={C_PACKAGEMANAGER_2}>
                             <div>
                                 <div className="font-medium text-foreground/90 text-sm group-hover:text-primary transition-colors">{pkg.name}</div>
                                 <div className="typo-caption text-muted-foreground/40 mt-1 font-mono">{pkg.version}</div>

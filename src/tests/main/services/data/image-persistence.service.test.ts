@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('electron', () => ({
@@ -23,6 +33,36 @@ vi.mock('crypto', () => ({
     randomBytes: vi.fn(() => ({
         toString: vi.fn(() => 'a1b2c3d4')
     }))
+}));
+
+vi.mock('https', () => ({
+    get: vi.fn((_url: string, callback: (res: any) => void) => {
+        const res = {
+            statusCode: 200,
+            on: vi.fn((event: string, handler: (data?: any) => void) => {
+                if (event === 'data') { handler(Buffer.from('fake-downloaded-data')); }
+                if (event === 'end') { handler(); }
+            }),
+            pipe: vi.fn()
+        };
+        callback(res);
+        return { on: vi.fn() };
+    })
+}));
+
+vi.mock('http', () => ({
+    get: vi.fn((_url: string, callback: (res: any) => void) => {
+        const res = {
+            statusCode: 200,
+            on: vi.fn((event: string, handler: (data?: any) => void) => {
+                if (event === 'data') { handler(Buffer.from('fake-downloaded-data')); }
+                if (event === 'end') { handler(); }
+            }),
+            pipe: vi.fn()
+        };
+        callback(res);
+        return { on: vi.fn() };
+    })
 }));
 
 import * as fs from 'fs';
@@ -310,12 +350,25 @@ describe('ImagePersistenceService', () => {
 
     describe('saveImage - HTTP URLs', () => {
         it('should detect jpg extension from URL', async () => {
-            // We can't easily test real HTTP downloads in unit tests,
-            // but we can verify the method rejects gracefully on network error
             const httpUrl = 'https://example.com/image.jpg';
+            
+            // Mock failure for this specific test
+            const https = await import('https');
+            vi.mocked(https.get).mockImplementationOnce(((_url: any, callback: any) => {
+                const res = { statusCode: 404, on: vi.fn() };
+                callback(res);
+                return { on: vi.fn() };
+            }) as any);
+
             const result = await service.saveImage(httpUrl);
-            // Since we can't mock http.get easily and it will fail, it returns the original
             expect(result).toBe(httpUrl);
+        });
+
+        it('should successfully download and save image from URL', async () => {
+            const httpUrl = 'https://example.com/image.png';
+            const result = await service.saveImage(httpUrl);
+            expect(result).toContain('safe-file:///');
+            expect(result).toContain('.png');
         });
     });
 

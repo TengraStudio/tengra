@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React, { useMemo, useState } from 'react';
 
 interface SSHEnvSyncProfilesProps {
@@ -169,7 +179,7 @@ export const SSHEnvSyncProfiles: React.FC<SSHEnvSyncProfilesProps> = ({ connecti
                 value={desiredContent}
                 onChange={event => setDesiredContent(event.target.value)}
                 placeholder={t('ssh.syncDesiredContent')}
-                style={{ minHeight: '90px' }}
+                className="min-h-90"
             />
             <select value={selectedId} onChange={event => setSelectedId(event.target.value)}>
                 <option value="">{t('ssh.syncSelectProfile')}</option>

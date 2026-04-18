@@ -1,7 +1,22 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Download, Eraser, Search, X } from 'lucide-react';
 import { memo, useEffect } from 'react';
 
 import { useDebounce } from '@/hooks/useDebounce';
+
+/* Batch-02: Extracted Long Classes */
+const C_CHATHEADER_1 = "inline-flex h-8 items-center gap-1.5 rounded-md border border-border/40 px-2.5 typo-caption font-semibold text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground";
+const C_CHATHEADER_2 = "w-full bg-foreground/5 border border-border/10 rounded-xl pl-10 pr-4 py-1.5 text-sm focus:outline-none focus:border-primary/30 transition-all placeholder:text-muted-foreground/30";
+
 
 interface ChatHeaderProps {
     searchTerm: string;
@@ -63,7 +78,7 @@ export const ChatHeader = memo(({
                     </div>
                     <button
                         onClick={onClearMessages}
-                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border/40 px-2.5 typo-caption font-semibold text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                        className={C_CHATHEADER_1}
                         title={t('chat.clear')}
                         aria-label={t('chat.clear')}
                     >
@@ -87,7 +102,7 @@ export const ChatHeader = memo(({
                         placeholder={t('chat.searchMessages')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-foreground/5 border border-border/10 rounded-xl pl-10 pr-4 py-1.5 text-sm focus:outline-none focus:border-primary/30 transition-all placeholder:text-muted-foreground/30"
+                        className={C_CHATHEADER_2}
                         aria-label={t('chat.searchMessages')}
                     />
                     {searchTerm && (

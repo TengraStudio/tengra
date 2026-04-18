@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { ToolExecutor, ToolExecutorOptions } from '@main/tools/tool-executor';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -142,16 +152,17 @@ describe('ToolExecutor', () => {
             result: {
                 success: true,
                 resultKind: 'directory_create',
-                path: 'C:/repo/app',
+                path: 'C:\\repo\\app',
+                inputPath: 'C:/repo/app',
                 pathExists: true,
                 existedBefore: true,
                 created: false,
                 complete: true,
-                displaySummary: 'Directory already existed: C:/repo/app',
+                displaySummary: 'Directory already existed: C:\\repo\\app',
             },
         });
-        expect(fileSystem.fileExists).toHaveBeenCalledWith('C:/repo/app');
-        expect(fileSystem.createDirectory).toHaveBeenCalledWith('C:/repo/app');
+        expect(fileSystem.fileExists).toHaveBeenCalledWith('C:\\repo\\app');
+        expect(fileSystem.createDirectory).toHaveBeenCalledWith('C:\\repo\\app');
     });
 
     it('rejects create_directory calls with an empty path before touching the file system', async () => {

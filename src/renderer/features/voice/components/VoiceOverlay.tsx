@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * VoiceOverlay Component - Visual feedback for voice-first interface
  * UI-11: Voice-first interface option
  */
@@ -8,7 +18,12 @@ import React from 'react';
 import { useSyncExternalStore } from 'react';
 
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 import { voiceStore } from '@/store/voice.store';
+
+/* Batch-02: Extracted Long Classes */
+const C_VOICEOVERLAY_1 = "max-w-md bg-background/90 border border-border/50 rounded-2xl p-4 shadow-xl animate-in slide-in-from-bottom-4 fade-in duration-300";
+
 
 export const VoiceOverlay: React.FC = () => {
     const { t } = useTranslation();
@@ -30,11 +45,12 @@ export const VoiceOverlay: React.FC = () => {
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
             <div className="flex flex-col items-center gap-3">
                 {/* Listening/Status Indicator */}
-                <div className={`
-                    flex items-center gap-3 px-4 py-2 rounded-full border shadow-2xl backdrop-blur-md
-                    transition-all duration-300 transform
-                    ${session.isListening ? 'bg-primary/20 border-primary/30 scale-110' : 'bg-background/80 border-border/50 scale-100'}
-                `}>
+                <div className={cn(
+                    'flex items-center gap-3 px-4 py-2 rounded-full border shadow-2xl backdrop-blur-md transition-all duration-300 transform',
+                    session.isListening
+                        ? 'bg-primary/20 border-primary/30 scale-110'
+                        : 'bg-background/80 border-border/50 scale-100'
+                )}>
                     <div className="relative">
                         {session.isListening && (
                             <div className="absolute inset-0 rounded-full bg-primary animate-ping opacity-20" />
@@ -61,7 +77,7 @@ export const VoiceOverlay: React.FC = () => {
 
                 {/* Transcript / Command History */}
                 {(session.lastTranscript || session.lastCommand) && (
-                    <div className="max-w-md bg-background/90 border border-border/50 rounded-2xl p-4 shadow-xl animate-in slide-in-from-bottom-4 fade-in duration-300">
+                    <div className={C_VOICEOVERLAY_1}>
                         {session.lastTranscript && (
                             <p className="text-sm text-foreground/80 line-clamp-2">
                                 "{session.lastTranscript}"

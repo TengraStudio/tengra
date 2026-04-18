@@ -1,10 +1,18 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Loader2, Minus, Puzzle, Square, X } from 'lucide-react';
 import { type CSSProperties, type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
-
-
 
 type AppRegionStyle = CSSProperties & { WebkitAppRegion?: 'drag' | 'no-drag' };
 
@@ -60,17 +68,20 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
     return (
         <>
             <header
-                className={cn("tengra-title-bar", className)}
+                className={cn(
+                    'z-40 flex h-12 select-none items-center justify-between border-b border-border/40 bg-card/40 px-6 backdrop-blur',
+                    className
+                )}
                 style={dragStyle}
             >
-                <div className="tengra-title-bar__left" style={noDragStyle}>
-                    <div className="tengra-title-bar__logo">
+                <div className="flex items-center gap-4" style={noDragStyle}>
+                    <div className="flex items-center gap-2">
                         <img
                             src="@renderer/assets/logo.png"
                             alt={t('app.name')}
-                            className="tengra-title-bar__logo-image"
+                            className="h-8 w-8 object-contain"
                         />
-                        <span className="tengra-title-bar__logo-text">
+                        <span className="text-xs font-bold text-foreground/80">
                             {t('app.name')}
                         </span>
                     </div>
@@ -80,57 +91,55 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                 {/* Center Content (e.g. Token Counter) */}
                 {children}
 
-                <div className="tengra-title-bar__right" style={noDragStyle}>
-                    <div className="tengra-title-bar__controls titlebar-controls">
+                <div className="flex items-center gap-2" style={noDragStyle}>
+                    <div className="flex items-center gap-2 px-2">
                         <div
-                            className="tengra-title-bar__status"
+                            className="flex items-center gap-1 rounded-md border border-border/60 px-2 py-1 text-10 text-muted-foreground"
                             title={t('titleBar.lazyServicesStatus', {
                                 loaded: lazyStatus.loaded,
                                 registered: lazyStatus.registered
                             })}
                         >
-                            {lazyStatus.loading > 0 && <Loader2 className="tengra-title-bar__status-spinner" />}
+                            {lazyStatus.loading > 0 && <Loader2 className="h-3 w-3 animate-spin" />}
                             <span>{lazyStatus.loaded}/{lazyStatus.registered}</span>
                         </div>
                         {onExtensionClick && (
                             <button
                                 onClick={onExtensionClick}
-                                className="tengra-title-bar__control tengra-title-bar__control--extension"
+                                className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-info/10 hover:text-info"
                                 title={t('titleBar.extension')}
                                 aria-label={t('titleBar.extension')}
                             >
-                                <Puzzle className="tengra-title-bar__control-icon" />
+                                <Puzzle className="h-4 w-4" />
                             </button>
                         )}
                         <button
                             onClick={handleMinimize}
-                            className="tengra-title-bar__control"
+                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
                             title={t('titleBar.minimize')}
                             aria-label={t('titleBar.minimize')}
                         >
-                            <Minus className="tengra-title-bar__control-icon" />
+                            <Minus className="h-4 w-4" />
                         </button>
                         <button
                             onClick={handleMaximize}
-                            className="tengra-title-bar__control"
+                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
                             title={t('titleBar.maximize')}
                             aria-label={t('titleBar.maximize')}
                         >
-                            <Square className="tengra-title-bar__control-icon tengra-title-bar__control-icon--maximize" />
+                            <Square className="h-3.5 w-3.5" />
                         </button>
                         <button
                             onClick={handleClose}
-                            className="tengra-title-bar__control tengra-title-bar__control--close"
+                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive hover:text-destructive-foreground"
                             title={t('titleBar.close')}
                             aria-label={t('titleBar.close')}
                         >
-                            <X className="tengra-title-bar__control-icon" />
+                            <X className="h-4 w-4" />
                         </button>
                     </div>
                 </div>
             </header>
-
-
         </>
     );
 }

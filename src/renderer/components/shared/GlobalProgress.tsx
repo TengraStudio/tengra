@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Global thin progress bar rendered at the top of the application window.
  * Supports multiple concurrent operations with smooth CSS transitions.
  */
@@ -34,16 +44,16 @@ export const GlobalProgress: React.FC = () => {
 
   return (
     <div
-      className="tengra-global-progress"
+      className="fixed top-0 left-0 right-0 z-50 pointer-events-none"
       role="progressbar"
       aria-valuenow={percent}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={label}
     >
-      <div className="tengra-global-progress__track">
+      <div className="h-1 w-full bg-transparent overflow-hidden">
         <div
-          className="tengra-global-progress__fill"
+          className="h-full bg-primary transition-all duration-300 ease-out"
           style={{ width: `${percent}%` }}
         />
       </div>

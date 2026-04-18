@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 pub const BASE_URL_DAILY: &str = "https://daily-cloudcode-pa.googleapis.com";
 pub const BASE_URL_SANDBOX_DAILY: &str = "https://daily-cloudcode-pa.sandbox.googleapis.com";
 pub const BASE_URL_PROD: &str = "https://cloudcode-pa.googleapis.com";

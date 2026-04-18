@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Button } from '@renderer/components/ui/button';
 import { CloudDownload, Cpu, Power, Settings, ShieldCheck, Terminal, Zap } from 'lucide-react';
 import React from 'react';
@@ -6,6 +16,17 @@ import { Switch } from '@/components/ui/switch';
 import type { AppSettings } from '@/types/settings';
 
 import type { SettingsSharedProps } from '../types';
+
+/* Batch-02: Extracted Long Classes */
+const C_SYSTEMTAB_1 = "h-10 rounded-xl border-primary/20 bg-primary/5 px-5 typo-body font-medium text-primary hover:bg-primary hover:text-primary-foreground";
+const C_SYSTEMTAB_2 = "flex flex-col gap-4 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-colors sm:flex-row sm:items-center sm:justify-between";
+const C_SYSTEMTAB_3 = "flex flex-col gap-4 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-colors sm:flex-row sm:items-center sm:justify-between";
+const C_SYSTEMTAB_4 = "flex flex-col gap-4 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-colors md:col-span-2 sm:flex-row sm:items-center sm:justify-between";
+const C_SYSTEMTAB_5 = "flex flex-col gap-4 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-colors sm:flex-row sm:items-center sm:justify-between";
+const C_SYSTEMTAB_6 = "flex flex-col gap-4 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-colors sm:flex-row sm:items-center sm:justify-between";
+const C_SYSTEMTAB_7 = "flex flex-col gap-4 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-colors sm:flex-row sm:items-center sm:justify-between";
+const C_SYSTEMTAB_8 = "flex flex-col gap-4 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-colors sm:flex-row sm:items-center sm:justify-between";
+
 
 type SystemTabProps = Pick<
     SettingsSharedProps,
@@ -98,17 +119,17 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                         onClick={() => {
                             void window.electron.update.checkForUpdates();
                         }}
-                        className="h-10 rounded-xl border-primary/20 bg-primary/5 px-5 typo-body font-medium text-primary hover:bg-primary hover:text-primary-foreground"
+                        className={C_SYSTEMTAB_1}
                     >
                         {t('general.checkForUpdates')}
                     </Button>
                 </div>
 
                 <div className="relative z-10 mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="flex flex-col gap-4 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-colors sm:flex-row sm:items-center sm:justify-between">
+                    <div className={C_SYSTEMTAB_2}>
                         <div className="space-y-1">
                             <div className="typo-body font-medium text-foreground">{t('general.autoUpdate')}</div>
-                            <div className="max-w-[240px] typo-body leading-relaxed text-muted-foreground/70">
+                            <div className="max-w-240 typo-body leading-relaxed text-muted-foreground/70">
                                 {t('general.autoUpdateDesc')}
                             </div>
                         </div>
@@ -118,10 +139,10 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                         />
                     </div>
 
-                    <div className="flex flex-col gap-4 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-colors sm:flex-row sm:items-center sm:justify-between">
+                    <div className={C_SYSTEMTAB_3}>
                         <div className="space-y-1">
                             <div className="typo-body font-medium text-foreground">{t('general.checkOnStartup')}</div>
-                            <div className="max-w-[240px] typo-body leading-relaxed text-muted-foreground/70">
+                            <div className="max-w-240 typo-body leading-relaxed text-muted-foreground/70">
                                 {t('general.checkOnStartupDesc')}
                             </div>
                         </div>
@@ -131,10 +152,10 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                         />
                     </div>
 
-                    <div className="flex flex-col gap-4 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-colors md:col-span-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className={C_SYSTEMTAB_4}>
                         <div className="space-y-1">
                             <div className="typo-body font-medium text-foreground">{t('settings.downloadUpdatesAutomatically')}</div>
-                            <div className="max-w-[420px] typo-body leading-relaxed text-muted-foreground/70">
+                            <div className="max-w-420 typo-body leading-relaxed text-muted-foreground/70">
                                 {t('settings.downloadUpdatesAutomaticallyDescription')}
                             </div>
                         </div>
@@ -162,7 +183,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                 </div>
 
                 <div className="relative z-10 mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="flex flex-col gap-4 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-colors sm:flex-row sm:items-center sm:justify-between">
+                    <div className={C_SYSTEMTAB_5}>
                         <div className="space-y-1">
                             <div className="flex items-center gap-2 typo-body font-medium text-foreground">
                                 <Power className="w-3.5 h-3.5 text-primary opacity-40" />
@@ -178,7 +199,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                         />
                     </div>
 
-                    <div className="flex flex-col gap-4 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-colors sm:flex-row sm:items-center sm:justify-between">
+                    <div className={C_SYSTEMTAB_6}>
                         <div className="space-y-1">
                             <div className="flex items-center gap-2 typo-body font-medium text-foreground">
                                 <Terminal className="w-3.5 h-3.5 text-primary opacity-40" />
@@ -194,7 +215,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                         />
                     </div>
 
-                    <div className="flex flex-col gap-4 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-colors sm:flex-row sm:items-center sm:justify-between">
+                    <div className={C_SYSTEMTAB_7}>
                         <div className="space-y-1">
                             <div className="flex items-center gap-2 typo-body font-medium text-foreground">
                                 <Zap className="w-3.5 h-3.5 text-primary opacity-40" />
@@ -210,7 +231,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                         />
                     </div>
 
-                    <div className="flex flex-col gap-4 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-colors sm:flex-row sm:items-center sm:justify-between">
+                    <div className={C_SYSTEMTAB_8}>
                         <div className="space-y-1">
                             <div className="flex items-center gap-2 typo-body font-medium text-foreground">
                                 <ShieldCheck className="w-3.5 h-3.5 text-primary opacity-40" />

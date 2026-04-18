@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import type { MarketplaceModelPerformanceEstimate, MarketplaceModelTag } from '@shared/types/marketplace';
 import { compareVersions } from '@shared/utils/extension.util';
 import DOMPurify from 'dompurify';
@@ -5,6 +15,14 @@ import { Download, TriangleAlert, X } from 'lucide-react';
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+
+import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_MARKETPLACEINFOPANEL_1 = "sticky top-6 self-start max-h-screen-minus-32 overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-500 w-full lg:w-480 px-8";
+const C_MARKETPLACEINFOPANEL_2 = "inline-flex items-center gap-2 rounded-full bg-amber-500/10 px-4 py-2 text-xxxs font-black uppercase tracking-wider text-amber-500";
+const C_MARKETPLACEINFOPANEL_3 = "opacity-0 group-hover/tag:opacity-100 p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all active:scale-95";
+
 
 export type MarketplaceInfoItem = {
     id: string;
@@ -86,11 +104,11 @@ export function MarketplaceInfoPanel({
     const paginatedSubmodels = item.submodels?.slice((currentPage - 1) * pageSize, currentPage * pageSize) || [];
 
     return (
-        <aside className="sticky top-6 self-start max-h-[calc(100vh-8rem)] overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-500 w-full lg:w-[480px] px-8">
+        <aside className={C_MARKETPLACEINFOPANEL_1}>
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
                     <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/30">{t('common.info')}</p>
+                    <p className="text-xxxs font-black uppercase tracking-super-wide text-muted-foreground/30">{t('common.info')}</p>
                 </div>
                 <button
                     onClick={onClose}
@@ -103,11 +121,11 @@ export function MarketplaceInfoPanel({
             <div className="space-y-10">
                 <div className="space-y-3">
                     <h3 className="text-3xl font-black tracking-tighter text-foreground/90 leading-none">{item.name}</h3>
-                    <p className="text-sm leading-relaxed text-muted-foreground/60 font-medium max-w-[90%]">{item.description}</p>
+                    <p className="text-sm leading-relaxed text-muted-foreground/60 font-medium max-w-90p">{item.description}</p>
                 </div>
 
                 {hasUpdate && item.installedVersion && (
-                    <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 px-4 py-2 text-[10px] font-black uppercase tracking-wider text-amber-500">
+                    <div className={C_MARKETPLACEINFOPANEL_2}>
                         <TriangleAlert className="h-3.5 w-3.5" />
                         {`${t('common.update')}: v${item.installedVersion} → v${item.version}`}
                     </div>
@@ -115,19 +133,19 @@ export function MarketplaceInfoPanel({
 
                 <div className="grid grid-cols-2 gap-x-8 gap-y-6">
                     <div className="space-y-1">
-                        <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.2em]">{t('common.type')}</span>
+                        <span className="text-xxxs font-black text-muted-foreground/30 uppercase tracking-super-wide">{t('common.type')}</span>
                         <p className="text-xs font-bold text-foreground/70 uppercase tracking-widest">{item.itemType}</p>
                     </div>
                     <div className="space-y-1">
-                        <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.2em]">{t('mcp.version')}</span>
+                        <span className="text-xxxs font-black text-muted-foreground/30 uppercase tracking-super-wide">{t('mcp.version')}</span>
                         <p className="text-xs font-bold text-foreground/70">{item.version}</p>
                     </div>
                     <div className="space-y-1">
-                        <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.2em]">{t('marketplace.author')}</span>
+                        <span className="text-xxxs font-black text-muted-foreground/30 uppercase tracking-super-wide">{t('marketplace.author')}</span>
                         <p className="text-xs font-bold text-foreground/70">{item.author}</p>
                     </div>
                     <div className="space-y-1">
-                        <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.2em]">{t('marketplace.downloads')}</span>
+                        <span className="text-xxxs font-black text-muted-foreground/30 uppercase tracking-super-wide">{t('marketplace.downloads')}</span>
                         <div className="flex items-center gap-1.5 text-xs font-bold text-foreground/70">
                             <Download className="w-3.5 h-3.5 opacity-40" />
                             {formatNumber(item.downloads || item.pullCount || 0)}
@@ -138,19 +156,19 @@ export function MarketplaceInfoPanel({
                 {item.performance && (
                     <div className="space-y-4">
                         <div className="flex items-center gap-3">
-                            <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.2em]">{t('marketplace.performance')}</span>
-                            <div className="h-[1px] flex-1 bg-muted/20" />
-                            <span className="text-[9px] font-black text-primary uppercase tracking-wider">
+                            <span className="text-xxxs font-black text-muted-foreground/30 uppercase tracking-super-wide">{t('marketplace.performance')}</span>
+                            <div className="h-px flex-1 bg-muted/20" />
+                            <span className="text-xxxs font-black text-primary uppercase tracking-wider">
                                 {t(`marketplace.modelFit.${item.performance.fit}`)}
                             </span>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="bg-muted/20 rounded-xl p-4 transition-colors hover:bg-muted/30">
-                                <span className="text-[8px] font-black text-muted-foreground/40 uppercase tracking-widest">{t('marketplace.tokensPerSecond')}</span>
-                                <p className="text-lg font-black text-foreground/80 mt-1">{item.performance.estimatedTokensPerSecond.toFixed(1)} <span className="text-[10px] text-muted-foreground/40">t/s</span></p>
+                                <span className="text-micro font-black text-muted-foreground/40 uppercase tracking-widest">{t('marketplace.tokensPerSecond')}</span>
+                                <p className="text-lg font-black text-foreground/80 mt-1">{item.performance.estimatedTokensPerSecond.toFixed(1)} <span className="text-xxxs text-muted-foreground/40">t/s</span></p>
                             </div>
                             <div className="bg-muted/20 rounded-xl p-4 transition-colors hover:bg-muted/30">
-                                <span className="text-[8px] font-black text-muted-foreground/40 uppercase tracking-widest">{t('marketplace.ram')}</span>
+                                <span className="text-micro font-black text-muted-foreground/40 uppercase tracking-widest">{t('marketplace.ram')}</span>
                                 <p className="text-lg font-black text-foreground/80 mt-1">{formatBytes(item.performance.estimatedMemoryBytes)}</p>
                             </div>
                         </div>
@@ -160,13 +178,13 @@ export function MarketplaceInfoPanel({
                 {item.readme && (
                     <div className="space-y-6">
                         <div className="flex items-center gap-3">
-                            <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.2em]">Documentation</span>
-                            <div className="h-[1px] flex-1 bg-muted/20" />
+                            <span className="text-xxxs font-black text-muted-foreground/30 uppercase tracking-super-wide">Documentation</span>
+                            <div className="h-px flex-1 bg-muted/20" />
                         </div>
                         <div className="prose prose-invert prose-sm max-w-full text-muted-foreground/60 leading-relaxed font-medium">
                             {((item.provider === 'ollama' || item.provider === 'huggingface') && (item.readme.includes('<h2') || item.readme.includes('<li>') || item.readme.includes('<p>') || item.readme.includes('<h1>'))) ? (
                                 <div
-                                    className={`${item.provider}-readme rich-text`}
+                                    className={cn(`${item.provider}-readme`, 'rich-text')}
                                     dangerouslySetInnerHTML={{ __html: sanitizedReadme }}
                                 />
                             ) : (
@@ -192,8 +210,8 @@ export function MarketplaceInfoPanel({
                 {item.isReadmeLoading && !item.readme && (
                     <div className="mt-8 pt-8 border-t border-muted/10">
                         <div className="flex items-center gap-3 text-muted-foreground/30 animate-pulse">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">{t('marketplace.syncing')}</span>
-                            <div className="h-[1px] flex-1 bg-muted/20" />
+                            <span className="text-xxxs font-black uppercase tracking-super-wide">{t('marketplace.syncing')}</span>
+                            <div className="h-px flex-1 bg-muted/20" />
                         </div>
                     </div>
                 )}
@@ -202,23 +220,23 @@ export function MarketplaceInfoPanel({
                     <div className="mt-10 pt-10 border-t border-muted/10 space-y-6">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.2em]">{t('mcp.version')}s</span>
-                                <span className="text-[9px] font-black text-muted-foreground/20">({totalSubmodels})</span>
+                                <span className="text-xxxs font-black text-muted-foreground/30 uppercase tracking-super-wide">{t('mcp.version')}s</span>
+                                <span className="text-xxxs font-black text-muted-foreground/20">({totalSubmodels})</span>
                             </div>
                             {totalPages > 1 && (
                                 <div className="flex items-center gap-3">
                                     <button
                                         disabled={currentPage === 1}
                                         onClick={() => setCurrentPage(prev => prev - 1)}
-                                        className="text-[10px] font-black uppercase tracking-widest text-primary disabled:opacity-20 transition-opacity"
+                                        className="text-xxxs font-black uppercase tracking-widest text-primary disabled:opacity-20 transition-opacity"
                                     >
                                         Prev
                                     </button>
-                                    <span className="text-[10px] font-black text-muted-foreground/20">{currentPage} / {totalPages}</span>
+                                    <span className="text-xxxs font-black text-muted-foreground/20">{currentPage} / {totalPages}</span>
                                     <button
                                         disabled={currentPage === totalPages}
                                         onClick={() => setCurrentPage(prev => prev + 1)}
-                                        className="text-[10px] font-black uppercase tracking-widest text-primary disabled:opacity-20 transition-opacity"
+                                        className="text-xxxs font-black uppercase tracking-widest text-primary disabled:opacity-20 transition-opacity"
                                     >
                                         Next
                                     </button>
@@ -235,10 +253,10 @@ export function MarketplaceInfoPanel({
                                         <div className="flex items-center gap-2">
                                             <span className="text-xs font-black text-foreground/80 truncate">{tag.name}</span>
                                             {tag.installed && (
-                                                <div className="h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+                                                <div className="h-1.5 w-1.5 rounded-full bg-success shadow-glow-success" />
                                             )}
                                         </div>
-                                        <div className="flex gap-3 text-[9px] font-black text-muted-foreground/40 uppercase tracking-tighter">
+                                        <div className="flex gap-3 text-xxxs font-black text-muted-foreground/40 uppercase tracking-tighter">
                                             {tag.modelSize && <span>{tag.modelSize} Params</span>}
                                             {tag.tensorType && <span>{tag.tensorType}</span>}
                                             <span>{tag.size || tag.contextWindow}</span>
@@ -252,7 +270,7 @@ export function MarketplaceInfoPanel({
                                                 name: `${item.name} (${tag.name})`,
                                                 downloadUrl: tag.downloadUrl
                                             })}
-                                            className="opacity-0 group-hover/tag:opacity-100 p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all active:scale-95"
+                                            className={C_MARKETPLACEINFOPANEL_3}
                                         >
                                             <Download className="w-4 h-4" />
                                         </button>

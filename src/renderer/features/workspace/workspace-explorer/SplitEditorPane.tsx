@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * @fileoverview Secondary editor pane for split view
  * @description Provides a read-only Monaco-backed editor with file selector,
  *   used as the right pane in split view mode.
@@ -37,7 +47,7 @@ export const SplitEditorPane: React.FC<SplitEditorPaneProps> = ({
                 <select
                     value={rightTab?.id ?? ''}
                     onChange={e => onSelectRightTab(e.target.value)}
-                    className="typo-caption bg-transparent border border-border/40 rounded px-1 py-0.5 tw-max-w-200 truncate"
+                    className="typo-caption bg-transparent border border-border/40 rounded px-1 py-0.5 max-w-200 truncate"
                 >
                     <option value="">{t('workspaceDashboard.editor.selectFile')}</option>
                     {openTabs.map(tab => (

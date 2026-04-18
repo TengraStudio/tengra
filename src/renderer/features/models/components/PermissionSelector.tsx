@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { WorkspaceAgentPermissionPolicy } from '@shared/types/workspace-agent-session';
 import {
     Settings2,
@@ -15,6 +25,10 @@ import {
 } from '@/components/ui/select';
 import { Tooltip } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_PERMISSIONSELECTOR_1 = "flex h-8 w-8 items-center justify-center rounded-lg bg-muted/30 text-muted-foreground transition-all hover:bg-muted/50 hover:text-foreground";
+
 
 interface PermissionSelectorProps {
     policy: WorkspaceAgentPermissionPolicy;
@@ -121,7 +135,7 @@ export const PermissionSelector: React.FC<PermissionSelectorProps> = ({
                             }
                         }}
                     >
-                        <SelectTrigger className="h-8 min-w-[148px] gap-1.5 rounded-lg border-none bg-muted/30 pl-2 pr-2 transition-all hover:bg-muted/50 focus:ring-0">
+                        <SelectTrigger className="h-8 min-w-148 gap-1.5 rounded-lg border-none bg-muted/30 pl-2 pr-2 transition-all hover:bg-muted/50 focus:ring-0">
                             <PresetIcon preset={preset} />
                             <span className="truncate typo-body font-bold opacity-80">
                                 {getPresetLabel(preset, t)}
@@ -129,7 +143,7 @@ export const PermissionSelector: React.FC<PermissionSelectorProps> = ({
                         </SelectTrigger>
                         <SelectContent
                             align="end"
-                            className="min-w-[180px] rounded-xl border-border/40 bg-background/95 shadow-none"
+                            className="min-w-180 rounded-xl border-border/40 bg-background/95 shadow-none"
                         >
                             <SelectItem value="high" className="py-2 typo-body font-bold">
                                 <div className="flex items-center gap-2">
@@ -163,7 +177,7 @@ export const PermissionSelector: React.FC<PermissionSelectorProps> = ({
                         <button
                             type="button"
                             onClick={onOpenSettings}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/30 text-muted-foreground transition-all hover:bg-muted/50 hover:text-foreground"
+                            className={C_PERMISSIONSELECTOR_1}
                         >
                             <Settings2 className="h-3.5 w-3.5" />
                         </button>

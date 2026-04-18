@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 export interface ImageGenerationOptions {
     prompt: string
     negativePrompt?: string
@@ -125,6 +135,7 @@ export interface LocalImageServiceDeps {
     authService?: import('@main/services/security/auth.service').AuthService;
     llmService?: import('@main/services/llm/llm.service').LLMService;
     quotaService?: import('@main/services/proxy/quota.service').QuotaService;
+    advancedMemoryService?: import('@main/services/llm/advanced-memory.service').AdvancedMemoryService;
     telemetryService?: import('@main/services/analysis/telemetry.service').TelemetryService;
 }
 

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import * as path from 'path';
 
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
@@ -33,8 +43,11 @@ import {
 import { appLogger } from '@main/logging/logger';
 import { chatQueueManager, OrchestrationPolicy } from '@main/services/chat-queue.service';
 import { DatabaseService } from '@main/services/data/database.service';
+import type { BrainService } from '@main/services/llm/brain.service';
 import { ContextRetrievalService } from '@main/services/llm/context-retrieval.service';
+import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { LLMService } from '@main/services/llm/llm.service';
+import { MemoryContextService } from '@main/services/llm/memory-context.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { ChatSessionRegistryService } from '@main/services/session/chat-session-registry.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
@@ -107,15 +120,21 @@ interface SessionConversationIpcOptions {
     contextRetrievalService: ContextRetrievalService;
     databaseService: DatabaseService;
     chatSessionRegistryService?: ChatSessionRegistryService;
+    advancedMemoryService?: AdvancedMemoryService;
+    brainService?: BrainService;
 }
 
 class SessionConversationIpcManager {
     private readonly chatSessionRegistryService: ChatSessionRegistryService;
+    private readonly memoryContextService: MemoryContextService;
+    private readonly brainService?: BrainService;
 
     constructor(private options: SessionConversationIpcOptions) {
         this.chatSessionRegistryService =
             options.chatSessionRegistryService ??
             new ChatSessionRegistryService(new EventBusService());
+        this.memoryContextService = new MemoryContextService(options.advancedMemoryService);
+        this.brainService = options.brainService;
     }
 
     async handleConversationComplete(_event: IpcMainInvokeEvent, params: ConversationCompleteParams) {
@@ -131,6 +150,8 @@ class SessionConversationIpcManager {
         }
 
         const permissionPolicy = await this.getPermissionPolicy(params.chatId);
+        const resolutionMemoryContext = await this.buildResolutionMemoryContext(sanitized.messages);
+        const userBrainContext = await this.buildUserBrainContext(sanitized.messages);
         const finalMessages = injectConversationSystemPrompt({
             messages: sanitized.messages,
             provider: sanitized.provider,
@@ -138,7 +159,8 @@ class SessionConversationIpcManager {
             settingsService: this.options.settingsService,
             localeService: this.options.localeService,
             permissionPolicy,
-            evidenceContext: '',
+            evidenceContext: userBrainContext,
+            resolutionMemoryContext,
         });
 
         try {
@@ -173,6 +195,17 @@ class SessionConversationIpcManager {
                     provider: sanitized.provider,
                 })
             );
+            this.scheduleMemoryIngestion({
+                chatId: sanitized.chatId,
+                workspaceId: sanitized.workspaceId,
+                provider: sanitized.provider,
+                model: sanitized.model,
+                messages: sanitized.messages,
+                assistantContent: result.content,
+                reasoning: result.reasoning,
+                toolCalls: result.toolCalls,
+            });
+            this.scheduleBrainExtraction(sanitized.messages);
             await this.chatSessionRegistryService.markCompleted(sessionId);
             return createConversationCompleteResult({
                 messages: sanitized.messages,
@@ -284,7 +317,8 @@ class SessionConversationIpcManager {
             settingsService: this.options.settingsService,
             localeService: this.options.localeService,
             permissionPolicy: undefined, // No permission policy in stream yet
-            evidenceContext: '',
+            evidenceContext: await this.buildUserBrainContext(sanitized.messages),
+            resolutionMemoryContext: await this.buildResolutionMemoryContext(sanitized.messages),
         });
 
         const controller = new AbortController();
@@ -398,6 +432,7 @@ class SessionConversationIpcManager {
 
     private async persistStreamedAssistantMessage(params: {
         chatId: string;
+        workspaceId?: string;
         messages: Message[];
         content: string;
         reasoning: string;
@@ -410,6 +445,7 @@ class SessionConversationIpcManager {
     }): Promise<void> {
         const {
             chatId,
+            workspaceId,
             messages,
             content,
             reasoning,
@@ -436,6 +472,18 @@ class SessionConversationIpcManager {
             systemMode,
             assistantId,
         });
+
+        this.scheduleMemoryIngestion({
+            chatId,
+            workspaceId,
+            provider,
+            model,
+            messages,
+            assistantContent: content,
+            reasoning,
+            toolCalls,
+        });
+        this.scheduleBrainExtraction(messages);
     }
 
     private async injectRAGContextForStream(params: {
@@ -519,6 +567,7 @@ class SessionConversationIpcManager {
             if (evidence.fullContent || evidence.fullReasoning) {
                 await this.persistStreamedAssistantMessage({
                     chatId,
+                    workspaceId: undefined,
                     messages: originalMessages,
                     systemMode,
                     content: evidence.fullContent,
@@ -609,6 +658,7 @@ class SessionConversationIpcManager {
             if (evidence.fullContent || evidence.fullReasoning) {
                 await this.persistStreamedAssistantMessage({
                     chatId,
+                    workspaceId,
                     messages: originalMessages,
                     systemMode,
                     content: evidence.fullContent,
@@ -715,6 +765,89 @@ class SessionConversationIpcManager {
             ? (workspaceAgentSession as JsonObject)['permissionPolicy']
             : undefined;
         return typeof policy === 'string' ? policy : undefined;
+    }
+
+    private getLastUserMessageText(messages: Message[]): string {
+        const userMessage = [...messages].reverse().find(message => message.role === 'user');
+        if (!userMessage) {
+            return '';
+        }
+        if (typeof userMessage.content === 'string') {
+            return userMessage.content.trim();
+        }
+        return userMessage.content
+            .map(item => item.type === 'text' ? item.text : item.image_url.url)
+            .join('\n')
+            .trim();
+    }
+
+    private async buildResolutionMemoryContext(messages: Message[]): Promise<string | undefined> {
+        const query = this.getLastUserMessageText(messages);
+        return this.memoryContextService.getResolutionContext(query, {
+            timeoutMs: 360,
+            limit: 3,
+            minQueryLength: 4
+        });
+    }
+
+    private async buildUserBrainContext(messages: Message[]): Promise<string | undefined> {
+        if (!this.brainService) {
+            return undefined;
+        }
+        const query = this.getLastUserMessageText(messages);
+        if (!query) {
+            return undefined;
+        }
+        const context = await this.brainService.getBrainContext(query);
+        const rawFormatted = this.brainService.formatBrainContext(context) as unknown;
+        const formatted = this.normalizeBrainContext(rawFormatted);
+        return formatted.length > 0 ? formatted : undefined;
+    }
+
+    private normalizeBrainContext(value: unknown): string {
+        if (typeof value === 'string') {
+            return value.trim();
+        }
+        if (value === null || value === undefined) {
+            return '';
+        }
+        if (typeof value === 'object') {
+            const candidate = value as Record<string, unknown>;
+            const textLike = candidate['content'] ?? candidate['text'] ?? candidate['context'];
+            if (typeof textLike === 'string') {
+                return textLike.trim();
+            }
+            try {
+                return JSON.stringify(value).trim();
+            } catch {
+                return '';
+            }
+        }
+        return String(value).trim();
+    }
+
+    private scheduleMemoryIngestion(params: {
+        chatId?: string;
+        workspaceId?: string;
+        provider: string;
+        model: string;
+        messages: Message[];
+        assistantContent: string;
+        reasoning?: string;
+        toolCalls?: ToolCall[];
+    }): void {
+        this.memoryContextService.captureConversation(params);
+    }
+
+    private scheduleBrainExtraction(messages: Message[]): void {
+        if (!this.brainService) {
+            return;
+        }
+        const userText = this.getLastUserMessageText(messages);
+        if (userText.length < 16) {
+            return;
+        }
+        void this.brainService.extractUserFactsFromMessage(userText).catch(() => undefined);
     }
 }
 

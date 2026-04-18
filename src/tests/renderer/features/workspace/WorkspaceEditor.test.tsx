@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -591,7 +601,7 @@ describe('WorkspaceEditor', () => {
             render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
 
             const textareas = screen.getAllByRole('textbox');
-            const scratchTextarea = textareas.find(el => el.tagName === 'TEXTAREA' && el.classList.contains('min-h-[70px]'));
+            const scratchTextarea = textareas.find(el => el.tagName === 'TEXTAREA' && el.classList.contains('min-h-70'));
             expect(scratchTextarea).toBeDefined();
             fireEvent.change(scratchTextarea!, { target: { value: 'echo hello' } });
             await clickAndFlush('workspaceDashboard.editor.runScratch');
@@ -605,7 +615,7 @@ describe('WorkspaceEditor', () => {
             render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
 
             const textareas = screen.getAllByRole('textbox');
-            const scratchTextarea = textareas.find(el => el.tagName === 'TEXTAREA' && el.classList.contains('min-h-[70px]'));
+            const scratchTextarea = textareas.find(el => el.tagName === 'TEXTAREA' && el.classList.contains('min-h-70'));
             fireEvent.change(scratchTextarea!, { target: { value: 'My documentation notes' } });
             await clickAndFlush('workspaceDashboard.editor.saveScratchDoc');
 
@@ -621,7 +631,7 @@ describe('WorkspaceEditor', () => {
             render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
 
             const textareas = screen.getAllByRole('textbox');
-            const scratchTextarea = textareas.find(el => el.tagName === 'TEXTAREA' && el.classList.contains('min-h-[70px]'));
+            const scratchTextarea = textareas.find(el => el.tagName === 'TEXTAREA' && el.classList.contains('min-h-70'));
             fireEvent.change(scratchTextarea!, { target: { value: 'Task description' } });
             await clickAndFlush('workspaceDashboard.editor.saveScratchTask');
 

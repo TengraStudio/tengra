@@ -1,8 +1,24 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Badge } from '@renderer/components/ui/badge';
 import { Button } from '@renderer/components/ui/button';
 import { cn } from '@renderer/lib/utils';
 import { CheckCircle2, CloudDownload, History, Trash2, XCircle } from 'lucide-react';
 import React from 'react';
+
+/* Batch-02: Extracted Long Classes */
+const C_DOWNLOADHISTORYLIST_1 = "flex flex-col items-center justify-center py-20 text-center border border-dashed border-border/30 rounded-2xl bg-muted/5 animate-in fade-in duration-500 sm:flex-row";
+const C_DOWNLOADHISTORYLIST_2 = "h-5 rounded-md border-border/20 px-2 py-0 typo-body font-bold typo-body uppercase tracking-wider text-muted-foreground/60";
+const C_DOWNLOADHISTORYLIST_3 = "h-8 w-8 rounded-lg text-muted-foreground/40 hover:bg-destructive/10 hover:text-destructive opacity-0 group-hover:opacity-100 transition-all p-0";
+
 
 type DownloadHistoryItemStatus =
     | 'queued'
@@ -46,10 +62,10 @@ export const DownloadHistoryList: React.FC<DownloadHistoryListProps> = ({
 }) => {
     if (history.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-border/30 rounded-2xl bg-muted/5 animate-in fade-in duration-500">
+            <div className={C_DOWNLOADHISTORYLIST_1}>
                 <History className="w-12 h-12 text-muted-foreground/20 mb-4" />
                 <h3 className="text-sm font-semibold text-foreground/70">{t('modelsPage.noDownloadHistory')}</h3>
-                <p className="typo-caption text-muted-foreground/50 mt-1 max-w-[240px]">
+                <p className="typo-caption text-muted-foreground/50 mt-1 max-w-240">
                     {t('modelsPage.noDownloadHistoryDescription')}
                 </p>
             </div>
@@ -113,7 +129,7 @@ export const DownloadHistoryList: React.FC<DownloadHistoryListProps> = ({
                                         <span className="truncate text-sm font-bold text-foreground">
                                             {item.modelRef}
                                         </span>
-                                        <Badge variant="outline" className="h-5 rounded-md border-border/20 px-2 py-0 typo-body font-bold typo-body uppercase tracking-wider text-muted-foreground/60">
+                                        <Badge variant="outline" className={C_DOWNLOADHISTORYLIST_2}>
                                             {item.provider}
                                         </Badge>
                                     </div>
@@ -130,7 +146,7 @@ export const DownloadHistoryList: React.FC<DownloadHistoryListProps> = ({
                                         {item.message && (
                                             <>
                                                 <span className="h-1 w-1 rounded-full bg-muted-foreground/10" />
-                                                <span className="text-destructive truncate max-w-[200px]" title={item.message}>{item.message}</span>
+                                                <span className="text-destructive truncate max-w-200" title={item.message}>{item.message}</span>
                                             </>
                                         )}
                                     </div>
@@ -142,7 +158,7 @@ export const DownloadHistoryList: React.FC<DownloadHistoryListProps> = ({
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => onDelete(item.id || '')}
-                                    className="h-8 w-8 rounded-lg text-muted-foreground/40 hover:bg-destructive/10 hover:text-destructive opacity-0 group-hover:opacity-100 transition-all p-0"
+                                    className={C_DOWNLOADHISTORYLIST_3}
                                 >
                                     <Trash2 className="w-3.5 h-3.5" />
                                 </Button>

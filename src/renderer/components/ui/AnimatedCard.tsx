@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React, { useRef, useState } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -55,10 +65,10 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
     };
 
     const effectClasses = {
-        lift: 'tengra-animated-card--lift',
-        glow: 'tengra-animated-card--glow',
-        scale: 'tengra-animated-card--scale',
-        '3d': 'tengra-animated-card--3d',
+        lift: 'hover:-translate-y-1 hover:shadow-lg',
+        glow: 'hover:shadow-glow-primary-hsl',
+        scale: 'hover:scale-102',
+        '3d': 'transform-3d',
         none: ''
     };
 
@@ -73,9 +83,9 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
                 (cardRef as React.MutableRefObject<HTMLElement | null>).current = node;
             }}
             className={cn(
-                'tengra-animated-card',
+                'p-4 rounded-xl border bg-card text-card-foreground transition-all duration-200',
                 effectClasses[hoverEffect],
-                onClick && 'tengra-animated-card--clickable',
+                onClick && 'cursor-pointer',
                 className
             )}
             onClick={onClick}
@@ -100,8 +110,8 @@ export const GradientBorderCard: React.FC<{
     className?: string
 }> = ({ children, className }) => {
     return (
-        <div className={cn('tengra-gradient-border-card', className)}>
-            <div className="tengra-gradient-border-card__inner">
+        <div className={cn('p-0.5 rounded-xl bg-gradient-to-tr from-primary via-accent to-info', className)}>
+            <div className="h-full rounded-inner-xl bg-card p-4">
                 {children}
             </div>
         </div>

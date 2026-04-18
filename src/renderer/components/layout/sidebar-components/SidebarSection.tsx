@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -5,6 +15,10 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Tooltip } from '@/components/ui/tooltip';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_SIDEBARSECTION_1 = "absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-xxxs font-bold flex items-center justify-center text-primary-foreground";
+
 
 type BadgeVariant = 'default' | 'warning' | 'error' | 'success';
 
@@ -191,7 +205,7 @@ const SidebarCollapsedSection: React.FC<{
                     <div className="relative">
                         {icon}
                         {badge !== undefined && (
-                            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-xxxs font-bold flex items-center justify-center text-primary-foreground">
+                            <span className={C_SIDEBARSECTION_1}>
                                 {typeof badge === 'number' && badge > 9 ? '9+' : badge}
                             </span>
                         )}

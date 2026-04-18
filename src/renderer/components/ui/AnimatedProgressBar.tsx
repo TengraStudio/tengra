@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React from 'react';
 
 import { cn } from '@/lib/utils';
@@ -40,27 +50,37 @@ export const AnimatedProgressBar: React.FC<AnimatedProgressBarProps> = React.mem
 
         return (
             <div className={cn(
-                'tengra-progress-bar',
-                `tengra-progress-bar--${size}`,
-                `tengra-progress-bar--${variant}`,
-                striped && 'tengra-progress-bar--striped',
-                animated && 'tengra-progress-bar--animated',
+                'w-full',
                 className
             )}>
                 <div
-                    className="tengra-progress-bar__track"
+                    className={cn(
+                        "w-full bg-muted overflow-hidden",
+                        size === 'sm' && "h-1 rounded-full",
+                        size === 'md' && "h-2 rounded-full",
+                        size === 'lg' && "h-3 rounded-full"
+                    )}
                     role="progressbar"
                     aria-valuenow={value}
                     aria-valuemin={0}
                     aria-valuemax={max}
                 >
                     <div
-                        className="tengra-progress-bar__fill"
+                        className={cn(
+                            "h-full rounded-full transition-all duration-500 ease-out",
+                            variant === 'default' && "bg-primary",
+                            variant === 'success' && "bg-success",
+                            variant === 'warning' && "bg-warning",
+                            variant === 'error' && "bg-destructive",
+                            variant === 'gradient' && "bg-gradient-to-r from-accent via-primary to-info",
+                            striped && "progress-animated",
+                            animated && striped && "animate-progress-stripes"
+                        )}
                         style={{ width: `${percentage}%` }}
                     />
                 </div>
                 {showLabel && (
-                    <div className="tengra-progress-bar__labels">
+                    <div className="flex justify-between mt-1 text-xs text-muted-foreground">
                         <span>{value}</span>
                         <span>{percentage.toFixed(0)}%</span>
                     </div>

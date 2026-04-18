@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Accessibility Settings Panel
  * Provides UI for configuring accessibility options.
  */
@@ -22,6 +32,12 @@ import React from 'react';
 
 import { cn } from '@/lib/utils';
 import { useA11ySettings } from '@/utils/accessibility';
+
+/* Batch-02: Extracted Long Classes */
+const C_ACCESSIBILITYSETTINGS_1 = "h-10 px-4 rounded-xl typo-body font-bold text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-border/40 transition-all active:scale-95";
+const C_ACCESSIBILITYSETTINGS_2 = "absolute top-0 right-0 p-12 -mr-6 -mt-6 bg-primary/10 rounded-full blur-3xl opacity-50 group-hover:opacity-100 transition-opacity";
+const C_ACCESSIBILITYSETTINGS_3 = "h-5 px-1.5 min-w-8 justify-center rounded bg-background/80 border-border/60 typo-body font-mono font-bold shadow-sm group-hover/row:border-primary/40 group-hover/row:text-primary transition-colors";
+
 
 interface SettingRowProps {
     icon: React.ReactNode;
@@ -109,7 +125,7 @@ export const AccessibilitySettings: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     onClick={handleReset}
-                    className="h-10 px-4 rounded-xl typo-body font-bold text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-border/40 transition-all active:scale-95"
+                    className={C_ACCESSIBILITYSETTINGS_1}
                 >
                     <RotateCcw className="w-3.5 h-3.5 mr-2" />
                     {t('common.reset')}
@@ -154,7 +170,7 @@ export const AccessibilitySettings: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
                 {/* System Preferences Info */}
                 <div className="p-6 rounded-3xl bg-primary/[0.03] border border-primary/20 shadow-xl shadow-primary/5 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-12 -mr-6 -mt-6 bg-primary/10 rounded-full blur-3xl opacity-50 group-hover:opacity-100 transition-opacity" />
+                    <div className={C_ACCESSIBILITYSETTINGS_2} />
                     <div className="flex items-center gap-3 mb-4 relative z-10">
                         <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
                             <Shield className="w-4 h-4" />
@@ -208,7 +224,7 @@ export const AccessibilitySettings: React.FC = () => {
                                 <div className="flex items-center gap-2">
                                     <Badge
                                         variant="outline"
-                                        className="h-5 px-1.5 min-w-[32px] justify-center rounded bg-background/80 border-border/60 typo-body font-mono font-bold shadow-sm group-hover/row:border-primary/40 group-hover/row:text-primary transition-colors"
+                                        className={C_ACCESSIBILITYSETTINGS_3}
                                     >
                                         {key}
                                     </Badge>

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { randomBytes } from 'crypto';
 import * as path from 'path';
 
@@ -81,15 +91,21 @@ function getWindowInitialSettings(settingsService?: SettingsService): {
     x: number | undefined;
     y: number | undefined;
     zoomFactor: number;
+    fullscreen: boolean;
+    maximized: boolean;
 } {
     const settings = settingsService?.getSettings();
     const win = settings?.window;
+    const fullscreen = win?.fullscreen === true;
+    const maximized = win?.maximized === true;
     return {
         width: win?.width ?? 1280,
         height: win?.height ?? 800,
-        x: win?.x,
-        y: win?.y,
+        x: (fullscreen || maximized) ? undefined : win?.x,
+        y: (fullscreen || maximized) ? undefined : win?.y,
         zoomFactor: win?.zoomFactor ?? 1,
+        fullscreen,
+        maximized,
     };
 }
 
@@ -99,6 +115,9 @@ function getWindowInitialSettings(settingsService?: SettingsService): {
 function setupWindowReadyState(win: BrowserWindow, settingsService?: SettingsService) {
     win.on('ready-to-show', () => {
         const settings = settingsService?.getSettings();
+        const shouldStartFullscreen = settings?.window?.fullscreen === true;
+        const shouldStartMaximized = settings?.window?.maximized === true;
+        
         const isHidden =
             process.argv.includes('--hidden') ||
             process.argv.includes('/hidden') ||
@@ -107,6 +126,24 @@ function setupWindowReadyState(win: BrowserWindow, settingsService?: SettingsSer
 
         if (!isHidden) {
             win.show();
+            if (shouldStartFullscreen && !win.isFullScreen()) {
+                win.setFullScreen(true);
+            } else if (shouldStartMaximized && !win.isMaximized()) {
+                win.maximize();
+            }
+            if (shouldStartFullscreen) {
+                setTimeout(() => {
+                    if (!win.isDestroyed() && !win.isFullScreen()) {
+                        win.setFullScreen(true);
+                    }
+                }, 100);
+            } else if (shouldStartMaximized) {
+                setTimeout(() => {
+                    if (!win.isDestroyed() && !win.isMaximized()) {
+                        win.maximize();
+                    }
+                }, 100);
+            }
         }
         win.setTitle('TENGRA');
     });
@@ -119,11 +156,9 @@ function setupWindowReadyState(win: BrowserWindow, settingsService?: SettingsSer
 function setupWebContentsSecurity(win: BrowserWindow) {
     const isDev = !app.isPackaged;
 
-    // Security: Filter headers to ensure strong CSP and prevent information disclosure
     win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
         const nonce = randomBytes(16).toString('base64');
 
-        // Build CSP sources based on environment
         const scriptSources = [
             `'self'`,
             'blob:',
@@ -175,20 +210,12 @@ function setupWebContentsSecurity(win: BrowserWindow) {
             },
         });
     });
-    win.webContents.on('console-message', event => {
-        if (event.message.includes('Content Security Policy')) {
-            appLogger.warn('Security', `CSP violation observed: ${event.message}`);
-        }
-    });
 
-    // Hardened permission handlers
     win.webContents.session.setPermissionRequestHandler((_webContents, permission, callback) => {
         const allowedPermissions = new Set(['notifications', 'fullscreen']);
         if (allowedPermissions.has(permission)) {
-            appLogger.debug('Security', `Permission allowed: ${permission}`);
             return callback(true);
         }
-        appLogger.warn('Security', `Permission request denied: ${permission}`);
         return callback(false);
     });
 
@@ -196,23 +223,11 @@ function setupWebContentsSecurity(win: BrowserWindow) {
         const allowedPermissions = new Set(['notifications', 'fullscreen']);
         return allowedPermissions.has(permission);
     });
-
 }
 
-/**
- * Redirects renderer console messages to application logger.
- * Uses new Event<WebContentsConsoleMessageEventParams> API (Electron 29+)
- */
 function setupConsoleRedirect(win: BrowserWindow) {
     win.webContents.on('console-message', event => {
         const { level, message, lineNumber, sourceId } = event;
-        if (
-            message.includes('[DEP0180]') &&
-            message.includes('fs.Stats constructor is deprecated')
-        ) {
-            return;
-        }
-        // level is now a string: 'info' | 'warning' | 'error' | 'debug'
         const levelMap: Record<string, 'debug' | 'info' | 'warn' | 'error'> = {
             debug: 'debug',
             info: 'info',
@@ -220,13 +235,9 @@ function setupConsoleRedirect(win: BrowserWindow) {
             error: 'error',
         };
         const lvl = levelMap[level] ?? 'info';
-
-        // In production, the renderer IPC bridge already forwards warn/error.
-        // Only capture debug/info here in dev to avoid double-logging.
         if (app.isPackaged && (lvl === 'warn' || lvl === 'error')) {
             return;
         }
-
         const context = `renderer:${path.basename(sourceId)}:${lineNumber} `;
         appLogger[lvl](context, message);
     });
@@ -245,18 +256,31 @@ function setupWindowStatePersistence(
         }
         saveTimeout = setTimeout(() => {
             if (settingsService && !win.isDestroyed()) {
-                const bounds = win.getBounds();
                 const isFullscreen = win.isFullScreen();
+                const isMaximized = win.isMaximized();
                 const currentSettings = settingsService.getSettings();
+                const currentWindow = currentSettings.window;
+                
+                // Only get normal bounds if not maximized/fullscreen
+                const bounds = (!isFullscreen && !isMaximized)
+                    ? win.getBounds()
+                    : {
+                        width: currentWindow?.width ?? defaultWidth,
+                        height: currentWindow?.height ?? defaultHeight,
+                        x: currentWindow?.x ?? 0,
+                        y: currentWindow?.y ?? 0,
+                    };
+
                 void settingsService.saveSettings({
                     ...currentSettings,
                     window: {
-                        ...currentSettings.window,
+                        ...currentWindow,
                         width: bounds.width,
                         height: bounds.height,
                         x: bounds.x,
                         y: bounds.y,
                         fullscreen: isFullscreen,
+                        maximized: isMaximized,
                     },
                 });
             }
@@ -265,46 +289,14 @@ function setupWindowStatePersistence(
 
     win.on('moved', saveWindowState);
     win.on('resized', saveWindowState);
-    win.on('enter-full-screen', () => {
-        if (settingsService) {
-            const currentSettings = settingsService.getSettings();
-            const currentWindow = currentSettings.window;
-            void settingsService.saveSettings({
-                ...currentSettings,
-                window: {
-                    ...currentWindow,
-                    width: currentWindow?.width ?? defaultWidth,
-                    height: currentWindow?.height ?? defaultHeight,
-                    x: currentWindow?.x ?? 0,
-                    y: currentWindow?.y ?? 0,
-                    fullscreen: true,
-                },
-            });
-        }
-    });
-    win.on('leave-full-screen', () => {
-        if (settingsService) {
-            const currentSettings = settingsService.getSettings();
-            const currentWindow = currentSettings.window;
-            void settingsService.saveSettings({
-                ...currentSettings,
-                window: {
-                    ...currentWindow,
-                    width: currentWindow?.width ?? defaultWidth,
-                    height: currentWindow?.height ?? defaultHeight,
-                    x: currentWindow?.x ?? 0,
-                    y: currentWindow?.y ?? 0,
-                    fullscreen: false,
-                },
-            });
-        }
-    });
+    win.on('maximize', saveWindowState);
+    win.on('unmaximize', saveWindowState);
+    win.on('enter-full-screen', saveWindowState);
+    win.on('leave-full-screen', saveWindowState);
 }
 
 export function setupTray(settingsService?: SettingsService) {
-    if (tray) {
-        return;
-    }
+    if (tray) return;
 
     try {
         const iconPath = app.isPackaged
@@ -360,5 +352,3 @@ export function destroyTray() {
         tray = null;
     }
 }
-
-

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { sanitizeBackendId, sanitizeShellId } from '@renderer/features/terminal/utils/terminal-toolbar-validation';
 import {
     recordTerminalToolbarFailure,
@@ -10,6 +20,8 @@ import type { ComponentProps } from 'react';
 import { useEffect } from 'react';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'; 
+import { UI_PRIMITIVES } from '@/constants/ui-primitives';
+import { cn } from '@/lib/utils';
 import { TerminalTab } from '@/types';
 
 import type { SplitAnalytics, SplitPreset } from '../utils/split-config';
@@ -17,6 +29,7 @@ import type { SplitAnalytics, SplitPreset } from '../utils/split-config';
 import { TerminalAppearanceModals } from './TerminalAppearanceModals';
 import { TerminalSplitControls } from './TerminalSplitControls';
 import { TerminalTabsBar } from './TerminalTabsBar';
+
 
 interface TerminalBackendInfo {
     id: string;
@@ -163,7 +176,7 @@ export function TerminalToolbar({
     }, []);
 
     return (
-        <div className="flex items-center justify-between px-2 py-1.5 border-b border-border/70">
+        <div className={cn(UI_PRIMITIVES.PANEL_SUB_HEADER, "pl-0")}>
             <TerminalTabsBar
                 tabs={tabs}
                 activeTabId={activeTabId}
@@ -207,7 +220,7 @@ export function TerminalToolbar({
                                                     onClick={() => {
                                                         void persistPreferredBackendId(backend.id);
                                                     }}
-                                                    className="w-full px-2 py-1 text-left text-xxxs rounded-sm hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 text-foreground"
+                                                    className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "text-xxxs px-2 py-1 justify-between gap-2")}
                                                 >
                                                     <span className="truncate">{backend.name}</span>
                                                     {resolvedDefaultBackendId === backend.id && (
@@ -238,7 +251,7 @@ export function TerminalToolbar({
                                                         createTerminal(shellId, backendId);
                                                         recordTerminalToolbarSuccess(performance.now() - startedAt);
                                                     }}
-                                                    className="w-full px-3 py-2 text-left typo-caption font-medium hover:bg-accent/50 transition-colors flex items-center gap-2 text-foreground rounded-sm"
+                                                    className={UI_PRIMITIVES.MENU_ITEM_BASE}
                                                 >
                                                 <span className="opacity-50">&gt;_</span>
                                                 {s.name}
@@ -265,7 +278,7 @@ export function TerminalToolbar({
                                                     }
                                                     recordTerminalToolbarFallback();
                                                 }}
-                                                className="w-full px-3 py-2 text-left typo-caption font-medium hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 text-foreground rounded-sm"
+                                                className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "justify-between")}
                                             >
                                                 <span className="flex items-center gap-2">
                                                     <TerminalSquare className="w-3 h-3 opacity-60" />
@@ -294,7 +307,7 @@ export function TerminalToolbar({
                                             onClick={() => {
                                                 createRemoteTerminal({ kind: 'ssh', profile });
                                             }}
-                                            className="w-full px-3 py-2 text-left typo-caption font-medium hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 text-foreground rounded-sm"
+                                            className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "justify-between")}
                                             title={`${profile.username}@${profile.host}:${profile.port}`}
                                         >
                                             <span className="truncate">{t('terminal.sshPrefix')}: {profile.name}</span>
@@ -310,7 +323,7 @@ export function TerminalToolbar({
                                             onClick={() => {
                                                 createRemoteTerminal({ kind: 'docker', container });
                                             }}
-                                            className="w-full px-3 py-2 text-left typo-caption font-medium hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 text-foreground rounded-sm"
+                                            className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "justify-between")}
                                             title={container.id}
                                         >
                                             <span className="truncate">{t('terminal.dockerPrefix')}: {container.name}</span>

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import type {
     WorkspaceAgentCommandPolicy,
     WorkspaceAgentPathPolicy,
@@ -25,6 +35,12 @@ import {
     ModelSelectorSearch,
     SelectorChatMode,
 } from './model-selector/ModelSelectorSections';
+
+
+/* Batch-02: Extracted Long Classes */
+const C_MODELSELECTORMODAL_1 = "rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground";
+const C_MODELSELECTORMODAL_2 = "w-full rounded-xl border border-border/50 bg-muted/30 p-2.5 text-sm text-foreground/90 transition-colors focus:ring-1 focus:ring-primary/50";
+const C_MODELSELECTORMODAL_3 = "w-full rounded-xl border border-border/50 bg-muted/30 p-2.5 text-sm text-foreground/90 transition-colors focus:ring-1 focus:ring-primary/50";
 
 /** Minimum padding from viewport edges in pixels */
 const VIEWPORT_PADDING = 16;
@@ -181,7 +197,7 @@ const ModelSelectorReasoningPanel: React.FC<ModelSelectorReasoningPanelProps> = 
                 <div className="flex items-center gap-2 border-t border-border/50 pt-3">
                     <button
                         onClick={handleCancelPending}
-                        className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                        className={C_MODELSELECTORMODAL_1}
                     >
                         {t('common.cancel')}
                     </button>
@@ -265,7 +281,7 @@ const ModelSelectorPermissionsPanel: React.FC<ModelSelectorPermissionsPanelProps
                     value={permissionPolicy.commandPolicy}
                     onValueChange={value => updatePermissionPolicy('commandPolicy', value)}
                 >
-                    <SelectTrigger className="w-full rounded-xl border border-border/50 bg-muted/30 p-2.5 text-sm text-foreground/90 transition-colors focus:ring-1 focus:ring-primary/50">
+                    <SelectTrigger className={C_MODELSELECTORMODAL_2}>
                         <SelectValue placeholder={t('workspaceAgent.permissions.policy.blocked')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -285,7 +301,7 @@ const ModelSelectorPermissionsPanel: React.FC<ModelSelectorPermissionsPanelProps
                     value={permissionPolicy.pathPolicy}
                     onValueChange={value => updatePermissionPolicy('pathPolicy', value)}
                 >
-                    <SelectTrigger className="w-full rounded-xl border border-border/50 bg-muted/30 p-2.5 text-sm text-foreground/90 transition-colors focus:ring-1 focus:ring-primary/50">
+                    <SelectTrigger className={C_MODELSELECTORMODAL_3}>
                         <SelectValue placeholder={t('workspaceAgent.permissions.policy.workspace-root-only')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -688,8 +704,8 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                 ref={modalRef}
                 style={modalStyle}
                 className={cn(
-                    'relative w-full max-w-3xl max-h-[85vh] flex flex-col',
-                    'bg-popover/95 backdrop-blur-[20px] rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)]',
+                    'relative w-full max-w-3xl max-h-85vh flex flex-col',
+                    'bg-popover/95 backdrop-blur-xl rounded-3xl shadow-modal-heavy',
                     'border border-border/40',
                     'animate-in fade-in-0 zoom-in-95 duration-300 ease-out'
                 )}

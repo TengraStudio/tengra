@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { formatBytes } from '@renderer/utils/format.util';
 import type { InstallRequest, MarketplaceExtension, MarketplaceItem, MarketplaceLanguage, MarketplaceMcp, MarketplaceModel, MarketplaceRegistry, MarketplaceRuntimeProfile } from '@shared/types/marketplace';
 import { Package, RefreshCw } from 'lucide-react';
@@ -5,6 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useModel } from '@/context/ModelContext';
 import { useLanguage, useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 import { marketplaceStore } from '@/store/marketplace.store';
 import { pushNotification } from '@/store/notification-center.store';
 import type { ModelInfo } from '@/types';
@@ -277,6 +288,7 @@ export function McpMarketplace({
                     env: mcpItem.env,
                     enabled: false,
                     permissionProfile: mcpItem.permissionProfile,
+                    permissions: mcpItem.permissions,
                     tools: mcpItem.tools,
                     category: mcpItem.category,
                     publisher: mcpItem.author,
@@ -567,10 +579,12 @@ export function McpMarketplace({
                         <button
                             key={tab}
                             onClick={() => onQueryChange(prev => ({ ...prev, modelTab: tab, page: 1, selectedItemId: null }))}
-                            className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${query.modelTab === tab
-                                ? 'bg-primary text-primary-foreground shadow-sm'
-                                : 'text-muted-foreground/50 hover:text-foreground hover:bg-muted/20'
-                                }`}
+                            className={cn(
+                                'px-4 py-1.5 rounded-lg text-xxxs font-black uppercase tracking-widest transition-all',
+                                query.modelTab === tab
+                                    ? 'bg-primary text-primary-foreground shadow-sm'
+                                    : 'text-muted-foreground/50 hover:text-foreground hover:bg-muted/20'
+                            )}
                         >
                             {t(`marketplace.tabs.${tab}`)}
                         </button>
@@ -588,8 +602,8 @@ export function McpMarketplace({
                 mcpView={query.mcpView}
             />
 
-            <div className={`flex flex-col xl:flex-row gap-8 transition-all duration-300`}>
-                <div className={`flex-1 space-y-6`}>
+            <div className="flex flex-col xl:flex-row gap-8 transition-all duration-300">
+                <div className="flex-1 space-y-6">
                     <div className="divide-y divide-muted/10 border-t border-muted/10">
                         {enrichedPagedItems.map(entry => {
                             const isSelected = selectedItemId === (entry.type === 'local' ? entry.plugin.id : entry.item.id);
@@ -597,10 +611,10 @@ export function McpMarketplace({
                                 <div
                                     key={entry.key}
                                     onClick={() => setSelectedItemId(entry.type === 'local' ? entry.plugin.id : entry.item.id)}
-                                    className={`
-                                        group relative flex items-start cursor-pointer transition-colors duration-200
-                                        ${isSelected ? 'bg-primary/[0.04]' : 'bg-transparent hover:bg-muted/30'}
-                                    `}
+                                    className={cn(
+                                        'group relative flex items-start cursor-pointer transition-colors duration-200',
+                                        isSelected ? 'bg-primary/[0.04]' : 'bg-transparent hover:bg-muted/30'
+                                    )}
                                 >
                                     {/* Selection indicator */}
                                     {isSelected && (
@@ -643,7 +657,7 @@ export function McpMarketplace({
                 </div>
 
                 {selectedItem && (
-                    <div className="w-full xl:w-[460px] shrink-0">
+                    <div className="w-full xl:w-460 shrink-0">
                         <div className="sticky top-6">
                             <MarketplaceInfoPanel
                                 item={selectedItem}
@@ -693,7 +707,7 @@ function EmptyState({
     return (
         <div className="py-32 flex flex-col items-center justify-center text-center">
             <Package className="w-12 h-12 text-muted-foreground/10 mb-4" />
-            <p className="text-xs text-muted-foreground/40 font-black uppercase tracking-[0.2em]">
+            <p className="text-xs text-muted-foreground/40 font-black uppercase tracking-super-wide">
                 {t('marketplace.emptyState', { mode: t(modeKeyByMode[mode]) })}
             </p>
         </div>
@@ -705,7 +719,7 @@ function Loader({ t }: { t: (key: string) => string }) {
     return (
         <div className="flex flex-col items-center justify-center py-32 space-y-5">
             <RefreshCw className="w-8 h-8 text-primary animate-spin opacity-40" />
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 animate-pulse">
+            <p className="text-xxxs font-black uppercase tracking-widest text-muted-foreground/40 animate-pulse">
                 {t('marketplace.syncing')}
             </p>
         </div>
@@ -713,6 +727,11 @@ function Loader({ t }: { t: (key: string) => string }) {
 }
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+/* Batch-02: Extracted Long Classes */
+const C_MCPMARKETPLACE_1 = "p-2 rounded-full hover:bg-muted text-muted-foreground/40 hover:text-foreground transition-all active:scale-90 disabled:opacity-10";
+const C_MCPMARKETPLACE_2 = "p-2 rounded-full hover:bg-muted text-muted-foreground/40 hover:text-foreground transition-all active:scale-90 disabled:opacity-10";
+
 function Pagination({
     currentPage,
     totalPages,
@@ -730,18 +749,18 @@ function Pagination({
                 type="button"
                 onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                 disabled={currentPage <= 1}
-                className="p-2 rounded-full hover:bg-muted text-muted-foreground/40 hover:text-foreground transition-all active:scale-90 disabled:opacity-10"
+                className={C_MCPMARKETPLACE_1}
             >
                 <ChevronLeft className="h-5 w-5" />
             </button>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/30">
+            <span className="text-xxxs font-black uppercase tracking-super-wide text-muted-foreground/30">
                 {t('common.pageOf', { current: currentPage, total: totalPages })}
             </span>
             <button
                 type="button"
                 onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage >= totalPages}
-                className="p-2 rounded-full hover:bg-muted text-muted-foreground/40 hover:text-foreground transition-all active:scale-90 disabled:opacity-10"
+                className={C_MCPMARKETPLACE_2}
             >
                 <ChevronRight className="h-5 w-5" />
             </button>

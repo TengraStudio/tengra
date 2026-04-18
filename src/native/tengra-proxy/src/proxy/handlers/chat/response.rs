@@ -1,11 +1,76 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
 use serde_json::{json, Value};
 
 pub fn translate_response(provider: &str, upstream_response: Value) -> Value {
     match provider {
         "antigravity" => translate_gemini_response(upstream_response),
         "claude" => translate_claude_response(upstream_response),
+        "copilot" => translate_copilot_response(upstream_response),
         _ => upstream_response,
     }
+}
+
+fn translate_copilot_response(mut v: Value) -> Value {
+    let Some(choices) = v.get_mut("choices").and_then(Value::as_array_mut) else {
+        return v;
+    };
+    for choice in choices {
+        let Some(message) = choice.get_mut("message").and_then(Value::as_object_mut) else {
+            continue;
+        };
+        if message
+            .get("reasoning_content")
+            .and_then(Value::as_str)
+            .map(|value| !value.is_empty())
+            .unwrap_or(false)
+        {
+            continue;
+        }
+        if let Some(reasoning) =
+            first_string_field(message, &["reasoning", "reasoning_text", "reasoningText"])
+        {
+            message.insert("reasoning_content".to_string(), Value::String(reasoning));
+            continue;
+        }
+        if has_encrypted_copilot_reasoning(message) {
+            message.insert(
+                "reasoning_content".to_string(),
+                Value::String("Copilot reasoning is encrypted for this turn.".to_string()),
+            );
+        }
+    }
+    v
+}
+
+fn first_string_field(object: &serde_json::Map<String, Value>, keys: &[&str]) -> Option<String> {
+    for key in keys {
+        let Some(value) = object.get(*key).and_then(Value::as_str) else {
+            continue;
+        };
+        if !value.is_empty() {
+            return Some(value.to_string());
+        }
+    }
+    None
+}
+
+fn has_encrypted_copilot_reasoning(object: &serde_json::Map<String, Value>) -> bool {
+    object
+        .get("reasoning_opaque")
+        .or_else(|| object.get("reasoningOpaque"))
+        .or_else(|| object.get("encrypted_content"))
+        .or_else(|| object.get("encryptedContent"))
+        .and_then(Value::as_str)
+        .map(|value| !value.is_empty())
+        .unwrap_or(false)
 }
 
 fn translate_gemini_response(v: Value) -> Value {
@@ -114,8 +179,14 @@ fn extract_gemini_parts(v: &Value) -> (String, String, Value, Value) {
             continue;
         }
         if let Some(inline_data) = part.get("inlineData") {
-            let mime_type = inline_data.get("mimeType").and_then(Value::as_str).unwrap_or("image/png");
-            let data = inline_data.get("data").and_then(Value::as_str).unwrap_or_default();
+            let mime_type = inline_data
+                .get("mimeType")
+                .and_then(Value::as_str)
+                .unwrap_or("image/png");
+            let data = inline_data
+                .get("data")
+                .and_then(Value::as_str)
+                .unwrap_or_default();
             if !data.is_empty() {
                 images.push(json!({
                     "type": "image_url",
@@ -228,7 +299,7 @@ fn extract_claude_content(v: &Value) -> (String, String, Value, Value) {
 mod tests {
     use serde_json::json;
 
-    use super::{translate_claude_response, translate_gemini_response};
+    use super::{translate_claude_response, translate_copilot_response, translate_gemini_response};
 
     #[test]
     fn translates_claude_tool_use_blocks() {
@@ -327,6 +398,40 @@ mod tests {
         assert_eq!(
             translated["choices"][0]["message"]["content"].as_str(),
             Some("final answer")
+        );
+    }
+
+    #[test]
+    fn normalizes_copilot_reasoning_text_response() {
+        let translated = translate_copilot_response(json!({
+            "choices": [{
+                "message": {
+                    "role": "assistant",
+                    "content": "answer",
+                    "reasoningText": "thinking"
+                }
+            }]
+        }));
+        assert_eq!(
+            translated["choices"][0]["message"]["reasoning_content"].as_str(),
+            Some("thinking")
+        );
+    }
+
+    #[test]
+    fn normalizes_copilot_encrypted_reasoning_response() {
+        let translated = translate_copilot_response(json!({
+            "choices": [{
+                "message": {
+                    "role": "assistant",
+                    "content": "answer",
+                    "encryptedContent": "secret"
+                }
+            }]
+        }));
+        assert_eq!(
+            translated["choices"][0]["message"]["reasoning_content"].as_str(),
+            Some("Copilot reasoning is encrypted for this turn.")
         );
     }
 }

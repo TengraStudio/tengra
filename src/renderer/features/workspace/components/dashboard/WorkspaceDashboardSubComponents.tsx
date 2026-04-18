@@ -1,6 +1,20 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { FileSearchResult } from '@shared/types/common';
 import { Trash2 } from 'lucide-react';
 import { Virtuoso } from 'react-virtuoso';
+
+/* Batch-02: Extracted Long Classes */
+const C_WORKSPACEDASHBOARDSUBCOMPONENTS_1 = "px-4 py-2 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-lg border border-destructive/20 transition-colors text-sm font-medium";
+
 
 interface SearchResultsProps {
     results: FileSearchResult[];
@@ -55,7 +69,7 @@ export function SearchResults({ results, workspaceRoot, searchQuery, onSelect, t
 
     return (
         <Virtuoso
-            style={{ height: '100%' }}
+            className="h-full"
             data={results}
             itemContent={(_index, res) => (
                 <div
@@ -104,7 +118,7 @@ export function DangerZone({ onDelete, t }: DangerZoneProps) {
                 </div>
                 <button
                     onClick={onDelete}
-                    className="px-4 py-2 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-lg border border-destructive/20 transition-colors text-sm font-medium"
+                    className={C_WORKSPACEDASHBOARDSUBCOMPONENTS_1}
                 >
                     {t('common.delete')}
                 </button>

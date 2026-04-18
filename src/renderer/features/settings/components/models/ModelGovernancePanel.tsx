@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Button } from '@renderer/components/ui/button';
 import {
     Select,
@@ -12,6 +22,15 @@ import { Shield, ShieldAlert, ShieldCheck, Trash2 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 
 import { AppSettings, ModelGovernanceSettings } from '@/types/settings';
+
+/* Batch-02: Extracted Long Classes */
+const C_MODELGOVERNANCEPANEL_1 = "h-11 rounded-xl border-success/20 bg-success/5 px-5 typo-body font-medium text-success hover:bg-success hover:text-success-foreground disabled:opacity-40";
+const C_MODELGOVERNANCEPANEL_2 = "h-11 rounded-xl border-destructive/20 bg-destructive/5 px-5 typo-body font-medium text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-40";
+const C_MODELGOVERNANCEPANEL_3 = "flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/20 bg-muted/5 py-10 text-center opacity-50 transition-colors group-hover/list:border-success/20 sm:flex-row";
+const C_MODELGOVERNANCEPANEL_4 = "group/item flex items-center justify-between gap-4 rounded-2xl border border-success/10 bg-background px-4 py-3.5 transition-colors hover:border-success/25 hover:bg-success/5 sm:gap-5 lg:gap-6";
+const C_MODELGOVERNANCEPANEL_5 = "flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/20 bg-muted/5 py-10 text-center opacity-50 transition-colors group-hover/list-block:border-destructive/20 sm:flex-row";
+const C_MODELGOVERNANCEPANEL_6 = "group/item flex items-center justify-between gap-4 rounded-2xl border border-destructive/10 bg-background px-4 py-3.5 transition-colors hover:border-destructive/25 hover:bg-destructive/5 sm:gap-5 lg:gap-6";
+
 
 const DEFAULT_GOVERNANCE: ModelGovernanceSettings = {
     mode: 'blocklist',
@@ -114,17 +133,19 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                 </div>
 
                 <div className={cn(
-                    'flex items-center justify-between gap-6 rounded-2xl border px-5 py-4 md:min-w-[260px]',
+                    'flex items-center justify-between gap-6 rounded-2xl border px-5 py-4 md:min-w-260',
                     isAllowlistMode
                         ? 'border-success/20 bg-success/5'
                         : 'border-destructive/20 bg-destructive/5'
                 )}>
                     <div className="flex items-center gap-4">
                         <div
-                            className={`rounded-xl border p-2 ${isAllowlistMode
-                                ? 'bg-success/10 border-success/30 text-success'
-                                : 'bg-destructive/10 border-destructive/30 text-destructive'
-                                }`}
+                            className={cn(
+                                'rounded-xl border p-2',
+                                isAllowlistMode
+                                    ? 'bg-success/10 border-success/30 text-success'
+                                    : 'bg-destructive/10 border-destructive/30 text-destructive'
+                            )}
                         >
                             {isAllowlistMode ? (
                                 <ShieldCheck className="w-4 h-4" />
@@ -167,7 +188,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                             size="sm"
                             onClick={addToAllowlist}
                             disabled={!selectedModel}
-                            className="h-11 rounded-xl border-success/20 bg-success/5 px-5 typo-body font-medium text-success hover:bg-success hover:text-success-foreground disabled:opacity-40"
+                            className={C_MODELGOVERNANCEPANEL_1}
                         >
                             <ShieldCheck className="w-3.5 h-3.5 mr-2" />
                             {t('workspaces.addToAllowlist')}
@@ -177,7 +198,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                             size="sm"
                             onClick={addToBlocklist}
                             disabled={!selectedModel}
-                            className="h-11 rounded-xl border-destructive/20 bg-destructive/5 px-5 typo-body font-medium text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-40"
+                            className={C_MODELGOVERNANCEPANEL_2}
                         >
                             <ShieldAlert className="w-3.5 h-3.5 mr-2" />
                             {t('workspaces.addToBlocklist')}
@@ -194,9 +215,9 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                             {t('workspaces.allowedModels')}
                         </div>
                     </div>
-                    <div className="space-y-3 min-h-[120px] max-h-[400px] overflow-y-auto pr-3 custom-scrollbar">
+                    <div className="space-y-3 min-h-120 max-h-400 overflow-y-auto pr-3 custom-scrollbar">
                         {governance.allowedModels.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/20 bg-muted/5 py-10 text-center opacity-50 transition-colors group-hover/list:border-success/20">
+                            <div className={C_MODELGOVERNANCEPANEL_3}>
                                 <ShieldCheck className="w-6 h-6 mb-3 text-muted-foreground" />
                                 <p className="px-6 typo-body font-medium text-muted-foreground">
                                     {t('workspaces.noAllowedModels')}
@@ -206,7 +227,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                             governance.allowedModels.map(modelId => (
                                 <div
                                     key={modelId}
-                                    className="group/item flex items-center justify-between gap-4 rounded-2xl border border-success/10 bg-background px-4 py-3.5 transition-colors hover:border-success/25 hover:bg-success/5"
+                                    className={C_MODELGOVERNANCEPANEL_4}
                                 >
                                     <div className="flex items-center gap-4 min-w-0">
                                         <div className="h-2 w-2 rounded-full bg-success/40 group-hover/item:bg-success" />
@@ -235,9 +256,9 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                             {t('workspaces.blockedModels')}
                         </div>
                     </div>
-                    <div className="space-y-3 min-h-[120px] max-h-[400px] overflow-y-auto pr-3 custom-scrollbar">
+                    <div className="space-y-3 min-h-120 max-h-400 overflow-y-auto pr-3 custom-scrollbar">
                         {governance.blockedModels.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/20 bg-muted/5 py-10 text-center opacity-50 transition-colors group-hover/list-block:border-destructive/20">
+                            <div className={C_MODELGOVERNANCEPANEL_5}>
                                 <ShieldAlert className="w-6 h-6 mb-3 text-muted-foreground" />
                                 <p className="px-6 typo-body font-medium text-muted-foreground">
                                     {t('workspaces.noBlockedModels')}
@@ -247,7 +268,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                             governance.blockedModels.map(modelId => (
                                 <div
                                     key={modelId}
-                                    className="group/item flex items-center justify-between gap-4 rounded-2xl border border-destructive/10 bg-background px-4 py-3.5 transition-colors hover:border-destructive/25 hover:bg-destructive/5"
+                                    className={C_MODELGOVERNANCEPANEL_6}
                                 >
                                     <div className="flex items-center gap-4 min-w-0">
                                         <div className="h-2 w-2 rounded-full bg-destructive/40 group-hover/item:bg-destructive" />

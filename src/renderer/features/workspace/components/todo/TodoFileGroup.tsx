@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { ChevronDown, ChevronRight, FileText } from 'lucide-react';
 
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
@@ -5,6 +15,10 @@ import { cn } from '@/lib/utils';
 
 import { TodoItemCard } from './TodoItemCard';
 import { TodoFile, TodoItem } from './types';
+
+/* Batch-02: Extracted Long Classes */
+const C_TODOFILEGROUP_1 = "w-full flex items-center gap-2 typo-caption font-bold text-muted-foreground hover:text-foreground transition-colors group select-none";
+
 
 interface TodoFileGroupProps {
     file: TodoFile;
@@ -35,7 +49,7 @@ export const TodoFileGroup = ({
         <div className="space-y-2">
             <button
                 onClick={() => onToggleExpand(file.path)}
-                className="w-full flex items-center gap-2 typo-caption font-bold text-muted-foreground hover:text-foreground transition-colors group select-none"
+                className={C_TODOFILEGROUP_1}
             >
                 {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                 <FileText className="w-3 h-3" />

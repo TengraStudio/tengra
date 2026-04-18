@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Input } from '@renderer/components/ui/input';
 import { Label } from '@renderer/components/ui/label';
 import { Textarea } from '@renderer/components/ui/textarea';
@@ -7,6 +17,10 @@ import React from 'react';
 
 import { useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
+
+/* Batch-02: Extracted Long Classes */
+const C_WIZARDDETAILSSTEP_1 = "bg-destructive/10 border border-destructive/20 rounded-xl p-4 text-destructive text-sm font-medium flex items-center gap-3 overflow-hidden sm:p-5 lg:p-6 sm:gap-4";
+
 
 interface CATEGORY {
     id: string;
@@ -87,7 +101,7 @@ export const WizardDetailsStep: React.FC<WizardDetailsStepProps> = ({
                                 className={cn(
                                     'flex flex-col items-center justify-center p-4 rounded-2xl border transition-all gap-3 group relative overflow-hidden h-32',
                                     formData.category === cat.id
-                                        ? 'bg-primary/10 border-primary/70 tw-shadow-primary-elevated'
+                                        ? 'bg-primary/10 border-primary/70 shadow-primary-elevated'
                                         : 'bg-background border-border/50 hover:bg-muted/30 hover:border-border'
                                 )}
                             >
@@ -124,7 +138,7 @@ export const WizardDetailsStep: React.FC<WizardDetailsStepProps> = ({
                                 <div className="flex flex-col items-center gap-1">
                                     <span
                                         className={cn(
-                                            'tw-text-11 font-semibold  text-center',
+                                            'text-11 font-semibold  text-center',
                                             formData.category === cat.id
                                                 ? 'text-primary'
                                                 : 'text-muted-foreground'
@@ -184,7 +198,7 @@ export const WizardDetailsStep: React.FC<WizardDetailsStepProps> = ({
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}
-                            className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 text-destructive text-sm font-medium flex items-center gap-3 overflow-hidden"
+                            className={C_WIZARDDETAILSSTEP_1}
                         >
                             <div className="w-1.5 h-1.5 rounded-full bg-destructive" />
                             {error}

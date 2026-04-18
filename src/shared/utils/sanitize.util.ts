@@ -156,8 +156,47 @@ export function safeJsonParse<T>(jsonString: string | null | undefined, defaultV
     try {
         return JSON.parse(jsonString) as T;
     } catch {
-        return defaultValue;
+        // PERF-004: Try to fix partial JSON if it's a streaming tool call
+        try {
+            const fixed = fixPartialJson(jsonString);
+            return JSON.parse(fixed) as T;
+        } catch {
+            return defaultValue;
+        }
     }
+}
+
+/**
+ * Attempts to fix partial JSON strings by closing unclosed brackets and quotes.
+ * Useful for displaying tool call arguments while they are still streaming.
+ */
+export function fixPartialJson(json: string): string {
+    let fixed = json.trim();
+    if (!fixed) return '{}';
+
+    // Basic heuristic for common partial JSON states
+    if (!fixed.startsWith('{')) fixed = '{' + fixed;
+    
+    let openQuotes = 0;
+    for (let i = 0; i < fixed.length; i++) {
+        if (fixed[i] === '"' && (i === 0 || fixed[i-1] !== '\\')) {
+            openQuotes++;
+        }
+    }
+    if (openQuotes % 2 !== 0) fixed += '"';
+
+    // Count open braces
+    let openBraces = 0;
+    for (const char of fixed) {
+        if (char === '{') openBraces++;
+        if (char === '}') openBraces--;
+    }
+    while (openBraces > 0) {
+        fixed += '}';
+        openBraces--;
+    }
+
+    return fixed;
 }
 
 /**

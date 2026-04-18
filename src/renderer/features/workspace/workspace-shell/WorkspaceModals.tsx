@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Button } from '@renderer/components/ui/button';
 import { Checkbox } from '@renderer/components/ui/checkbox';
 import { Input } from '@renderer/components/ui/input';
@@ -13,6 +23,10 @@ import { cn } from '@renderer/lib/utils';
 import React from 'react';
 
 import { Workspace } from '@/types';
+
+/* Batch-02: Extracted Long Classes */
+const C_WORKSPACEMODALS_1 = "flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors group";
+
 
 interface WorkspaceModalsProps {
     editingWorkspace: Workspace | null;
@@ -123,7 +137,7 @@ const EditWorkspaceModal: React.FC<{
                                 }
                                 aria-invalid={!hasValidDescription}
                                 className={cn(
-                                    'w-full bg-muted/30 border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary/20 tw-min-h-80 resize-none',
+                                    'w-full bg-muted/30 border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary/20 min-h-80 resize-none',
                                     !hasValidDescription && 'border-destructive/50 focus-visible:ring-destructive'
                                 )}
                                 placeholder={t('workspaces.workspaceDescPlaceholder')}
@@ -377,7 +391,7 @@ const DeleteFilesCheckbox: React.FC<{
     onChange: (b: boolean) => void;
     t: (key: string) => string;
 }> = ({ checked, onChange, t }) => (
-    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors group">
+    <div className={C_WORKSPACEMODALS_1}>
         <Checkbox
             id="delete-files"
             checked={checked}

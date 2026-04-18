@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React, { useEffect, useState } from 'react';
 
 
@@ -70,16 +80,16 @@ export const Confetti: React.FC<ConfettiProps> = ({
             {pieces.map((piece) => (
                 <div
                     key={piece.id}
-                    className="tengra-confetti-piece"
+                    className="fixed -top-5 z-9999 pointer-events-none animate-confetti-fall"
                     style={{
                         left: `${piece.x}%`,
                         backgroundColor: piece.color,
                         animationDelay: `${piece.delay}s`,
-                        animationDuration: `${piece.duration}s`,
+                        '--confetti-duration': `${piece.duration}s`,
                         borderRadius: piece.isRound ? '50%' : '2px',
                         width: `${piece.size}px`,
                         height: `${piece.size}px`
-                    }}
+                    } as React.CSSProperties}
                 />
             ))}
         </>

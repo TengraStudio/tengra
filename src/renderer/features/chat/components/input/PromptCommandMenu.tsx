@@ -1,7 +1,21 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { memo } from 'react';
 
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_PROMPTCOMMANDMENU_1 = "absolute bottom-full left-0 z-50 mb-3 w-command-menu overflow-hidden rounded-2xl border border-border/25 bg-popover shadow-xl";
+
 
 export interface PromptCommandMenuProps {
     show: boolean;
@@ -23,7 +37,7 @@ export const PromptCommandMenu = memo(({ show, prompts, selectedIndex, onSelect,
                 initial={{ opacity: 0, y: 10, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                className="absolute bottom-full left-0 z-50 mb-3 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border/25 bg-popover shadow-xl"
+                className={C_PROMPTCOMMANDMENU_1}
                 role="listbox"
                 aria-label={t('input.promptSuggestions')}
                 id="chat-prompt-command-listbox"

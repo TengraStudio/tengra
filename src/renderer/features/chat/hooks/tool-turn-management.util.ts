@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { AiEvidenceRecord, AiIntentClassification } from '@shared/types/ai-runtime';
 import { composeDeterministicAnswer, doesEvidenceSatisfyIntent, isLowSignalProgressContent } from '@shared/utils/ai-runtime.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
@@ -427,10 +437,18 @@ export async function finalizeLoopForcefully(
         toolResults: storedToolResults,
         language: params.language,
     });
+    const hasSuccessfulToolResult = storedToolResults.some(result => result.success === true);
+    const primaryDeterministicFallbackContent = hasSuccessfulToolResult
+        ? deterministicFallbackContent
+        : undefined;
+    const secondaryDeterministicFallbackContent = hasSuccessfulToolResult
+        ? undefined
+        : deterministicFallbackContent;
     const resolvedFallbackContent = fallbackContent
         ?? (hasMeaningfulAssistantContent && !hasProgressOnlyContent ? normalizedAssistantContent : undefined)
-        ?? deterministicFallbackContent
+        ?? primaryDeterministicFallbackContent
         ?? toolErrorFallbackContent
+        ?? secondaryDeterministicFallbackContent
         ?? evidenceFallbackContent
         ?? params.t('chat.toolLoop.limitReachedPreserved');
 

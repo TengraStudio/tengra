@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React from 'react';
 
 import { cn } from '@/lib/utils';
@@ -35,7 +45,7 @@ export const StyleSection: React.FC<StyleSectionProps> = ({
                         className={cn(
                             "px-2 py-2.5 rounded-xl text-xxxs font-bold   border transition-all text-center truncate",
                             style === option.value
-                                ? "bg-primary text-primary-foreground border-primary shadow-md tw-scale-102"
+                                ? "bg-primary text-primary-foreground border-primary shadow-md scale-102"
                                 : "bg-muted/30 border-border/50 text-muted-foreground hover:border-border/80 hover:bg-muted/40"
                         )}
                     >

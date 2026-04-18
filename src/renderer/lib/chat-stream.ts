@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { CatchError, JsonObject } from '@shared/types/common';
 import { SessionConversationStreamChunk } from '@shared/types/session-conversation';
 
@@ -23,12 +33,12 @@ const STREAM_WAIT_LOG_EVERY_TICKS = 10;
 
 function normalizeChunk(chunk: ChatStreamChunk): ChatStreamChunk[] {
     const results: ChatStreamChunk[] = [];
+    if (typeof chunk.reasoning === 'string' && chunk.reasoning.length > 0) {
+        // Preserve reasoning before visible content so thought accordions render in sequence.
+        results.push({ type: 'reasoning', reasoning: chunk.reasoning });
+    }
     if (typeof chunk.content === 'string' && chunk.content.length > 0) {
         results.push({ type: 'content', content: chunk.content });
-    }
-    if (typeof chunk.reasoning === 'string' && chunk.reasoning.length > 0) {
-        // Preserve reasoning in the reasoning field, not content field
-        results.push({ type: 'reasoning', reasoning: chunk.reasoning });
     }
     if (chunk.images) {
         results.push({ type: 'images', images: chunk.images });
@@ -104,7 +114,7 @@ export async function* chatStream(
             ignoredChunkCount++;
             return;
         }
-        if (chatId && typedChunk.chatId !== chatId) {
+        if (chatId && typedChunk.chatId && typedChunk.chatId !== chatId) {
             ignoredChunkCount++;
             return;
         }

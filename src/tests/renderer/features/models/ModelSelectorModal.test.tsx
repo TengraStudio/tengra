@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * @fileoverview Comprehensive unit tests for ModelSelectorModal component
  * @description Tests edge cases, user interactions, and accessibility
  */
@@ -19,6 +29,7 @@ vi.mock('react-dom', () => ({
 // Mock lucide-react icons
 vi.mock('lucide-react', () => ({
     Brain: () => <span data-testid="brain-icon">Brain</span>,
+    Box: () => <span data-testid="box-icon">Box</span>,
     Bot: () => <span data-testid="bot-icon">Bot</span>,
     Clock: () => <span data-testid="clock-icon">Clock</span>,
     Search: () => <span data-testid="search-icon">Search</span>,
@@ -268,7 +279,7 @@ describe('ModelSelectorModal', () => {
 
         it('should render mode tabs', () => {
             render(<ModelSelectorModal {...mockProps} />);
-            expect(screen.getByText('instant')).toBeInTheDocument();
+            expect(screen.getByText('modelSelector.modeOptions.instant')).toBeInTheDocument();
         });
     });
 
@@ -365,9 +376,9 @@ describe('ModelSelectorModal', () => {
             fireEvent.click(modelButton);
 
             // Should show reasoning level buttons
-            expect(screen.getByText('Low')).toBeInTheDocument();
-            expect(screen.getByText('Medium')).toBeInTheDocument();
-            expect(screen.getByText('High')).toBeInTheDocument();
+            expect(screen.getByText('modelSelector.reasoningLevels.low')).toBeInTheDocument();
+            expect(screen.getByText('modelSelector.reasoningLevels.medium')).toBeInTheDocument();
+            expect(screen.getByText('modelSelector.reasoningLevels.high')).toBeInTheDocument();
         });
 
         it('should call onThinkingLevelChange when a level is selected', async () => {
@@ -380,7 +391,7 @@ describe('ModelSelectorModal', () => {
             fireEvent.click(modelButton);
 
             // Click on a thinking level
-            const highLevelButton = screen.getByText('High');
+            const highLevelButton = screen.getByText('modelSelector.reasoningLevels.high');
             fireEvent.click(highLevelButton);
 
             expect(onThinkingLevelChange).toHaveBeenCalledWith('model-2', 'high');
@@ -396,7 +407,7 @@ describe('ModelSelectorModal', () => {
             fireEvent.click(modelButton);
 
             expect(screen.getByText('modelSelector.confirmModel')).not.toBeDisabled();
-            expect(screen.getByText('Low')).toHaveClass('bg-primary');
+            expect(screen.getByText('modelSelector.reasoningLevels.low')).toHaveClass('bg-primary');
         });
     });
 
@@ -537,7 +548,7 @@ describe('ModelSelectorModal', () => {
     describe('Chat Mode', () => {
         it('should display current chat mode', () => {
             render(<ModelSelectorModal {...mockProps} />);
-            expect(screen.getAllByText('instant')[0]).toBeInTheDocument();
+            expect(screen.getByText('modelSelector.modeOptions.instant')).toBeInTheDocument();
         });
 
         it('should call onChatModeChange when mode changes', async () => {
@@ -545,7 +556,7 @@ describe('ModelSelectorModal', () => {
             const props = createMockProps({ onChatModeChange });
             render(<ModelSelectorModal {...props} />);
 
-            const agentModeButton = screen.getByText('agent');
+            const agentModeButton = screen.getByText('modelSelector.modeOptions.agent');
             fireEvent.click(agentModeButton);
 
             expect(onChatModeChange).toHaveBeenCalledWith('agent');
@@ -591,7 +602,7 @@ describe('ModelSelectorModal', () => {
             fireEvent.click(modelButton);
 
             // Should not show reasoning tab
-            expect(screen.queryByText('Low')).not.toBeInTheDocument();
+            expect(screen.queryByText('modelSelector.reasoningLevels.low')).not.toBeInTheDocument();
         });
 
         it('should handle models with empty thinkingLevels array', async () => {
@@ -617,7 +628,7 @@ describe('ModelSelectorModal', () => {
             fireEvent.click(modelButton);
 
             // Should not show reasoning tab for empty thinkingLevels
-            expect(screen.queryByText('Low')).not.toBeInTheDocument();
+            expect(screen.queryByText('modelSelector.reasoningLevels.low')).not.toBeInTheDocument();
         });
 
         it('should handle very long model names', () => {

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { ModelCard } from '@renderer/features/models/components/ModelCard';
 import { ModelDetailsPanel } from '@renderer/features/models/components/ModelDetailsPanel';
 import { useModelExplorer } from '@renderer/features/models/hooks/useModelExplorer';
@@ -11,6 +21,11 @@ import { useTranslation } from '@/i18n';
 import { AnimatePresence } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 import type { ModelInfo } from '@/types';
+
+/* Batch-02: Extracted Long Classes */
+const C_MODELEXPLORER_1 = "absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors";
+const C_MODELEXPLORER_2 = "w-full bg-muted/30 border border-border/30 rounded-2xl pl-12 pr-4 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all placeholder:text-muted-foreground/50 shadow-inner";
+
 
 interface ModelExplorerProps {
     onClose?: () => void
@@ -53,9 +68,9 @@ const ExplorerHeader: React.FC<ExplorerHeaderProps> = ({ query, totalHf, onSearc
         </div>
         <div className="flex items-center gap-6">
             <div className="flex-1 relative group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                <Search className={C_MODELEXPLORER_1} />
                 <input
-                    className="w-full bg-muted/30 border border-border/30 rounded-2xl pl-12 pr-4 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all placeholder:text-muted-foreground/50 shadow-inner"
+                    className={C_MODELEXPLORER_2}
                     placeholder={t('modelExplorer.searchPlaceholder')}
                     value={query}
                     onChange={onSearchChange}

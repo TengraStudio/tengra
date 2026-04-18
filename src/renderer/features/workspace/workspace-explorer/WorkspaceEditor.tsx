@@ -1,15 +1,34 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import type { FileSearchResult } from '@shared/types/common';
 import { X } from 'lucide-react';
 import * as React from 'react';
 import {
     useCallback,
     useEffect,
+    useMemo,
     useReducer,
     useRef,
     useState,
 } from 'react';
 
 import { CodeEditor } from '@/components/ui/CodeEditor';
+import {
+    createWorkspaceShareCode,
+    filterWorkspaceSnippets,
+    loadWorkspaceSnippets,
+    parseWorkspaceShareCode,
+    saveWorkspaceSnippets,
+    WorkspaceSnippet,
+} from '@/features/workspace/utils/snippet-manager';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { EditorTab, Workspace } from '@/types';
@@ -17,6 +36,9 @@ import { getLanguageFromExtension } from '@/utils/language-map';
 
 import { useEditorAIReview } from './useEditorAIReview';
 import { useEditorMacros } from './useEditorMacros';
+
+const FLOATING_PANEL_BASE = 
+    "absolute z-20 rounded border border-border/40 bg-background/90 p-2 shadow-sm font-sans";
 
 
 export interface WorkspaceEditorProps {
@@ -40,6 +62,52 @@ interface EditorViewState {
 const MAX_EDITOR_VIEW_STATE_ENTRIES = 40;
 const VIEW_STATE_SCROLL_PERSIST_DELAY_MS = 120;
 const AUTO_SAVE_DELAY_MS = 700;
+
+interface ClipboardResult {
+    success: boolean;
+    text: string;
+}
+
+function normalizeWorkspaceBasePath(workspacePath: string): string {
+    return workspacePath.replace(/[\\/]+$/, '');
+}
+
+function toWorkspaceFilePath(
+    workspacePath: string,
+    folder: 'docs' | 'tasks',
+    fileName: string
+): string {
+    return `${normalizeWorkspaceBasePath(workspacePath)}\\${folder}\\${fileName}`;
+}
+
+function normalizeImportedSnippet(
+    candidate: unknown,
+    workspaceKey: string
+): WorkspaceSnippet | null {
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
+        return null;
+    }
+    const parsed = candidate as Partial<WorkspaceSnippet>;
+    if (typeof parsed.name !== 'string' || parsed.name.trim() === '') {
+        return null;
+    }
+    if (typeof parsed.content !== 'string') {
+        return null;
+    }
+
+    const now = Date.now();
+    return {
+        id: typeof parsed.id === 'string' && parsed.id.trim() !== '' ? parsed.id : `${now}`,
+        name: parsed.name,
+        content: parsed.content,
+        language: typeof parsed.language === 'string' && parsed.language.trim() !== '' ? parsed.language : 'plaintext',
+        workspaceKey:
+            typeof parsed.workspaceKey === 'string' && parsed.workspaceKey.trim() !== ''
+                ? parsed.workspaceKey
+                : workspaceKey,
+        createdAt: typeof parsed.createdAt === 'number' && Number.isFinite(parsed.createdAt) ? parsed.createdAt : now,
+    };
+}
 
 /* ------------------------------------------------------------------ */
 /*  Workspace tools reducer – groups rename, scratch, test, settings  */
@@ -356,6 +424,8 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
         symbol: string;
         results: FileSearchResult[];
     } | null>(null);
+    const [snippets, setSnippets] = useState<WorkspaceSnippet[]>(() => loadWorkspaceSnippets());
+    const [selectedSnippetId, setSelectedSnippetId] = useState('');
 
     const [viewStateMap, persistViewState] = useViewStatePersistence(
         `workspace.editor.viewstate:${workspaceKey}`
@@ -370,6 +440,11 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
     const macros = useEditorMacros({ updateTabContent, setStatusMessage });
     const actionDeps: WorkspaceActionDeps = { activeTab, workspacePath, updateTabContent, dispatch, tools, setStatusMessage };
     const refactorActions = useRefactorActions(actionDeps); 
+    const activeLanguage = activeTab ? getLanguageFromExtension(activeTab.name) : 'plaintext';
+    const filteredSnippets = useMemo(
+        () => filterWorkspaceSnippets(snippets, activeLanguage, workspaceKey),
+        [activeLanguage, snippets, workspaceKey]
+    );
     void macros;
     void refactorActions;
 
@@ -456,22 +531,346 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
         [onOpenFile]
     );
 
+    const handleSaveSnippet = useCallback(() => {
+        if (!activeTab) {
+            return;
+        }
+        const now = Date.now();
+        const snippet: WorkspaceSnippet = {
+            id: `${now}`,
+            name: activeTab.name,
+            language: getLanguageFromExtension(activeTab.name),
+            workspaceKey,
+            content: activeTab.content,
+            createdAt: now,
+        };
+        const nextSnippets = [snippet, ...snippets];
+        saveWorkspaceSnippets(nextSnippets);
+        setSnippets(nextSnippets);
+        setSelectedSnippetId(snippet.id);
+        setStatusMessage(t('workspaceDashboard.editor.snippetSaved'));
+    }, [activeTab, snippets, t, workspaceKey]);
+
+    const handleInsertSnippet = useCallback(() => {
+        if (!activeTab) {
+            return;
+        }
+        const selectedSnippet = filteredSnippets.find(snippet => snippet.id === selectedSnippetId);
+        if (!selectedSnippet) {
+            return;
+        }
+        const prefix = activeTab.content.length > 0 && !activeTab.content.endsWith('\n') ? '\n' : '';
+        updateTabContent(`${activeTab.content}${prefix}${selectedSnippet.content}`);
+        setStatusMessage(t('workspaceDashboard.editor.snippetInserted'));
+    }, [activeTab, filteredSnippets, selectedSnippetId, t, updateTabContent]);
+
+    const handleExportSnippets = useCallback(async () => {
+        try {
+            const clipboard = window.electron?.clipboard;
+            if (!clipboard || typeof clipboard.writeText !== 'function') {
+                throw new Error('clipboard-not-available');
+            }
+            await clipboard.writeText(JSON.stringify(filteredSnippets));
+            setStatusMessage(t('workspaceDashboard.editor.snippetExported'));
+        } catch {
+            setStatusMessage(t('workspaceDashboard.editor.snippetImportFailed'));
+        }
+    }, [filteredSnippets, t]);
+
+    const handleImportSnippets = useCallback(async () => {
+        try {
+            const clipboard = window.electron?.clipboard;
+            if (!clipboard || typeof clipboard.readText !== 'function') {
+                throw new Error('clipboard-not-available');
+            }
+
+            const result = await clipboard.readText() as ClipboardResult;
+            if (!result.success || result.text.trim() === '') {
+                throw new Error('clipboard-empty');
+            }
+
+            const parsed = JSON.parse(result.text) as unknown;
+            if (!Array.isArray(parsed)) {
+                throw new Error('clipboard-not-array');
+            }
+
+            const imported = parsed
+                .map(entry => normalizeImportedSnippet(entry, workspaceKey))
+                .filter((entry): entry is WorkspaceSnippet => entry !== null);
+
+            if (imported.length === 0) {
+                throw new Error('clipboard-invalid-snippets');
+            }
+
+            const nextSnippets = [...snippets, ...imported];
+            saveWorkspaceSnippets(nextSnippets);
+            setSnippets(nextSnippets);
+            if (selectedSnippetId === '' && imported[0]) {
+                setSelectedSnippetId(imported[0].id);
+            }
+            setStatusMessage(t('workspaceDashboard.editor.snippetImported'));
+        } catch {
+            setStatusMessage(t('workspaceDashboard.editor.snippetImportFailed'));
+        }
+    }, [selectedSnippetId, snippets, t, workspaceKey]);
+
+    const handleShareSnippet = useCallback(async () => {
+        const selectedSnippet = filteredSnippets.find(snippet => snippet.id === selectedSnippetId);
+        if (!selectedSnippet) {
+            return;
+        }
+
+        try {
+            const clipboard = window.electron?.clipboard;
+            if (!clipboard || typeof clipboard.writeText !== 'function') {
+                throw new Error('clipboard-not-available');
+            }
+            const shareCode = createWorkspaceShareCode(selectedSnippet);
+            await clipboard.writeText(shareCode);
+            setStatusMessage(t('workspaceDashboard.editor.snippetShareCodeCopied'));
+        } catch {
+            setStatusMessage(t('workspaceDashboard.editor.snippetImportFailed'));
+        }
+    }, [filteredSnippets, selectedSnippetId, t]);
+
+    const handleImportShareCode = useCallback(async () => {
+        try {
+            const clipboard = window.electron?.clipboard;
+            if (!clipboard || typeof clipboard.readText !== 'function') {
+                throw new Error('clipboard-not-available');
+            }
+
+            const result = await clipboard.readText() as ClipboardResult;
+            if (!result.success || result.text.trim() === '') {
+                throw new Error('clipboard-empty');
+            }
+
+            const parsedSnippet = parseWorkspaceShareCode(result.text.trim());
+            if (!parsedSnippet) {
+                throw new Error('invalid-share-code');
+            }
+
+            const nextSnippets = [parsedSnippet, ...snippets];
+            saveWorkspaceSnippets(nextSnippets);
+            setSnippets(nextSnippets);
+            setSelectedSnippetId(parsedSnippet.id);
+            setStatusMessage(t('workspaceDashboard.editor.snippetImported'));
+        } catch {
+            setStatusMessage(t('workspaceDashboard.editor.snippetImportFailed'));
+        }
+    }, [snippets, t]);
+
+    const handleRunScratchCommand = useCallback(async () => {
+        const rawCommand = tools.scratchNote.trim();
+        if (!workspacePath || rawCommand === '') {
+            return;
+        }
+
+        const [command, ...args] = rawCommand.split(/\s+/).filter(Boolean);
+        if (!command) {
+            return;
+        }
+
+        try {
+            const executeCommand = window.electron?.runCommand;
+            if (typeof executeCommand !== 'function') {
+                throw new Error('run-command-not-available');
+            }
+            const result = await executeCommand(command, args, workspacePath);
+            const stdout = typeof result?.stdout === 'string' ? result.stdout : '';
+            const stderr = typeof result?.stderr === 'string' ? result.stderr : '';
+            const output = [stdout, stderr].filter(Boolean).join('\n');
+            dispatch({
+                type: 'SET_TEST_RESULTS',
+                output,
+                lines: output === '' ? [] : output.split('\n'),
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            dispatch({
+                type: 'SET_TEST_RESULTS',
+                output: message,
+                lines: [message],
+            });
+        }
+    }, [tools.scratchNote, workspacePath]);
+
+    const handleSaveScratchDoc = useCallback(async () => {
+        if (!workspacePath) {
+            return;
+        }
+        const writeFile = window.electron?.files?.writeFile;
+        if (typeof writeFile !== 'function') {
+            return;
+        }
+
+        const scratchName = tools.scratchName.trim() || 'scratch-note';
+        const targetPath = toWorkspaceFilePath(workspacePath, 'docs', `${scratchName}.md`);
+        await writeFile(targetPath, tools.scratchNote);
+        setStatusMessage(t('workspaceDashboard.editor.scratchSavedDoc'));
+    }, [tools.scratchName, tools.scratchNote, t, workspacePath]);
+
+    const handleSaveScratchTask = useCallback(async () => {
+        if (!workspacePath) {
+            return;
+        }
+        const writeFile = window.electron?.files?.writeFile;
+        if (typeof writeFile !== 'function') {
+            return;
+        }
+
+        const scratchName = tools.scratchName.trim() || 'scratch-note';
+        const targetPath = toWorkspaceFilePath(workspacePath, 'tasks', `${scratchName}.txt`);
+        await writeFile(targetPath, tools.scratchNote);
+        setStatusMessage(t('workspaceDashboard.editor.scratchSavedTask'));
+    }, [tools.scratchName, tools.scratchNote, t, workspacePath]);
+
+    const handleAiReview = useCallback(async () => {
+        await aiReview.runAiCodeReview();
+    }, [aiReview]);
+
+    const handleAiBugScan = useCallback(() => {
+        aiReview.runAiBugScan();
+    }, [aiReview]);
+
+    const handleAiPerformance = useCallback(() => {
+        aiReview.runAiPerformanceScan();
+    }, [aiReview]);
+
     return (
         <div className="absolute inset-0 overflow-hidden">  
+            {activeTab?.type === 'code' && (
+                <div className={cn(FLOATING_PANEL_BASE, "left-2 top-2 right-2 flex max-h-80 flex-col gap-2 overflow-auto bg-background/95 p-3")}>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <select
+                            className="h-8 min-w-40 rounded border border-border/40 bg-background px-2 text-12"
+                            value={selectedSnippetId}
+                            onChange={event => setSelectedSnippetId(event.target.value)}
+                            aria-label={t('workspaceDashboard.editor.insertSnippet')}
+                        >
+                            <option value="">--</option>
+                            {filteredSnippets.map(snippet => (
+                                <option key={snippet.id} value={snippet.id}>
+                                    {snippet.name}
+                                </option>
+                            ))}
+                        </select>
+                        <button
+                            type="button"
+                            className="rounded border border-border/40 bg-muted/30 px-2 py-1 text-12"
+                            onClick={handleInsertSnippet}
+                        >
+                            {t('workspaceDashboard.editor.insertSnippet')}
+                        </button>
+                        <button
+                            type="button"
+                            className="rounded border border-border/40 bg-muted/30 px-2 py-1 text-12"
+                            onClick={handleSaveSnippet}
+                        >
+                            {t('workspaceDashboard.editor.saveSnippet')}
+                        </button>
+                        <button
+                            type="button"
+                            className="rounded border border-border/40 bg-muted/30 px-2 py-1 text-12"
+                            onClick={() => { void handleExportSnippets(); }}
+                        >
+                            {t('workspaceDashboard.editor.exportSnippets')}
+                        </button>
+                        <button
+                            type="button"
+                            className="rounded border border-border/40 bg-muted/30 px-2 py-1 text-12"
+                            onClick={() => { void handleImportSnippets(); }}
+                        >
+                            {t('workspaceDashboard.editor.importSnippets')}
+                        </button>
+                        <button
+                            type="button"
+                            className="rounded border border-border/40 bg-muted/30 px-2 py-1 text-12"
+                            onClick={() => { void handleShareSnippet(); }}
+                        >
+                            {t('workspaceDashboard.editor.shareSnippet')}
+                        </button>
+                        <button
+                            type="button"
+                            className="rounded border border-border/40 bg-muted/30 px-2 py-1 text-12"
+                            onClick={() => { void handleImportShareCode(); }}
+                        >
+                            {t('workspaceDashboard.editor.importShareCode')}
+                        </button>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            className="rounded border border-border/40 bg-muted/30 px-2 py-1 text-12"
+                            onClick={() => { void handleAiReview(); }}
+                        >
+                            {t('workspaceDashboard.editor.aiReview')}
+                        </button>
+                        <button
+                            type="button"
+                            className="rounded border border-border/40 bg-muted/30 px-2 py-1 text-12"
+                            onClick={handleAiBugScan}
+                        >
+                            {t('workspaceDashboard.editor.aiBugScan')}
+                        </button>
+                        <button
+                            type="button"
+                            className="rounded border border-border/40 bg-muted/30 px-2 py-1 text-12"
+                            onClick={handleAiPerformance}
+                        >
+                            {t('workspaceDashboard.editor.aiPerf')}
+                        </button>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <input
+                            type="text"
+                            value={tools.scratchName}
+                            onChange={event => dispatch({ type: 'SET_SCRATCH_NAME', value: event.target.value })}
+                            className="h-8 w-44 rounded border border-border/40 bg-background px-2 text-12"
+                        />
+                        <button
+                            type="button"
+                            className="rounded border border-border/40 bg-muted/30 px-2 py-1 text-12"
+                            onClick={() => { void handleRunScratchCommand(); }}
+                        >
+                            {t('workspaceDashboard.editor.runScratch')}
+                        </button>
+                        <button
+                            type="button"
+                            className="rounded border border-border/40 bg-muted/30 px-2 py-1 text-12"
+                            onClick={() => { void handleSaveScratchDoc(); }}
+                        >
+                            {t('workspaceDashboard.editor.saveScratchDoc')}
+                        </button>
+                        <button
+                            type="button"
+                            className="rounded border border-border/40 bg-muted/30 px-2 py-1 text-12"
+                            onClick={() => { void handleSaveScratchTask(); }}
+                        >
+                            {t('workspaceDashboard.editor.saveScratchTask')}
+                        </button>
+                    </div>
+                    <textarea
+                        value={tools.scratchNote}
+                        onChange={event => dispatch({ type: 'SET_SCRATCH_NOTE', value: event.target.value })}
+                        className="min-h-70 w-full rounded border border-border/40 bg-background p-2 text-12"
+                    />
+                </div>
+            )}
             {statusMessage && (
-                <div className="absolute top-12 right-2 z-20 typo-caption text-muted-foreground rounded border border-border/40 bg-background/90 px-2 py-1">
+                <div className={cn(FLOATING_PANEL_BASE, "top-12 right-2 typo-caption text-muted-foreground px-2 py-1")}>
                     {statusMessage}
                 </div>
             )}
             {tools.semanticPreview && (
-                <pre className="absolute top-20 right-2 z-20 tw-w-440 max-h-48 overflow-auto tw-text-11 rounded border border-border/40 bg-background/90 p-2">
+                <pre className={cn(FLOATING_PANEL_BASE, "top-20 right-2 w-440 max-h-48 overflow-auto text-11")}>
                     {tools.semanticPreview}
                 </pre>
             )} 
             {activeTab?.type === 'image' ? (
                 <div className="absolute inset-0 flex items-center justify-center p-8 bg-background overflow-auto z-10">
-                    <div className="relative max-w-full max-h-full shadow-2xl tw-bg-checker rounded-lg border border-border/40 p-1">
-                        <img src={activeTab.content} alt={activeTab.name} className="max-w-full tw-max-h-80vh object-contain rounded" />
+                    <div className="relative max-w-full max-h-full shadow-2xl bg-checker rounded-lg border border-border/40 p-1">
+                        <img src={activeTab.content} alt={activeTab.name} className="max-w-full max-h-80vh object-contain rounded" />
                     </div>
                 </div>
             ) : (
@@ -514,13 +913,13 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
                 </div>
             )}
             {workspaceResults && (
-                <div className="absolute bottom-2 left-2 z-20 tw-w-440 tw-max-w-90p rounded border border-border/40 bg-background/95 shadow-2xl backdrop-blur">
+                <div className={cn(FLOATING_PANEL_BASE, "bottom-2 left-2 w-440 max-w-90p bg-background/95 shadow-2xl backdrop-blur p-0")}>
                     <div className="flex items-center justify-between gap-3 border-b border-border/40 px-3 py-2">
                         <div className="min-w-0">
                             <div className="truncate typo-caption font-semibold text-foreground">
                                 {workspaceResults.symbol}
                             </div>
-                            <div className="tw-text-10 text-muted-foreground/70">
+                            <div className="text-10 text-muted-foreground/70">
                                 {workspaceResults.results.length}
                             </div>
                         </div>
@@ -544,14 +943,14 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
                                     className="flex w-full items-start gap-3 border-b border-border/20 px-3 py-2 text-left transition-colors hover:bg-muted/40"
                                 >
                                     <span className="min-w-0 flex-1">
-                                        <span className="block truncate tw-text-12 font-medium text-foreground">
+                                        <span className="block truncate text-12 font-medium text-foreground">
                                             {resultFileName}
                                         </span>
-                                        <span className="block truncate font-mono tw-text-11 text-muted-foreground/80">
+                                        <span className="block truncate font-mono text-11 text-muted-foreground/80">
                                             {result.text.trim()}
                                         </span>
                                     </span>
-                                    <span className="shrink-0 font-mono tw-text-10 tabular-nums text-muted-foreground/60">
+                                    <span className="shrink-0 font-mono text-10 tabular-nums text-muted-foreground/60">
                                         {result.line}
                                     </span>
                                 </button>
@@ -561,12 +960,12 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
                 </div>
             )}
             {tools.testOutput && (
-                <pre className="absolute bottom-2 right-2 z-20 tw-w-480 tw-max-w-90p max-h-52 overflow-auto tw-text-11 rounded border border-border/40 bg-background/90 p-2">
+                <pre className={cn(FLOATING_PANEL_BASE, "bottom-2 right-2 w-480 max-w-90p max-h-52 overflow-auto text-11")}>
                     {tools.testOutput}
                 </pre>
             )}
             {(aiReview.reviewSummary || aiReview.bugSummary || aiReview.performanceSummary) && (
-                <pre className="absolute bottom-56 right-2 z-20 tw-w-520 tw-max-w-90p max-h-56 overflow-auto tw-text-11 rounded border border-border/40 bg-background/90 p-2">
+                <pre className={cn(FLOATING_PANEL_BASE, "bottom-56 right-2 w-520 max-w-90p max-h-56 overflow-auto text-11")}>
                     {[aiReview.reviewSummary, aiReview.bugSummary, aiReview.performanceSummary].filter(Boolean).join('\n\n')}
                 </pre>
             )}

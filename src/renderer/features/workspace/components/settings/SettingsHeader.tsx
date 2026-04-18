@@ -1,5 +1,20 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { RotateCcw, Save, Settings } from 'lucide-react';
 import React from 'react';
+
+/* Batch-02: Extracted Long Classes */
+const C_SETTINGSHEADER_1 = "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-muted/40 transition-colors disabled:opacity-30";
+const C_SETTINGSHEADER_2 = "flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-50 shadow-lg shadow-primary/20";
+
 
 interface SettingsHeaderProps {
     t: (key: string) => string;
@@ -33,7 +48,7 @@ export const SettingsHeader: React.FC<SettingsHeaderProps> = ({
             <button
                 onClick={onReset}
                 disabled={!isDirty}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-muted/40 transition-colors disabled:opacity-30"
+                className={C_SETTINGSHEADER_1}
             >
                 <RotateCcw className="w-4 h-4" />
                 {t('common.reset')}
@@ -41,7 +56,7 @@ export const SettingsHeader: React.FC<SettingsHeaderProps> = ({
             <button
                 onClick={onSave}
                 disabled={!isDirty}
-                className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-50 shadow-lg shadow-primary/20"
+                className={C_SETTINGSHEADER_2}
             >
                 <Save className="w-4 h-4" />
                 {t('common.save')}

@@ -1,9 +1,24 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Copy } from 'lucide-react';
 import { memo } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_COLLABORATIONSESSION_1 = "h-8 text-xxs font-mono font-medium truncate pr-16 bg-muted border-muted-foreground/10 focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-all";
+
 
 interface CollaborationSessionProps {
     sessionRecording: boolean;
@@ -34,8 +49,10 @@ export const CollaborationSession = memo(({
                         setSessionRecording((current) => !current);
                         appendRecordingEvent(t('chat.collaboration.recordingToggled'));
                     }}
-                    className={`h-8 px-4 text-xxxs font-bold  transition-all duration-300 relative group overflow-hidden ${sessionRecording ? 'shadow-lg shadow-destructive/20 border-destructive/20' : 'hover:border-primary/40'
-                        }`}
+                    className={cn(
+                        'h-8 px-4 text-xxxs font-bold transition-all duration-300 relative group overflow-hidden',
+                        sessionRecording ? 'shadow-lg shadow-destructive/20 border-destructive/20' : 'hover:border-primary/40'
+                    )}
                 >
                     {sessionRecording && (
                         <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-ping mr-2.5 inline-block shrink-0 shadow-sm" />
@@ -63,7 +80,7 @@ export const CollaborationSession = memo(({
                             <Input
                                 value={shareLink}
                                 readOnly
-                                className="h-8 text-xxs font-mono font-medium truncate pr-16 bg-muted border-muted-foreground/10 focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-all"
+                                className={C_COLLABORATIONSESSION_1}
                             />
                             <div className="absolute right-0 top-0 h-full flex items-center pr-2.5 group-hover:opacity-100 opacity-50 transition-opacity">
                                 <span className="text-xxxs font-bold text-primary">{t('chat.collaboration.copied')}</span>

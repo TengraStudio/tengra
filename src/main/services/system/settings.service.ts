@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -225,6 +235,18 @@ import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
 import { LinkedAccount } from '@main/services/data/database.service';
 import { AuthService } from '@main/services/security/auth.service';
+
+interface RemoteChannelSettings {
+    enabled: boolean;
+    token: string;
+    allowedUserIds: string[];
+    notifications?: boolean;
+}
+
+interface WhatsappRemoteChannelSettings extends RemoteChannelSettings {
+    mode: 'qr' | 'api';
+    botId?: string;
+}
 
 export class SettingsService extends BaseService {
     private static readonly ERROR_CODES = {
@@ -554,30 +576,55 @@ export class SettingsService extends BaseService {
         const defDiscord = DEFAULT_SETTINGS.remoteAccounts?.discord ?? fallback.discord;
         const defTelegram = DEFAULT_SETTINGS.remoteAccounts?.telegram ?? fallback.telegram;
         const defWhatsapp = DEFAULT_SETTINGS.remoteAccounts?.whatsapp ?? fallback.whatsapp;
-
-        const res: AppSettings['remoteAccounts'] = {
-            discord: {
-                enabled: loaded?.discord?.enabled ?? defDiscord.enabled,
-                token: this.findTokenInAuth(authAccounts, 'remote_discord') || (loaded?.discord?.token ?? defDiscord.token),
-                allowedUserIds: loaded?.discord?.allowedUserIds ?? defDiscord.allowedUserIds,
-                notifications: loaded?.discord?.notifications ?? defDiscord.notifications,
-            },
-            telegram: {
-                enabled: loaded?.telegram?.enabled ?? defTelegram.enabled,
-                token: this.findTokenInAuth(authAccounts, 'remote_telegram') || (loaded?.telegram?.token ?? defTelegram.token),
-                allowedUserIds: loaded?.telegram?.allowedUserIds ?? defTelegram.allowedUserIds,
-                notifications: loaded?.telegram?.notifications ?? defTelegram.notifications,
-            },
-            whatsapp: {
-                enabled: loaded?.whatsapp?.enabled ?? defWhatsapp.enabled,
-                mode: loaded?.whatsapp?.mode ?? defWhatsapp.mode,
-                token: this.findTokenInAuth(authAccounts, 'remote_whatsapp') || (loaded?.whatsapp?.token ?? defWhatsapp.token ?? ''),
-                botId: loaded?.whatsapp?.botId ?? defWhatsapp.botId ?? '',
-                allowedUserIds: loaded?.whatsapp?.allowedUserIds ?? defWhatsapp.allowedUserIds,
-                notifications: loaded?.whatsapp?.notifications ?? defWhatsapp.notifications,
-            },
+        const normalizedWhatsappDefaults: WhatsappRemoteChannelSettings = {
+            ...defWhatsapp,
+            token: defWhatsapp.token ?? '',
         };
-        return res;
+
+        return {
+            discord: this.mergeRemoteChannel(
+                authAccounts,
+                loaded?.discord,
+                defDiscord,
+                'remote_discord'
+            ),
+            telegram: this.mergeRemoteChannel(
+                authAccounts,
+                loaded?.telegram,
+                defTelegram,
+                'remote_telegram'
+            ),
+            whatsapp: this.mergeWhatsappChannel(authAccounts, loaded?.whatsapp, normalizedWhatsappDefaults),
+        };
+    }
+
+    private mergeRemoteChannel(
+        authAccounts: LinkedAccount[],
+        loaded: Partial<RemoteChannelSettings> | undefined,
+        defaults: RemoteChannelSettings,
+        provider: 'remote_discord' | 'remote_telegram'
+    ): RemoteChannelSettings {
+        return {
+            enabled: loaded?.enabled ?? defaults.enabled,
+            token: this.findTokenInAuth(authAccounts, provider) || (loaded?.token ?? defaults.token ?? ''),
+            allowedUserIds: loaded?.allowedUserIds ?? defaults.allowedUserIds,
+            notifications: loaded?.notifications ?? defaults.notifications,
+        };
+    }
+
+    private mergeWhatsappChannel(
+        authAccounts: LinkedAccount[],
+        loaded: Partial<WhatsappRemoteChannelSettings> | undefined,
+        defaults: WhatsappRemoteChannelSettings
+    ): WhatsappRemoteChannelSettings {
+        return {
+            enabled: loaded?.enabled ?? defaults.enabled,
+            mode: loaded?.mode ?? defaults.mode,
+            token: this.findTokenInAuth(authAccounts, 'remote_whatsapp') || (loaded?.token ?? defaults.token ?? ''),
+            botId: loaded?.botId ?? defaults.botId ?? '',
+            allowedUserIds: loaded?.allowedUserIds ?? defaults.allowedUserIds,
+            notifications: loaded?.notifications ?? defaults.notifications,
+        };
     }
 
     private migrateDeprecatedSettings(settings: AppSettings): void {
@@ -1082,6 +1129,7 @@ export class SettingsService extends BaseService {
             y: DEFAULT_SETTINGS.window?.y ?? 0,
             zoomFactor: DEFAULT_SETTINGS.window?.zoomFactor ?? 1,
             fullscreen: DEFAULT_SETTINGS.window?.fullscreen ?? false,
+            maximized: DEFAULT_SETTINGS.window?.maximized ?? false,
             startOnStartup: DEFAULT_SETTINGS.window?.startOnStartup ?? true,
             workAtBackground: DEFAULT_SETTINGS.window?.workAtBackground ?? true,
         };
@@ -1138,6 +1186,8 @@ export class SettingsService extends BaseService {
             zoomFactor: resolveZoomFactor(record.zoomFactor, fallback.zoomFactor),
             fullscreen:
                 typeof record.fullscreen === 'boolean' ? record.fullscreen : fallback.fullscreen,
+            maximized:
+                typeof record.maximized === 'boolean' ? record.maximized : fallback.maximized,
             startOnStartup:
                 typeof record.startOnStartup === 'boolean'
                     ? record.startOnStartup

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React from 'react';
 
 import { cn } from '@/lib/utils';
@@ -31,10 +41,10 @@ export const Skeleton: React.FC<SkeletonProps> = React.memo(({
     animate = true
 }) => {
     const variantClasses = {
-        text: 'tengra-skeleton--text',
-        circular: 'tengra-skeleton--circular',
-        rectangular: 'tengra-skeleton--rectangular',
-        rounded: 'tengra-skeleton--rounded'
+        text: 'h-4 rounded',
+        circular: 'rounded-full',
+        rectangular: 'rounded-none',
+        rounded: 'rounded-lg'
     };
 
     const style: React.CSSProperties = {
@@ -45,8 +55,8 @@ export const Skeleton: React.FC<SkeletonProps> = React.memo(({
     return (
         <div
             className={cn(
-                'tengra-skeleton',
-                animate && 'tengra-skeleton--animated',
+                'bg-muted',
+                animate && 'relative overflow-hidden after:absolute after:inset-0 after:bg-skeleton-shimmer after:animate-skeleton-shimmer',
                 variantClasses[variant],
                 className
             )}
@@ -69,7 +79,7 @@ export const SkeletonText: React.FC<{
     lastLineWidth?: string
 }> = React.memo(({ lines = 3, className, lastLineWidth = '60%' }) => {
     return (
-        <div className={cn('tengra-skeleton-text', className)}>
+        <div className={cn('flex flex-col gap-2', className)}>
             {Array.from({ length: lines }).map((_, i) => (
                 <Skeleton
                     key={i}
@@ -100,12 +110,12 @@ export const SkeletonCard: React.FC<{
     showDescription = true 
 }) => {
     return (
-        <div className={cn('tengra-skeleton-card', className)}>
+        <div className={cn('p-4 flex flex-col gap-4 border border-border rounded-xl', className)}>
             {showImage && (
-                <Skeleton className="tengra-skeleton-card__image" variant="rounded" width="100%" height={120} />
+                <Skeleton className="w-full h-120 rounded-lg" variant="rounded" width="100%" height={120} />
             )}
             {showTitle && (
-                <Skeleton className="tengra-skeleton-card__title" variant="text" width="70%" height={20} />
+                <Skeleton className="w-70p h-5" variant="text" width="70%" height={20} />
             )}
             {showDescription && (
                 <SkeletonText lines={2} />

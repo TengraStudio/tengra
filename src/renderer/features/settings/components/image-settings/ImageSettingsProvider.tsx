@@ -1,9 +1,23 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { CheckCircle2, Image } from 'lucide-react';
 import React from 'react';
 
 import { cn } from '@/lib/utils';
 
 import { ImageProvider } from '../../types';
+
+/* Batch-02: Extracted Long Classes */
+const C_IMAGESETTINGSPROVIDER_1 = "absolute -right-4 -bottom-4 w-24 h-24 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-all duration-500";
+
 
 interface ImageSettingsProviderProps {
     currentProvider: ImageProvider;
@@ -59,7 +73,7 @@ export const ImageSettingsProvider: React.FC<ImageSettingsProviderProps> = ({
                                 <CheckCircle2 className="w-6 h-6 text-primary" />
                             </div>
                         )}
-                        <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-all duration-500" />
+                        <div className={C_IMAGESETTINGSPROVIDER_1} />
                     </button>
                 ))}
             </div>

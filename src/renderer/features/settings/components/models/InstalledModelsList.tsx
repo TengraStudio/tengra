@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Badge } from '@renderer/components/ui/badge';
 import { Button } from '@renderer/components/ui/button';
 import { Input } from '@renderer/components/ui/input';
@@ -6,6 +16,14 @@ import { Bot, Eye, EyeOff, Search, Star, Trash2 } from 'lucide-react';
 import React from 'react';
 
 import type { ModelInfo } from '@/types';
+
+/* Batch-02: Extracted Long Classes */
+const C_INSTALLEDMODELSLIST_1 = "absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 transition-colors group-focus-within:text-primary";
+const C_INSTALLEDMODELSLIST_2 = "h-11 rounded-2xl border-border/30 bg-background pl-12 pr-6 typo-caption font-medium placeholder:text-muted-foreground/35";
+const C_INSTALLEDMODELSLIST_3 = "flex h-11 items-center gap-3 rounded-2xl border-border/30 bg-background px-5 typo-body font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground sm:gap-4";
+const C_INSTALLEDMODELSLIST_4 = "h-9 flex-1 rounded-xl border-primary/20 bg-primary/5 px-4 typo-body font-medium text-primary hover:bg-primary hover:text-primary-foreground";
+const C_INSTALLEDMODELSLIST_5 = "flex h-9 w-9 items-center justify-center rounded-xl border-destructive/20 bg-destructive/5 text-destructive hover:bg-destructive hover:text-destructive-foreground";
+
 
 interface InstalledModelsListProps {
     filtered: Array<{
@@ -46,20 +64,20 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
         <div className="space-y-6">
             <div className="flex flex-col items-stretch justify-between gap-4 px-1 lg:flex-row lg:items-center">
                 <div className="group relative w-full max-w-xl">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 transition-colors group-focus-within:text-primary" />
+                    <Search className={C_INSTALLEDMODELSLIST_1} />
                     <Input
                         type="text"
                         value={modelSearch}
                         onChange={e => setModelSearch(e.target.value)}
                         placeholder={t('workspaces.searchModels')}
-                        className="h-11 rounded-2xl border-border/30 bg-background pl-12 pr-6 typo-caption font-medium placeholder:text-muted-foreground/35"
+                        className={C_INSTALLEDMODELSLIST_2}
                     />
                 </div>
                 <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setShowHiddenModels(prev => !prev)}
-                    className="flex h-11 items-center gap-3 rounded-2xl border-border/30 bg-background px-5 typo-body font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                    className={C_INSTALLEDMODELSLIST_3}
                 >
                     {showHiddenModels ? (
                         <>
@@ -153,7 +171,7 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                                             variant="outline"
                                             size="sm"
                                             onClick={() => setDefault(model.id, model.provider)}
-                                            className="h-9 flex-1 rounded-xl border-primary/20 bg-primary/5 px-4 typo-body font-medium text-primary hover:bg-primary hover:text-primary-foreground"
+                                            className={C_INSTALLEDMODELSLIST_4}
                                         >
                                             {t('workspaces.makeDefault')}
                                         </Button>
@@ -189,7 +207,7 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                                                 variant="outline"
                                                 size="sm"
                                                 onClick={() => onDelete?.(model.id, model.provider)}
-                                                className="flex h-9 w-9 items-center justify-center rounded-xl border-destructive/20 bg-destructive/5 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                                                className={C_INSTALLEDMODELSLIST_5}
                                                 title={t('common.delete')}
                                             >
                                                 <Trash2 className="h-3.5 w-3.5" />

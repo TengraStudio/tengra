@@ -1,6 +1,19 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
+import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { LLMService } from '@main/services/llm/llm.service';
+import { MemoryContextService } from '@main/services/llm/memory-context.service';
+import { Message } from '@shared/types/chat';
 
 import { TerminalService } from './terminal.service';
 
@@ -52,12 +65,21 @@ export interface FixErrorResult {
     alternativeCommands?: string[];
 }
 
+const TERMINAL_SMART_MODEL = 'gpt-4o';
+const TERMINAL_SMART_PROVIDER = 'openai';
+const TERMINAL_MEMORY_LOOKUP_TIMEOUT_MS = 450;
+const TERMINAL_MEMORY_MATCH_LIMIT = 3;
+
 export class TerminalSmartService extends BaseService {
+    private readonly memoryContext: MemoryContextService;
+
     constructor(
         private llmService: LLMService,
-        private terminalService: TerminalService
+        private terminalService: TerminalService,
+        private readonly advancedMemoryService?: AdvancedMemoryService
     ) {
         super('TerminalSmartService');
+        this.memoryContext = new MemoryContextService(this.advancedMemoryService);
     }
 
     private async raceWithTimeout<T>(operation: Promise<T>, timeoutMs: number): Promise<T> {
@@ -91,14 +113,21 @@ export class TerminalSmartService extends BaseService {
                 .map(h => h.command);
 
             const prompt = this.buildPrompt(command, shell, cwd, history);
+            const memoryContext = await this.memoryContext.getResolutionContext(`${command}\n${history.join('\n')}`, {
+                timeoutMs: TERMINAL_MEMORY_LOOKUP_TIMEOUT_MS,
+                limit: TERMINAL_MEMORY_MATCH_LIMIT
+            });
 
             const response = await this.llmService.chat([{
                 role: 'system',
-                content: 'You are a CLI expert. Predict the most likely completion for the given command input. Return ONLY a JSON array of strings, no other text.'
+                content: this.memoryContext.buildMemoryAwareSystemPrompt(
+                    'You are a CLI expert. Predict the most likely completion for the given command input. Return ONLY a JSON array of strings, no other text.',
+                    memoryContext
+                )
             }, {
                 role: 'user',
                 content: prompt
-            }], 'gpt-4o');
+            }], TERMINAL_SMART_MODEL);
 
             const content = response.content || '[]';
             const suggestions = this.parseSuggestions(content);
@@ -184,17 +213,29 @@ Respond with a JSON object containing:
 
 Return ONLY valid JSON, no markdown or other text.
 `;
+            const memoryContext = await this.memoryContext.getResolutionContext(command, {
+                timeoutMs: TERMINAL_MEMORY_LOOKUP_TIMEOUT_MS,
+                limit: TERMINAL_MEMORY_MATCH_LIMIT
+            });
 
             const responsePromise = this.llmService.chat([{
                 role: 'system',
-                content: 'You are a CLI expert. Provide clear, accurate explanations. Return only valid JSON.'
+                content: this.memoryContext.buildMemoryAwareSystemPrompt(
+                    'You are a CLI expert. Provide clear, accurate explanations. Return only valid JSON.',
+                    memoryContext
+                )
             }, {
                 role: 'user',
                 content: prompt
-            }], 'gpt-4o');
+            }], TERMINAL_SMART_MODEL);
 
             const response = await this.raceWithTimeout(responsePromise, TIMEOUT_MS);
             const content = response.content || '{}';
+            this.captureConversationMemory({
+                userInput: `Explain command: ${command}\nShell: ${shell}\nDirectory: ${cwd ?? 'unknown'}`,
+                assistantContent: content,
+                cwd
+            });
 
             return this.parseExplainCommandResult(content);
         } catch (error) {
@@ -250,17 +291,32 @@ Respond with a JSON object containing:
 
 Return ONLY valid JSON, no markdown or other text.
 `;
+            const memoryContext = await this.memoryContext.getResolutionContext(
+                `${command ?? ''}\n${truncatedError}`.trim(),
+                {
+                    timeoutMs: TERMINAL_MEMORY_LOOKUP_TIMEOUT_MS,
+                    limit: TERMINAL_MEMORY_MATCH_LIMIT
+                }
+            );
 
             const responsePromise = this.llmService.chat([{
                 role: 'system',
-                content: 'You are a CLI troubleshooting expert. Provide clear, actionable solutions. Return only valid JSON.'
+                content: this.memoryContext.buildMemoryAwareSystemPrompt(
+                    'You are a CLI troubleshooting expert. Provide clear, actionable solutions. Return only valid JSON.',
+                    memoryContext
+                )
             }, {
                 role: 'user',
                 content: prompt
-            }], 'gpt-4o');
+            }], TERMINAL_SMART_MODEL);
 
             const response = await this.raceWithTimeout(responsePromise, TIMEOUT_MS);
             const content = response.content || '{}';
+            this.captureConversationMemory({
+                userInput: `Explain terminal error for command: ${command ?? 'unknown'}\nShell: ${shell}\nError:\n${truncatedError}`,
+                assistantContent: content,
+                cwd
+            });
 
             return this.parseExplainErrorResult(content);
         } catch (error) {
@@ -324,17 +380,32 @@ Respond with a JSON object containing:
 
 Return ONLY valid JSON, no markdown or other text.
 `;
+            const memoryContext = await this.memoryContext.getResolutionContext(
+                `${command}\n${truncatedError}`,
+                {
+                    timeoutMs: TERMINAL_MEMORY_LOOKUP_TIMEOUT_MS,
+                    limit: TERMINAL_MEMORY_MATCH_LIMIT
+                }
+            );
 
             const responsePromise = this.llmService.chat([{
                 role: 'system',
-                content: 'You are a CLI expert. Suggest corrected commands based on errors. Return only valid JSON.'
+                content: this.memoryContext.buildMemoryAwareSystemPrompt(
+                    'You are a CLI expert. Suggest corrected commands based on errors. Return only valid JSON.',
+                    memoryContext
+                )
             }, {
                 role: 'user',
                 content: prompt
-            }], 'gpt-4o');
+            }], TERMINAL_SMART_MODEL);
 
             const response = await this.raceWithTimeout(responsePromise, TIMEOUT_MS);
             const content = response.content || '{}';
+            this.captureConversationMemory({
+                userInput: `Fix failed terminal command: ${command}\nShell: ${shell}\nDirectory: ${cwd ?? 'unknown'}\nError:\n${truncatedError}`,
+                assistantContent: content,
+                cwd
+            });
 
             return this.parseFixErrorResult(content);
         } catch (error) {
@@ -422,5 +493,30 @@ Return ONLY valid JSON, no markdown or other text.
                 confidence: 'low'
             };
         }
+    }
+
+    private captureConversationMemory(params: {
+        userInput: string;
+        assistantContent: string;
+        cwd?: string;
+    }): void {
+        const assistantContent = params.assistantContent.trim();
+        const userInput = params.userInput.trim();
+        if (!assistantContent || !userInput) {
+            return;
+        }
+        const now = Date.now();
+        const messages: Message[] = [{
+            id: `terminal-smart-${now}`,
+            role: 'user',
+            content: userInput,
+            timestamp: new Date(now)
+        }];
+        this.memoryContext.captureConversation({
+            provider: TERMINAL_SMART_PROVIDER,
+            model: TERMINAL_SMART_MODEL,
+            messages,
+            assistantContent
+        });
     }
 }

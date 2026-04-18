@@ -1,6 +1,17 @@
-import { Briefcase, Brain, DownloadCloud, MessageSquare, Pause, Play, RefreshCcw, Rocket, ShoppingBag, X } from 'lucide-react';
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+import { Briefcase, DownloadCloud, MessageSquare, Pause, Play, RefreshCcw, Rocket, ShoppingBag, X } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { UI_PRIMITIVES } from '@/constants/ui-primitives';
 import { AppView } from '@/hooks/useAppState';
 import { cn } from '@/lib/utils';
 import { type DownloadHistoryItem, type DownloadStatus, downloadStore, type DownloadTaskState, useDownloadStore } from '@/store/download.store';
@@ -10,7 +21,6 @@ import { formatBytes, formatDuration } from '@/utils/format.util';
 import { preloadViewResources } from '@/views/view-manager/view-loaders';
 
 import { SidebarItem } from './SidebarItem';
-
 
 interface SidebarNavigationProps {
     currentView: AppView
@@ -49,7 +59,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
     chatsCount,
     t
 }) => {
-    const modelDownloader = window.electron.modelDownloader;
+    const modelDownloader = window.electron?.modelDownloader;
     const hasModelDownloader =
         typeof modelDownloader === 'object'
         && modelDownloader !== null
@@ -74,12 +84,6 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                 icon: Rocket,
                 label: t('sidebar.workspaces'),
                 testId: 'sidebar-nav-workspace'
-            },
-            {
-                view: 'memory',
-                icon: Brain,
-                label: t('sidebar.memory'),
-                testId: 'sidebar-nav-memory'
             },
             {
                 view: 'marketplace',
@@ -315,7 +319,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
     };
 
     return (
-        <nav className="tengra-sidebar-navigation" aria-label={t('aria.sidebarNavigation')}>
+        <nav className="flex flex-col gap-1 px-3" aria-label={t('aria.sidebarNavigation')}>
             {navItems.map((item, index) => (
                 <SidebarItem
                     key={item.view}
@@ -335,7 +339,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                     onKeyDown={(event) => handleRovingNav(event, index)}
                 />
             ))}
-            <div className="tengra-sidebar-downloads">
+            <div className="group/downloads relative">
                 <SidebarItem
                     icon={DownloadCloud}
                     label={t('sidebar.downloads')}
@@ -344,17 +348,17 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                     isCollapsed={isCollapsed}
                     badge={activeDownloadCount > 0 ? activeDownloadCount : undefined}
                 />
-                <div className="tengra-sidebar-downloads__hover-bridge" aria-hidden="true" />
-                <div className="tengra-sidebar-downloads__panel">
+                <div className="absolute left-full top-0 h-full w-2" aria-hidden="true" />
+                <div className="pointer-events-none invisible absolute left-full-plus-2 top-0 z-30 max-h-96 w-88 translate-y-1 overflow-y-auto rounded-xl border border-border/50 bg-card p-3 opacity-0 shadow-2xl transition-all duration-150 group-hover/downloads:pointer-events-auto group-hover/downloads:visible group-hover/downloads:translate-y-0 group-hover/downloads:opacity-100">
                     {activeDownloadCount > 0 && (
-                        <div className="tengra-sidebar-downloads__section">
-                            <div className="tengra-sidebar-downloads__title">{t('sidebar.activeDownloads')}</div>
+                        <div className="mb-3 space-y-2">
+                            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/70">{t('sidebar.activeDownloads')}</div>
                             <div className="space-y-3">
                                 {Object.values(activeDownloads).map((task) => {
                                     const progressPercent = getProgressPercent(task.received, task.total);
 
                                     return (
-                                        <div key={task.downloadId} className="tengra-sidebar-downloads__active-task">
+                                        <div key={task.downloadId} className="rounded-lg border border-border/30 bg-muted/10 p-2.5">
                                             <div className="flex items-center justify-between gap-2 mb-1.5">
                                                 <div className="flex flex-col min-w-0">
                                                     <span className="typo-body font-semibold text-foreground truncate">{task.modelRef}</span>
@@ -391,7 +395,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                                     <button
                                                         type="button"
                                                         onClick={() => handleResume(task.downloadId)}
-                                                        className="p-1 px-2 rounded bg-primary/20 hover:bg-primary/30 text-primary typo-body font-bold flex items-center gap-1 transition-all hover:scale-105 active:scale-95"
+                                                        className={cn(UI_PRIMITIVES.ITEM_OVERLAY, "p-1 px-2 rounded bg-primary/20 text-primary hover:bg-primary/30")}
                                                         title={t('common.resume')}
                                                     >
                                                         <Play className="w-2.5 h-2.5 fill-current" />
@@ -401,7 +405,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                                     <button
                                                         type="button"
                                                         onClick={() => handlePause(task.downloadId)}
-                                                        className="p-1 px-2 rounded bg-muted/30 hover:bg-muted/50 text-muted-foreground typo-body font-bold flex items-center gap-1 transition-all hover:scale-105 active:scale-95"
+                                                        className={cn(UI_PRIMITIVES.ITEM_OVERLAY, "p-1 px-2 rounded bg-muted/30 text-muted-foreground hover:bg-muted/50")}
                                                         title={t('common.pause')}
                                                     >
                                                         <Pause className="w-2.5 h-2.5 fill-current" />
@@ -411,7 +415,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                                 <button
                                                     type="button"
                                                     onClick={() => handleCancel(task.downloadId)}
-                                                    className="p-1 px-2 rounded bg-destructive/10 hover:bg-destructive/20 text-destructive typo-body font-bold flex items-center gap-1 transition-all hover:scale-105 active:scale-95 ml-auto"
+                                                    className={cn(UI_PRIMITIVES.ITEM_OVERLAY, "p-1 px-2 rounded bg-destructive/10 text-destructive hover:bg-destructive/20 ml-auto")}
                                                     title={t('common.cancel')}
                                                 >
                                                     <X className="w-2.5 h-2.5" />
@@ -424,21 +428,21 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                             </div>
                         </div>
                     )}
-                    <div className="tengra-sidebar-downloads__section">
-                        <div className="tengra-sidebar-downloads__title">{t('sidebar.downloadsToday')}</div>
+                    <div className="mb-3 space-y-2">
+                        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/70">{t('sidebar.downloadsToday')}</div>
                         {todayHistory.length === 0 && activeDownloadCount === 0 && (
-                            <div className="tengra-sidebar-downloads__empty">{t('sidebar.downloadHistoryEmpty')}</div>
+                            <div className="text-xs text-muted-foreground/60">{t('sidebar.downloadHistoryEmpty')}</div>
                         )}
                         {todayHistory.map((item) => (
-                            <div key={item.id} className="tengra-sidebar-downloads__row">
-                                <div className="tengra-sidebar-downloads__meta">
-                                    <span className="tengra-sidebar-downloads__name">{item.modelRef}</span>
-                                    <span className="tengra-sidebar-downloads__status">{getStatusLabel(item.status)}</span>
+                            <div key={item.id} className="flex items-center justify-between gap-2 rounded-md border border-border/20 bg-muted/5 px-2 py-1.5">
+                                <div className="min-w-0">
+                                    <span className="block truncate text-xs font-medium">{item.modelRef}</span>
+                                    <span className="block text-xxs text-muted-foreground/70">{getStatusLabel(item.status)}</span>
                                 </div>
                                 {item.status === 'error' && (
                                     <button
                                         type="button"
-                                        className="tengra-sidebar-downloads__retry"
+                                        className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
                                         onClick={() => handleRetry(item.id)}
                                     >
                                         <RefreshCcw className="w-3 h-3" />
@@ -447,12 +451,12 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                             </div>
                         ))}
                     </div>
-                    <div className="tengra-sidebar-downloads__section">
-                        <div className="tengra-sidebar-downloads__title">{t('sidebar.downloadsHistory')}</div>
+                    <div className="space-y-2">
+                        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/70">{t('sidebar.downloadsHistory')}</div>
                         {allHistoryPreview.slice(0, 4).map((item) => (
-                            <div key={`history-${item.id}`} className="tengra-sidebar-downloads__history-item">
-                                <span>{item.modelRef}</span>
-                                <span>{getStatusLabel(item.status)}</span>
+                            <div key={`history-${item.id}`} className="flex items-center justify-between gap-2 text-xs text-muted-foreground/80">
+                                <span className="truncate">{item.modelRef}</span>
+                                <span className="shrink-0">{getStatusLabel(item.status)}</span>
                             </div>
                         ))}
                     </div>

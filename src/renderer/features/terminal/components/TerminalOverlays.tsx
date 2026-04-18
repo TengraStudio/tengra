@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Bot, Loader2, Play, X } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { createPortal } from 'react-dom';
@@ -9,6 +19,10 @@ import { TerminalContextMenu } from './TerminalContextMenu';
 import { TerminalRecordingPanel } from './TerminalRecordingPanel';
 import { TerminalSearchOverlay } from './TerminalSearchOverlay';
 import { TerminalSemanticPanel } from './TerminalSemanticPanel';
+
+/* Batch-02: Extracted Long Classes */
+const C_TERMINALOVERLAYS_1 = "shrink-0 px-2 py-1.5 typo-caption bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors flex items-center gap-1";
+
 
 interface TerminalOverlaysProps {
     terminalContextMenu: { x: number; y: number } | null;
@@ -151,7 +165,7 @@ export function TerminalOverlays({
                                                     onClick={() => {
                                                         void handleAiApplyFix(String(aiResult.data.suggestedCommand));
                                                     }}
-                                                    className="shrink-0 px-2 py-1.5 typo-caption bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors flex items-center gap-1"
+                                                    className={C_TERMINALOVERLAYS_1}
                                                 >
                                                     <Play className="w-3 h-3" />
                                                     {t('terminal.aiRunCommand')}

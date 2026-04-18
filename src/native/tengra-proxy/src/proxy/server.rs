@@ -1,3 +1,12 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
 use axum::http::header::AUTHORIZATION;
 use axum::{
     extract::State,
@@ -25,6 +34,8 @@ const INSECURE_PROXY_FALLBACK_ENV: &str = "TENGRA_PROXY_ALLOW_INSECURE_DEFAULT_K
 pub struct AppState {
     pub signature_cache: Mutex<std::collections::HashMap<String, String>>,
     pub session_id_cache: Mutex<std::collections::HashMap<String, String>>,
+    pub terminal_manager: crate::terminal::TerminalManager,
+    pub lsp_manager: crate::analysis::lsp_manager::LspManager,
 }
 
 #[derive(Deserialize)]
@@ -37,6 +48,8 @@ pub async fn start_proxy_server(port: u16) -> anyhow::Result<()> {
     let state = Arc::new(AppState {
         signature_cache: Mutex::new(std::collections::HashMap::new()),
         session_id_cache: Mutex::new(std::collections::HashMap::new()),
+        terminal_manager: crate::terminal::TerminalManager::new(),
+        lsp_manager: crate::analysis::lsp_manager::LspManager::new(),
     });
     let protected = Router::new()
         .route(
@@ -158,6 +171,22 @@ pub async fn start_proxy_server(port: u16) -> anyhow::Result<()> {
         .route(
             "/v0/skills/:skill_id/toggle",
             post(crate::proxy::handlers::skills::handle_toggle_skill),
+        )
+        .route(
+            "/v0/terminal",
+            post(crate::proxy::handlers::terminal::create_terminal),
+        )
+        .route(
+            "/v0/terminal/list",
+            get(crate::proxy::handlers::terminal::list_terminals),
+        )
+        .route(
+            "/v0/terminal/ws/:session_id",
+            get(crate::proxy::handlers::terminal::terminal_ws_handler),
+        )
+        .route(
+            "/v0/tools/dispatch",
+            post(crate::proxy::handlers::tools::handle_tool_dispatch),
         )
         .layer(middleware::from_fn_with_state(
             state.clone(),

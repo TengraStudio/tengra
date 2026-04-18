@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Bot, Box, Brain, Clock, Search, Sparkles, Star, X, Zap } from 'lucide-react';
 import React from 'react';
 import { Virtuoso } from 'react-virtuoso';
@@ -8,6 +18,12 @@ import type { ClaudeQuota, CodexUsage, CopilotQuota, QuotaResponse } from '@/typ
 import { ModelCategory, ModelListItem } from '../../types';
 import { scoreModelForMode } from '../../utils/model-selector-metadata';
 import { ModelSelectorItem } from '../ModelSelectorItem';
+
+/* Batch-02: Extracted Long Classes */
+const C_MODELSELECTORSECTIONS_1 = "flex items-center gap-3 bg-background/50 backdrop-blur-sm rounded-xl px-4 py-2.5 border border-border/50 focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all shadow-sm sm:gap-4";
+const C_MODELSELECTORSECTIONS_2 = "bg-transparent border-none p-0 text-sm focus:ring-0 w-full placeholder:text-muted-foreground/40 outline-none text-foreground font-medium";
+const C_MODELSELECTORSECTIONS_3 = "sticky top-0 z-10 w-full px-4 py-3.5 typo-body font-bold text-muted-foreground/60 flex items-center gap-2 bg-popover/95 backdrop-blur-md hover:text-foreground transition-all group/cat relative overflow-hidden uppercase tracking-wider";
+
 
 export type SelectorChatMode = 'instant' | 'thinking' | 'agent';
 
@@ -84,7 +100,7 @@ export const ModelSelectorModeTabs: React.FC<ModelSelectorModeTabsProps> = ({
                             className={cn(
                                 'flex items-center gap-2 px-3.5 py-1.5 rounded-lg typo-caption font-bold transition-all duration-200',
                                 isActive
-                                    ? cn(config.bg, config.color, "shadow-[0_2px_8px_-2px_rgba(0,0,0,0.2)] scale-[1.02]")
+                                    ? cn(config.bg, config.color, "shadow-card-md scale-102")
                                     : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/50'
                             )}
                         >
@@ -103,7 +119,7 @@ export const ModelSelectorModeTabs: React.FC<ModelSelectorModeTabsProps> = ({
                     className={cn(
                         'px-4 py-1.5 rounded-lg typo-caption font-bold transition-all duration-200',
                         activeTab === 'models'
-                            ? 'bg-primary/20 text-primary shadow-[0_2px_8px_-2px_rgba(0,0,0,0.1)]'
+                            ? 'bg-primary/20 text-primary shadow-card-sm'
                             : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/50'
                     )}
                 >
@@ -115,7 +131,7 @@ export const ModelSelectorModeTabs: React.FC<ModelSelectorModeTabsProps> = ({
                         className={cn(
                             'px-4 py-1.5 rounded-lg typo-caption font-bold transition-all duration-200',
                             activeTab === 'reasoning'
-                                ? 'bg-primary/20 text-primary shadow-[0_2_2px_8px_-2px_rgba(0,0,0,0.1)]'
+                                ? 'bg-primary/20 text-primary shadow-card-sm'
                                 : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/50'
                         )}
                     >
@@ -128,7 +144,7 @@ export const ModelSelectorModeTabs: React.FC<ModelSelectorModeTabsProps> = ({
                         className={cn(
                             'px-4 py-1.5 rounded-lg typo-caption font-bold transition-all duration-200',
                             activeTab === 'permissions'
-                                ? 'bg-primary/20 text-primary shadow-[0_2px_8px_-2px_rgba(0,0,0,0.1)]'
+                                ? 'bg-primary/20 text-primary shadow-card-sm'
                                 : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/50'
                         )}
                     >
@@ -154,7 +170,7 @@ export const ModelSelectorSearch: React.FC<ModelSelectorSearchProps> = ({
     placeholder,
 }) => (
     <div className="px-4 py-3 bg-muted/5 border-b border-border/40">
-        <div className="flex items-center gap-3 bg-background/50 backdrop-blur-sm rounded-xl px-4 py-2.5 border border-border/50 focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all shadow-sm">
+        <div className={C_MODELSELECTORSECTIONS_1}>
             <Search className="w-4 h-4 text-muted-foreground/60" />
             <input
                 ref={searchInputRef}
@@ -162,7 +178,7 @@ export const ModelSelectorSearch: React.FC<ModelSelectorSearchProps> = ({
                 placeholder={placeholder}
                 value={searchQuery}
                 onChange={e => onSearchQueryChange(e.target.value)}
-                className="bg-transparent border-none p-0 text-sm focus:ring-0 w-full placeholder:text-muted-foreground/40 outline-none text-foreground font-medium"
+                className={C_MODELSELECTORSECTIONS_2}
             />
         </div>
     </div>
@@ -190,12 +206,11 @@ const CircularQuota: React.FC<{ value: number; label: string }> = ({ value, labe
     const normalized = Math.max(0, Math.min(100, Math.round(value)));
     const radius = 10;
     const circumference = 2 * Math.PI * radius;
-    const offset = circumference - (normalized / 100) * circumference;
-    const tone = getQuotaTone(normalized);
+    const offset = circumference - (normalized / 100) * circumference; 
 
     return (
         <div className="flex items-center gap-1.5">
-            <div className={cn("relative flex h-7 w-7 items-center justify-center rounded-full border", tone.split(' ').slice(2).join(' '))}>
+            <div className={cn("relative flex h-7 w-7 items-center justify-center rounded-full border", getQuotaTone(normalized).split(' ').slice(2))}>
                 <svg className="absolute inset-0 -rotate-90" viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r={radius} stroke="currentColor" strokeWidth="2" className="opacity-15" fill="none" />
                     <circle
@@ -206,7 +221,7 @@ const CircularQuota: React.FC<{ value: number; label: string }> = ({ value, labe
                         strokeWidth="2"
                         strokeLinecap="round"
                         fill="none"
-                        className={tone.split(' ').slice(0, 1).join(' ')}
+                        className={cn(getQuotaTone(normalized).split(' ').slice(0, 1))}
                         strokeDasharray={circumference}
                         strokeDashoffset={offset}
                     />
@@ -409,12 +424,12 @@ const CategoryRow: React.FC<{
             <button
                 type="button"
                 onClick={() => onToggleCollapse(category.id)}
-                className="sticky top-0 z-10 w-full px-4 py-3.5 typo-body font-bold text-muted-foreground/60 flex items-center gap-2 bg-popover/95 backdrop-blur-md hover:text-foreground transition-all group/cat relative overflow-hidden uppercase tracking-wider"
+                className={C_MODELSELECTORSECTIONS_3}
                 aria-expanded={!collapsed}
                 aria-label={`${category.name} ${t('modelSelector.categoryLabelSuffix')}`}
             >
                 <div className={cn(
-                    "w-1.5 h-1.5 rounded-full shrink-0 animate-pulse shadow-[0_0_8px_rgba(0,0,0,0.2)]",
+                    "w-1.5 h-1.5 rounded-full shrink-0 animate-pulse shadow-card-dark",
                     category.color.replace('text-', 'bg-')
                 )} />
                 <span className="truncate">{category.name}</span>
@@ -572,9 +587,9 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
                     <p className="text-sm font-medium">{t('modelSelector.noModelsFound')}</p>
                 </div>
             ) : shouldVirtualize ? (
-                <div className="h-[500px]">
+                <div className="h-500">
                     <Virtuoso
-                        style={{ height: '100%' }}
+                        className="h-full"
                         data={modeFilteredCategories}
                         itemContent={(_, category) => (
                             <CategoryRow

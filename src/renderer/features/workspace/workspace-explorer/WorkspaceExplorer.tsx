@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { useWorkspaceExplorerDiagnostics } from '@renderer/features/workspace/hooks/useWorkspaceExplorerDiagnostics';
 import {
     useWorkspaceExplorerTree,
@@ -38,6 +48,10 @@ import {
     WorkspaceInlineAction,
 } from '@/store/workspace-explorer.store';
 import { WorkspaceEntry, WorkspaceMount } from '@/types';
+
+/* Batch-02: Extracted Long Classes */
+const C_WORKSPACEEXPLORER_1 = "h-8 w-full rounded-md border border-border/50 bg-background/70 pl-8 pr-2 typo-caption text-foreground outline-none transition-colors focus:border-primary/40";
+
 
 interface WorkspaceExplorerProps {
     workspaceId: string;
@@ -945,7 +959,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                             setWorkspaceExplorerFilterQuery(workspaceId, event.target.value)
                         }
                         placeholder={t('common.search')}
-                        className="h-8 w-full rounded-md border border-border/50 bg-background/70 pl-8 pr-2 typo-caption text-foreground outline-none transition-colors focus:border-primary/40"
+                        className={C_WORKSPACEEXPLORER_1}
                     />
                 </label>
             </div>

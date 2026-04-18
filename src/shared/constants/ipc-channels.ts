@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Centralized registry of all IPC channel names used in Tengra.
  *
  * This file serves as a single source of truth for every IPC channel.
@@ -59,6 +69,8 @@ export const HEALTH_CHANNELS = {
   GET_SERVICE: 'health:getService',
   /** List all registered services */
   LIST_SERVICES: 'health:listServices',
+  /** Get memory context runtime metrics */
+  MEMORY_CONTEXT: 'health:memoryContext',
   /** Get overall health status */
   STATUS: 'health:status',
 } as const;

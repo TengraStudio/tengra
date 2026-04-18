@@ -1,7 +1,18 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { memo } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 export interface PresenceParticipant {
     id: string;
@@ -38,8 +49,10 @@ export const CollaborationPresence = memo(({
                         setAllowGuests((current) => !current);
                         appendRecordingEvent(t('chat.collaboration.guestPolicyChanged'));
                     }}
-                    className={`h-7 px-2.5 text-xxxs font-bold   transition-all duration-300 ${allowGuests ? 'bg-secondary/80 hover:bg-secondary' : 'hover:border-primary/40'
-                        }`}
+                    className={cn(
+                        'h-7 px-2.5 text-xxxs font-bold transition-all duration-300',
+                        allowGuests ? 'bg-secondary/80 hover:bg-secondary' : 'hover:border-primary/40'
+                    )}
                 >
                     {allowGuests ? t('chat.collaboration.guestsAllowed') : t('chat.collaboration.guestsBlocked')}
                 </Button>
@@ -48,13 +61,15 @@ export const CollaborationPresence = memo(({
                 {presence.map((participant) => (
                     <div key={participant.id} className="typo-caption flex items-center gap-3 font-medium transition-opacity hover:opacity-100">
                         <div className="relative">
-                            <span className={`flex w-2.5 h-2.5 rounded-full shadow-sm ring-2 ring-background transition-colors ${participant.isOnline ? 'bg-success animate-pulse' : 'bg-muted-foreground/40'
-                                }`} />
+                            <span className={cn(
+                                'flex w-2.5 h-2.5 rounded-full shadow-sm ring-2 ring-background transition-colors',
+                                participant.isOnline ? 'bg-success animate-pulse' : 'bg-muted-foreground/40'
+                            )} />
                             {participant.isOnline && (
                                 <span className="absolute inset-0 rounded-full bg-success animate-ping opacity-25" />
                             )}
                         </div>
-                        <span className={`transition-colors ${participant.isOnline ? 'text-foreground' : 'text-muted-foreground '}`}>
+                        <span className={cn('transition-colors', participant.isOnline ? 'text-foreground' : 'text-muted-foreground')}>
                             {participant.name}
                         </span>
                         {participant.role === 'owner' && (

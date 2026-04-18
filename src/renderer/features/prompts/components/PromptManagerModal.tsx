@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Edit2, Plus, Save, Trash2, X } from 'lucide-react';
 import React, { useState } from 'react';
 
@@ -5,6 +15,11 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Language, useTranslation } from '@/i18n';
 import { Prompt } from '@/types';
+
+/* Batch-02: Extracted Long Classes */
+const C_PROMPTMANAGERMODAL_1 = "w-full bg-muted/30 border border-border/50 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary/50 transition-colors";
+const C_PROMPTMANAGERMODAL_2 = "w-full flex-1 bg-muted/30 border border-border/50 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary/50 transition-colors resize-none font-mono";
+
 
 interface PromptManagerModalProps {
     isOpen: boolean
@@ -60,7 +75,7 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
                             <input
                                 value={editForm.title}
                                 onChange={e => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-                                className="w-full bg-muted/30 border border-border/50 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                                className={C_PROMPTMANAGERMODAL_1}
                                 placeholder={t('ssh.promptManager.placeholders.title')}
                                 autoFocus
                             />
@@ -70,7 +85,7 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
                             <textarea
                                 value={editForm.content}
                                 onChange={e => setEditForm(prev => ({ ...prev, content: e.target.value }))}
-                                className="w-full flex-1 bg-muted/30 border border-border/50 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary/50 transition-colors resize-none font-mono"
+                                className={C_PROMPTMANAGERMODAL_2}
                                 placeholder={t('ssh.promptManager.placeholders.content')}
                             />
                         </div>

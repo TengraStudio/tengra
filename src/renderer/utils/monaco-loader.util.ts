@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import type { Monaco as MonacoReactType } from '@monaco-editor/react';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
@@ -5,7 +15,7 @@ import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 
-type MonacoModule = typeof import('monaco-editor');
+type MonacoModule = typeof import('monaco-editor/esm/vs/editor/editor.api');
 type MonacoWorkerFactory = new () => Worker;
 interface MonacoTypeScriptDefaults {
     setEagerModelSync(value: boolean): void;
@@ -107,7 +117,7 @@ export async function ensureMonacoInitialized(): Promise<MonacoModule> {
     monacoInitPromise = (async () => {
         const [{ loader }, monaco] = await Promise.all([
             import('@monaco-editor/react'),
-            import('monaco-editor')
+            import('monaco-editor/esm/vs/editor/editor.api')
         ]);
 
         ensureMonacoEnvironment();

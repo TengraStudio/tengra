@@ -1,0 +1,194 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/* stylelint-disable */
+
+/* Screen Reader Only - Visually hidden but accessible */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+.sr-only:focus,
+.sr-only:active {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: inherit;
+    margin: inherit;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+}
+
+/* Enhanced Focus Indicators */
+.enhanced-focus *:focus,
+.enhanced-focus *:focus-visible {
+    outline: 3px solid hsl(var(--primary)) !important;
+    outline-offset: 2px !important;
+}
+
+.enhanced-focus button:focus,
+.enhanced-focus a:focus,
+.enhanced-focus [role='button']:focus,
+.enhanced-focus input:focus,
+.enhanced-focus select:focus,
+.enhanced-focus textarea:focus {
+    outline: 3px solid hsl(var(--primary)) !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 0 6px hsl(var(--primary) / 0.3) !important;
+}
+
+/* High Contrast Mode Enhancements */
+.high-contrast {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 5%;
+    --card-foreground: 0 0% 100%;
+    --border: 0 0% 50%;
+    --primary: 210 100% 60%;
+    --primary-foreground: 0 0% 100%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 80%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 100%;
+}
+
+.high-contrast button,
+.high-contrast a,
+.high-contrast [role='button'] {
+    border: 2px solid hsl(var(--foreground));
+}
+
+.high-contrast input,
+.high-contrast select,
+.high-input textarea {
+    border: 2px solid hsl(var(--foreground));
+    background: hsl(var(--background));
+}
+
+.high-contrast .text-muted-foreground {
+    color: hsl(var(--foreground) / 0.9);
+}
+
+.high-contrast *:focus {
+    outline: 3px solid hsl(var(--primary)) !important;
+    outline-offset: 2px !important;
+}
+
+/* Reduced Motion */
+.reduced-motion *,
+.reduced-motion *::before,
+.reduced-motion *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+}
+
+/* Skip Link for Keyboard Navigation */
+.skip-link {
+    position: absolute;
+    top: -100%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    padding: 1rem 2rem;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    text-decoration: none;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+    top: 1rem;
+}
+
+/* Focus Visible Polyfill Styles */
+.focus-visible-polyfill:focus:not(.focus-visible) {
+    outline: none;
+}
+
+.focus-visible-polyfill.focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+}
+
+/* Minimum Touch Target Size (44x44) */
+.touch-target-min {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+/* Keyboard Navigation Indicators */
+[role='menuitem']:focus,
+[role='option']:focus,
+[role='tab']:focus {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: -2px;
+    background: hsl(var(--accent) / 0.5);
+}
+
+/* Focus Trap Container */
+.focus-trap-container {
+    outline: none;
+}
+
+/* Live Region Announcements */
+#sr-announcements {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* High Contrast Focus Ring */
+@media (prefers-contrast: more) {
+    *:focus {
+        outline: 3px solid hsl(var(--primary)) !important;
+        outline-offset: 2px !important;
+    }
+}
+
+/* Forced Colors Mode (Windows High Contrast) */
+@media (forced-colors: active) {
+
+    .btn-primary,
+    .btn-ghost,
+    button,
+    a {
+        border: 1px solid currentColor;
+    }
+
+    .glass-card,
+    .premium-glass {
+        border: 1px solid currentColor;
+        backdrop-filter: none;
+    }
+
+    *:focus {
+        outline: 2px solid Highlight !important;
+    }
+}
+

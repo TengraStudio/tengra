@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { useGitData } from '@renderer/features/workspace/hooks/useGitData';
 import { AlertTriangle, CheckCircle2, FileCode, Minus, Plus, RefreshCw } from 'lucide-react';
 import React, { useEffect } from 'react';
@@ -98,7 +108,7 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
                             const state = sectionStates[section.key];
                             return (
                                 <div key={section.key} className="bg-card/60 border border-border/50 rounded-xl px-3 py-2 space-y-1">
-                                    <div className="tw-text-11 text-muted-foreground">{section.label}</div>
+                                    <div className="text-11 text-muted-foreground">{section.label}</div>
                                     <div className="flex items-center gap-1.5 typo-caption font-medium">
                                         {state.loading ? (
                                             <>
@@ -118,7 +128,7 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
                                         )}
                                     </div>
                                     {state.error && (
-                                        <div className="tw-text-10 text-muted-foreground truncate" title={state.error}>
+                                        <div className="text-10 text-muted-foreground truncate" title={state.error}>
                                             {state.error}
                                         </div>
                                     )}

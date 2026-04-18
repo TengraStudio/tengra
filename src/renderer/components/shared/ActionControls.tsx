@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * @fileoverview Shared action controls for form/editor footers
  * @description Provides a standardized Save/Cancel action bar used across feature editors,
  *   modals, and form footers. Supports loading states, disabled conditions, and variant styling.
@@ -55,7 +65,7 @@ export const ActionControls: React.FC<ActionControlsProps> = ({
     const resolvedCancelLabel = cancelLabel ?? t('common.cancel');
 
     return (
-        <div className={cn('tengra-action-controls', className)}>
+        <div className={cn('flex items-center justify-end gap-3', className)}>
             <Button
                 variant="ghost"
                 size="sm"
@@ -71,9 +81,9 @@ export const ActionControls: React.FC<ActionControlsProps> = ({
                 disabled={disabled || isLoading}
             >
                 {isLoading ? (
-                    <Loader2 className="tengra-action-controls__spinner" />
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 ) : showIcon ? (
-                    <Save className="tengra-action-controls__icon" />
+                    <Save className="w-4 h-4 mr-2" />
                 ) : null}
                 {resolvedSaveLabel}
             </Button>

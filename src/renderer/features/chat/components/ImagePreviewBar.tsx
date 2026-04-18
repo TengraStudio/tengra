@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { X } from 'lucide-react';
 import React from 'react';
 
@@ -6,6 +16,10 @@ import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 
 import type { ImageAttachment } from '../hooks/useImageAttachment';
+
+/* Batch-02: Extracted Long Classes */
+const C_IMAGEPREVIEWBAR_1 = "absolute top-0.5 right-0.5 p-0.5 rounded-full bg-background/80 text-muted-foreground hover:text-destructive hover:bg-background transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100";
+
 
 interface ImagePreviewBarProps {
     images: ImageAttachment[];
@@ -65,7 +79,7 @@ export const ImagePreviewBar: React.FC<ImagePreviewBarProps> = ({
                             <button
                                 type="button"
                                 onClick={() => onRemove(img.id)}
-                                className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-background/80 text-muted-foreground hover:text-destructive hover:bg-background transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                                className={C_IMAGEPREVIEWBAR_1}
                                 aria-label={t('imageAttachment.remove')}
                             >
                                 <X size={12} aria-hidden="true" />

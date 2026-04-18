@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { cn } from '@/lib/utils';
 
 function resolveProgressColor(color: string): string {
@@ -37,7 +47,7 @@ export const StatusBadge = ({ status, text }: { status: 'active' | 'error' | 'ex
     };
 
     return (
-        <div className={cn("tw-text-9 font-bold py-0.5 px-2.5 rounded-full border   flex items-center gap-2", colors[status])}>
+        <div className={cn("text-9 font-bold py-0.5 px-2.5 rounded-full border   flex items-center gap-2", colors[status])}>
             <div className={cn("w-1.5 h-1.5 rounded-full", dots[status])} />
             {text}
         </div>

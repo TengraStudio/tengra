@@ -1,7 +1,22 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { useTranslation } from '@renderer/i18n';
 import React from 'react';
 
 import { motion } from '@/lib/framer-motion-compat';
+
+/* Batch-02: Extracted Long Classes */
+const C_NEWTERMINALMENU_1 = "absolute bottom-full left-0 mb-2 py-1 bg-popover border border-border rounded-lg shadow-xl z-9999 min-w-140 overflow-hidden";
+const C_NEWTERMINALMENU_2 = "w-full px-3 py-2 text-left typo-caption font-medium hover:bg-accent/50 transition-colors flex items-center gap-2 text-foreground";
+
 
 interface ShellInfo {
     id: string;
@@ -25,14 +40,14 @@ export const NewTerminalMenu: React.FC<NewTerminalMenuProps> = ({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="absolute bottom-full left-0 mb-2 py-1 bg-popover border border-border rounded-lg shadow-xl z-9999 tw-min-w-140 overflow-hidden"
+            className={C_NEWTERMINALMENU_1}
         >
             {availableShells.length > 0 ? (
                 availableShells.map(shell => (
                     <button
                         key={shell.id}
                         onClick={() => onCreateTerminal(shell.id)}
-                        className="w-full px-3 py-2 text-left typo-caption font-medium hover:bg-accent/50 transition-colors flex items-center gap-2 text-foreground"
+                        className={C_NEWTERMINALMENU_2}
                     >
                         <span className="opacity-50">&gt;_</span>
                         {shell.name}

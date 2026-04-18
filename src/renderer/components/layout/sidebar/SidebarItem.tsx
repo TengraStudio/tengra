@@ -1,3 +1,15 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+import { UI_PRIMITIVES } from '@renderer/constants/ui-primitives';
+import { cva, type VariantProps } from 'class-variance-authority';
 import { LucideIcon } from 'lucide-react';
 import React from 'react';
 
@@ -5,38 +17,46 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 
+const sidebarItemVariants = cva(
+    'w-full cursor-pointer items-center gap-3 rounded-lg border border-transparent px-3 py-2 transition-all duration-200 flex',
+    {
+        variants: {
+            variant: {
+                default: '',
+                ghost: 'hover:bg-muted/40',
+                glass: 'hover:bg-background/40 hover:backdrop-blur-sm',
+            },
+            active: {
+                true: 'bg-primary/10 font-medium text-primary',
+                false: 'text-muted-foreground hover:bg-muted/30 hover:text-foreground',
+            },
+            isCollapsed: {
+                true: 'justify-center px-0',
+                false: '',
+            },
+        },
+        defaultVariants: {
+            variant: "default",
+            active: false,
+            isCollapsed: false,
+        },
+    }
+);
 
-export interface SidebarItemProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface SidebarItemProps
+    extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof sidebarItemVariants> {
     icon: LucideIcon;
     label: string;
-    active?: boolean;
-    // onClick, className, children are inherited
     badge?: number | string;
-    isCollapsed?: boolean;
     actions?: React.ReactNode;
-    variant?: 'default' | 'ghost' | 'glass';
     iconClassName?: string;
     labelClassName?: string;
 }
 
-function getButtonClassName(
-    active: boolean,
-    variant: string,
-    isCollapsed?: boolean,
-    className?: string
-): string {
-    const baseClasses = cn(
-        'tengra-sidebar-item__button',
-        isCollapsed && 'tengra-sidebar-item__button--collapsed'
-    );
-    const activeClasses = 'tengra-sidebar-item__button--active';
-    const inactiveClasses = 'tengra-sidebar-item__button--inactive';
-    const glassClasses =
-        variant === 'glass' && !active ? 'hover:bg-background/40 hover:backdrop-blur-sm' : '';
-
-    return cn(baseClasses, active ? activeClasses : inactiveClasses, glassClasses, className);
-}
-
+/**
+ * Individual item component for the sidebar navigation.
+ */
 export const SidebarItem: React.FC<SidebarItemProps> = ({
     icon: Icon,
     label,
@@ -52,13 +72,15 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
     iconClassName,
     ...props
 }) => (
-    <div className="group/item tengra-sidebar-item">
+    <div className="group/item relative px-2 py-0.5">
         {active && (
             <motion.div
-                className="tengra-sidebar-item__active-indicator"
+                className="absolute left-0 top-1/2 z-10 h-5 w-1 -translate-y-1/2 rounded-r bg-primary"
+                layout
                 initial={{ opacity: 0, x: -4 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -4 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
             />
         )}
         <Tooltip content={label} side="right" disabled={!isCollapsed}>
@@ -66,13 +88,13 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
                 {...props}
                 onClick={onClick}
                 aria-label={props['aria-label'] ?? label}
-                className={getButtonClassName(active, variant, isCollapsed, className)}
+                className={cn(sidebarItemVariants({ active, variant, isCollapsed, className }))}
             >
-                <div className="relative flex items-center justify-center min-w-0">
+                <div className="relative flex items-center justify-center shrink-0">
                     <Icon
                         className={cn(
-                            'w-4 h-4 shrink-0 transition-opacity duration-200',
-                            active ? 'opacity-100' : 'opacity-70 group-hover/item:opacity-100',
+                            'w-4 h-4 transition-all duration-200',
+                            active ? 'opacity-100 scale-110' : 'opacity-70 group-hover/item:opacity-100',
                             iconClassName
                         )}
                     />
@@ -80,11 +102,11 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
 
                 {!isCollapsed && (
                     <>
-                        <span className={cn("flex-1 text-left truncate", labelClassName)}>{label}</span>
+                        <span className={cn('flex-1 truncate text-left text-sm', labelClassName)}>{label}</span>
                         {badge !== undefined && (
                             <span
                                 className={cn(
-                                    'text-xxs px-1.5 py-0.5 rounded-full',
+                                    'text-xxs px-1.5 py-0.5 rounded-full font-bold',
                                     active
                                         ? 'bg-primary/20 text-primary'
                                         : 'bg-muted/50 text-muted-foreground'
@@ -100,7 +122,7 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
 
         {/* Hover Actions */}
         {!isCollapsed && actions && (
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/item:opacity-100 flex items-center gap-1 transition-opacity bg-card border border-border/50 shadow-sm rounded-md px-1 py-0.5">
+            <div className={UI_PRIMITIVES.ACTION_BUTTON_GHOST}>
                 {actions}
             </div>
         )}

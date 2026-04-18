@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import {
     Container,
     LayoutGrid,
@@ -37,7 +47,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         workspace: LayoutGrid,
         settings: SettingsIcon,
         mcp: Container,
-        memory: MessageSquare,
         docker: Container,
         terminal: MessageSquare,
         models: MessageSquare,
@@ -59,13 +68,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
     return (
         <>
-            <header className="tengra-app-header app-drag-region">
-                <div className="tengra-app-header__left no-drag">
-                    <div className="tengra-app-header__icon-container">
-                        <Icon className="tengra-app-header__icon" />
+            <header className="app-drag-region z-20 flex h-14 items-center justify-between bg-background/95 px-6">
+                <div className="no-drag flex items-center gap-4">
+                    <div className="rounded-xl bg-primary/10 p-2">
+                        <Icon className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                        <h1 className="tengra-app-header__title">
+                        <h1 className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
                             {currentView === 'chat' && currentChatTitle
                                 ? currentChatTitle
                                 : t(`nav.${currentView}`)}
@@ -73,49 +82,49 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                     </div>
                 </div>
 
-                <div className="tengra-app-header__right no-drag">
+                <div className="no-drag flex items-center gap-2">
                     <button
                         onClick={onOpenSettings}
                         className={cn(
-                            "tengra-app-header__settings",
+                            'relative rounded-xl p-2 transition-colors',
                             currentView === 'settings'
-                                ? "tengra-app-header__settings--active"
-                                : "tengra-app-header__settings--inactive"
+                                ? 'bg-primary/10 text-primary'
+                                : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                         )}
                         title={t('nav.settings')}
                         aria-label={t('nav.settings')}
                     >
-                        <SettingsIcon className="tengra-app-header__settings-icon" />
+                        <SettingsIcon className="h-4 w-4" />
                         {updateCount > 0 && (
-                            <span className="tengra-app-header__update-badge">
+                            <span className="pointer-events-none absolute -right-0.5 -top-0.5 z-10 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-8 font-bold leading-none text-destructive-foreground shadow-outline-background-2">
                                 {updateCount}
                             </span>
                         )}
                     </button>
 
-                    <div className="tengra-app-header__divider" />
+                    <div className="mx-2 h-4 w-px bg-border/50" />
 
-                    <div className="tengra-app-header__window-controls">
+                    <div className="flex items-center gap-1">
                         <button
                             data-testid="window-minimize"
                             onClick={handleMinimize}
-                            className="tengra-app-header__window-control"
+                            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent/50"
                         >
-                            <Minus className="tengra-app-header__window-control-icon" />
+                            <Minus className="h-4 w-4" />
                         </button>
                         <button
                             data-testid="window-maximize"
                             onClick={handleMaximize}
-                            className="tengra-app-header__window-control"
+                            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent/50"
                         >
-                            <Square className="tengra-app-header__window-control-icon tengra-app-header__window-control-icon--maximize" />
+                            <Square className="h-3.5 w-3.5" />
                         </button>
                         <button
                             data-testid="window-close"
                             onClick={handleClose}
-                            className="tengra-app-header__window-control tengra-app-header__window-control--close"
+                            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/20 hover:text-destructive"
                         >
-                            <X className="tengra-app-header__window-control-icon" />
+                            <X className="h-4 w-4" />
                         </button>
                     </div>
                 </div>

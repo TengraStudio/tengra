@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React from 'react';
 
 import { Modal } from '@/components/ui/modal';
@@ -5,6 +15,10 @@ import { AnimatePresence } from '@/lib/framer-motion-compat';
 import { Workspace } from '@/types';
 
 import { DeleteFilesCheckbox } from './DeleteFilesCheckbox';
+
+/* Batch-02: Extracted Long Classes */
+const C_DELETEWORKSPACEMODAL_1 = "px-6 py-2 rounded-lg text-sm font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-95 transition-all shadow-lg shadow-destructive/20";
+
 
 interface DeleteWorkspaceModalProps {
     workspace: Workspace | null;
@@ -35,7 +49,7 @@ export const DeleteWorkspaceModal: React.FC<DeleteWorkspaceModalProps> = ({ work
                             </button>
                             <button
                                 onClick={() => { void onSubmit(deleteFiles); }}
-                                className="px-6 py-2 rounded-lg text-sm font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-95 transition-all shadow-lg shadow-destructive/20"
+                                className={C_DELETEWORKSPACEMODAL_1}
                             >
                                 {t('common.delete')}
                             </button>

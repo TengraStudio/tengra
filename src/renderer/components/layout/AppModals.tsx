@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { KeyboardShortcutsModal } from '@renderer/components/shared/KeyboardShortcutsModal';
 import { Modal } from '@renderer/components/ui/modal';
 import { SettingsCategory } from '@renderer/features/settings/types';
@@ -48,9 +58,9 @@ export function AppModals({
                     setCurrentView('settings');
                     setSettingsCategory('accounts');
                 })();
-            }} className="tengra-app-modals__auth-footer-button">{t('auth.goToAccounts')}</button>}
+            }} className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors">{t('auth.goToAccounts')}</button>}
         >
-            <div className="tengra-app-modals__auth-body"><p className="tengra-app-modals__auth-body-text">{t('auth.connectionFailed')}</p></div>
+            <div className="p-6 flex flex-col items-center justify-center"><p className="text-base text-muted-foreground text-center">{t('auth.connectionFailed')}</p></div>
         </Modal>
         <AnimatePresence>
             {showShortcuts && <KeyboardShortcutsModal isOpen={showShortcuts} onClose={() => { setShowShortcuts(false); }} language={language} />}

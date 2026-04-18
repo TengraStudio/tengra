@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import {
     AdvancedSemanticFragment,
     PendingMemory
@@ -13,6 +23,11 @@ import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 import { CATEGORY_CONFIG } from './constants';
+
+/* Batch-02: Extracted Long Classes */
+const C_MEMORYSUBCOMPONENTS_1 = "flex flex-col items-center justify-center py-20 text-center space-y-4 bg-muted/10 rounded-2xl border border-dashed border-border/40 sm:flex-row";
+const C_MEMORYSUBCOMPONENTS_2 = "group p-4 bg-muted/20 border-border/40 hover:bg-muted/30 transition-all hover:border-warning/40 relative overflow-hidden sm:p-5 lg:p-6";
+
 
 export const StatCard = memo(({
     label,
@@ -49,7 +64,7 @@ export const EmptyState = memo(({
     title: string;
     description: string;
 }) => (
-    <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-muted/10 rounded-2xl border border-dashed border-border/40">
+    <div className={C_MEMORYSUBCOMPONENTS_1}>
         <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center">
             <Icon className="w-8 h-8 text-muted-foreground/40" />
         </div>
@@ -74,7 +89,7 @@ export const PendingMemoryCard = memo(({
     const config = CATEGORY_CONFIG[memory.suggestedCategory];
 
     return (
-        <Card className="group p-4 bg-muted/20 border-border/40 hover:bg-muted/30 transition-all hover:border-warning/40 relative overflow-hidden">
+        <Card className={C_MEMORYSUBCOMPONENTS_2}>
             <div
                 className="absolute left-0 top-0 bottom-0 w-1"
                 style={{

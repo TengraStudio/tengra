@@ -1,9 +1,23 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Check, Copy } from 'lucide-react';
 import { Highlight, themes } from 'prism-react-renderer';
 import React, { memo, useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n'; 
 import { normalizeLanguage } from '@/utils/language-map';
+
+/* Batch-02: Extracted Long Classes */
+const C_MONACOBLOCK_1 = "text-xxs text-muted-foreground font-bold opacity-60 group-hover/code:opacity-100 transition-opacity flex items-center gap-1.5";
+
 
 const PRISM_LANGUAGE_ALIASES: Record<string, string> = {
     plaintext: 'text',
@@ -132,7 +146,7 @@ const BlockHeader: React.FC<{
 }> = ({ language, handleCopy, copied }) => (
     <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border/40 backdrop-blur-md">
         <div className="flex items-center gap-2">
-            <span className="text-xxs text-muted-foreground font-bold opacity-60 group-hover/code:opacity-100 transition-opacity flex items-center gap-1.5">
+            <span className={C_MONACOBLOCK_1}>
                 {language}
             </span>
         </div>

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { AppSettings } from '@/types';
@@ -62,6 +72,45 @@ interface BrowserAuthOptions {
     t?: (key: string, options?: Record<string, string | number>) => string
     onRefreshModels?: () => void
     onShowManualSession?: (id: string, email?: string) => void
+}
+
+function defaultBrowserAuthTranslation(
+    key: string,
+    options?: Record<string, string | number>
+): string {
+    const provider = String(options?.provider ?? 'provider');
+    const reason = String(options?.reason ?? 'Unknown error');
+
+    switch (key) {
+    case 'auth.providerSuccess':
+        return `${provider} success!`;
+    case 'auth.preparingConnection':
+        return 'Preparing connection...';
+    case 'auth.connecting':
+        return 'Connecting...';
+    case 'auth.providerTimeout':
+        return `${provider} connection timed out.`;
+    case 'auth.providerFailed':
+        return `${provider} connection failed.`;
+    case 'auth.failedUrlForProvider':
+        return `Failed to start ${provider} authentication.`;
+    case 'auth.failedWithReason':
+        return `Connection failed: ${reason}`;
+    case 'auth.connectionFailedGeneric':
+        return 'Connection failed.';
+    case 'auth.connectionCancelled':
+        return 'Connection cancelled.';
+    case 'auth.anotherFlowRunning':
+        return 'Another authentication flow is already running.';
+    case 'auth.savingSession':
+        return 'Saving session...';
+    case 'common.success':
+        return 'Success';
+    case 'common.unknownError':
+        return 'Unknown error';
+    default:
+        return key;
+    }
 }
 
 const PROVIDER_ACCOUNT_ALIASES: Record<BrowserOAuthProvider, string[]> = {
@@ -224,7 +273,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
         authBusy,
         setAuthBusy,
         setAuthNotice,
-        t = (key: string) => key,
+        t = defaultBrowserAuthTranslation,
         onRefreshModels,
         onShowManualSession
     } = options;
@@ -297,6 +346,25 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
             appLogger.error('BrowserAuth', 'Failed to load Claude accounts', error as Error);
         }
     }, [onShowManualSession]);
+
+    const invokeBrowserAuthStatus = useCallback((request: BrowserAuthRequest) => {
+        const electronInvoke = window.electron.invoke;
+        if (typeof electronInvoke === 'function') {
+            return electronInvoke(
+                'proxy:getAuthStatus',
+                request.provider,
+                request.state,
+                request.accountId
+            ) as Promise<BrowserAuthPollStatus>;
+        }
+
+        return window.electron.ipcRenderer.invoke(
+            'proxy:getAuthStatus',
+            request.provider,
+            request.state,
+            request.accountId
+        ) as Promise<BrowserAuthPollStatus>;
+    }, []);
 
     const completeBrowserAuth = useCallback(async (request: BrowserAuthRequest) => {
 
@@ -418,12 +486,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                     return;
                 }
                 const boundedAuthState = await withTimeout(
-                    window.electron.ipcRenderer.invoke(
-                        'proxy:getAuthStatus',
-                        request.provider,
-                        request.state,
-                        request.accountId
-                    ) as Promise<BrowserAuthPollStatus>,
+                    invokeBrowserAuthStatus(request),
                     Math.min(BROWSER_AUTH_STATUS_TIMEOUT_MS, remainingFlowMs),
                     `${request.provider} auth status`
                 );
@@ -499,7 +562,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
         pollTimeoutRef.current = setTimeout(() => {
             void poll();
         }, 2000);
-    }, [cancelBrowserAuthAttempt, completeBrowserAuth, findLinkedBrowserAccount, resetBrowserAuthState, t]);
+    }, [cancelBrowserAuthAttempt, completeBrowserAuth, findLinkedBrowserAccount, invokeBrowserAuthStatus, resetBrowserAuthState, t]);
 
     const connectBrowserProvider = useCallback(async (provider: BrowserOAuthProvider) => {
         if (authBusy && !isBrowserOAuthProvider(authBusy.provider)) {

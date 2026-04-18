@@ -1,11 +1,35 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Database, History, Maximize2,Network } from 'lucide-react';
 import React, { useState } from 'react';
 
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
 import { EntityRelationshipDiagram } from './EntityRelationshipDiagram';
 import { MemoryGraphView } from './MemoryGraphView';
 import { MemoryTimelineView } from './MemoryTimelineView';
+
+/* Batch-02: Extracted Long Classes */
+const C_MEMORYVISUALIZATION_1 = "px-6 py-3 border-t border-border/30 bg-muted/20 flex items-center justify-between typo-caption text-muted-foreground font-bold";
+
+function getLegacyTabAriaLabel(tabId: VizTab, fallbackLabel: string, t: (key: string) => string): string {
+    if (tabId === 'entities') {
+        return t('memory.entities');
+    }
+    if (tabId === 'timeline') {
+        return t('memory.timeline');
+    }
+    return fallbackLabel;
+}
 
 type VizTab = 'graph' | 'entities' | 'timeline';
 
@@ -38,12 +62,15 @@ export const MemoryVisualization: React.FC = () => {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === tab.id
-                                ? 'bg-muted/40 text-foreground shadow-xl scale-105'
-                                : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
-                                }`}
+                            aria-label={getLegacyTabAriaLabel(tab.id, tab.label, t)}
+                            className={cn(
+                                'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300',
+                                activeTab === tab.id
+                                    ? 'bg-muted/40 text-foreground shadow-xl scale-105'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                            )}
                         >
-                            <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? tab.color : ''}`} />
+                            <tab.icon className={cn('w-4 h-4', activeTab === tab.id && tab.color)} />
                             <span>{tab.label}</span>
                         </button>
                     ))}
@@ -60,7 +87,7 @@ export const MemoryVisualization: React.FC = () => {
             </div>
 
             {/* Footer / Legend */}
-            <div className="px-6 py-3 border-t border-border/30 bg-muted/20 flex items-center justify-between typo-caption text-muted-foreground font-bold">
+            <div className={C_MEMORYVISUALIZATION_1}>
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-primary" />

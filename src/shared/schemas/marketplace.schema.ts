@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { localePackManifestSchema } from '@shared/schemas/locale.schema';
 import type {
     InstallRequest,
@@ -42,6 +52,7 @@ const marketplaceMcpSchema = marketplaceItemBaseSchema.extend({
     entrypointFile: z.string().min(1).max(128).optional(),
     env: z.record(z.string(), z.string()).optional(),
     permissionProfile: z.enum(['read-only', 'workspace-only', 'network-enabled', 'destructive', 'full-access']).optional(),
+    permissions: z.array(z.enum(['read', 'write', 'delete', 'network', 'execute'])).max(5).optional(),
     tools: z.array(z.object({
         name: z.string().min(1).max(128),
         description: z.string().min(1).max(512),

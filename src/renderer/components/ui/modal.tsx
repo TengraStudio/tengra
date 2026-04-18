@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { X } from 'lucide-react';
 import React, { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -158,7 +168,7 @@ const ModalBase: React.FC<ModalProps> = ({
 
     const modalContent = (
         <div
-            className="tengra-modal-overlay animate-in fade-in duration-300"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/40 backdrop-blur-sm animate-in fade-in duration-300"
             onClick={handleBackdropClick}
             role="dialog"
             aria-modal="true"
@@ -173,29 +183,43 @@ const ModalBase: React.FC<ModalProps> = ({
                     width: computedWidth,
                     height: computedHeight,
                 }}
-                className={cn("tengra-modal", `tengra-modal--${size}`, className)}
+                className={cn(
+                    "relative flex flex-col overflow-hidden rounded-3xl border border-border/60 bg-card shadow-2xl animate-in zoom-in-95 duration-200",
+                    {
+                        'max-w-sm': size === 'sm',
+                        'max-w-md': size === 'md',
+                        'max-w-lg': size === 'lg',
+                        'max-w-xl': size === 'xl',
+                        'max-w-2xl': size === '2xl',
+                        'max-w-3xl': size === '3xl',
+                        'max-w-4xl': size === '4xl',
+                        'max-w-5xl': size === '5xl',
+                        'max-w-95vw': size === 'full',
+                    },
+                    className
+                )}
             >
-                <div className="tengra-modal__header">
+                <div className="flex items-center justify-between p-6 border-b border-border/50 bg-muted/30 backdrop-blur-md">
+                    {title && <h3 id={titleId} className="text-xl font-bold tracking-tight text-foreground">{title}</h3>}
                     {!preventClose && (
                         <button
                             type="button"
                             onClick={onClose}
-                            className="tengra-modal__close"
+                            className="p-2 rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all active:scale-95"
                             aria-label={t('aria.closeModal')}
                         >
-                            <X aria-hidden="true" />
+                            <X className="w-5 h-5" aria-hidden="true" />
                         </button>
                     )}
-                    {title && <h3 id={titleId} className="tengra-modal__title">{title}</h3>}
                 </div>
-                <p id={descriptionId} className="tengra-modal__sr-description">
+                <p id={descriptionId} className="sr-only">
                     {t('modal.contentForTitle', { title: title ?? '' })}
                 </p>
-                <div className="tengra-modal__content">
+                <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
                     {children}
                 </div>
                 {footer && (
-                    <div className="tengra-modal__footer">
+                    <div className="flex items-center justify-end gap-3 p-6 border-t border-border/10 bg-muted/5">
                         {footer}
                     </div>
                 )}

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Button } from '@renderer/components/ui/button';
 import { Input } from '@renderer/components/ui/input';
 import {
@@ -19,6 +29,7 @@ import {
     Layers,
     RefreshCw,
     Settings2,
+    ShieldAlert,
     Sliders,
     Thermometer,
     Timer,
@@ -27,6 +38,21 @@ import {
 import React, { useCallback, useMemo, useState } from 'react';
 
 import type { ModelInfo } from '@/types';
+
+/* Batch-02: Extracted Long Classes */
+const C_ADVANCEDTAB_1 = "p-6 rounded-card-lg bg-muted/10 border border-border/40 space-y-4 group/interval hover:bg-muted/20 transition-all duration-500 lg:p-8";
+const C_ADVANCEDTAB_2 = "p-3 rounded-2xl bg-primary/10 text-primary shadow-lg shadow-primary/5 group-hover/config:scale-110 transition-transform duration-500";
+const C_ADVANCEDTAB_3 = "absolute -inset-0.5 bg-gradient-to-br from-primary/20 to-transparent rounded-card-lg blur opacity-0 group-hover/textarea:opacity-100 transition duration-1000";
+const C_ADVANCEDTAB_4 = "relative w-full h-48 px-6 py-6 rounded-card-lg bg-muted/20 border-border/40 typo-body leading-relaxed font-medium focus-visible:ring-primary/20 transition-all shadow-inner";
+const C_ADVANCEDTAB_5 = "p-3 rounded-2xl bg-primary/10 text-primary shadow-lg shadow-primary/5 group-hover/orch:scale-110 transition-transform duration-500";
+const C_ADVANCEDTAB_6 = "p-3.5 rounded-2xl bg-primary/10 text-primary shadow-lg shadow-primary/5 group-hover/intervals:scale-110 transition-transform duration-500";
+const C_ADVANCEDTAB_7 = "p-3.5 rounded-2xl bg-primary/10 text-primary shadow-2xl shadow-primary/10 group-hover:scale-110 transition-transform duration-700 ring-1 ring-primary/20";
+
+
+const SECTION_CARD_BASE = 
+    "bg-card rounded-3xl border border-border/40 p-8 space-y-10 shadow-sm transition-all duration-500 overflow-hidden relative";
+
+const SECTION_CARD_HOVER = "hover:border-border/60 shadow-md";
 
 interface BenchmarkResult {
     tokensPerSec: number;
@@ -94,7 +120,7 @@ const IntervalSelect: React.FC<IntervalSelectProps> = ({
     onChange,
     t,
 }) => (
-    <div className="p-6 rounded-[2rem] bg-muted/10 border border-border/40 space-y-4 group/interval hover:bg-muted/20 transition-all duration-500">
+    <div className={C_ADVANCEDTAB_1}>
         <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-background shadow-sm group-hover/interval:scale-110 transition-transform duration-500">
                 {icon}
@@ -128,7 +154,7 @@ interface BenchmarkResultsProps {
 
 const BenchmarkResults: React.FC<BenchmarkResultsProps> = ({ result, t }) => (
     <div className="grid grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-4 duration-1000">
-        <div className="p-8 rounded-[2rem] bg-primary/5 border border-primary/10 flex flex-col items-center justify-center gap-2 group/stat">
+        <div className="p-8 rounded-card-lg bg-primary/5 border border-primary/10 flex flex-col items-center justify-center gap-2 group/stat">
             <Thermometer className="w-6 h-6 text-primary mb-2 group-hover/stat:scale-110 transition-transform duration-500" />
             <div className="text-3xl font-bold text-foreground leading-none">
                 {result.tokensPerSec}
@@ -137,7 +163,7 @@ const BenchmarkResults: React.FC<BenchmarkResultsProps> = ({ result, t }) => (
                 {t('advanced.tokensPerSecShort')}
             </div>
         </div>
-        <div className="p-8 rounded-[2rem] bg-success/5 border border-success/10 flex flex-col items-center justify-center gap-2 group/stat">
+        <div className="p-8 rounded-card-lg bg-success/5 border border-success/10 flex flex-col items-center justify-center gap-2 group/stat">
             <Activity className="w-6 h-6 text-success mb-2 group-hover/stat:scale-110 transition-transform duration-500" />
             <div className="text-3xl font-bold text-foreground leading-none">
                 {result.latency}ms
@@ -171,7 +197,7 @@ const PresetButton: React.FC<{
         variant="ghost"
         onClick={onSelect}
         className={cn(
-            'flex items-center justify-between p-5 h-auto rounded-[1.5rem] border transition-all duration-300 text-left justify-start group/preset',
+            'flex items-center justify-between p-5 h-auto rounded-3xl border transition-all duration-300 text-left justify-start group/preset',
             isSelected
                 ? 'bg-primary/10 border-primary/30 text-primary shadow-lg shadow-primary/5'
                 : 'bg-muted/5 border-border/10 text-muted-foreground/60 hover:bg-muted/10 hover:border-border/20 hover:text-foreground'
@@ -196,10 +222,10 @@ const ModelConfigSection: React.FC<ModelConfigSectionProps> = ({
     updateModelSetting,
     t,
 }) => (
-    <div className="bg-card rounded-3xl border border-border/40 p-8 space-y-10 shadow-sm group/config hover:border-border/60 transition-all duration-500 overflow-hidden relative">
+    <div className={cn(SECTION_CARD_BASE, SECTION_CARD_HOVER, "group/config")}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1 relative z-10">
             <div className="flex items-center gap-4">
-                <div className="p-3 rounded-2xl bg-primary/10 text-primary shadow-lg shadow-primary/5 group-hover/config:scale-110 transition-transform duration-500">
+                <div className={C_ADVANCEDTAB_2}>
                     <Brain className="w-6 h-6" />
                 </div>
                 <div>
@@ -215,7 +241,7 @@ const ModelConfigSection: React.FC<ModelConfigSectionProps> = ({
                 <SelectTrigger className="h-10 px-4 w-56 rounded-xl bg-muted/20 border-border/40 typo-body font-bold focus:ring-primary/20">
                     <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl max-h-[300px]">
+                <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl max-h-300">
                     {modelOptions.map(opt => (
                         <SelectItem key={opt.value} value={opt.value} className="typo-body font-bold">
                             {opt.label}
@@ -234,14 +260,14 @@ const ModelConfigSection: React.FC<ModelConfigSectionProps> = ({
                     </span>
                 </div>
                 <div className="relative group/textarea">
-                    <div className="absolute -inset-0.5 bg-gradient-to-br from-primary/20 to-transparent rounded-[2rem] blur opacity-0 group-hover/textarea:opacity-100 transition duration-1000" />
+                    <div className={C_ADVANCEDTAB_3} />
                     <Textarea
                         value={modelSettings.systemPrompt ?? ''}
                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                             updateModelSetting({ systemPrompt: e.target.value })
                         }
                         placeholder={t('advancedTab.systemPromptPlaceholder')}
-                        className="relative w-full h-48 px-6 py-6 rounded-[2rem] bg-muted/20 border-border/40 typo-body leading-relaxed font-medium focus-visible:ring-primary/20 transition-all shadow-inner"
+                        className={C_ADVANCEDTAB_4}
                     />
                 </div>
             </div>
@@ -289,7 +315,7 @@ const ModelConfigSection: React.FC<ModelConfigSectionProps> = ({
                 )}
             </div>
         </div>
-        <div className="absolute -right-20 -top-20 w-80 h-80 bg-primary/5 rounded-full blur-[100px] opacity-30 pointer-events-none" />
+        <div className="absolute -right-20 -top-20 w-80 h-80 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
     </div>
 );
 
@@ -305,10 +331,10 @@ const OrchestrationSection: React.FC<OrchestrationSectionProps> = ({
     updateOrchestrationPolicy,
     t,
 }) => (
-    <div className="bg-card rounded-3xl border border-border/40 p-8 space-y-8 shadow-sm group/orch hover:border-border/60 transition-all duration-500 overflow-hidden relative">
+    <div className={cn(SECTION_CARD_BASE, SECTION_CARD_HOVER, "space-y-8 group/orch")}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1 relative z-10">
             <div className="flex items-center gap-4">
-                <div className="p-3 rounded-2xl bg-primary/10 text-primary shadow-lg shadow-primary/5 group-hover/orch:scale-110 transition-transform duration-500">
+                <div className={C_ADVANCEDTAB_5}>
                     <Layers className="w-6 h-6" />
                 </div>
                 <div>
@@ -327,7 +353,7 @@ const OrchestrationSection: React.FC<OrchestrationSectionProps> = ({
                 </SelectContent>
             </Select>
         </div>
-        <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-primary/5 rounded-full blur-[100px] opacity-30 pointer-events-none" />
+        <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
     </div>
 );
 
@@ -346,9 +372,9 @@ const ServiceIntervalsSection: React.FC<ServiceIntervalsSectionProps> = ({
     updateAiSetting,
     t,
 }) => (
-    <div className="bg-card rounded-3xl border border-border/40 p-8 space-y-10 shadow-sm group/intervals hover:border-border/60 transition-all duration-500 overflow-hidden relative">
+    <div className={cn(SECTION_CARD_BASE, SECTION_CARD_HOVER, "group/intervals")}>
         <div className="flex items-center gap-4 relative z-10 px-1">
-            <div className="p-3.5 rounded-2xl bg-primary/10 text-primary shadow-lg shadow-primary/5 group-hover/intervals:scale-110 transition-transform duration-500">
+            <div className={C_ADVANCEDTAB_6}>
                 <Timer className="w-6 h-6" />
             </div>
             <div>
@@ -389,9 +415,67 @@ const ServiceIntervalsSection: React.FC<ServiceIntervalsSectionProps> = ({
                 t={t}
             />
         </div>
-        <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-primary/5 rounded-full blur-[100px] opacity-30 pointer-events-none" />
+        <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
     </div>
 );
+
+const SecuritySection: React.FC<{ t: (k: string) => string }> = ({ t }) => {
+    const [isResetting, setIsResetting] = useState(false);
+    
+    const handleReset = async () => {
+        if (!window.confirm(t('advanced.resetMasterKeyConfirm'))) return;
+        
+        setIsResetting(true);
+        try {
+            const result = await (window.electron as any).security.resetMasterKey();
+            if (result.success) {
+                alert(t('advanced.resetMasterKeySuccess'));
+            } else {
+                alert(t('advanced.resetMasterKeyError') + ': ' + result.error);
+            }
+        } catch (error) {
+            console.error('Failed to reset master key:', error);
+        } finally {
+            setIsResetting(false);
+        }
+    };
+
+    return (
+        <div className={cn(SECTION_CARD_BASE, SECTION_CARD_HOVER, "border-destructive/40 bg-destructive/5")}>
+            <div className="flex items-center gap-4 relative z-10 px-1">
+                <div className="p-3.5 rounded-2xl bg-destructive/10 text-destructive shadow-2xl shadow-destructive/10 group-hover:scale-110 transition-transform duration-700 ring-1 ring-destructive/20">
+                    <ShieldAlert className="w-6 h-6" />
+                </div>
+                <div>
+                    <h3 className="text-lg font-bold text-foreground">
+                        {t('advanced.securityTitle')}
+                    </h3>
+                    <p className="typo-body text-muted-foreground mt-1 font-bold opacity-40">
+                        {t('advanced.dangerZone')}
+                    </p>
+                </div>
+            </div>
+            <div className="space-y-4 relative z-10 mt-6 px-1">
+                <p className="typo-body text-muted-foreground leading-relaxed font-bold">
+                    {t('advanced.resetMasterKeyWarning')}
+                </p>
+                <div className="flex items-center gap-4">
+                    <Button 
+                        variant="destructive" 
+                        onClick={handleReset} 
+                        disabled={isResetting}
+                        className="rounded-xl font-bold h-11 px-6 shadow-lg shadow-destructive/10"
+                    >
+                        {isResetting ? t('common.resetting') : t('advanced.resetMasterKeyButton')}
+                    </Button>
+                    <p className="typo-caption text-muted-foreground/40 font-bold max-w-sm">
+                        {t('advanced.resetMasterKeyHelp')}
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // Default presets factory
 const getDefaultPresets = (t: (k: string) => string) => [
@@ -569,7 +653,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
             {/* Page Header */}
             <div className="relative group px-1">
                 <div className="flex items-center gap-4 mb-3">
-                    <div className="p-3.5 rounded-2xl bg-primary/10 text-primary shadow-2xl shadow-primary/10 group-hover:scale-110 transition-transform duration-700 ring-1 ring-primary/20">
+                    <div className={C_ADVANCEDTAB_7}>
                         <Settings2 className="w-7 h-7" />
                     </div>
                     <div>
@@ -607,7 +691,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                 />
 
                 {benchmarkResult && (
-                    <div className="bg-card rounded-3xl border border-border/40 p-10 space-y-8 shadow-sm group/benchmark hover:border-border/60 transition-all duration-500 overflow-hidden relative">
+                    <div className={cn(SECTION_CARD_BASE, SECTION_CARD_HOVER, "p-10 space-y-8 group/benchmark")}>
                         <div className="flex items-center gap-3 px-1 relative z-10">
                             <Gauge className="w-4 h-4 text-primary" />
                             <h4 className="typo-body font-bold text-muted-foreground/40">{t('advanced.throughputSnapshot')}</h4>
@@ -615,13 +699,14 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                         <div className="relative z-10">
                             <BenchmarkResults result={benchmarkResult} t={t} />
                         </div>
-                        <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-primary/5 rounded-full blur-[100px] opacity-30 pointer-events-none" />
+                        <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
                     </div>
                 )}
 
                 <ServiceIntervalsSection settings={settings} updateAiSetting={updateAiSetting} t={t} />
+
+                <SecuritySection t={t} />
             </div>
         </div>
     );
 };
-

@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Multi-Model Collaboration Component
  * Allows users to run multiple LLMs simultaneously and compare/combine results
  *
@@ -6,6 +16,7 @@
  * useCallback, and stabilized the presence interval via useRef.
  */
 
+import { cn } from '@renderer/lib/utils';
 import { AlertTriangle, CheckCircle2, Copy, Loader2, RefreshCw, Sparkles, XCircle } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -163,7 +174,7 @@ const PresenceCard = React.memo<PresenceCardProps>(({ presence, allowGuests, onT
         </div>
         {presence.map((participant) => (
             <div key={participant.id} className="typo-caption flex items-center gap-2">
-                <span className={`w-2 h-2 rounded-full ${participant.isOnline ? 'bg-success' : 'bg-muted-foreground'}`} />
+                <span className={cn('w-2 h-2 rounded-full', participant.isOnline ? 'bg-success' : 'bg-muted-foreground')} />
                 <span>{participant.name}</span>
             </div>
         ))}

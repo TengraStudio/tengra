@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { X } from 'lucide-react';
 import React, { memo, useEffect, useRef } from 'react';
 
@@ -19,6 +29,11 @@ import {
     VoiceButton
 } from './input/ChatInputActions';
 import { PromptCommandMenu } from './input/PromptCommandMenu';
+
+/* Batch-02: Extracted Long Classes */
+const C_CHATINPUT_1 = "mb-2.5 flex items-center justify-between gap-2 rounded-md border border-destructive/25 bg-destructive/5 px-3 py-2 typo-caption text-destructive animate-in fade-in slide-in-from-top-1";
+const C_CHATINPUT_2 = "min-h-11 max-h-60 resize-none overflow-y-auto border-0 bg-transparent px-0 py-1 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50";
+
 
 interface ChatInputProps {
     fileInputRef?: React.RefObject<HTMLInputElement>;
@@ -45,6 +60,14 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
         const localTextareaRef = useRef<HTMLTextAreaElement>(null);
         const fileInputRef = externalFileInputRef ?? localFileInputRef;
         const textareaRef = externalTextareaRef ?? localTextareaRef;
+        const antigravityCreditConfirmation = ctrl.antigravityCreditConfirmation ?? {
+            isOpen: false,
+            title: '',
+            message: '',
+            confirmLabel: '',
+        };
+        const cancelAntigravityCreditUsage = ctrl.cancelAntigravityCreditUsage ?? (() => undefined);
+        const confirmAntigravityCreditUsage = ctrl.confirmAntigravityCreditUsage ?? (() => undefined);
 
         // Auto-resize textarea effect
         useEffect(() => {
@@ -119,7 +142,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                 onDrop={ctrl.onDrop}
             >
                 {ctrl.lastError && (
-                    <div role="status" aria-live="polite" className="mb-2.5 flex items-center justify-between gap-2 rounded-md border border-destructive/25 bg-destructive/5 px-3 py-2 typo-caption text-destructive animate-in fade-in slide-in-from-top-1">
+                    <div role="status" aria-live="polite" className={C_CHATINPUT_1}>
                         <span>{ctrl.t(ctrl.lastError.messageKey)}</span>
                         <button type="button" onClick={ctrl.clearLastError} className="p-1 rounded-md hover:bg-destructive/10 transition-colors" aria-label={ctrl.t('common.close')}><X size={12} aria-hidden="true" /></button>
                     </div>
@@ -152,7 +175,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                             onChange={handleInputChange}
                             onKeyDown={handleKeyDown}
                             placeholder={ctrl.t('input.placeholder.default')}
-                            className="min-h-[44px] max-h-60 resize-none overflow-y-auto border-0 bg-transparent px-0 py-1 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50"
+                            className={C_CHATINPUT_2}
                             rows={1}
                             aria-label={ctrl.t('input.placeholder.default')}
                             role="combobox"
@@ -182,12 +205,12 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                 </div>
 
                 <ConfirmationModal
-                    isOpen={ctrl.antigravityCreditConfirmation.isOpen}
-                    onClose={ctrl.cancelAntigravityCreditUsage}
-                    onConfirm={ctrl.confirmAntigravityCreditUsage}
-                    title={ctrl.antigravityCreditConfirmation.title}
-                    message={ctrl.antigravityCreditConfirmation.message}
-                    confirmLabel={ctrl.antigravityCreditConfirmation.confirmLabel}
+                    isOpen={antigravityCreditConfirmation.isOpen}
+                    onClose={cancelAntigravityCreditUsage}
+                    onConfirm={confirmAntigravityCreditUsage}
+                    title={antigravityCreditConfirmation.title}
+                    message={antigravityCreditConfirmation.message}
+                    confirmLabel={antigravityCreditConfirmation.confirmLabel}
                     variant="warning"
                 />
             </div>

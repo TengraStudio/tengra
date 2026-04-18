@@ -1,8 +1,22 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React, { CSSProperties, memo, useCallback, useMemo } from 'react';
 import { List, RowComponentProps } from 'react-window';
 
 import { cn } from '@/lib/utils';
 import { SSHConnection } from '@/types';
+
+/* Batch-02: Extracted Long Classes */
+const C_SSHCONNECTIONLIST_1 = "typo-caption px-2 py-0.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded border border-destructive/20";
+
 
 // PERF-001-2: Virtualization threshold and constants
 const VIRTUALIZATION_THRESHOLD = 50;
@@ -77,7 +91,7 @@ const ConnectionCard = memo(({
                         e.stopPropagation();
                         onDisconnect(conn.id);
                     }}
-                    className="typo-caption px-2 py-0.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded border border-destructive/20"
+                    className={C_SSHCONNECTIONLIST_1}
                 >
                     {t('ssh.disconnect')}
                 </button>

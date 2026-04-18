@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Badge } from '@renderer/components/ui/badge';
 import { Button } from '@renderer/components/ui/button';
 import { Switch } from '@renderer/components/ui/switch';
@@ -12,6 +22,12 @@ import React, { useCallback, useEffect, useState } from 'react';
 import type { SettingsSharedProps } from '../types';
 
 import { SettingsPanel } from './SettingsPrimitives';
+
+/* Batch-02: Extracted Long Classes */
+const C_SKILLSTAB_1 = "flex items-center gap-3 bg-muted/40 px-3 py-1.5 rounded-xl border border-border/10 ring-1 ring-inset ring-white/5 shadow-sm sm:gap-4";
+const C_SKILLSTAB_2 = "h-9 gap-2 px-4 rounded-xl font-black uppercase tracking-widest text-xxxs shadow-lg shadow-destructive/20 active:scale-95";
+const C_SKILLSTAB_3 = "h-9 w-9 rounded-xl border-destructive/20 text-destructive/60 hover:text-destructive hover:bg-destructive/10 hover:border-destructive/40 transition-all active:scale-90 shadow-sm";
+
 
 type SkillsTabProps = Pick<SettingsSharedProps, 't'>;
 
@@ -118,7 +134,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
                                     className={cn(
                                         "group relative flex items-center justify-between gap-5 rounded-2xl border p-5 transition-all duration-300",
                                         isActive
-                                            ? "border-primary/40 bg-card/10 shadow-[0_0_15px_rgba(var(--primary-rgb),0.1)] ring-1 ring-primary/20"
+                                            ? "border-primary/40 bg-card/10 shadow-glow-primary-ring ring-1 ring-primary/20"
                                             : "border-border/30 bg-muted/20 hover:border-border/60"
                                     )}
                                 >
@@ -136,7 +152,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
                                             <div className="flex items-center gap-3">
                                                 <h3 className="font-black tracking-tight text-foreground leading-none">{skill.name}</h3>
                                                 <Badge variant="outline" className={cn(
-                                                    "text-[9px] h-4 font-black uppercase tracking-widest px-2",
+                                                    "text-xxxs h-4 font-black uppercase tracking-widest px-2",
                                                     isActive ? "border-primary/30 text-primary bg-primary/5" : "bg-muted/20 text-muted-foreground/40"
                                                 )}>
                                                     {skill.provider}
@@ -149,10 +165,10 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
                                     </div>
 
                                     <div className="flex items-center gap-4">
-                                        <div className="flex items-center gap-3 bg-muted/40 px-3 py-1.5 rounded-xl border border-border/10 ring-1 ring-inset ring-white/5 shadow-sm">
+                                        <div className={C_SKILLSTAB_1}>
                                             <span className={cn(
-                                                "text-[9px] font-black uppercase tracking-widest",
-                                                isActive ? "text-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.4)]" : "text-muted-foreground/30"
+                                                "text-xxxs font-black uppercase tracking-widest",
+                                                isActive ? "text-primary shadow-glow-primary-rgb" : "text-muted-foreground/30"
                                             )}>
                                                 {isActive ? t('common.active') : t('common.disabled')}
                                             </span>
@@ -169,7 +185,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
                                                 <Button
                                                     size="xs"
                                                     variant="destructive"
-                                                    className="h-9 gap-2 px-4 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-destructive/20 active:scale-95"
+                                                    className={C_SKILLSTAB_2}
                                                     disabled={updatingId === skill.id}
                                                     onClick={() => {
                                                         void handleUpdate(skill.id);
@@ -183,7 +199,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
                                             <Button
                                                 variant="outline"
                                                 size="icon"
-                                                className="h-9 w-9 rounded-xl border-destructive/20 text-destructive/60 hover:text-destructive hover:bg-destructive/10 hover:border-destructive/40 transition-all active:scale-90 shadow-sm"
+                                                className={C_SKILLSTAB_3}
                                                 disabled={isRemoving || updatingId === skill.id}
                                                 onClick={() => {
                                                     void handleUninstall(skill.id);
@@ -195,7 +211,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
                                     </div>
                                     
                                     {isActive && (
-                                        <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-primary rounded-r-full shadow-[2px_0_8px_rgba(var(--primary-rgb),0.5)]" />
+                                        <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-primary rounded-r-full shadow-edge-primary" />
                                     )}
                                 </div>
                             );

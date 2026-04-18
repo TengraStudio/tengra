@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -471,16 +481,16 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
         <div className="sftp-browser flex-1 flex bg-background text-foreground/90">
             <div className="flex-1 flex flex-col">
             <div className="browser-toolbar p-2 border-b border-border/50 flex gap-2 items-center bg-muted/20">
-                <button onClick={handleBack} disabled={currentPath === '/'} style={{ padding: '4px 8px' }}>← {t('ssh.back')}</button>
+                <button onClick={handleBack} disabled={currentPath === '/'} className="px-2 py-1">← {t('ssh.back')}</button>
                 <div style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.9em' }}>
                     {currentPath}
                 </div>
-                <button onClick={() => void handleMkdir()} style={{ padding: '4px 8px' }}>+ {t('ssh.newFolder')}</button>
+                <button onClick={() => void handleMkdir()} className="px-2 py-1">+ {t('ssh.newFolder')}</button>
                 <button
                     onClick={() => {
                         refreshDirectory(true);
                     }}
-                    style={{ padding: '4px 8px' }}
+                    className="px-2 py-1"
                 >
                     ↻ {t('ssh.refresh')}
                 </button>

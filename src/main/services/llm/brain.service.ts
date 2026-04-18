@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Brain Service - User-Focused Memory System
  * 
  * Stores ONLY user-related information:
@@ -18,6 +28,7 @@ import * as crypto from 'crypto';
 
 import { appLogger } from '@main/logging/logger';
 import { DatabaseService, SemanticFragment } from '@main/services/data/database.service';
+import { BackgroundModelResolver } from '@main/services/llm/background-model-resolver.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
@@ -46,12 +57,15 @@ export interface BrainContext {
 export class BrainService {
     private isInitialized = false;
     private userId = 'default-user'; // Can be expanded to multi-user
+    private lastExtractionTime = 0;
+    private readonly EXTRACTION_THROTTLE_MS = 30_000; // 30 seconds between fact extractions
 
     constructor(
         private db: DatabaseService,
         private embedding: EmbeddingService,
         private llmService: LLMService,
-        _processManager: ProcessManagerService
+        _processManager: ProcessManagerService,
+        private backgroundModelResolver?: BackgroundModelResolver
     ) { }
 
     async initialize(): Promise<void> {
@@ -195,12 +209,19 @@ export class BrainService {
         return sections.length > 0
             ? `## About the User\n\n${sections.join('\n\n')}`
             : '';
-    }
+    }
 
     /**
      * Auto-extract user facts from conversation
      */
     async extractUserFactsFromMessage(message: string, _userId: string = this.userId): Promise<UserFact[]> {
+        const now = Date.now();
+        if (now - this.lastExtractionTime < this.EXTRACTION_THROTTLE_MS) {
+            appLogger.debug('BrainService', 'Skipping fact extraction: throttled');
+            return [];
+        }
+        this.lastExtractionTime = now;
+
         // Sanitize message to prevent prompt injection
         const sanitizedMessage = message
             .replace(/```/g, '') // Remove code block markers
@@ -226,14 +247,20 @@ Format as JSON array:
 If NO user facts found, return: []`;
 
         try {
+            const backgroundModel = await this.backgroundModelResolver?.resolve();
+            if (!backgroundModel) {
+                appLogger.debug('BrainService', 'Skipping fact extraction: no background model available');
+                return [];
+            }
+
             const response = await this.llmService.chat(
                 [
                     { id: `${Date.now()}`, role: 'system', content: 'You extract user facts. Return ONLY JSON array. Be conservative - only extract clear user facts.', timestamp: new Date() },
                     { id: `${Date.now() + 1}`, role: 'user', content: prompt, timestamp: new Date() }
                 ],
-                'gpt-4o-mini',
+                backgroundModel.model,
                 undefined,
-                'openai'
+                backgroundModel.provider
             );
 
             const facts = safeJsonParse<Array<{ category: UserFact['category']; content: string; confidence: number }>>(

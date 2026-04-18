@@ -1,5 +1,16 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import {
     Activity,
+    Brain,
     ChevronDown,
     Cpu,
     Database,
@@ -77,6 +88,8 @@ export const SettingsSectionComponent: React.FC<SettingsSectionProps> = ({
                 return t('settings.tabs.accounts');
             case 'models':
                 return t('settings.tabs.models');
+            case 'memory':
+                return t('settings.tabs.memory');
             case 'personas':
                 return t('settings.tabs.personas');
             case 'speech':
@@ -143,6 +156,7 @@ export const SettingsSectionComponent: React.FC<SettingsSectionProps> = ({
                                     'editor',
                                     'accounts',
                                     'models',
+                                    'memory',
                                     'usage-limits',
                                     'appearance',
                                     'system',
@@ -194,6 +208,8 @@ const getIconForId = (id: SettingsCategory) => {
     switch (id) {
         case 'models':
             return Database;
+        case 'memory':
+            return Brain;
         case 'appearance':
             return Image;
         case 'images':

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import {
     Select,
     SelectContent,
@@ -39,7 +49,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>{t('codeSandbox.languageLabel')}</span>
             <Select value={value} onValueChange={handleChange} disabled={disabled}>
-                <SelectTrigger className="h-8 w-[120px] px-2 py-1 typo-caption">
+                <SelectTrigger className="h-8 w-120 px-2 py-1 typo-caption">
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

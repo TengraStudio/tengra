@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Status Bar Component
  * VSCode-like status bar with left/right sections and interactive items.
  */
@@ -8,7 +18,6 @@ import React, { createContext, useCallback, useContext, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
-
 
 export interface StatusBarItem {
     id: string;
@@ -94,8 +103,8 @@ const StatusBarItemView: React.FC<{
             onClick={item.onClick}
             title={item.tooltip}
             className={cn(
-                "tengra-status-bar__item",
-                item.onClick && "tengra-status-bar__item--clickable"
+                'flex items-center gap-1 px-2 py-0.5 text-10 transition-colors',
+                item.onClick && 'cursor-pointer hover:bg-foreground/10'
             )}
             style={item.backgroundColor ? { backgroundColor: item.backgroundColor } : undefined}
         >
@@ -110,24 +119,30 @@ export const StatusBar: React.FC<{
     variant?: 'default' | 'primary' | 'warning' | 'error';
 }> = ({ className, variant = 'default' }) => {
     const { leftItems, rightItems } = useStatusBar();
+    const variantClass = {
+        default: 'bg-primary/90',
+        primary: 'bg-primary',
+        warning: 'bg-warning',
+        error: 'bg-destructive',
+    }[variant];
 
     return (
         <div
             className={cn(
-                "tengra-status-bar",
-                `tengra-status-bar--${variant}`,
+                'flex h-6 select-none items-center justify-between text-foreground/90',
+                variantClass,
                 className
             )}
         >
             {/* Left section */}
-            <div className="tengra-status-bar__left">
+            <div className="flex items-center">
                 {leftItems.map(item => (
                     <StatusBarItemView key={item.id} item={item} />
                 ))}
             </div>
 
             {/* Right section */}
-            <div className="tengra-status-bar__right">
+            <div className="flex items-center">
                 {rightItems.map(item => (
                     <StatusBarItemView key={item.id} item={item} />
                 ))}
@@ -145,13 +160,13 @@ export const GitBranchStatus: React.FC<{
     <div
         onClick={onClick}
         className={cn(
-            "tengra-status-bar__git",
-            onClick && "tengra-status-bar__git--clickable"
+            'flex items-center gap-1 px-2 py-0.5 text-10',
+            onClick && 'cursor-pointer hover:bg-foreground/10'
         )}
     >
-        <GitBranch className="tengra-status-bar__git-icon" />
+        <GitBranch className="h-3.5 w-3.5" />
         <span>{branch}</span>
-        {modified > 0 && <span className="tengra-status-bar__git-modified">+{modified}</span>}
+        {modified > 0 && <span className="opacity-70">+{modified}</span>}
     </div>
 );
 
@@ -163,14 +178,14 @@ export const ConnectionStatus: React.FC<{
     <div
         onClick={onClick}
         className={cn(
-            "tengra-status-bar__connection",
-            onClick && "tengra-status-bar__connection--clickable"
+            'flex items-center gap-1 px-2 py-0.5 text-10',
+            onClick && 'cursor-pointer hover:bg-foreground/10'
         )}
     >
         {connected ? (
-            <Wifi className="tengra-status-bar__connection-icon" />
+            <Wifi className="h-3.5 w-3.5" />
         ) : (
-            <WifiOff className="tengra-status-bar__connection-icon tengra-status-bar__connection-icon--disconnected" />
+            <WifiOff className="h-3.5 w-3.5 text-destructive" />
         )}
         {label && <span>{label}</span>}
     </div>
@@ -183,13 +198,13 @@ export const NotificationBell: React.FC<{
     <div
         onClick={onClick}
         className={cn(
-            "tengra-status-bar__notification",
-            onClick && "tengra-status-bar__notification--clickable"
+            'relative flex items-center px-2 py-0.5',
+            onClick && 'cursor-pointer hover:bg-foreground/10'
         )}
     >
-        <Bell className="tengra-status-bar__notification-icon" />
+        <Bell className="h-3.5 w-3.5" />
         {count > 0 && (
-            <span className="tengra-status-bar__notification-badge">
+            <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-destructive px-1 text-8 font-bold">
                 {count > 99 ? '99+' : count}
             </span>
         )}
@@ -205,8 +220,8 @@ export const LoadingStatus: React.FC<{
     }
 
     return (
-        <div className="tengra-status-bar__loading">
-            <Loader2 className="tengra-status-bar__loading-spinner" />
+        <div className="flex items-center gap-1 px-2 py-0.5 text-10">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
             {label && <span>{label}</span>}
         </div>
     );
@@ -226,11 +241,11 @@ export const ErrorStatus: React.FC<{
         <div
             onClick={onClick}
             className={cn(
-                "tengra-status-bar__error",
-                onClick && "tengra-status-bar__error--clickable"
+                'flex items-center gap-1 bg-destructive/50 px-2 py-0.5 text-10',
+                onClick && 'cursor-pointer hover:bg-destructive/70'
             )}
         >
-            <AlertCircle className="tengra-status-bar__error-icon" />
+            <AlertCircle className="h-3.5 w-3.5" />
             <span>
                 {count} {label}
             </span>
@@ -252,11 +267,11 @@ export const WarningStatus: React.FC<{
         <div
             onClick={onClick}
             className={cn(
-                "tengra-status-bar__warning",
-                onClick && "tengra-status-bar__warning--clickable"
+                'flex items-center gap-1 bg-warning/50 px-2 py-0.5 text-10',
+                onClick && 'cursor-pointer hover:bg-warning/70'
             )}
         >
-            <AlertCircle className="tengra-status-bar__warning-icon" />
+            <AlertCircle className="h-3.5 w-3.5" />
             <span>
                 {count} {label}
             </span>
@@ -271,11 +286,11 @@ export const ModelStatus: React.FC<{
     <div
         onClick={onClick}
         className={cn(
-            "tengra-status-bar__model",
-            onClick && "tengra-status-bar__model--clickable"
+            'flex items-center gap-1 px-2 py-0.5 text-10',
+            onClick && 'cursor-pointer hover:bg-foreground/10'
         )}
     >
-        <Zap className="tengra-status-bar__model-icon" />
+        <Zap className="h-3.5 w-3.5" />
         <span>{model}</span>
     </div>
 );

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import {
     AlertCircle,
     Brain,
@@ -25,6 +35,11 @@ import type { GroupedModels, ModelInfo } from '@/types';
 import type { AppSettings } from '@/types/settings';
 
 import type { ProviderAccounts, ProviderQuotas } from '../pages/ModelsPage';
+
+/* Batch-02: Extracted Long Classes */
+const C_INSTALLEDMODELSGRID_1 = "w-full h-10 bg-muted/30 border border-border/50 rounded-xl pl-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all";
+const C_INSTALLEDMODELSGRID_2 = "flex items-center gap-2 px-4 py-2 bg-muted/30 border border-border/50 rounded-xl typo-caption font-bold text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all";
+
 
 interface InstalledModelsGridProps {
     groupedModels: GroupedModels;
@@ -641,7 +656,7 @@ export function InstalledModelsGrid({
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
                         placeholder={t('modelsPage.searchPlaceholder')}
-                        className="w-full h-10 bg-muted/30 border border-border/50 rounded-xl pl-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all"
+                        className={C_INSTALLEDMODELSGRID_1}
                     />
                 </div>
 
@@ -661,7 +676,7 @@ export function InstalledModelsGrid({
 
                     <button
                         onClick={onRefresh}
-                        className="flex items-center gap-2 px-4 py-2 bg-muted/30 border border-border/50 rounded-xl typo-caption font-bold text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all"
+                        className={C_INSTALLEDMODELSGRID_2}
                     >
                         <RefreshCw className="w-3.5 h-3.5" />
                         {t('modelsPage.refresh')}

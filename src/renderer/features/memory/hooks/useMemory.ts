@@ -1,4 +1,15 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import {
+    AdvancedMemoryHealthSummary,
     AdvancedSemanticFragment,
     MemoryCategory,
     MemorySearchAnalytics,
@@ -8,7 +19,10 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
-import { recordMemoryInspectorHealthEvent } from '@/store/memory-inspector-health.store';
+import {
+    recordMemoryInspectorHealthEvent,
+    recordMemoryInspectorRuntimeHealth
+} from '@/store/memory-inspector-health.store';
 
 import {
     memoryInspectorErrorCodes,
@@ -41,6 +55,7 @@ interface UseMemoryReturn {
     stats: MemoryStatistics | null;
     searchAnalytics: MemorySearchAnalytics | null;
     contextPreview: AdvancedSemanticFragment[];
+    memoryHealth: AdvancedMemoryHealthSummary | null;
     isLoading: boolean;
     error: string | null;
     lastErrorCode: string | null;
@@ -82,6 +97,7 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
     const [stats, setStats] = useState<MemoryStatistics | null>(null);
     const [searchAnalytics, setSearchAnalytics] = useState<MemorySearchAnalytics | null>(null);
     const [contextPreview, setContextPreview] = useState<AdvancedSemanticFragment[]>([]);
+    const [memoryHealth, setMemoryHealth] = useState<AdvancedMemoryHealthSummary | null>(null);
 
     const setHookError = useCallback((errorCode: string, message: string) => {
         setLastErrorCode(errorCode);
@@ -123,7 +139,7 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
         const maxAttempts = 2;
         for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
             try {
-                const [pendingRes, statsRes, analyticsRes, contextRes] = await Promise.all([
+                const [pendingRes, statsRes, analyticsRes, contextRes, healthRes] = await Promise.all([
                     window.electron.advancedMemory.getPending(),
                     window.electron.advancedMemory.getStats(),
                     window.electron.advancedMemory.getSearchAnalytics(),
@@ -131,13 +147,15 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
                         query: searchQuery,
                         limit: 8,
                         includeArchived: activeTab === 'archived'
-                    })
+                    }),
+                    window.electron.advancedMemory.health()
                 ]);
 
                 const pendingResponse = pendingRes as MemoryIpcResponse<PendingMemory[]>;
                 const statsResponse = statsRes as MemoryIpcResponse<MemoryStatistics>;
                 const analyticsResponse = analyticsRes as MemoryIpcResponse<MemorySearchAnalytics>;
                 const contextResponse = contextRes as MemoryIpcResponse<{ memories: AdvancedSemanticFragment[]; totalMatches: number }>;
+                const healthResponse = healthRes as MemoryIpcResponse<AdvancedMemoryHealthSummary>;
 
                 if (pendingResponse.success && Array.isArray(pendingResponse.data)) {
                     setPendingMemories(pendingResponse.data);
@@ -150,6 +168,10 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
                 }
                 if (contextResponse.success && contextResponse.data) {
                     setContextPreview(contextResponse.data.memories);
+                }
+                if (healthResponse.success && healthResponse.data) {
+                    setMemoryHealth(healthResponse.data);
+                    recordMemoryInspectorRuntimeHealth(healthResponse.data);
                 }
 
                 const confirmedResponse = searchQuery
@@ -174,6 +196,7 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
                     statsResponse as MemoryIpcResponse<object | object[] | string | number | boolean | null>,
                     analyticsResponse as MemoryIpcResponse<object | object[] | string | number | boolean | null>,
                     contextResponse as MemoryIpcResponse<object | object[] | string | number | boolean | null>,
+                    healthResponse as MemoryIpcResponse<object | object[] | string | number | boolean | null>,
                     confirmedResult as MemoryIpcResponse<object | object[] | string | number | boolean | null>
                 ].filter(response => response.success === false);
 
@@ -228,6 +251,24 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
             window.clearTimeout(timeoutId);
         };
     }, [loadData]);
+
+    useEffect(() => {
+        const pollId = window.setInterval(() => {
+            void window.electron.advancedMemory.health()
+                .then(response => {
+                    const healthResponse = response as MemoryIpcResponse<AdvancedMemoryHealthSummary>;
+                    if (healthResponse.success && healthResponse.data) {
+                        setMemoryHealth(healthResponse.data);
+                        recordMemoryInspectorRuntimeHealth(healthResponse.data);
+                    }
+                })
+                .catch(() => undefined);
+        }, 8000);
+
+        return () => {
+            window.clearInterval(pollId);
+        };
+    }, []);
 
     const recordOperationFailure = useCallback((
         payload: MemoryIpcMetadata,
@@ -469,7 +510,7 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
     }, [loadData]);
 
     return {
-        pendingMemories, confirmedMemories, stats, searchAnalytics, contextPreview, isLoading, error, lastErrorCode,
+        pendingMemories, confirmedMemories, stats, searchAnalytics, contextPreview, memoryHealth, isLoading, error, lastErrorCode,
         setPendingMemories, setConfirmedMemories, loadData,
         handleConfirm, handleReject, handleConfirmAll, handleRejectAll, handleRunDecay,
         handleDelete, handleDeleteSelected, handleArchive, handleArchiveSelected, handleRestore,

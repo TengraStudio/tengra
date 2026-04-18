@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Input } from '@renderer/components/ui/input';
 import {
     Select,
@@ -10,6 +20,11 @@ import { Language, useTranslation } from '@renderer/i18n';
 import { cn } from '@renderer/lib/utils';
 import { Download, FileText, RefreshCw, Search, Trash2 } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+
+/* Batch-02: Extracted Long Classes */
+const C_WORKSPACELOGSTAB_1 = "flex items-center gap-2 px-4 py-2 bg-muted/30 hover:bg-muted/50 border border-border/50 rounded-lg text-sm font-medium transition-colors h-10";
+const C_WORKSPACELOGSTAB_2 = "flex items-center gap-2 px-4 py-2 bg-muted/30 hover:bg-muted/50 border border-border/50 rounded-lg text-sm font-medium transition-colors h-10";
+
 
 interface LogEntry {
     timestamp: string;
@@ -264,7 +279,7 @@ export const WorkspaceLogsTab: React.FC<WorkspaceLogsTabProps> = ({
                         value={levelFilter}
                         onValueChange={(val: 'all' | LogEntry['level']) => setLevelFilter(val)}
                     >
-                        <SelectTrigger className="w-[140px] h-10">
+                        <SelectTrigger className="w-140 h-10">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -276,7 +291,7 @@ export const WorkspaceLogsTab: React.FC<WorkspaceLogsTabProps> = ({
                         </SelectContent>
                     </Select>
                     <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                        <SelectTrigger className="w-[180px] h-10">
+                        <SelectTrigger className="w-180 h-10">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -304,14 +319,14 @@ export const WorkspaceLogsTab: React.FC<WorkspaceLogsTabProps> = ({
                     </button>
                     <button
                         onClick={exportLogs}
-                        className="flex items-center gap-2 px-4 py-2 bg-muted/30 hover:bg-muted/50 border border-border/50 rounded-lg text-sm font-medium transition-colors h-10"
+                        className={C_WORKSPACELOGSTAB_1}
                     >
                         <Download className="w-4 h-4" />
                         {t('logging.export')}
                     </button>
                     <button
                         onClick={clearLogs}
-                        className="flex items-center gap-2 px-4 py-2 bg-muted/30 hover:bg-muted/50 border border-border/50 rounded-lg text-sm font-medium transition-colors h-10"
+                        className={C_WORKSPACELOGSTAB_2}
                     >
                         <Trash2 className="w-4 h-4" />
                         {t('workspaceDashboard.logsClear')}

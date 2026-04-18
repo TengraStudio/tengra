@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { appLogger } from '@main/logging/logger';
 import { EntityKnowledge, EpisodicMemory, SemanticFragment } from '@main/services/data/database.service';
 import { AdvancedMemoryService, PersonalitySettings, SummarizationResult } from '@main/services/llm/advanced-memory.service';
@@ -43,11 +53,23 @@ export class MemoryService {
     }
 
     async removeEntityFact(_entityName: string): Promise<boolean> {
-        // AdvancedMemoryService doesn't have a direct removeEntityFact yet, but we can add it if needed
-        // Or just call DB directly if we must. For now, let's assume it's okay to just use name.
-        // Actually, MemoryService.removeEntityFact was using ID.
-        // I'll update AdvancedMemoryService to handle deletion if needed.
-        return true;
+        const normalized = _entityName.trim();
+        if (!normalized) {
+            return false;
+        }
+
+        const allEntities = await this.advancedMemory.getAllEntityFacts();
+        const directEntityName = allEntities.find(entity => entity.entityName === normalized);
+        if (directEntityName) {
+            return this.advancedMemory.deleteEntityFacts(directEntityName.entityName);
+        }
+
+        const byId = allEntities.find(entity => entity.id === normalized);
+        if (byId) {
+            return this.advancedMemory.deleteEntityFacts(byId.entityName);
+        }
+
+        return this.advancedMemory.deleteEntityFacts(normalized);
     }
 
     // High-level "Think" method to gather context
@@ -56,9 +78,26 @@ export class MemoryService {
     }
 
     async getAllMemories(): Promise<{ facts: SemanticFragment[], episodes: EpisodicMemory[], entities: EntityKnowledge[] }> {
-        // This is mostly for the UI memory view.
-        // We can still call DB directly for this if AdvancedMemory doesn't expose it.
-        return { facts: [], episodes: [], entities: [] };
+        const [facts, episodes, entities] = await Promise.all([
+            this.advancedMemory.getAllAdvancedMemories(),
+            this.advancedMemory.getAllEpisodes(),
+            this.advancedMemory.getAllEntityFacts(),
+        ]);
+
+        const mappedFacts = facts.map(memory => ({
+            id: memory.id,
+            content: memory.content,
+            embedding: memory.embedding,
+            source: memory.source,
+            sourceId: memory.sourceId,
+            tags: memory.tags,
+            importance: memory.importance,
+            workspacePath: memory.workspaceId,
+            createdAt: memory.createdAt,
+            updatedAt: memory.updatedAt,
+        })) as SemanticFragment[];
+
+        return { facts: mappedFacts, episodes, entities };
     }
 
     async forgetFact(id: string): Promise<boolean> {

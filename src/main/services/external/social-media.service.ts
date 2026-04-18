@@ -1,6 +1,18 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
+import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { LLMService } from '@main/services/llm/llm.service';
+import { MemoryContextService } from '@main/services/llm/memory-context.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { Message } from '@shared/types/chat';
@@ -13,6 +25,8 @@ import { WhatsAppProvider } from './social-media/whatsapp.provider';
 
 /** Maximum response length sent back to social platforms */
 const MAX_REPLY_LENGTH = 1800;
+const SOCIAL_MEMORY_TIMEOUT_MS = 350;
+const SOCIAL_MEMORY_MATCH_LIMIT = 3;
 
 /**
  * Service that manages social media bot providers (Discord, Telegram, WhatsApp)
@@ -20,13 +34,16 @@ const MAX_REPLY_LENGTH = 1800;
  */
 export class SocialMediaService extends BaseService {
     private providers: Map<string, SocialMediaProvider> = new Map();
+    private readonly memoryContext: MemoryContextService;
 
     constructor(
         private settingsService: SettingsService,
         private llmService?: LLMService,
-        private eventBusService?: EventBusService
+        private eventBusService?: EventBusService,
+        advancedMemoryService?: AdvancedMemoryService
     ) {
         super('SocialMediaService');
+        this.memoryContext = new MemoryContextService(advancedMemoryService);
     }
 
     /** Inject LLMService after construction (for circular dependency avoidance) */
@@ -158,14 +175,20 @@ export class SocialMediaService extends BaseService {
                     timestamp: new Date(message.timestamp),
                 },
             ];
+            const memoryContext = await this.memoryContext.getResolutionContext(message.content, {
+                timeoutMs: SOCIAL_MEMORY_TIMEOUT_MS,
+                limit: SOCIAL_MEMORY_MATCH_LIMIT
+            });
+            const memoryAwareMessages = this.memoryContext.prependMemoryMessage(messages, memoryContext);
 
-            const result = await this.llmService?.chat(messages, model, undefined, provider);
+            const result = await this.llmService?.chat(memoryAwareMessages, model, undefined, provider);
             if (!result) {
                 throw new Error('No result from LLM');
             }
             const responseText = this.truncateResponse(result.content);
 
             await message.reply(responseText);
+            this.captureConversationMemory(memoryAwareMessages, provider, model, result.content);
 
             appLogger.info('SocialMediaService', `Replied to ${message.platform} (${message.userName}) via ${provider}/${model}`);
         } catch (error) {
@@ -178,6 +201,23 @@ export class SocialMediaService extends BaseService {
     private truncateResponse(text: string): string {
         if (text.length <= MAX_REPLY_LENGTH) { return text; }
         return text.slice(0, MAX_REPLY_LENGTH - 3) + '...';
+    }
+
+    private captureConversationMemory(
+        messages: Message[],
+        provider: string,
+        model: string,
+        assistantContent: string
+    ): void {
+        if (!assistantContent.trim()) {
+            return;
+        }
+        this.memoryContext.captureConversation({
+            provider,
+            model,
+            messages,
+            assistantContent
+        });
     }
 
     /**

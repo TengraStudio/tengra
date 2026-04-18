@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Button } from '@renderer/components/ui/button';
 import { Modal } from '@renderer/components/ui/modal';
 import { Brain,Lightbulb, Sparkles, Zap } from 'lucide-react';
@@ -38,39 +48,41 @@ export function TipModal({ language = 'en' }: { language?: Language }) {
 
     return (
         <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title={t('tips.title')}>
-            <div className="tengra-tip-modal">
-                <div className="tengra-tip-modal__icon-wrapper">
-                    <div className="tengra-tip-modal__icon-glow" />
-                    <Lightbulb className="tengra-tip-modal__icon" />
-                    <div className="tengra-tip-modal__badge">
-                        <Sparkles className="tengra-tip-modal__badge-icon" />
+            <div className="flex flex-col items-center justify-center p-6 text-center max-w-sm mx-auto space-y-6">
+                <div className="relative">
+                    <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
+                    <div className="relative bg-background border border-border/50 p-4 rounded-2xl shadow-xl">
+                        <Lightbulb className="w-10 h-10 text-primary animate-pulse" />
+                    </div>
+                    <div className="absolute -top-2 -right-2 bg-accent text-accent-foreground p-1.5 rounded-full shadow-md animate-bounce">
+                        <Sparkles className="w-4 h-4" />
                     </div>
                 </div>
 
-                <div className="tengra-tip-modal__content">
-                    <h3 className="tengra-tip-modal__title">
-                        <Zap className="tengra-tip-modal__title-icon" />
+                <div className="space-y-3">
+                    <h3 className="flex items-center justify-center gap-2 text-xl font-bold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">
+                        <Zap className="w-5 h-5 text-accent" />
                         {t('tips.didYouKnow')}
                     </h3>
-                    <p className="tengra-tip-modal__text">
+                    <p className="text-muted-foreground leading-relaxed italic border-l-2 border-primary/30 pl-4 py-1 text-left">
                         "{currentTip}"
                     </p>
                 </div>
 
-                <div className="tengra-tip-modal__actions">
-                    <Button variant="outline" className="tengra-tip-modal__button tengra-tip-modal__button--outline" onClick={() => setIsOpen(false)}>
+                <div className="flex w-full gap-3 pt-2">
+                    <Button variant="outline" className="flex-1" onClick={() => setIsOpen(false)}>
                         {t('tips.gotIt')}
                     </Button>
-                    <Button className="tengra-tip-modal__button tengra-tip-modal__button--primary" onClick={() => setIsOpen(false)}>
+                    <Button className="flex-1 shadow-lg shadow-primary/20" onClick={() => setIsOpen(false)}>
                         <Brain className="w-4 h-4 mr-2" />
                         {t('tips.discoverMore')}
                     </Button>
                 </div>
 
-                <div className="tengra-tip-modal__footer">
+                <div className="pt-2">
                     <button
                         onClick={() => setIsOpen(false)}
-                        className="tengra-tip-modal__dismiss"
+                        className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors cursor-pointer bg-transparent border-none p-2"
                     >
                         {t('tips.dontShowAgain')}
                     </button>

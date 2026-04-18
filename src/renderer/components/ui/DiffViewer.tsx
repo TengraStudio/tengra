@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { DiffEditor } from '@monaco-editor/react';
 import { Loader2 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -46,7 +56,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
     }, []);
 
     return (
-        <div className={cn('tengra-diff-viewer', className)}>
+        <div className={cn('relative w-full h-full rounded-lg border border-border/50 overflow-hidden bg-background shadow-sm', className)}>
             {isMonacoReady ? (
                 <DiffEditor
                     height="100%"
@@ -55,8 +65,8 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
                     modified={modified}
                     theme={isLight ? 'light' : 'vs-dark'}
                     loading={
-                        <div className="tengra-diff-viewer__loading">
-                            <Loader2 className="tengra-diff-viewer__spinner" />
+                        <div className="flex items-center justify-center h-full w-full bg-background/50 text-muted-foreground gap-2">
+                            <Loader2 className="w-5 h-5 animate-spin text-primary" />
                             {t('diffViewer.loading')}
                         </div>
                     }
@@ -71,8 +81,8 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
                     }}
                 />
             ) : (
-                <div className="tengra-diff-viewer__loading">
-                    <Loader2 className="tengra-diff-viewer__spinner" />
+                <div className="flex items-center justify-center h-full w-full bg-background/50 text-muted-foreground gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
                     {t('diffViewer.loading')}
                 </div>
             )}

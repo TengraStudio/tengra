@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { applyGitTreeStatus } from '@renderer/features/workspace/utils/gitTreeStatus';
 import { joinPath, sortNodes } from '@renderer/features/workspace/utils/workspaceUtils';
@@ -249,7 +259,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
                 {...listeners}
                 data-entry-id={entryId}
                 className={cn(
-                    'flex items-center gap-1.5 tw-py-5px px-2 rounded-sm cursor-pointer transition-all select-none group border border-transparent outline-none',
+                    'flex items-center gap-1.5 py-5px px-2 rounded-sm cursor-pointer transition-all select-none group border border-transparent outline-none',
                     isSelected
                         ? 'bg-primary/10 text-primary border-primary/20 focus:bg-primary/20'
                         : 'hover:bg-muted/20 text-muted-foreground/80 hover:text-foreground focus:bg-muted/30',
@@ -281,7 +291,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
                 </span>
                 {node.gitStatus && (
                     <span
-                        className={cn('ml-1 tw-text-10 font-bold leading-none', gitBadgeClass)}
+                        className={cn('ml-1 text-10 font-bold leading-none', gitBadgeClass)}
                         title={`Git: ${node.gitRawStatus ?? node.gitStatus}`}
                     >
                         {node.gitStatus}

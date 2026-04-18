@@ -1,9 +1,24 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { AudioLines, File as FileIcon, FileCode, FileText, Image as ImageIcon, Video, X } from 'lucide-react';
 import { memo } from 'react';
 
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 import { Attachment } from '@/types';
+
+/* Batch-02: Extracted Long Classes */
+const C_ATTACHMENTLIST_1 = "group relative flex items-center gap-1.5 rounded-xl border border-border/20 bg-muted/10 px-2 py-1 pr-6 typo-body text-muted-foreground transition-colors hover:bg-muted/20";
+const C_ATTACHMENTLIST_2 = "absolute right-1 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-muted-foreground opacity-100 transition-all hover:bg-destructive/10 hover:text-destructive md:opacity-0 md:group-hover:opacity-100";
+
 
 interface AttachmentListProps {
     attachments: Attachment[];
@@ -36,7 +51,7 @@ export const AttachmentList = memo(({ attachments, onRemove, t }: AttachmentList
                     {attachments.map((att, i) => (
                         <div
                             key={i}
-                            className="group relative flex items-center gap-1.5 rounded-xl border border-border/20 bg-muted/10 px-2 py-1 pr-6 typo-body text-muted-foreground transition-colors hover:bg-muted/20"
+                            className={C_ATTACHMENTLIST_1}
                         >
                             {(att.type === 'image' || att.type === 'video') && typeof att.preview === 'string' ? (
                                 <img
@@ -52,10 +67,10 @@ export const AttachmentList = memo(({ attachments, onRemove, t }: AttachmentList
                                     {getFileIcon(att.type)}
                                 </span>
                             )}
-                            <span className="max-w-[100px] truncate">{att.name}</span>
+                            <span className="max-w-100 truncate">{att.name}</span>
                             <button
                                 onClick={() => onRemove(i)}
-                                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-muted-foreground opacity-100 transition-all hover:bg-destructive/10 hover:text-destructive md:opacity-0 md:group-hover:opacity-100"
+                                className={C_ATTACHMENTLIST_2}
                                 aria-label={t('input.removeAttachment', { name: att.name })}
                             >
                                 <X size={12} aria-hidden="true" />

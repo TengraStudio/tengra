@@ -1,0 +1,119 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/* stylelint-disable */
+
+/* Monaco Editor Overlays - High z-index to appear above all UI components */
+.monaco-editor .monaco-hover {
+    z-index: 10000 !important;
+}
+
+.monaco-editor .editor-widget {
+    z-index: 10000 !important;
+}
+
+.monaco-editor .suggest-widget {
+    z-index: 10001 !important;
+}
+
+.monaco-editor .parameter-hints-widget {
+    z-index: 10001 !important;
+}
+
+.monaco-editor .monaco-editor-hover {
+    z-index: 10000 !important;
+}
+
+.monaco-editor .overflowingContentWidgets {
+    z-index: 10000 !important;
+}
+
+.monaco-editor .contentWidgets {
+    z-index: 10000 !important;
+}
+
+/* Agent Panel Animations */
+@keyframes scan {
+    0% {
+        transform: translateY(-100%);
+    }
+
+    100% {
+        transform: translateY(100vh);
+    }
+}
+
+@keyframes scan-slow {
+    0% {
+        top: -10%;
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    90% {
+        opacity: 1;
+    }
+
+    100% {
+        top: 110%;
+        opacity: 0;
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(200%);
+    }
+}
+
+@keyframes ping-slow {
+    0% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+
+    50% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+}
+
+.animate-scan {
+    animation: scan 3s linear infinite;
+}
+
+.animate-scan-slow {
+    animation: scan-slow 8s ease-in-out infinite;
+}
+
+.animate-shimmer {
+    animation: shimmer 2s linear infinite;
+}
+
+.animate-ping-slow {
+    animation: ping-slow 3s ease-in-out infinite;
+}
+
+/* ==============================
+ * ACCESSIBILITY ENHANCEMENTS
+ * ============================== */
+

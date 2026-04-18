@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import {
     AlertTriangle,
     CheckCircle,
@@ -12,6 +22,7 @@ import {
 import React, { useState } from 'react';
 
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
 import type { PromptAnalysis, PromptSuggestion, PromptSuggestionType } from '../utils/prompt-optimizer';
 
@@ -53,7 +64,7 @@ const SuggestionItem: React.FC<{
     t: (key: string) => string;
 }> = ({ suggestion, index, onApply, onDismiss, t }) => (
     <div className="group flex items-start gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-accent/50">
-        <span className={`mt-0.5 shrink-0 ${SEVERITY_STYLES[suggestion.severity]}`}>
+        <span className={cn('mt-0.5 shrink-0', SEVERITY_STYLES[suggestion.severity])}>
             {TYPE_ICONS[suggestion.type]}
         </span>
         <span className="typo-caption text-muted-foreground flex-1 leading-relaxed">
@@ -112,7 +123,7 @@ export const PromptSuggestions: React.FC<PromptSuggestionsProps> = React.memo(({
                 onClick={() => setIsExpanded(prev => !prev)}
                 className="flex w-full items-center gap-2 px-3 py-1.5 typo-caption transition-colors hover:bg-accent/50"
             >
-                <span className={`px-1.5 py-0.5 rounded text-xxxs font-semibold ${getScoreColor(analysis.score)}`}>
+                <span className={cn('px-1.5 py-0.5 rounded text-xxxs font-semibold', getScoreColor(analysis.score))}>
                     {analysis.score}
                 </span>
                 <span className="text-muted-foreground font-medium">

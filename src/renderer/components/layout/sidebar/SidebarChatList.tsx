@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { FolderPlus, MessageSquare, Pin, Search } from 'lucide-react';
 import React, { useMemo } from 'react';
 import { Virtuoso } from 'react-virtuoso';
@@ -71,22 +81,22 @@ export const SidebarChatList = React.memo(
             <>
                 {/* Search */}
                 {!isCollapsed && (
-                    <div className="tengra-sidebar-chat-list__search-wrap">
-                        <div className="tengra-sidebar-chat-list__search-box">
-                            <Search className="tengra-sidebar-chat-list__search-icon" />
+                    <div className="px-3 pb-2">
+                        <div className="relative">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
                             <input
                                 type="text"
                                 placeholder={t('sidebar.searchChats')}
                                 value={searchQuery}
                                 onChange={onSearchChange}
-                                className="tengra-sidebar-chat-list__search-input focus:border-primary/50 transition-colors"
+                                className="w-full rounded-lg border border-border/40 bg-muted/30 py-2 pl-8 pr-3 text-xs font-medium outline-none transition-colors focus:border-primary/50"
                             />
                         </div>
                     </div>
                 )}
 
                 {/* Chat List */}
-                <div className="tengra-sidebar-chat-list__container scrollbar-thin scrollbar-thumb-border/30">
+                <div className="flex-1 space-y-1 overflow-y-auto px-2 scrollbar-thin scrollbar-thumb-border/30">
                     {/* Pinned */}
                     {pinnedChats.length > 0 && (
                         <div>

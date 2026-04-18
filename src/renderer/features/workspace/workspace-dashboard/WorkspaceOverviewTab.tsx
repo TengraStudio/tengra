@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { WorkspaceDashboardHeader } from '@renderer/features/workspace/components/WorkspaceDashboardHeader';
 import { WorkspaceStatsCards } from '@renderer/features/workspace/components/WorkspaceStatsCards';
 
@@ -100,11 +110,11 @@ export const WorkspaceOverviewTab = ({
                         {t('workspaceDashboard.techStack')}
                     </h3>
                     <div className="flex flex-wrap gap-2">
-                        <span className="px-3 py-1 rounded-full border border-primary/20 bg-primary/5 tw-text-11 font-semibold text-primary">
+                        <span className="px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-11 font-semibold text-primary">
                             {analysis.type}
                         </span>
                         {analysis.monorepo && (
-                            <span className="px-3 py-1 rounded-full border border-border/60 bg-muted/20 tw-text-11 font-semibold text-foreground/80">
+                            <span className="px-3 py-1 rounded-full border border-border/60 bg-muted/20 text-11 font-semibold text-foreground/80">
                                 {analysis.monorepo.type}
                             </span>
                         )}
@@ -124,7 +134,7 @@ export const WorkspaceOverviewTab = ({
                         <div className="w-1.5 h-1.5 rounded-full bg-success" />
                         {t('workspaceDashboard.langDist')}
                     </h3>
-                    <div className="space-y-3 tw-max-h-250 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20">
+                    <div className="space-y-3 max-h-250 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20">
                         {Object.entries(analysis.languages)
                             .sort(([, a], [, b]) => (b as number) - (a as number))
                             .slice(0, 15)

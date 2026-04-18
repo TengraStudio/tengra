@@ -1,6 +1,23 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Download, Play, Square, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_TERMINALRECORDINGPANEL_1 = "absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 w-460 max-w-95vw";
+const C_TERMINALRECORDINGPANEL_2 = "h-7 px-2 rounded typo-caption border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1";
+const C_TERMINALRECORDINGPANEL_3 = "h-7 px-2 rounded typo-caption border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1";
+const C_TERMINALRECORDINGPANEL_4 = "h-7 px-2 rounded typo-caption border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1";
+
 
 interface TerminalRecordingEvent {
     at: number;
@@ -58,7 +75,7 @@ export function TerminalRecordingPanel({
     setReplayText,
 }: TerminalRecordingPanelProps) {
     return (
-        <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 tw-w-460 tw-max-w-95vw">
+        <div className={C_TERMINALRECORDINGPANEL_1}>
             <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="typo-caption font-semibold text-foreground">{t('terminal.recordingsTitle')}</div>
                 <button
@@ -92,7 +109,7 @@ export function TerminalRecordingPanel({
                         }
                     }}
                     disabled={!selectedRecording || isReplayRunning}
-                    className="h-7 px-2 rounded typo-caption border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                    className={C_TERMINALRECORDINGPANEL_2}
                 >
                     <Play className="w-3 h-3" />
                     {t('terminal.replay')}
@@ -100,7 +117,7 @@ export function TerminalRecordingPanel({
                 <button
                     onClick={stopReplay}
                     disabled={!isReplayRunning}
-                    className="h-7 px-2 rounded typo-caption border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                    className={C_TERMINALRECORDINGPANEL_3}
                 >
                     <Square className="w-3 h-3" />
                     {t('common.stop')}
@@ -112,14 +129,14 @@ export function TerminalRecordingPanel({
                         }
                     }}
                     disabled={!selectedRecording}
-                    className="h-7 px-2 rounded typo-caption border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                    className={C_TERMINALRECORDINGPANEL_4}
                 >
                     <Download className="w-3 h-3" />
                     {t('terminal.exportRecording')}
                 </button>
             </div>
             {activeRecordingTabId && (
-                <div className="mb-2 px-2 py-1 rounded border border-destructive/30 bg-destructive/5 tw-text-10 text-destructive">
+                <div className="mb-2 px-2 py-1 rounded border border-destructive/30 bg-destructive/5 text-10 text-destructive">
                     {t('terminal.recordingActive')}: {activeRecordingLabel ?? activeRecordingTabId}
                 </div>
             )}
@@ -143,7 +160,7 @@ export function TerminalRecordingPanel({
                         )}
                     >
                         <div className="typo-caption text-foreground truncate">{recording.tabName}</div>
-                        <div className="tw-text-10 text-muted-foreground truncate">
+                        <div className="text-10 text-muted-foreground truncate">
                             {new Date(recording.startedAt).toLocaleString()} -{' '}
                             {(recording.durationMs / 1000).toFixed(1)}s - {recording.events.length}{' '}
                             {t('terminal.eventsLabel')}
@@ -153,10 +170,10 @@ export function TerminalRecordingPanel({
             </div>
             {selectedRecording && (
                 <div className="rounded border border-border/60 bg-background/70">
-                    <div className="px-2 py-1 border-b border-border/60 tw-text-10 text-muted-foreground">
+                    <div className="px-2 py-1 border-b border-border/60 text-10 text-muted-foreground">
                         {t('terminal.replayPreview')}
                     </div>
-                    <pre className="p-2 tw-text-11 leading-4 text-foreground max-h-44 overflow-auto whitespace-pre-wrap break-words">
+                    <pre className="p-2 text-11 leading-4 text-foreground max-h-44 overflow-auto whitespace-pre-wrap break-words">
                         {isReplayRunning || replayText ? replayText : selectedRecordingText}
                     </pre>
                 </div>

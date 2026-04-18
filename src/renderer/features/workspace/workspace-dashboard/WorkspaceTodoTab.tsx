@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 
 import { Input } from '@renderer/components/ui/input';
 import { Label } from '@renderer/components/ui/label';
@@ -9,6 +19,7 @@ import {
     SelectValue,
 } from '@renderer/components/ui/select';
 import { Textarea } from '@renderer/components/ui/textarea';
+import { cn } from '@renderer/lib/utils';
 import { appLogger } from '@renderer/utils/renderer-logger';
 import {
     addEdge,
@@ -47,6 +58,11 @@ import { useTranslation } from '@/i18n';
 import { JsonObject, JsonValue, Workspace } from '@/types';
 
 
+
+/* Batch-02: Extracted Long Classes */
+const C_WORKSPACETODOTAB_1 = "h-8 px-3 rounded-md bg-primary text-primary-foreground typo-caption inline-flex items-center gap-1 transition-colors hover:bg-primary/90";
+const C_WORKSPACETODOTAB_2 = "h-8 px-2 rounded-md border border-border typo-caption inline-flex items-center cursor-pointer transition-colors hover:bg-muted";
+const C_WORKSPACETODOTAB_3 = "h-8 px-3 rounded-md border border-destructive/40 text-destructive typo-caption transition-colors hover:bg-destructive/10";
 interface WorkspaceTodoTabProps {
     workspace: Workspace
     onUpdate?: (updates: Partial<Workspace>) => Promise<void>
@@ -134,12 +150,18 @@ const TodoNode = ({ data, selected }: NodeProps<Node<TodoCanvasNodeData>>) => {
     const assignee = typeof data.assignee === 'string' ? data.assignee : '';
 
     return (
-        <div className={`min-w-60 max-w-80 rounded-xl border bg-card text-card-foreground shadow-sm ${selected ? 'border-primary' : 'border-border'}`}>
+        <div className={cn(
+            'min-w-60 max-w-80 rounded-xl border bg-card text-card-foreground shadow-sm',
+            selected ? 'border-primary' : 'border-border'
+        )}>
             <Handle type="target" position={Position.Left} className="!bg-primary/80 !border-0 !w-2 !h-2" />
             <div className="p-3 space-y-2">
                 <div className="typo-caption font-medium line-clamp-2">{title || '—'}</div>
                 <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 tw-text-10 ${STATUS_CLASSES[status]}`}>
+                    <span className={cn(
+                        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-10',
+                        STATUS_CLASSES[status]
+                    )}>
                         {statusIcon(status)}
                         {status === 'completed'
                             ? t('workspaceDashboard.todoCanvas.completed')
@@ -148,12 +170,12 @@ const TodoNode = ({ data, selected }: NodeProps<Node<TodoCanvasNodeData>>) => {
                                 : t('workspaceDashboard.pending')}
                     </span>
                     {category ? (
-                        <span className="inline-flex items-center rounded-full px-2 py-0.5 tw-text-10 bg-primary/15 text-primary">
+                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-10 bg-primary/15 text-primary">
                             {category}
                         </span>
                     ) : null}
                     {assignee ? (
-                        <span className="inline-flex items-center rounded-full px-2 py-0.5 tw-text-10 bg-accent/20 text-accent-foreground">
+                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-10 bg-accent/20 text-accent-foreground">
                             {assignee}
                         </span>
                     ) : null}
@@ -392,7 +414,7 @@ const TodoCanvasStatsBar: React.FC<TodoCanvasStatsBarProps> = ({
                 value={statusFilter}
                 onValueChange={(val: 'all' | TodoStatus) => setStatusFilter(val)}
             >
-                <SelectTrigger className="h-8 w-[120px] typo-caption">
+                <SelectTrigger className="h-8 w-120 typo-caption">
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -409,7 +431,7 @@ const TodoCanvasStatsBar: React.FC<TodoCanvasStatsBarProps> = ({
                 </SelectContent>
             </Select>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="h-8 w-[140px] typo-caption">
+                <SelectTrigger className="h-8 w-140 typo-caption">
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -425,7 +447,7 @@ const TodoCanvasStatsBar: React.FC<TodoCanvasStatsBarProps> = ({
             </Select>
             <button
                 onClick={onAddNode}
-                className="h-8 px-3 rounded-md bg-primary text-primary-foreground typo-caption inline-flex items-center gap-1 transition-colors hover:bg-primary/90"
+                className={C_WORKSPACETODOTAB_1}
             >
                 <Plus className="w-3.5 h-3.5" />
                 {t('workspaceDashboard.createTodo')}
@@ -442,7 +464,7 @@ const TodoCanvasStatsBar: React.FC<TodoCanvasStatsBarProps> = ({
             >
                 <FileText className="w-3.5 h-3.5" />
             </button>
-            <label className="h-8 px-2 rounded-md border border-border typo-caption inline-flex items-center cursor-pointer transition-colors hover:bg-muted">
+            <label className={C_WORKSPACETODOTAB_2}>
                 <Upload className="w-3.5 h-3.5" />
                 <input
                     type="file"
@@ -482,7 +504,7 @@ const TodoCanvasSidebar: React.FC<TodoCanvasSidebarProps> = ({
     t,
 }) => (
     <div className="w-80 border-l border-border p-3 space-y-3 bg-card/40 overflow-y-auto">
-        <div className="tw-text-11 text-muted-foreground">
+        <div className="text-11 text-muted-foreground">
             {t('workspaceDashboard.todoCanvas.history')}: {historyTick}
         </div>
         <div className="space-y-2">
@@ -613,7 +635,7 @@ const TodoCanvasSidebar: React.FC<TodoCanvasSidebarProps> = ({
                     </button>
                     <button
                         onClick={onDeleteSelectedNode}
-                        className="h-8 px-3 rounded-md border border-destructive/40 text-destructive typo-caption transition-colors hover:bg-destructive/10"
+                        className={C_WORKSPACETODOTAB_3}
                     >
                         {t('common.delete')}
                     </button>
@@ -924,6 +946,8 @@ const WorkspaceTodoTabCanvas: React.FC<WorkspaceTodoTabProps> = ({ workspace, on
             } catch (error) {
                 setCanvasError(t('workspaceDashboard.todoCanvas.invalidJsonImportFile'));
                 appLogger.error('WorkspaceTodoTab', 'Failed to import todo canvas JSON', { error });
+
+
             }
         };
         reader.readAsText(file);

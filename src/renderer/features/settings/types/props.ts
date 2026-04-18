@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { ClaudeQuota, CodexUsage, CopilotQuota, QuotaResponse } from '@shared/types/quota';
 import { Dispatch, SetStateAction } from 'react';
 
@@ -25,6 +35,7 @@ export interface SettingsSharedProps {
     updateEditor: (patch: Partial<NonNullable<AppSettings['editor']>>) => Promise<void>
     updateSpeech: (patch: Partial<NonNullable<AppSettings['speech']>>) => Promise<void>
     updateRemoteAccounts: (patch: Partial<NonNullable<AppSettings['remoteAccounts']>>) => Promise<void>
+    updateWindow: (patch: Partial<AppSettings['window']>) => Promise<void>
     handleSave: (ns?: AppSettings) => Promise<void>
     startOllama: () => Promise<void>
     checkOllama: () => Promise<void>

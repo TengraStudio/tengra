@@ -1,31 +1,41 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import * as fs from 'fs';
 import * as path from 'path';
 
 import { ExternalMcpPlugin } from '@main/mcp/external-plugin';
-import { IMcpPlugin, InternalMcpPlugin } from '@main/mcp/plugin-base';
-import { buildMcpServices } from '@main/mcp/registry';
+import { IMcpPlugin, NativeMcpPlugin } from '@main/mcp/plugin-base';
 import { McpDeps } from '@main/mcp/server-utils';
 import { McpDispatchResult } from '@main/mcp/types';
 import { BaseService } from '@main/services/base.service';
 import { SettingsService } from '@main/services/system/settings.service';
-import { JsonObject, JsonValue } from '@shared/types/common';
-import { McpPermissionProfile,MCPServerConfig } from '@shared/types/settings';
+import { JsonObject } from '@shared/types/common';
+import { MCPServerConfig, McpPermission, McpPermissionProfile } from '@shared/types/settings';
 
 const MCP_PLUGIN_MESSAGE_KEY = {
     PERMISSION_REQUEST_NOT_FOUND: 'mainProcess.mcpPlugin.permissionRequestNotFound',
     PLUGIN_NOT_FOUND: 'mainProcess.mcpPlugin.pluginNotFound',
     PLUGIN_DISABLED: 'mainProcess.mcpPlugin.pluginDisabled',
-    ACTION_FORBIDDEN_FOR_PROFILE: 'mainProcess.mcpPlugin.actionForbiddenForProfile',
     PERMISSION_DENIED_FOR_ACTION: 'mainProcess.mcpPlugin.permissionDeniedForAction',
-    PERMISSION_REQUIRED_FOR_ACTION: 'mainProcess.mcpPlugin.permissionRequiredForAction'
+    PERMISSION_REQUIRED_FOR_ACTION: 'mainProcess.mcpPlugin.permissionRequiredForAction',
+    GRANULAR_PERMISSION_DENIED: 'mainProcess.mcpPlugin.granularPermissionDenied'
 } as const;
+
 const MCP_PLUGIN_ERROR_MESSAGE = {
     PERMISSION_REQUEST_NOT_FOUND: 'Permission request not found',
     PLUGIN_NOT_FOUND: 'MCP Plugin \'{{pluginName}}\' not found.',
     PLUGIN_DISABLED: 'Plugin \'{{pluginName}}\' is disabled. Enable it in Settings > MCP.',
-    ACTION_FORBIDDEN_FOR_PROFILE: 'Action \'{{actionName}}\' is forbidden for profile \'{{profile}}\'. Change the server\'s permission profile in Settings.',
     PERMISSION_DENIED_FOR_ACTION: 'Permission denied for action \'{{actionName}}\'',
-    PERMISSION_REQUIRED_FOR_ACTION: 'Permission required for \'{{pluginName}}:{{actionName}}\'. Approve it in MCP settings.'
+    PERMISSION_REQUIRED_FOR_ACTION: 'Permission required for \'{{pluginName}}:{{actionName}}\'. Approve it in MCP settings.',
+    GRANULAR_PERMISSION_DENIED: 'MCP Server \'{{pluginName}}\' does not have permission for \'{{category}}\' actions (Action: {{actionName}}).'
 } as const;
 
 function interpolateMessage(
@@ -37,10 +47,6 @@ function interpolateMessage(
     }, template);
 }
 
-/**
- * McpPluginService manages the lifecycle and dispatching of MCP tool plugins.
- * It supports both internal (TypeScript) and external (standalone process) plugins.
- */
 export class McpPluginService extends BaseService {
     private plugins = new Map<string, IMcpPlugin>();
     private dispatchMetrics = new Map<string, { count: number; errors: number; totalDurationMs: number; lastDurationMs: number; lastError?: string }>();
@@ -91,14 +97,7 @@ export class McpPluginService extends BaseService {
     override async initialize(): Promise<void> {
         this.logInfo('Initializing MCP Plugin Architecture...');
 
-        // 1. Load Built-in Core Plugins (Internal)
-        const coreServices = buildMcpServices(this.mcpDeps);
-        for (const service of coreServices) {
-            const plugin = new InternalMcpPlugin(service);
-            this.plugins.set(plugin.name, plugin);
-        }
-
-        // 2. Load User Plugins (External)
+        // 1. Load User Plugins (External)
         const settings = this.settingsService.getSettings();
         const userPlugins = settings.mcpUserServers ?? [];
         for (const config of userPlugins) {
@@ -115,7 +114,132 @@ export class McpPluginService extends BaseService {
             this.plugins.set(plugin.name, plugin);
         }
 
-        this.logInfo(`Loaded ${this.plugins.size} MCP plugins.`);
+        // 2. Register Native Rust Plugins
+        const nativePlugins = [
+            {
+                name: 'filesystem',
+                description: 'Native high-performance filesystem tools',
+                actions: [
+                    { name: 'read', description: 'Read a file from disk' },
+                    { name: 'write', description: 'Write a file to disk' },
+                    { name: 'list', description: 'List directory contents' },
+                    { name: 'extract_strings', description: 'Extract strings from binary/text files' },
+                    { name: 'unzip', description: 'Extract a zip archive' },
+                    { name: 'download_file', description: 'Download a file from a URL' }
+                ]
+            },
+            {
+                name: 'terminal',
+                description: 'Native persistent terminal and shell command execution',
+                actions: [
+                    { name: 'run_command', description: 'Execute a command in a persistent terminal session' },
+                    { name: 'list_sessions', description: 'List active terminal sessions' },
+                    { name: 'resize', description: 'Resize a terminal window' },
+                    { name: 'kill_session', description: 'Terminate a terminal session' }
+                ]
+            },
+            {
+                name: 'git',
+                description: 'Native Git integration using libgit2',
+                actions: [
+                    { name: 'status', description: 'Get the status of a Git repository' },
+                    { name: 'diff', description: 'Get the diff of a Git repository' },
+                    { name: 'blame', description: 'Get the blame information for a file' },
+                    { name: 'log', description: 'Show the commit logs' },
+                    { name: 'add', description: 'Add file contents to the index' },
+                    { name: 'commit', description: 'Record changes to the repository' },
+                    { name: 'push', description: 'Update remote refs along with associated objects' },
+                    { name: 'pull', description: 'Fetch from and integrate with another repository or a local branch' },
+                    { name: 'checkout', description: 'Switch branches or restore working tree files' },
+                    { name: 'branches', description: 'List local branches' }
+                ]
+            },
+            {
+                name: 'web',
+                description: 'Native web scraping and search tools',
+                actions: [
+                    { name: 'search', description: 'Search the web for information' },
+                    { name: 'read_page', description: 'Read and extract content from a web page' },
+                    { name: 'fetch_json', description: 'Fetch JSON data from a URL' }
+                ]
+            },
+            {
+                name: 'crawler',
+                description: 'High-performance web crawler and content extractor',
+                actions: [
+                    { name: 'crawl', description: 'Deep crawl a website and extract structured content' }
+                ]
+            },
+            {
+                name: 'system',
+                description: 'Native system monitoring and process management',
+                actions: [
+                    { name: 'get_info', description: 'Get system hardware and OS information' },
+                    { name: 'env_vars', description: 'List system environment variables' },
+                    { name: 'process_list', description: 'List running processes with resource usage' },
+                    { name: 'kill_process', description: 'Terminate a system process' },
+                    { name: 'disk_space', description: 'Get disk space information' }
+                ]
+            },
+            {
+                name: 'network',
+                description: 'Native network diagnostic and interface tools',
+                actions: [
+                    { name: 'list_interfaces', description: 'List network interfaces and IP addresses' },
+                    { name: 'check_port', description: 'Check if a specific port is open' },
+                    { name: 'active_ports', description: 'List active development ports' },
+                    { name: 'ping', description: 'Send ICMP ECHO_REQUEST to network hosts' },
+                    { name: 'traceroute', description: 'Print the route packets trace to network host' },
+                    { name: 'whois', description: 'Lookup domain registration information' }
+                ]
+            },
+            {
+                name: 'internet',
+                description: 'Native internet-based utility tools',
+                actions: [
+                    { name: 'weather', description: 'Get current weather and forecast for a location' }
+                ]
+            },
+            {
+                name: 'workspace',
+                description: 'Native workspace and container management',
+                actions: [
+                    { name: 'listContainers', description: 'List Docker containers' },
+                    { name: 'stats', description: 'Get Docker container resource usage stats' },
+                    { name: 'listImages', description: 'List Docker images' }
+                ]
+            },
+            {
+                name: 'llm',
+                description: 'Native LLM sidecar and model management',
+                actions: [
+                    { name: 'listModels', description: 'List available local LLM models (Ollama)' },
+                    { name: 'ps', description: 'Show running LLM models' }
+                ]
+            },
+            {
+                name: 'search',
+                description: 'Fast local search using ripgrep engine',
+                actions: [
+                    { name: 'grep', description: 'High-speed text search across files' }
+                ]
+            },
+            {
+                name: 'analysis',
+                description: 'Native code analysis and LSP management',
+                actions: [
+                    { name: 'lsp_status', description: 'Check status of language servers' },
+                    { name: 'symbols', description: 'Extract symbols from a file' }
+                ]
+            }
+        ];
+
+        for (const p of nativePlugins) {
+            const plugin = new NativeMcpPlugin(this.mcpDeps.proxy, p.name, p.description, p.actions);
+            this.plugins.set(plugin.name, plugin);
+        }
+
+        this.logInfo(`Loaded ${this.plugins.size} MCP plugins (${nativePlugins.length} native).`);
     }
 
     override async cleanup(): Promise<void> {
@@ -126,9 +250,6 @@ export class McpPluginService extends BaseService {
         this.plugins.clear();
     }
 
-    /**
-     * Get all registered plugins
-     */
     async listPlugins() {
         const settings = this.settingsService.getSettings();
         const userServers = settings.mcpUserServers ?? [];
@@ -136,17 +257,33 @@ export class McpPluginService extends BaseService {
         for (const [name, plugin] of this.plugins.entries()) {
             const actions = await plugin.getActions();
             const config = userServers.find(s => s.name === name || s.id === name);
+            const fallbackProfile = !config && plugin.source === 'core'
+                ? 'full-access'
+                : settings.mcpPermissionProfile ?? 'read-only';
             result.push({
                 name,
                 id: config?.id ?? name,
                 description: plugin.description,
                 source: plugin.source,
                 isAlive: plugin.isAlive(),
-                permissionProfile: config?.permissionProfile ?? settings.mcpPermissionProfile ?? 'read-only',
+                permissionProfile: config?.permissionProfile ?? fallbackProfile,
+                permissions: config?.permissions ?? this.getPermissionsByProfile(config?.permissionProfile ?? fallbackProfile),
                 actions
             });
         }
         return result;
+    }
+
+    private getPermissionsByProfile(profile: McpPermissionProfile): McpPermission[] {
+        switch (profile) {
+            case 'read-only': return ['read'];
+            case 'workspace-only': return ['read', 'write'];
+            case 'network-enabled': return ['read', 'network'];
+            case 'destructive': return ['read', 'write', 'delete'];
+            case 'full-access': 
+            default:
+                return ['read', 'write', 'delete', 'network', 'execute'];
+        }
     }
 
     getDispatchMetrics() {
@@ -185,16 +322,8 @@ export class McpPluginService extends BaseService {
         this.dispatchMetrics.set(key, current);
     }
 
-    private permissionKey(pluginName: string, actionName: string): string {
-        return `${pluginName}:${actionName}`;
-    }
 
-    private isSensitiveAction(actionName: string): boolean {
-        const category = this.getActionCategory(actionName);
-        return category === 'write' || category === 'destructive' || category === 'network';
-    }
-
-    private getActionCategory(actionName: string): 'read' | 'write' | 'network' | 'destructive' {
+    private getActionCategory(actionName: string): McpPermission {
         const normalized = actionName.toLowerCase();
 
         if (
@@ -204,9 +333,20 @@ export class McpPluginService extends BaseService {
             normalized.includes('purge') ||
             normalized.includes('format') ||
             normalized.includes('drop') ||
-            normalized.includes('terminate')
+            normalized.includes('terminate') ||
+            normalized.includes('kill')
         ) {
-            return 'destructive';
+            return 'delete';
+        }
+
+        if (
+            normalized.includes('exec') ||
+            normalized.includes('run') ||
+            normalized.includes('shell') ||
+            normalized.includes('terminal') ||
+            normalized.includes('command')
+        ) {
+            return 'execute';
         }
 
         if (
@@ -216,11 +356,13 @@ export class McpPluginService extends BaseService {
             normalized.includes('edit') ||
             normalized.includes('patch') ||
             normalized.includes('save') ||
-            normalized.includes('exec') ||
-            normalized.includes('run') ||
-            normalized.includes('shell') ||
             normalized.includes('install') ||
-            normalized.includes('append')
+            normalized.includes('append') ||
+            normalized.includes('add') ||
+            normalized.includes('commit') ||
+            normalized.includes('push') ||
+            normalized.includes('pull') ||
+            normalized.includes('checkout')
         ) {
             return 'write';
         }
@@ -233,7 +375,15 @@ export class McpPluginService extends BaseService {
             normalized.includes('lookup') ||
             normalized.includes('network') ||
             normalized.includes('cloud') ||
-            (normalized.includes('api') && !normalized.includes('local'))
+            (normalized.includes('api') && !normalized.includes('local')) ||
+            normalized.includes('browsing') ||
+            normalized.includes('scrape') ||
+            normalized.includes('crawl') ||
+            normalized.includes('download') ||
+            normalized.includes('weather') ||
+            normalized.includes('ping') ||
+            normalized.includes('traceroute') ||
+            normalized.includes('whois')
         ) {
             return 'network';
         }
@@ -241,152 +391,6 @@ export class McpPluginService extends BaseService {
         return 'read';
     }
 
-    private isActionAllowed(profile: McpPermissionProfile, actionName: string): boolean {
-        if (profile === 'full-access') {
-            return true;
-        }
-
-        const category = this.getActionCategory(actionName);
-
-        switch (profile) {
-            case 'read-only':
-                return category === 'read';
-
-            case 'workspace-only':
-                // Workspace only allows read and write, but NOT network or destructive
-                return category === 'read' || category === 'write';
-
-            case 'network-enabled':
-                // Network enabled allows read and network, but NOT write or destructive
-                return category === 'read' || category === 'network';
-
-            case 'destructive':
-                // Destructive allows everything EXCEPT network? 
-                // Let's assume it allows read, write, and destructive.
-                return category !== 'network';
-
-            default:
-                return category === 'read';
-        }
-    }
-
-    private validateArgsForWorkspaceOnly(args: JsonObject): void {
-        const openWorkspaces = this.mcpDeps.workspace.getOpenWorkspaces();
-
-        const checkPath = (p: string) => {
-            if (!path.isAbsolute(p)) {
-                return;
-            }
-
-            const isInside = openWorkspaces.some(ws => {
-                const relative = path.relative(ws, p);
-                return !relative.startsWith('..') && !path.isAbsolute(relative);
-            });
-
-            if (!isInside && openWorkspaces.length > 0) {
-                throw new Error(
-                    `Access denied: Path '${p}' is outside of open workspaces. This server is restricted to 'workspace-only' access.`
-                );
-            }
-        };
-
-        const traverse = (obj: JsonValue | JsonObject | string | undefined): void => {
-            if (typeof obj === 'string') {
-                if (obj.includes('/') || obj.includes('\\')) {
-                    checkPath(obj);
-                }
-            } else if (obj && typeof obj === 'object') {
-                for (const val of Object.values(obj)) {
-                    traverse(val);
-                }
-            }
-        };
-
-        traverse(args);
-    }
-
-    private calculateDirectorySizeBytes(directoryPath: string): number {
-        if (!fs.existsSync(directoryPath)) {
-            return 0;
-        }
-
-        const entries = fs.readdirSync(directoryPath, { withFileTypes: true });
-        let total = 0;
-        for (const entry of entries) {
-            const entryPath = path.join(directoryPath, entry.name);
-            if (entry.isDirectory()) {
-                total += this.calculateDirectorySizeBytes(entryPath);
-                continue;
-            }
-            total += fs.statSync(entryPath).size;
-        }
-        return total;
-    }
-
-    private ensureStorageQuota(
-        serverConfig: {
-            id: string;
-            storage?: { dataPath?: string; quotaMb?: number };
-        },
-        actionName: string
-    ): void {
-        if (!this.isSensitiveAction(actionName)) {
-            return;
-        }
-        const storagePath = this.resolveServerStoragePath(serverConfig.id, serverConfig.storage?.dataPath);
-        const quotaBytes = (serverConfig.storage?.quotaMb ?? 256) * 1024 * 1024;
-        const usageBytes = this.calculateDirectorySizeBytes(storagePath);
-        if (usageBytes > quotaBytes) {
-            throw new Error(
-                `Storage quota exceeded for ${serverConfig.id}: ${(usageBytes / (1024 * 1024)).toFixed(2)}MB / ${serverConfig.storage?.quotaMb ?? 256}MB`
-            );
-        }
-    }
-
-    async listPermissionRequests() {
-        const settings = this.settingsService.getSettings();
-        return settings.mcpPermissionRequests ?? [];
-    }
-
-    async setActionPermission(service: string, action: string, policy: 'allow' | 'deny' | 'ask') {
-        const settings = this.settingsService.getSettings();
-        const current = settings.mcpActionPermissions ?? {};
-        const updated = { ...current, [this.permissionKey(service, action)]: policy };
-        await this.settingsService.saveSettings({ mcpActionPermissions: updated });
-        return { success: true };
-    }
-
-    async resolvePermissionRequest(
-        requestId: string,
-        decision: 'approved' | 'denied'
-    ) {
-        const settings = this.settingsService.getSettings();
-        const requests = settings.mcpPermissionRequests ?? [];
-        const req = requests.find(r => r.id === requestId);
-        if (!req) {
-            return {
-                success: false,
-                error: MCP_PLUGIN_ERROR_MESSAGE.PERMISSION_REQUEST_NOT_FOUND,
-                messageKey: MCP_PLUGIN_MESSAGE_KEY.PERMISSION_REQUEST_NOT_FOUND
-            };
-        }
-
-        const nextRequests = requests.map(r => r.id === requestId ? { ...r, status: decision } : r);
-        const permission = decision === 'approved' ? 'allow' : 'deny';
-        const currentPermissions = settings.mcpActionPermissions ?? {};
-        currentPermissions[this.permissionKey(req.service, req.action)] = permission;
-
-        await this.settingsService.saveSettings({
-            mcpPermissionRequests: nextRequests,
-            mcpActionPermissions: currentPermissions
-        });
-
-        return { success: true };
-    }
-
-    /**
-     * Dispatch an action to a specific plugin
-     */
     async dispatch(pluginName: string, actionName: string, args: JsonObject): Promise<McpDispatchResult> {
         const plugin = this.plugins.get(pluginName);
         if (!plugin) {
@@ -398,7 +402,6 @@ export class McpPluginService extends BaseService {
             };
         }
 
-        // Check if plugin is enabled
         const settings = this.settingsService.getSettings();
         const disabledServers = settings.mcpDisabledServers ?? [];
         if (disabledServers.includes(pluginName)) {
@@ -413,7 +416,6 @@ export class McpPluginService extends BaseService {
         const userServers = settings.mcpUserServers ?? [];
         const serverConfig = userServers.find(s => s.id === pluginName || s.name === pluginName);
 
-        // If it's a user server, check if it's explicitly enabled in its own config too
         if (serverConfig && !serverConfig.enabled) {
             return {
                 success: false,
@@ -422,77 +424,24 @@ export class McpPluginService extends BaseService {
                 messageParams: { pluginName }
             };
         }
+
+        // GRANULAR PERMISSION CHECK
         if (serverConfig) {
-            this.ensureStorageQuota(
-                {
-                    id: serverConfig.id,
-                    storage: serverConfig.storage
-                },
-                actionName
-            );
-        }
-
-        // Profile-based gating
-        const profile = serverConfig?.permissionProfile ?? settings.mcpPermissionProfile ?? 'read-only';
-        if (!this.isActionAllowed(profile, actionName)) {
-            return {
-                success: false,
-                error: interpolateMessage(MCP_PLUGIN_ERROR_MESSAGE.ACTION_FORBIDDEN_FOR_PROFILE, {
-                    actionName,
-                    profile
-                }),
-                messageKey: MCP_PLUGIN_MESSAGE_KEY.ACTION_FORBIDDEN_FOR_PROFILE,
-                messageParams: { actionName, profile }
-            };
-        }
-
-        // Workspace-only additional check
-        if (profile === 'workspace-only') {
-            try {
-                this.validateArgsForWorkspaceOnly(args);
-            } catch (error) {
-                return { success: false, error: error instanceof Error ? error.message : String(error) };
-            }
-        }
-
-        const permissionKey = this.permissionKey(pluginName, actionName);
-        const permissionPolicy = settings.mcpActionPermissions?.[permissionKey] ?? 'ask';
-        const requiresReview = settings.mcpReviewPolicy === 'elevated' && this.isSensitiveAction(actionName);
-
-        if (requiresReview && permissionPolicy === 'deny') {
-            return {
-                success: false,
-                error: interpolateMessage(MCP_PLUGIN_ERROR_MESSAGE.PERMISSION_DENIED_FOR_ACTION, { actionName }),
-                messageKey: MCP_PLUGIN_MESSAGE_KEY.PERMISSION_DENIED_FOR_ACTION,
-                messageParams: { actionName }
-            };
-        }
-
-        if (requiresReview && permissionPolicy === 'ask') {
-            const requests = settings.mcpPermissionRequests ?? [];
-            const existingPending = requests.find(
-                r => r.service === pluginName && r.action === actionName && r.status === 'pending'
-            );
-            if (!existingPending) {
-                const request = {
-                    id: `mcp-perm-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-                    service: pluginName,
-                    action: actionName,
-                    createdAt: Date.now(),
-                    argsPreview: JSON.stringify(args).slice(0, 240),
-                    status: 'pending' as const
+            const actionCategory = this.getActionCategory(actionName);
+            const permissions = serverConfig.permissions ?? this.getPermissionsByProfile(serverConfig.permissionProfile ?? settings.mcpPermissionProfile ?? 'read-only');
+            
+            if (!permissions.includes(actionCategory)) {
+                return {
+                    success: false,
+                    error: interpolateMessage(MCP_PLUGIN_ERROR_MESSAGE.GRANULAR_PERMISSION_DENIED, { 
+                        pluginName, 
+                        category: actionCategory,
+                        actionName 
+                    }),
+                    messageKey: MCP_PLUGIN_MESSAGE_KEY.GRANULAR_PERMISSION_DENIED,
+                    messageParams: { pluginName, category: actionCategory, actionName }
                 };
-                await this.settingsService.saveSettings({ mcpPermissionRequests: [...requests, request] });
             }
-            return {
-                success: false,
-                error: interpolateMessage(MCP_PLUGIN_ERROR_MESSAGE.PERMISSION_REQUIRED_FOR_ACTION, {
-                    pluginName,
-                    actionName
-                }),
-                messageKey: MCP_PLUGIN_MESSAGE_KEY.PERMISSION_REQUIRED_FOR_ACTION,
-                messageParams: { pluginName, actionName }
-            };
         }
 
         const startedAt = Date.now();
@@ -511,9 +460,6 @@ export class McpPluginService extends BaseService {
         }
     }
 
-    /**
-     * Register a new external plugin
-     */
     async registerPlugin(config: MCPServerConfig) {
         const { name, description = '', command, args, env } = config;
         if (this.plugins.has(name)) {
@@ -534,23 +480,20 @@ export class McpPluginService extends BaseService {
         await plugin.initialize();
         this.plugins.set(name, plugin);
 
-        // Update settings persistence
         const settings = this.settingsService.getSettings();
         const userServers = [...(settings.mcpUserServers ?? []), {
             ...config,
             description,
             storage,
             enabled: config.enabled ?? false,
-            tools: config.tools ?? []
+            tools: config.tools ?? [],
+            permissions: config.permissions ?? this.getPermissionsByProfile(config.permissionProfile ?? settings.mcpPermissionProfile ?? 'read-only')
         }];
         await this.settingsService.saveSettings({ mcpUserServers: userServers });
 
         return { success: true };
     }
 
-    /**
-     * Unregister a plugin
-     */
     async unregisterPlugin(name: string) {
         const plugin = this.plugins.get(name);
         if (!plugin) {
@@ -565,4 +508,3 @@ export class McpPluginService extends BaseService {
         await this.settingsService.saveSettings({ mcpUserServers: userServers });
     }
 }
-

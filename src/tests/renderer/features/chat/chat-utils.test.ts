@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { describe, expect, it, vi } from 'vitest';
 
 import { extractReasoning } from '@/features/chat/hooks/process-stream';
@@ -181,6 +191,37 @@ describe('processStreamChunk', () => {
             function: {
                 name: 'list_directory',
                 arguments: '{"path":"C:/Users/agnes/Desktop"}',
+            },
+        }]);
+    });
+
+    it('ignores empty malformed tool call shells and survives missing function fields', () => {
+        const emptyShellChunk = {
+            type: 'tool_calls',
+            tool_calls: [{ index: 0 }],
+        } as unknown as StreamChunk;
+        const emptyShellResult = processStreamChunk(emptyShellChunk, baseCurrent, startTime, 'Stream error');
+
+        expect(emptyShellResult.newToolCalls).toEqual([]);
+
+        const partialChunk = {
+            type: 'tool_calls',
+            tool_calls: [{
+                id: 't1',
+                index: 0,
+                type: 'function',
+                function: { name: 'run_command' },
+            }],
+        } as unknown as StreamChunk;
+        const partialResult = processStreamChunk(partialChunk, baseCurrent, startTime, 'Stream error');
+
+        expect(partialResult.newToolCalls).toEqual([{
+            id: 't1',
+            index: 0,
+            type: 'function',
+            function: {
+                name: 'run_command',
+                arguments: '',
             },
         }]);
     });

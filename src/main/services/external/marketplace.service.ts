@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { exec } from 'child_process';
 import path from 'path';
 import { promisify } from 'util';
@@ -196,37 +206,20 @@ export class MarketplaceService extends BaseService {
 
             // Check GitHub raw for each installed extension to find stealth updates (not yet in registry.json)
             for (const item of registry.extensions || []) {
-                if (item.installed && item.repository) {
-                    try {
-                        const baseUrl = item.repository.replace(/\.git$/, '');
-                        if (baseUrl.includes('github.com')) {
-                            const rawBase = baseUrl.replace('github.com', 'raw.githubusercontent.com');
+                if (!item.installed || !item.repository) {
+                    continue;
+                }
 
-                            // Try main branch first, then fallback to master
-                            const branches = ['main', 'master'];
-                            let remoteVersion: string | undefined;
-
-                            for (const branch of branches) {
-                                try {
-                                    const pkgUrl = `${rawBase}/${branch}/package.json`;
-                                    const response = await axios.get(pkgUrl, { timeout: 2000 });
-                                    remoteVersion = response.data?.version;
-                                    if (remoteVersion) { break; }
-                                } catch {
-                                    continue;
-                                }
-                            }
-
-                            if (remoteVersion && this.isNewerVersion(item.installedVersion || '0.0.0', remoteVersion)) {
-                                item.updateAvailable = true;
-                                this.liveUpdates.add(item.id);
-                                this.logInfo(`Live update detected for ${item.id}: ${item.installedVersion} -> ${remoteVersion}`);
-                            }
-                        }
-                    } catch (e) {
-                        // ignore individual fetch errors
-                        this.logError(`Failed to fetch live update for ${item.id}`, e as Error);
+                try {
+                    const remoteVersion = await this.fetchGithubRawVersion(item.repository);
+                    if (remoteVersion && this.isNewerVersion(item.installedVersion || '0.0.0', remoteVersion)) {
+                        item.updateAvailable = true;
+                        this.liveUpdates.add(item.id);
+                        this.logInfo(`Live update detected for ${item.id}: ${item.installedVersion} -> ${remoteVersion}`);
                     }
+                } catch (e) {
+                    // ignore individual fetch errors
+                    this.logError(`Failed to fetch live update for ${item.id}`, e as Error);
                 }
             }
 
@@ -248,6 +241,29 @@ export class MarketplaceService extends BaseService {
         }
 
         return count;
+    }
+
+    private async fetchGithubRawVersion(repositoryUrl: string): Promise<string | undefined> {
+        const baseUrl = repositoryUrl.replace(/\.git$/, '');
+        if (!baseUrl.includes('github.com')) {
+            return undefined;
+        }
+
+        const rawBase = baseUrl.replace('github.com', 'raw.githubusercontent.com');
+        for (const branch of ['main', 'master']) {
+            try {
+                const pkgUrl = `${rawBase}/${branch}/package.json`;
+                const response = await axios.get(pkgUrl, { timeout: 2000 });
+                const version = response.data?.version;
+                if (typeof version === 'string' && version.length > 0) {
+                    return version;
+                }
+            } catch {
+                // Try next branch.
+            }
+        }
+
+        return undefined;
     }
 
     /**
@@ -569,6 +585,7 @@ export class MarketplaceService extends BaseService {
             env: item.env,
             enabled: false,
             permissionProfile: item.permissionProfile,
+            permissions: item.permissions,
             tools: item.tools,
             category: item.category,
             publisher: item.author,

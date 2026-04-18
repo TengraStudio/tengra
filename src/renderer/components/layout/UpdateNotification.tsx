@@ -1,9 +1,20 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import type { IpcRendererEvent } from 'electron';
 import { AlertCircle, CheckCircle, Download, LucideIcon, RefreshCw, X } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
 import { appLogger } from '@/utils/renderer-logger';
 
 
@@ -90,14 +101,14 @@ function formatBytes(bytes: number, decimals = 2): string {
 }
 
 const DownloadProgress: React.FC<{ status: UpdateStatus }> = ({ status }) => (
-    <div className="tengra-update-notification__progress">
-        <div className="tengra-update-notification__progress-meta">
+    <div className="mt-3 space-y-2">
+        <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
             <span>{formatBytes(status.bytesPerSecond ?? 0)}/s</span>
             <span>{Math.round(status.progress ?? 0)}%</span>
         </div>
-        <div className="tengra-update-notification__progress-track">
+        <div className="h-2 w-full bg-muted rounded-full overflow-hidden border border-border/10 shadow-inner">
             <div
-                className="tengra-update-notification__progress-fill"
+                className="h-full bg-primary transition-all duration-300 ease-out rounded-full shadow-glow-primary-strong"
                 style={{ width: `${status.progress}%` }}
             />
         </div>
@@ -113,7 +124,7 @@ interface ActionButtonProps {
 const ActionButton: React.FC<ActionButtonProps> = ({ onClick, className, label }) => (
     <button
         onClick={onClick}
-        className={`tengra-update-notification__action ${className}`}
+        className={cn('flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-primary shadow-sm hover:shadow-md active:scale-98', className)}
     >
         {label}
     </button>
@@ -173,16 +184,16 @@ export const UpdateNotification: React.FC = () => {
                 initial={{ opacity: 0, y: -50, x: 50 }}
                 animate={{ opacity: 1, y: 0, x: 0 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className="tengra-update-notification"
+                className="fixed bottom-6 right-6 w-340 bg-background border border-border/40 rounded-xl shadow-2xl overflow-hidden z-50 flex flex-col font-sans backdrop-blur-md"
             >
-                <div className="tengra-update-notification__header">
-                    <div className="tengra-update-notification__title-row">
-                        <Icon className={`tengra-update-notification__icon ${config.iconClass}`} />
-                        <h3 className="tengra-update-notification__title">{title}</h3>
+                <div className="flex items-start justify-between p-4 border-b border-border/30 bg-muted/10">
+                    <div className="flex items-center gap-3">
+                        <Icon className={cn('w-5 h-5 flex-shrink-0', config.iconClass)} />
+                        <h3 className="text-sm font-semibold text-foreground m-0 leading-tight">{title}</h3>
                     </div>
                     <button
                         onClick={handleDismiss}
-                        className="tengra-update-notification__dismiss"
+                        className="p-1 -m-1 text-muted-foreground/60 hover:text-foreground transition-colors hover:bg-muted/50 rounded-md cursor-pointer"
                     >
                         <X className="w-4 h-4" />
                     </button>
@@ -211,7 +222,7 @@ const UpdateContent: React.FC<UpdateContentProps> = ({ status, config }) => {
     const stringContent = typeof contentValue === 'string' ? contentValue : null;
 
     return (
-        <div className="tengra-update-notification__content">
+        <div className="p-4 text-sm text-muted-foreground/90 leading-relaxed bg-background">
             {status.state === 'downloading' && <DownloadProgress status={status} />}
             {status.state === 'error' && status.error}
             {stringContent}
@@ -227,18 +238,18 @@ interface UpdateActionsProps {
 }
 
 const UpdateActions: React.FC<UpdateActionsProps> = ({ state, onDownload, onInstall, t }) => (
-    <div className="tengra-update-notification__actions">
+    <div className="flex gap-2 p-3 bg-muted/20 border-t border-border/30">
         {state === 'available' && (
             <ActionButton
                 onClick={onDownload}
-                className="tengra-update-notification__action--download"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 border border-primary/20 hover:brightness-110"
                 label={t('updateNotification.downloadAction')}
             />
         )}
         {state === 'downloaded' && (
             <ActionButton
                 onClick={onInstall}
-                className="tengra-update-notification__action--install"
+                className="bg-success text-success-foreground hover:bg-success/90 border border-success/20 hover:brightness-110"
                 label={t('updateNotification.restartAction')}
             />
         )}

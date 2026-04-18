@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import {
     buildAssistantPresentationMetadata,
     buildStoredToolResults,
@@ -266,6 +276,7 @@ export async function consumeConversationStream(
                 chunkCount += 1;
 
                 if (chunk.type === 'content' && chunk.content) {
+                    turnState.reasoningSegmentOpen = false;
                     turnState.content += chunk.content;
                     displayContent = turnState.content;
                     patchAssistantState(setMessages, assistantId, intentClassification, language, {
@@ -438,6 +449,15 @@ export async function consumeConversationStream(
                 'sessionConversationStream',
                 `[${traceId}] turn=${streamTurn} execute-tools finish results=${executionResult.toolResults.length} images=${executionResult.generatedImages.length}`
             );
+
+            if (abortedRef.current) {
+                appLogger.warn(
+                    'sessionConversationStream',
+                    `[${traceId}] turn=${streamTurn} tool execution finished but abortedRef is true, stopping turn loop.`
+                );
+                break;
+            }
+
             currentMessages = buildModelConversation(
                 currentMessages,
                 createTurnAssistantMessage(assistantId, provider, model, turnState),

@@ -1,9 +1,23 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Activity, FileText, Folder, Package } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import type { IpcValue } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
+
+/* Batch-02: Extracted Long Classes */
+const C_FOLDERINSPECTOR_1 = "bg-muted/30 rounded-lg p-3 border border-border/50 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-muted typo-caption text-muted-foreground leading-relaxed";
+
 
 interface DirectoryAnalysis {
     hasPackageJson: boolean;
@@ -76,7 +90,7 @@ const ScriptsSection = ({ scripts }: { scripts: ScriptsRecord }) => {
                     >
                         <span className="font-mono typo-caption text-info-light font-bold">{name}</span>
                         <span
-                            className="font-mono text-xxs text-muted-foreground truncate tw-max-w-120"
+                            className="font-mono text-xxs text-muted-foreground truncate max-w-120"
                             title={String(scripts[name])}
                         >
                             {String(scripts[name])}
@@ -166,7 +180,7 @@ const ReadmeSection = ({ readme }: { readme: string }) => {
             <h3 className="typo-caption font-bold text-muted-foreground flex items-center gap-2">
                 <FileText className="w-3.5 h-3.5" /> {t('workspaceDashboard.folderInspector.readme')}
             </h3>
-            <div className="bg-muted/30 rounded-lg p-3 border border-border/50 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-muted typo-caption text-muted-foreground leading-relaxed">
+            <div className={C_FOLDERINSPECTOR_1}>
                 <pre className="whitespace-pre-wrap font-sans">{displayText}</pre>
             </div>
         </div>

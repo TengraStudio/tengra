@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 
 import { FolderInspector } from '@renderer/features/workspace/components/ide/FolderInspector';
 import { FileCode, X } from 'lucide-react';
@@ -46,9 +56,12 @@ export const WorkspaceFilesTab = ({
                                 <div
                                     key={file.path}
                                     onClick={() => { setActiveFile(file.path); }}
-                                    className={`group flex items-center gap-2 px-3 py-2 typo-caption border-r border-border/20 cursor-pointer tw-min-w-120 tw-max-w-200 ${activeFile === file.path ? 'bg-card text-primary font-medium border-t-2 border-t-primary' : 'text-muted-foreground hover:bg-muted/30'}`}
+                                    className={cn(
+                                        'group flex items-center gap-2 px-3 py-2 typo-caption border-r border-border/20 cursor-pointer min-w-120 max-w-200',
+                                        activeFile === file.path ? 'bg-card text-primary font-medium border-t-2 border-t-primary' : 'text-muted-foreground hover:bg-muted/30'
+                                    )}
                                 >
-                                    <FileCode size={12} className={activeFile === file.path ? 'text-primary' : 'opacity-50'} />
+                                    <FileCode size={12} className={cn(activeFile === file.path ? 'text-primary' : 'opacity-50')} />
                                     <span className="truncate flex-1">{file.name}</span>
                                     <button onClick={(e) => closeFile(e, file.path)} className="opacity-0 group-hover:opacity-100 hover:text-destructive p-0.5 rounded">
                                         <X size={12} />

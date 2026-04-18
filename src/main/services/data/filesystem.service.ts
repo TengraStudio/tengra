@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { createHash } from 'crypto';
 import { watch } from 'fs';
 import { createWriteStream } from 'fs';
@@ -158,19 +168,27 @@ export class FileSystemService {
 
     async readFile(filePath: string): Promise<ServiceResponse<string>> {
         try {
-            const expandedPath = this.expandEnvVars(filePath); 
-            const absolutePath = path.resolve(expandedPath); 
+            const expandedPath = this.expandEnvVars(filePath);
+            this.validatePath(expandedPath);
+            const absolutePath = path.resolve(expandedPath);
 
-            // Read the file
+            const stats = await fs.stat(absolutePath);
+            if (stats.size > 10 * 1024 * 1024) {
+                return { success: false, error: `File too large (max 10MB): ${filePath}` };
+            }
+
+            if (await this.isBinaryFile(absolutePath)) {
+                return { success: false, error: `Cannot read binary file as text: ${filePath}` };
+            }
+
+            // Read the file after validation
             const content = await fs.readFile(absolutePath);
 
             // UTF-16 LE BOM detection (common on Windows/PowerShell)
-            // We keep this to ensure the file renders correctly instead of showing nulls between letters
             if (content.length >= 2 && content[0] === 0xFF && content[1] === 0xFE) {
                 return { success: true, data: content.toString('utf16le') };
             }
 
-            // Default to UTF-8 and let Monaco handle any unusual characters
             return { success: true, data: content.toString('utf-8') };
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { IpcRenderer } from 'electron';
 
 export interface LinkedAccountInfo {
@@ -8,6 +18,7 @@ export interface LinkedAccountInfo {
     active: boolean;
     lastCheckedAt?: number;
     expiresAt?: number;
+    decryptionError?: boolean;
 }
 
 export type TokenData = {
@@ -20,6 +31,7 @@ export type TokenData = {
 
 export interface LinkedAccountsBridge {
     getLinkedAccounts: (provider?: string) => Promise<LinkedAccountInfo[]>;
+    getAllAccounts: () => Promise<LinkedAccountInfo[]>;
     getActiveLinkedAccount: (provider: string) => Promise<LinkedAccountInfo | null>;
     setActiveLinkedAccount: (
         provider: string,
@@ -89,6 +101,7 @@ export interface LinkedAccountsBridge {
 export function createLinkedAccountsBridge(ipc: IpcRenderer): LinkedAccountsBridge {
     return {
         getLinkedAccounts: provider => ipc.invoke('auth:get-linked-accounts', provider),
+        getAllAccounts: () => ipc.invoke('auth:get-linked-accounts'),
         getActiveLinkedAccount: provider => ipc.invoke('auth:get-active-linked-account', provider),
         setActiveLinkedAccount: (provider, accountId) =>
             ipc.invoke('auth:set-active-linked-account', provider, accountId),

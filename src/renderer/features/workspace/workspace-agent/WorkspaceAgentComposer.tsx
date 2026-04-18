@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import type {
     CouncilRunConfig,
     WorkspaceAgentPermissionPolicy,
@@ -17,9 +27,16 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 import type { AppSettings, CodexUsage, GroupedModels, QuotaResponse } from '@/types';
 
 import { WorkspaceAgentCouncilSetup } from './WorkspaceAgentCouncilSetup';
+
+/* Batch-02: Extracted Long Classes */
+const C_WORKSPACEAGENTCOMPOSER_1 = "min-h-44 h-11 flex-1 rounded-2xl border-border/30 bg-background/40 px-4 py-2.5 placeholder:text-muted-foreground/40 text-sm focus:border-border/20 transition-colors resize-none overflow-hidden";
+const C_WORKSPACEAGENTCOMPOSER_2 = "h-10 w-10 shrink-0 flex items-center justify-center rounded-xl border-border/10 bg-background/30 hover:bg-background/40 transition-colors p-0";
+const C_WORKSPACEAGENTCOMPOSER_3 = "relative w-280 rounded-2xl border border-border/40 bg-background/95 p-1.5 shadow-none animate-in fade-in zoom-in-95 duration-200";
+
 
 export type WorkspaceAgentComposerPreset = 'default-agent' | 'plan' | 'agent';
 
@@ -168,7 +185,7 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                     onChange={event => setComposerValue(event.target.value)}
                     onKeyDown={handleEnter}
                     placeholder={t('workspace.writeSomething')}
-                    className="tw-min-h-44 h-11 flex-1 rounded-2xl border-border/30 bg-background/40 px-4 py-2.5 placeholder:text-muted-foreground/40 text-sm focus:border-border/20 transition-colors resize-none overflow-hidden"
+                    className={C_WORKSPACEAGENTCOMPOSER_1}
                     disabled={isLoading}
                 />
                 <Button
@@ -190,7 +207,7 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                             type="button"
                             variant="outline"
                             title={t('workspaceAgent.permissions.profile')}
-                            className="h-10 w-10 shrink-0 flex items-center justify-center rounded-xl border-border/10 bg-background/30 hover:bg-background/40 transition-colors p-0"
+                            className={C_WORKSPACEAGENTCOMPOSER_2}
                         >
                             <span className="typo-caption font-bold text-muted-foreground/60">
                                 {selectedPreset.value === 'default-agent' ? 'A' : selectedPreset.value === 'plan' ? 'P' : 'E'}
@@ -199,9 +216,9 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                     </PopoverTrigger>
                     <PopoverContent
                         align="start"
-                        className="relative tw-w-280 rounded-2xl border border-border/40 bg-background/95 p-1.5 shadow-none animate-in fade-in zoom-in-95 duration-200"
+                        className={C_WORKSPACEAGENTCOMPOSER_3}
                     >
-                        <div className="px-3 py-1.5 tw-text-10 font-bold uppercase tracking-widest text-muted-foreground/30 border-b border-border/30 mb-1.5">
+                        <div className="px-3 py-1.5 text-10 font-bold uppercase tracking-widest text-muted-foreground/30 border-b border-border/30 mb-1.5">
                             {t('workspaceAgent.permissions.profile')}
                         </div>
                         <div className="space-y-0.5">
@@ -216,7 +233,7 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                                         <span className="block text-sm font-bold text-foreground/90 group-hover:text-foreground transition-colors">
                                             {option.title}
                                         </span>
-                                        <span className="block tw-text-10 text-muted-foreground/50 leading-snug mt-0.5">
+                                        <span className="block text-10 text-muted-foreground/50 leading-snug mt-0.5">
                                             {option.description}
                                         </span>
                                     </span>
@@ -233,11 +250,12 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                     type="button"
                     variant={currentModes.council ? 'secondary' : 'outline'}
                     title={t('agents.council')}
-                    className={`h-10 w-10 shrink-0 flex items-center justify-center rounded-xl border-border/10 transition-colors p-0 ${
-                        currentModes.council 
-                        ? 'bg-primary/10 border-primary/20 hover:bg-primary/20 text-primary' 
-                        : 'bg-background/30 hover:bg-background/40'
-                    }`}
+                    className={cn(
+                        'h-10 w-10 shrink-0 flex items-center justify-center rounded-xl border-border/10 transition-colors p-0',
+                        currentModes.council
+                            ? 'bg-primary/10 border-primary/20 hover:bg-primary/20 text-primary'
+                            : 'bg-background/30 hover:bg-background/40'
+                    )}
                     onClick={onToggleCouncil}
                 >
                     <Map className="h-4 w-4 text-muted-foreground/60" />

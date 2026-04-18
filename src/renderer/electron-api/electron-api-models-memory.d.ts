@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import type {
     EntityKnowledge,
     EpisodicMemory,
@@ -5,6 +15,7 @@ import type {
     SemanticFragment,
 } from '@/shared/types';
 import type {
+    AdvancedMemoryHealthSummary,
     AdvancedSemanticFragment,
     MemoryCategory,
     MemoryImportResult,
@@ -415,6 +426,10 @@ export interface ElectronApiModelsMemoryDomain {
             query: string,
             limit?: number
         ) => Promise<{ success: boolean; data: AdvancedSemanticFragment[]; error?: string }>;
+        searchResolutions: (
+            query: string,
+            limit?: number
+        ) => Promise<{ success: boolean; data: AdvancedSemanticFragment[]; error?: string }>;
         getSearchAnalytics: () => Promise<{
             success: boolean;
             data: MemorySearchAnalytics;
@@ -525,12 +540,7 @@ export interface ElectronApiModelsMemoryDomain {
         getAllAdvancedMemories: () => Promise<{ success: boolean; data: AdvancedSemanticFragment[]; error?: string }>;
         health: () => Promise<{
             success: boolean;
-            data?: {
-                status: 'healthy' | 'degraded';
-                uiState: 'ready' | 'failure';
-                budgets: { fastMs: number; standardMs: number; heavyMs: number };
-                metrics: Record<string, IpcValue>;
-            };
+            data?: AdvancedMemoryHealthSummary;
             error?: string;
             errorCode?: string;
             messageKey?: string;

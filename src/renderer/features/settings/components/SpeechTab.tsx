@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Badge } from '@renderer/components/ui/badge';
 import { Button } from '@renderer/components/ui/button';
 import {
@@ -22,6 +32,14 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { AppSettings } from '@/types/settings';
 import { appLogger } from '@/utils/renderer-logger';
+
+/* Batch-02: Extracted Long Classes */
+const C_SPEECHTAB_1 = "p-3.5 rounded-2xl bg-primary/10 text-primary shadow-2xl shadow-primary/10 group-hover:scale-110 transition-transform duration-700 ring-1 ring-primary/20";
+const C_SPEECHTAB_2 = "bg-card rounded-card-xl border border-border/40 p-8 pt-10 space-y-10 shadow-sm relative overflow-hidden group/voice hover:border-border/60 transition-all duration-500 lg:p-10";
+const C_SPEECHTAB_3 = "absolute -inset-2 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 rounded-2xl blur-xl opacity-0 group-hover/preview:opacity-100 transition duration-1000";
+const C_SPEECHTAB_4 = "relative p-6 rounded-2xl bg-muted/10 border border-border/20 backdrop-blur-sm shadow-inner group-hover/preview:border-primary/20 transition-all lg:p-8";
+const C_SPEECHTAB_5 = "h-14 rounded-2xl bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 hover:border-primary/30 transition-all duration-500 font-bold typo-body shadow-lg shadow-primary/5 group/btn";
+
 
 interface SpeechTabProps {
     settings: AppSettings | null;
@@ -128,7 +146,7 @@ const VoiceSection: React.FC<VoiceSectionProps> = ({
                 <SelectTrigger className="h-12 px-6 rounded-2xl bg-muted/5 border-border/40 typo-body font-bold focus:ring-primary/20 transition-all">
                     <SelectValue placeholder={t('speech.systemDefault')} />
                 </SelectTrigger>
-                <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl max-h-[300px]">
+                <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl max-h-300">
                     <SelectItem value="system-default" className="typo-body font-bold">{t('speech.systemDefault')}</SelectItem>
                     {voices.map(v => (
                         <SelectItem key={v.voiceURI} value={v.voiceURI} className="typo-body font-bold">
@@ -252,7 +270,7 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({
             {/* Page Header */}
             <div className="relative group px-1">
                 <div className="flex items-center gap-4 mb-3">
-                    <div className="p-3.5 rounded-2xl bg-primary/10 text-primary shadow-2xl shadow-primary/10 group-hover:scale-110 transition-transform duration-700 ring-1 ring-primary/20">
+                    <div className={C_SPEECHTAB_1}>
                         <Waves className="w-7 h-7" />
                     </div>
                     <div>
@@ -273,7 +291,7 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({
             </div>
 
             {/* Voice & Config Section */}
-            <div className="bg-card rounded-[2.5rem] border border-border/40 p-8 pt-10 space-y-10 shadow-sm relative overflow-hidden group/voice hover:border-border/60 transition-all duration-500">
+            <div className={C_SPEECHTAB_2}>
                 <div className="flex items-center gap-3 px-1 relative z-10">
                     <Radio className="w-4 h-4 text-primary" />
                     <h4 className="typo-body font-bold text-muted-foreground/40">{t('speech.synthesizerMatrix')}</h4>
@@ -298,8 +316,8 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({
                 <div className="pt-10 border-t border-border/10 relative z-10">
                     <div className="flex flex-col gap-6">
                         <div className="group/preview relative">
-                            <div className="absolute -inset-2 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 rounded-2xl blur-xl opacity-0 group-hover/preview:opacity-100 transition duration-1000" />
-                            <div className="relative p-6 rounded-2xl bg-muted/10 border border-border/20 backdrop-blur-sm shadow-inner group-hover/preview:border-primary/20 transition-all">
+                            <div className={C_SPEECHTAB_3} />
+                            <div className={C_SPEECHTAB_4}>
                                 <div className="flex items-start gap-4">
                                     <div className="p-2 rounded-lg bg-primary/20 text-primary mt-1">
                                         <Volume2 className="w-4 h-4" />
@@ -317,14 +335,14 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({
                         <Button
                             onClick={handleTest}
                             variant="outline"
-                            className="h-14 rounded-2xl bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 hover:border-primary/30 transition-all duration-500 font-bold typo-body shadow-lg shadow-primary/5 group/btn"
+                            className={C_SPEECHTAB_5}
                         >
                             <Play className="w-3.5 h-3.5 mr-3 group-hover:scale-125 transition-transform" />
                             {t('speech.test')}
                         </Button>
                     </div>
                 </div>
-                <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-primary/5 rounded-full blur-[100px] opacity-30 pointer-events-none" />
+                <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
             </div>
         </div>
     );

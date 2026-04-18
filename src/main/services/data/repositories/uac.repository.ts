@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { WORKSPACE_COMPAT_INDEX_VALUES, WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { AgentCollaborationMessage, WorkspaceStep } from '@shared/types/council';
 import { DatabaseAdapter, SqlValue } from '@shared/types/database';
@@ -94,58 +104,6 @@ export interface UacCollaborationMessageRecord {
     payload_json: string;
     created_at: number;
     expires_at?: number;
-}
-
-export interface UacCouncilPlanRecord {
-    id: string;
-    task_id: string;
-    plan_version: string;
-    user_constraints_json?: string;
-    estimated_cost_usd?: number;
-    approved_at?: number;
-    created_at: number;
-    updated_at: number;
-}
-
-export interface UacCouncilPlanStageRecord {
-    id: string;
-    plan_id: string;
-    task_id: string;
-    stage_id: string;
-    dependencies_json: string;
-    assigned_agent: string;
-    status: string;
-    acceptance_json: string;
-    created_at: number;
-    updated_at: number;
-}
-
-export interface UacCouncilAssignmentRecord {
-    id: string;
-    task_id: string;
-    stage_id: string;
-    agent_id: string;
-    assigned_at: number;
-    reassigned_from?: string;
-}
-
-export interface UacCouncilDecisionRecord {
-    id: string;
-    task_id: string;
-    stage_id?: string;
-    decision_type: string;
-    reason: string;
-    actor: string;
-    created_at: number;
-}
-
-export interface UacCouncilInterruptRecord {
-    id: string;
-    task_id: string;
-    stage_id?: string;
-    interrupt_type: 'quota_exhausted' | 'provider_down' | 'timeout' | 'crash_resume';
-    payload_json: string;
-    created_at: number;
 }
 
 /** AGT-PLN-03: Plan pattern record for learning from past plans */
@@ -324,73 +282,6 @@ export class UacRepository {
             );
         `);
 
-        await this.db.exec(`
-            CREATE TABLE IF NOT EXISTS uac_council_plans (
-                id TEXT PRIMARY KEY,
-                task_id TEXT NOT NULL,
-                plan_version TEXT NOT NULL,
-                user_constraints_json TEXT,
-                estimated_cost_usd REAL,
-                approved_at BIGINT,
-                created_at BIGINT NOT NULL,
-                updated_at BIGINT NOT NULL,
-                FOREIGN KEY(task_id) REFERENCES uac_tasks(id) ON DELETE CASCADE
-            );
-        `);
-
-        await this.db.exec(`
-            CREATE TABLE IF NOT EXISTS uac_council_plan_stages (
-                id TEXT PRIMARY KEY,
-                plan_id TEXT NOT NULL,
-                task_id TEXT NOT NULL,
-                stage_id TEXT NOT NULL,
-                dependencies_json TEXT NOT NULL,
-                assigned_agent TEXT NOT NULL,
-                status TEXT NOT NULL,
-                acceptance_json TEXT NOT NULL,
-                created_at BIGINT NOT NULL,
-                updated_at BIGINT NOT NULL,
-                FOREIGN KEY(plan_id) REFERENCES uac_council_plans(id) ON DELETE CASCADE,
-                FOREIGN KEY(task_id) REFERENCES uac_tasks(id) ON DELETE CASCADE
-            );
-        `);
-
-        await this.db.exec(`
-            CREATE TABLE IF NOT EXISTS uac_council_assignments (
-                id TEXT PRIMARY KEY,
-                task_id TEXT NOT NULL,
-                stage_id TEXT NOT NULL,
-                agent_id TEXT NOT NULL,
-                assigned_at BIGINT NOT NULL,
-                reassigned_from TEXT,
-                FOREIGN KEY(task_id) REFERENCES uac_tasks(id) ON DELETE CASCADE
-            );
-        `);
-
-        await this.db.exec(`
-            CREATE TABLE IF NOT EXISTS uac_council_decisions (
-                id TEXT PRIMARY KEY,
-                task_id TEXT NOT NULL,
-                stage_id TEXT,
-                decision_type TEXT NOT NULL,
-                reason TEXT NOT NULL,
-                actor TEXT NOT NULL,
-                created_at BIGINT NOT NULL,
-                FOREIGN KEY(task_id) REFERENCES uac_tasks(id) ON DELETE CASCADE
-            );
-        `);
-
-        await this.db.exec(`
-            CREATE TABLE IF NOT EXISTS uac_council_interrupts (
-                id TEXT PRIMARY KEY,
-                task_id TEXT NOT NULL,
-                stage_id TEXT,
-                interrupt_type TEXT NOT NULL,
-                payload_json TEXT NOT NULL,
-                created_at BIGINT NOT NULL,
-                FOREIGN KEY(task_id) REFERENCES uac_tasks(id) ON DELETE CASCADE
-            );
-        `);
 
         await this.db.exec(
             `CREATE INDEX IF NOT EXISTS idx_uac_plan_patterns_keywords ON uac_plan_patterns(task_keywords);`
@@ -431,21 +322,6 @@ export class UacRepository {
         );
         await this.db.exec(
             `CREATE INDEX IF NOT EXISTS idx_uac_collab_messages_task_stage ON uac_collaboration_messages(task_id, stage_id, created_at ASC);`
-        );
-        await this.db.exec(
-            `CREATE INDEX IF NOT EXISTS idx_uac_council_plans_task_updated ON uac_council_plans(task_id, updated_at DESC);`
-        );
-        await this.db.exec(
-            `CREATE INDEX IF NOT EXISTS idx_uac_council_stages_task_stage ON uac_council_plan_stages(task_id, stage_id, status, updated_at DESC);`
-        );
-        await this.db.exec(
-            `CREATE INDEX IF NOT EXISTS idx_uac_council_assignments_task_stage ON uac_council_assignments(task_id, stage_id, assigned_at DESC);`
-        );
-        await this.db.exec(
-            `CREATE INDEX IF NOT EXISTS idx_uac_council_decisions_task_created ON uac_council_decisions(task_id, stage_id, created_at DESC);`
-        );
-        await this.db.exec(
-            `CREATE INDEX IF NOT EXISTS idx_uac_council_interrupts_task_created ON uac_council_interrupts(task_id, stage_id, created_at DESC);`
         );
     }
 

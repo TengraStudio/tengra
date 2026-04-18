@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { useTranslation } from '@renderer/i18n';
 import React, { useRef } from 'react';
 
@@ -55,7 +65,7 @@ export const DragDropWrapper: React.FC<DragDropWrapperProps> = ({
 
     return (
         <div
-            className="tengra-drag-drop-wrapper"
+            className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
             onDragEnter={handleDragEnter}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -69,15 +79,15 @@ export const DragDropWrapper: React.FC<DragDropWrapperProps> = ({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="tengra-drag-drop-wrapper__overlay"
+                        className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
                     >
-                        <div className="tengra-drag-drop-wrapper__pulse" />
-                        <div className="tengra-drag-drop-wrapper__content space-y-4">
-                            <div className="tengra-drag-drop-wrapper__emoji">🏮</div>
-                            <div className="tengra-drag-drop-wrapper__title">
+                        <div className="absolute inset-0 animate-pulse bg-primary/5" />
+                        <div className="relative space-y-4 text-center">
+                            <div className="mb-4 text-6xl">🏮</div>
+                            <div className="text-2xl font-bold text-foreground">
                                 {t('dragDrop.title')}
                             </div>
-                            <div className="tengra-drag-drop-wrapper__description">
+                            <div className="text-sm font-medium text-muted-foreground/60">
                                 {t('dragDrop.description')}
                             </div>
                         </div>

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import {
     Background,
     Controls,
@@ -15,6 +25,10 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from '@/i18n';
 
 import { appLogger } from '../../../utils/renderer-logger';
+
+/* Batch-02: Extracted Long Classes */
+const C_ENTITYRELATIONSHIPDIAGRAM_1 = "p-2.5 bg-background/80 backdrop-blur-xl hover:bg-muted/40 rounded-xl border border-border/50 transition-all text-muted-foreground hover:text-foreground shadow-lg";
+
 
 
 // Node type for Entities
@@ -160,7 +174,7 @@ export const EntityRelationshipDiagram: React.FC = () => {
                 <Panel position="top-right" className="m-4">
                     <button
                         onClick={() => void loadData()}
-                        className="p-2.5 bg-background/80 backdrop-blur-xl hover:bg-muted/40 rounded-xl border border-border/50 transition-all text-muted-foreground hover:text-foreground shadow-lg"
+                        className={C_ENTITYRELATIONSHIPDIAGRAM_1}
                     >
                         <RotateCcw className="w-4 h-4" />
                     </button>

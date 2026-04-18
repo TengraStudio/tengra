@@ -1,3 +1,12 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
 use crate::proxy::server::AppState;
 use crate::proxy::skills::{
     delete_skill, get_skill, install_marketplace_skill_input, list_marketplace_skills, list_skills,

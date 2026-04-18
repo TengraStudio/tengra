@@ -1,6 +1,20 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React from 'react';
 
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_WORKSPACEEXPLORERINLINEROW_1 = "w-full rounded-md border border-primary/20 bg-background/90 px-2 py-1 typo-caption text-foreground outline-none focus:border-primary/40";
+
 
 interface WorkspaceExplorerInlineRowProps {
     rowKey: string;
@@ -59,7 +73,7 @@ export const WorkspaceExplorerInlineRow: React.FC<WorkspaceExplorerInlineRowProp
                     }
                 }}
                 onBlur={onSubmit}
-                className="w-full rounded-md border border-primary/20 bg-background/90 px-2 py-1 typo-caption text-foreground outline-none focus:border-primary/40"
+                className={C_WORKSPACEEXPLORERINLINEROW_1}
                 placeholder={placeholder}
                 tabIndex={-1}
             />

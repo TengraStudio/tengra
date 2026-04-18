@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { AlertCircle, AlertTriangle, CalendarClock, CheckCheck, Clock3, History, Info, Trash2 } from 'lucide-react';
 import {  useState } from 'react';
 
@@ -51,10 +61,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
     return (
         <>
             <div
-                className={cn(
-                    'tengra-toasts',
-                    breakpoint === 'mobile' ? 'tengra-toasts--mobile' : 'tengra-toasts--desktop'
-                )}
+                className={cn('fixed z-100 flex flex-col gap-2 pointer-events-none', breakpoint === 'mobile' ? 'top-4 left-4 right-4' : 'top-6 right-6 w-80')}
             >
 
                 {visibleToasts.map(toast => {
@@ -70,17 +77,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                     return (
                         <div
                             key={toast.id}
-                            className={cn(
-                                'tengra-toast-card animate-in slide-in-from-right-full duration-300',
-                                breakpoint === 'mobile' ? 'tengra-toast-card--mobile' : 'tengra-toast-card--desktop',
-                                toast.type === 'success'
-                                    ? 'tengra-toast-card--success'
-                                    : toast.type === 'error'
-                                        ? 'tengra-toast-card--error'
-                                        : toast.type === 'warning'
-                                            ? 'tengra-toast-card--warning'
-                                            : 'tengra-toast-card--info'
-                            )}
+                            className={cn('pointer-events-auto flex flex-col gap-2 px-3 py-2.5 rounded-lg border shadow-lg backdrop-blur-md animate-in slide-in-from-right-full duration-300 transition-all font-sans', breakpoint === 'mobile' ? 'w-full' : 'w-full min-w-300', toast.type === 'success' ? 'bg-success/15 border-success/30 text-success-foreground shadow-success/10' : toast.type === 'error' ? 'bg-destructive/15 border-destructive/30 text-destructive-foreground shadow-destructive/10' : toast.type === 'warning' ? 'bg-warning/15 border-warning/30 text-warning-foreground shadow-warning/10' : 'bg-primary/15 border-primary/30 text-primary-foreground shadow-primary/10')}
                         >
                             <div className="flex items-center gap-3">
                                 <span className="text-xxxs font-bold opacity-80">

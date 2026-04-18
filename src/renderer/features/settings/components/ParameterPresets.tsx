@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Check, Plus } from 'lucide-react';
 import { useState } from 'react';
 
@@ -7,6 +17,10 @@ import { cn } from '@/lib/utils';
 import { PresetCard } from './presets/PresetCard';
 import { PresetEditor } from './presets/PresetEditor';
 import { getPresetColor, getPresetIcon } from './presets/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_PARAMETERPRESETS_1 = "flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/20 border border-border/50 typo-caption text-muted-foreground/60 hover:text-foreground hover:bg-muted/30 transition-colors";
+
 
 export interface ParameterPreset {
     id: string
@@ -112,7 +126,7 @@ export function ParameterPresets({
                 <h3 className="text-sm font-semibold text-foreground">{t('ssh.presets.title')}</h3>
                 <button
                     onClick={handleCreateCustom}
-                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/20 border border-border/50 typo-caption text-muted-foreground/60 hover:text-foreground hover:bg-muted/30 transition-colors"
+                    className={C_PARAMETERPRESETS_1}
                 >
                     <Plus size={12} />
                     {t('ssh.presets.custom')}

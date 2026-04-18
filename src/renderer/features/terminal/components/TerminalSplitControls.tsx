@@ -1,9 +1,25 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Columns2, Rows2, X } from 'lucide-react';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
 import type { SplitAnalytics, SplitPreset, SplitViewState } from '../utils/split-config';
+
+/* Batch-02: Extracted Long Classes */
+const C_TERMINALSPLITCONTROLS_1 = "px-2 py-1 rounded border border-border text-11 hover:bg-accent/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
+const C_TERMINALSPLITCONTROLS_2 = "flex-1 px-1.5 py-0.5 rounded-sm text-left typo-caption hover:bg-accent/50 transition-colors flex items-center justify-between gap-2";
+const C_TERMINALSPLITCONTROLS_3 = "px-1.5 py-0.5 rounded text-10 border border-border/60 text-muted-foreground hover:text-destructive hover:bg-destructive/10";
+
 
 interface TerminalSplitControlsProps {
     t: (key: string, options?: Record<string, string | number>) => string;
@@ -55,16 +71,16 @@ export function TerminalSplitControls({
                     side="top"
                     align="end"
                     sideOffset={8}
-                    className="tw-w-260 p-2 bg-popover border border-border rounded-lg space-y-2"
+                    className="w-260 p-2 bg-popover border border-border rounded-lg space-y-2"
                 >
                     <div className="flex items-center justify-between gap-2">
-                        <div className="tw-text-10 text-muted-foreground">
+                        <div className="text-10 text-muted-foreground">
                             {t('terminal.splitPresetsLabel')}
                         </div>
                         <button
                             onClick={saveCurrentSplitAsPreset}
                             disabled={!splitView}
-                            className="px-2 py-1 rounded border border-border tw-text-11 hover:bg-accent/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className={C_TERMINALSPLITCONTROLS_1}
                         >
                             {t('terminal.saveCurrent')}
                         </button>
@@ -79,10 +95,10 @@ export function TerminalSplitControls({
                                     onClick={() => {
                                         applySplitPreset(preset);
                                     }}
-                                    className="flex-1 px-1.5 py-0.5 rounded-sm text-left typo-caption hover:bg-accent/50 transition-colors flex items-center justify-between gap-2"
+                                    className={C_TERMINALSPLITCONTROLS_2}
                                 >
                                     <span className="truncate">{preset.name}</span>
-                                    <span className="tw-text-10 text-muted-foreground capitalize">
+                                    <span className="text-10 text-muted-foreground capitalize">
                                         {preset.orientation}
                                     </span>
                                 </button>
@@ -92,7 +108,7 @@ export function TerminalSplitControls({
                                             onClick={() => {
                                                 renameSplitPreset(preset.id);
                                             }}
-                                            className="px-1.5 py-0.5 rounded tw-text-10 border border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent/40"
+                                            className="px-1.5 py-0.5 rounded text-10 border border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent/40"
                                             title={t('terminal.renamePresetTitle')}
                                         >
                                             {t('terminal.editShort')}
@@ -101,7 +117,7 @@ export function TerminalSplitControls({
                                             onClick={() => {
                                                 deleteSplitPreset(preset.id);
                                             }}
-                                            className="px-1.5 py-0.5 rounded tw-text-10 border border-border/60 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                            className={C_TERMINALSPLITCONTROLS_3}
                                             title={t('terminal.deletePresetTitle')}
                                         >
                                             {t('terminal.deleteShort')}
@@ -111,7 +127,7 @@ export function TerminalSplitControls({
                             </div>
                         ))}
                     </div>
-                    <div className="pt-1 border-t border-border/50 space-y-0.5 tw-text-10 text-muted-foreground">
+                    <div className="pt-1 border-t border-border/50 space-y-0.5 text-10 text-muted-foreground">
                         <div>{t('terminal.analyticsCreated')}: {splitAnalytics.splitCreatedCount}</div>
                         <div>{t('terminal.analyticsClosed')}: {splitAnalytics.splitClosedCount}</div>
                         <div>
@@ -127,7 +143,7 @@ export function TerminalSplitControls({
                             </span>
                             <button
                                 onClick={resetSplitAnalytics}
-                                className="px-1.5 py-0.5 rounded border border-border/60 tw-text-10 hover:bg-accent/40"
+                                className="px-1.5 py-0.5 rounded border border-border/60 text-10 hover:bg-accent/40"
                             >
                                 {t('common.reset')}
                             </button>
@@ -140,7 +156,7 @@ export function TerminalSplitControls({
                     <button
                         onClick={toggleSynchronizedInput}
                         className={cn(
-                            'px-1.5 py-1 tw-text-10 font-semibold rounded border transition-colors',
+                            'px-1.5 py-1 text-10 font-semibold rounded border transition-colors',
                             isSynchronizedInputEnabled
                                 ? 'border-primary/60 text-primary bg-primary/10'
                                 : 'border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent/40'

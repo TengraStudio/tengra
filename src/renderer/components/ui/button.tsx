@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
@@ -19,7 +29,7 @@ const buttonVariants = cva(
             size: {
                 default: "h-9 px-3",
                 sm: "h-8 px-2.5 typo-caption",
-                xs: "h-6 px-2 text-[10px]",
+                xs: "h-6 px-2 text-xxxs",
                 lg: "h-10 px-4",
                 icon: "h-9 w-9",
             },

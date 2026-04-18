@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Size, buffer, and iteration limits used throughout the application.
  * Centralizing these values prevents inconsistencies and makes tuning easier.
  */
@@ -51,8 +61,6 @@ export const ITERATION_LIMITS = {
 export const DISPLAY_LIMITS = {
     /** Recent chats to display in sidebar */
     RECENT_CHATS: 20,
-    /** Commands to show in command palette */
-    COMMAND_PALETTE_ITEMS: 5,
     /** Prompts to show in dropdown */
     PROMPTS_DROPDOWN: 5,
     /** Tool output preview lines */

@@ -1,8 +1,20 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { ChevronRight, HardDrive, Server } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
+import { UI_PRIMITIVES } from '@/constants/ui-primitives';
 import { useTranslation } from '@/i18n';
 import { invokeTypedIpc } from '@/lib/ipc-client';
+import { cn } from '@/lib/utils';
 import { SSHConfig } from '@/types/ssh';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -66,7 +78,7 @@ export const TerminalConnectionSelector: React.FC<TerminalConnectionSelectorProp
                         id: c.Id,
                         name: Array.isArray(c.Names) ? c.Names[0].replace(/^\//, '') : c.Id.substring(0, 12),
                         status: c.Status
-                    }));
+                     }));
                     setContainers(mappedContainers);
                 } else {
                     setContainers([]);
@@ -87,69 +99,95 @@ export const TerminalConnectionSelector: React.FC<TerminalConnectionSelectorProp
     };
 
     return (
-        <div className="connection-selector-overlay" onClick={onClose}>
-            <div className="connection-selector-content" onClick={e => e.stopPropagation()}>
-                <div className="selector-header">
-                    <h3>{t('terminal.select_connection')}</h3>
+        <div className={UI_PRIMITIVES.OVERLAY_BASE} onClick={onClose}>
+            <div 
+                className={cn(UI_PRIMITIVES.PANEL_BASE, "w-400 max-h-500 shadow-2xl")} 
+                onClick={e => e.stopPropagation()}
+            >
+                <div className={UI_PRIMITIVES.PANEL_SUB_HEADER}>
+                    <h3 className="typo-body font-bold text-foreground pl-2">{t('terminal.select_connection')}</h3>
                 </div>
 
-                <div className="selector-list">
+                <div className="flex-1 overflow-y-auto p-1 space-y-4">
                     {/* Local Terminal */}
-                    <div className="selector-item" onClick={() => handleSelect({ id: 'local', name: t('terminal.local'), type: 'local' })}>
-                        <div className="item-icon"><HardDrive size={16} /></div>
-                        <div className="item-details">
-                            <span className="item-name">{t('terminal.local_terminal')}</span>
-                            <span className="item-desc">{t('terminal.local_terminal_desc')}</span>
+                    <div className="space-y-1">
+                        <div 
+                            className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "group")} 
+                            onClick={() => handleSelect({ id: 'local', name: t('terminal.local'), type: 'local' })}
+                        >
+                            <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                <HardDrive size={16} />
+                            </div>
+                            <div className="flex-1 flex flex-col">
+                                <span className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "p-0 bg-transparent font-bold")}>{t('terminal.local_terminal')}</span>
+                                <span className="text-xxxs text-muted-foreground">{t('terminal.local_terminal_desc')}</span>
+                            </div>
+                            <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
-                        <ChevronRight size={16} className="item-arrow" />
                     </div>
 
-                    <div className="selector-section">
-                        <h4>{t('terminal.ssh_connections')}</h4>
+                    <div className="space-y-1">
+                        <h4 className="px-3 text-xxs font-bold text-muted-foreground/60 uppercase tracking-wider">{t('terminal.ssh_connections')}</h4>
                         {sshProfiles.length === 0 && !loading && (
-                            <div className="empty-message">{t('terminal.no_ssh_profiles')}</div>
+                            <div className="px-3 py-2 text-xxs text-muted-foreground italic">{t('terminal.no_ssh_profiles')}</div>
                         )}
                         {sshProfiles.map(profile => (
-                            <div key={profile.id} className="selector-item" onClick={() => handleSelect({
-                                id: profile.id,
-                                name: profile.name || profile.host,
-                                type: 'ssh',
-                                metadata: { host: profile.host, port: profile.port, username: profile.username }
-                            })}>
-                                <div className="item-icon"><Server size={16} /></div>
-                                <div className="item-details">
-                                    <span className="item-name">{profile.name || profile.host}</span>
-                                    <span className="item-desc">{profile.username}@{profile.host}:{profile.port}</span>
+                            <div 
+                                key={profile.id} 
+                                className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "group")} 
+                                onClick={() => handleSelect({
+                                    id: profile.id,
+                                    name: profile.name || profile.host,
+                                    type: 'ssh',
+                                    metadata: { host: profile.host, port: profile.port, username: profile.username }
+                                })}
+                            >
+                                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-muted/50 text-muted-foreground group-hover:text-foreground">
+                                    <Server size={16} />
                                 </div>
-                                <ChevronRight size={16} className="item-arrow" />
+                                <div className="flex-1 flex flex-col">
+                                    <span className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "p-0 bg-transparent font-bold")}>{profile.name || profile.host}</span>
+                                    <span className="text-xxxs text-muted-foreground">{profile.username}@{profile.host}:{profile.port}</span>
+                                </div>
+                                <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
                         ))}
                     </div>
 
-                    <div className="selector-section">
-                        <h4>{t('terminal.docker_containers')}</h4>
+                    <div className="space-y-1">
+                        <h4 className="px-3 text-xxs font-bold text-muted-foreground/60 uppercase tracking-wider">{t('terminal.docker_containers')}</h4>
                         {containers.length === 0 && !loading && (
-                            <div className="empty-message">{t('terminal.no_containers')}</div>
+                            <div className="px-3 py-2 text-xxs text-muted-foreground italic">{t('terminal.no_containers')}</div>
                         )}
                         {containers.map(container => (
-                            <div key={container.id} className="selector-item" onClick={() => handleSelect({
-                                id: container.id,
-                                name: container.name,
-                                type: 'docker',
-                                metadata: { containerId: container.id, shell: '/bin/bash' }
-                            })}>
-                                <div className="item-icon"><div className="docker-icon">D</div></div>
-                                <div className="item-details">
-                                    <span className="item-name">{container.name}</span>
-                                    <span className="item-desc">{container.status}</span>
+                            <div 
+                                key={container.id} 
+                                className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "group")} 
+                                onClick={() => handleSelect({
+                                    id: container.id,
+                                    name: container.name,
+                                    type: 'docker',
+                                    metadata: { containerId: container.id, shell: '/bin/bash' }
+                                })}
+                            >
+                                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
+                                    <div className="text-10 font-bold border border-current px-1 rounded">D</div>
                                 </div>
-                                <ChevronRight size={16} className="item-arrow" />
+                                <div className="flex-1 flex flex-col">
+                                    <span className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "p-0 bg-transparent font-bold")}>{container.name}</span>
+                                    <span className="text-xxxs text-muted-foreground">{container.status}</span>
+                                </div>
+                                <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
                         ))}
                     </div>
                 </div>
 
-                {loading && <div className="selector-loading">{t('common.loading')}</div>}
+                {loading && (
+                    <div className="p-4 text-center text-xxs text-muted-foreground animate-pulse">
+                        {t('common.loading')}
+                    </div>
+                )}
             </div>
         </div>
     );

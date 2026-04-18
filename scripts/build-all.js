@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 const { spawn } = require('child_process');
 const path = require('path');
 
@@ -22,6 +32,25 @@ function writeStderr(message) {
  */
 let activeProcesses = [];
 
+function terminateProcessTree(proc) {
+    if (!proc || proc.killed) {
+        return;
+    }
+    if (process.platform === 'win32') {
+        const killer = spawn('taskkill', ['/PID', String(proc.pid), '/T', '/F'], {
+            stdio: 'ignore',
+            windowsHide: true
+        });
+        killer.on('error', () => undefined);
+        return;
+    }
+    try {
+        process.kill(proc.pid, 'SIGTERM');
+    } catch {
+        // Ignore kill errors
+    }
+}
+
 function runCommand(command, args, name) {
     return new Promise((resolve, reject) => {
         const commandLine = [command, ...args].join(' ');
@@ -30,11 +59,18 @@ function runCommand(command, args, name) {
         const proc = spawn(commandLine, {
             cwd: PROJECT_ROOT,
             shell: true,
-            stdio: 'inherit',
+            stdio: ['ignore', 'pipe', 'pipe'],
             env: { ...process.env, FORCE_COLOR: '1' }
         });
 
         activeProcesses.push({ proc, name });
+
+        proc.stdout?.on('data', chunk => {
+            process.stdout.write(chunk);
+        });
+        proc.stderr?.on('data', chunk => {
+            process.stderr.write(chunk);
+        });
 
         proc.on('error', (error) => {
             writeStderr(`[${name}] Failed to start: ${error.message}`);
@@ -59,12 +95,8 @@ function cleanup() {
     if (activeProcesses.length > 0) {
         writeStdout('\nCleaning up active processes...');
         activeProcesses.forEach(({ proc, name }) => {
-            try {
-                proc.kill('SIGTERM');
-                writeStdout(`- Terminated: ${name}`);
-            } catch (err) {
-                // Ignore kill errors
-            }
+            terminateProcessTree(proc);
+            writeStdout(`- Terminated: ${name}`);
         });
     }
 }

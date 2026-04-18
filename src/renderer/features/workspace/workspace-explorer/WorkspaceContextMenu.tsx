@@ -1,8 +1,30 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { FilePlus, FolderPlus, History, Pencil, SquareArrowDown, SquareArrowUp, Trash2 } from 'lucide-react';
 import React from 'react';
 import { createPortal } from 'react-dom';
 
 import { ContextMenuAction, ContextMenuState } from './types';
+
+/* Batch-02: Extracted Long Classes */
+const C_WORKSPACECONTEXTMENU_1 = "fixed bg-card/95 border border-border/50 rounded-xl shadow-2xl py-1.5 min-w-180 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl";
+const C_WORKSPACECONTEXTMENU_2 = "w-full flex items-center gap-3 px-3 py-2 typo-caption font-medium hover:bg-destructive/10 text-destructive hover:text-destructive transition-colors";
+const C_WORKSPACECONTEXTMENU_3 = "w-full flex items-center gap-3 px-3 py-2 typo-caption font-medium hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors";
+const C_WORKSPACECONTEXTMENU_4 = "w-full flex items-center gap-3 px-3 py-2 typo-caption font-medium hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors";
+const C_WORKSPACECONTEXTMENU_5 = "w-full flex items-center gap-3 px-3 py-2 typo-caption font-medium hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors";
+const C_WORKSPACECONTEXTMENU_6 = "w-full flex items-center gap-3 px-3 py-2 typo-caption font-medium hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors";
+const C_WORKSPACECONTEXTMENU_7 = "w-full flex items-center gap-3 px-3 py-2 typo-caption font-medium hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors";
+const C_WORKSPACECONTEXTMENU_8 = "w-full flex items-center gap-3 px-3 py-2 typo-caption font-medium hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors";
+const C_WORKSPACECONTEXTMENU_9 = "w-full flex items-center gap-3 px-3 py-2 typo-caption font-medium hover:bg-destructive/10 text-destructive hover:text-destructive transition-colors";
+
 
 interface WorkspaceContextMenuProps {
     contextMenu: ContextMenuState;
@@ -34,7 +56,7 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
 
     return createPortal(
         <div
-            className="fixed bg-card/95 border border-border/50 rounded-xl shadow-2xl py-1.5 tw-min-w-180 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl"
+            className={C_WORKSPACECONTEXTMENU_1}
             style={{
                 left: contextMenu.x,
                 top: contextMenu.y,
@@ -51,7 +73,7 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
                         }
                         onClose();
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2 typo-caption font-medium hover:bg-destructive/10 text-destructive hover:text-destructive transition-colors"
+                    className={C_WORKSPACECONTEXTMENU_2}
                 >
                     <Trash2 className="w-3.5 h-3.5" />
                     {t('workspace.removeMount')}
@@ -66,7 +88,7 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
                             {(hasUnstagedChanges || !hasStagedChanges) && (
                                 <button
                                     onClick={() => onContextAction('stage')}
-                                    className="w-full flex items-center gap-3 px-3 py-2 typo-caption font-medium hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors"
+                                    className={C_WORKSPACECONTEXTMENU_3}
                                 >
                                     <SquareArrowUp className="w-3.5 h-3.5" />
                                     {t('workspaceDashboard.stage')}
@@ -75,7 +97,7 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
                             {hasStagedChanges && (
                                 <button
                                     onClick={() => onContextAction('unstage')}
-                                    className="w-full flex items-center gap-3 px-3 py-2 typo-caption font-medium hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors"
+                                    className={C_WORKSPACECONTEXTMENU_4}
                                 >
                                     <SquareArrowDown className="w-3.5 h-3.5" />
                                     {t('workspaceDashboard.unstage')}
@@ -83,7 +105,7 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
                             )}
                             <button
                                 onClick={() => onContextAction('gitHistory')}
-                                className="w-full flex items-center gap-3 px-3 py-2 typo-caption font-medium hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors"
+                                className={C_WORKSPACECONTEXTMENU_5}
                             >
                                 <History className="w-3.5 h-3.5" />
                                 {t('agent.history')}
@@ -95,14 +117,14 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
                         <>
                             <button
                                 onClick={() => onContextAction('createFile')}
-                                className="w-full flex items-center gap-3 px-3 py-2 typo-caption font-medium hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors"
+                                className={C_WORKSPACECONTEXTMENU_6}
                             >
                                 <FilePlus className="w-3.5 h-3.5" />
                                 {t('workspace.newFile')}
                             </button>
                             <button
                                 onClick={() => onContextAction('createFolder')}
-                                className="w-full flex items-center gap-3 px-3 py-2 typo-caption font-medium hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors"
+                                className={C_WORKSPACECONTEXTMENU_7}
                             >
                                 <FolderPlus className="w-3.5 h-3.5" />
                                 {t('workspace.newFolder')}
@@ -112,14 +134,14 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
                     )}
                     <button
                         onClick={() => onContextAction('rename')}
-                        className="w-full flex items-center gap-3 px-3 py-2 typo-caption font-medium hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors"
+                        className={C_WORKSPACECONTEXTMENU_8}
                     >
                         <Pencil className="w-3.5 h-3.5" />
                         {t('workspace.rename')}
                     </button>
                     <button
                         onClick={() => onContextAction('delete')}
-                        className="w-full flex items-center gap-3 px-3 py-2 typo-caption font-medium hover:bg-destructive/10 text-destructive hover:text-destructive transition-colors"
+                        className={C_WORKSPACECONTEXTMENU_9}
                     >
                         <Trash2 className="w-3.5 h-3.5" />
                         {t('common.delete')}

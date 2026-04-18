@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Keyboard Shortcuts Hook
  * Centralizes keyboard shortcut handling
  */
@@ -13,7 +23,6 @@ import {
 import { AppView } from './useAppState';
 
 export interface KeyboardShortcutsConfig {
-    onCommandPalette: () => void
     onNewChat: () => void
     onOpenSettings: () => void
     onShowShortcuts: () => void
@@ -24,7 +33,6 @@ export interface KeyboardShortcutsConfig {
     onZoomIn: () => void
     onZoomOut: () => void
     onResetZoom: () => void
-    showCommandPalette: boolean
     showShortcuts: boolean
     showSSHManager: boolean
     currentChatId: string | null
@@ -44,11 +52,11 @@ function isZoomShortcut(event: KeyboardEvent, isMac: boolean): boolean {
 
 function handleEscape(
     e: KeyboardEvent,
-    state: { showCommandPalette: boolean; showShortcuts: boolean; showSSHManager: boolean },
+    state: { showShortcuts: boolean; showSSHManager: boolean },
     onCloseModals: () => void
 ) {
     if (e.key === 'Escape' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
-        if (state.showCommandPalette || state.showShortcuts || state.showSSHManager) {
+        if (state.showShortcuts || state.showSSHManager) {
             e.preventDefault();
             onCloseModals();
         }
@@ -60,7 +68,6 @@ function handleEscape(
  */
 export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
     const {
-        onCommandPalette,
         onNewChat,
         onOpenSettings,
         onShowShortcuts,
@@ -71,7 +78,6 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
         onZoomIn,
         onZoomOut,
         onResetZoom,
-        showCommandPalette,
         showShortcuts,
         showSSHManager,
         currentChatId
@@ -93,7 +99,6 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
 
     useEffect(() => {
         const actionHandlers: Record<ShortcutActionId, () => void> = {
-            commandPalette: onCommandPalette,
             newChat: onNewChat,
             openSettings: onOpenSettings,
             clearChat: onClearChat,
@@ -108,7 +113,6 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
             'goToChat',
             'goToWorkspaces',
             'goToSettings',
-            'commandPalette',
             'newChat',
             'openSettings',
             'clearChat',
@@ -152,7 +156,7 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
                 return;
             }
 
-            handleEscape(e, { showCommandPalette, showShortcuts, showSSHManager }, onCloseModals);
+            handleEscape(e, { showShortcuts, showSSHManager }, onCloseModals);
         };
 
         window.addEventListener('keydown', handleKeyDown);
@@ -160,7 +164,6 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
             window.removeEventListener('keydown', handleKeyDown);
         };
     }, [
-        onCommandPalette,
         onNewChat,
         onOpenSettings,
         onShowShortcuts,
@@ -171,7 +174,6 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
         onZoomIn,
         onZoomOut,
         onResetZoom,
-        showCommandPalette,
         showShortcuts,
         showSSHManager,
         currentChatId,

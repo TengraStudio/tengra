@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
@@ -16,6 +26,22 @@ describe('useMessageContent', () => {
         const { result } = renderHook(() => useMessageContent(raw, undefined, undefined));
 
         expect(result.current.displayContent).toBe('merhaba, nasilsin?');
+    });
+
+    it('extracts thinking tags as thought content', () => {
+        const raw = '<thinking>copilot dusuncesi</thinking>Sonuc burada.';
+        const { result } = renderHook(() => useMessageContent(raw, undefined, undefined));
+
+        expect(result.current.thought).toBe('copilot dusuncesi');
+        expect(result.current.displayContent).toBe('Sonuc burada.');
+    });
+
+    it('extracts planing typo tags as plan content', () => {
+        const raw = '<planing>1. adim</planing>Devam.';
+        const { result } = renderHook(() => useMessageContent(raw, undefined, undefined));
+
+        expect(result.current.plan).toBe('1. adim');
+        expect(result.current.displayContent).toBe('Devam.');
     });
 
     it('uses the streaming fast path for plain text content without structured markers', () => {

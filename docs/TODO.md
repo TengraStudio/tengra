@@ -635,3 +635,22 @@ Bu aşamada build/lint/type-check/test henüz özellikle çalıştırılmadı. S
 - [x] Consolidated project documentation: gathered scattered Markdown files into a central docs/ directory.
 - [x] Hardened documentation links: updated relative paths in all core rule files (MASTER_COMMANDMENTS.md, AI_RULES.md, AGENTS.md, etc.) to reflect the unified docs/ structure.
 - [x] Updated scripts/build-env-setup.js to align with the single-runtime-root architecture.
+
+## Open Source Release (15-Day) Remaining
+- [x] Migrate remaining `tengra-*` CSS class usage to Tailwind utilities in renderer components.
+- [x] Remove unused CSS files/imports after each migration batch and keep `index.css` minimal.
+- [x] Normalize remaining CSS filenames to kebab-case and remove legacy naming.
+- [x] Audit and remove dead i18n keys related to removed Command Palette UI.
+- [x] Replace or clean up any stale "command palette" user-facing copy in workspace/help overlays.
+- [x] Run full regression pass on layout surfaces (sidebar, header, panel, status/title bars, workspace shell).
+- [x] Execute full lint/type-check/test pipeline and resolve all remaining warnings before open-source release.
+- [ ] Prepare a final OSS readiness checklist (build reproducibility, docs, contribution flow, license headers).
+
+## Long-Term MCP Marketplace & Sidecar Evolution (Roadmap)
+- [ ] **Native MCP Orchestrator**: Migrate `ExternalMcpPlugin` lifecycle management from Node.js `child_process` to `tengra-proxy` (Rust).
+- [ ] **WASM Plugin Runtime**: Integrate a WASM/WASI runtime (e.g., Wasmtime) into the sidecar for secure, sandboxed marketplace plugins.
+- [ ] **Capability-Based Security**: Implement a request/grant system in the sidecar where plugins must request specific resource handles (VFS, Network).
+- [ ] **Unified Tool Hub**: Use `tengra-proxy` as the single gateway for all tool calls (internal, external, WASM), eliminating Node.js IPC hops for 3rd-party tools.
+- [ ] **Tengra Native SDK**: Develop a Rust crate for plugin authors to build safe, high-performance MCP servers.
+- [ ] **Process Isolation 2.0**: Use Rust's `sysinfo` to precisely monitor and throttle CPU/Memory of legacy (executable) MCP plugins.
+- [ ] **TPP (Tengra Plugin Protocol)**: Extend standard MCP with high-speed shared memory IPC for deep integration between plugins and Tengra core (AST, Code Graph).

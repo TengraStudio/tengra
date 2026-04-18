@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Advanced Memory Service
  *
  * A sophisticated memory system that surpasses ChatGPT/Claude memory with:
@@ -17,6 +27,10 @@ import { AdvancedMemoryMaintenanceService } from '@main/services/llm/advanced-me
 import { AdvancedMemoryNormalizationAdapter } from '@main/services/llm/advanced-memory-normalization.adapter';
 import { AdvancedMemoryPersistenceAdapter } from '@main/services/llm/advanced-memory-persistence.adapter';
 import { AdvancedMemoryRetrievalService } from '@main/services/llm/advanced-memory-retrieval.service';
+import {
+    BackgroundModelResolver,
+    BackgroundModelSelection
+} from '@main/services/llm/background-model-resolver.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { SettingsService } from '@main/services/system/settings.service';
@@ -118,8 +132,12 @@ export class AdvancedMemoryService {
     private config: AdvancedMemoryConfig;
     private stagingBuffer: Map<string, PendingMemory> = new Map();
     private sharedNamespaces = new Map<string, SharedMemoryNamespace>();
-    private sharedNamespaceConflicts = new Map<string, SharedMemoryMergeConflict[]>();
-    private cachedOllamaModel: string | null = null;
+    private readonly searchCacheTtlMs = 15_000;
+    private readonly snapshotCacheTtlMs = 10_000;
+    private searchCache = new Map<string, { expiresAt: number; value: AdvancedSemanticFragment[] }>();
+    private memorySnapshot: { expiresAt: number; value: AdvancedSemanticFragment[] } | null = null;
+    private memorySnapshotRefresh: Promise<void> | null = null;
+    private cachedBackgroundModel: BackgroundModelSelection | null = null;
     private isInitialized = false;
     private searchAnalytics = {
         totalQueries: 0,
@@ -152,6 +170,7 @@ export class AdvancedMemoryService {
         private embedding: EmbeddingService,
         private llmService: LLMService,
         private settings: SettingsService,
+        private backgroundModelResolver?: BackgroundModelResolver,
         config?: Partial<AdvancedMemoryConfig>
     ) {
         this.config = { ...DEFAULT_MEMORY_CONFIG, ...config };
@@ -205,6 +224,7 @@ export class AdvancedMemoryService {
 
         // Run decay maintenance
         await this.runDecayMaintenance();
+        this.warmMemorySnapshot();
 
         this.isInitialized = true;
         appLogger.info(SERVICE_NAME, 'Advanced memory service initialized');
@@ -214,10 +234,12 @@ export class AdvancedMemoryService {
     async cleanup(): Promise<void> {
         this.stagingBuffer.clear();
         this.sharedNamespaces.clear();
-        this.sharedNamespaceConflicts.clear();
+        this.searchCache.clear();
+        this.memorySnapshot = null;
+        this.memorySnapshotRefresh = null;
         this.searchAnalytics.queryCounts.clear();
         this.searchAnalytics.history.length = 0;
-        this.cachedOllamaModel = null;
+        this.cachedBackgroundModel = null;
         this.isInitialized = false;
         appLogger.info(SERVICE_NAME, 'Advanced memory service cleaned up');
     }
@@ -625,7 +647,69 @@ export class AdvancedMemoryService {
     }
 
     async searchMemoriesHybrid(query: string, limit: number = 10): Promise<AdvancedSemanticFragment[]> {
-        return this.retrievalService.searchMemoriesHybrid(query, limit);
+        const startedAt = Date.now();
+        this.operationalAnalytics.totalRequests++;
+
+        const normalizedQuery = query.trim().toLowerCase();
+        if (!normalizedQuery) {
+            this.finalizeOperationDuration(startedAt);
+            return [];
+        }
+
+        const safeLimit = Math.max(1, Math.min(100, limit));
+        const cacheKey = this.buildSearchCacheKey(normalizedQuery, safeLimit);
+        const cached = this.readSearchCache(cacheKey);
+        if (cached) {
+            this.finalizeOperationDuration(startedAt);
+            return cached;
+        }
+
+        try {
+            const primaryResult = await Promise.race([
+                this.retrievalService.searchMemoriesHybrid(normalizedQuery, safeLimit).then(result => ({
+                    type: 'primary' as const,
+                    result
+                })),
+                new Promise<{ type: 'timeout' }>(resolve => {
+                    setTimeout(() => resolve({ type: 'timeout' }), ADVANCED_MEMORY_BUDGET_MS);
+                })
+            ]);
+
+            if (primaryResult.type === 'primary') {
+                this.writeSearchCache(cacheKey, primaryResult.result);
+                this.operationalAnalytics.lastErrorCode = undefined;
+                this.finalizeOperationDuration(startedAt);
+                return primaryResult.result;
+            }
+
+            this.operationalAnalytics.budgetExceededCount++;
+            this.operationalAnalytics.fallbackResponses++;
+            const fallback = await this.searchMemoriesByText(normalizedQuery, safeLimit, true);
+            this.writeSearchCache(cacheKey, fallback);
+            this.operationalAnalytics.lastErrorCode = ADVANCED_MEMORY_ERROR_CODE.transient;
+            this.finalizeOperationDuration(startedAt);
+            return fallback;
+        } catch (error) {
+            this.operationalAnalytics.failedRequests++;
+            this.operationalAnalytics.fallbackResponses++;
+            this.operationalAnalytics.lastErrorCode = ADVANCED_MEMORY_ERROR_CODE.operationFailed;
+            appLogger.warn(
+                SERVICE_NAME,
+                `Hybrid search primary path failed, using lexical fallback: ${String(error)}`
+            );
+            const fallback = await this.searchMemoriesByText(normalizedQuery, safeLimit, true);
+            this.writeSearchCache(cacheKey, fallback);
+            this.finalizeOperationDuration(startedAt);
+            return fallback;
+        }
+    }
+
+    async findResolutionMemories(errorQuery: string, limit: number = 5): Promise<AdvancedSemanticFragment[]> {
+        const normalizedLimit = Math.max(1, Math.min(50, limit));
+        const candidates = await this.searchMemoriesHybrid(errorQuery, normalizedLimit * 3);
+        return candidates
+            .filter(memory => memory.tags.includes('resolution') || memory.tags.includes('error-fix'))
+            .slice(0, normalizedLimit);
     }
 
     async exportMemories(query?: string, limit: number = 200): Promise<{
@@ -828,9 +912,23 @@ Transcript:
 ${transcript}`;
 
         try {
+            const selectedModel = model ?? (await this.getAvailableModel());
+            if (!selectedModel) {
+                appLogger.debug(SERVICE_NAME, 'Skipping summarization: no background model available');
+                const firstMessageContent = messages[0]?.content;
+                return {
+                    summary: `Conversation with ${messages.length} messages.`,
+                    title: typeof firstMessageContent === 'string'
+                        ? firstMessageContent.substring(0, 50)
+                        : 'Conversation',
+                    topics: [],
+                    pendingTasks: []
+                };
+            }
+
             const res = await this.callLLM(
                 [{ role: 'system', content: 'You are an expert at analyzing and summarizing conversations.' }, { role: 'user', content: prompt }],
-                model ?? (await this.getAvailableModel()) ?? 'gpt-4o-mini',
+                selectedModel,
                 provider
             );
 
@@ -924,6 +1022,15 @@ ${transcript}`;
 
     async getAllEntityFacts(): Promise<EntityKnowledge[]> {
         return await this.db.knowledge.getAllEntityKnowledge();
+    }
+
+    async deleteEntityFacts(entityName: string): Promise<boolean> {
+        const normalized = entityName.trim();
+        if (!normalized) {
+            return false;
+        }
+        await this.db.deleteEntityKnowledge(normalized);
+        return true;
     }
 
     // ========================================================================
@@ -1253,6 +1360,7 @@ If no facts worth remembering, return [].`;
 
     private async clearExistingMemories(): Promise<void> {
         await this.maintenanceService.clearExistingMemories();
+        this.clearSearchCaches();
     }
 
     private finalizeOperationDuration(startedAt: number): void {
@@ -1333,10 +1441,12 @@ If no facts worth remembering, return [].`;
 
     private async storeAdvancedMemory(memory: AdvancedSemanticFragment): Promise<void> {
         await this.persistenceAdapter.storeAdvancedMemory(memory);
+        this.clearSearchCaches();
     }
 
     private async updateAdvancedMemory(memory: AdvancedSemanticFragment): Promise<void> {
         await this.persistenceAdapter.updateAdvancedMemory(memory);
+        this.clearSearchCaches();
     }
 
     private async getMemoryById(id: string): Promise<AdvancedSemanticFragment | null> {
@@ -1387,7 +1497,13 @@ If no facts worth remembering, return [].`;
     // ========================================================================
 
     private async getAvailableModel(): Promise<string | null> {
-        if (this.cachedOllamaModel) { return this.cachedOllamaModel; }
+        const resolved = await this.backgroundModelResolver?.resolve();
+        if (resolved) {
+            this.cachedBackgroundModel = resolved;
+            return resolved.model;
+        }
+
+        if (this.cachedBackgroundModel) { return this.cachedBackgroundModel.model; }
 
         try {
             const res = await fetch('http://127.0.0.1:11434/api/tags');
@@ -1400,14 +1516,14 @@ If no facts worth remembering, return [].`;
             for (const preferred of preferredModels) {
                 const match = installed.find(m => m === preferred || m.startsWith(preferred.split(':')[0]));
                 if (match) {
-                    this.cachedOllamaModel = match;
+                    this.cachedBackgroundModel = { model: match, provider: 'ollama', source: 'local' };
                     appLogger.info(SERVICE_NAME, `Using Ollama model: ${match}`);
                     return match;
                 }
             }
 
             if (installed.length > 0) {
-                this.cachedOllamaModel = installed[0];
+                this.cachedBackgroundModel = { model: installed[0], provider: 'ollama', source: 'local' };
                 return installed[0];
             }
         } catch {
@@ -1417,8 +1533,28 @@ If no facts worth remembering, return [].`;
         return null;
     }
 
-    private async callLLM(messages: ChatMessage[], model: string, provider: string = 'ollama'): Promise<{ content: string }> {
-        return this.llmService.chat(messages, model, [], provider);
+    private async callLLM(messages: ChatMessage[], model: string, provider?: string): Promise<{ content: string }> {
+        const resolvedProvider = provider ?? this.providerForBackgroundModel(model);
+        return this.llmService.chat(messages, model, [], resolvedProvider);
+    }
+
+    private providerForBackgroundModel(model: string): string {
+        if (this.cachedBackgroundModel?.model === model) {
+            return this.cachedBackgroundModel.provider;
+        }
+        if (model.startsWith('ollama/')) {
+            return 'ollama';
+        }
+        if (model.startsWith('claude-') || model.startsWith('anthropic/')) {
+            return 'anthropic';
+        }
+        if (model.startsWith('gemini-') || model.startsWith('google/')) {
+            return 'antigravity';
+        }
+        if (model.includes('codex') || model.startsWith('gpt-5') || model.startsWith('o1') || model.startsWith('o3')) {
+            return 'codex';
+        }
+        return 'ollama';
     }
 
     // ========================================================================
@@ -1436,6 +1572,7 @@ If no facts worth remembering, return [].`;
         }
 
         await this.db.deleteAdvancedMemory(id);
+        this.clearSearchCaches();
         appLogger.info(SERVICE_NAME, `Memory deleted: ${id}`);
         return true;
     }
@@ -1614,32 +1751,34 @@ If no facts worth remembering, return [].`;
         return sharedMemory;
     }
 
-    createSharedNamespace(payload: {
+    async createSharedNamespace(payload: {
         id: string;
         name: string;
         workspaceIds: string[];
         accessControl?: Record<string, string[]>;
-    }): SharedMemoryNamespace {
+    }): Promise<SharedMemoryNamespace> {
         const now = Date.now();
         const uniqueWorkspaces = Array.from(new Set(payload.workspaceIds.filter(wsId => wsId.trim().length > 0)));
         const defaultAccess: Record<string, string[]> = {};
         for (const wsId of uniqueWorkspaces) {
             defaultAccess[wsId] = uniqueWorkspaces.filter(candidate => candidate !== wsId);
         }
+        const existing = await this.persistenceAdapter.getSharedMemoryNamespaceById(payload.id);
         const namespace: SharedMemoryNamespace = {
             id: payload.id,
             name: payload.name,
             workspaceIds: uniqueWorkspaces,
             accessControl: payload.accessControl ?? defaultAccess,
-            createdAt: this.sharedNamespaces.get(payload.id)?.createdAt ?? now,
+            createdAt: existing?.createdAt ?? now,
             updatedAt: now
         };
+        await this.persistenceAdapter.upsertSharedMemoryNamespace(namespace);
         this.sharedNamespaces.set(namespace.id, namespace);
         return namespace;
     }
 
     async syncSharedNamespace(request: SharedMemorySyncRequest): Promise<SharedMemorySyncResult> {
-        const namespace = this.sharedNamespaces.get(request.namespaceId);
+        const namespace = await this.getSharedNamespace(request.namespaceId);
         if (!namespace) {
             throw new Error(`Shared namespace not found: ${request.namespaceId}`);
         }
@@ -1689,10 +1828,9 @@ If no facts worth remembering, return [].`;
             }
         }
 
-        this.sharedNamespaceConflicts.set(namespace.id, [
-            ...(this.sharedNamespaceConflicts.get(namespace.id) ?? []),
-            ...conflicts
-        ]);
+        if (conflicts.length > 0) {
+            await this.persistenceAdapter.appendSharedMemoryConflicts(namespace.id, conflicts);
+        }
 
         return {
             namespaceId: namespace.id,
@@ -1704,7 +1842,7 @@ If no facts worth remembering, return [].`;
     }
 
     async getSharedNamespaceAnalytics(namespaceId: string): Promise<SharedMemoryAnalytics> {
-        const namespace = this.sharedNamespaces.get(namespaceId);
+        const namespace = await this.getSharedNamespace(namespaceId);
         if (!namespace) {
             throw new Error(`Shared namespace not found: ${namespaceId}`);
         }
@@ -1722,7 +1860,7 @@ If no facts worth remembering, return [].`;
             namespaceId,
             totalMemories,
             totalWorkspaces: namespace.workspaceIds.length,
-            conflicts: (this.sharedNamespaceConflicts.get(namespaceId) ?? []).length,
+            conflicts: await this.persistenceAdapter.getSharedMemoryConflictCount(namespaceId),
             memoriesByWorkspace,
             updatedAt: Date.now()
         };
@@ -1734,7 +1872,7 @@ If no facts worth remembering, return [].`;
         workspaceId: string;
         limit?: number;
     }): Promise<AdvancedSemanticFragment[]> {
-        const namespace = this.sharedNamespaces.get(payload.namespaceId);
+        const namespace = await this.getSharedNamespace(payload.namespaceId);
         if (!namespace) {
             throw new Error(`Shared namespace not found: ${payload.namespaceId}`);
         }
@@ -1791,4 +1929,118 @@ If no facts worth remembering, return [].`;
     async cleanupExpiredMemories(): Promise<number> {
         return this.maintenanceService.cleanupExpiredMemories();
     }
+
+    private async getSharedNamespace(namespaceId: string): Promise<SharedMemoryNamespace | null> {
+        const cached = this.sharedNamespaces.get(namespaceId);
+        if (cached) {
+            return cached;
+        }
+        const persisted = await this.persistenceAdapter.getSharedMemoryNamespaceById(namespaceId);
+        if (persisted) {
+            this.sharedNamespaces.set(namespaceId, persisted);
+        }
+        return persisted;
+    }
+
+    private buildSearchCacheKey(query: string, limit: number): string {
+        return `${query}::${limit}`;
+    }
+
+    private readSearchCache(key: string): AdvancedSemanticFragment[] | null {
+        const cached = this.searchCache.get(key);
+        if (!cached) {
+            return null;
+        }
+        if (cached.expiresAt <= Date.now()) {
+            this.searchCache.delete(key);
+            return null;
+        }
+        return cached.value;
+    }
+
+    private writeSearchCache(key: string, value: AdvancedSemanticFragment[]): void {
+        this.searchCache.set(key, {
+            value,
+            expiresAt: Date.now() + this.searchCacheTtlMs
+        });
+        if (this.searchCache.size > 300) {
+            const firstKey = this.searchCache.keys().next().value as string | undefined;
+            if (firstKey) {
+                this.searchCache.delete(firstKey);
+            }
+        }
+    }
+
+    private clearSearchCaches(): void {
+        this.searchCache.clear();
+        this.warmMemorySnapshot();
+    }
+
+    private async getMemorySnapshot(options: { fastOnly?: boolean } = {}): Promise<AdvancedSemanticFragment[]> {
+        if (this.memorySnapshot && this.memorySnapshot.expiresAt > Date.now()) {
+            return this.memorySnapshot.value;
+        }
+        if (options.fastOnly) {
+            return this.memorySnapshot?.value ?? [];
+        }
+        await this.refreshMemorySnapshot();
+        return this.memorySnapshot?.value ?? [];
+    }
+
+    private async refreshMemorySnapshot(): Promise<void> {
+        if (this.memorySnapshotRefresh) {
+            await this.memorySnapshotRefresh;
+            return;
+        }
+        this.memorySnapshotRefresh = (async () => {
+            const memories = await this.getAllAdvancedMemories();
+            this.memorySnapshot = {
+                value: memories,
+                expiresAt: Date.now() + this.snapshotCacheTtlMs
+            };
+        })().finally(() => {
+            this.memorySnapshotRefresh = null;
+        });
+        await this.memorySnapshotRefresh;
+    }
+
+    private warmMemorySnapshot(): void {
+        if (this.memorySnapshotRefresh) {
+            return;
+        }
+        void this.refreshMemorySnapshot().catch(error => {
+            appLogger.debug(SERVICE_NAME, `Background memory cache refresh failed: ${String(error)}`);
+        });
+    }
+
+    private async searchMemoriesByText(
+        normalizedQuery: string,
+        limit: number,
+        fastOnly: boolean = false
+    ): Promise<AdvancedSemanticFragment[]> {
+        const memories = await this.getMemorySnapshot({ fastOnly });
+        if (memories.length === 0 && fastOnly) {
+            this.warmMemorySnapshot();
+        }
+        const terms = normalizedQuery.split(/\s+/).filter(Boolean);
+        if (terms.length === 0) {
+            return [];
+        }
+        return memories
+            .map(memory => {
+                const haystack = `${memory.content} ${memory.tags.join(' ')}`.toLowerCase();
+                let score = 0;
+                for (const term of terms) {
+                    if (haystack.includes(term)) {
+                        score++;
+                    }
+                }
+                return { memory, score };
+            })
+            .filter(item => item.score > 0)
+            .sort((left, right) => right.score - left.score)
+            .slice(0, limit)
+            .map(item => item.memory);
+    }
+
 }

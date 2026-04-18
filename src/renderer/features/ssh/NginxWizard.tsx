@@ -1,7 +1,22 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Globe, Loader2, Play, Save, Server, ShieldCheck } from 'lucide-react';
 import React, { useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_NGINXWIZARD_1 = "px-6 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-all flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50";
+
 
 interface NginxWizardProps {
     connectionId: string
@@ -117,7 +132,7 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
                     <button
                         onClick={() => void handleApply()}
                         disabled={isGenerating || !domain}
-                        className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-all flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50"
+                        className={C_NGINXWIZARD_1}
                     >
                         {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         {t('ssh.nginx.apply')}
@@ -125,10 +140,12 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
                 </div>
 
                 {status && (
-                    <div className={`p-4 rounded-lg text-sm flex items-start gap-3 border ${status.type === 'success' ? 'bg-success/10 border-success/20 text-success' :
-                        status.type === 'error' ? 'bg-destructive/10 border-destructive/20 text-destructive' :
-                            'bg-primary/10 border-primary/20 text-primary'
-                        }`}>
+                    <div className={cn(
+                        'p-4 rounded-lg text-sm flex items-start gap-3 border',
+                        status.type === 'success' && 'bg-success/10 border-success/20 text-success',
+                        status.type === 'error' && 'bg-destructive/10 border-destructive/20 text-destructive',
+                        status.type === 'info' && 'bg-primary/10 border-primary/20 text-primary'
+                    )}>
                         {status.type === 'success' && <ShieldCheck className="w-5 h-5 flex-shrink-0" />}
                         <p>{status.message}</p>
                     </div>

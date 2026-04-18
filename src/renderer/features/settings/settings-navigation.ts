@@ -1,7 +1,18 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import {
     BarChart,
     Bot,
     Code,
+    Database,
     FolderKanban,
     Image,
     LayoutPanelLeft,
@@ -86,6 +97,12 @@ export function getSettingsNavigationItems(t: SettingsTranslationFn): SettingsNa
             icon: Sparkles,
         },
         {
+            id: 'memory',
+            label: t('settings.tabs.memory'),
+            sectionLabel: t('settings.categories.ai'),
+            icon: Database,
+        },
+        {
             id: 'quotas',
             label: t('statistics.connectedAppsUsage'),
             sectionLabel: t('settings.categories.ai'),
@@ -140,10 +157,22 @@ export function getSettingsNavigationItems(t: SettingsTranslationFn): SettingsNa
             icon: Rocket,
         },
         {
-            id: 'extensions',
-            label: t('settings.tabs.extensions'),
-            sectionLabel: t('settings.categories.tools'),
+            id: 'extensions-plugins',
+            label: t('settings.tabs.plugins'),
+            sectionLabel: t('settings.categories.extensions'),
             icon: Puzzle,
+        },
+        {
+            id: 'extensions-mcp',
+            label: t('settings.tabs.mcpServers'),
+            sectionLabel: t('settings.categories.extensions'),
+            icon: Rocket,
+        },
+        {
+            id: 'extensions-skills',
+            label: t('settings.tabs.skills'),
+            sectionLabel: t('settings.categories.extensions'),
+            icon: Sparkles,
         },
     ];
 }

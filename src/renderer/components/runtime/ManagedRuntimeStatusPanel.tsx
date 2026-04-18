@@ -1,9 +1,27 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { RuntimeBootstrapExecutionResult, RuntimeBootstrapExecutionStatus, RuntimeHealthEntry } from '@shared/types/runtime-manifest';
 import { AlertTriangle, CheckCircle2, Download, Play, RefreshCw, Wrench } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 import { translateErrorMessage } from '@/utils/error-handler.util';
+
+/* Batch-02: Extracted Long Classes */
+const C_MANAGEDRUNTIMESTATUSPANEL_1 = "inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 typo-caption font-semibold text-muted-foreground transition hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-60";
+const C_MANAGEDRUNTIMESTATUSPANEL_2 = "inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 typo-caption font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60";
+const C_MANAGEDRUNTIMESTATUSPANEL_3 = "inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 typo-caption font-semibold text-muted-foreground transition hover:bg-muted/40";
+const C_MANAGEDRUNTIMESTATUSPANEL_4 = "inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 typo-caption font-semibold text-muted-foreground transition hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-60";
+
 
 interface ManagedRuntimeStatusPanelProps {
     status: RuntimeBootstrapExecutionResult | null;
@@ -129,13 +147,17 @@ export function ManagedRuntimeStatusPanel({
         [blockingOnly, status, t]
     );
 
-    const wrapperClassName = fullscreen
-        ? 'h-screen w-screen bg-background text-foreground flex items-center justify-center p-6'
-        : 'rounded-xl border border-border bg-card p-6';
+    const wrapperClassName = cn(
+        fullscreen
+            ? 'h-screen w-screen bg-background text-foreground flex items-center justify-center p-6'
+            : 'rounded-xl border border-border bg-card p-6'
+    );
 
-    const cardClassName = fullscreen
-        ? 'w-full max-w-4xl rounded-2xl border border-border bg-card/95 p-6 shadow-2xl backdrop-blur'
-        : '';
+    const cardClassName = cn(
+        fullscreen
+            ? 'w-full max-w-4xl rounded-2xl border border-border bg-card/95 p-6 shadow-2xl backdrop-blur'
+            : ''
+    );
 
     const title = t('runtime.managementTitle');
     const subtitle = t('runtime.statusTitle');
@@ -173,17 +195,17 @@ export function ManagedRuntimeStatusPanel({
                         <button
                             onClick={onRefresh}
                             disabled={isLoading || isRepairing}
-                            className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 typo-caption font-semibold text-muted-foreground transition hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={C_MANAGEDRUNTIMESTATUSPANEL_1}
                         >
-                            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+                            <RefreshCw className={cn('h-3.5 w-3.5', isLoading && 'animate-spin')} />
                             {t('common.refresh')}
                         </button>
                         <button
                             onClick={onRepair}
                             disabled={isLoading || isRepairing}
-                            className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 typo-caption font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={C_MANAGEDRUNTIMESTATUSPANEL_2}
                         >
-                            <Download className={`h-3.5 w-3.5 ${isRepairing ? 'animate-bounce' : ''}`} />
+                            <Download className={cn('h-3.5 w-3.5', isRepairing && 'animate-bounce')} />
                             {t('runtime.repairAction')}
                         </button>
                     </div>
@@ -220,20 +242,21 @@ export function ManagedRuntimeStatusPanel({
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span
-                                        className={`rounded-full border px-2 py-1 text-xxxs font-semibold   ${
+                                        className={cn(
+                                            'rounded-full border px-2 py-1 text-xxxs font-semibold',
                                             entry.statusTone === 'success'
                                                 ? 'border-success/30 text-success'
                                                 : entry.statusTone === 'warning'
                                                     ? 'border-warning/30 text-warning'
                                                     : 'border-destructive/30 text-destructive'
-                                        }`}
+                                        )}
                                     >
                                         {entry.statusLabel}
                                     </span>
                                     {entry.canInstall && entry.installUrl && (
                                         <button
                                             onClick={() => handleOpenInstallUrl(entry.installUrl ?? '')}
-                                            className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 typo-caption font-semibold text-muted-foreground transition hover:bg-muted/40"
+                                            className={C_MANAGEDRUNTIMESTATUSPANEL_3}
                                         >
                                             <Download className="h-3.5 w-3.5" />
                                             {t('runtime.installAction')}
@@ -245,7 +268,7 @@ export function ManagedRuntimeStatusPanel({
                                                 void handleStartExternal(entry.componentId);
                                             }}
                                             disabled={startingComponentId === entry.componentId}
-                                            className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 typo-caption font-semibold text-muted-foreground transition hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-60"
+                                            className={C_MANAGEDRUNTIMESTATUSPANEL_4}
                                         >
                                             <Play className="h-3.5 w-3.5" />
                                             {t('runtime.startAction')}

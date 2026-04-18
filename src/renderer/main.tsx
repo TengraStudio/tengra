@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import App from '@renderer/App';
 import { AppProviders } from '@renderer/context/AppProviders';
 import { registerExtensionComponent } from '@renderer/features/extensions/components/ExtensionViewHost';
@@ -9,7 +19,7 @@ import React from 'react';
 import * as ReactDOM from 'react-dom';
 import * as ReactDOMClient from 'react-dom/client';
 
-import '@renderer/index.css';
+import '@renderer/styles/index.css';
 
 // Expose extension SDK to the global window object
 window.React = React;

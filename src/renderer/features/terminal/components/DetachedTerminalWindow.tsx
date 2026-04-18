@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { useTranslation } from '@renderer/i18n';
 import { FitAddon } from '@xterm/addon-fit';
 import { Terminal as XTerm } from '@xterm/xterm';
@@ -168,7 +178,7 @@ export function DetachedTerminalWindow() {
             <div className="h-10 border-b border-border flex items-center justify-between px-3 bg-card/70">
                 <div className="min-w-0">
                     <div className="typo-caption font-medium truncate">{title}</div>
-                    <div className="tw-text-10 text-muted-foreground truncate">
+                    <div className="text-10 text-muted-foreground truncate">
                         {[shell, cwd].filter(Boolean).join(' - ')}
                     </div>
                 </div>

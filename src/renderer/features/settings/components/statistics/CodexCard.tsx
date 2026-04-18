@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -36,28 +46,28 @@ export const CodexCard: React.FC<CodexCardProps> = ({ codexUsage, locale = 'en-U
                                     {acc.email ?? t('statistics.codexAccount')}
                                 </div>
                                 {(acc.error || acc.isActive) && <StatusBadge status={status} text={statusText} />}
-                                {acc.error && <span className="tw-text-9 text-destructive truncate ml-2">{acc.error}</span>}
+                                {acc.error && <span className="text-9 text-destructive truncate ml-2">{acc.error}</span>}
                             </div>
 
                             {!acc.error && usage && (
                                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 pt-2 md:grid-cols-2 xl:grid-cols-3">
                                     <div className="space-y-2">
-                                        <div className="tw-text-10 flex items-center justify-between font-medium">
+                                        <div className="text-10 flex items-center justify-between font-medium">
                                             <span className="text-muted-foreground truncate pr-2">{t('statistics.dailyStatus')}</span>
                                             <span className="text-foreground/80 tabular-nums shrink-0">{dailyRemaining}%</span>
                                         </div>
                                         <HorizontalProgressBar percentage={dailyRemaining} color={getQuotaColor(dailyRemaining)} />
-                                        <div className="tw-text-9 font-medium text-muted-foreground/40 mt-1">
+                                        <div className="text-9 font-medium text-muted-foreground/40 mt-1">
                                             {formatReset(usage.dailyResetAt, locale)}
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <div className="tw-text-10 flex items-center justify-between font-medium">
+                                        <div className="text-10 flex items-center justify-between font-medium">
                                             <span className="text-muted-foreground truncate pr-2">{t('statistics.weeklyStatus')}</span>
                                             <span className="text-foreground/80 tabular-nums shrink-0">{weeklyRemaining}%</span>
                                         </div>
                                         <HorizontalProgressBar percentage={weeklyRemaining} color={getQuotaColor(weeklyRemaining)} />
-                                        <div className="tw-text-9 font-medium text-muted-foreground/40 mt-1">
+                                        <div className="text-9 font-medium text-muted-foreground/40 mt-1">
                                             {formatReset(usage.weeklyResetAt, locale)}
                                         </div>
                                     </div>

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Input } from '@renderer/components/ui/input';
 import {
     Select,
@@ -12,6 +22,7 @@ import { Folder, HardDrive, Layout, RefreshCw, Search, Terminal } from 'lucide-r
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { invokeTypedIpc } from '@/lib/ipc-client';
+import { cn } from '@/lib/utils';
 
 import type { SettingsSharedProps } from '../types';
 
@@ -105,7 +116,7 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
                                 onChange={event => {
                                     void updateGeneral({ workspacesBasePath: event.target.value });
                                 }}
-                                className={`${SettingsInputClassName} pl-10`}
+                                className={cn(SettingsInputClassName, 'pl-10')}
                                 placeholder={t('workspaceWizard.selectRootDesc')}
                             />
                         </div>

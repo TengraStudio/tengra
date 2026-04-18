@@ -1,8 +1,24 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { AlertTriangle, ArrowRightLeft, RefreshCw } from 'lucide-react';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 import { ChatErrorKind } from '@/types';
+
+/* Batch-02: Extracted Long Classes */
+const C_CHATERRORBANNER_1 = "flex items-center gap-1 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1.5 typo-caption font-medium transition-colors";
+const C_CHATERRORBANNER_2 = "flex items-center gap-1 rounded-lg border border-border/60 hover:bg-accent/50 text-muted-foreground hover:text-foreground px-3 py-1.5 typo-caption font-medium transition-colors";
+
 
 interface ChatErrorBannerProps {
     errorKind: ChatErrorKind;
@@ -55,7 +71,10 @@ export const ChatErrorBanner: React.FC<ChatErrorBannerProps> = ({
     return (
         <div
             role="alert"
-            className={`mx-4 my-2 rounded-xl border p-3 ${ERROR_COLORS[errorKind]} flex flex-col gap-2`}
+            className={cn(
+                'mx-4 my-2 rounded-xl border p-3 flex flex-col gap-2',
+                ERROR_COLORS[errorKind]
+            )}
         >
             <div className="flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
@@ -76,7 +95,7 @@ export const ChatErrorBanner: React.FC<ChatErrorBannerProps> = ({
             <div className="flex items-center gap-2">
                 <button
                     onClick={onRetry}
-                    className="flex items-center gap-1 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1.5 typo-caption font-medium transition-colors"
+                    className={C_CHATERRORBANNER_1}
                 >
                     <RefreshCw className="w-3 h-3" />
                     {t('chat.errorRetry')}
@@ -85,7 +104,7 @@ export const ChatErrorBanner: React.FC<ChatErrorBannerProps> = ({
                 {showSwitchModel && onSwitchModel && (
                     <button
                         onClick={onSwitchModel}
-                        className="flex items-center gap-1 rounded-lg border border-border/60 hover:bg-accent/50 text-muted-foreground hover:text-foreground px-3 py-1.5 typo-caption font-medium transition-colors"
+                        className={C_CHATERRORBANNER_2}
                     >
                         <ArrowRightLeft className="w-3 h-3" />
                         {t('chat.errorSwitchModel')}

@@ -1,9 +1,21 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import * as fs from 'fs';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { LinkedAccount } from '@main/services/data/database.service';
+import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { LLMService } from '@main/services/llm/llm.service';
+import { MemoryContextService } from '@main/services/llm/memory-context.service';
 import { QuotaModel, QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { getManagedRuntimeTempDir } from '@main/services/system/runtime-path.service';
@@ -27,7 +39,12 @@ interface ProviderDeps {
     authService?: AuthService;
     llmService?: LLMService;
     quotaService?: QuotaService;
+    advancedMemoryService?: AdvancedMemoryService;
 }
+
+const LOCAL_IMAGE_MEMORY_TIMEOUT_MS = 250;
+const LOCAL_IMAGE_MEMORY_MATCH_LIMIT = 2;
+const LOCAL_IMAGE_MEMORY_MIN_QUERY_LENGTH = 32;
 
 /** Routes image generation to the appropriate provider. */
 export class LocalImageProviders {
@@ -43,10 +60,12 @@ export class LocalImageProviders {
     private static readonly ANTIGRAVITY_IMAGE_MODEL_ID = 'gemini-3.1-flash-image';
 
     private readonly deps: ProviderDeps;
+    private readonly memoryContext: MemoryContextService;
     private comfyWorkflowTemplates: ComfyWorkflowTemplate[] = [];
 
     constructor(deps: ProviderDeps) {
         this.deps = deps;
+        this.memoryContext = new MemoryContextService(deps.advancedMemoryService);
     }
 
     /** Update the ComfyUI workflow templates reference. */
@@ -120,8 +139,9 @@ export class LocalImageProviders {
         try {
             await this.deps.authService.setActiveAccount('antigravity', account.id);
             appLogger.info('LocalImageProviders', `Calling Antigravity image generation with account ${account.email ?? account.id}`);
+            const memoryAwarePrompt = await this.buildMemoryAwarePrompt(options.prompt);
             const response = await this.deps.llmService.chat(
-                [{ role: 'user', content: options.prompt }],
+                [{ role: 'user', content: memoryAwarePrompt }],
                 LocalImageProviders.ANTIGRAVITY_IMAGE_MODEL_ID,
                 [],
                 'antigravity'
@@ -644,5 +664,21 @@ export class LocalImageProviders {
         } catch {
             return null;
         }
+    }
+
+    private async buildMemoryAwarePrompt(prompt: string): Promise<string> {
+        const memoryContext = await this.getMemoryContext(prompt);
+        if (!memoryContext) {
+            return prompt;
+        }
+        return `${prompt}\n\nReference from prior successful generations:\n${memoryContext}\nOnly apply if this improves relevance.`;
+    }
+
+    private async getMemoryContext(query: string): Promise<string | undefined> {
+        return this.memoryContext.getResolutionContext(query, {
+            timeoutMs: LOCAL_IMAGE_MEMORY_TIMEOUT_MS,
+            limit: LOCAL_IMAGE_MEMORY_MATCH_LIMIT,
+            minQueryLength: LOCAL_IMAGE_MEMORY_MIN_QUERY_LENGTH
+        });
     }
 }

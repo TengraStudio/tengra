@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Input } from '@renderer/components/ui/input';
 import { Switch } from '@renderer/components/ui/switch';
 import { Percent } from 'lucide-react';
@@ -34,7 +44,7 @@ export const AntigravityLimitsSection: React.FC<AntigravityLimitsSectionProps> =
                 </div>
             </div>
 
-            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="space-y-3 max-h-400 overflow-y-auto pr-2 custom-scrollbar">
                 {antigravityModels.map(model => {
                     const modelId = model.id ?? '';
                     const modelLimit = antigravityLimits?.[modelId] ?? {

@@ -1,8 +1,22 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Brain, Sparkles } from 'lucide-react';
 import { memo, useEffect, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import { appLogger } from '@/utils/renderer-logger';
+
+/* Batch-02: Extracted Long Classes */
+const C_THOUGHTSECTION_1 = "whitespace-pre-wrap font-mono text-xxs leading-relaxed text-muted-foreground/80 selection:bg-primary/20 drop-shadow-sm max-h-72 overflow-y-auto pe-2";
+
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
 
@@ -116,7 +130,7 @@ export const ThoughtSection = memo(
                         <div className="relative ps-4 border-s-2 border-primary/20 py-1">
                             <div className="absolute -start-0.5 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary/40 via-primary/10 to-transparent" />
                             <div className="rounded-2xl p-2 border border-border/20 bg-transparent">
-                                <div className="whitespace-pre-wrap font-mono text-xxs leading-relaxed text-muted-foreground/80 selection:bg-primary/20 drop-shadow-sm max-h-72 overflow-y-auto pe-2">
+                                <div className={C_THOUGHTSECTION_1}>
                                     {thought}
                                 </div>
                             </div>

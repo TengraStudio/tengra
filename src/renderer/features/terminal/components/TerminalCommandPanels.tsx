@@ -1,6 +1,21 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { History, TerminalSquare, X } from 'lucide-react';
 
 import type { TaskRunnerEntry, TerminalHistoryEntry } from '../hooks/useTerminalCommandTools';
+
+/* Batch-02: Extracted Long Classes */
+const C_TERMINALCOMMANDPANELS_1 = "absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 w-420 max-w-95vw";
+const C_TERMINALCOMMANDPANELS_2 = "absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 w-420 max-w-95vw";
+
 
 interface TerminalCommandPanelsProps {
     t: (key: string, options?: Record<string, string | number>) => string;
@@ -42,7 +57,7 @@ export function TerminalCommandPanels({
     return (
         <>
             {isCommandHistoryOpen && (
-                <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 tw-w-420 tw-max-w-95vw">
+                <div className={C_TERMINALCOMMANDPANELS_1}>
                     <div className="flex items-center justify-between gap-2 mb-2">
                         <div className="flex items-center gap-1 typo-caption font-medium text-foreground">
                             <History className="w-3.5 h-3.5 text-muted-foreground" />
@@ -53,7 +68,7 @@ export function TerminalCommandPanels({
                                 onClick={() => {
                                     void clearCommandHistory();
                                 }}
-                                className="h-6 px-2 tw-text-10 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40"
+                                className="h-6 px-2 text-10 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40"
                             >
                                 {t('terminal.clearHistory')}
                             </button>
@@ -98,7 +113,7 @@ export function TerminalCommandPanels({
                                     <div className="typo-caption text-foreground truncate">
                                         {entry.command}
                                     </div>
-                                    <div className="tw-text-10 text-muted-foreground truncate">
+                                    <div className="text-10 text-muted-foreground truncate">
                                         {new Date(entry.timestamp).toLocaleString()}
                                         {entry.cwd ? ` - ${entry.cwd}` : ''}
                                     </div>
@@ -108,7 +123,7 @@ export function TerminalCommandPanels({
                 </div>
             )}
             {isTaskRunnerOpen && (
-                <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 tw-w-420 tw-max-w-95vw">
+                <div className={C_TERMINALCOMMANDPANELS_2}>
                     <div className="flex items-center justify-between gap-2 mb-2">
                         <div className="flex items-center gap-1 typo-caption font-medium text-foreground">
                             <TerminalSquare className="w-3.5 h-3.5 text-muted-foreground" />
@@ -154,7 +169,7 @@ export function TerminalCommandPanels({
                                     <div className="typo-caption text-foreground truncate">
                                         {item.command}
                                     </div>
-                                    <div className="tw-text-10 text-muted-foreground truncate">
+                                    <div className="text-10 text-muted-foreground truncate">
                                         {item.source} - {item.label}
                                     </div>
                                 </button>

@@ -1,9 +1,25 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { chatStream } from '@renderer/lib/chat-stream';
 import { Check, Copy, GitCommit, RefreshCw, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { appLogger } from '@/utils/renderer-logger';
+
+/* Batch-02: Extracted Long Classes */
+const C_GITCOMMITGENERATOR_1 = "flex items-center gap-2 px-3 py-2 rounded-lg bg-success/20 border border-success/30 text-success text-sm font-medium disabled:opacity-50";
+const C_GITCOMMITGENERATOR_2 = "w-full bg-background/60 border border-border/40 rounded-lg px-4 py-3 text-sm text-foreground font-mono focus:outline-none focus:border-success/50 resize-none";
+const C_GITCOMMITGENERATOR_3 = "bg-background/60 border border-border/30 rounded-lg p-3 typo-caption font-mono text-muted-foreground max-h-48 overflow-y-auto";
+
 
 interface GitCommitGeneratorProps {
     workspacePath?: string;
@@ -29,7 +45,7 @@ const GeneratorHeader = ({ t, isLoading, workspacePath, onFetch }: HeaderProps) 
         <button
             onClick={onFetch}
             disabled={isLoading || !workspacePath}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-success/20 border border-success/30 text-success text-sm font-medium disabled:opacity-50"
+            className={C_GITCOMMITGENERATOR_1}
         >
             {isLoading ? <RefreshCw size={16} className="animate-spin" /> : <Sparkles size={16} />}
             {t('git.generate')}
@@ -58,7 +74,7 @@ const SuggestionArea = ({
             <textarea
                 value={suggestion}
                 onChange={e => setSuggestion(e.target.value)}
-                className="w-full bg-background/60 border border-border/40 rounded-lg px-4 py-3 text-sm text-foreground font-mono focus:outline-none focus:border-success/50 resize-none"
+                className={C_GITCOMMITGENERATOR_2}
                 rows={3}
             />
             <button
@@ -208,7 +224,7 @@ export function GitCommitGenerator({ workspacePath, onClose }: GitCommitGenerato
                         <label className="typo-caption text-muted-foreground">
                             {t('git.stagedChanges')}
                         </label>
-                        <pre className="bg-background/60 border border-border/30 rounded-lg p-3 typo-caption font-mono text-muted-foreground max-h-48 overflow-y-auto">
+                        <pre className={C_GITCOMMITGENERATOR_3}>
                             {diff.slice(0, 2000)}
                             {diff.length > 2000 && '\n... (truncated)'}
                         </pre>

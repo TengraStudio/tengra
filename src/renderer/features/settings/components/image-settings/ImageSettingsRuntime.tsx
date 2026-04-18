@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Badge } from '@renderer/components/ui/badge';
 import { Button } from '@renderer/components/ui/button';
 import { AlertTriangle, CheckCircle2, Download, RotateCcw, Settings2 } from 'lucide-react';
@@ -6,6 +16,12 @@ import React, { useState } from 'react';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { cn } from '@/lib/utils';
 import { appLogger } from '@/utils/renderer-logger';
+
+/* Batch-02: Extracted Long Classes */
+const C_IMAGESETTINGSRUNTIME_1 = "p-8 rounded-3xl bg-muted/20 border border-border/20 space-y-8 shadow-sm group-hover/runtime:border-border/40 transition-all duration-500 overflow-hidden relative lg:p-10";
+const C_IMAGESETTINGSRUNTIME_2 = "space-y-4 animate-in slide-in-from-top-4 duration-700 bg-background/40 p-6 rounded-2xl border border-border/20 shadow-inner relative z-10 lg:p-8";
+const C_IMAGESETTINGSRUNTIME_3 = "rounded-2xl bg-warning/5 border border-warning/10 p-5 flex gap-4 relative z-10 group/help cursor-help hover:bg-warning/10 transition-colors duration-500 sm:p-6 lg:p-8 sm:gap-5 lg:gap-6";
+
 
 interface ImageSettingsRuntimeProps {
     sdCppStatus: string;
@@ -61,7 +77,7 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                 </h4>
             </div>
 
-            <div className="p-8 rounded-3xl bg-muted/20 border border-border/20 space-y-8 shadow-sm group-hover/runtime:border-border/40 transition-all duration-500 overflow-hidden relative">
+            <div className={C_IMAGESETTINGSRUNTIME_1}>
                 <div className="flex items-center justify-between gap-6 relative z-10">
                     <div className="flex items-center gap-5">
                         <div className={cn(
@@ -111,7 +127,7 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
 
                 {/* Progress Monitor */}
                 {(sdCppStatus === 'installing' || isReinstalling) && downloadProgress && (
-                    <div className="space-y-4 animate-in slide-in-from-top-4 duration-700 bg-background/40 p-6 rounded-2xl border border-border/20 shadow-inner relative z-10">
+                    <div className={C_IMAGESETTINGSRUNTIME_2}>
                         <div className="flex justify-between items-end gap-6">
                             <div className="space-y-2 min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
@@ -141,7 +157,7 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                 )}
 
                 {/* Help/Support Text */}
-                <div className="rounded-2xl bg-warning/5 border border-warning/10 p-5 flex gap-4 relative z-10 group/help cursor-help hover:bg-warning/10 transition-colors duration-500">
+                <div className={C_IMAGESETTINGSRUNTIME_3}>
                     <div className="p-2 rounded-xl bg-warning/10 text-warning h-fit group-hover/help:scale-110 transition-transform">
                         <AlertTriangle className="w-4 h-4" />
                     </div>
@@ -150,7 +166,7 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                     </p>
                 </div>
 
-                <div className="absolute -right-16 -bottom-16 w-64 h-64 bg-primary/5 rounded-full blur-[80px] opacity-50" />
+                <div className="absolute -right-16 -bottom-16 w-64 h-64 bg-primary/5 rounded-full blur-3xl opacity-50" />
             </div>
 
             <ConfirmationModal

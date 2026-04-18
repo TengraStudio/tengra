@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -94,6 +104,29 @@ export function registerGalleryIpc(galleryPath: string, databaseService?: Databa
         try {
             const results: GalleryItem[] = [];
             const subdirs = ['images', 'videos'];
+
+            // Ensure gallery_items table exists for metadata storage
+            if (databaseService) {
+                try {
+                    await databaseService.exec(`
+                        CREATE TABLE IF NOT EXISTS gallery_items (
+                            path TEXT PRIMARY KEY,
+                            prompt TEXT,
+                            negative_prompt TEXT,
+                            seed INTEGER,
+                            steps INTEGER,
+                            cfg_scale REAL,
+                            width INTEGER,
+                            height INTEGER,
+                            model TEXT,
+                            created_at BIGINT
+                        )
+                    `);
+                } catch (e) {
+                    appLogger.error('Gallery', `Failed to ensure gallery_items table: ${e}`);
+                }
+            }
+
             // Fetch metadata from DB if available
             interface GalleryItemMetadata {
                 path: string;
@@ -113,15 +146,12 @@ export function registerGalleryIpc(galleryPath: string, databaseService?: Databa
                 try {
                     const dbResults = await databaseService.query<GalleryItemMetadata>('SELECT * FROM gallery_items');
                     dbResults.rows.forEach((row) => {
-                        metadataMap[row.path] = row;
+                        // Use path.basename to correctly map metadata regardless of stored path depth
+                        const key = path.basename(row.path);
+                        metadataMap[key] = row;
                     });
                 } catch (e) {
-                    const message = String(e);
-                    if (message.includes('no such table: gallery_items')) {
-                        appLogger.warn('Gallery', 'Gallery metadata table is unavailable; continuing without metadata');
-                    } else {
-                        appLogger.error('Gallery', `Failed to fetch gallery metadata: ${e}`);
-                    }
+                    appLogger.error('Gallery', `Failed to fetch gallery metadata: ${e}`);
                 }
             }
 

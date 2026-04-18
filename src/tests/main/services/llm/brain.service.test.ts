@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { BrainService } from '@main/services/llm/brain.service';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -31,7 +41,10 @@ describe('BrainService - multilingual fact extraction', () => {
             db as never,
             embedding as never,
             llmService as never,
-            {} as never
+            {} as never,
+            {
+                resolve: vi.fn().mockResolvedValue({ model: 'claude-haiku-4.5', provider: 'copilot', source: 'oauth' })
+            } as never
         );
 
         return { service, db, llmService };

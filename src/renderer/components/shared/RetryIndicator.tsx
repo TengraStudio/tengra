@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Loader2 } from 'lucide-react';
 
 import { useTranslation } from '@/i18n';
@@ -27,8 +37,8 @@ const RetryIndicator: React.FC<RetryIndicatorProps> = ({ isRetrying, attempt, ma
   const showAttempts = attempt !== undefined && maxAttempts !== undefined;
 
   return (
-    <div className="tengra-retry-indicator">
-      <Loader2 className="tengra-retry-indicator__spinner" />
+    <div className="flex items-center gap-2 text-sm text-warning font-medium animate-in fade-in duration-300">
+      <Loader2 className="w-4 h-4 animate-spin" />
       <span>
         {showAttempts
           ? t('common.retryingWithAttempt', { attempt, maxAttempts })

@@ -1,5 +1,16 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Badge } from '@renderer/components/ui/badge';
 import { Button } from '@renderer/components/ui/button';
+import { UI_PRIMITIVES } from '@renderer/constants/ui-primitives';
 import { JsonValue } from '@shared/types';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { Activity, Database, Download, FileUp, HardDrive, Layout, RefreshCw, Terminal, Trash2 } from 'lucide-react';
@@ -21,6 +32,18 @@ import { isAppSettings } from '@/utils/app-settings.util';
 import { appLogger } from '@/utils/renderer-logger';
 
 import { PerformanceDashboard } from './PerformanceDashboard';
+
+/* Batch-02: Extracted Long Classes */
+const C_DEVELOPERTAB_1 = "flex items-center justify-between p-4 rounded-2xl bg-muted/5 group/row hover:bg-muted/10 border border-border/10 transition-all sm:p-5 lg:p-6";
+const C_DEVELOPERTAB_2 = "h-9 px-4 rounded-xl border-border/40 typo-body font-bold hover:bg-red-500 hover:text-white hover:border-red-500 transition-all";
+const C_DEVELOPERTAB_3 = "flex items-center justify-between p-4 rounded-2xl bg-muted/5 group/row hover:bg-muted/10 border border-border/10 transition-all sm:p-5 lg:p-6";
+const C_DEVELOPERTAB_4 = "h-9 px-4 rounded-xl border-primary/20 bg-primary/5 text-primary typo-body font-bold hover:bg-primary hover:text-primary-foreground transition-all";
+const C_DEVELOPERTAB_5 = "flex items-center justify-between p-4 rounded-2xl bg-muted/5 group/row hover:bg-muted/10 border border-border/10 transition-all sm:p-5 lg:p-6";
+const C_DEVELOPERTAB_6 = "h-9 w-9 p-0 rounded-xl border-border/40 flex items-center justify-center hover:bg-muted/20 text-muted-foreground transition-all";
+const C_DEVELOPERTAB_7 = "h-9 w-9 p-0 rounded-xl border-border/40 flex items-center justify-center hover:bg-muted/20 text-muted-foreground transition-all";
+const C_DEVELOPERTAB_8 = "flex items-center justify-between p-4 rounded-2xl bg-muted/5 group/row hover:bg-muted/10 border border-border/10 transition-all sm:p-5 lg:p-6";
+const C_DEVELOPERTAB_9 = "h-9 px-4 rounded-xl border-primary/20 bg-primary/5 text-primary typo-body font-bold hover:bg-primary hover:text-primary-foreground transition-all";
+
 
 interface DeveloperTabProps {
     settings: AppSettings | null;
@@ -48,11 +71,11 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
     }, [runtimeIsLoading, runtimeStatus]);
 
     return (
-        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000 ease-out pb-20">
+        <div className={cn("space-y-12 pb-20", UI_PRIMITIVES.FADE_SLIDE_IN)}>
             {/* Page Header */}
             <div className="relative group px-1">
                 <div className="flex items-center gap-4 mb-3">
-                    <div className="p-3.5 rounded-2xl bg-primary/10 text-primary shadow-2xl shadow-primary/10 group-hover:scale-110 transition-transform duration-700 ring-1 ring-primary/20">
+                    <div className={UI_PRIMITIVES.ICON_WRAPPER}>
                         <Terminal className="w-7 h-7" />
                     </div>
                     <div>
@@ -91,20 +114,20 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
             {/* Diagnostics and Data Control */}
             <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
                 {/* Data Control Panel */}
-                <div className="bg-card rounded-3xl border border-border/40 p-8 space-y-8 shadow-sm group/data hover:border-border/60 transition-all duration-500 overflow-hidden relative">
+                <div className={UI_PRIMITIVES.SECTION_CARD}>
                     <div className="flex items-center gap-3 px-1 relative z-10">
                         <Database className="w-4 h-4 text-primary" />
                         <h4 className="typo-body font-bold text-muted-foreground/40">{t('developer.dataProtocols')}</h4>
                     </div>
 
                     <div className="space-y-4 relative z-10">
-                        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/5 group/row hover:bg-muted/10 border border-border/10 transition-all">
+                        <div className={C_DEVELOPERTAB_1}>
                             <div className="space-y-1">
                                 <div className="typo-body font-bold text-foreground flex items-center gap-2">
                                     <Trash2 className="w-3 h-3 text-red-500/60" />
                                     {t('developer.clearCache')}
                                 </div>
-                                <div className="typo-body font-bold text-muted-foreground/40 max-w-[200px] leading-relaxed">
+                                <div className="typo-body font-bold text-muted-foreground/40 max-w-200 leading-relaxed">
                                     {t('developer.clearCacheDesc')}
                                 </div>
                             </div>
@@ -112,19 +135,19 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                                 variant="outline"
                                 size="sm"
                                 onClick={() => { localStorage.clear(); sessionStorage.clear(); setStatusMessage(t('developer.cacheCleared')); setTimeout(() => setStatusMessage(''), 3000); }}
-                                className="h-9 px-4 rounded-xl border-border/40 typo-body font-bold hover:bg-red-500 hover:text-white hover:border-red-500 transition-all"
+                                className={C_DEVELOPERTAB_2}
                             >
                                 {t('developer.executeClear')}
                             </Button>
                         </div>
 
-                        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/5 group/row hover:bg-muted/10 border border-border/10 transition-all">
+                        <div className={C_DEVELOPERTAB_3}>
                             <div className="space-y-1">
                                 <div className="typo-body font-bold text-foreground flex items-center gap-2">
                                     <RefreshCw className="w-3 h-3 text-primary/60" />
                                     {t('developer.refreshData')}
                                 </div>
-                                <div className="typo-body font-bold text-muted-foreground/40 max-w-[200px] leading-relaxed">
+                                <div className="typo-body font-bold text-muted-foreground/40 max-w-200 leading-relaxed">
                                     {t('developer.refreshDataDesc')}
                                 </div>
                             </div>
@@ -132,19 +155,19 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                                 variant="outline"
                                 size="sm"
                                 onClick={() => { void (async () => { try { setIsLoading(true); onRefreshModels(true); await loadSettings(); setStatusMessage(t('developer.dataRefreshed')); setTimeout(() => setStatusMessage(''), 3000); } finally { setIsLoading(false); } })(); }}
-                                className="h-9 px-4 rounded-xl border-primary/20 bg-primary/5 text-primary typo-body font-bold hover:bg-primary hover:text-primary-foreground transition-all"
+                                className={C_DEVELOPERTAB_4}
                             >
                                 {t('developer.reloadAssets')}
                             </Button>
                         </div>
 
-                        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/5 group/row hover:bg-muted/10 border border-border/10 transition-all">
+                        <div className={C_DEVELOPERTAB_5}>
                             <div className="space-y-1">
                                 <div className="typo-body font-bold text-foreground flex items-center gap-2">
                                     <Download className="w-3 h-3 text-primary/60" />
                                     {t('developer.exportSchema')}
                                 </div>
-                                <div className="typo-body font-bold text-muted-foreground/40 max-w-[200px] leading-relaxed">
+                                <div className="typo-body font-bold text-muted-foreground/40 max-w-200 leading-relaxed">
                                     {t('developer.exportSchemaDesc')}
                                 </div>
                             </div>
@@ -153,7 +176,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                                     variant="outline"
                                     size="sm"
                                     onClick={() => { if (!settings) { return; } const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `Tengra-settings-${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url); setStatusMessage(t('developer.settingsExported')); setTimeout(() => setStatusMessage(''), 3000); }}
-                                    className="h-9 w-9 p-0 rounded-xl border-border/40 flex items-center justify-center hover:bg-muted/20 text-muted-foreground transition-all"
+                                    className={C_DEVELOPERTAB_6}
                                     title={t('developer.exportSettings')}
                                 >
                                     <HardDrive className="w-4 h-4" />
@@ -180,7 +203,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                                         setStatusMessage(t('developer.uiStateExported'));
                                         setTimeout(() => setStatusMessage(''), 3000);
                                     }}
-                                    className="h-9 w-9 p-0 rounded-xl border-border/40 flex items-center justify-center hover:bg-muted/20 text-muted-foreground transition-all"
+                                    className={C_DEVELOPERTAB_7}
                                     title={t('developer.exportUiState')}
                                 >
                                     <Layout className="w-4 h-4" />
@@ -188,13 +211,13 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/5 group/row hover:bg-muted/10 border border-border/10 transition-all">
+                        <div className={C_DEVELOPERTAB_8}>
                             <div className="space-y-1">
                                 <div className="typo-body font-bold text-foreground flex items-center gap-2">
                                     <FileUp className="w-3 h-3 text-primary/60" />
                                     {t('developer.importSettings')}
                                 </div>
-                                <div className="typo-body font-bold text-muted-foreground/40 max-w-[200px] leading-relaxed">
+                                <div className="typo-body font-bold text-muted-foreground/40 max-w-200 leading-relaxed">
                                     {t('developer.restoreFromSnapshot')}
                                 </div>
                             </div>
@@ -202,7 +225,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                                 variant="outline"
                                 size="sm"
                                 asChild
-                                className="h-9 px-4 rounded-xl border-primary/20 bg-primary/5 text-primary typo-body font-bold hover:bg-primary hover:text-primary-foreground transition-all"
+                                className={C_DEVELOPERTAB_9}
                             >
                                 <label className="cursor-pointer">
                                     {t('developer.import')}
@@ -214,14 +237,14 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                 </div>
 
                 {/* Animation & UX Diagnostics */}
-                <div className="bg-card rounded-3xl border border-border/40 p-8 space-y-8 shadow-sm group/ux hover:border-border/60 transition-all duration-500 overflow-hidden relative">
+                <div className={UI_PRIMITIVES.SECTION_CARD}>
                     <div className="flex items-center gap-3 px-1 relative z-10">
                         <Activity className="w-4 h-4 text-primary" />
                         <h4 className="typo-body font-bold text-muted-foreground/40">{t('developer.uxDiagnostics')}</h4>
                     </div>
 
                     <div className="space-y-6 relative z-10">
-                        <div className="p-6 rounded-[2rem] border border-border/40 bg-muted/10 shadow-inner">
+                        <div className="p-6 rounded-card-lg border border-border/40 bg-muted/10 shadow-inner">
                             <div className="typo-body font-bold text-foreground mb-4">{t('developer.responsiveStateMatrix')}</div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="p-4 rounded-2xl border border-border/10 bg-background/50">
@@ -285,7 +308,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
             </div>
 
             {/* Performance Dashboard */}
-            <div className="bg-card rounded-3xl border border-border/40 p-8 space-y-8 shadow-sm group/performance hover:border-border/60 transition-all duration-500 overflow-hidden relative">
+            <div className={UI_PRIMITIVES.SECTION_CARD}>
                 <div className="flex items-center gap-3 px-1 relative z-10">
                     <Activity className="w-4 h-4 text-primary" />
                     <h4 className="typo-body font-bold text-muted-foreground/40">{t('developer.performanceOverview')}</h4>

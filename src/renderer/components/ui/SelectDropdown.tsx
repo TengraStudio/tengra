@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import {
     autoUpdate,
     flip,
@@ -38,12 +48,12 @@ const OptionButton: React.FC<OptionButtonProps> = ({ option, isSelected, onSelec
         type="button"
         onClick={onSelect}
         className={cn(
-            "tengra-select-dropdown__option",
-            isSelected && "tengra-select-dropdown__option--selected"
+            "w-full flex items-center justify-between py-2 px-4 text-sm font-medium text-muted-foreground bg-transparent border-none text-left cursor-pointer transition-all duration-150 ease-in-out hover:bg-muted/60 hover:text-foreground",
+            isSelected && "bg-primary/15 text-primary"
         )}
     >
-        <span className="tengra-select-dropdown__option-label">{option.label}</span>
-        {isSelected && <Check className="tengra-select-dropdown__check" />}
+        <span className="truncate overflow-hidden whitespace-nowrap text-ellipsis">{option.label}</span>
+        {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
     </button>
 );
 
@@ -58,12 +68,12 @@ const TriggerButton: React.FC<TriggerButtonProps> = ({ label, isOpen, onToggle }
         type="button"
         onClick={onToggle}
         className={cn(
-            "tengra-select-dropdown__trigger",
-            isOpen && "tengra-select-dropdown__trigger--open"
+            "group w-full flex items-center justify-between bg-muted/20 border border-border/50 rounded-xl py-2.5 px-4 text-sm font-medium text-primary/90 shadow-sm cursor-pointer transition-all duration-150 ease-in-out hover:bg-muted/30 hover:border-border focus:outline-none focus:shadow-outline-primary-1",
+            isOpen && "bg-primary/5 border-primary/40"
         )}
     >
-        <span className="tengra-select-dropdown__label">{label}</span>
-        <ChevronDown className="tengra-select-dropdown__chevron" />
+        <span className="truncate overflow-hidden whitespace-nowrap text-ellipsis">{label}</span>
+        <ChevronDown className={cn("w-4 h-4 text-muted-foreground ml-2 shrink-0 transition-transform duration-150 group-hover:text-primary/70", isOpen && "rotate-180")} />
     </button>
 );
 
@@ -90,10 +100,10 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
             exit={{ opacity: 0, y: isUp ? 4 : -4, scale: 0.95 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
             style={{ position: strategy, top: y ?? 0, left: x ?? 0, zIndex: 10000, width: width || 'auto' }}
-            className="tengra-select-dropdown__menu"
+            className="bg-background/95 backdrop-blur-16 border border-border/40 rounded-xl shadow-2xl overflow-hidden"
             onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
         >
-            <div className="tengra-select-dropdown__menu-inner custom-scrollbar">
+            <div className="max-h-72 overflow-y-auto py-1 custom-scrollbar">
                 {options.map(opt => (
                     <OptionButton key={opt.value} option={opt} isSelected={opt.value === value} onSelect={() => onSelect(opt.value)} />
                 ))}
@@ -145,7 +155,7 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
     }, [isOpen, refs.domReference]);
 
     return (
-        <div ref={setReferenceNode} className={cn("tengra-select-dropdown", className)}>
+        <div ref={setReferenceNode} className={cn("relative w-full", className)}>
             <TriggerButton label={selectedLabel} isOpen={isOpen} onToggle={handleToggle} />
             <AnimatePresence>
                 {isOpen && (

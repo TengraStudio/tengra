@@ -1,9 +1,23 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Button } from '@renderer/components/ui/button';
 import { Server } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
 import { SSHConnection } from '@/types/ssh';
 import { appLogger } from '@/utils/renderer-logger';
+
+/* Batch-02: Extracted Long Classes */
+const C_SAVEDPROFILESELECTOR_1 = "flex flex-col items-start px-3 py-2 h-auto hover:bg-muted/60 text-left transition-all border border-transparent hover:border-border/60 group sm:flex-row";
+
 
 interface SavedProfileSelectorProps {
     onSelect: (profile: SSHConnection) => void;
@@ -49,7 +63,7 @@ export const SavedProfileSelector: React.FC<SavedProfileSelectorProps> = ({ onSe
 
     if (loading) {
         return (
-            <div className="tw-text-10 text-muted-foreground animate-pulse p-2 mb-4 bg-muted/40 rounded-lg border border-dashed border-border/40">
+            <div className="text-10 text-muted-foreground animate-pulse p-2 mb-4 bg-muted/40 rounded-lg border border-dashed border-border/40">
                 {t('common.loading')}
             </div>
         );
@@ -57,7 +71,7 @@ export const SavedProfileSelector: React.FC<SavedProfileSelectorProps> = ({ onSe
 
     if (profiles.length === 0) {
         return (
-            <div className="tw-text-10 text-muted-foreground p-2 mb-4 bg-muted/40 rounded-lg border border-dashed border-border/40">
+            <div className="text-10 text-muted-foreground p-2 mb-4 bg-muted/40 rounded-lg border border-dashed border-border/40">
                 {loadFailed ? t('errors.unexpected') : t('terminal.no_ssh_profiles')}
             </div>
         );
@@ -75,12 +89,12 @@ export const SavedProfileSelector: React.FC<SavedProfileSelectorProps> = ({ onSe
                         key={profile.id}
                         variant="ghost"
                         onClick={() => onSelect(profile)}
-                        className="flex flex-col items-start px-3 py-2 h-auto hover:bg-muted/60 text-left transition-all border border-transparent hover:border-border/60 group"
+                        className={C_SAVEDPROFILESELECTOR_1}
                     >
                         <span className="typo-caption font-medium text-foreground group-hover:text-success transition-colors">
                             {profile.name}
                         </span>
-                        <span className="tw-text-10 text-muted-foreground truncate w-full">
+                        <span className="text-10 text-muted-foreground truncate w-full">
                             {profile.username}@{profile.host}:{profile.port}
                         </span>
                     </Button>

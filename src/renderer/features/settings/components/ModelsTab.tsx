@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Button } from '@renderer/components/ui/button';
 import { cn } from '@renderer/lib/utils';
 import { HardDrive, History, RefreshCw } from 'lucide-react';
@@ -11,6 +21,10 @@ import { appLogger } from '@/utils/renderer-logger';
 import { type DownloadHistoryItem, DownloadHistoryList } from './models/DownloadHistoryList';
 import { InstalledModelsList } from './models/InstalledModelsList';
 import { ModelGovernancePanel } from './models/ModelGovernancePanel';
+
+/* Batch-02: Extracted Long Classes */
+const C_MODELSTAB_1 = "group flex h-10 items-center gap-3 rounded-2xl border-border/30 bg-background px-6 typo-body font-bold text-muted-foreground hover:bg-muted/40 hover:text-foreground shadow-sm sm:gap-4";
+
 
 interface ModelsTabProps {
     settings: AppSettings | null;
@@ -239,14 +253,14 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
                             void fetchHistory();
                         }
                     }}
-                    className="group flex h-10 items-center gap-3 rounded-2xl border-border/30 bg-background px-6 typo-body font-bold text-muted-foreground hover:bg-muted/40 hover:text-foreground shadow-sm"
+                    className={C_MODELSTAB_1}
                 >
                     <RefreshCw className="h-4 w-4 transition-transform duration-500 group-hover:rotate-180" />
                     {t('modelsPage.refresh')}
                 </Button>
             </div>
 
-            <div className="space-y-8 min-h-[400px]">
+            <div className="space-y-8 min-h-400">
                 {subTab === 'installed' ? (
                     <InstalledModelsList
                         filtered={filtered}

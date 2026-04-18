@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import type {
     MarketplaceItem,
     MarketplaceLanguage
@@ -19,7 +29,17 @@ import {
 import type { ElementType } from 'react';
 
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 import { useDownloadStore } from '@/store/download.store';
+
+/* Batch-02: Extracted Long Classes */
+const C_MARKETCARD_1 = "flex h-5 items-center gap-1 rounded bg-amber-500/10 px-2 py-0.5 text-xxxs font-black uppercase tracking-wider text-amber-500 ring-1 ring-inset ring-amber-500/20 shadow-glow-amber";
+const C_MARKETCARD_2 = "flex h-5 items-center gap-1 rounded bg-success/10 px-2 py-0.5 text-xxxs font-black uppercase tracking-wider text-success ring-1 ring-inset ring-success/20";
+const C_MARKETCARD_3 = "flex h-5 items-center gap-1 rounded bg-muted/40 px-2 py-0.5 text-xxxs font-black uppercase tracking-wider text-muted-foreground/60 ring-1 ring-inset ring-white/5";
+const C_MARKETCARD_4 = "h-8 px-2 flex items-center gap-1.5 rounded-md text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95 text-xxxs font-bold uppercase tracking-wider";
+const C_MARKETCARD_5 = "h-8 px-3 flex items-center gap-2 rounded-md bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white transition-all active:scale-95 text-xxxs font-bold uppercase tracking-wider";
+const C_MARKETCARD_6 = "bg-primary/5 text-primary hover:bg-primary hover:text-primary-foreground px-3 py-1 rounded text-xxxs font-black uppercase tracking-widest transition-all active:scale-95";
+
 
 
 const formatBytes = (bytes: number): string => {
@@ -79,20 +99,20 @@ export function MarketCard({
                 <>
                     {compareVersions(item.version, installedVersion) > 0 ? (
                         <div className="flex items-center gap-1.5">
-                             <span className="text-[10px] text-muted-foreground/30 line-through decoration-muted-foreground/20 italic font-bold">V{installedVersion}</span>
-                             <div className="flex h-5 items-center gap-1 rounded bg-amber-500/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-500 ring-1 ring-inset ring-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.15)]">
+                             <span className="text-xxxs text-muted-foreground/30 line-through decoration-muted-foreground/20 italic font-bold">V{installedVersion}</span>
+                             <div className={C_MARKETCARD_1}>
                                  <RefreshCw className="h-2.5 w-2.5 animate-spin-slow" />
                                  V{item.version}
                              </div>
                         </div>
                     ) : (
-                        <div className="flex h-5 items-center gap-1 rounded bg-success/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-success ring-1 ring-inset ring-success/20">
+                        <div className={C_MARKETCARD_2}>
                             V{installedVersion}
                         </div>
                     )}
                 </>
             ) : (
-                <div className="flex h-5 items-center gap-1 rounded bg-muted/40 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-muted-foreground/60 ring-1 ring-inset ring-white/5">
+                <div className={C_MARKETCARD_3}>
                     V{item.version.startsWith('v') ? item.version.substring(1).toUpperCase() : item.version.toUpperCase()}
                 </div>
             )}
@@ -100,22 +120,22 @@ export function MarketCard({
     );
 
     return (
-        <div className={`
-            group relative flex items-start gap-4 p-4 transition-colors duration-200
-            ${item.installed ? 'bg-primary/[0.03]' : 'bg-transparent hover:bg-muted/30'}
-        `}>
+        <div className={cn(
+            'group relative flex items-start gap-4 p-4 transition-colors duration-200',
+            item.installed ? 'bg-primary/[0.03]' : 'bg-transparent hover:bg-muted/30'
+        )}>
             {/* Visual indicator for installed */}
             {item.installed && (
                 <div className="absolute left-0 top-4 bottom-4 w-0.5 bg-primary rounded-r-full" />
             )}
 
             {/* Icon - Smaller and more integrated */}
-            <div className={`
-                flex h-12 w-12 shrink-0 items-center justify-center rounded-lg transition-transform
-                ${item.installed 
-                    ? 'bg-primary/10 text-primary' 
-                    : 'bg-muted/50 text-muted-foreground group-hover:scale-105'}
-            `}>
+            <div className={cn(
+                'flex h-12 w-12 shrink-0 items-center justify-center rounded-lg transition-transform',
+                item.installed
+                    ? 'bg-primary/10 text-primary'
+                    : 'bg-muted/50 text-muted-foreground group-hover:scale-105'
+            )}>
                 <Icon className="h-6 w-6" />
             </div>
 
@@ -137,7 +157,7 @@ export function MarketCard({
                                     e.stopPropagation();
                                     onUninstall(item);
                                 }}
-                                className="h-8 px-2 flex items-center gap-1.5 rounded-md text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95 text-[10px] font-bold uppercase tracking-wider"
+                                className={C_MARKETCARD_4}
                             >
                                 <Trash2 className="h-3.5 w-3.5" />
                                 {t('marketplace.uninstall')}
@@ -150,7 +170,7 @@ export function MarketCard({
                                     e.stopPropagation();
                                     onInstall(item);
                                 }}
-                                className="h-8 px-3 flex items-center gap-2 rounded-md bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white transition-all active:scale-95 text-[10px] font-bold uppercase tracking-wider"
+                                className={C_MARKETCARD_5}
                             >
                                 <RefreshCw className="h-3.5 w-3.5" />
                                 {t('marketplace.update')}
@@ -164,12 +184,12 @@ export function MarketCard({
                                     onInstall(item);
                                 }}
                                 disabled={isInstalling}
-                                className={`
-                                    h-8 px-4 flex items-center gap-2 rounded-md transition-all active:scale-95 text-[10px] font-bold uppercase tracking-wider
-                                    ${isInstalling 
-                                        ? 'bg-muted text-muted-foreground animate-pulse' 
-                                        : 'bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground'}
-                                `}
+                                className={cn(
+                                    'h-8 px-4 flex items-center gap-2 rounded-md transition-all active:scale-95 text-xxxs font-bold uppercase tracking-wider',
+                                    isInstalling
+                                        ? 'bg-muted text-muted-foreground animate-pulse'
+                                        : 'bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground'
+                                )}
                             >
                                 {isInstalling ? (
                                     <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -182,12 +202,12 @@ export function MarketCard({
                     </div>
                 </div>
 
-                <div className="mt-1 flex items-center gap-2 text-[11px] font-medium text-muted-foreground/60">
+                <div className="mt-1 flex items-center gap-2 text-xxs font-medium text-muted-foreground/60">
                     <span className="truncate">{item.author || t('marketplace.authorPrefix')}</span>
                     <span className="opacity-30">•</span>
                     {versionDisplay}
                     <span className="opacity-30">•</span>
-                    <span className="uppercase tracking-widest text-[9px] font-black">{item.itemType}</span>
+                    <span className="uppercase tracking-widest text-xxxs font-black">{item.itemType}</span>
                 </div>
 
                 <p className="mt-2 line-clamp-1 text-sm text-muted-foreground/50 group-hover:text-muted-foreground/70 transition-colors">
@@ -202,7 +222,7 @@ export function MarketCard({
 
                 {languageItem && item.installed && !isActive && (
                     <div className="mt-3 flex items-center justify-between">
-                        <span className="text-[10px] font-black text-muted-foreground/30 uppercase tracking-widest">{languageItem.nativeName}</span>
+                        <span className="text-xxxs font-black text-muted-foreground/30 uppercase tracking-widest">{languageItem.nativeName}</span>
                         <button
                             onClick={(event) => {
                                 event.stopPropagation();
@@ -210,7 +230,7 @@ export function MarketCard({
                                     onActivateLanguage(languageItem);
                                 }
                             }}
-                            className="bg-primary/5 text-primary hover:bg-primary hover:text-primary-foreground px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
+                            className={C_MARKETCARD_6}
                         >
                             {t('common.activate')}
                         </button>
@@ -240,7 +260,7 @@ function ModelDownloadProgress({ modelId }: { modelId: string }) {
             </div>
             <div className="h-1.5 w-full bg-primary/10 rounded-full overflow-hidden">
                 <div
-                    className="h-full bg-primary transition-all duration-300 shadow-[0_0_8px_rgba(var(--primary),0.5)]"
+                    className="h-full bg-primary transition-all duration-300 shadow-glow-primary"
                     style={{ width: `${progressPercent}%` }}
                 />
             </div>

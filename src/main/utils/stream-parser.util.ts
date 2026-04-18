@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { appLogger } from '@main/logging/logger';
 import { XmlToolParser } from '@main/utils/xml-tool-parser.util';
 import { ToolCall } from '@shared/types/chat';
@@ -27,6 +37,8 @@ type OpenCodeToolCallState = {
 
 type OpenCodeStreamState = {
     toolCalls: Map<string, OpenCodeToolCallState>;
+    processedMessageIds: Set<string>;
+    lastContent: string;
 };
 
 type XmlParserState = {
@@ -38,8 +50,10 @@ type OpenAIStreamDelta = {
     content?: string;
     reasoning_content?: string;
     reasoning?: string;
+    thinking?: string;
+    thought?: string;
     images?: Array<string | { image_url: { url: string } }>;
-    tool_calls?: ToolCall[];
+    tool_calls?: Partial<ToolCall>[];
 };
 
 type OpenAIStreamPayload = {
@@ -48,6 +62,13 @@ type OpenAIStreamPayload = {
         index?: number;
         finish_reason?: string | null;
     }>;
+    usage?: {
+        prompt_tokens: number;
+        completion_tokens: number;
+        total_tokens: number;
+    };
+    thinking?: string;
+    thought?: string;
 };
 
 export class StreamParser {
@@ -86,6 +107,8 @@ export class StreamParser {
     private static createOpenCodeStreamState(): OpenCodeStreamState {
         return {
             toolCalls: new Map<string, OpenCodeToolCallState>(),
+            processedMessageIds: new Set<string>(),
+            lastContent: '',
         };
     }
 
@@ -228,9 +251,23 @@ export class StreamParser {
         const type = json.type;
 
         if (this.isOpenCodeDoneEvent(json)) {
+            const itemId = json.item?.id;
+            if (itemId && openCodeState.processedMessageIds.has(itemId)) {
+                return;
+            }
             const contentItems = json.item?.content;
             if (contentItems) {
-                yield* this.handleOpenCodeDone(contentItems);
+                if (itemId) {
+                    openCodeState.processedMessageIds.add(itemId);
+                }
+                const text = contentItems
+                    .filter((c) => c.type === 'output_text')
+                    .map((c) => c.text ?? '')
+                    .join('');
+                if (text && text !== openCodeState.lastContent) {
+                    openCodeState.lastContent = text;
+                    yield { content: text };
+                }
             }
             return;
         }
@@ -238,9 +275,12 @@ export class StreamParser {
         if (!type) { return; }
         if (
             !json.delta
+            && !json.text
             && type !== 'response.output_item.added'
             && type !== 'response.output_item.done'
             && type !== 'response.function_call_arguments.done'
+            && type !== 'response.mcp_call_arguments.done'
+            && type !== 'response.completed'
         ) {
             return;
         }
@@ -254,11 +294,37 @@ export class StreamParser {
 
     private static *dispatchOpenCodeDelta(json: StreamPayload, openCodeState: OpenCodeStreamState): Generator<StreamChunk> {
         if (json.type === 'response.output_text.delta' && json.delta) {
-            yield* this.handleOpenCodeText(json.delta);
-        } else if (json.type === 'response.reasoning_summary_text.delta' && json.delta) {
-            yield* this.handleOpenCodeReasoning(json.delta);
+            yield* this.handleOpenCodeText(json.delta, openCodeState);
+        } else if (
+            json.type === 'response.reasoning_text.delta'
+            || json.type === 'response.reasoning_summary_text.delta'
+        ) {
+            if (json.delta) {
+                yield* this.handleOpenCodeReasoning(json.delta);
+            }
+        } else if (
+            json.type === 'response.output_text.done'
+        ) {
+            const itemId = json.item_id || json.item?.id;
+            if (itemId && openCodeState.processedMessageIds.has(itemId)) {
+                return;
+            }
+            if (json.text && json.text !== openCodeState.lastContent) {
+                if (itemId) {
+                    openCodeState.processedMessageIds.add(itemId);
+                }
+                openCodeState.lastContent = json.text;
+                yield { content: json.text };
+            }
+        } else if (
+            json.type === 'response.reasoning_text.done'
+        ) {
+            if (json.text) {
+                yield { reasoning: json.text };
+            }
         } else if (
             json.type === 'response.function_call_arguments.delta'
+            || json.type === 'response.mcp_call_arguments.delta'
             || json.type === 'response.output_item.added'
             || json.type === 'response.output_item.done'
         ) {
@@ -269,17 +335,31 @@ export class StreamParser {
                     yield toolCall;
                 }
             }
-        } else if (json.type === 'response.function_call_arguments.done') {
+        } else if (
+            json.type === 'response.function_call_arguments.done'
+            || json.type === 'response.mcp_call_arguments.done'
+        ) {
             const toolCall = this.finalizeOpenCodeToolCall(json, openCodeState, true);
             if (toolCall) {
                 yield toolCall;
             }
+        } else if (json.type === 'response.completed') {
+            // Flush all pending tool calls
+            for (const [id] of openCodeState.toolCalls) {
+                const toolCall = this.finalizeOpenCodeToolCall({ call_id: id } as StreamPayload, openCodeState, false);
+                if (toolCall) {
+                    yield toolCall;
+                }
+            }
         }
     }
 
-    private static *handleOpenCodeText(delta: string | { text?: string }) {
+    private static *handleOpenCodeText(delta: string | { text?: string }, openCodeState: OpenCodeStreamState) {
         const content = typeof delta === 'string' ? delta : delta.text;
-        if (content) { yield { content }; }
+        if (content) {
+            openCodeState.lastContent += content;
+            yield { content };
+        }
     }
 
     private static *handleOpenCodeReasoning(delta: string | { text?: string }) {
@@ -287,7 +367,8 @@ export class StreamParser {
         if (reasoning) { yield { reasoning }; }
     }
 
-    private static *handleOpenCodeDone(contentItems: StreamItemContent[]) {
+    // @ts-expect-error reserved for future OpenCode done-event handling
+    private static *_handleOpenCodeDone(contentItems: StreamItemContent[]) {
         const text = contentItems
             .filter((c) => c.type === 'output_text')
             .map((c) => c.text ?? '')
@@ -313,7 +394,10 @@ export class StreamParser {
 
         const delta = this.resolveOpenCodeToolCallArguments(json);
         if (delta) {
-            if (json.type === 'response.function_call_arguments.delta') {
+            if (
+                json.type === 'response.function_call_arguments.delta'
+                || json.type === 'response.mcp_call_arguments.delta'
+            ) {
                 current.arguments += delta;
             } else if (delta.length >= current.arguments.length) {
                 current.arguments = delta;
@@ -452,7 +536,7 @@ export class StreamParser {
         finishReason?: string | null
     ): StreamChunk | null {
         const content = delta.content ?? '';
-        const reasoning = delta.reasoning_content ?? delta.reasoning ?? '';
+        const reasoning = delta.reasoning_content ?? delta.reasoning ?? delta.thinking ?? delta.thought ?? '';
 
         if (content) {
             return this.createOpenAIChunk({
@@ -474,7 +558,8 @@ export class StreamParser {
                 finishReason,
             });
         }
-        if ((delta.images && delta.images.length > 0) || delta.tool_calls || usage || finishReason) {
+        const hasToolCalls = this.normalizeOpenAIToolCalls(delta.tool_calls) !== undefined;
+        if ((delta.images && delta.images.length > 0) || hasToolCalls || usage || finishReason) {
             return this.createOpenAIChunk({
                 idx: choiceIdx,
                 content,
@@ -504,9 +589,10 @@ export class StreamParser {
             usage,
             finishReason,
         } = options;
+        const toolCalls = this.normalizeOpenAIToolCalls(delta.tool_calls);
         // Determine type based on tool_calls presence or finish_reason
         let chunkType: string | undefined;
-        if (delta.tool_calls) {
+        if (toolCalls && toolCalls.length > 0) {
             chunkType = 'tool_calls';
         } else if (finishReason === 'tool_calls') {
             chunkType = 'tool_calls';
@@ -518,9 +604,52 @@ export class StreamParser {
             reasoning,
             images: Array.isArray(delta.images) ? delta.images : [],
             type: chunkType,
-            tool_calls: delta.tool_calls,
+            tool_calls: toolCalls,
             finish_reason: finishReason,
             usage
+        };
+    }
+
+    private static normalizeOpenAIToolCalls(toolCalls?: Partial<ToolCall>[]): ToolCall[] | undefined {
+        if (!Array.isArray(toolCalls)) {
+            return undefined;
+        }
+
+        const normalized = toolCalls
+            .map((toolCall, index) => this.normalizeOpenAIToolCall(toolCall, index))
+            .filter((toolCall): toolCall is ToolCall => toolCall !== null);
+
+        return normalized.length > 0 ? normalized : undefined;
+    }
+
+    private static normalizeOpenAIToolCall(toolCall: Partial<ToolCall>, fallbackIndex: number): ToolCall | null {
+        const functionValue = toolCall.function;
+        const functionObject = functionValue && typeof functionValue === 'object'
+            ? functionValue as Partial<ToolCall['function']>
+            : {};
+        const name = typeof functionObject.name === 'string' ? functionObject.name : '';
+        const args = typeof functionObject.arguments === 'string' ? functionObject.arguments : '';
+        const id = typeof toolCall.id === 'string' ? toolCall.id : '';
+        const index = typeof toolCall.index === 'number' ? toolCall.index : fallbackIndex;
+
+        // Some providers emit empty shell deltas before the actual function metadata.
+        // They are not useful to display and can crash consumers that expect valid tool calls.
+        if (id.trim().length === 0 && name.trim().length === 0 && args.trim().length === 0) {
+            return null;
+        }
+        if (name.trim().length === 0 && args.trim().length === 0) {
+            return null;
+        }
+
+        return {
+            ...toolCall,
+            id,
+            index,
+            type: 'function',
+            function: {
+                name,
+                arguments: args,
+            },
         };
     }
 
@@ -591,6 +720,7 @@ type StreamPayload = OpenAIStreamPayload & {
     type?: string;
     delta?: string | { text?: string };
     message?: string;
+    text?: string;
     item?: {
         id?: string;
         type?: string;

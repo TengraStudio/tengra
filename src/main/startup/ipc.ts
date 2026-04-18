@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { registerAdvancedMemoryIpc } from '@main/ipc/advanced-memory';
 import { registerAgentIpc } from '@main/ipc/agent';
 import { registerAuditIpc } from '@main/ipc/audit';
@@ -12,7 +22,6 @@ import { registerContractIpc } from '@main/ipc/contract';
 import { registerDbIpc } from '@main/ipc/db';
 import { registerDialogIpc } from '@main/ipc/dialog';
 import { registerExportIpc } from '@main/ipc/export';
-import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { registerFilesIpc } from '@main/ipc/files';
 import { registerGalleryIpc } from '@main/ipc/gallery';
 import { registerGitIpc } from '@main/ipc/git';
@@ -37,7 +46,9 @@ import { registerPromptTemplatesIpc } from '@main/ipc/prompt-templates';
 import { registerProxyIpc } from '@main/ipc/proxy';
 import { registerProxyEmbedIpc } from '@main/ipc/proxy-embed';
 import { registerRuntimeIpc } from '@main/ipc/runtime';
+import { registerSecurityIpc } from '@main/ipc/security';
 import { registerSdCppIpc } from '@main/ipc/sd-cpp';
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { registerSessionIpc } from '@main/ipc/session';
 import { registerSessionConversationIpc } from '@main/ipc/session-conversation';
 import { registerSessionWorkspaceIpc } from '@main/ipc/session-workspace';
@@ -56,14 +67,16 @@ import { registerWorkspaceAgentSessionIpc } from '@main/ipc/workspace-agent-sess
 import { appLogger } from '@main/logging/logger';
 import { McpDispatcher } from '@main/mcp/dispatcher';
 import { SharedPromptsService } from '@main/services/data/shared-prompts.service';
+import type { ExtensionService } from '@main/services/extension/extension.service';
 import type { LogoService } from '@main/services/external/logo.service';
 import type { DockerService } from '@main/services/workspace/docker.service';
 import { container, Services } from '@main/startup/services';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { registerBatchIpc } from '@main/utils/ipc-batch.util';
 import { setIpcEventBus } from '@main/utils/ipc-wrapper.util';
-import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 import { createIpcHandler as baseCreateIpcHandler } from '@main/utils/ipc-wrapper.util';
+import type { ExtensionDevOptions, ExtensionPublishOptions, ExtensionTestOptions } from '@shared/types/extension';
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
 export function registerIpcHandlers(
     services: Services,
@@ -110,6 +123,7 @@ export function registerIpcHandlers(
         services.eventBusService
     );
     registerKeyRotationIpc(getMainWindow, services.keyRotationService);
+    registerSecurityIpc(services.securityService, getMainWindow);
 
     registerSessionConversationIpc({
         getMainWindow,
@@ -121,6 +135,8 @@ export function registerIpcHandlers(
         databaseService: services.databaseService,
         localeService: services.localeService,
         chatSessionRegistryService: services.chatSessionRegistryService,
+        advancedMemoryService: services.advancedMemoryService,
+        brainService: services.brainService,
     });
 
     registerOllamaIpc({
@@ -201,14 +217,16 @@ export function registerIpcHandlers(
     registerWorkspaceAgentSessionIpc(
         getMainWindow,
         services.databaseService,
-        services.modelRegistryService
+        services.modelRegistryService,
+        services.advancedMemoryService
     );
 
     registerToolsIpc(
         getMainWindow,
         toolExecutor,
         services.commandService,
-        services.databaseService
+        services.databaseService,
+        services.advancedMemoryService
     );
     registerMcpIpc(mcpDispatcher, getMainWindow);
     registerMarketplaceIpc(services.marketplaceService, services.themeService, services.localeService, getMainWindow);
@@ -236,7 +254,7 @@ export function registerIpcHandlers(
  * Registers IPC handlers for Extension operations
  */
 function registerExtensionIpc(
-    extensionService: any,
+    extensionService: ExtensionService,
     getMainWindow: () => BrowserWindow | null
 ) {
     appLogger.debug('ExtensionIPC', 'Registering Extension IPC handlers');
@@ -275,7 +293,7 @@ function registerExtensionIpc(
     ));
 
     ipcMain.handle('extension:dev-start', createIpcHandler('extension:dev-start',
-        async (_event: IpcMainInvokeEvent, options: any) => await extensionService.handleDevStart(_event, options)
+        async (_event: IpcMainInvokeEvent, options: ExtensionDevOptions) => await extensionService.handleDevStart(_event, options)
     ));
 
     ipcMain.handle('extension:dev-stop', createIpcHandler('extension:dev-stop',
@@ -287,11 +305,11 @@ function registerExtensionIpc(
     ));
 
     ipcMain.handle('extension:test', createIpcHandler('extension:test',
-        async (_event: IpcMainInvokeEvent, options: any) => await extensionService.handleTest(_event, options)
+        async (_event: IpcMainInvokeEvent, options: ExtensionTestOptions) => await extensionService.handleTest(_event, options)
     ));
 
     ipcMain.handle('extension:publish', createIpcHandler('extension:publish',
-        async (_event: IpcMainInvokeEvent, options: any) => await extensionService.handlePublish(_event, options)
+        async (_event: IpcMainInvokeEvent, options: ExtensionPublishOptions) => await extensionService.handlePublish(_event, options)
     ));
 
     ipcMain.handle('extension:get-profile', createIpcHandler('extension:get-profile',
@@ -299,7 +317,7 @@ function registerExtensionIpc(
     ));
 
     ipcMain.handle('extension:validate', createIpcHandler('extension:validate',
-        (_event: IpcMainInvokeEvent, manifest: any) => extensionService.handleValidate(_event, manifest)
+        (_event: IpcMainInvokeEvent, manifest: Record<string, unknown>) => extensionService.handleValidate(_event, manifest)
     ));
 
     ipcMain.handle('extension:get-state', createIpcHandler('extension:get-state',
@@ -311,7 +329,7 @@ function registerExtensionIpc(
     ));
 
     ipcMain.handle('extension:update-config', createIpcHandler('extension:update-config',
-        async (_event: IpcMainInvokeEvent, extensionId: string, config: any) => 
+        async (_event: IpcMainInvokeEvent, extensionId: string, config: Record<string, unknown>) => 
             await extensionService.handleUpdateConfig(_event, extensionId, config)
     ));
 }

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import antigravityLogo from '@renderer/assets/antigravity.svg';
 import chatgptLogo from '@renderer/assets/chatgpt.svg';
 import claudeLogo from '@renderer/assets/claude.svg';
@@ -22,6 +32,23 @@ import type { AntigravityCreditUsageMode } from '@/types/settings';
 import { AccountWrapper, AuthBusyState } from '../types';
 
 import { AccountRow } from './accounts/AccountRow';
+
+/* Batch-02: Extracted Long Classes */
+const C_ACCOUNTSTAB_1 = "flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border/20 bg-muted/30 text-foreground";
+const C_ACCOUNTSTAB_2 = "flex flex-1 items-center gap-3 rounded-xl border border-border/40 bg-background px-4 py-2.5 font-mono typo-body text-muted-foreground shadow-sm sm:gap-4";
+const C_ACCOUNTSTAB_3 = "h-10 w-10 min-w-10 rounded-xl border-border/30 text-muted-foreground hover:border-destructive/20 hover:bg-destructive/10 hover:text-destructive transition-colors";
+const C_ACCOUNTSTAB_4 = "group/docs flex h-auto items-center gap-2 p-0 typo-body font-medium text-muted-foreground/60 hover:text-primary transition-colors";
+const C_ACCOUNTSTAB_5 = "h-9 rounded-xl border-border/30 bg-background px-5 typo-body font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground";
+const C_ACCOUNTSTAB_6 = "h-9 rounded-xl border-primary/25 bg-primary/5 px-5 typo-body font-medium text-primary hover:bg-primary hover:text-primary-foreground";
+const C_ACCOUNTSTAB_7 = "group flex h-10 items-center gap-3 rounded-xl border-border/30 bg-background px-5 typo-body font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground sm:gap-4";
+const C_ACCOUNTSTAB_8 = "h-8 rounded-lg border-border/30 bg-background px-4 typo-body font-medium text-muted-foreground hover:border-destructive/20 hover:bg-destructive/5 hover:text-destructive";
+
+
+const PROVIDER_CARD_BASE = "group overflow-hidden rounded-2xl border transition-colors";
+const PROVIDER_CARD_CONTENT = "flex flex-col gap-4 p-4 transition-colors sm:flex-row sm:items-center sm:gap-5 sm:p-5";
+const BUTTON_PRIMARY_GHOST = "h-10 rounded-xl border-primary/25 bg-primary/5 px-4 typo-body font-medium text-primary hover:bg-primary hover:text-primary-foreground";
+const BUTTON_SECONDARY_GHOST = "group/btn flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/40 typo-body font-medium text-muted-foreground hover:border-primary/30 hover:bg-primary/5 hover:text-primary";
+const KEY_ROW_BASE = "group/key animate-in fade-in slide-in-from-left-2 flex flex-col gap-3 duration-300 sm:flex-row sm:items-center";
 
 type ProviderCategory = 'ai' | 'developer' | 'local'
 
@@ -163,7 +190,7 @@ function ProviderIdentity({
     providerId: string;
 }) {
     return (
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border/20 bg-muted/30 text-foreground">
+        <div className={C_ACCOUNTSTAB_1}>
             {logo ? (
                 <img
                     src={logo}
@@ -247,12 +274,12 @@ const ProviderCard = React.memo<ProviderCardProps>(({
 
     return (
         <div className={cn(
-            'group overflow-hidden rounded-2xl border transition-colors',
+            PROVIDER_CARD_BASE,
             hasAccounts && expanded ? 'border-primary/20 bg-card' : 'border-border/30 bg-card hover:border-border/50'
         )}>
             <div
                 className={cn(
-                    'flex flex-col gap-4 p-4 transition-colors sm:flex-row sm:items-center sm:gap-5 sm:p-5',
+                    PROVIDER_CARD_CONTENT,
                     hasAccounts ? 'cursor-pointer hover:bg-muted/5' : 'bg-muted/[0.03]'
                 )}
                 onClick={() => hasAccounts && setExpanded(!expanded)}
@@ -285,7 +312,7 @@ const ProviderCard = React.memo<ProviderCardProps>(({
                                 onConnect(provider.id);
                             }}
                             disabled={isBusy}
-                            className="h-10 rounded-xl border-primary/25 bg-primary/5 px-4 typo-body font-medium text-primary hover:bg-primary hover:text-primary-foreground"
+                            className={cn(BUTTON_PRIMARY_GHOST, "h-10 px-4")}
                         >
                             <UserPlus className="h-4 w-4 mr-2" />
                             {t('accounts.connect')}
@@ -330,7 +357,7 @@ const ProviderCard = React.memo<ProviderCardProps>(({
                                 onConnect(provider.id);
                             }}
                             disabled={isBusy}
-                            className="group/btn flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/40 typo-body font-medium text-muted-foreground hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+                            className={BUTTON_SECONDARY_GHOST}
                         >
                             <Plus className="h-3.5 w-3.5" />
                             {t('accounts.addAnotherAccount')}
@@ -437,12 +464,12 @@ const ApiKeyProviderCard = React.memo(({
 
     return (
         <div className={cn(
-            'group overflow-hidden rounded-2xl border transition-colors',
+            PROVIDER_CARD_BASE,
             hasKeys && expanded ? 'border-primary/20 bg-card' : 'border-border/30 bg-card hover:border-border/50'
         )}>
             <div
                 className={cn(
-                    'flex flex-col gap-4 p-4 transition-colors sm:flex-row sm:items-center sm:gap-5 sm:p-5',
+                    PROVIDER_CARD_CONTENT,
                     hasKeys ? 'cursor-pointer hover:bg-muted/5' : 'bg-muted/[0.03]'
                 )}
                 onClick={() => hasKeys && setExpanded(!expanded)}
@@ -474,7 +501,7 @@ const ApiKeyProviderCard = React.memo(({
                                 e.stopPropagation();
                                 setExpanded(true);
                             }}
-                            className="h-10 rounded-xl border-primary/25 bg-primary/5 px-4 typo-body font-medium text-primary hover:bg-primary hover:text-primary-foreground"
+                            className={cn(BUTTON_PRIMARY_GHOST, "h-10 px-4")}
                         >
                             <Plus className="h-4 w-4 mr-2" />
                             {t('accounts.addApiKey')}
@@ -488,8 +515,8 @@ const ApiKeyProviderCard = React.memo(({
                 <div className="animate-in slide-in-from-top-2 space-y-4 border-t border-border/20 bg-muted/[0.02] p-5 duration-300">
                     <div className="space-y-3">
                         {apiKeys.map((key, index) => (
-                            <div key={index} className="group/key animate-in fade-in slide-in-from-left-2 flex flex-col gap-3 duration-300 sm:flex-row sm:items-center" style={{ animationDelay: `${index * 50}ms` }}>
-                                <div className="flex flex-1 items-center gap-3 rounded-xl border border-border/40 bg-background px-4 py-2.5 font-mono typo-body text-muted-foreground">
+                            <div key={index} className={cn(KEY_ROW_BASE, "flex flex-col gap-3 sm:flex-row sm:items-center")} style={{ animationDelay: `${index * 50}ms` }}>
+                                <div className={C_ACCOUNTSTAB_2}>
                                     <Shield className="w-3 h-3 opacity-30" />
                                     <span className="opacity-80">{maskKey(key)}</span>
                                 </div>
@@ -501,7 +528,7 @@ const ApiKeyProviderCard = React.memo(({
                                         e.stopPropagation();
                                         onRemoveKey(index);
                                     }}
-                                    className="h-10 w-10 min-w-[40px] rounded-xl border-border/30 text-muted-foreground hover:border-destructive/20 hover:bg-destructive/10 hover:text-destructive"
+                                    className={C_ACCOUNTSTAB_3}
                                     title={t('common.delete')}
                                 >
                                     <Trash2 className="h-4 w-4" />
@@ -544,7 +571,7 @@ const ApiKeyProviderCard = React.memo(({
                                 variant="link"
                                 size="sm"
                                 asChild
-                                className="group/docs flex h-auto items-center gap-2 p-0 typo-body font-medium text-muted-foreground/60 hover:text-primary"
+                                className={C_ACCOUNTSTAB_4}
                             >
                                 <a href={provider.docsUrl} target="_blank" rel="noopener noreferrer">
                                     <Globe className="h-3 w-3" />
@@ -766,7 +793,7 @@ const OllamaSection = React.memo(({
                                 e.stopPropagation();
                                 void checkOllama();
                             }}
-                            className="h-9 rounded-xl border-border/30 bg-background px-5 typo-body font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                            className={C_ACCOUNTSTAB_5}
                         >
                             <RefreshCw className={cn("h-3 w-3 mr-2", !isRunning && "animate-spin")} />
                             {t('accounts.check')}
@@ -780,7 +807,7 @@ const OllamaSection = React.memo(({
                                     e.stopPropagation();
                                     void startOllama();
                                 }}
-                                className="h-9 rounded-xl border-primary/25 bg-primary/5 px-5 typo-body font-medium text-primary hover:bg-primary hover:text-primary-foreground"
+                                className={C_ACCOUNTSTAB_6}
                             >
                                 <Zap className="h-3.5 w-3.5 mr-2" />
                                 {t('accounts.start')}
@@ -857,7 +884,7 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
                         e.stopPropagation();
                         handleRefresh();
                     }}
-                    className="group flex h-10 items-center gap-3 rounded-xl border-border/30 bg-background px-5 typo-body font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                    className={C_ACCOUNTSTAB_7}
                 >
                     <RefreshCw className={cn("h-3.5 w-3.5 transition-transform duration-500", linkedAccounts.loading ? "animate-spin" : "group-hover:rotate-180")} />
                     {t('common.refresh')}
@@ -880,7 +907,7 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
                                     e.stopPropagation();
                                     cancelAuthFlow();
                                 }}
-                                className="h-8 rounded-lg border-border/30 bg-background px-4 typo-body font-medium text-muted-foreground hover:border-destructive/20 hover:bg-destructive/5 hover:text-destructive"
+                                className={C_ACCOUNTSTAB_8}
                             >
                                 {t('common.cancel')}
                             </Button>

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Badge } from '@renderer/components/ui/badge';
 import { Button } from '@renderer/components/ui/button';
 import { Input } from '@renderer/components/ui/input';
@@ -15,6 +25,20 @@ import { BookOpen, Edit3, Plus, Search, Tag, Trash2, X } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_PROMPTTEMPLATELIBRARY_1 = "h-11 px-5 rounded-xl typo-caption font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-102 active:scale-95 transition-all";
+const C_PROMPTTEMPLATELIBRARY_2 = "absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-muted-foreground/60 transition-colors group-focus-within:text-primary";
+const C_PROMPTTEMPLATELIBRARY_3 = "h-12 w-full sm:w-240 bg-background/50 border-border/40 rounded-2xl typo-caption font-bold px-4 focus:ring-primary/20";
+const C_PROMPTTEMPLATELIBRARY_4 = "bg-card p-8 rounded-2xl border border-primary/20 space-y-6 shadow-2xl shadow-primary/5 animate-in zoom-in-95 duration-300 lg:p-10";
+const C_PROMPTTEMPLATELIBRARY_5 = "min-h-160 bg-background/50 border-border/40 rounded-xl font-mono text-sm p-4 focus-visible:ring-primary/20 custom-scrollbar sm:p-5 lg:p-6";
+const C_PROMPTTEMPLATELIBRARY_6 = "flex-1 h-12 rounded-xl typo-caption font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/10 hover:scale-101 active:scale-95 transition-all";
+const C_PROMPTTEMPLATELIBRARY_7 = "flex-1 h-12 rounded-xl typo-caption font-bold bg-muted/30 text-muted-foreground hover:bg-muted/50 hover:text-foreground border border-border/40 transition-all";
+const C_PROMPTTEMPLATELIBRARY_8 = "h-9 w-9 p-0 rounded-xl bg-accent/30 text-muted-foreground hover:text-foreground hover:bg-accent/50 border border-border/40 transition-all hover:scale-110 active:scale-90";
+const C_PROMPTTEMPLATELIBRARY_9 = "h-9 w-9 p-0 rounded-xl bg-destructive/5 text-destructive hover:text-destructive hover:bg-destructive/10 border border-destructive/20 transition-all hover:scale-110 active:scale-90";
+const C_PROMPTTEMPLATELIBRARY_10 = "p-5 bg-background shadow-inner rounded-xl typo-caption text-foreground/90 font-mono whitespace-pre-wrap overflow-auto max-h-64 border border-border/40 custom-scrollbar leading-relaxed sm:p-6 lg:p-8";
+const C_PROMPTTEMPLATELIBRARY_11 = "flex flex-col items-center justify-center py-24 text-center space-y-4 bg-muted/5 border border-dashed border-border/40 rounded-3xl opacity-40 sm:flex-row";
+
 
 interface TemplateDraft {
     name: string;
@@ -130,14 +154,14 @@ export const PromptTemplateLibrary: React.FC = () => {
                     </div>
                     <Button
                         onClick={startCreate}
-                        className="h-11 px-5 rounded-xl typo-caption font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+                        className={C_PROMPTTEMPLATELIBRARY_1}
                     >
                         <Plus className="w-4 h-4 mr-2" /> {t('prompts.library.newPrompt')}
                     </Button>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 relative z-10">
                     <div className="relative group flex-1">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-muted-foreground/60 transition-colors group-focus-within:text-primary" />
+                        <Search className={C_PROMPTTEMPLATELIBRARY_2} />
                         <Input
                             type="text"
                             placeholder={t('prompts.library.searchPlaceholder')}
@@ -150,7 +174,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                     </div>
                     {categories.length > 0 && (
                         <Select value={filterCategory} onValueChange={setFilterCategory}>
-                            <SelectTrigger className="h-12 w-full sm:w-[240px] bg-background/50 border-border/40 rounded-2xl typo-caption font-bold px-4 focus:ring-primary/20">
+                            <SelectTrigger className={C_PROMPTTEMPLATELIBRARY_3}>
                                 <SelectValue placeholder={t('prompts.library.allCategories')} />
                             </SelectTrigger>
                             <SelectContent className="rounded-2xl border-border/40 shadow-2xl">
@@ -177,7 +201,7 @@ export const PromptTemplateLibrary: React.FC = () => {
             </div>
 
             {isEditing && (
-                <div className="bg-card p-8 rounded-2xl border border-primary/20 space-y-6 shadow-2xl shadow-primary/5 animate-in zoom-in-95 duration-300">
+                <div className={C_PROMPTTEMPLATELIBRARY_4}>
                     <div className="flex items-center gap-3">
                         <div className="w-1.5 h-5 bg-primary rounded-full" />
                         <h4 className="text-sm font-bold text-foreground">
@@ -240,13 +264,13 @@ export const PromptTemplateLibrary: React.FC = () => {
                             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                                 setDraft({ ...draft, template: e.target.value })
                             }
-                            className="min-h-[160px] bg-background/50 border-border/40 rounded-xl font-mono text-sm p-4 focus-visible:ring-primary/20 custom-scrollbar"
+                            className={C_PROMPTTEMPLATELIBRARY_5}
                         />
                     </div>
                     <div className="flex flex-col sm:flex-row gap-3 pt-2">
                         <Button
                             onClick={() => void handleSave()}
-                            className="flex-1 h-12 rounded-xl typo-caption font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/10 hover:scale-[1.01] active:scale-95 transition-all"
+                            className={C_PROMPTTEMPLATELIBRARY_6}
                         >
                             {t('common.save')}
                         </Button>
@@ -256,7 +280,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                                 setEditingId(null);
                                 setDraft(EMPTY_DRAFT);
                             }}
-                            className="flex-1 h-12 rounded-xl typo-caption font-bold bg-muted/30 text-muted-foreground hover:bg-muted/50 hover:text-foreground border border-border/40 transition-all"
+                            className={C_PROMPTTEMPLATELIBRARY_7}
                         >
                             <X className="w-4 h-4 mr-2" />
                             {t('common.cancel')}
@@ -305,7 +329,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                                         e.stopPropagation();
                                         startEdit(tp);
                                     }}
-                                    className="h-9 w-9 p-0 rounded-xl bg-accent/30 text-muted-foreground hover:text-foreground hover:bg-accent/50 border border-border/40 transition-all hover:scale-110 active:scale-90"
+                                    className={C_PROMPTTEMPLATELIBRARY_8}
                                 >
                                     <Edit3 className="w-4 h-4" />
                                 </Button>
@@ -316,7 +340,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                                         e.stopPropagation();
                                         void handleDelete(tp.id);
                                     }}
-                                    className="h-9 w-9 p-0 rounded-xl bg-destructive/5 text-destructive hover:text-destructive hover:bg-destructive/10 border border-destructive/20 transition-all hover:scale-110 active:scale-90"
+                                    className={C_PROMPTTEMPLATELIBRARY_9}
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </Button>
@@ -330,7 +354,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                                             MONO
                                         </div>
                                     </div>
-                                    <pre className="p-5 bg-background shadow-inner rounded-xl typo-caption text-foreground/90 font-mono whitespace-pre-wrap overflow-auto max-h-64 border border-border/40 custom-scrollbar leading-relaxed">
+                                    <pre className={C_PROMPTTEMPLATELIBRARY_10}>
                                         {selected.template}
                                     </pre>
                                 </div>
@@ -340,7 +364,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                 ))}
 
                 {filtered.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-24 text-center space-y-4 bg-muted/5 border border-dashed border-border/40 rounded-3xl opacity-40">
+                    <div className={C_PROMPTTEMPLATELIBRARY_11}>
                         <BookOpen className="w-12 h-12 text-muted-foreground" />
                         <div>
                             <p className="text-sm font-bold text-muted-foreground">

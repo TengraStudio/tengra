@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { X } from 'lucide-react';
 import { type MouseEventHandler, type ReactNode } from 'react';
 
@@ -8,6 +18,10 @@ import type { ResolvedTerminalAppearance, TerminalAppearancePreferences } from '
 
 import { TerminalEmptyState } from './TerminalEmptyState';
 import { TerminalInstance } from './TerminalInstance';
+
+/* Batch-02: Extracted Long Classes */
+const C_TERMINALSPLITVIEW_1 = "absolute top-0 inset-x-0 z-10 h-7 flex items-center justify-between px-2 bg-background/80 border-b border-border/70 backdrop-blur";
+
 
 interface TerminalSplitViewProps {
     onContextMenu: MouseEventHandler<HTMLDivElement>;
@@ -112,14 +126,14 @@ export function TerminalSplitView({
                 })}
             {isGalleryView && tabs.length > 0 && (
                 <div className="absolute inset-0 p-2 overflow-auto">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 tw-auto-rows-260">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 auto-rows-260">
                         {tabs.map(tab => (
                             <div
                                 key={tab.id}
                                 className={cn(
                                     'relative rounded-lg border overflow-hidden bg-background/70',
                                     activeTabId === tab.id
-                                        ? 'border-primary/60 tw-shadow-primary-outline'
+                                        ? 'border-primary/60 shadow-primary-outline'
                                         : 'border-border/70'
                                 )}
                                 onMouseDown={() => {
@@ -130,8 +144,8 @@ export function TerminalSplitView({
                                     setIsGalleryView(false);
                                 }}
                             >
-                                <div className="absolute top-0 inset-x-0 z-10 h-7 flex items-center justify-between px-2 bg-background/80 border-b border-border/70 backdrop-blur">
-                                    <div className="tw-text-11 truncate text-foreground/90">
+                                <div className={C_TERMINALSPLITVIEW_1}>
+                                    <div className="text-11 truncate text-foreground/90">
                                         {tab.name}
                                     </div>
                                     {resolveTerminalTabMetadata(tab).closable !== false && (

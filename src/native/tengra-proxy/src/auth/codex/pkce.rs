@@ -1,3 +1,12 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use rand::{thread_rng, RngCore};
 use sha2::{Digest, Sha256};

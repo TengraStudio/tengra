@@ -6,6 +6,8 @@ import {
     MemorySource,
     MemoryStatus,
     PendingMemory,
+    SharedMemoryMergeConflict,
+    SharedMemoryNamespace,
     SimilarMemoryCandidate
 } from '@shared/types/advanced-memory';
 import { JsonObject } from '@shared/types/common';
@@ -480,16 +482,54 @@ export class KnowledgeRepository extends BaseRepository {
     }
 
     async searchAdvancedMemories(embedding: number[], limit: number): Promise<AdvancedSemanticFragment[]> {
-        const vecStr = `[${embedding.join(',')}]`;
+        // Fetch candidates (since we can't do vector search in SQLite natively without extensions)
+        // We limit the rows we fetch to avoid performance issues in huge datasets
         const rows = await this.adapter.prepare(`
-            SELECT *, embedding <-> $1 as distance
-            FROM advanced_memories
+            SELECT * FROM advanced_memories 
             WHERE status IN ('confirmed', 'pending')
-            ORDER BY embedding <-> $1
-            LIMIT ${limit}
-        `).all<JsonObject & { distance?: number }>(vecStr);
+            LIMIT 1000
+        `).all<JsonObject>();
 
-        return rows.map(r => this.mapRowToAdvancedMemory(r, 1 - (r.distance ?? 0)));
+        // Manual cosine similarity sorting
+        const scored = rows.map(row => {
+            const memory = this.mapRowToAdvancedMemory(row);
+            const rowEmbedding = this.parseEmbedding(row.embedding as string | null);
+            const score = rowEmbedding.length > 0 ? this.cosineSimilarity(embedding, rowEmbedding) : 0;
+            return { memory, score };
+        });
+
+        return scored
+            .filter(item => item.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, limit)
+            .map(item => ({ ...item.memory, score: item.score }));
+    }
+
+    private parseEmbedding(embeddingStr: string | null): number[] {
+        if (!embeddingStr) return [];
+        try {
+            const clean = embeddingStr.trim().replace(/^\[|\]$/g, '');
+            if (!clean) return [];
+            return clean.split(/[\s,]+/).map(Number);
+        } catch {
+            return [];
+        }
+    }
+
+    private cosineSimilarity(a: number[], b: number[]): number {
+        if (a.length !== b.length || a.length === 0) return 0;
+        let dotProduct = 0;
+        let mA = 0;
+        let mB = 0;
+        for (let i = 0; i < a.length; i++) {
+            dotProduct += a[i] * b[i];
+            mA += a[i] * a[i];
+            mB += b[i] * b[i];
+        }
+        mA = Math.sqrt(mA);
+        mB = Math.sqrt(mB);
+        if (mA * mB === 0) return 0;
+        return dotProduct / (mA * mB);
     }
 
     private mapRowToAdvancedMemory(r: JsonObject, score?: number): AdvancedSemanticFragment {
@@ -600,6 +640,76 @@ export class KnowledgeRepository extends BaseRepository {
             workspaceId: r.workspace_id as string | undefined
         };
     }
+
+    async upsertSharedMemoryNamespace(namespace: SharedMemoryNamespace): Promise<void> {
+        await this.adapter.prepare(`
+            INSERT INTO shared_memory_namespaces (id, name, workspace_ids, access_control, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                name = excluded.name,
+                workspace_ids = excluded.workspace_ids,
+                access_control = excluded.access_control,
+                updated_at = excluded.updated_at
+        `).run(
+            namespace.id,
+            namespace.name,
+            JSON.stringify(namespace.workspaceIds),
+            JSON.stringify(namespace.accessControl),
+            namespace.createdAt,
+            namespace.updatedAt
+        );
+    }
+
+    async getSharedMemoryNamespaceById(namespaceId: string): Promise<SharedMemoryNamespace | null> {
+        const row = await this.adapter.prepare(
+            'SELECT * FROM shared_memory_namespaces WHERE id = ?'
+        ).get<JsonObject>(namespaceId);
+        if (!row) {
+            return null;
+        }
+        return {
+            id: String(row.id),
+            name: String(row.name),
+            workspaceIds: this.parseJsonField(row.workspace_ids as string | null, []),
+            accessControl: this.parseJsonField(row.access_control as string | null, {}),
+            createdAt: Number(row.created_at ?? Date.now()),
+            updatedAt: Number(row.updated_at ?? Date.now())
+        };
+    }
+
+    async appendSharedMemoryConflicts(
+        namespaceId: string,
+        conflicts: SharedMemoryMergeConflict[]
+    ): Promise<void> {
+        for (const conflict of conflicts) {
+            const conflictId = `${namespaceId}_${conflict.detectedAt}_${Math.random().toString(36).slice(2, 10)}`;
+            await this.adapter.prepare(`
+                INSERT INTO shared_memory_conflicts (
+                    id, namespace_id, source_workspace_id, target_workspace_id,
+                    source_memory_id, target_memory_id, source_content, target_content, resolution, detected_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(
+                conflictId,
+                conflict.namespaceId,
+                conflict.sourceWorkspaceId,
+                conflict.targetWorkspaceId,
+                conflict.sourceMemoryId,
+                conflict.targetMemoryId,
+                conflict.sourceContent,
+                conflict.targetContent,
+                conflict.resolution,
+                conflict.detectedAt
+            );
+        }
+    }
+
+    async getSharedMemoryConflictCount(namespaceId: string): Promise<number> {
+        const row = await this.adapter.prepare(
+            'SELECT COUNT(*) as count FROM shared_memory_conflicts WHERE namespace_id = ?'
+        ).get<JsonObject>(namespaceId);
+        return Number(row?.count ?? 0);
+    }
+
 
     // =========================================================================
     // CLEAN-001-4: Orphaned Data Cleanup

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { AdvancedSemanticFragment } from '@shared/types/advanced-memory';
 import { EpisodicMemory } from '@shared/types/memory';
 import { format } from 'date-fns';
@@ -7,8 +17,13 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
 import { appLogger } from '../../../utils/renderer-logger';
+
+/* Batch-02: Extracted Long Classes */
+const C_MEMORYTIMELINEVIEW_1 = "bg-muted/20 border border-border/30 hover:border-border/60 rounded-2xl p-4 transition-all hover:bg-muted/30 shadow-sm hover:shadow-xl sm:p-5 lg:p-6";
+
 
 interface TimelineItem {
     id: string;
@@ -135,8 +150,12 @@ export const MemoryTimelineView: React.FC = () => {
                             <button
                                 key={f}
                                 onClick={() => setFilter(f)}
-                                className={`px-3 py-1 rounded-md text-xxxs font-bold  transition-all ${filter === f ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'
-                                    }`}
+                                className={cn(
+                                    'px-3 py-1 rounded-md text-xxxs font-bold transition-all',
+                                    filter === f
+                                        ? 'bg-primary text-primary-foreground shadow-lg'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                )}
                             >
                                 {f === 'all'
                                     ? t('memory.timelineFilterAll')
@@ -191,7 +210,7 @@ export const MemoryTimelineView: React.FC = () => {
                                         <div key={item.id} className="group relative transition-all hover:translate-x-1">
                                             <div className="absolute -left-10 top-2 w-3 h-px bg-border/60 group-hover:bg-primary/40 group-hover:w-5 transition-all" />
 
-                                            <div className="bg-muted/20 border border-border/30 hover:border-border/60 rounded-2xl p-4 transition-all hover:bg-muted/30 shadow-sm hover:shadow-xl">
+                                            <div className={C_MEMORYTIMELINEVIEW_1}>
                                                 <div className="flex items-center justify-between mb-3">
                                                     <div className="flex items-center gap-2">
                                                         {item.type === 'episode' ? (

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Download, Globe } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
@@ -6,6 +16,11 @@ import { useTranslation } from '@/i18n';
 import { localeRegistry } from '@/i18n/locale-registry.service';
 import { enLocalePack } from '@/i18n/locales';
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_TRANSLATIONEXPORT_1 = "inline-flex items-center gap-1.5 rounded-md border border-border/40 px-3 py-1.5 typo-caption hover:bg-muted/30 transition-colors";
+const C_TRANSLATIONEXPORT_2 = "inline-flex items-center gap-1.5 rounded-md border border-border/40 px-3 py-1.5 typo-caption hover:bg-muted/30 transition-colors";
+
 
 type TranslationObject = Record<string, RendererDataValue>;
 
@@ -172,14 +187,14 @@ export const TranslationExport: React.FC = () => {
             <div className="flex gap-2">
                 <button
                     onClick={handleExportJSON}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-border/40 px-3 py-1.5 typo-caption hover:bg-muted/30 transition-colors"
+                    className={C_TRANSLATIONEXPORT_1}
                 >
                     <Download className="w-3.5 h-3.5" />
                     {t('settings.translationExport.exportJSON')}
                 </button>
                 <button
                     onClick={handleExportCSV}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-border/40 px-3 py-1.5 typo-caption hover:bg-muted/30 transition-colors"
+                    className={C_TRANSLATIONEXPORT_2}
                 >
                     <Download className="w-3.5 h-3.5" />
                     {t('settings.translationExport.exportCSV')}

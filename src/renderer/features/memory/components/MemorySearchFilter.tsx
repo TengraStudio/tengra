@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { MemoryCategory } from '@shared/types/advanced-memory';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { Filter, Search } from 'lucide-react';
@@ -16,6 +26,10 @@ import { useTranslation } from '@/i18n';
 import { appLogger } from '@/utils/renderer-logger';
 
 import { CATEGORY_CONFIG } from './constants';
+
+/* Batch-02: Extracted Long Classes */
+const C_MEMORYSEARCHFILTER_1 = "rounded-md border border-border/50 bg-muted/30 px-2 py-0.5 typo-caption text-muted-foreground transition hover:bg-muted/40 hover:text-foreground";
+
 
 const MEMORY_SEARCH_HISTORY_KEY = 'memory-search-history';
 const MAX_MEMORY_SEARCH_HISTORY = 8;
@@ -138,7 +152,7 @@ export const MemorySearchFilter: React.FC<MemorySearchFilterProps> = ({
                             <button
                                 key={query}
                                 type="button"
-                                className="rounded-md border border-border/50 bg-muted/30 px-2 py-0.5 typo-caption text-muted-foreground transition hover:bg-muted/40 hover:text-foreground"
+                                className={C_MEMORYSEARCHFILTER_1}
                                 onClick={() => onSearchChange(query)}
                             >
                                 {query}

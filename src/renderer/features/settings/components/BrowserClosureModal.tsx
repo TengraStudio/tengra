@@ -1,7 +1,22 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { AlertTriangle, X } from 'lucide-react';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
+
+/* Batch-02: Extracted Long Classes */
+const C_BROWSERCLOSUREMODAL_1 = "fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200";
+const C_BROWSERCLOSUREMODAL_2 = "px-4 py-2 rounded-lg text-sm font-bold bg-warning hover:bg-warning text-foreground shadow-lg shadow-amber-500/20 transition-all";
+
 
 interface BrowserClosureModalProps {
     isOpen: boolean;
@@ -22,7 +37,7 @@ export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className={C_BROWSERCLOSUREMODAL_1}>
             <div className="w-full max-w-md bg-card border border-border rounded-xl shadow-2xl animate-in zoom-in-95 duration-200">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-border">
@@ -72,7 +87,7 @@ export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({
                             onConfirm();
                             onClose();
                         }}
-                        className="px-4 py-2 rounded-lg text-sm font-bold bg-warning hover:bg-warning text-foreground shadow-lg shadow-amber-500/20 transition-all"
+                        className={C_BROWSERCLOSUREMODAL_2}
                     >
                         {t('settings.browserClosure.confirm')}
                     </button>

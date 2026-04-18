@@ -1,10 +1,27 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Expand, Sparkles, X } from 'lucide-react';
 import { memo, useState } from 'react';
+
+/* Batch-02: Extracted Long Classes */
+const C_MESSAGEIMAGES_1 = "w-72 h-72 rounded-xl bg-accent/30 border border-border/50 flex flex-col items-center justify-center gap-4 relative overflow-hidden group/skel sm:gap-5 lg:gap-6 sm:flex-row";
+const C_MESSAGEIMAGES_2 = "absolute inset-0 bg-gradient-to-t from-background/75 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100";
+const C_MESSAGEIMAGES_3 = "absolute bottom-3 left-3 right-3 flex items-center justify-between rounded-xl border border-border/50 bg-background/80 px-3 py-2 opacity-0 backdrop-blur-md transition-opacity duration-300 group-hover:opacity-100";
+const C_MESSAGEIMAGES_4 = "absolute right-6 top-6 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/50 bg-background/80 text-muted-foreground transition-colors hover:bg-background/90 hover:text-foreground";
+
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
 
 export const ImageSkeleton = ({ t }: { t: TranslationFn }) => (
-    <div className="w-72 h-72 rounded-xl bg-accent/30 border border-border/50 flex flex-col items-center justify-center gap-4 relative overflow-hidden group/skel">
+    <div className={C_MESSAGEIMAGES_1}>
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-accent/30 to-transparent -translate-x-full animate-slide-shimmer" />
         <div className="w-12 h-12 rounded-full bg-accent/30 flex items-center justify-center animate-pulse">
             <Sparkles className="w-6 h-6 text-primary/40" />
@@ -14,8 +31,8 @@ export const ImageSkeleton = ({ t }: { t: TranslationFn }) => (
                 {t('messageBubble.TengraDrawing')}
             </div>
             <div className="flex gap-1 justify-center">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce [animation-delay:-0.3s]" />
-                <div className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce [animation-delay:-0.15s]" />
+                <div className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce animate-delay-300" />
+                <div className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce animate-delay-150" />
                 <div className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce" />
             </div>
         </div>
@@ -74,8 +91,8 @@ export const MessageImages = memo(({ images, t }: MessageImagesProps) => {
                                     alt={t('messageBubble.attachedImage', { index: i + 1 })}
                                     className="max-h-screen min-h-96 w-full object-cover transition-transform duration-300 group-hover:scale-102"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-t from-background/75 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                                <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between rounded-xl border border-border/50 bg-background/80 px-3 py-2 opacity-0 backdrop-blur-md transition-opacity duration-300 group-hover:opacity-100">
+                                <div className={C_MESSAGEIMAGES_2} />
+                                <div className={C_MESSAGEIMAGES_3}>
                                     <span className="typo-caption font-medium text-foreground">
                                         {t('messageBubble.attachedImage', { index: i + 1 })}
                                     </span>
@@ -102,7 +119,7 @@ export const MessageImages = memo(({ images, t }: MessageImagesProps) => {
                 >
                     <button
                         type="button"
-                        className="absolute right-6 top-6 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/50 bg-background/80 text-muted-foreground transition-colors hover:bg-background/90 hover:text-foreground"
+                        className={C_MESSAGEIMAGES_4}
                         onClick={event => {
                             event.stopPropagation();
                             setPreviewImage(null);

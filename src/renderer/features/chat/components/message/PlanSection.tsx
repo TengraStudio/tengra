@@ -1,6 +1,21 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Check, ListTodo } from 'lucide-react';
 import { lazy, memo, Suspense } from 'react';
 import remarkGfm from 'remark-gfm';
+
+/* Batch-02: Extracted Long Classes */
+const C_PLANSECTION_1 = "w-full mb-4 bg-gradient-to-br from-primary/[0.07] to-accent-foreground/[0.02] border border-primary/20 rounded-2xl p-4 shadow-lg shadow-primary/5 animate-fade-in relative overflow-hidden group/plan sm:p-5 lg:p-6";
+const C_PLANSECTION_2 = "flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground typo-caption font-bold tracking_wider hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20";
+
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
 
@@ -32,7 +47,7 @@ export const PlanSection = memo(
             return null;
         }
         return (
-            <div className="w-full mb-4 bg-gradient-to-br from-primary/[0.07] to-accent-foreground/[0.02] border border-primary/20 rounded-2xl p-4 shadow-lg shadow-primary/5 animate-fade-in relative overflow-hidden group/plan">
+            <div className={C_PLANSECTION_1}>
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/plan:opacity-20 transition-opacity">
                     <ListTodo className="w-12 h-12" />
                 </div>
@@ -66,7 +81,7 @@ export const PlanSection = memo(
                     <div className="mt-4 pt-4 border-t border-primary/10 flex justify-end">
                         <button
                             onClick={onApprovePlan}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground typo-caption font-bold tracking_wider hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                            className={C_PLANSECTION_2}
                         >
                             <Check className="w-3.5 h-3.5" />
                             {t('messageBubble.approvePlan')}

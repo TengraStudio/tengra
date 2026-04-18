@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * @fileoverview Editor breadcrumb navigation showing the file path hierarchy
  * @description Renders a clickable breadcrumb trail from the active editor tab's path,
  *   allowing quick navigation to parent directories via the file explorer.
@@ -8,6 +18,10 @@ import { ChevronRight, FileCode, FolderOpen } from 'lucide-react';
 import React, { useMemo } from 'react';
 
 import { EditorTab } from '@/types';
+
+/* Batch-02: Extracted Long Classes */
+const C_EDITORBREADCRUMB_1 = "flex items-center gap-0.5 px-3 py-1 typo-caption text-muted-foreground bg-muted/20 border-b border-border/30 overflow-x-auto scrollbar-none";
+
 
 interface EditorBreadcrumbProps {
     /** Currently active editor tab */
@@ -41,7 +55,7 @@ export const EditorBreadcrumb: React.FC<EditorBreadcrumbProps> = ({
     return (
         <nav
             aria-label={t('workspaceDashboard.editor.breadcrumbNav')}
-            className="flex items-center gap-0.5 px-3 py-1 typo-caption text-muted-foreground bg-muted/20 border-b border-border/30 overflow-x-auto scrollbar-none"
+            className={C_EDITORBREADCRUMB_1}
         >
             {segments.map((segment, index) => {
                 const isLast = index === segments.length - 1;
@@ -53,14 +67,14 @@ export const EditorBreadcrumb: React.FC<EditorBreadcrumbProps> = ({
                             <ChevronRight className="w-3 h-3 text-muted-foreground/40 flex-shrink-0" />
                         )}
                         {isLast ? (
-                            <span className="flex items-center gap-1 font-medium text-foreground truncate tw-max-w-180">
+                            <span className="flex items-center gap-1 font-medium text-foreground truncate max-w-180">
                                 <FileCode className="w-3 h-3 flex-shrink-0" />
                                 {segment}
                             </span>
                         ) : (
                             <button
                                 onClick={() => onNavigateToPath?.(pathUpToHere)}
-                                className="flex items-center gap-1 hover:text-foreground transition-colors truncate tw-max-w-140"
+                                className="flex items-center gap-1 hover:text-foreground transition-colors truncate max-w-140"
                                 title={pathUpToHere}
                             >
                                 <FolderOpen className="w-3 h-3 flex-shrink-0" />

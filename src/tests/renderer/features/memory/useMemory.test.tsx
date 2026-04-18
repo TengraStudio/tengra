@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -21,6 +31,34 @@ const buildAdvancedMemoryMocks = () => {
     });
     const recall = vi.fn().mockResolvedValue({ success: true, data: { memories: [], totalMatches: 0 } });
     const search = vi.fn().mockResolvedValue({ success: true, data: [] });
+    const health = vi.fn().mockResolvedValue({
+        success: true,
+        data: {
+            status: 'healthy',
+            uiState: 'ready',
+            budgets: { fastMs: 40, standardMs: 120, heavyMs: 250 },
+            metrics: {
+                totalCalls: 1,
+                totalFailures: 0,
+                totalRetries: 0,
+                validationFailures: 0,
+                budgetExceededCount: 0,
+                errorRate: 0,
+            },
+            memoryContext: {
+                cacheHits: 2,
+                cacheMisses: 1,
+                inflightReuseCount: 0,
+                lookupCount: 3,
+                lookupTimeoutCount: 0,
+                lookupFailureCount: 0,
+                lastLookupDurationMs: 8,
+                averageLookupDurationMs: 6.5,
+                cacheSize: 2,
+                inflightSize: 0,
+            }
+        }
+    });
     const importMemory = vi.fn().mockResolvedValue({ success: true, data: { imported: 1, pendingImported: 0, skipped: 0, errors: [] } });
 
     return {
@@ -29,6 +67,7 @@ const buildAdvancedMemoryMocks = () => {
         getSearchAnalytics,
         recall,
         search,
+        health,
         importMemory,
     };
 };
@@ -47,6 +86,7 @@ describe('useMemory', () => {
                 getSearchAnalytics: mocks.getSearchAnalytics,
                 recall: mocks.recall,
                 search: mocks.search,
+                health: mocks.health,
                 import: mocks.importMemory,
             },
         };
@@ -82,5 +122,16 @@ describe('useMemory', () => {
         await waitFor(() => {
             expect(result.current.lastErrorCode).toBe(memoryInspectorErrorCodes.importInvalidPayload);
         });
+    });
+
+    it('hydrates memory health metrics from advanced memory health endpoint', async () => {
+        const { result } = renderHook(() => useMemory('', 'stats'));
+
+        await waitFor(() => {
+            expect(result.current.isLoading).toBe(false);
+        });
+
+        expect(result.current.memoryHealth?.status).toBe('healthy');
+        expect(result.current.memoryHealth?.memoryContext?.lookupCount).toBe(3);
     });
 });

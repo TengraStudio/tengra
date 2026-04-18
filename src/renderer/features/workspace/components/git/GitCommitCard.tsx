@@ -1,6 +1,20 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { cn } from '@/lib/utils';
 
 import { GitCommitInfo } from './types';
+
+/* Batch-02: Extracted Long Classes */
+const C_GITCOMMITCARD_1 = "w-10 h-10 rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0";
+
 
 interface CommitCardProps {
     commit: GitCommitInfo;
@@ -19,7 +33,7 @@ export const GitCommitCard: React.FC<CommitCardProps> = ({ commit, isSelected, o
         )}
     >
         <div className="flex items-center justify-between w-full">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0">
+            <div className={C_GITCOMMITCARD_1}>
                 {commit.author[0].toUpperCase()}
             </div>
             <div className="text-xxs font-mono text-muted-foreground bg-muted/50 px-2 py-0.5 rounded group-hover:text-primary transition-colors">

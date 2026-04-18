@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { CheckedState } from '@radix-ui/react-checkbox';
 import { Checkbox } from '@renderer/components/ui/checkbox';
 import { Input } from '@renderer/components/ui/input';
@@ -277,7 +287,7 @@ export const EditorSection: React.FC<SettingsSectionProps> = props => {
                     }
                     rows={12}
                     spellCheck={false}
-                    className="min-h-[240px] resize-y font-mono text-sm"
+                    className="min-h-240 resize-y font-mono text-sm"
                     placeholder="{}"
                 />
             </div>

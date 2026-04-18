@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { SidebarChatItem } from '@renderer/components/layout/sidebar/SidebarChatItem';
 import { SidebarChatList } from '@renderer/components/layout/sidebar/SidebarChatList';
 import { SidebarFooter } from '@renderer/components/layout/sidebar/SidebarFooter';
@@ -247,8 +257,8 @@ export const Sidebar = React.memo(({
                 data-testid="sidebar"
                 aria-label={t('aria.applicationSidebar')}
                 className={cn(
-                    "tengra-sidebar",
-                    isCollapsed ? "tengra-sidebar--collapsed" : "tengra-sidebar--expanded"
+                    'flex h-full flex-col overflow-hidden border-r border-border/40 bg-card/80 backdrop-blur-sm transition-width duration-300 ease-out',
+                    isCollapsed ? 'w-20' : 'w-full'
                 )}>
                 <SidebarHeaderConnector
                     isCollapsed={isCollapsed}
@@ -261,7 +271,7 @@ export const Sidebar = React.memo(({
                     isCollapsed={isCollapsed}
                 />
 
-                <div className="tengra-sidebar__divider" />
+                <div className="mx-3 my-2 h-px bg-border/40" />
 
                 <SidebarChatSection
                     isCollapsed={isCollapsed}

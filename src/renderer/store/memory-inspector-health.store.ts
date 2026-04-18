@@ -1,4 +1,16 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { useSyncExternalStore } from 'react';
+
+import { AdvancedMemoryHealthSummary } from '@shared/types/advanced-memory';
 
 type MemoryInspectorHealthStatus = 'success' | 'failure' | 'validation-failure';
 type MemoryInspectorHealthChannel = 'memory.loadData' | 'memory.import' | 'memory.operation';
@@ -36,6 +48,16 @@ export interface MemoryInspectorHealthSnapshot {
         lastErrorCode: string | null;
         channels: Record<MemoryInspectorHealthChannel, MemoryInspectorChannelMetrics>;
     };
+    runtime: {
+        status: 'healthy' | 'degraded' | 'unknown';
+        cacheHitRate: number;
+        averageLookupDurationMs: number;
+        lookupTimeoutCount: number;
+        lookupFailureCount: number;
+        cacheSize: number;
+        inflightSize: number;
+        lastUpdatedAt: number | null;
+    };
     events: MemoryInspectorHealthEvent[];
 }
 
@@ -47,6 +69,7 @@ const memoryInspectorHealthBudgets = {
     importMs: 1200,
     operationMs: 700,
 } as const;
+const memoryLookupRuntimeBudgetMs = 300;
 
 const listeners = new Set<Listener>();
 
@@ -79,6 +102,16 @@ const initialSnapshot: MemoryInspectorHealthSnapshot = {
             'memory.operation': createChannelMetrics(),
         },
     },
+    runtime: {
+        status: 'unknown',
+        cacheHitRate: 0,
+        averageLookupDurationMs: 0,
+        lookupTimeoutCount: 0,
+        lookupFailureCount: 0,
+        cacheSize: 0,
+        inflightSize: 0,
+        lastUpdatedAt: null,
+    },
     events: [],
 };
 
@@ -100,8 +133,12 @@ function channelBudget(channel: MemoryInspectorHealthChannel): number {
     return memoryInspectorHealthBudgets.operationMs;
 }
 
-function computeStatus(errorRate: number, budgetExceeded: number): 'healthy' | 'degraded' {
-    if (errorRate > 0.1 || budgetExceeded > 0) {
+function computeStatus(
+    errorRate: number,
+    budgetExceeded: number,
+    runtimeStatus: MemoryInspectorHealthSnapshot['runtime']['status']
+): 'healthy' | 'degraded' {
+    if (errorRate > 0.1 || budgetExceeded > 0 || runtimeStatus === 'degraded') {
         return 'degraded';
     }
     return 'healthy';
@@ -144,7 +181,7 @@ export function recordMemoryInspectorHealthEvent(event: {
 
     const totalCalls = snapshot.metrics.totalCalls + 1;
     const errorRate = totalCalls === 0 ? 0 : totalFailures / totalCalls;
-    const status = computeStatus(errorRate, budgetExceeded);
+    const status = computeStatus(errorRate, budgetExceeded, snapshot.runtime.status);
 
     snapshot = {
         ...snapshot,
@@ -173,6 +210,49 @@ export function recordMemoryInspectorHealthEvent(event: {
             },
             ...snapshot.events,
         ].slice(0, MAX_EVENTS),
+    };
+    emit();
+}
+
+export function recordMemoryInspectorRuntimeHealth(health?: AdvancedMemoryHealthSummary | null): void {
+    if (!health?.memoryContext) {
+        return;
+    }
+
+    const context = health.memoryContext;
+    const cacheHitRate = context.lookupCount > 0
+        ? (context.cacheHits / context.lookupCount) * 100
+        : 0;
+    const runtimeStatus: MemoryInspectorHealthSnapshot['runtime']['status'] =
+        health.status === 'degraded'
+            || context.lookupTimeoutCount > 0
+            || context.lookupFailureCount > 0
+            || context.averageLookupDurationMs > memoryLookupRuntimeBudgetMs
+            ? 'degraded'
+            : 'healthy';
+
+    const nextRuntime: MemoryInspectorHealthSnapshot['runtime'] = {
+        status: runtimeStatus,
+        cacheHitRate: Number(cacheHitRate.toFixed(1)),
+        averageLookupDurationMs: context.averageLookupDurationMs,
+        lookupTimeoutCount: context.lookupTimeoutCount,
+        lookupFailureCount: context.lookupFailureCount,
+        cacheSize: context.cacheSize,
+        inflightSize: context.inflightSize,
+        lastUpdatedAt: Date.now(),
+    };
+
+    const status = computeStatus(
+        snapshot.metrics.errorRate,
+        snapshot.metrics.budgetExceeded,
+        nextRuntime.status
+    );
+
+    snapshot = {
+        ...snapshot,
+        status,
+        uiState: status === 'healthy' ? 'ready' : 'failure',
+        runtime: nextRuntime,
     };
     emit();
 }
@@ -207,6 +287,9 @@ export function __resetMemoryInspectorHealthForTests(): void {
                 'memory.import': createChannelMetrics(),
                 'memory.operation': createChannelMetrics(),
             },
+        },
+        runtime: {
+            ...initialSnapshot.runtime,
         },
     };
     emit();

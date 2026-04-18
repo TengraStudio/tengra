@@ -1,9 +1,23 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React from 'react';
 
 import { Modal } from '@/components/ui/modal';
 import { AnimatePresence } from '@/lib/framer-motion-compat';
 
 import { DeleteFilesCheckbox } from './DeleteFilesCheckbox';
+
+/* Batch-02: Extracted Long Classes */
+const C_BULKDELETEMODAL_1 = "px-6 py-2 rounded-lg text-sm font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-95 transition-all shadow-lg shadow-destructive/20";
+
 
 interface BulkDeleteModalProps {
     isOpen: boolean;
@@ -35,7 +49,7 @@ export const BulkDeleteModal: React.FC<BulkDeleteModalProps> = ({ isOpen, count,
                             </button>
                             <button
                                 onClick={() => { void onSubmit(deleteFiles); }}
-                                className="px-6 py-2 rounded-lg text-sm font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-95 transition-all shadow-lg shadow-destructive/20"
+                                className={C_BULKDELETEMODAL_1}
                             >
                                 {t('workspaces.bulkDelete')}
                             </button>

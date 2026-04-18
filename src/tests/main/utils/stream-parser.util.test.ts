@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { StreamParser } from '@main/utils/stream-parser.util';
 import { XmlToolParser } from '@main/utils/xml-tool-parser.util';
 import { describe, expect, it, vi } from 'vitest';
@@ -129,6 +139,32 @@ describe('StreamParser', () => {
         expect(chunks[0]?.tool_calls?.[0]?.id).toBe('call_1');
         expect(chunks[0]?.tool_calls?.[0]?.function.name).toBe('get_system_info');
         expect(chunks[0]?.tool_calls?.[0]?.function.arguments).toBe('{"scope":"system"}');
+    });
+
+    it('should normalize OpenAI-style partial tool call deltas with missing fields', async () => {
+        const stream = new ReadableStream({
+            start(controller) {
+                controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"tool_calls":[{"index":0}]}}]}\n\n'));
+                controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","type":"function","function":{"name":"run_command"}}]}}]}\n\n'));
+                controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\\"command\\":\\"which node\\"}"}}]},"finish_reason":"tool_calls"}]}\n\n'));
+                controller.close();
+            }
+        });
+        const mockResponse = { body: stream } as never;
+
+        const chunks = [];
+        for await (const chunk of StreamParser.parseChatStream(mockResponse)) {
+            chunks.push(chunk);
+        }
+
+        expect(chunks).toHaveLength(2);
+        expect(chunks[0]?.type).toBe('tool_calls');
+        expect(chunks[0]?.tool_calls?.[0]?.id).toBe('call_1');
+        expect(chunks[0]?.tool_calls?.[0]?.function.name).toBe('run_command');
+        expect(chunks[0]?.tool_calls?.[0]?.function.arguments).toBe('');
+        expect(chunks[1]?.tool_calls?.[0]?.id).toBe('');
+        expect(chunks[1]?.tool_calls?.[0]?.function.name).toBe('');
+        expect(chunks[1]?.tool_calls?.[0]?.function.arguments).toBe('{"command":"which node"}');
     });
 
     it('should parse response.reasoning_text.delta events as reasoning chunks', async () => {

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import {
     ArrowLeft,
     PanelLeftClose,
@@ -13,6 +23,10 @@ import { cn } from '@/lib/utils';
 import { WorkspaceDashboardTab } from '@/types';
 
 import { DashboardTabs } from './DashboardTabs';
+
+/* Batch-02: Extracted Long Classes */
+const C_WORKSPACETOOLBAR_1 = "bg-muted/60 text-sm font-medium px-1.5 py-0.5 rounded border border-border/60 focus:outline-none focus:border-primary/50 text-foreground min-w-200";
+
 
 interface WorkspaceToolbarProps {
     workspaceName: string;
@@ -92,14 +106,14 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
                                 onChange={e => setEditedName(e.target.value)}
                                 onBlur={handleNameSubmit}
                                 onKeyDown={handleKeyDown}
-                                className="bg-muted/60 text-sm font-medium px-1.5 py-0.5 rounded border border-border/60 focus:outline-none focus:border-primary/50 text-foreground tw-min-w-200"
+                                className={C_WORKSPACETOOLBAR_1}
                             />
                         ) : (
                             <div
                                 onClick={() => setIsEditingName(true)}
                                 className="flex items-center gap-2 cursor-pointer hover:bg-muted/40 px-1.5 py-0.5 -ml-1.5 rounded transition-colors"
                             >
-                                <span className="font-medium text-sm text-foreground truncate max-tw-w-300">
+                                <span className="font-medium text-sm text-foreground truncate max-w-300">
                                     {workspaceName}
                                 </span>
                                 <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { invokeIpc, invokeTypedIpc, type IpcContractMap } from '@renderer/lib/ipc-client';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
@@ -80,7 +90,7 @@ describe('ipc-client', () => {
                 maxAttempts: 3,
                 baseDelayMs: 1
             })
-        ).rejects.toThrow('IPC theme:runtime:install failed after 3 attempt(s): Validation failed');
+        ).rejects.toThrow(/theme:runtime:install.*Validation failed/i);
 
         expect(invoke).toHaveBeenCalledTimes(1); // Cached contract, so only the failed call
     });

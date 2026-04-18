@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { TerminalComponent } from '@renderer/features/workspace/components/ide/Terminal';
 import { WorkspaceEnvironmentTab } from '@renderer/features/workspace/components/WorkspaceEnvironmentTab';
 import { WorkspaceGitTab } from '@renderer/features/workspace/components/WorkspaceGitTab';
@@ -16,6 +26,10 @@ import { AnalysisTab } from './AnalysisTab';
 import { FilesTab } from './FilesTab';
 import { OverviewTab } from './OverviewTab';
 import { DangerZone, SearchResults } from './WorkspaceDashboardSubComponents';
+
+/* Batch-02: Extracted Long Classes */
+const C_WORKSPACEDASHBOARDTABS_1 = "px-4 py-1.5 bg-primary text-primary-foreground rounded-lg typo-caption font-medium hover:bg-primary/90 disabled:opacity-50";
+
 
 interface WorkspaceDashboardTabsProps {
     activeTab: WorkspaceDashboardTab
@@ -101,7 +115,7 @@ export const WorkspaceDashboardTabsContent: React.FC<WorkspaceDashboardTabsProps
                     <button
                         onClick={() => { void handleSearch(); }}
                         disabled={isSearching || searchQuery.trim().length < 2}
-                        className="px-4 py-1.5 bg-primary text-primary-foreground rounded-lg typo-caption font-medium hover:bg-primary/90 disabled:opacity-50"
+                        className={C_WORKSPACEDASHBOARDTABS_1}
                     >
                         {isSearching ? t('common.searching') : t('common.search')}
                     </button>

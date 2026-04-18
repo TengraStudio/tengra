@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -44,7 +54,7 @@ export const WorkspaceStatsCards: React.FC<WorkspaceStatsCardsProps> = ({ stats,
                         {t('workspaceDashboard.loc')}
                     </div>
                     <div className="text-2xl font-bold text-foreground">~{formattedLoc}</div>
-                    <div className="mt-1 tw-text-10 text-muted-foreground/70">
+                    <div className="mt-1 text-10 text-muted-foreground/70">
                         {t('workspaceDashboard.locHint')}
                     </div>
                 </div>
@@ -70,7 +80,7 @@ export const WorkspaceStatsCards: React.FC<WorkspaceStatsCardsProps> = ({ stats,
                         </div>
                         <div className="mt-1 text-3xl font-bold text-foreground">{formattedSize}</div>
                     </div>
-                    <div className="tw-text-10 text-muted-foreground/70">
+                    <div className="text-10 text-muted-foreground/70">
                         {t('workspaceDashboard.scannedStorageOnly')}
                     </div>
                 </div>
@@ -90,7 +100,7 @@ export const WorkspaceStatsCards: React.FC<WorkspaceStatsCardsProps> = ({ stats,
                                     <div className="truncate font-mono typo-caption text-foreground">
                                         {entry.path}
                                     </div>
-                                    <div className="tw-text-10 text-muted-foreground/70">
+                                    <div className="text-10 text-muted-foreground/70">
                                         {t('workspaceDashboard.storageFiles', { count: entry.fileCount })}
                                     </div>
                                 </div>

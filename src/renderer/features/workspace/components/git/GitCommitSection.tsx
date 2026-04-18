@@ -1,6 +1,20 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { GitCommit, RefreshCw } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_GITCOMMITSECTION_1 = "flex-1 bg-muted/30 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50";
+
 
 interface CommitSectionProps {
     commitMessage: string;
@@ -24,7 +38,7 @@ export const GitCommitSection: React.FC<CommitSectionProps> = ({ commitMessage, 
                     }
                 }}
                 placeholder={t('workspaceDashboard.commitMessage')}
-                className="flex-1 bg-muted/30 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                className={C_GITCOMMITSECTION_1}
             />
             <button
                 onClick={() => { void handleCommit(); }}

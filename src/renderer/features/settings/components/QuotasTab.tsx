@@ -1,5 +1,15 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Badge } from '@renderer/components/ui/badge';
-import { Activity, Layers } from 'lucide-react';
+import { Activity, Layers, ShieldAlert } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
 import { appLogger } from '@/utils/renderer-logger';
@@ -25,19 +35,25 @@ export const QuotasTab: React.FC<QuotasTabProps> = ({
     t,
 }) => {
     const [activeAntigravityAccount, setActiveAntigravityAccount] = useState<{ id?: string; email?: string } | null>(null);
+    const [hasDecryptionError, setHasDecryptionError] = useState(false);
 
     useEffect(() => {
-        const loadActiveAntigravityAccount = async () => {
+        const loadStatus = async () => {
             try {
+                // Check all accounts for decryption errors
+                const accounts = await (window.electron as any).getAllAccounts();
+                const anyError = (accounts as any[]).some((acc: any) => acc.decryptionError);
+                setHasDecryptionError(anyError);
+
                 const account = await window.electron.getActiveLinkedAccount('antigravity')
                     .catch(() => window.electron.getActiveLinkedAccount('google'));
                 setActiveAntigravityAccount(account ? { id: account.id, email: account.email } : null);
             } catch (error) {
-                appLogger.error('QuotasTab', 'Failed to load active Antigravity account', error as Error);
+                appLogger.error('QuotasTab', 'Failed to load accounts status', error as Error);
             }
         };
 
-        void loadActiveAntigravityAccount();
+        void loadStatus();
     }, []);
 
     const locale = settings?.general.language ?? 'en-US';
@@ -59,6 +75,24 @@ export const QuotasTab: React.FC<QuotasTabProps> = ({
                     {t('statistics.usageStatistics')}
                 </p>
             </div>
+
+            {hasDecryptionError && (
+                <div className="rounded-3xl border border-destructive/30 bg-destructive/5 p-6 mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <div className="flex items-start gap-4">
+                        <div className="rounded-2xl bg-destructive/10 p-3 text-destructive">
+                            <ShieldAlert className="w-6 h-6" />
+                        </div>
+                        <div className="space-y-2">
+                            <h4 className="text-lg font-bold text-foreground">
+                                {t('security.decryptionErrorTitle') || 'Security Key Mismatch'}
+                            </h4>
+                            <p className="typo-body text-muted-foreground font-bold opacity-80 leading-relaxed">
+                                {t('security.decryptionErrorDesc') || 'Some of your account tokens cannot be decrypted. This usually happens if the master security key was reset or corrupted. Please go to Advanced settings to Reset your Encryption Key or re-link your accounts.'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="rounded-3xl border border-border/20 bg-muted/5 p-5 sm:p-6">
                 <div className="mb-4 flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">

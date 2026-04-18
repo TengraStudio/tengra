@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Check, Loader2 } from 'lucide-react';
 import React from 'react';
 
@@ -14,7 +24,7 @@ export const WizardCreatingStep: React.FC = () => {
             </div>
             <div>
                 <h3 className="text-2xl font-light text-foreground">{t('workspaceWizard.creating')}</h3>
-                <p className="text-muted-foreground mt-2 max-tw-w-280 mx-auto text-sm">
+                <p className="text-muted-foreground mt-2 max-w-280 mx-auto text-sm">
                     {t('workspaceWizard.configuring')}
                 </p>
             </div>

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import type { MarketplaceRegistry, MarketplaceRuntimeProfile, MarketplaceSkill } from '@shared/types/marketplace';
 import type { ProxySkill } from '@shared/types/skill';
 import {
@@ -14,6 +24,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuthLanguage } from '@/context/AuthContext';
 import { useModel } from '@/context/ModelContext';
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 import { pushNotification } from '@/store/notification-center.store';
 
 import { McpMarketplace, type McpPlugin } from './components/McpMarketplace';
@@ -239,7 +250,7 @@ export function MarketplaceView(): JSX.Element {
                         <h1 className="text-3xl font-black tracking-tighter text-foreground">
                             {t('marketplace.title')}
                         </h1>
-                        <p className="text-xs font-medium text-muted-foreground/50 uppercase tracking-[0.2em]">
+                        <p className="text-xs font-medium text-muted-foreground/50 uppercase tracking-super-wide">
                             {t('marketplace.subtitle')}
                         </p>
                     </div>
@@ -252,12 +263,10 @@ export function MarketplaceView(): JSX.Element {
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`
-                                        relative px-4 py-2 text-xs font-black uppercase tracking-widest transition-all
-                                        ${isActive
-                                            ? 'text-primary'
-                                            : 'text-muted-foreground/40 hover:text-foreground/70'}
-                                    `}
+                                    className={cn(
+                                        'relative px-4 py-2 text-xs font-black uppercase tracking-widest transition-all',
+                                        isActive ? 'text-primary' : 'text-muted-foreground/40 hover:text-foreground/70'
+                                    )}
                                 >
                                     {tabLabels[tab.id]}
                                     {isActive && (
@@ -271,12 +280,12 @@ export function MarketplaceView(): JSX.Element {
 
                 {/* Status Bar - Refined Typography */}
                 <div className="mt-8 flex items-center gap-6 px-1 border-b border-muted/10 pb-4">
-                    <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.15em]">
+                    <div className="flex items-center gap-2 text-xxxs font-black text-muted-foreground/40 uppercase tracking-ultra-wide">
                         <Package className="w-3.5 h-3.5 opacity-30" />
                         <span>{totalAvailable} {t('marketplace.results')}</span>
                     </div>
                     <div className="h-1 w-1 rounded-full bg-muted/20" />
-                    <div className="flex items-center gap-2 text-[10px] font-black text-primary/60 uppercase tracking-[0.15em]">
+                    <div className="flex items-center gap-2 text-xxxs font-black text-primary/60 uppercase tracking-ultra-wide">
                         <CheckCircle2 className="w-3.5 h-3.5 opacity-60" />
                         <span>{totalInstalled} {t('modelExplorer.installed')}</span>
                     </div>

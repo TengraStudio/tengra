@@ -1,5 +1,19 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Loader2, Sparkles, Wand2 } from 'lucide-react';
 import React, { useCallback } from 'react';
+
+/* Batch-02: Extracted Long Classes */
+const C_PROMPTSECTION_1 = "w-full bg-muted/30 border border-border/50 rounded-xl p-3 text-sm min-h-100 resize-none focus:border-primary/50 transition-colors outline-none text-foreground";
+
 
 interface PromptSectionProps {
     prompt: string;
@@ -59,7 +73,7 @@ export const PromptSection: React.FC<PromptSectionProps> = ({
             <textarea
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}
-                className="w-full bg-muted/30 border border-border/50 rounded-xl p-3 text-sm tw-min-h-100 resize-none focus:border-primary/50 transition-colors outline-none text-foreground"
+                className={C_PROMPTSECTION_1}
                 placeholder={translateKey('workspaces.logoPromptPlaceholder')}
             />
         </div>

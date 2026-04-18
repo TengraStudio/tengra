@@ -1,10 +1,22 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { promises as fs } from 'fs';
 import { extname, join } from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { ImagePersistenceService } from '@main/services/data/image-persistence.service';
+import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
+import { MemoryContextService } from '@main/services/llm/memory-context.service';
 import { ModelProviderInfo, ModelRegistryService } from '@main/services/llm/model-registry.service';
 import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
@@ -33,7 +45,12 @@ interface LogoServiceDependencies {
     authService: AuthService;
     quotaService: QuotaService;
     modelRegistryService: ModelRegistryService;
+    advancedMemoryService?: AdvancedMemoryService;
 }
+
+const LOGO_MEMORY_TIMEOUT_MS = 320;
+const LOGO_MEMORY_MATCH_LIMIT = 3;
+const LOGO_MEMORY_MIN_QUERY_LENGTH = 24;
 
 export class LogoService {
     private readonly llmService: LLMService;
@@ -43,6 +60,7 @@ export class LogoService {
     private readonly authService: AuthService;
     private readonly quotaService: QuotaService;
     private readonly modelRegistryService: ModelRegistryService;
+    private readonly memoryContext: MemoryContextService;
 
     constructor(deps: LogoServiceDependencies) {
         this.llmService = deps.llmService;
@@ -52,6 +70,7 @@ export class LogoService {
         this.authService = deps.authService;
         this.quotaService = deps.quotaService;
         this.modelRegistryService = deps.modelRegistryService;
+        this.memoryContext = new MemoryContextService(deps.advancedMemoryService);
     }
 
     private getStylePrompt(style: string): string {
@@ -105,6 +124,7 @@ Return JSON only: { "concepts": ["concept 1", "concept 2", "concept 3"], "colors
 
 Workspace Info:
 ${context}`;
+        const memoryAwareAnalysisPrompt = await this.buildMemoryAwarePrompt(analysisPrompt);
 
         try {
             const candidates = await this.getAnalysisModelCandidates();
@@ -116,7 +136,7 @@ ${context}`;
                         `[LogoService] Trying analysis model ${candidate.provider ?? 'auto'}/${candidate.model} (${candidate.source}${candidate.accountId ? `, account=${candidate.accountId}` : ''})`
                     );
                     const response = await this.llmService.chat(
-                        [{ role: 'user', content: analysisPrompt }],
+                        [{ role: 'user', content: memoryAwareAnalysisPrompt }],
                         candidate.model,
                         [],
                         candidate.provider
@@ -689,6 +709,7 @@ ${context}`;
         Focus on artistic style, lighting, composition, and professional aesthetics. Keep it to 2-3 sentences.
         Original Idea: ${prompt}
         Improved Prompt:`;
+        const memoryAwareImprovementPrompt = await this.buildMemoryAwarePrompt(improvementPrompt);
 
         try {
             const candidates = await this.getAnalysisModelCandidates();
@@ -696,7 +717,7 @@ ${context}`;
                 try {
                     await this.activateCandidateAccount(candidate);
                     const response = await this.llmService.chat(
-                        [{ role: 'user', content: improvementPrompt }],
+                        [{ role: 'user', content: memoryAwareImprovementPrompt }],
                         candidate.model,
                         [],
                         candidate.provider
@@ -772,11 +793,12 @@ ${context}`;
         const resolved = await this.resolveGenerationModel(model);
         const isSdCpp = resolved.provider === 'sd-cpp';
         const isLocal = isSdCpp || model.toLowerCase().includes('local') || model === '';
+        const memoryAwarePrompt = await this.buildMemoryAwarePrompt(enhancedPrompt);
 
         if (isLocal) {
             // Force provider if it's sd-cpp to ensure the settings are loaded correctly
             const options = {
-                prompt: enhancedPrompt,
+                prompt: memoryAwarePrompt,
                 width: 1024,
                 height: 1024,
             };
@@ -796,7 +818,7 @@ ${context}`;
 
         // Remote API
         const response = await this.llmService.chat(
-            [{ role: 'user', content: enhancedPrompt }],
+            [{ role: 'user', content: memoryAwarePrompt }],
             resolved.model,
             [],
             resolved.provider
@@ -974,6 +996,22 @@ ${context}`;
         }
     }
 
+    private async buildMemoryAwarePrompt(prompt: string): Promise<string> {
+        const memoryContext = await this.getMemoryContext(prompt);
+        if (!memoryContext) {
+            return prompt;
+        }
+
+        return `${prompt}\n\nRelevant past brand decisions or successful outputs:\n${memoryContext}\nUse only if it improves output quality.`;
+    }
+
+    private async getMemoryContext(query: string): Promise<string | undefined> {
+        return this.memoryContext.getResolutionContext(query, {
+            timeoutMs: LOGO_MEMORY_TIMEOUT_MS,
+            limit: LOGO_MEMORY_MATCH_LIMIT,
+            minQueryLength: LOGO_MEMORY_MIN_QUERY_LENGTH
+        });
+    }
 }
 
 

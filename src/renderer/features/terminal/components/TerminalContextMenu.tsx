@@ -1,3 +1,15 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+import { cn } from '@renderer/lib/utils';
+
 type TerminalContextMenuProps = {
     position: { x: number; y: number } | null;
     hasActiveSession: boolean;
@@ -63,6 +75,9 @@ type TerminalContextMenuProps = {
     };
 };
 
+const ITEM_BASE_CLASS = 'w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground';
+const ITEM_DISABLED_CLASS = 'disabled:opacity-40 disabled:cursor-not-allowed';
+
 export function TerminalContextMenu({
     position,
     hasActiveSession,
@@ -113,14 +128,14 @@ export function TerminalContextMenu({
         >
             <button
                 onClick={onCopy}
-                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground"
+                className={ITEM_BASE_CLASS}
             >
                 {labels.copy}
             </button>
             {onCopyWithFormatting && (
                 <button
                     onClick={onCopyWithFormatting}
-                    className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground"
+                    className={ITEM_BASE_CLASS}
                 >
                     {labels.copyWithFormatting}
                 </button>
@@ -128,7 +143,7 @@ export function TerminalContextMenu({
             {onCopyStripAnsi && (
                 <button
                     onClick={onCopyStripAnsi}
-                    className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground"
+                    className={ITEM_BASE_CLASS}
                 >
                     {labels.copyStripAnsi}
                 </button>
@@ -136,14 +151,14 @@ export function TerminalContextMenu({
             <button
                 onClick={onPaste}
                 disabled={!hasActiveSession}
-                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                className={cn(ITEM_BASE_CLASS, ITEM_DISABLED_CLASS)}
             >
                 {labels.paste}
             </button>
             {onTestPaste && (
                 <button
                     onClick={onTestPaste}
-                    className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground"
+                    className={ITEM_BASE_CLASS}
                 >
                     {labels.pasteTest}
                 </button>
@@ -158,7 +173,7 @@ export function TerminalContextMenu({
                             key={`${index}-${entry.slice(0, 16)}`}
                             onClick={() => onPasteHistory(entry)}
                             disabled={!hasActiveSession}
-                            className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed truncate"
+                            className={cn(ITEM_BASE_CLASS, ITEM_DISABLED_CLASS, 'truncate')}
                             title={entry}
                         >
                             {entry.replace(/\s+/g, ' ').slice(0, 70)}
@@ -169,21 +184,21 @@ export function TerminalContextMenu({
             <button
                 onClick={onSelectAll}
                 disabled={!hasActiveSession}
-                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                className={cn(ITEM_BASE_CLASS, ITEM_DISABLED_CLASS)}
             >
                 {labels.selectAll}
             </button>
             <button
                 onClick={onSearch}
                 disabled={!hasActiveSession}
-                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                className={cn(ITEM_BASE_CLASS, ITEM_DISABLED_CLASS)}
             >
                 {labels.search}
             </button>
             <button
                 onClick={onSemanticToggle}
                 disabled={!hasActiveSession}
-                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-between gap-2"
+                className={cn(ITEM_BASE_CLASS, ITEM_DISABLED_CLASS, 'flex items-center justify-between gap-2')}
             >
                 <span>{labels.semanticIssues}</span>
                 {semanticIssueCount > 0 && (
@@ -195,55 +210,55 @@ export function TerminalContextMenu({
             <button
                 onClick={onGalleryToggle}
                 disabled={!canUseGallery}
-                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                className={cn(ITEM_BASE_CLASS, ITEM_DISABLED_CLASS)}
             >
                 {isGalleryView ? labels.exitGalleryView : labels.galleryView}
             </button> 
             <button
                 onClick={onHistoryToggle}
                 disabled={!hasActiveSession}
-                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                className={cn(ITEM_BASE_CLASS, ITEM_DISABLED_CLASS)}
             >
                 {labels.commandHistory}
             </button> 
             <button
                 onClick={onRecordingToggle}
                 disabled={!hasActiveSession}
-                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                className={cn(ITEM_BASE_CLASS, ITEM_DISABLED_CLASS)}
             >
                 {isRecordingActive ? labels.stopRecording : labels.startRecording}
             </button>
             <button
                 onClick={onOpenRecordings}
-                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground"
+                className={ITEM_BASE_CLASS}
             >
                 {labels.sessionRecordings}
             </button>
             <button
                 onClick={onTaskRunnerToggle}
                 disabled={!hasActiveSession || !workspacePath}
-                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground"
+                className={ITEM_BASE_CLASS}
             >
                 {labels.runTask}
             </button>
             <button
                 onClick={onClearOutput}
                 disabled={!hasActiveSession}
-                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                className={cn(ITEM_BASE_CLASS, ITEM_DISABLED_CLASS)}
             >
                 {labels.clearOutput}
             </button>
             <button
                 onClick={onSplit}
                 disabled={!hasActiveSession}
-                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                className={cn(ITEM_BASE_CLASS, ITEM_DISABLED_CLASS)}
             >
                 {labels.split}
             </button>
             <button
                 onClick={onDetach}
                 disabled={!hasActiveSession}
-                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                className={cn(ITEM_BASE_CLASS, ITEM_DISABLED_CLASS)}
             >
                 {labels.detach}
             </button>
@@ -251,7 +266,7 @@ export function TerminalContextMenu({
                 <button
                     onClick={onToggleSynchronizedInput}
                     disabled={!hasActiveSession}
-                    className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                    className={cn(ITEM_BASE_CLASS, ITEM_DISABLED_CLASS)}
                 >
                     {isSynchronizedInputEnabled
                         ? labels.synchronizedInputOn
@@ -262,13 +277,13 @@ export function TerminalContextMenu({
                 <>
                     <button
                         onClick={onToggleSplitOrientation}
-                        className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground"
+                        className={ITEM_BASE_CLASS}
                     >
                         {labels.toggleSplitOrientation}
                     </button>
                     <button
                         onClick={onCloseSplit}
-                        className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground"
+                        className={ITEM_BASE_CLASS}
                     >
                         {labels.closeSplit}
                     </button>
@@ -277,13 +292,13 @@ export function TerminalContextMenu({
             <div className="h-px bg-border/60 my-1 mx-2" />
             <button
                 onClick={onNewTerminal}
-                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground"
+                className={ITEM_BASE_CLASS}
             >
                 {labels.newTerminal}
             </button>
             <button
                 onClick={onHidePanel}
-                className="w-full text-left px-3 py-2 typo-caption hover:bg-accent/50 transition-colors text-foreground"
+                className={ITEM_BASE_CLASS}
             >
                 {labels.hide}
             </button>

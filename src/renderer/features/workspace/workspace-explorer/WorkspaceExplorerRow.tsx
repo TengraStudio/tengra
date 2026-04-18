@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import {
     AlertTriangle,
@@ -70,7 +80,7 @@ function WorkspaceExplorerDiagnosticsBadges({
     }
 
     return (
-        <div className="flex items-center gap-1 tw-text-10 font-semibold leading-none">
+        <div className="flex items-center gap-1 text-10 font-semibold leading-none">
             {diagnostics.typescript > 0 && (
                 <span className="flex items-center gap-0.5 rounded-sm bg-primary/10 px-1 py-0.5 text-primary">
                     <Braces className="h-2.5 w-2.5" />
@@ -247,7 +257,7 @@ const EntryRowView: React.FC<{
             <WorkspaceExplorerDiagnosticsBadges diagnostics={row.diagnostics} />
             {row.gitStatus && (
                 <span
-                    className={cn('ml-1 tw-text-10 font-bold leading-none', getGitBadgeClass(row.gitStatus))}
+                    className={cn('ml-1 text-10 font-bold leading-none', getGitBadgeClass(row.gitStatus))}
                     title={`Git: ${row.gitRawStatus ?? row.gitStatus}`}
                 >
                     {row.gitStatus}

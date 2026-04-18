@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { MessageNormalizer } from '@main/utils/message-normalizer.util';
 import type { AnthropicContentBlock, OpenAIContentPart } from '@shared/types/llm-provider-types';
 import { describe, expect, it } from 'vitest';

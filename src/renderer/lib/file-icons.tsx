@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Unified File & Folder Icon Pack
  * Provides VS Code-style icons for the file explorer
  * Uses react-file-icon for files and Lucide for folders with custom colors
@@ -330,7 +340,7 @@ export function FileIcon({ fileName, className = 'w-4 h-4', size = 16 }: { fileN
     const defaultStyle = (ext as DefaultExtensionType) in defaultStyles ? defaultStyles[ext as DefaultExtensionType] : undefined;
 
     return (
-        <div className={className} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className={`${className} inline-flex items-center justify-center`}>
             <div style={{ width: size, height: size }}>
                 <ReactFileIcon
                     extension={ext}

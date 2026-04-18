@@ -1,8 +1,29 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Button } from '@renderer/components/ui/button';
 import { Input } from '@renderer/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@renderer/components/ui/select';
 import { Play, Sparkles, Wand2, Zap } from 'lucide-react';
 import React from 'react';
+
+/* Batch-02: Extracted Long Classes */
+const C_IMAGESETTINGSEDIT_1 = "bg-card rounded-3xl border border-border/40 p-8 space-y-8 shadow-sm group/edit hover:border-border/60 transition-all duration-500 overflow-hidden relative lg:p-10";
+const C_IMAGESETTINGSEDIT_2 = "p-3 rounded-2xl bg-primary/10 text-primary shadow-lg shadow-primary/5 group-hover/edit:scale-110 transition-transform duration-500";
+const C_IMAGESETTINGSEDIT_3 = "min-h-32 w-full rounded-2xl border border-border/40 bg-muted/20 p-6 font-mono typo-body text-muted-foreground leading-relaxed shadow-inner focus:ring-1 focus:ring-primary/20 outline-none transition-all custom-scrollbar lg:p-8";
+const C_IMAGESETTINGSEDIT_4 = "h-12 px-8 rounded-2xl bg-foreground text-background hover:bg-primary hover:text-primary-foreground typo-body font-bold transition-all active:scale-95 shadow-xl shadow-black/10 flex items-center gap-3 w-full sm:w-auto";
+const C_IMAGESETTINGSEDIT_5 = "h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 typo-caption font-bold placeholder:text-muted-foreground/30 shadow-inner group-hover:bg-muted/30 transition-all";
+const C_IMAGESETTINGSEDIT_6 = "h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 typo-caption font-bold placeholder:text-muted-foreground/30 shadow-inner group-hover:bg-muted/30 transition-all";
+const C_IMAGESETTINGSEDIT_7 = "absolute top-1/2 right-0 -translate-y-1/2 w-4 h-4 bg-background border-2 border-primary rounded-full shadow-lg group-hover/slider:scale-125 transition-transform";
+const C_IMAGESETTINGSEDIT_8 = "h-14 px-10 rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 typo-caption font-bold transition-all active:scale-95 shadow-2xl shadow-primary/20 flex items-center gap-4 w-full sm:gap-5 lg:gap-6";
+
 
 interface ImageSettingsEditProps {
     batchPrompts: string;
@@ -40,10 +61,10 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
     t,
 }) => {
     return (
-        <div className="bg-card rounded-3xl border border-border/40 p-8 space-y-8 shadow-sm group/edit hover:border-border/60 transition-all duration-500 overflow-hidden relative">
+        <div className={C_IMAGESETTINGSEDIT_1}>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1 relative z-10">
                 <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-2xl bg-primary/10 text-primary shadow-lg shadow-primary/5 group-hover/edit:scale-110 transition-transform duration-500">
+                    <div className={C_IMAGESETTINGSEDIT_2}>
                         <Wand2 className="w-6 h-6" />
                     </div>
                     <div>
@@ -64,11 +85,11 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                         value={batchPrompts}
                         onChange={event => setBatchPrompts(event.target.value)}
                         placeholder={t('settings.images.batchPrompts')}
-                        className="tw-min-h-32 w-full rounded-2xl border border-border/40 bg-muted/20 p-6 font-mono typo-body text-muted-foreground leading-relaxed shadow-inner focus:ring-1 focus:ring-primary/20 outline-none transition-all custom-scrollbar"
+                        className={C_IMAGESETTINGSEDIT_3}
                     />
                     <Button
                         onClick={() => { void handleRunBatch(); }}
-                        className="h-12 px-8 rounded-2xl bg-foreground text-background hover:bg-primary hover:text-primary-foreground typo-body font-bold transition-all active:scale-95 shadow-xl shadow-black/10 flex items-center gap-3 w-full sm:w-auto"
+                        className={C_IMAGESETTINGSEDIT_4}
                     >
                         <Play className="w-4 h-4" />
                         {t('settings.images.batchRun')}
@@ -88,7 +109,7 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                                 value={editSource}
                                 onChange={event => setEditSource(event.target.value)}
                                 placeholder={t('settings.images.editSource')}
-                                className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 typo-caption font-bold placeholder:text-muted-foreground/30 shadow-inner group-hover:bg-muted/30 transition-all"
+                                className={C_IMAGESETTINGSEDIT_5}
                             />
                         </div>
                         <div className="space-y-2">
@@ -97,7 +118,7 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                                 value={editPrompt}
                                 onChange={event => setEditPrompt(event.target.value)}
                                 placeholder={t('settings.images.editPrompt')}
-                                className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 typo-caption font-bold placeholder:text-muted-foreground/30 shadow-inner group-hover:bg-muted/30 transition-all"
+                                className={C_IMAGESETTINGSEDIT_6}
                             />
                         </div>
                         <div className="space-y-2">
@@ -154,14 +175,14 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                                 className="h-full bg-primary rounded-full transition-all duration-300 relative shadow-lg shadow-primary/20"
                                 style={{ width: `${editStrength * 100}%` }}
                             >
-                                <div className="absolute top-1/2 right-0 -translate-y-1/2 w-4 h-4 bg-background border-2 border-primary rounded-full shadow-lg group-hover/slider:scale-125 transition-transform" />
+                                <div className={C_IMAGESETTINGSEDIT_7} />
                             </div>
                         </div>
                     </div>
 
                     <Button
                         onClick={() => { void handleRunEdit(); }}
-                        className="h-14 px-10 rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 typo-caption font-bold transition-all active:scale-95 shadow-2xl shadow-primary/20 flex items-center gap-4 w-full"
+                        className={C_IMAGESETTINGSEDIT_8}
                     >
                         <Zap className="w-5 h-5" />
                         {t('settings.images.editRun')}
@@ -169,7 +190,7 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                 </div>
             </div>
 
-            <div className="absolute -right-24 -bottom-24 w-96 h-96 bg-primary/5 rounded-full blur-[100px] opacity-30 pointer-events-none" />
+            <div className="absolute -right-24 -bottom-24 w-96 h-96 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
         </div>
     );
 };

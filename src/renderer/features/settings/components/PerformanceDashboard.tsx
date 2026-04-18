@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Button } from '@renderer/components/ui/button';
 import { ProcessMetric, ServiceResponse, StartupMetrics } from '@shared/types';
 import { Activity, AlertTriangle, Cpu, MemoryStick, RefreshCw, Timer } from 'lucide-react';
@@ -5,6 +15,10 @@ import React, { useCallback, useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_PERFORMANCEDASHBOARD_1 = "rounded-full px-4 h-8 text-xxs font-bold bg-muted/10 hover:bg-muted/20 border-border/40 transition-all flex items-center gap-1.5";
+
 
 interface PerformanceDashboardData {
     memory: {
@@ -172,7 +186,7 @@ export const PerformanceDashboard: React.FC = () => {
                     onClick={() => {
                         void handleTriggerGC();
                     }}
-                    className="rounded-full px-4 h-8 text-xxs font-bold bg-muted/10 hover:bg-muted/20 border-border/40 transition-all flex items-center gap-1.5"
+                    className={C_PERFORMANCEDASHBOARD_1}
                 >
                     <RefreshCw className="w-3 h-3" />
                     {t('settings.performanceDashboard.clearMemory')}

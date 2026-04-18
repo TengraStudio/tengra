@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -28,18 +38,18 @@ const ContextWindowIndicator: React.FC<ContextWindowIndicatorProps> = ({
 
     const colorClass =
         percentage > 80
-            ? 'tengra-context-indicator__fill--danger'
+            ? 'bg-destructive shadow-glow-destructive animate-pulse'
             : percentage > 50
-              ? 'tengra-context-indicator__fill--warning'
-              : 'tengra-context-indicator__fill--success';
+              ? 'bg-warning shadow-glow-warning'
+              : 'bg-primary shadow-glow-primary-subtle';
 
     const formatNumber = (n: number): string => n.toLocaleString();
 
     return (
-        <div className="tengra-context-indicator">
-            <div className="tengra-context-indicator__header">
-                <span className="tengra-context-indicator__model">{modelName}</span>
-                <span>
+        <div className="flex flex-col gap-1.5 w-full max-w-sm px-1 font-sans">
+            <div className="flex items-center justify-between text-xs font-medium text-muted-foreground tracking-tight">
+                <span className="font-semibold text-foreground/80 truncate pr-2" title={modelName}>{modelName}</span>
+                <span className="whitespace-nowrap tabular-nums text-foreground/70">
                     {t('contextWindow.usage', {
                         used: formatNumber(usedTokens),
                         max: formatNumber(maxTokens),
@@ -47,9 +57,9 @@ const ContextWindowIndicator: React.FC<ContextWindowIndicatorProps> = ({
                     })}
                 </span>
             </div>
-            <div className="tengra-context-indicator__bar">
+            <div className="h-1.5 w-full bg-muted/50 rounded-full overflow-hidden border border-border/20 shadow-inner">
                 <div
-                    className={cn('tengra-context-indicator__fill', colorClass)}
+                    className={cn('h-full rounded-full transition-all duration-500 ease-out', colorClass)}
                     style={{ width: `${roundedPercentage}%` }}
                 />
             </div>

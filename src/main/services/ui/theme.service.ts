@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -10,7 +20,6 @@ import {
     ThemeErrorCode,
 } from '@main/services/ui/theme-error';
 import { withRetry } from '@main/utils/retry.util';
-import { BUILTIN_THEMES, getThemeById } from '@main/utils/theme-constants';
 import { RETRY_DEFAULTS } from '@shared/constants/defaults';
 import { JsonObject } from '@shared/types/common';
 import { CustomTheme, DEFAULT_THEME_PRESETS, ThemeColors, ThemePreset } from '@shared/types/theme';
@@ -211,7 +220,7 @@ export class ThemeService extends BaseService {
             return false;
         }
 
-        const theme = getThemeById(themeId) ?? this.store.customThemes.find(t => t.id === themeId);
+        const theme = this.store.customThemes.find(t => t.id === themeId);
         if (!theme) {
             this.logWarn(`Theme not found: ${themeId}`);
             this.emitTelemetry({ action: 'theme.switch', themeId, success: false, timestamp: Date.now() });
@@ -246,25 +255,16 @@ export class ThemeService extends BaseService {
     }
 
     getAllThemes(): Array<{ id: string; name: string; isDark: boolean; isCustom?: boolean }> {
-        const builtin = BUILTIN_THEMES.map(t => ({
-            id: t.id,
-            name: t.name,
-            isDark: t.isDark
-        }));
         const custom = this.store.customThemes.map(t => ({
             id: t.id,
             name: t.name,
             isDark: t.isDark,
             isCustom: true
         }));
-        return [...builtin, ...custom];
+        return [...custom];
     }
 
     getThemeDetails(themeId: string) {
-        const builtin = getThemeById(themeId);
-        if (builtin) {
-            return { ...builtin, isBuiltIn: true };
-        }
         const custom = this.store.customThemes.find(t => t.id === themeId);
         if (custom) {
             return { ...custom, isBuiltIn: false };
@@ -489,7 +489,7 @@ export class ThemeService extends BaseService {
             throw new Error(ThemeErrorCode.INVALID_ID);
         }
 
-        if (getThemeById(themeId) || this.store.customThemes.some(t => t.id === themeId)) {
+        if (this.store.customThemes.some(t => t.id === themeId)) {
             throw new Error(ThemeErrorCode.DUPLICATE_ID);
         }
     }

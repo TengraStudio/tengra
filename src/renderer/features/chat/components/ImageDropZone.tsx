@@ -1,9 +1,23 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { ImagePlus } from 'lucide-react';
 import React, { useCallback, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_IMAGEDROPZONE_1 = "absolute inset-0 z-50 flex items-center justify-center rounded-xl border-2 border-dashed border-primary bg-primary/10 backdrop-blur-sm";
+
 
 interface ImageDropZoneProps {
     onImageDrop: (files: File[]) => void;
@@ -87,7 +101,7 @@ export const ImageDropZone: React.FC<ImageDropZoneProps> = ({
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute inset-0 z-50 flex items-center justify-center rounded-xl border-2 border-dashed border-primary bg-primary/10 backdrop-blur-sm"
+                        className={C_IMAGEDROPZONE_1}
                         aria-label={t('imageAttachment.dropHere')}
                     >
                         <div className="flex flex-col items-center gap-2 text-primary">

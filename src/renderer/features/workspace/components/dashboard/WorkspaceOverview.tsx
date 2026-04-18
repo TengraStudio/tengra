@@ -1,8 +1,25 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Camera, Check, Pencil, RefreshCw, Sparkles } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Workspace, WorkspaceAnalysis, WorkspaceStats } from '@/types';
 import { toSafeFileUrl } from '@/utils/safe-file-url.util';
+
+/* Batch-02: Extracted Long Classes */
+const C_WORKSPACEOVERVIEW_1 = "w-32 h-32 rounded-2xl bg-muted/40 border-2 border-dashed border-border flex items-center justify-center overflow-hidden transition-all group-hover:border-primary/50 shadow-inner";
+const C_WORKSPACEOVERVIEW_2 = "absolute inset-0 bg-primary/60 backdrop-blur-2 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2 text-primary-foreground sm:flex-row";
+const C_WORKSPACEOVERVIEW_3 = "text-sm text-muted-foreground leading-relaxed cursor-pointer hover:text-foreground transition-colors max-w-2xl flex items-start gap-2";
+const C_WORKSPACEOVERVIEW_4 = "p-2 rounded-lg bg-muted/20 border border-border text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all flex items-center gap-2 typo-caption";
+
 
 interface WorkspaceOverviewHeaderProps {
     workspace: Workspace
@@ -50,7 +67,7 @@ export function WorkspaceOverviewHeader({
         <div className="flex flex-col md:flex-row gap-8 items-start bg-card/40 p-6 rounded-3xl border border-border backdrop-blur-sm">
             {/* Logo Area */}
             <div className="relative group shrink-0">
-                <div className="w-32 h-32 rounded-2xl bg-muted/40 border-2 border-dashed border-border flex items-center justify-center overflow-hidden transition-all group-hover:border-primary/50 shadow-inner">
+                <div className={C_WORKSPACEOVERVIEW_1}>
                     {workspaceLogoUrl ? (
                         <img src={workspaceLogoUrl} alt={t('workspaces.logoAlt')} className="w-full h-full object-cover" />
                     ) : (
@@ -59,7 +76,7 @@ export function WorkspaceOverviewHeader({
 
                     <button
                         onClick={onOpenLogoGenerator}
-                        className="absolute inset-0 bg-primary/60 tw-backdrop-blur-2 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2 text-primary-foreground"
+                        className={C_WORKSPACEOVERVIEW_2}
                     >
                         <Camera className="w-6 h-6" />
                         <span className="text-xxs font-bold">{t('workspaces.changeLogo')}</span>
@@ -106,14 +123,14 @@ export function WorkspaceOverviewHeader({
                                 value={editDesc}
                                 onChange={e => onSetDesc(e.target.value)}
                                 onBlur={() => onSaveDesc()}
-                                className="w-full bg-muted/40 border border-primary/30 rounded-xl p-3 text-sm text-foreground outline-none tw-min-h-80 resize-none"
+                                className="w-full bg-muted/40 border border-primary/30 rounded-xl p-3 text-sm text-foreground outline-none min-h-80 resize-none"
                                 placeholder={t('workspaces.workspaceDescPlaceholder')}
                             />
                         </div>
                     ) : (
                         <p
                             onClick={() => onEditDesc(true)}
-                            className="text-sm text-muted-foreground leading-relaxed cursor-pointer hover:text-foreground transition-colors max-w-2xl flex items-start gap-2"
+                            className={C_WORKSPACEOVERVIEW_3}
                         >
                             {workspace.description}
                             <Pencil className="w-3 h-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -132,7 +149,7 @@ export function WorkspaceOverviewHeader({
                     <button
                         onClick={onAnalyze}
                         disabled={loading}
-                        className="p-2 rounded-lg bg-muted/20 border border-border text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all flex items-center gap-2 typo-caption"
+                        className={C_WORKSPACEOVERVIEW_4}
                         title={t('common.refresh')}
                     >
                         <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />

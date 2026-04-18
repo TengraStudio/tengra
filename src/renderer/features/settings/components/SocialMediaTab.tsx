@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Input } from '@renderer/components/ui/input';
 import { Switch } from '@renderer/components/ui/switch';
 import type { AppSettings, CronJobEntry } from '@shared/types/settings';
@@ -14,6 +24,8 @@ import {
 } from 'lucide-react';
 import React, { useCallback, useMemo, useState } from 'react';
 
+import { cn } from '@/lib/utils';
+
 import type { SettingsSharedProps } from '../types';
 
 import {
@@ -22,6 +34,11 @@ import {
     SettingsPanel,
     SettingsToggleRow,
 } from './SettingsPrimitives';
+
+
+/* Batch-02: Extracted Long Classes */
+const C_SOCIALMEDIATAB_1 = "px-3 py-1.5 rounded-lg bg-primary text-primary-foreground typo-caption font-medium hover:bg-primary/90 transition-colors disabled:opacity-40";
+const C_SOCIALMEDIATAB_2 = "flex items-center gap-2 px-3 py-2 rounded-xl border border-dashed border-border/60 typo-caption text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors w-full justify-center";
 
 type SocialMediaTabProps = Pick<
     SettingsSharedProps,
@@ -326,7 +343,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                                         type="text"
                                         value={newCronDraft.cronExpression}
                                         onChange={e => setNewCronDraft(d => ({ ...d, cronExpression: e.target.value }))}
-                                        className={`${SettingsInputClassName} font-mono`}
+                                        className={cn(SettingsInputClassName, 'font-mono')}
                                         placeholder="0 9 * * 1-5"
                                     />
                                 </SettingsField>
@@ -383,7 +400,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                                     type="button"
                                     onClick={handleAddCronJob}
                                     disabled={!newCronDraft.label || !newCronDraft.message || newCronDraft.platforms.length === 0}
-                                    className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground typo-caption font-medium hover:bg-primary/90 transition-colors disabled:opacity-40"
+                                    className={C_SOCIALMEDIATAB_1}
                                 >
                                     {t('settings.socialMedia.cronJobs.addButton')}
                                 </button>
@@ -406,7 +423,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                         <button
                             type="button"
                             onClick={() => setShowNewCronForm(true)}
-                            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-dashed border-border/60 typo-caption text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors w-full justify-center"
+                            className={C_SOCIALMEDIATAB_2}
                         >
                             <Plus className="h-4 w-4" />
                             {t('settings.socialMedia.cronJobs.addNew')}

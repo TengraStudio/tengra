@@ -1,8 +1,19 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { compactToolCallsForDisplay } from '@renderer/features/chat/components/message/tool-call-display.util';
 import { JsonValue } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { memo, useEffect, useMemo } from 'react';
 
+import { UI_PRIMITIVES } from '@/constants/ui-primitives';
 import { Language } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { Message, ToolResult } from '@/types';
@@ -33,6 +44,7 @@ type ToolCallView = {
     id: string;
     name: string;
     arguments: Record<string, JsonValue>;
+    rawArguments: string;
 };
 
 function buildToolCalls(message: Message): ToolCallView[] {
@@ -40,11 +52,23 @@ function buildToolCalls(message: Message): ToolCallView[] {
     if (!displayToolCalls || displayToolCalls.length === 0) {
         return [];
     }
-    return displayToolCalls.map(toolCall => ({
-        id: toolCall.id,
-        name: toolCall.function.name,
-        arguments: safeJsonParse<Record<string, JsonValue>>(toolCall.function.arguments, {}),
-    }));
+    return displayToolCalls
+        .map(toolCall => {
+            const name = typeof toolCall.function?.name === 'string' ? toolCall.function.name : '';
+            const args = typeof toolCall.function?.arguments === 'string' ? toolCall.function.arguments : '';
+            if (name.trim().length === 0 && args.trim().length === 0) {
+                return null;
+            }
+            return {
+                id: typeof toolCall.id === 'string' && toolCall.id.trim().length > 0
+                    ? toolCall.id
+                    : `${name || 'tool'}-${toolCall.index ?? 0}`,
+                name,
+                arguments: safeJsonParse<Record<string, JsonValue>>(args, {}),
+                rawArguments: args
+            };
+        })
+        .filter((tc): tc is ToolCallView => tc !== null);
 }
 
 function buildToolResultMap(message: Message): Map<string, ToolResult> {
@@ -140,11 +164,7 @@ const MessageBubbleInner = memo(
         );
 
         return (
-            <div
-                className={cn(
-                    'rounded-2xl p-2 text-base leading-relaxed whitespace-pre-wrap break-words border-none relative group/bubble w-full overflow-hidden',
-                )}
-            >
+            <div className={UI_PRIMITIVES.CHAT_BUBBLE_BASE}>
                 {isStreaming && <ResponseProgress />}
                 <BubbleContentSection
                     contentProps={contentProps}
@@ -418,7 +438,7 @@ export const SingleMessageViewContent = memo(
                                         key={index}
                                         type="button"
                                         onClick={() => onReact?.(emoji)}
-                                        className="rounded-full border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-xxs transition-colors hover:bg-primary/20"
+                                        className={UI_PRIMITIVES.REACTION_BADGE}
                                     >
                                         {emoji}
                                     </button>

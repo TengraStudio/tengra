@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { AiIntentClassification } from '@shared/types/ai-runtime';
 import { JsonValue } from '@shared/types/common';
 import {
@@ -15,12 +25,14 @@ import { Chat, Message, ToolCall, ToolDefinition } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 import {
+    buildRepeatedToolMessages,
     buildStoredToolResults,
     getToolMessageContent,
     readToolResultImages,
     shouldRecoverFromLowSignalFinalContent,
 } from './ai-runtime-chat.util';
 import {
+    REPEATED_TOOL_RESULT_HINT,
     isExecutableToolCall,
     isMonotonousToolFamily,
     TOOL_LOOP_DIRECT_ANSWER_HINT,
@@ -92,6 +104,17 @@ function buildInFlightToolProgressMessage(
     const overflowCount = uniqueNames.length - 2;
     const overflowSuffix = overflowCount > 0 ? ` +${overflowCount}` : '';
     return `${prefix}: ${listedNames}${overflowSuffix}`;
+}
+
+function toCachedToolMessageContents(
+    cachedContents: JsonValue[] | undefined
+): string[] {
+    if (!Array.isArray(cachedContents)) {
+        return [];
+    }
+    return cachedContents.map(content =>
+        typeof content === 'string' ? content : JSON.stringify(content)
+    );
 }
 
 function readToolMessagePayload(message: Message): Record<string, JsonValue> {
@@ -441,10 +464,6 @@ async function handleTurnConclusion(params: {
             toolEvidenceState.toolMessages,
             language
         );
-        if (deterministicFallback) {
-            appLogger.warn('useChatGenerator', `[${traceId}] Low-signal final content detected; deterministic evidence answer available, forcing finalize`);
-            return { shouldBreak: true, lowSignalRecoveryCount, noProgressToolTurnCount, wasSafetyBreak: true };
-        }
         const lastAssistantMessage: Message = {
             id: assistantId,
             role: 'assistant',
@@ -461,7 +480,9 @@ async function handleTurnConclusion(params: {
             {
                 id: generateId(),
                 role: 'system' as const,
-                content: `${TOOL_LOOP_DIRECT_ANSWER_HINT} Do not say that you are checking, waiting, or inspecting. Give the final answer now from the existing evidence.`,
+                content: deterministicFallback
+                    ? `${TOOL_LOOP_DIRECT_ANSWER_HINT} Use the existing evidence to provide the final answer now.`
+                    : `${TOOL_LOOP_DIRECT_ANSWER_HINT} Do not say that you are checking, waiting, or inspecting. Give the final answer now from the existing evidence.`,
                 timestamp: new Date(),
             },
         ];
@@ -539,6 +560,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
     let wasSafetyBreak = false;
     let lastAssistantMessage: Message | null = null;
     let lastToolResults: Message[] = [];
+    const cachedToolContentsByName = new Map<string, string[]>();
     const reasonings: string[] = [];
     let accumulatedContent = '';
     let toolCallsHistory: ToolCall[] = [];
@@ -638,7 +660,70 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
         });
         lastAssistantMessage = assistantMsg;
 
-        if (!toolsAllowed || (repeatedToolSignatureCount >= 2 && Array.isArray(getCachedToolContentsForSignature(toolSignature)))) {
+        const cachedSignaturePayload = getCachedToolContentsForSignature(toolSignature);
+        const cachedSignatureContents = toCachedToolMessageContents(
+            Array.isArray(cachedSignaturePayload)
+                ? cachedSignaturePayload as JsonValue[]
+                : undefined
+        );
+        const isRepeatedSignature = repeatedToolSignatureCount >= 2 && cachedSignatureContents.length > 0;
+        const isResolvePathRepeat = validExecutableToolCalls.length > 0
+            && validExecutableToolCalls.every(toolCall => toolCall.function.name === 'resolve_path')
+            && seenToolFamilies.has('resolve_path');
+
+        if (isRepeatedSignature || isResolvePathRepeat) {
+            const reusedContents = isResolvePathRepeat
+                ? (cachedToolContentsByName.get('resolve_path') ?? cachedSignatureContents)
+                : cachedSignatureContents;
+            const repeatedToolResults = buildRepeatedToolMessages(
+                validExecutableToolCalls,
+                reusedContents,
+                REPEATED_TOOL_RESULT_HINT
+            );
+            appendToolMessages(toolEvidenceState, repeatedToolResults);
+            rememberToolCalls(toolEvidenceState, validExecutableToolCalls);
+            lastToolResults = repeatedToolResults;
+            updateInFlightToolProgress({
+                chatId, assistantId, toolCallsHistory, toolEvidenceState, setChats,
+            });
+
+            const hasSuccessfulEvidence = hasSuccessfulToolEvidence(toolEvidenceState.toolMessages);
+            if (hasSuccessfulEvidence || repeatedToolSignatureCount >= 3) {
+                noProgressToolTurnCount += 1;
+            }
+
+            if (isLowSignalProgressContent(turnDisplayContent.trim()) && hasSuccessfulEvidence) {
+                wasSafetyBreak = true;
+                break;
+            }
+
+            const loopAction = evaluateLoopSafety({
+                repeatedToolSignatureCount, executableToolCalls: validExecutableToolCalls,
+                currentMessages, assistantMsg, toolResults: repeatedToolResults, noProgressToolTurnCount,
+                recentToolSignatures, executedToolTurnCount, noProgressThreshold: toolLoopBudget.noProgressThreshold,
+                maxExecutedToolTurns: toolLoopBudget.maxExecutedToolTurns, activeModel, selectedProvider,
+                fullOptions, activeWorkspacePath, systemMode, chatId, workspaceId, intentClassification,
+                currentAssistantId: assistantId, setStreamingStates, setChats, accumulatedToolCallMap: toolEvidenceState.toolCallMap,
+                accumulatedToolMessages: toolEvidenceState.toolMessages, evidenceRecords: toolEvidenceState.evidenceRecords, t, language,
+            }, { recentSignatureWindow: TOOL_LOOP_RECENT_SIGNATURE_WINDOW, directAnswerHint: TOOL_LOOP_DIRECT_ANSWER_HINT });
+            if (loopAction.action === 'break') {
+                wasSafetyBreak = true;
+                break;
+            }
+            currentMessages = [
+                ...buildModelConversation(currentMessages, assistantMsg, repeatedToolResults),
+                {
+                    id: generateId(),
+                    role: 'system',
+                    content: `${REPEATED_TOOL_RESULT_HINT} ${TOOL_LOOP_DIRECT_ANSWER_HINT}`,
+                    timestamp: new Date(),
+                },
+            ];
+            toolIterations++;
+            continue;
+        }
+
+        if (!toolsAllowed) {
             const loopAction = evaluateLoopSafety({
                 repeatedToolSignatureCount, executableToolCalls: validExecutableToolCalls,
                 currentMessages, assistantMsg, toolResults: [], noProgressToolTurnCount,
@@ -674,6 +759,14 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
         lastToolResults = toolResults;
         executedToolTurnCount++;
         cacheToolContentsForSignature(toolSignature, toolResults.map(tr => getToolMessageContent(tr)));
+        for (let resultIndex = 0; resultIndex < validExecutableToolCalls.length; resultIndex += 1) {
+            const call = validExecutableToolCalls[resultIndex];
+            const message = toolResults[resultIndex];
+            if (!message) {
+                continue;
+            }
+            cachedToolContentsByName.set(call.function.name, [getToolMessageContent(message)]);
+        }
         
         const contentLen = turnResult.finalContent.trim().length;
         const currentTurnMadeProgress = contentLen > TOOL_LOOP_LOW_SIGNAL_CONTENT_THRESHOLD || (hasSuccessfulToolEvidence(toolResults) && validExecutableToolCalls.some(tc => !seenToolFamilies.has(tc.function.name)));

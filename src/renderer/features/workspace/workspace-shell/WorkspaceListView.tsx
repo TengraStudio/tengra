@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Archive, ArrowDownUp, Edit, FolderOpen, Monitor, Trash2 } from 'lucide-react';
 import React, { memo } from 'react';
 import { Virtuoso } from 'react-virtuoso';
@@ -29,7 +39,7 @@ export const WorkspaceListView: React.FC<WorkspaceListViewProps> = memo(({
 }) => {
     return (
         <div className="rounded-xl border border-border/40 overflow-hidden">
-            <div className="grid tw-grid-cols-todo gap-3 px-4 py-3 bg-muted/20 typo-caption font-semibold text-muted-foreground">
+            <div className="grid grid-cols-todo gap-3 px-4 py-3 bg-muted/20 typo-caption font-semibold text-muted-foreground">
                 <div />
                 <button onClick={() => toggleSort('title')} className="flex items-center gap-1 text-left hover:text-foreground transition-colors">
                     {t('workspaces.tableName')} <ArrowDownUp className="w-3 h-3" />
@@ -41,10 +51,10 @@ export const WorkspaceListView: React.FC<WorkspaceListViewProps> = memo(({
                 <div className="text-right">{t('workspaces.tableActions')}</div>
             </div>
             <Virtuoso
-                style={{ height: 520 }}
+                className="h-520"
                 data={workspaces}
                 itemContent={(_index, workspace) => (
-                    <div className="grid tw-grid-cols-todo gap-3 px-4 py-3 border-t border-border/20 items-center text-sm">
+                    <div className="grid grid-cols-todo gap-3 px-4 py-3 border-t border-border/20 items-center text-sm">
                         <div>
                             <input
                                 type="checkbox"

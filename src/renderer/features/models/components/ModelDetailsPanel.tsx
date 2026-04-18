@@ -1,3 +1,14 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+import { UI_PRIMITIVES } from '@renderer/constants/ui-primitives';
 import { BadgeQ } from '@renderer/features/models/components/BadgeQ';
 import { HFFile, HFModel, OllamaLibraryModel, UnifiedModel } from '@renderer/features/models/types';
 import { formatSize } from '@renderer/features/models/utils/explorer-utils';
@@ -121,7 +132,7 @@ const HFFileCard: React.FC<{
     const showActiveTask = hasActiveTask && !isDownloaded;
 
     return (
-        <div className="p-4 rounded-xl border border-border/50 bg-muted/20 space-y-3">
+        <div className={cn("space-y-3", UI_PRIMITIVES.DETAILS_CARD)}>
             <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                     <BadgeQ quantization={file.quantization} />
@@ -351,14 +362,14 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
             transition={{ type: 'spring', stiffness: 360, damping: 36 }}
             className="w-1/2 max-w-5xl min-w-96 border-l border-border/50 bg-card/60 backdrop-blur-2xl flex flex-col relative z-40"
         >
-            <div className="p-6 border-b border-border/50 flex items-center justify-between bg-muted/30">
+            <div className={UI_PRIMITIVES.PANEL_HEADER}>
                 <h2 className="font-bold truncate pr-4 text-lg">{isHF ? hfModel?.name : ollamaModel?.name}</h2>
                 <button onClick={() => setSelectedModel(null)} className="p-2 hover:bg-muted/40 rounded-xl transition-all active:scale-90">
                     <X className="w-5 h-5" />
                 </button>
             </div>
 
-            <div className="p-6 border-b border-border/50 space-y-3 bg-muted/30">
+            <div className={cn("space-y-3 px-6 py-6 border-b border-border/50 bg-muted/30")}>
                 <div className="text-xxs text-muted-foreground">{isHF ? t('modelExplorer.sourceHuggingFace') : t('modelExplorer.ollamaLibrary')}</div>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                     {selectedModel.description || t('modelExplorer.defaultDescription')}
@@ -401,7 +412,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                 {isHF ? (
                     <>
                         {isHF && (hfModel?.longDescriptionHtml || hfModel?.longDescriptionMarkdown) && (
-                            <div className="rounded-xl border border-border/40 bg-muted/10 p-4">
+                            <div className={UI_PRIMITIVES.DETAILS_CARD}>
                                 <h3 className="text-xxs font-bold text-muted-foreground mb-2">{t('common.details')}</h3>
                                 {hfModel.longDescriptionHtml ? (
                                     <div
@@ -426,7 +437,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                             ) : (
                                 <>
                                     {hfShardGroups.length > 0 && (
-                                        <div className="space-y-2 rounded-xl border border-border/40 bg-muted/10 p-3">
+                                        <div className={cn("p-3", UI_PRIMITIVES.DETAILS_CARD)}>
                                             <div className="text-xxs font-bold text-muted-foreground">{t('modelExplorer.shardedModelSets')}</div>
                                             {hfShardGroups.map((group) => {
                                                 const downloadedCount = group.files.filter((f) => downloadedFilePaths[f.path]).length;
@@ -486,7 +497,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                 ) : (
                     <>
                         {sanitizedOllamaDescriptionHtml && (
-                            <div className="rounded-xl border border-border/40 bg-muted/10 p-4">
+                            <div className={UI_PRIMITIVES.DETAILS_CARD}>
                                 <h3 className="text-xxs font-bold text-muted-foreground mb-2">{t('common.details')}</h3>
                                 <div className="prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: sanitizedOllamaDescriptionHtml }} />
                             </div>

@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Accessibility utilities for the Tengra application.
  * Provides hooks, components, and utilities for a11y compliance.
  */
@@ -6,6 +16,10 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
+
+/* Batch-02: Extracted Long Classes */
+const C_ACCESSIBILITY_1 = "sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:outline-none";
+
 
 // ============================================================================
 // Types
@@ -513,7 +527,7 @@ export const SkipLink: React.FC<{ targetId: string; label?: string }> = ({
         <a
             href={`#${targetId}`}
             onClick={handleClick}
-            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:outline-none"
+            className={C_ACCESSIBILITY_1}
         >
             {resolvedLabel}
         </a>

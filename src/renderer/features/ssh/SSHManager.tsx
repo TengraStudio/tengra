@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { NginxWizard } from '@renderer/features/ssh/NginxWizard';
 import { PackageManager } from '@renderer/features/ssh/PackageManager';
 import { SFTPBrowser } from '@renderer/features/ssh/SFTPBrowser';
@@ -25,6 +35,10 @@ import { SSHKeyManagement } from './components/SSHKeyManagement';
 import { SSHTerminal } from './components/SSHTerminal';
 import { SSHTunnels } from './components/SSHTunnels';
 import { useSSHConnections } from './hooks/useSSHConnections';
+
+/* Batch-02: Extracted Long Classes */
+const C_SSHMANAGER_1 = "modal-content ssh-manager flex h-dialog-ssh w-modal-72 flex-col overflow-hidden rounded-2xl border border-border/30 bg-popover shadow-lg";
+
 
 interface SSHManagerProps { isOpen: boolean; onClose: () => void; language: Language; }
 type SSHTabId =
@@ -521,13 +535,13 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
 
     return (
         <div className="modal-overlay">
-            <div className="modal-content ssh-manager flex h-[min(88vh,42rem)] w-[min(100%,72rem)] flex-col overflow-hidden rounded-2xl border border-border/30 bg-popover shadow-lg">
+            <div className={C_SSHMANAGER_1}>
                 <div className="modal-header flex items-center justify-between border-b border-border/20 px-4 py-4 sm:px-5">
                     <h2 className="text-lg font-semibold">{t('ssh.title')}</h2>
                     <button className="close-btn rounded-lg px-2 py-1 text-muted-foreground hover:bg-muted/30 hover:text-foreground" onClick={onClose}>×</button>
                 </div>
                 <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
-                    <div className="relative border-b border-border/20 lg:w-[18rem] lg:border-b-0 lg:border-r lg:border-border/20">
+                    <div className="relative border-b border-border/20 lg:w-72 lg:border-b-0 lg:border-r lg:border-border/20">
                         <SSHConnectionList
                             connections={connections}
                             selectedId={selectedConnectionId}

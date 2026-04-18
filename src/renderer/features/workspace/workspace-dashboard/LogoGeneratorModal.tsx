@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Check, Image as ImageIcon, Loader2, Sparkles, Upload, Wand2 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
@@ -16,9 +26,15 @@ import {
 import { ModelDefinition } from '@/electron';
 import { useLogoGenerator } from '@/features/workspace/hooks/useLogoGenerator';
 import { Language, useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 import { Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 import { toSafeFileUrl } from '@/utils/safe-file-url.util';
+
+/* Batch-02: Extracted Long Classes */
+const C_LOGOGENERATORMODAL_1 = "h-full flex flex-col items-center justify-center text-muted-foreground border-2 border-dashed rounded-xl border-muted/70 bg-muted/10";
+const C_LOGOGENERATORMODAL_2 = "absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2";
+
 
 interface LogoGeneratorModalProps {
     isOpen: boolean;
@@ -155,19 +171,25 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
             height="auto"
             className="flex flex-col"
         >
-            <div className="h-full grid grid-cols-1 tw-xl-grid-cols-360-main gap-6 overflow-hidden">
+            <div className="h-full grid grid-cols-1 xl:grid-cols-360-main gap-6 overflow-hidden">
                 {/* Left Panel: Controls */}
                 <div className="min-h-0 rounded-2xl border border-border/60 bg-muted/20 p-4 overflow-y-auto">
                     <div className="w-full space-y-5">
                         <div className="flex items-center p-1 bg-background/80 border border-border/60 rounded-xl">
                             <button
-                                className={`flex-1 px-3 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'generate' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                                className={cn(
+                                    'flex-1 px-3 py-2 text-sm font-semibold rounded-lg transition-all',
+                                    activeTab === 'generate' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                                )}
                                 onClick={() => setActiveTab('generate')}
                             >
                                 {t('common.generate')}
                             </button>
                             <button
-                                className={`flex-1 px-3 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'upload' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                                className={cn(
+                                    'flex-1 px-3 py-2 text-sm font-semibold rounded-lg transition-all',
+                                    activeTab === 'upload' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                                )}
                                 onClick={() => setActiveTab('upload')}
                             >
                                 {t('common.upload')}
@@ -333,7 +355,10 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                                         {suggestions.map((s, i) => (
                                                             <div
                                                                 key={i}
-                                                                className={`p-2 rounded-md border text-sm cursor-pointer hover:bg-muted ${prompt === s ? 'border-primary bg-primary/5' : 'border-border'}`}
+                                                                className={cn(
+                                                                    'p-2 rounded-md border text-sm cursor-pointer hover:bg-muted',
+                                                                    prompt === s ? 'border-primary bg-primary/5' : 'border-border'
+                                                                )}
                                                                 onClick={() => setPrompt(s)}
                                                             >
                                                                 {s}
@@ -377,11 +402,10 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                         {activeTab === 'upload' && (
                             <div className="mt-4">
                                 <div
-                                    className={`
-                                        relative flex flex-col items-center justify-center w-full h-64 
-                                        border-2 border-dashed rounded-xl transition-colors cursor-pointer
-                                        ${dragActive ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}
-                                    `}
+                                    className={cn(
+                                        'relative flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-xl transition-colors cursor-pointer',
+                                        dragActive ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'
+                                    )}
                                     onDragEnter={handleDrag}
                                     onDragLeave={handleDrag}
                                     onDragOver={handleDrag}
@@ -425,7 +449,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
 
                     <div className="flex-1 overflow-y-auto">
                         {generatedLogos.length === 0 ? (
-                                <div className="h-full flex flex-col items-center justify-center text-muted-foreground border-2 border-dashed rounded-xl border-muted/70 bg-muted/10">
+                                <div className={C_LOGOGENERATORMODAL_1}>
                                     <ImageIcon className="w-12 h-12 mb-4 opacity-25" />
                                     <p className="font-medium">{t('workspace.errors.logoGenerator.noLogosYet')}</p>
                                     <p className="text-sm opacity-70">
@@ -444,7 +468,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                             alt={`Generated Logo ${index + 1}`}
                                             className="w-full h-full object-contain p-4 bg-checkered"
                                         />
-                                        <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                                        <div className={C_LOGOGENERATORMODAL_2}>
                                             <Button
                                                 size="sm"
                                                 onClick={() => void handleApply(logoPath)}

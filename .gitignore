@@ -186,3 +186,11 @@ website/appendonlydir
 scripts/testScripts
 IPC_CHANNELS.md
 .codex/SESSION_ENGINE.md
+
+# Test results and analysis dumps
+vitest-results.json
+vitest-results-renderer.json
+stryker.log
+stryker-results.json
+*.audit.json
+*.dump.txt

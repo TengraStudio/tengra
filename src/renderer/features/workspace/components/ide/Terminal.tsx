@@ -1,3 +1,14 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+import { cn } from '@renderer/lib/utils';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { FitAddon } from '@xterm/addon-fit';
 import { Terminal } from '@xterm/xterm';
@@ -421,15 +432,24 @@ export const TerminalComponent = ({ cwd, workspaceId }: TerminalComponentProps) 
     }, []);
 
     return (
-        <div className="w-full h-full relative group flex flex-col gap-2" style={{ minHeight: '300px' }}>
-            <div className="flex flex-wrap items-center gap-2 tw-text-11">
-                <span className={`inline-flex items-center rounded-full px-2 py-1 border ${terminalRuntimeHealth?.terminalAvailable ? 'border-success/50 text-success' : 'border-destructive/50 text-destructive'}`}>
+        <div className="w-full h-full relative group flex flex-col gap-2 min-h-300">
+            <div className="flex flex-wrap items-center gap-2 text-11">
+                <span className={cn(
+                    'inline-flex items-center rounded-full px-2 py-1 border',
+                    terminalRuntimeHealth?.terminalAvailable ? 'border-success/50 text-success' : 'border-destructive/50 text-destructive'
+                )}>
                     {t('workspace.terminalStatusTerm')} {terminalRuntimeHealth?.availableBackends ?? 0}/{terminalRuntimeHealth?.totalBackends ?? 0}
                 </span>
-                <span className={`inline-flex items-center rounded-full px-2 py-1 border ${sshConnectionCount > 0 ? 'border-success/50 text-success' : 'border-muted-foreground/40 text-muted-foreground'}`}>
+                <span className={cn(
+                    'inline-flex items-center rounded-full px-2 py-1 border',
+                    sshConnectionCount > 0 ? 'border-success/50 text-success' : 'border-muted-foreground/40 text-muted-foreground'
+                )}>
                     {t('workspace.terminalStatusSsh')} {sshConnectionCount}
                 </span>
-                <span className={`inline-flex items-center rounded-full px-2 py-1 border ${dockerAvailable ? 'border-success/50 text-success' : 'border-muted-foreground/40 text-muted-foreground'}`}>
+                <span className={cn(
+                    'inline-flex items-center rounded-full px-2 py-1 border',
+                    dockerAvailable ? 'border-success/50 text-success' : 'border-muted-foreground/40 text-muted-foreground'
+                )}>
                     {t('workspace.terminalStatusDocker')} {dockerAvailable ? t('workspace.terminalStatusReady') : t('workspace.terminalStatusUnavailable')}
                 </span>
             </div>

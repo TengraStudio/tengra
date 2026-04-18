@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React, { isValidElement, lazy, memo, Suspense, useMemo } from 'react';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
@@ -13,6 +23,10 @@ import { TypingIndicator } from '../TypingIndicator';
 import { MarkdownImage } from './MarkdownImage';
 import { PermissionErrorCard } from './PermissionErrorCard';
 import { QuotaErrorCard } from './QuotaErrorCard';
+
+/* Batch-02: Extracted Long Classes */
+const C_MARKDOWNCONTENT_1 = "whitespace-pre-wrap font-mono text-sm rounded-lg px-4 py-2 border border-border/30 overflow-x-auto text-foreground/90 leading-relaxed";
+
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
 
@@ -236,7 +250,7 @@ export const MessageBubbleContent = memo(
             return (
                 <div className="flex flex-col gap-2">
                     <AttachmentList attachments={attachments ?? []} onRemove={() => {}} t={t} />
-                    <div className="whitespace-pre-wrap font-mono text-sm rounded-lg px-4 py-2 border border-border/30 overflow-x-auto text-foreground/90 leading-relaxed">
+                    <div className={C_MARKDOWNCONTENT_1}>
                         {displayContent}
                     </div>
                 </div>

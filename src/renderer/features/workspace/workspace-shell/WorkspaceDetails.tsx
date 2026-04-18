@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { WorkspaceExplorerPanel } from '@renderer/features/workspace/workspace-explorer/WorkspaceExplorerPanel';
 import { CommandStrip } from '@renderer/features/workspace/workspace-shell/CommandStrip';
 import { ShortcutHelpOverlay } from '@renderer/features/workspace/workspace-shell/ShortcutHelpOverlay';
@@ -363,15 +373,15 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                             return (
                                 <div
                                     key={task.id}
-                                    className="tw-min-w-220 tw-max-w-320 rounded-lg border border-border/40 bg-background/80 px-3 py-2"
+                                    className="min-w-220 max-w-320 rounded-lg border border-border/40 bg-background/80 px-3 py-2"
                                 >
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0">
-                                            <div className="truncate tw-text-11 font-semibold text-foreground">
+                                            <div className="truncate text-11 font-semibold text-foreground">
                                                 {task.command}
                                             </div>
                                             {latestLine && (
-                                                <div className="truncate tw-text-10 text-muted-foreground">
+                                                <div className="truncate text-10 text-muted-foreground">
                                                     {latestLine}
                                                 </div>
                                             )}
@@ -412,7 +422,9 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                 }}
                 onBranchSelect={handleBranchSelect}
                 onCommandClick={() => {
-                    window.dispatchEvent(new CustomEvent('app:open-command-palette'));
+                    qs.setShowQuickSwitch(true);
+                    qs.setQuickSwitchQuery('');
+                    qs.setQuickSwitchIndex(0);
                 }}
                 onQuickSwitchClick={() => {
                     qs.setShowQuickSwitch(true);

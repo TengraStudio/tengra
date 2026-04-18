@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Checkbox } from '@renderer/components/ui/checkbox';
 import { Input } from '@renderer/components/ui/input';
 import { Label } from '@renderer/components/ui/label';
@@ -11,6 +21,12 @@ import {
 import { Textarea } from '@renderer/components/ui/textarea';
 import { localizeIpcValidationMessage } from '@renderer/features/ssh/utils/ipc-validation-message';
 import React, { useEffect, useState } from 'react';
+
+import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_ADDCONNECTIONMODAL_1 = "modal-content flex max-h-88vh w-modal-32 flex-col overflow-hidden rounded-2xl border border-border/30 bg-popover";
+
 
 export interface SSHProfileTestUIResult {
     success: boolean;
@@ -118,7 +134,7 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
 
     return (
         <div className="modal-overlay" style={{ zIndex: 1000 }}>
-            <div className="modal-content flex max-h-[88vh] w-[min(100%,32rem)] flex-col overflow-hidden rounded-2xl border border-border/30 bg-popover">
+            <div className={C_ADDCONNECTIONMODAL_1}>
                 <div className="border-b border-border/20 px-4 py-4 sm:px-5">
                     <h3 className="text-lg font-semibold">{t('ssh.newConnectionTitle')}</h3>
                 </div>
@@ -282,11 +298,12 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                 </div>
                 {testMessage !== '' && (
                     <div
-                        className={`mx-4 mb-4 rounded border border-border/30 bg-muted/20 p-2 typo-caption sm:mx-5 ${
+                        className={cn(
+                            'mx-4 mb-4 rounded border border-border/30 bg-muted/20 p-2 typo-caption sm:mx-5',
                             testState === 'failure'
                                 ? 'text-destructive border-destructive/20'
                                 : 'text-muted-foreground'
-                        }`}
+                        )}
                     >
                         {testMessage}
                     </div>

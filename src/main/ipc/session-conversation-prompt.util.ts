@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { LocaleService } from '@main/services/system/locale.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { buildSystemPrompt, toLocalePromptMetadata } from '@shared/instructions';
@@ -15,6 +25,7 @@ export interface ConversationPromptOptions {
     localeService: LocaleService;
     permissionPolicy?: string;
     evidenceContext?: string;
+    resolutionMemoryContext?: string;
 }
 
 export function injectConversationSystemPrompt(options: ConversationPromptOptions): Message[] {
@@ -26,6 +37,7 @@ export function injectConversationSystemPrompt(options: ConversationPromptOption
         localeService,
         permissionPolicy,
         evidenceContext,
+        resolutionMemoryContext,
     } = options;
     const settings = settingsService.getSettings();
     const configuredLanguage = getConversationLanguage(settingsService);
@@ -46,7 +58,10 @@ export function injectConversationSystemPrompt(options: ConversationPromptOption
     const evidencePart = evidenceContext
         ? `\n\n## CURRENT EVIDENCE\n${evidenceContext}`
         : '';
-    const finalInstruction = `${basePrompt}${customPromptPart}${policyPart}${evidencePart}`;
+    const resolutionPart = resolutionMemoryContext
+        ? `\n\n## RELEVANT PAST RESOLUTIONS\n${resolutionMemoryContext}`
+        : '';
+    const finalInstruction = `${basePrompt}${customPromptPart}${policyPart}${evidencePart}${resolutionPart}`;
 
     const systemMessage = messages.find(message => message.role === 'system');
     if (systemMessage) {

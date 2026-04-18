@@ -1,8 +1,19 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { ChatErrorState } from '@renderer/features/chat/components/ChatErrorState';
 import { ChatHeader } from '@renderer/features/chat/components/ChatHeader';
 import { ChatInput } from '@renderer/features/chat/components/ChatInput';
 import { ExportModal } from '@renderer/features/chat/components/ExportModal';
 import { MessageList } from '@renderer/features/chat/components/MessageList';
+import { MultiModelCollaboration } from '@renderer/features/chat/components/MultiModelCollaboration';
 import { WelcomeScreen } from '@renderer/features/chat/components/WelcomeScreen';
 import { ChatTemplate } from '@renderer/features/chat/types';
 import { ChevronDown } from 'lucide-react';
@@ -14,6 +25,11 @@ import { useChat } from '@/context/ChatContext';
 import { useModel } from '@/context/ModelContext';
 import { useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
+import { Button } from '@/components/ui/button';
+
+/* Batch-02: Extracted Long Classes */
+const C_CHATVIEW_1 = "absolute bottom-28 right-5 z-20 flex h-9 w-9 items-center justify-center rounded-md border border-border/50 bg-background text-foreground transition-colors hover:bg-accent";
+
 
 interface ChatViewProps {
     templates: ChatTemplate[];
@@ -47,13 +63,27 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
     } = useChat();
 
     const { language } = useAuth();
-    const { selectedProvider, selectedModel } = useModel();
+    const { selectedProvider, selectedModel, selectedModels, models } = useModel();
     const { t } = useTranslation(language);
 
     const virtuosoRef = useRef<VirtuosoHandle>(null);
 
     const [showExportModal, setShowExportModal] = React.useState(false);
+    const [showCollaborationPanel, setShowCollaborationPanel] = React.useState(false);
     const activeChat = React.useMemo(() => chats.find(c => c.id === currentChatId), [chats, currentChatId]);
+    const availableCollaborationModels = React.useMemo(
+        () => models
+            .filter((model): model is typeof model & { id: string; provider: string } =>
+                typeof model.id === 'string' && model.id.length > 0
+                && typeof model.provider === 'string' && model.provider.length > 0)
+            .map(model => ({
+                provider: model.provider,
+                model: model.id,
+                label: model.name || model.id,
+            })),
+        [models]
+    );
+    const isMultiModelSelection = selectedModels.length > 1;
 
     const handleErrorRetry = useCallback(() => {
         clearChatError();
@@ -141,12 +171,37 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
                         onClick={handleScrollToBottom}
-                        className="absolute bottom-28 right-5 z-20 flex h-9 w-9 items-center justify-center rounded-md border border-border/50 bg-background text-foreground transition-colors hover:bg-accent"
+                        className={C_CHATVIEW_1}
                     >
                         <ChevronDown className="h-4 w-4" />
                     </motion.button>
                 )}
             </AnimatePresence>
+
+            {isMultiModelSelection && (
+                <div className="border-t border-border/40 bg-muted/10 px-3 py-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowCollaborationPanel(previous => !previous)}
+                        className="w-full justify-between"
+                    >
+                        <span>{t('chat.collaboration.title')}</span>
+                        <span className="typo-caption text-muted-foreground">
+                            {showCollaborationPanel ? t('common.hide') : t('common.show')}
+                        </span>
+                    </Button>
+                </div>
+            )}
+
+            {isMultiModelSelection && showCollaborationPanel && (
+                <div className="max-h-96 overflow-y-auto border-t border-border/40 bg-background p-3">
+                    <MultiModelCollaboration
+                        messages={displayMessages}
+                        availableModels={availableCollaborationModels}
+                    />
+                </div>
+            )}
 
             <ChatInput
                 fileInputRef={fileInputRef}

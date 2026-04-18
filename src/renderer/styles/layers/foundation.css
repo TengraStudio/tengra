@@ -1,0 +1,105 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/* stylelint-disable */
+
+/* Checkbox & Toggle Fixes */
+@layer base {
+    /* Reset checkbox appearance */
+    input[type='checkbox']:not(.sr-only) {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+    }
+
+    /* Fix for toggle switches using peer-checked pattern */
+    input[type='checkbox']:checked+div::after {
+        transform: translateX(100%);
+    }
+}
+
+/* React Transition Group animations for AnimatePresence compatibility */
+.fade-enter {
+    opacity: 0;
+}
+
+.fade-enter-active {
+    opacity: 1;
+    transition: opacity 300ms ease-in-out;
+}
+
+.fade-exit {
+    opacity: 1;
+}
+
+.fade-exit-active {
+    opacity: 0;
+    transition: opacity 300ms ease-in-out;
+}
+
+@media (hover: none) and (pointer: coarse) {
+
+    /* Mobile/touch devices */
+    .touch-target {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    /* Larger tap targets on mobile */
+    button,
+    a,
+    [role='button'] {
+        min-height: 44px;
+        padding: 0.75rem 1rem;
+    }
+
+    /* Prevent text selection on tap */
+    .no-select {
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        user-select: none;
+    }
+}
+
+/* Landscape orientation adjustments */
+@media (orientation: landscape) and (max-height: 500px) {
+    .landscape-compact {
+        padding: 0.5rem !important;
+    }
+
+    .landscape-hide {
+        display: none !important;
+    }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2),
+(min-resolution: 192dpi) {
+    .retina-border {
+        border-width: 0.5px;
+    }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+    .auto-dark {
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+    }
+}

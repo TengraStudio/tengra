@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { useModelCategories } from '@renderer/features/models/hooks/useModelCategories';
 import type { GroupedModels } from '@shared/types/model.types';
 import { renderHook } from '@testing-library/react';

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React from 'react';
 
 interface ShortcutHelpOverlayProps {
@@ -18,7 +28,6 @@ export const ShortcutHelpOverlay: React.FC<ShortcutHelpOverlayProps> = ({ visibl
                     {t('workspace.shortcutHelpTitle')}
                 </h3>
                 <ul className="typo-caption text-muted-foreground space-y-2">
-                    <li>{t('workspace.shortcutCombos.commandPalette')} — {t('shortcuts.commandPalette')}</li>
                     <li>{t('workspace.shortcutCombos.quickSwitch')} — {t('workspace.quickSwitch')}</li>
                     <li>{t('workspace.shortcutCombos.closeTab')} — {t('workspace.closeTab')}</li>
                     <li>{t('workspace.shortcutCombos.toggleHelp')} — {t('workspace.shortcuts')}</li>

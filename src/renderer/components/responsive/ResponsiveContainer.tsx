@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Responsive Container Component
  * Provides adaptive layouts for different screen sizes
  */
@@ -79,6 +89,25 @@ interface ResponsiveGridProps {
     className?: string
 }
 
+const GRID_COLS_CLASS_MAP: Record<number, string> = {
+    1: 'grid-cols-1',
+    2: 'grid-cols-2',
+    3: 'grid-cols-3',
+    4: 'grid-cols-4',
+    5: 'grid-cols-5',
+    6: 'grid-cols-6',
+    7: 'grid-cols-7',
+    8: 'grid-cols-8',
+    9: 'grid-cols-9',
+    10: 'grid-cols-10',
+    11: 'grid-cols-11',
+    12: 'grid-cols-12',
+};
+
+function resolveGridColsClass(cols: number): string {
+    return GRID_COLS_CLASS_MAP[cols] ?? GRID_COLS_CLASS_MAP[1];
+}
+
 /**
  * Responsive grid that adapts column count
  */
@@ -104,7 +133,7 @@ export function ResponsiveGrid({
     };
 
     return (
-        <div className={cn('grid', `grid-cols-${colsConfig[device]}`, gapConfig[device], className)}>
+        <div className={cn('grid', resolveGridColsClass(colsConfig[device]), gapConfig[device], className)}>
             {children}
         </div>
     );

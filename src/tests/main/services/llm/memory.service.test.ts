@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { EntityKnowledge, EpisodicMemory, SemanticFragment } from '@main/services/data/database.service';
 import { AdvancedMemoryService, PersonalitySettings, SummarizationResult } from '@main/services/llm/advanced-memory.service';
 import { MemoryService } from '@main/services/llm/memory.service';
@@ -40,8 +50,12 @@ function createMockAdvancedMemory() {
             value: 'developer',
         }) as never as EntityKnowledge),
         getEntityFacts: vi.fn(async (): Promise<EntityKnowledge[]> => []),
+        getAllEntityFacts: vi.fn(async (): Promise<EntityKnowledge[]> => []),
+        deleteEntityFacts: vi.fn(async () => true),
         gatherContext: vi.fn(async () => 'context text'),
         deleteMemory: vi.fn(async () => true),
+        getAllAdvancedMemories: vi.fn(async () => []),
+        getAllEpisodes: vi.fn(async () => []),
         getPersonality: vi.fn(async (): Promise<PersonalitySettings | null> => null),
         updatePersonality: vi.fn(async () => undefined),
         extractAndStageFromMessage: vi.fn(async () => []),
@@ -126,6 +140,8 @@ describe('MemoryService', () => {
         it('returns true (stub implementation)', async () => {
             const result = await service.removeEntityFact('Alice');
             expect(result).toBe(true);
+            expect(mockAdvanced.getAllEntityFacts).toHaveBeenCalledOnce();
+            expect(mockAdvanced.deleteEntityFacts).toHaveBeenCalledWith('Alice');
         });
     });
 

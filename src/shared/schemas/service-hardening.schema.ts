@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { z } from 'zod';
 
 import {
@@ -153,7 +163,19 @@ export const AdvancedMemoryHealthSchema = z.object({
         validationFailures: z.number().int(),
         budgetExceededCount: z.number().int(),
         errorRate: z.number()
-    })
+    }),
+    memoryContext: z.object({
+        cacheHits: z.number().int(),
+        cacheMisses: z.number().int(),
+        inflightReuseCount: z.number().int(),
+        lookupCount: z.number().int(),
+        lookupTimeoutCount: z.number().int(),
+        lookupFailureCount: z.number().int(),
+        lastLookupDurationMs: z.number(),
+        averageLookupDurationMs: z.number(),
+        cacheSize: z.number().int(),
+        inflightSize: z.number().int()
+    }).optional()
 });
 
 export const ContextRetrievalInputSchema = z.object({

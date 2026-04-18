@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { AdvancedSemanticFragment, coerceMemoryCategory, MemoryCategory } from '@shared/types/advanced-memory';
 import {
     Background,
@@ -23,9 +33,14 @@ import {
     SelectValue
 } from '@/components/ui/select';
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
 import { appLogger } from '../../../utils/renderer-logger';
 import { CATEGORY_CONFIG } from '../components/constants';
+
+/* Batch-02: Extracted Long Classes */
+const C_MEMORYGRAPHVIEW_1 = "p-2.5 bg-background/80 backdrop-blur-xl hover:bg-muted/40 rounded-xl border border-border/40 transition-all text-muted-foreground hover:text-foreground shadow-lg";
+
 
 
 // Node type for memories
@@ -42,7 +57,10 @@ const MemoryNode = ({ data }: { data: { label: string; category: MemoryCategory;
     };
 
     return (
-        <div className={`px-4 py-2 rounded-xl border-2 shadow-xl backdrop-blur-md min-w-36 transition-all hover:scale-105 ${getCategoryColor(data.category)}`}>
+        <div className={cn(
+            'px-4 py-2 rounded-xl border-2 shadow-xl backdrop-blur-md min-w-36 transition-all hover:scale-105',
+            getCategoryColor(data.category)
+        )}>
             <div className="typo-caption font-bold opacity-70 mb-1">{data.category}</div>
             <div className="text-sm font-medium line-clamp-2 leading-tight">{data.label}</div>
             <div className="mt-2 h-1 w-full bg-muted/40 rounded-full overflow-hidden">
@@ -229,7 +247,7 @@ export const MemoryGraphView: React.FC = () => {
                         <div className="flex flex-col gap-2">
                             <button
                                 onClick={() => void loadData()}
-                                className="p-2.5 bg-background/80 backdrop-blur-xl hover:bg-muted/40 rounded-xl border border-border/40 transition-all text-muted-foreground hover:text-foreground shadow-lg"
+                                className={C_MEMORYGRAPHVIEW_1}
                                 title={t('memory.refreshTitle')}
                             >
                                 <RotateCcw className="w-4 h-4" />

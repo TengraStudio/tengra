@@ -1,5 +1,16 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React, { Suspense } from 'react';
 
+import { ErrorBoundary } from '@renderer/components/shared/ErrorBoundary';
 import { SettingsCategory } from '@/features/settings/types';
 import type { GroupedModels, ModelInfo } from '@/types';
 
@@ -14,6 +25,7 @@ const EditorTab = React.lazy(() => import('@/features/settings/components/Editor
 const GeneralTab = React.lazy(() => import('@/features/settings/components/GeneralTab').then(m => ({ default: m.GeneralTab })));
 const ImageSettingsTab = React.lazy(() => import('@/features/settings/components/ImageSettingsTab').then(m => ({ default: m.ImageSettingsTab })));
 const ModelsTab = React.lazy(() => import('@/features/settings/components/ModelsTab').then(m => ({ default: m.ModelsTab })));
+const MemoryInspector = React.lazy(() => import('@/features/memory/components/MemoryInspector').then(m => ({ default: m.MemoryInspector })));
 const ModelUsageLimitsTab = React.lazy(() => import('@/features/settings/components/ModelUsageLimitsTab').then(m => ({ default: m.ModelUsageLimitsTab })));
 const QuotasTab = React.lazy(() => import('@/features/settings/components/QuotasTab').then(m => ({ default: m.QuotasTab })));
 const PersonasTab = React.lazy(() => import('@/features/settings/components/PersonasTab').then(m => ({ default: m.PersonasTab })));
@@ -22,7 +34,11 @@ const StatisticsTab = React.lazy(() => import('@/features/settings/components/St
 const SystemTab = React.lazy(() => import('@/features/settings/components/SystemTab').then(m => ({ default: m.SystemTab })));
 const WorkspaceTab = React.lazy(() => import('@/features/settings/components/WorkspaceTab').then(m => ({ default: m.WorkspaceTab })));
 const SocialMediaTab = React.lazy(() => import('@/features/settings/components/SocialMediaTab').then(m => ({ default: m.SocialMediaTab })));
-const ExtensionsTab = React.lazy(() => import('@/features/settings/components/ExtensionsTab').then(m => ({ default: m.ExtensionsTab })));
+
+// Extensions Category Tabs
+const ExtensionPluginsTab = React.lazy(() => import('@/features/settings/components/ExtensionPluginsTab').then(m => ({ default: m.ExtensionPluginsTab })));
+const MCPServersTab = React.lazy(() => import('@/features/settings/components/MCPServersTab').then(m => ({ default: m.MCPServersTab })));
+const SkillsTab = React.lazy(() => import('@/features/settings/components/SkillsTab').then(m => ({ default: m.SkillsTab })));
 
 interface SettingsTabContentProps {
     activeTab: SettingsCategory
@@ -51,8 +67,8 @@ const SettingsTabRenderer: React.FC<SettingsTabContentProps> = ({
         case 'appearance': return <AppearanceTab {...sharedProps} />;
         case 'system': return <SystemTab {...sharedProps} />;
         case 'models': return <ModelsTab {...sharedProps} installedModels={installedModels} proxyModels={proxyModels} onRefreshModels={onRefreshModels} />;
+        case 'memory': return <MemoryInspector />;
         case 'quotas': return <QuotasTab {...sharedProps} />;
-        case 'skills': return <ExtensionsTab {...sharedProps} initialSection="skills" />;
         case 'statistics': return <StatisticsTab {...sharedProps} />;
         case 'personas': return <PersonasTab {...sharedProps} />;
         case 'speech': return <SpeechTab {...sharedProps} />;
@@ -62,7 +78,20 @@ const SettingsTabRenderer: React.FC<SettingsTabContentProps> = ({
         case 'usage-limits': return <ModelUsageLimitsTab {...sharedProps} groupedModels={groupedModels} />;
         case 'images': return <ImageSettingsTab {...sharedProps} />;
         case 'social-media': return <SocialMediaTab {...sharedProps} />;
-        case 'extensions': return <ExtensionsTab {...sharedProps} initialSection="plugins" />;
+        
+        // Extension Category
+        case 'extensions-plugins': return <ExtensionPluginsTab {...sharedProps} />;
+        case 'extensions-mcp': return (
+            <div className="rounded-lg border border-border/40 bg-card/30 p-1">
+                <MCPServersTab />
+            </div>
+        );
+        case 'extensions-skills': return <SkillsTab {...sharedProps} />;
+        
+        // Legacy/Fallback cases
+        case 'skills': return <SkillsTab {...sharedProps} />;
+        case 'extensions': return <ExtensionPluginsTab {...sharedProps} />;
+        
         default: return null;
     }
 };
@@ -70,8 +99,10 @@ const SettingsTabRenderer: React.FC<SettingsTabContentProps> = ({
 export const SettingsTabContent: React.FC<SettingsTabContentProps> = (props) => {
     const { sharedProps } = props;
     return (
-        <Suspense fallback={<div className="animate-pulse p-6 text-muted-foreground">{sharedProps.t('common.loading')}</div>}>
-            <SettingsTabRenderer {...props} />
-        </Suspense>
+        <ErrorBoundary>
+            <Suspense fallback={<div className="animate-pulse p-6 text-muted-foreground">{sharedProps.t('common.loading')}</div>}>
+                <SettingsTabRenderer {...props} />
+            </Suspense>
+        </ErrorBoundary>
     );
 };

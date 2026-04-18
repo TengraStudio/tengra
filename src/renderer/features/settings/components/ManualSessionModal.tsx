@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Button } from '@renderer/components/ui/button';
 import { Input } from '@renderer/components/ui/input';
 import { useTranslation } from '@renderer/i18n';
@@ -6,6 +16,15 @@ import React, { useCallback, useState } from 'react';
 
 import { Modal } from '@/components/ui/modal';
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_MANUALSESSIONMODAL_1 = "flex items-start gap-4 p-5 rounded-2xl bg-primary/5 border border-primary/10 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300";
+const C_MANUALSESSIONMODAL_2 = "flex items-start gap-3 p-3 rounded-xl bg-muted/20 border border-border/10 typo-body text-muted-foreground font-medium leading-relaxed transition-all hover:bg-muted/30";
+const C_MANUALSESSIONMODAL_3 = "flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-primary/10 text-primary font-bold typo-body border border-primary/20";
+const C_MANUALSESSIONMODAL_4 = "absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground group-focus-within:text-primary transition-colors";
+const C_MANUALSESSIONMODAL_5 = "absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground/40 hover:text-foreground hover:bg-muted/50 rounded-lg";
+const C_MANUALSESSIONMODAL_6 = "w-full sm:flex-1 h-12 rounded-2xl typo-body font-bold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all disabled:opacity-50 border border-border/40";
+
 
 export interface ManualSessionModalState {
     isOpen: boolean;
@@ -25,7 +44,7 @@ const HeaderSection: React.FC<{
     email?: string;
     t: (key: string, options?: Record<string, string>) => string;
 }> = ({ email, t }) => (
-    <div className="flex items-start gap-4 p-5 rounded-2xl bg-primary/5 border border-primary/10 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+    <div className={C_MANUALSESSIONMODAL_1}>
         <div className="p-2.5 rounded-xl bg-primary/10 text-primary shadow-sm">
             <ShieldCheck className="w-5.5 h-5.5" />
         </div>
@@ -50,9 +69,9 @@ const InstructionsSection: React.FC<{ t: (key: string) => string }> = ({ t }) =>
             {[1, 2, 3, 4, 5].map(step => (
                 <li
                     key={step}
-                    className="flex items-start gap-3 p-3 rounded-xl bg-muted/20 border border-border/10 typo-body text-muted-foreground font-medium leading-relaxed transition-all hover:bg-muted/30"
+                    className={C_MANUALSESSIONMODAL_2}
                 >
-                    <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-primary/10 text-primary font-bold typo-body border border-primary/20">
+                    <span className={C_MANUALSESSIONMODAL_3}>
                         {step}
                     </span>
                     <span>{t(`auth.sessionKeyInstructions.step${step}`)}</span>
@@ -87,7 +106,7 @@ const InputSection: React.FC<InputSectionProps> = ({
             {t('auth.sessionKeyLabel')}
         </label>
         <div className="relative group">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground group-focus-within:text-primary transition-colors">
+            <div className={C_MANUALSESSIONMODAL_4}>
                 <Key className="w-4 h-4" />
             </div>
             <Input
@@ -107,7 +126,7 @@ const InputSection: React.FC<InputSectionProps> = ({
                     variant="ghost"
                     size="icon"
                     onClick={() => setSessionKey('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground/40 hover:text-foreground hover:bg-muted/50 rounded-lg"
+                    className={C_MANUALSESSIONMODAL_5}
                 >
                     <X className="w-3.5 h-3.5" />
                 </Button>
@@ -235,7 +254,7 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
                         variant="ghost"
                         onClick={onClose}
                         disabled={isSaving || success}
-                        className="w-full sm:flex-1 h-12 rounded-2xl typo-body font-bold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all disabled:opacity-50 border border-border/40"
+                        className={C_MANUALSESSIONMODAL_6}
                     >
                         {t('common.cancel')}
                     </Button>
@@ -244,10 +263,10 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
                         onClick={() => void handleSave()}
                         disabled={isSaving || success || !sessionKey.startsWith('sk-ant-sid')}
                         className={cn(
-                            'w-full sm:tw-flex-2 h-12 rounded-2xl typo-body font-bold   flex items-center justify-center gap-3 transition-all shadow-xl',
+                            'w-full sm:flex-2 h-12 rounded-2xl typo-body font-bold   flex items-center justify-center gap-3 transition-all shadow-xl',
                             success
                                 ? 'bg-success hover:bg-success text-foreground shadow-emerald-500/20'
-                                : 'bg-primary text-primary-foreground shadow-primary/20 hover:scale-[1.02] active:scale-95 disabled:scale-100 disabled:opacity-40 disabled:grayscale'
+                                : 'bg-primary text-primary-foreground shadow-primary/20 hover:scale-102 active:scale-95 disabled:scale-100 disabled:opacity-40 disabled:grayscale'
                         )}
                     >
                         <SaveButtonContent isSaving={isSaving} success={success} t={t} />

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -5,7 +15,6 @@ import type { KeyboardShortcutsConfig } from '@/hooks/useKeyboardShortcuts';
 
 vi.mock('@/hooks/shortcutBindings', () => {
     const DEFAULT_SHORTCUT_BINDINGS = {
-        commandPalette: { key: 'k', mod: true },
         newChat: { key: 'n', mod: true },
         openSettings: { key: ',', mod: true },
         clearChat: { key: 'l', mod: true },
@@ -34,7 +43,6 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 function createConfig(overrides?: Partial<KeyboardShortcutsConfig>): KeyboardShortcutsConfig {
     return {
-        onCommandPalette: vi.fn(),
         onNewChat: vi.fn(),
         onOpenSettings: vi.fn(),
         onShowShortcuts: vi.fn(),
@@ -45,7 +53,6 @@ function createConfig(overrides?: Partial<KeyboardShortcutsConfig>): KeyboardSho
         onZoomIn: vi.fn(),
         onZoomOut: vi.fn(),
         onResetZoom: vi.fn(),
-        showCommandPalette: false,
         showShortcuts: false,
         showSSHManager: false,
         currentChatId: 'chat-1',
@@ -65,14 +72,6 @@ describe('useKeyboardShortcuts', () => {
 
     afterEach(() => {
         vi.restoreAllMocks();
-    });
-
-    it('calls onCommandPalette on Ctrl+K', () => {
-        const config = createConfig();
-        renderHook(() => useKeyboardShortcuts(config));
-
-        fireKey('k', { ctrlKey: true });
-        expect(config.onCommandPalette).toHaveBeenCalledOnce();
     });
 
     it('calls onNewChat on Ctrl+N', () => {
@@ -116,7 +115,7 @@ describe('useKeyboardShortcuts', () => {
     });
 
     it('Escape calls onCloseModals when modals are open', () => {
-        const config = createConfig({ showCommandPalette: true });
+        const config = createConfig({ showShortcuts: true });
         renderHook(() => useKeyboardShortcuts(config));
 
         fireKey('Escape');

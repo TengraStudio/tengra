@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Theme Store Component
  * Browse, preview, and install themes for the application.
  */
@@ -8,6 +18,10 @@ import React, { useMemo, useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_THEMESTORE_1 = "flex max-h-dialog w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-border/30 bg-card shadow-lg";
+
 
 interface Theme {
     id: string
@@ -106,7 +120,7 @@ const ThemePreviewModal: React.FC<{
     t: (key: string) => string;
 }> = ({ theme, onApply, onClose, t }) => (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm" onClick={onClose}>
-        <div onClick={(e) => e.stopPropagation()} className="flex max-h-[min(88vh,44rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-border/30 bg-card shadow-lg">
+        <div onClick={(e) => e.stopPropagation()} className={C_THEMESTORE_1}>
             <div className="h-32 sm:h-40" style={{ background: theme.preview }} />
             <div className="overflow-y-auto p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-2">

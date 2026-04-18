@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -12,6 +22,7 @@ import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.servic
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service';
 import { OllamaService } from '@main/services/llm/ollama.service';
+import { ProxyService } from '@main/services/proxy/proxy.service';
 import { SecurityService } from '@main/services/security/security.service';
 import { CommandService } from '@main/services/system/command.service';
 import { NetworkService } from '@main/services/system/network.service';
@@ -44,6 +55,7 @@ export interface McpDeps {
     modelCollaboration: ModelCollaborationService;
     auditLog: AuditLogService;
     workspace: WorkspaceService;
+    proxy: ProxyService;
 }
 
 export type McpHandlerResult = JsonValue | ServiceResponse<JsonValue | void> | void | RuntimeValue;

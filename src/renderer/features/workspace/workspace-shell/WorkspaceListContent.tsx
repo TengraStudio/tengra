@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Button } from '@renderer/components/ui/button';
 import { Checkbox } from '@renderer/components/ui/checkbox';
 import { useWorkspaceListStateMachine } from '@renderer/features/workspace/hooks/useWorkspaceListStateMachine';
@@ -7,6 +17,10 @@ import React from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
 import { Workspace } from '@/types';
+
+/* Batch-02: Extracted Long Classes */
+const C_WORKSPACELISTCONTENT_1 = "grid grid-cols-todo gap-3 px-4 py-3 border-t border-border/20 items-center text-sm hover:bg-muted/10 transition-colors sm:gap-4";
+
 
 interface WorkspaceListContentProps {
     viewMode: 'grid' | 'list';
@@ -48,7 +62,7 @@ export const WorkspaceListContent: React.FC<WorkspaceListContentProps> = ({
 
     return (
         <div className="rounded-xl border border-border/40 overflow-hidden">
-            <div className="grid tw-grid-cols-todo gap-3 px-4 py-3 bg-muted/20 typo-caption font-semibold text-muted-foreground">
+            <div className="grid grid-cols-todo gap-3 px-4 py-3 bg-muted/20 typo-caption font-semibold text-muted-foreground">
                 <div />
                 <button 
                     onClick={() => toggleSort('title')} 
@@ -71,7 +85,7 @@ export const WorkspaceListContent: React.FC<WorkspaceListContentProps> = ({
                 style={{ height: 'calc(100vh - 350px)', minHeight: 400 }}
                 data={workspaces}
                 itemContent={(_index, workspace) => (
-                    <div className="grid tw-grid-cols-todo gap-3 px-4 py-3 border-t border-border/20 items-center text-sm hover:bg-muted/10 transition-colors">
+                    <div className={C_WORKSPACELISTCONTENT_1}>
                         <div>
                             <Checkbox
                                 checked={workspaceStateMachine.state.selectedWorkspaceIds.has(workspace.id)}

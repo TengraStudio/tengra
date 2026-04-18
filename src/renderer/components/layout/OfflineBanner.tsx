@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { useTranslation } from '@renderer/i18n';
 import { WifiOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -30,10 +40,10 @@ export function OfflineBanner(): JSX.Element | null {
 
     return (
         <div
-            className="tengra-offline-banner"
+            className="sticky top-0 z-50 flex items-center justify-center gap-2 bg-warning/90 px-3 py-1.5 text-xs font-semibold text-warning-foreground"
             role="alert"
         >
-            <WifiOff className="tengra-offline-banner__icon" />
+            <WifiOff className="h-3.5 w-3.5" />
             <span>{t('common.offlineBanner')}</span>
         </div>
     );

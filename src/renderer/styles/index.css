@@ -1,0 +1,21 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+@import url('./vendor.css');
+@import url('./tailwind.css');
+@import url('./base/app.css');
+@import url('./base/typography.css');
+@import url('./layout/terminal.css');
+@import url('./layers/foundation.css');
+@import url('./layers/theme-base.css');
+@import url('./layers/components.css');
+@import url('./layers/overlays.css');
+@import url('./layers/accessibility.css');
+@import url('./layers/rtl.css');

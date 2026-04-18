@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock electron
@@ -29,6 +39,27 @@ vi.mock('@main/services/system/health-check.service', () => ({
     HealthCheckService: vi.fn(),
 }));
 
+const mockMemoryContextStats = vi.hoisted(() => ({
+    getStats: vi.fn(() => ({
+        cacheHits: 0,
+        cacheMisses: 0,
+        inflightReuseCount: 0,
+        lookupCount: 0,
+        lookupTimeoutCount: 0,
+        lookupFailureCount: 0,
+        lastLookupDurationMs: 0,
+        averageLookupDurationMs: 0,
+        cacheSize: 0,
+        inflightSize: 0,
+    })),
+}));
+
+vi.mock('@main/services/llm/memory-context.service', () => ({
+    MemoryContextService: {
+        getStats: mockMemoryContextStats.getStats,
+    },
+}));
+
 // Import the module under test AFTER mocks
 import { registerHealthIpc } from '@main/ipc/health';
 
@@ -52,7 +83,8 @@ describe('Health IPC Integration', () => {
         expect(mockIpcMainHandlers.has('health:check')).toBe(true);
         expect(mockIpcMainHandlers.has('health:getService')).toBe(true);
         expect(mockIpcMainHandlers.has('health:listServices')).toBe(true);
-        expect(mockIpcMainHandlers.size).toBe(4);
+        expect(mockIpcMainHandlers.has('health:memoryContext')).toBe(true);
+        expect(mockIpcMainHandlers.size).toBe(5);
     });
 
     describe('health:status', () => {
@@ -264,6 +296,30 @@ describe('Health IPC Integration', () => {
             const result = await handler!({});
 
             expect(result).toEqual([]);
+        });
+    });
+
+    describe('health:memoryContext', () => {
+        it('should return memory context runtime metrics', async () => {
+            const expectedStats = {
+                cacheHits: 5,
+                cacheMisses: 7,
+                inflightReuseCount: 2,
+                lookupCount: 12,
+                lookupTimeoutCount: 1,
+                lookupFailureCount: 0,
+                lastLookupDurationMs: 9,
+                averageLookupDurationMs: 6.5,
+                cacheSize: 4,
+                inflightSize: 1,
+            };
+            mockMemoryContextStats.getStats.mockReturnValue(expectedStats);
+
+            const handler = mockIpcMainHandlers.get('health:memoryContext');
+            const result = await handler!({});
+
+            expect(mockMemoryContextStats.getStats).toHaveBeenCalledTimes(1);
+            expect(result).toEqual(expectedStats);
         });
     });
 });

@@ -1,4 +1,18 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Terminal } from 'lucide-react';
+
+/* Batch-02: Extracted Long Classes */
+const C_TERMINALEMPTYSTATE_1 = "mt-4 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg typo-caption font-bold transition-all border border-primary/30";
+
 
 type TerminalEmptyStateProps = {
     title: string;
@@ -13,7 +27,7 @@ export function TerminalEmptyState({ title, actionLabel, onCreate }: TerminalEmp
             <p className="text-sm">{title}</p>
             <button
                 onClick={onCreate}
-                className="mt-4 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg typo-caption font-bold transition-all border border-primary/30"
+                className={C_TERMINALEMPTYSTATE_1}
             >
                 {actionLabel}
             </button>

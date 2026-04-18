@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -81,8 +91,18 @@ describe('FileSystemService', () => {
 
         it('should detect binary files', async () => {
             const content = Buffer.from([0x48, 0x65, 0x00, 0x6c]);
-            vi.mocked(fs.stat).mockResolvedValue({ size: content.length } as Awaited<ReturnType<typeof fs.stat>>);
-            vi.mocked(fs.readFile).mockResolvedValue(content as never as string);
+            vi.mocked(fs.stat).mockResolvedValue({ size: content.length } as any);
+            vi.mocked(fs.readFile).mockResolvedValue(content as any);
+            
+            // Mock fs.open for isBinaryFile
+            const mockRead = vi.fn().mockImplementation((buf: Buffer) => {
+                content.copy(buf);
+                return Promise.resolve({ bytesRead: buf.length, buffer: buf });
+            });
+            vi.mocked(fs.open).mockResolvedValue({
+                read: mockRead,
+                close: vi.fn().mockResolvedValue(undefined)
+            } as any);
 
             const result = await service.readFile(path.join(allowedRoot, 'bin.dat'));
             expect(result.success).toBe(false);

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Check, Plus, RefreshCw, User, Users } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
@@ -6,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { LinkedAccountInfo } from '@/electron.d';
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 import { CommonBatches } from '@/utils/ipc-batch.util';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -79,7 +90,10 @@ export const AccountManager: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-6">
                 {message && (
-                    <div className={`p-3 rounded-md text-sm font-medium ${message.type === 'success' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
+                    <div className={cn(
+                        'p-3 rounded-md text-sm font-medium',
+                        message.type === 'success' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+                    )}>
                         {message.text}
                     </div>
                 )}
@@ -90,7 +104,10 @@ export const AccountManager: React.FC = () => {
                         {accounts.map((account) => (
                             <div
                                 key={account.id}
-                                className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${activeAccountId === account.id ? 'border-primary bg-primary/10' : 'border-border/50 hover:bg-muted/50'}`}
+                                className={cn(
+                                    'flex items-center justify-between p-3 rounded-lg border transition-colors',
+                                    activeAccountId === account.id ? 'border-primary bg-primary/10' : 'border-border/50 hover:bg-muted/50'
+                                )}
                             >
                                 <div className="flex items-center gap-3">
                                     <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center overflow-hidden border border-border">

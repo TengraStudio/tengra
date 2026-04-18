@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Checkbox } from '@renderer/components/ui/checkbox';
 import { Input } from '@renderer/components/ui/input';
 import {
@@ -444,7 +454,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                         }}
                         rows={12}
                         spellCheck={false}
-                        className="min-h-[240px] resize-y rounded-2xl border border-border/20 bg-background px-4 py-3 font-mono typo-caption leading-6"
+                        className="min-h-240 resize-y rounded-2xl border border-border/20 bg-background px-4 py-3 font-mono typo-caption leading-6"
                         placeholder={t('settings.editor.additionalOptionsPlaceholder')}
                     />
                 </SettingsField>

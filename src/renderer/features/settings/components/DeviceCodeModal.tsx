@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Check, Copy, ExternalLink, Loader2, X } from 'lucide-react';
 import React, { useCallback, useState } from 'react';
 
@@ -5,6 +15,11 @@ import { Modal } from '@/components/ui/modal';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { appLogger } from '@/utils/renderer-logger';
+
+/* Batch-02: Extracted Long Classes */
+const C_DEVICECODEMODAL_1 = "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 transition-colors font-semibold";
+const C_DEVICECODEMODAL_2 = "w-full px-4 py-2.5 rounded-xl bg-muted/30 border border-border/50 text-muted-foreground/60 hover:text-foreground hover:bg-muted/50 transition-colors text-sm font-medium";
+
 
 export interface DeviceCodeModalState {
     isOpen: boolean
@@ -98,7 +113,7 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
                 {/* Open GitHub Button */}
                 <button
                     onClick={handleOpenLink}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 transition-colors font-semibold"
+                    className={C_DEVICECODEMODAL_1}
                 >
                     <ExternalLink className="w-4 h-4" />
                     {t('auth.openGithubToEnter')}
@@ -128,7 +143,7 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
 
                 <button
                     onClick={onClose}
-                    className="w-full px-4 py-2.5 rounded-xl bg-muted/30 border border-border/50 text-muted-foreground/60 hover:text-foreground hover:bg-muted/50 transition-colors text-sm font-medium"
+                    className={C_DEVICECODEMODAL_2}
                 >
                     {isPending ? t('common.cancel') : t('common.close')}
                 </button>

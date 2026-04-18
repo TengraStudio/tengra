@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * ComparisonCard - Individual model response card for A/B comparison.
  * Shows model name, response content, metrics, copy and rating buttons.
  */
@@ -9,6 +19,7 @@ import React, { useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
 import type { ComparisonResult } from '../hooks/useModelComparison';
 
@@ -72,14 +83,14 @@ export const ComparisonCard: React.FC<ComparisonCardProps> = React.memo(({ resul
                     <Button
                         variant="ghost" size="sm"
                         onClick={() => { onRate(modelKey, 1); }}
-                        className={rating === 1 ? 'text-success' : 'text-muted-foreground'}
+                        className={cn(rating === 1 ? 'text-success' : 'text-muted-foreground')}
                     >
                         <ThumbsUp className="w-3.5 h-3.5" />
                     </Button>
                     <Button
                         variant="ghost" size="sm"
                         onClick={() => { onRate(modelKey, -1); }}
-                        className={rating === -1 ? 'text-destructive' : 'text-muted-foreground'}
+                        className={cn(rating === -1 ? 'text-destructive' : 'text-muted-foreground')}
                     >
                         <ThumbsDown className="w-3.5 h-3.5" />
                     </Button>

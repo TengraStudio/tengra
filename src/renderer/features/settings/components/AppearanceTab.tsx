@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Badge } from '@renderer/components/ui/badge';
 import { Input } from '@renderer/components/ui/input';
 import {
@@ -8,6 +18,7 @@ import {
     SelectValue,
 } from '@renderer/components/ui/select';
 import { Switch } from '@renderer/components/ui/switch';
+import { UI_PRIMITIVES } from '@renderer/constants/ui-primitives';
 import {
     clamp,
     DEFAULT_TERMINAL_APPEARANCE,
@@ -21,6 +32,7 @@ import type { ThemeManifest } from '@shared/types/theme';
 import {
     Accessibility,
     BaggageClaim,
+    Maximize,
     Monitor,
     MousePointer2,
     Palette,
@@ -38,9 +50,12 @@ import { themeIpc } from '@/utils/theme-ipc.util';
 
 import type { SettingsSharedProps } from '../types';
 
+const APPEARANCE_ROW_CLASS = UI_PRIMITIVES.SETTINGS_ROW;
+const SECTION_CONTAINER_CLASS = UI_PRIMITIVES.SECTION_CARD;
+
 type AppearanceTabProps = Pick<
     SettingsSharedProps,
-    'settings' | 'updateGeneral' | 't'
+    'settings' | 'updateGeneral' | 'updateWindow' | 't'
 >;
 
 interface TerminalPreviewProps {
@@ -61,8 +76,8 @@ function TerminalPreview({
     t,
 }: TerminalPreviewProps): JSX.Element {
     return (
-        <div className="relative h-full overflow-hidden rounded-[2rem] border border-border/40 bg-[#0c0c0c] p-1">
-            <div className="h-full rounded-[1.75rem] border border-white/5 p-8">
+        <div className="relative h-full overflow-hidden rounded-card-lg border border-border/40 bg-black p-1">
+            <div className="h-full rounded-card-2xl border border-white/5 p-8">
                 <div className="mb-8 flex items-center gap-2 opacity-40">
                     <div className="h-2.5 w-2.5 rounded-full bg-destructive/60" />
                     <div className="h-2.5 w-2.5 rounded-full bg-warning/60" />
@@ -130,13 +145,13 @@ function AppearanceRow({
     icon: React.ReactNode
 }): JSX.Element {
     return (
-        <div className="flex flex-col gap-4 rounded-2xl border border-border/15 p-4 transition-colors hover:bg-muted/10 sm:flex-row sm:items-center sm:justify-between">
+        <div className={APPEARANCE_ROW_CLASS}>
             <div className="min-w-0 space-y-1">
                 <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                     {icon}
                     {title}
                 </div>
-                <div className="max-w-[32rem] typo-caption leading-relaxed text-muted-foreground/70">
+                <div className="max-w-lg typo-caption leading-relaxed text-muted-foreground/70">
                     {description}
                 </div>
             </div>
@@ -148,6 +163,7 @@ function AppearanceRow({
 export const AppearanceTab: React.FC<AppearanceTabProps> = ({
     settings,
     updateGeneral,
+    updateWindow,
     t,
 }) => {
     const [themes, setThemes] = useState<ThemeManifest[]>([]);
@@ -216,15 +232,23 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
         [terminalAppearance]
     );
 
+    const resolutionOptions = [
+        { value: 'auto', label: 'Auto (Recommended)' },
+        { value: '1280x720', label: '1280 x 720 (HD)' },
+        { value: '1600x900', label: '1600 x 900' },
+        { value: '1920x1080', label: '1920 x 1080 (FHD)' },
+        { value: '2560x1440', label: '2560 x 1440 (QHD)' },
+    ];
+
     return (
-        <div className="space-y-8 pb-16 lg:space-y-10">
+        <div className="space-y-8 pb-16 lg:space-y-10 animate-in fade-in duration-500">
             <div className="px-1">
                 <div className="mb-3 flex items-center gap-4">
-                    <div className="rounded-2xl bg-primary/10 p-3.5 text-primary">
+                    <div className={UI_PRIMITIVES.ICON_WRAPPER}>
                         <Palette className="h-7 w-7" />
                     </div>
                     <div>
-                        <h3 className="text-2xl font-semibold leading-none text-foreground">
+                        <h3 className="text-2xl font-bold tracking-tight text-foreground">
                             {t('settings.appearanceTitle')}
                         </h3>
                     </div>
@@ -234,31 +258,35 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 2xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-                <div className="space-y-6 rounded-3xl border border-border/20 bg-card p-5 sm:p-6 lg:p-8">
-                    <div className="flex items-center gap-3 px-1">
-                        <Monitor className="h-4 w-4 text-primary" />
-                        <h4 className="text-sm font-semibold text-foreground">{t('settings.appearanceTitle')}</h4>
+            <div className="grid grid-cols-1 gap-6 2xl:grid-cols-balance-95-105">
+                <div className={SECTION_CONTAINER_CLASS}>
+                    <div className="flex items-center gap-2 px-1">
+                        <Monitor className="h-4 w-4 text-primary/80" />
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
+                            {t('settings.interfaceConfiguration')}
+                        </h4>
                     </div>
 
                     <div className="space-y-6">
                         <div className="space-y-2">
-                            <div className="px-1 typo-caption font-medium text-muted-foreground">{t('settings.theme')}</div>
+                            <label className="px-1 text-xs font-semibold text-muted-foreground">
+                                {t('settings.theme')}
+                            </label>
                             <Select
                                 value={settings?.general.theme ?? 'graphite'}
                                 onValueChange={value => {
                                     void updateGeneral({ theme: value });
                                 }}
                             >
-                                <SelectTrigger className="h-12 rounded-2xl border-border/40 bg-muted/20 px-6 text-sm focus:ring-primary/20">
+                                <SelectTrigger className={UI_PRIMITIVES.CONTROL_BASE}>
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-2xl border-border/40 bg-background/95">
+                                <SelectContent className="rounded-2xl border-border/40 bg-background/95 backdrop-blur-md">
                                     {themeOptions.map(opt => (
                                         <SelectItem key={opt.value} value={opt.value} className="text-sm">
                                             <div className="flex items-center gap-3">
-                                                <span>{opt.label}</span>
-                                                <Badge variant="outline" className="h-5 border-border/20 px-2 typo-body opacity-60">
+                                                <span className="font-medium">{opt.label}</span>
+                                                <Badge variant="outline" className={cn(UI_PRIMITIVES.BADGE_MUTED, "uppercase")}>
                                                     {opt.type}
                                                 </Badge>
                                             </div>
@@ -270,7 +298,9 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
 
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
                             <div className="space-y-2">
-                                <div className="px-1 typo-caption font-medium text-muted-foreground">{t('settings.baseFontSize')}</div>
+                                <label className="px-1 text-xs font-semibold text-muted-foreground">
+                                    {t('settings.baseFontSize')}
+                                </label>
                                 <Input
                                     type="number"
                                     min={12}
@@ -281,11 +311,13 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                                         const nextValue = Number.isNaN(parsed) ? 14 : clamp(parsed, 12, 18);
                                         void updateGeneral({ fontSize: nextValue });
                                     }}
-                                    className="h-12 rounded-2xl border-border/40 bg-muted/20 px-6 text-sm focus-visible:ring-primary/20"
+                                    className={UI_PRIMITIVES.CONTROL_INPUT}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <div className="px-1 typo-caption font-medium text-muted-foreground">{t('settings.typographyScale')}</div>
+                                <label className="px-1 text-xs font-semibold text-muted-foreground">
+                                    {t('settings.typographyScale')}
+                                </label>
                                 <Select
                                     value={settings?.general.typographyScale ?? 'balanced'}
                                     onValueChange={value => {
@@ -294,10 +326,10 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                                         });
                                     }}
                                 >
-                                    <SelectTrigger className="h-12 rounded-2xl border-border/40 bg-muted/20 px-6 text-sm focus:ring-primary/20">
+                                    <SelectTrigger className={UI_PRIMITIVES.CONTROL_BASE}>
                                         <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-border/40 bg-background/95">
+                                    <SelectContent className="rounded-2xl border-border/40 bg-background/95 backdrop-blur-md">
                                         {typographyScaleOptions.map(opt => (
                                             <SelectItem key={opt.value} value={opt.value} className="text-sm">
                                                 {opt.label}
@@ -310,51 +342,152 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                     </div>
                 </div>
 
-                <div className="flex flex-col justify-between rounded-3xl border border-border/20 bg-card p-5 sm:p-6 lg:p-8">
-                    <div className="mb-6 flex items-center gap-3 px-1">
-                        <Type className="h-4 w-4 text-primary" />
-                        <h4 className="text-sm font-semibold text-foreground">{t('settings.livePreview')}</h4>
+                <div className={cn(SECTION_CONTAINER_CLASS, "flex flex-col")}>
+                    <div className="mb-6 flex items-center gap-2 px-1">
+                        <Type className="h-4 w-4 text-primary/80" />
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
+                            {t('settings.livePreview')}
+                        </h4>
                     </div>
 
-                    <div className="flex-1 space-y-6">
-                        <div className="rounded-[2rem] border border-border/15 bg-muted/10 p-6 sm:p-8">
-                            <h2
-                                className="mb-4 text-3xl font-semibold leading-tight text-foreground sm:text-4xl"
-                                style={{ fontFamily: resolvedAppFont.display }}
-                            >
-                                {t('settings.previewHeading')}
-                            </h2>
-                            <p
-                                className="text-sm leading-8 text-muted-foreground/80"
-                                style={{ fontFamily: resolvedAppFont.sans }}
-                            >
-                                {t('settings.previewBody')}
-                            </p>
-                        </div>
+                    <div className={cn(UI_PRIMITIVES.PREVIEW_BOX, "flex-1 flex flex-col justify-center")}>
+                        <h2
+                            className="mb-4 text-3xl font-bold leading-tight text-foreground sm:text-4xl tracking-tight"
+                            style={{ fontFamily: resolvedAppFont.display }}
+                        >
+                            {t('settings.previewHeading')}
+                        </h2>
+                        <p
+                            className="text-sm leading-relaxed text-muted-foreground/80"
+                            style={{ fontFamily: resolvedAppFont.sans }}
+                        >
+                            {t('settings.previewBody')}
+                        </p>
                     </div>
 
                     <div className="mt-6 flex flex-col gap-3 border-t border-border/10 px-1 pt-6 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                            <div className="typo-caption font-medium text-primary">
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4 font-mono text-xxs uppercase tracking-widest text-muted-foreground/50">
+                            <span className="text-primary/70">
                                 {themeOptions.find(option => option.value === (settings?.general.theme ?? 'graphite'))?.label}
-                            </div>
+                            </span>
                             <div className="h-1 w-1 rounded-full bg-border/40" />
-                            <div className="typo-caption text-muted-foreground/60">{resolvedAppFont.label}</div>
+                            <span>{resolvedAppFont.label}</span>
                         </div>
-                        <Badge variant="outline" className="h-6 border-border/40 bg-muted/20 px-3 typo-body text-muted-foreground/60">
+                        <Badge variant="outline" className="h-6 border-border/40 bg-muted/20 px-3 font-mono text-muted-foreground/60">
                             {settings?.general.fontSize}px
                         </Badge>
                     </div>
                 </div>
             </div>
 
-            <div className="space-y-8 rounded-3xl border border-border/20 bg-card p-5 sm:p-6 lg:p-8">
+            {/* Window Configuration Section */}
+            <div className={cn(SECTION_CONTAINER_CLASS, "space-y-8")}>
                 <div className="flex items-center gap-4">
-                    <div className="rounded-2xl bg-primary/10 p-3 text-primary">
-                        <Terminal className="h-6 w-6" />
+                    <div className={UI_PRIMITIVES.ICON_WRAPPER}>
+                        <Maximize className="h-7 w-7" />
                     </div>
                     <div>
-                        <h3 className="text-lg font-semibold text-foreground">
+                        <h3 className="text-xl font-bold text-foreground">
+                            {t('settings.windowConfigurationTitle')}
+                        </h3>
+                        <p className="mt-1 text-sm text-muted-foreground/70">
+                            {t('settings.windowConfigurationDesc')}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-8 xl:grid-cols-balance-95-105 xl:gap-10">
+                    <div className="space-y-6">
+                        <div className="space-y-2">
+                            <label className="px-1 text-xs font-semibold text-muted-foreground">
+                                {t('settings.windowResolution')}
+                            </label>
+                            <Select
+                                value={settings?.general.resolution ?? 'auto'}
+                                onValueChange={value => {
+                                    void updateGeneral({ resolution: value });
+                                }}
+                            >
+                                <SelectTrigger className={UI_PRIMITIVES.CONTROL_BASE}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-2xl border-border/40 bg-background/95 backdrop-blur-md">
+                                    {resolutionOptions.map(opt => (
+                                        <SelectItem key={opt.value} value={opt.value} className="text-sm">
+                                            {opt.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div className="space-y-2">
+                                <label className="px-1 text-xs font-semibold text-muted-foreground">{t('settings.windowWidth')}</label>
+                                <Input
+                                    type="number"
+                                    min={800}
+                                    max={7680}
+                                    value={settings?.window?.width ?? 1280}
+                                    onChange={event => {
+                                        const p = Number(event.target.value);
+                                        updateWindow?.({ width: clamp(Number.isFinite(p) ? p : 1280, 800, 7680) });
+                                    }}
+                                    className={UI_PRIMITIVES.CONTROL_INPUT}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="px-1 text-xs font-semibold text-muted-foreground">{t('settings.windowHeight')}</label>
+                                <Input
+                                    type="number"
+                                    min={600}
+                                    max={4320}
+                                    value={settings?.window?.height ?? 720}
+                                    onChange={event => {
+                                        const p = Number(event.target.value);
+                                        updateWindow?.({ height: clamp(Number.isFinite(p) ? p : 720, 600, 4320) });
+                                    }}
+                                    className={UI_PRIMITIVES.CONTROL_INPUT}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-4 border-t border-border/10 pt-6">
+                            <AppearanceRow
+                                title={t('settings.windowStartOnStartup')}
+                                description={t('settings.windowStartOnStartupDesc')}
+                                control={(
+                                    <Switch
+                                        checked={settings?.window?.startOnStartup ?? false}
+                                        onCheckedChange={checked => updateWindow?.({ startOnStartup: checked })}
+                                    />
+                                )}
+                                icon={<RefreshCw className="h-3.5 w-3.5 text-primary opacity-60" />}
+                            />
+                            <AppearanceRow
+                                title={t('settings.workAtBackground')}
+                                description={t('settings.workAtBackgroundDesc')}
+                                control={(
+                                    <Switch
+                                        checked={settings?.window?.workAtBackground ?? true}
+                                        onCheckedChange={checked => updateWindow?.({ workAtBackground: checked })}
+                                    />
+                                )}
+                                icon={<RefreshCw className="h-3.5 w-3.5 text-primary opacity-60" />}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Terminal Appearance Section */}
+            <div className={cn(SECTION_CONTAINER_CLASS, "space-y-8")}>
+                <div className="flex items-center gap-4">
+                    <div className={UI_PRIMITIVES.ICON_WRAPPER}>
+                        <Terminal className="h-7 w-7" />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-bold text-foreground">
                             {t('settings.terminalAppearanceTitle')}
                         </h3>
                         <p className="mt-1 text-sm text-muted-foreground/70">
@@ -363,80 +496,73 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] xl:gap-10">
+                <div className="grid grid-cols-1 gap-8 xl:grid-cols-balance-95-105 xl:gap-10">
                     <div className="space-y-8">
                         <div className="space-y-6">
-                            <div className="space-y-2">
-                                <div className="px-1 typo-caption font-medium text-muted-foreground">{t('terminal.theme')}</div>
-                                <Select
-                                    value={terminalAppearance.themePresetId}
-                                    onValueChange={value => {
-                                        setTerminalAppearance(previousValue => ({
-                                            ...previousValue,
-                                            fontPresetId: DEFAULT_TERMINAL_APPEARANCE.fontPresetId,
-                                            themePresetId: value,
-                                        }));
-                                    }}
-                                >
-                                    <SelectTrigger className="h-12 rounded-2xl border-border/40 bg-muted/20 px-6 text-sm focus:ring-primary/20">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-border/40 bg-background/95">
-                                        {terminalThemeOptions.map(opt => (
-                                            <SelectItem key={opt.value} value={opt.value} className="text-sm">
-                                                {opt.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <label className="px-1 text-xs font-semibold text-muted-foreground">{t('terminal.theme')}</label>
+                                    <Select
+                                        value={terminalAppearance.themePresetId}
+                                        onValueChange={value => {
+                                            setTerminalAppearance(p => ({ ...p, themePresetId: value }));
+                                        }}
+                                    >
+                                        <SelectTrigger className={UI_PRIMITIVES.CONTROL_BASE}>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-border/40 bg-background/95 backdrop-blur-md">
+                                            {terminalThemeOptions.map(opt => (
+                                                <SelectItem key={opt.value} value={opt.value} className="text-sm">
+                                                    {opt.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
 
-                            <div className="space-y-2">
-                                <div className="px-1 typo-caption font-medium text-muted-foreground">{t('terminal.cursorStyle')}</div>
-                                <Select
-                                    value={terminalAppearance.cursorStyle}
-                                    onValueChange={value => {
-                                        setTerminalAppearance(previousValue => ({
-                                            ...previousValue,
-                                            fontPresetId: DEFAULT_TERMINAL_APPEARANCE.fontPresetId,
-                                            cursorStyle: value as 'block' | 'underline' | 'bar',
-                                        }));
-                                    }}
-                                >
-                                    <SelectTrigger className="h-12 rounded-2xl border-border/40 bg-muted/20 px-6 text-sm focus:ring-primary/20">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-border/40 bg-background/95">
-                                        {terminalCursorOptions.map(opt => (
-                                            <SelectItem key={opt.value} value={opt.value} className="text-sm">
-                                                {opt.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <div className="space-y-2">
+                                    <label className="px-1 text-xs font-semibold text-muted-foreground">{t('terminal.cursorStyle')}</label>
+                                    <Select
+                                        value={terminalAppearance.cursorStyle}
+                                        onValueChange={value => {
+                                            setTerminalAppearance(p => ({
+                                                ...p,
+                                                cursorStyle: value as typeof p.cursorStyle
+                                            }));
+                                        }}
+                                    >
+                                        <SelectTrigger className={UI_PRIMITIVES.CONTROL_BASE}>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-border/40 bg-background/95 backdrop-blur-md">
+                                            {terminalCursorOptions.map(opt => (
+                                                <SelectItem key={opt.value} value={opt.value} className="text-sm">
+                                                    {opt.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
-                                    <div className="px-1 typo-caption font-medium text-muted-foreground">{t('settings.terminalFontSize')}</div>
+                                    <label className="px-1 text-xs font-semibold text-muted-foreground">{t('settings.terminalFontSize')}</label>
                                     <Input
                                         type="number"
                                         min={8}
                                         max={32}
                                         value={terminalAppearance.fontSize}
                                         onChange={event => {
-                                            const parsed = Number(event.target.value);
-                                            setTerminalAppearance(previousValue => ({
-                                                ...previousValue,
-                                                fontPresetId: DEFAULT_TERMINAL_APPEARANCE.fontPresetId,
-                                                fontSize: clamp(Number.isFinite(parsed) ? parsed : 13, 8, 32),
-                                            }));
+                                            const p = Number(event.target.value);
+                                            setTerminalAppearance(prev => ({ ...prev, fontSize: clamp(Number.isFinite(p) ? p : 13, 8, 32) }));
                                         }}
-                                        className="h-12 rounded-2xl border-border/40 bg-muted/20 px-5 text-sm focus-visible:ring-primary/20"
+                                        className={UI_PRIMITIVES.CONTROL_INPUT}
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <div className="px-1 typo-caption font-medium text-muted-foreground">{t('terminal.lineHeight')}</div>
+                                    <label className="px-1 text-xs font-semibold text-muted-foreground">{t('terminal.lineHeight')}</label>
                                     <Input
                                         type="number"
                                         min={1}
@@ -444,33 +570,23 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                                         step={0.1}
                                         value={terminalAppearance.lineHeight}
                                         onChange={event => {
-                                            const parsed = Number(event.target.value);
-                                            setTerminalAppearance(previousValue => ({
-                                                ...previousValue,
-                                                fontPresetId: DEFAULT_TERMINAL_APPEARANCE.fontPresetId,
-                                                lineHeight: clamp(Number.isFinite(parsed) ? parsed : 1.2, 1, 2),
-                                            }));
+                                            const p = Number(event.target.value);
+                                            setTerminalAppearance(prev => ({ ...prev, lineHeight: clamp(Number.isFinite(p) ? p : 1.2, 1, 2) }));
                                         }}
-                                        className="h-12 rounded-2xl border-border/40 bg-muted/20 px-5 text-sm focus-visible:ring-primary/20"
+                                        className={UI_PRIMITIVES.CONTROL_INPUT}
                                     />
                                 </div>
                             </div>
                         </div>
 
-                        <div className="space-y-4 border-t border-border/10 pt-4">
+                        <div className="space-y-4 border-t border-border/10 pt-6">
                             <AppearanceRow
                                 title={t('terminal.fontLigatures')}
                                 description={t('settings.previewBody')}
                                 control={(
                                     <Switch
                                         checked={terminalAppearance.ligatures}
-                                        onCheckedChange={checked => {
-                                            setTerminalAppearance(previousValue => ({
-                                                ...previousValue,
-                                                fontPresetId: DEFAULT_TERMINAL_APPEARANCE.fontPresetId,
-                                                ligatures: checked,
-                                            }));
-                                        }}
+                                        onCheckedChange={checked => setTerminalAppearance(prev => ({ ...prev, ligatures: checked }))}
                                     />
                                 )}
                                 icon={<BaggageClaim className="h-3.5 w-3.5 text-primary opacity-60" />}
@@ -481,13 +597,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                                 control={(
                                     <Switch
                                         checked={terminalAppearance.cursorBlink}
-                                        onCheckedChange={checked => {
-                                            setTerminalAppearance(previousValue => ({
-                                                ...previousValue,
-                                                fontPresetId: DEFAULT_TERMINAL_APPEARANCE.fontPresetId,
-                                                cursorBlink: checked,
-                                            }));
-                                        }}
+                                        onCheckedChange={checked => setTerminalAppearance(prev => ({ ...prev, cursorBlink: checked }))}
                                     />
                                 )}
                                 icon={<RefreshCw className="h-3.5 w-3.5 text-primary opacity-60" />}
@@ -508,32 +618,31 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                 </div>
             </div>
 
-            <div className="space-y-8 rounded-3xl border border-border/20 bg-card p-5 sm:p-6 lg:p-8">
+            {/* Accessibility Section */}
+            <div className={cn(SECTION_CONTAINER_CLASS, "space-y-8")}>
                 <div className="flex items-center gap-4 px-1">
-                    <div className="rounded-2xl bg-primary/10 p-3.5 text-primary">
-                        <Accessibility className="h-6 w-6" />
+                    <div className={cn(UI_PRIMITIVES.ICON_WRAPPER, "bg-success/10 text-success shadow-success/10")}>
+                        <Accessibility className="h-7 w-7" />
                     </div>
                     <div>
-                        <h3 className="text-lg font-semibold text-foreground">
+                        <h3 className="text-xl font-bold text-foreground">
                             {t('settings.accessibility.title')}
                         </h3>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:gap-x-10 xl:gap-y-8">
-                    <div className="space-y-8">
+                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:gap-x-10 xl:gap-y-6">
+                    <div className="space-y-4">
                         <AppearanceRow
                             title={t('settings.accessibility.highContrast')}
                             description={t('settings.accessibility.highContrastDesc')}
                             control={(
                                 <Switch
                                     checked={a11ySettings.highContrast}
-                                    onCheckedChange={checked => {
-                                        updateSettings({ highContrast: checked });
-                                    }}
+                                    onCheckedChange={checked => updateSettings({ highContrast: checked })}
                                 />
-                            )}
-                            icon={<BaggageClaim className="h-3.5 w-3.5 text-primary opacity-60" />}
+                              )}
+                            icon={<BaggageClaim className="h-3.5 w-3.5 text-success opacity-60" />}
                         />
                         <AppearanceRow
                             title={t('settings.accessibility.reducedMotion')}
@@ -541,28 +650,24 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                             control={(
                                 <Switch
                                     checked={a11ySettings.reducedMotion}
-                                    onCheckedChange={checked => {
-                                        updateSettings({ reducedMotion: checked });
-                                    }}
+                                    onCheckedChange={checked => updateSettings({ reducedMotion: checked })}
                                 />
-                            )}
-                            icon={<RefreshCw className="h-3.5 w-3.5 text-primary opacity-60" />}
+                              )}
+                            icon={<RefreshCw className="h-3.5 w-3.5 text-success opacity-60" />}
                         />
                     </div>
 
-                    <div className="space-y-8">
+                    <div className="space-y-4">
                         <AppearanceRow
                             title={t('settings.accessibility.enhancedFocus')}
                             description={t('settings.accessibility.enhancedFocusDesc')}
                             control={(
                                 <Switch
                                     checked={a11ySettings.enhancedFocusIndicators}
-                                    onCheckedChange={checked => {
-                                        updateSettings({ enhancedFocusIndicators: checked });
-                                    }}
+                                    onCheckedChange={checked => updateSettings({ enhancedFocusIndicators: checked })}
                                 />
-                            )}
-                            icon={<MousePointer2 className="h-3.5 w-3.5 text-primary opacity-60" />}
+                              )}
+                            icon={<MousePointer2 className="h-3.5 w-3.5 text-success opacity-60" />}
                         />
                         <AppearanceRow
                             title={t('settings.accessibility.screenReader')}
@@ -570,12 +675,10 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                             control={(
                                 <Switch
                                     checked={a11ySettings.screenReaderAnnouncements}
-                                    onCheckedChange={checked => {
-                                        updateSettings({ screenReaderAnnouncements: checked });
-                                    }}
+                                    onCheckedChange={checked => updateSettings({ screenReaderAnnouncements: checked })}
                                 />
-                            )}
-                            icon={<RefreshCw className="h-3.5 w-3.5 text-primary opacity-60" />}
+                              )}
+                            icon={<RefreshCw className="h-3.5 w-3.5 text-success opacity-60" />}
                         />
                     </div>
                 </div>

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { FileNode, WorkspaceTreeItem } from '@renderer/features/workspace/components/WorkspaceTreeItem';
 import { ChevronDown, ChevronRight, Folder, Server, X } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -85,7 +95,7 @@ const MountHeader: React.FC<MountHeaderProps> = ({
                     {mount.name}
                 </div>
                 {mount.type === 'ssh' && (
-                    <span className="px-1 py-0.5 tw-rounded-3px bg-primary/20 text-primary text-xxxs font-bold border border-primary/30">
+                    <span className="px-1 py-0.5 rounded-3px bg-primary/20 text-primary text-xxxs font-bold border border-primary/30">
                         {t('terminal.sshPrefix')}
                     </span>
                 )}

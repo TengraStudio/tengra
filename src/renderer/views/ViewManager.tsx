@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { useChatListening } from '@renderer/context/ChatContext';
 import { useModel } from '@renderer/context/ModelContext';
 import {
@@ -29,11 +39,14 @@ import {
     ChatViewWrapperView,
     DockerDashboardView,
     MarketplaceView,
-    MemoryInspectorView,
     ModelsPageView,
     SettingsRouteView,
     WorkspaceRouteView,
 } from './view-manager/view-loaders';
+
+
+/* Batch-02: Extracted Long Classes */
+const C_VIEWMANAGER_1 = "absolute top-4 right-4 z-50 cursor-pointer bg-destructive/70 text-destructive-foreground px-3 py-1.5 rounded-full backdrop-blur-md animate-pulse flex items-center gap-2";
 
 interface ViewManagerProps {
     currentView: AppView
@@ -170,7 +183,7 @@ const ListeningOverlay: React.FC = () => {
     return (
         <div
             onClick={() => stopListening()}
-            className="absolute top-4 right-4 z-50 cursor-pointer bg-destructive/70 text-destructive-foreground px-3 py-1.5 rounded-full backdrop-blur-md animate-pulse flex items-center gap-2"
+            className={C_VIEWMANAGER_1}
         >
             <div className="w-2 h-2 rounded-full bg-current animate-ping" />
             <span className="text-xs font-bold text-xxs">
@@ -204,7 +217,6 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
             case 'workspace': return <WorkspaceSection />;
             case 'settings': return <SettingsSection />;
             case 'mcp': return <DockerSection />;
-            case 'memory': return <Suspense fallback={<LoadingState size="md" />}><MemoryInspectorView /></Suspense>;
             case 'models': return <ModelsSection />;
             case 'docker': return <DockerSection />;
             case 'terminal': return <TerminalPlaceholderSection />;
@@ -222,16 +234,15 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
             <AnimatePresence initial={false}>
                 <motion.div
                     key={currentView}
-                    className={cn("h-full overflow-hidden", currentView === 'memory' && "h-full")}
+                    className={cn("h-full overflow-hidden will-change-opacity")}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: pagePreset.duration, ease: pagePreset.ease }}
-                    style={{ willChange: 'opacity' }}
                 >
                     <ErrorBoundary resetKeys={[currentView]}>
                         <Suspense fallback={renderViewSkeleton(
-                            ['chat', 'workspace', 'settings', 'mcp', 'memory', 'agent', 'models', 'docker', 'terminal', 'marketplace'].includes(currentView)
+                            ['chat', 'workspace', 'settings', 'mcp', 'agent', 'models', 'docker', 'terminal', 'marketplace'].includes(currentView)
                                 ? currentView as ViewSkeletonId
                                 : 'marketplace'
                         )}>

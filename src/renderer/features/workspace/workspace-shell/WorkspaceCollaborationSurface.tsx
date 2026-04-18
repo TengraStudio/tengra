@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Bot, Lock, Radio, Users } from 'lucide-react';
 import React from 'react';
 
@@ -285,13 +295,13 @@ export function WorkspaceCollaborationSurface({
     return (
         <div className="rounded-xl border border-border/40 bg-background/70 px-3 py-3">
             <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 tw-text-11 font-semibold tw-tracking-18 text-muted-foreground/60">
+                <div className="flex items-center gap-2 text-11 font-semibold tracking-18 text-muted-foreground/60">
                     <Users className="h-3.5 w-3.5" />
                     <span>{t('chat.collaboration.presence')}</span>
                 </div>
                 <div
                     className={cn(
-                        'flex items-center gap-1 tw-text-10 font-semibold  tw-tracking-18',
+                        'flex items-center gap-1 text-10 font-semibold  tracking-18',
                         collaboration.status === 'connected'
                             ? 'text-success'
                             : collaboration.status === 'connecting'
@@ -315,7 +325,7 @@ export function WorkspaceCollaborationSurface({
                     <div
                         key={entry.actorId}
                         className={cn(
-                            'flex tw-min-w-140 items-center gap-2 rounded-lg border px-2.5 py-2 typo-caption',
+                            'flex min-w-140 items-center gap-2 rounded-lg border px-2.5 py-2 typo-caption',
                             entry.isLocal
                                 ? 'border-primary/20 bg-primary/5 text-primary'
                                 : 'border-border/50 bg-background/60 text-foreground'
@@ -329,7 +339,7 @@ export function WorkspaceCollaborationSurface({
                         <div className="min-w-0 flex-1">
                             <div className="truncate font-medium">{entry.name}</div>
                             {entry.filePath && (
-                                <div className="truncate tw-text-11 text-muted-foreground">
+                                <div className="truncate text-11 text-muted-foreground">
                                     {getFileName(entry.filePath)}
                                 </div>
                             )}
@@ -354,7 +364,7 @@ export function WorkspaceCollaborationSurface({
 
             {feedEntries.length > 0 && (
                 <div className="mt-3 border-t border-border/40 pt-3">
-                    <div className="tw-text-11 font-semibold tw-tracking-18 text-muted-foreground/60">
+                    <div className="text-11 font-semibold tracking-18 text-muted-foreground/60">
                         {t('agent.history')}
                     </div>
                     <div className="mt-2 space-y-1.5">
@@ -373,7 +383,7 @@ export function WorkspaceCollaborationSurface({
                                 </div>
                                 <div
                                     className={cn(
-                                        'shrink-0 tw-text-10 font-semibold  tw-tracking-16',
+                                        'shrink-0 text-10 font-semibold  tracking-16',
                                         entry.kind === 'workspace:file-focus'
                                             ? 'text-primary'
                                             : 'text-muted-foreground'

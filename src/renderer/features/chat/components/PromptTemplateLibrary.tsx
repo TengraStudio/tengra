@@ -1,9 +1,23 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { PromptTemplate } from '@shared/types/templates';
 import { BookTemplate, Search, X } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_PROMPTTEMPLATELIBRARY_1 = "absolute bottom-full left-0 right-0 mb-2 z-30 max-h-80 overflow-hidden rounded-xl border border-border bg-card shadow-2xl flex flex-col sm:flex-row";
+
 
 interface PromptTemplateLibraryProps {
     /** Called when a template is selected for insertion into chat */
@@ -47,7 +61,7 @@ export const PromptTemplateLibrary: React.FC<PromptTemplateLibraryProps> = ({ on
     };
 
     return (
-        <div className="absolute bottom-full left-0 right-0 mb-2 z-30 max-h-80 overflow-hidden rounded-xl border border-border bg-card shadow-2xl flex flex-col">
+        <div className={C_PROMPTTEMPLATELIBRARY_1}>
             <div className="flex items-center gap-2 p-3 border-b border-border">
                 <BookTemplate className="w-4 h-4 text-primary" />
                 <span className="text-sm font-bold text-foreground">{t('prompts.library.title')}</span>

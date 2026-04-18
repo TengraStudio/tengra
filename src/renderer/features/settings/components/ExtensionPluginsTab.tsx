@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Badge } from '@renderer/components/ui/badge';
 import { Button } from '@renderer/components/ui/button';
 import { Input } from '@renderer/components/ui/input';
@@ -16,10 +26,28 @@ import { MarketplaceExtension } from '@shared/types/marketplace';
 import { Info, Package, RefreshCw, Settings2, Trash2, TriangleAlert } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { cn } from '@/lib/utils';
 import { useExtensionStore } from '@/store/extension.store';
 import { marketplaceStore, useMarketplaceStore } from '@/store/marketplace.store';
 import { pushNotification } from '@/store/notification-center.store';
 import { appLogger } from '@/utils/renderer-logger';
+
+/* Batch-02: Extracted Long Classes */
+const C_EXTENSIONPLUGINSTAB_1 = "m-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs animate-in fade-in duration-300";
+const C_EXTENSIONPLUGINSTAB_2 = "absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-success border-2 border-background shadow-glow-success-strong";
+const C_EXTENSIONPLUGINSTAB_3 = "bg-muted px-4 py-1.5 rounded-xl border border-border/20 flex items-center gap-4 shadow-sm ring-1 ring-inset ring-white/5 sm:gap-5 lg:gap-6";
+const C_EXTENSIONPLUGINSTAB_4 = "h-9 w-9 rounded-xl border-destructive/20 text-destructive/60 hover:text-destructive hover:bg-destructive/10 hover:border-destructive/40 transition-all active:scale-90 shadow-sm";
+const C_EXTENSIONPLUGINSTAB_5 = "flex items-center justify-between gap-4 sticky top-0 z-10 bg-card/60 backdrop-blur-md pb-4 pt-1 border-b border-border/5 mb-2 sm:gap-5 lg:gap-6";
+const C_EXTENSIONPLUGINSTAB_6 = "py-12 px-6 rounded-2xl border border-dashed border-border/40 bg-muted/5 flex flex-col items-center justify-center text-center space-y-3 sm:flex-row";
+const C_EXTENSIONPLUGINSTAB_7 = "group relative grid gap-2 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-all duration-200 hover:bg-muted/10 hover:border-border/40 sm:p-5 lg:p-6";
+const C_EXTENSIONPLUGINSTAB_8 = "h-10 rounded-xl border-border/30 bg-background/50 px-4 font-bold shadow-inner focus:ring-primary/20 transition-all font-mono";
+
+
+const ICON_WRAPPER_BASE = "p-5 rounded-2xl bg-primary/10 text-primary shadow-inner ring-1 ring-inset ring-primary/20 transition-all";
+const ICON_WRAPPER_HOVER = "group-hover:scale-105 group-hover:shadow-glow-primary-lg";
+
+const SIDEBAR_ITEM_BASE = "group relative flex items-center gap-4 w-full cursor-pointer rounded-xl border p-3.5 transition-all duration-300";
+const SIDEBAR_ITEM_SELECTED = "border-primary/40 bg-primary/10 shadow-glow-primary-ring ring-1 ring-primary/20";
 
 interface ExtensionPluginsTabProps {
     t: (key: string, options?: Record<string, string | number>) => string;
@@ -230,7 +258,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
     const selectedDraft = selectedExtensionId ? (draftByExtensionId[selectedExtensionId] ?? {}) : {};
 
     return (
-        <div className="grid gap-6 xl:grid-cols-[380px,1fr] h-[calc(100vh-200px)]">
+        <div className="grid gap-6 xl:grid-cols-380-main h-screen-minus-200">
             {/* Left Sidebar: Extension List */}
             <section className="flex flex-col rounded-2xl border border-border/40 bg-card/30 overflow-hidden shadow-sm">
                 <div className="p-4 border-b border-border/20 bg-muted/20 flex items-center justify-between">
@@ -242,7 +270,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                 
                 <div className="flex-1 overflow-y-auto p-2 space-y-1">
                     {error && (
-                        <div className="m-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs animate-in fade-in duration-300">
+                        <div className={C_EXTENSIONPLUGINSTAB_1}>
                              <p className="font-bold flex items-center gap-2"><Info className="w-3 h-3" /> Error</p>
                              <p className="mt-1 opacity-80">{error}</p>
                         </div>
@@ -270,47 +298,58 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                                     <div
                                         key={extension.manifest.id}
                                         onClick={() => setSelectedExtensionId(extension.manifest.id)}
-                                        className={`group relative flex items-center gap-4 w-full cursor-pointer rounded-xl border p-3.5 transition-all duration-300
-                                            ${isSelected
-                                                ? 'border-primary/40 bg-primary/10 shadow-[0_0_15px_rgba(var(--primary-rgb),0.1)] ring-1 ring-primary/20'
+                                        className={cn(
+                                            SIDEBAR_ITEM_BASE,
+                                            isSelected
+                                                ? SIDEBAR_ITEM_SELECTED
                                                 : 'border-transparent bg-transparent hover:bg-muted/40 hover:border-border/40 hover:shadow-sm'
-                                            }`}
+                                        )}
                                     >
-                                        <div className={`p-2.5 rounded-xl shrink-0 transition-all duration-300 shadow-inner
-                                            ${isActive 
-                                                ? 'bg-primary/20 text-primary ring-1 ring-inset ring-primary/30 group-hover:scale-110' 
+                                        <div className={cn(
+                                            'p-2.5 rounded-xl shrink-0 transition-all duration-300 shadow-inner',
+                                            isActive
+                                                ? 'bg-primary/20 text-primary ring-1 ring-inset ring-primary/30 group-hover:scale-110'
                                                 : 'bg-muted/50 text-muted-foreground/40 grayscale opacity-60'
-                                            }`}>
+                                        )}>
                                             <Package className="w-6 h-6" />
                                         </div>
                                         
                                         <div className="min-w-0 flex-1 space-y-1">
                                             <div className="flex items-center justify-between gap-2">
                                                 <div className="flex items-center gap-2 min-w-0">
-                                                    <p className={`truncate text-sm font-black tracking-tight leading-none ${isActive ? 'text-foreground' : 'text-muted-foreground/60'}`}>
+                                                    <p className={cn(
+                                                        'truncate text-sm font-black tracking-tight leading-none',
+                                                        isActive ? 'text-foreground' : 'text-muted-foreground/60'
+                                                    )}>
                                                         {extension.manifest.name}
                                                     </p>
                                                     {isActive && (
-                                                        <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-success shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                                                        <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-success shadow-glow-success" />
                                                     )}
                                                 </div>
                                                 {extension.updateAvailable && (
-                                                    <div className="h-2 w-2 shrink-0 rounded-full bg-destructive shadow-[0_0_8px_rgba(var(--destructive-rgb),0.5)] animate-pulse" />
+                                                    <div className="h-2 w-2 shrink-0 rounded-full bg-destructive shadow-glow-destructive-rgb animate-pulse" />
                                                 )}
                                             </div>
                                             
                                             <div className="flex items-center gap-2">
-                                                <Badge variant="outline" className={`text-[9px] h-4 leading-none font-bold tracking-tighter uppercase px-1.5 ${isActive ? 'border-primary/30 text-primary bg-primary/5' : 'opacity-30'}`}>
+                                                <Badge
+                                                    variant="outline"
+                                                    className={cn(
+                                                        'text-xxxs h-4 leading-none font-bold tracking-tighter uppercase px-1.5',
+                                                        isActive ? 'border-primary/30 text-primary bg-primary/5' : 'opacity-30'
+                                                    )}
+                                                >
                                                     V{extension.manifest.version}
                                                 </Badge>
                                                 {!isActive && (
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/30">{t('common.disabled')}</span>
+                                                    <span className="text-xxxs font-black uppercase tracking-widest text-muted-foreground/30">{t('common.disabled')}</span>
                                                 )}
                                             </div>
                                         </div>
                                         
                                         {isSelected && (
-                                            <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-primary rounded-r-full shadow-[2px_0_8px_rgba(var(--primary-rgb),0.5)]" />
+                                            <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-primary rounded-r-full shadow-edge-primary" />
                                         )}
                                     </div>
                                 );
@@ -329,7 +368,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                         </div>
                         <div className="space-y-1">
                             <h3 className="text-base font-bold text-muted-foreground/50">{t('settings.extensions.plugins.select')}</h3>
-                            <p className="text-xs text-muted-foreground/30 max-w-[280px]">Select an extension from the list to manage its configuration and lifecycle.</p>
+                            <p className="text-xs text-muted-foreground/30 max-w-280">Select an extension from the list to manage its configuration and lifecycle.</p>
                         </div>
                     </div>
                 ) : (
@@ -340,11 +379,11 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                                 <div className="flex items-start justify-between gap-6">
                                     <div className="flex gap-6">
                                         <div className="relative group">
-                                            <div className="p-5 rounded-2xl bg-primary/10 text-primary shadow-inner ring-1 ring-inset ring-primary/20 transition-all group-hover:scale-105 group-hover:shadow-[0_0_20px_rgba(var(--primary-rgb),0.2)]">
+                                            <div className={cn(ICON_WRAPPER_BASE, ICON_WRAPPER_HOVER)}>
                                                 <Package className="w-10 h-10" />
                                             </div>
                                             {selectedExtension.status === 'active' && (
-                                                <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-success border-2 border-background shadow-[0_0_10px_rgba(34,197,94,0.6)]" />
+                                                <div className={C_EXTENSIONPLUGINSTAB_2} />
                                             )}
                                         </div>
                                         <div>
@@ -356,11 +395,11 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                                                     {selectedExtension.manifest.author.name}
                                                 </span>
                                                 <span className="h-1 w-1 rounded-full bg-border/40" />
-                                                <Badge variant="outline" className="font-black text-[10px] border-primary/20 text-primary bg-primary/5 uppercase tracking-widest px-2 h-5">
+                                                <Badge variant="outline" className="font-black text-xxxs border-primary/20 text-primary bg-primary/5 uppercase tracking-widest px-2 h-5">
                                                     V{selectedExtension.manifest.version}
                                                 </Badge>
                                                 {selectedExtension.updateAvailable && (
-                                                    <Badge variant="destructive" className="h-5 px-2 text-[10px] font-black uppercase tracking-widest animate-pulse shadow-lg shadow-destructive/20">
+                                                    <Badge variant="destructive" className="h-5 px-2 text-xxxs font-black uppercase tracking-widest animate-pulse shadow-lg shadow-destructive/20">
                                                         Update Available: v{selectedExtension.latestVersion}
                                                     </Badge>
                                                 )}
@@ -373,17 +412,23 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                                             <Button
                                                 size="sm"
                                                 variant="destructive"
-                                                className="h-9 px-4 gap-2 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-destructive/20 active:scale-95"
+                                                className="h-9 px-4 gap-2 font-black uppercase tracking-widest text-xxxs shadow-lg shadow-destructive/20 active:scale-95"
                                                 onClick={() => { void handleUpdate(selectedExtension.manifest.id); }}
                                                 disabled={isUpdating === selectedExtension.manifest.id}
                                             >
-                                                <RefreshCw className={`h-3.5 w-3.5 ${isUpdating === selectedExtension.manifest.id ? 'animate-spin' : ''}`} />
+                                                <RefreshCw className={cn(
+                                                    'h-3.5 w-3.5',
+                                                    isUpdating === selectedExtension.manifest.id && 'animate-spin'
+                                                )} />
                                                 {t('common.update')}
                                             </Button>
                                         )}
                                         
-                                        <div className="bg-muted px-4 py-1.5 rounded-xl border border-border/20 flex items-center gap-4 shadow-sm ring-1 ring-inset ring-white/5">
-                                            <span className={`text-[10px] font-black uppercase tracking-widest ${selectedExtension.status === 'active' ? 'text-primary' : 'text-muted-foreground/50'}`}>
+                                        <div className={C_EXTENSIONPLUGINSTAB_3}>
+                                            <span className={cn(
+                                                'text-xxxs font-black uppercase tracking-widest',
+                                                selectedExtension.status === 'active' ? 'text-primary' : 'text-muted-foreground/50'
+                                            )}>
                                                 {selectedExtension.status === 'active' ? t('common.active') : t('common.disabled')}
                                             </span>
                                             <Switch
@@ -397,7 +442,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                                         <Button
                                             variant="outline"
                                             size="icon"
-                                            className="h-9 w-9 rounded-xl border-destructive/20 text-destructive/60 hover:text-destructive hover:bg-destructive/10 hover:border-destructive/40 transition-all active:scale-90 shadow-sm"
+                                            className={C_EXTENSIONPLUGINSTAB_4}
                                             title={t('marketplace.uninstall')}
                                             onClick={() => {
                                                 // eslint-disable-next-line no-alert
@@ -407,7 +452,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                                             }}
                                             disabled={isUninstalling === selectedExtension.manifest.id}
                                         >
-                                            <Trash2 className={`w-4 h-4 ${isUninstalling === selectedExtension.manifest.id ? 'animate-pulse' : ''}`} />
+                                            <Trash2 className={cn('w-4 h-4', isUninstalling === selectedExtension.manifest.id && 'animate-pulse')} />
                                         </Button>
                                     </div>
                                 </div>
@@ -421,7 +466,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                         {/* Configuration & Scroll Area */}
                         <div className="flex-1 overflow-y-auto p-6 space-y-8 CustomScrollbar">
                             <div className="space-y-6 max-w-3xl">
-                                <div className="flex items-center justify-between gap-4 sticky top-0 z-10 bg-card/60 backdrop-blur-md pb-4 pt-1 border-b border-border/5 mb-2">
+                                <div className={C_EXTENSIONPLUGINSTAB_5}>
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 rounded-lg bg-primary/10 text-primary">
                                             <Settings2 className="w-4 h-4" />
@@ -449,7 +494,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                                         <p className="text-xs font-bold uppercase tracking-widest">{t('common.loading')}</p>
                                     </div>
                                 ) : Object.keys(configProperties).length === 0 ? (
-                                    <div className="py-12 px-6 rounded-2xl border border-dashed border-border/40 bg-muted/5 flex flex-col items-center justify-center text-center space-y-3">
+                                    <div className={C_EXTENSIONPLUGINSTAB_6}>
                                         <div className="p-3 rounded-full bg-muted/20">
                                             <Info className="w-6 h-6 text-muted-foreground/30" />
                                         </div>
@@ -462,10 +507,10 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                                             const fieldLabel = property.title.trim().length > 0 ? property.title : key;
                                             
                                             return (
-                                                <div key={key} className="group relative grid gap-2 rounded-2xl border border-border/20 bg-muted/5 p-4 transition-all duration-200 hover:bg-muted/10 hover:border-border/40">
+                                                <div key={key} className={C_EXTENSIONPLUGINSTAB_7}>
                                                     <div className="flex items-center justify-between gap-4">
                                                         <div className="space-y-1">
-                                                            <Label className="text-[13px] font-black text-foreground/90 uppercase tracking-tight">
+                                                            <Label className="text-xs font-black text-foreground/90 uppercase tracking-tight">
                                                                 {fieldLabel}
                                                             </Label>
                                                             <p className="text-xs font-medium text-muted-foreground/60 leading-relaxed max-w-xl">
@@ -473,7 +518,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                                                             </p>
                                                         </div>
                                                         
-                                                        <div className="shrink-0 flex items-center justify-end min-w-[100px]">
+                                                        <div className="shrink-0 flex items-center justify-end min-w-100">
                                                             {property.type === 'boolean' ? (
                                                                 <Switch
                                                                     checked={Boolean(fieldValue)}
@@ -484,7 +529,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                                                                     value={typeof fieldValue === 'string' ? fieldValue : ''}
                                                                     onValueChange={value => handleFieldChange(key, value)}
                                                                 >
-                                                                    <SelectTrigger className="w-[180px] h-9 rounded-xl border-border/30 bg-background/50 font-bold overflow-hidden">
+                                                                    <SelectTrigger className="w-180 h-9 rounded-xl border-border/30 bg-background/50 font-bold overflow-hidden">
                                                                         <SelectValue className="truncate" placeholder={key} />
                                                                     </SelectTrigger>
                                                                     <SelectContent className="rounded-xl border-border/40 bg-card shadow-2xl">
@@ -505,7 +550,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                                                                 <Input
                                                                     type="number"
                                                                     value={typeof fieldValue === 'number' ? String(fieldValue) : ''}
-                                                                    className="h-10 rounded-xl border-border/30 bg-background/50 px-4 font-bold shadow-inner focus:ring-primary/20 transition-all font-mono"
+                                                                    className={C_EXTENSIONPLUGINSTAB_8}
                                                                     onChange={event => {
                                                                         const parsed = Number(event.target.value);
                                                                         if (Number.isFinite(parsed)) {
@@ -522,7 +567,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                                                             ) : (
                                                                 <div className="flex items-center gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-warning">
                                                                     <TriangleAlert className="h-4 w-4 shrink-0" />
-                                                                    <p className="text-[11px] font-bold uppercase tracking-tight">
+                                                                    <p className="text-xxs font-bold uppercase tracking-tight">
                                                                         {t('settings.extensions.plugins.complexConfigHint')}
                                                                     </p>
                                                                 </div>

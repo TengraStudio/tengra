@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -198,7 +208,7 @@ export function Tooltip({
                     <div
                         ref={tooltipRef}
                         className={cn(
-                            'tengra-tooltip',
+                            'absolute z-50 py-2 px-3 text-xs text-foreground bg-popover/95 backdrop-blur-16 border border-border/60 rounded-lg shadow-2xl pointer-events-none',
                             maxWidthClassName,
                             className
                         )}
@@ -210,19 +220,19 @@ export function Tooltip({
                         role="tooltip"
                         aria-live="polite"
                     >
-                        <div className="tengra-tooltip__content">
-                            {title && <div className="tengra-tooltip__title">{title}</div>}
+                        <div className="flex flex-col gap-1">
+                            {title && <div className="text-xs font-semibold text-foreground">{title}</div>}
                             {typeof content === 'string' ? (
-                                <div className="tengra-tooltip__text">{content}</div>
+                                <div className="text-muted-foreground">{content}</div>
                             ) : (
                                 content
                             )}
                             {description && (
-                                <div className="tengra-tooltip__description">{description}</div>
+                                <div className="text-10 text-muted-foreground/90">{description}</div>
                             )}
                             {shortcut && (
-                                <div className="tengra-tooltip__shortcut">
-                                    <kbd className="tengra-tooltip__kbd">
+                                <div className="pt-1">
+                                    <kbd className="inline-block px-1.5 py-0.5 font-mono text-10 tracking-50 text-foreground bg-background/70 border border-border/60 rounded">
                                         {shortcut}
                                     </kbd>
                                 </div>
@@ -230,11 +240,11 @@ export function Tooltip({
                         </div>
                         <div
                             className={cn(
-                                'tengra-tooltip__arrow',
-                                resolvedSide === 'top' && 'tengra-tooltip__arrow--top',
-                                resolvedSide === 'bottom' && 'tengra-tooltip__arrow--bottom',
-                                resolvedSide === 'left' && 'tengra-tooltip__arrow--left',
-                                resolvedSide === 'right' && 'tengra-tooltip__arrow--right'
+                                'absolute w-2 h-2 bg-popover/95 transform rotate-45',
+                                resolvedSide === 'top' && '-bottom-1 left-1/2 -translate-x-1/2 border-r border-b border-border/60',
+                                resolvedSide === 'bottom' && '-top-1 left-1/2 -translate-x-1/2 border-l border-t border-border/60',
+                                resolvedSide === 'left' && '-right-1 top-1/2 -translate-y-1/2 border-r border-t border-border/60',
+                                resolvedSide === 'right' && '-left-1 top-1/2 -translate-y-1/2 border-l border-b border-border/60'
                             )}
                         />
                     </div>,

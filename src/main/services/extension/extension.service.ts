@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Extension Service - Main process service for extension management
  * MKT-DEV-01: Extension SDK/templates/CLI
  */
@@ -185,7 +195,7 @@ export class ExtensionService extends BaseService {
                         // Try again to delete it, maybe the lock is gone now.
                         await fs.promises.rm(extPath, { recursive: true, force: true });
                         this.logInfo(`Delayed cleanup successful for ${extPath}`);
-                    } catch (cleanupErr) {
+                    } catch {
                         this.logWarn(`Delayed cleanup still failing for ${extPath}`);
                     }
                     continue;
@@ -597,7 +607,7 @@ export class ExtensionService extends BaseService {
         messageKey?: string;
         messageParams?: Record<string, string | number>;
     }> {
-        let instance = this.state.extensions.get(extensionId);
+        const instance = this.state.extensions.get(extensionId);
         let extensionPath: string | undefined;
 
         if (instance) {
@@ -619,7 +629,7 @@ export class ExtensionService extends BaseService {
         }
 
         // Deactivate first if active
-        if (instance && instance.status === 'active') {
+        if (instance?.status === 'active') {
             await this.deactivateExtension(extensionId);
         }
 
@@ -644,37 +654,7 @@ export class ExtensionService extends BaseService {
         // Delete from disk if it's in the managed extensions folder
         if (extensionPath && this.state.extensionsPath && extensionPath.startsWith(this.state.extensionsPath)) {
             try {
-                // Give some time for OS to release file handles after watcher/process closure
-                await new Promise(resolve => setTimeout(resolve, 200));
-
-                const stats = fs.lstatSync(extensionPath);
-                if (stats.isSymbolicLink()) {
-                    fs.unlinkSync(extensionPath);
-                    this.logInfo(`Extension symlink removed: ${extensionPath}`);
-                } else {
-                    // Optimized deletion for Windows: try to rename first if possible
-                    // as it releases the lock on the original path name immediately
-                    const trashPath = `${extensionPath}.trash-${Date.now()}`;
-                    try {
-                        fs.renameSync(extensionPath, trashPath);
-                        await fs.promises.rm(trashPath, { recursive: true, force: true });
-                    } catch {
-                        // If rename fails, try direct deletion with retries
-                        let lastErr: Error | null = null;
-                        for (let i = 0; i < 5; i++) {
-                            try {
-                                await fs.promises.rm(extensionPath, { recursive: true, force: true });
-                                lastErr = null;
-                                break;
-                            } catch (err) {
-                                lastErr = err as Error;
-                                await new Promise(resolve => setTimeout(resolve, 150 * (i + 1)));
-                            }
-                        }
-                        if (lastErr) { throw lastErr; }
-                    }
-                    this.logInfo(`Extension folder deleted: ${extensionPath}`);
-                }
+                await this.deleteExtensionFromDisk(extensionPath);
             } catch (err) {
                 this.logError(`Failed to delete extension folder: ${extensionPath}`, err as Error);
                 
@@ -1323,23 +1303,18 @@ export class ExtensionService extends BaseService {
 
                 // 2. Check package.json for ID matches
                 const packageJsonPath = path.join(extPath, 'package.json');
-                if (fs.existsSync(packageJsonPath)) {
-                    try {
-                        const content = await fs.promises.readFile(packageJsonPath, 'utf-8');
-                        const pkg = JSON.parse(content) as ExtensionPackageJson;
-                        const candidateIds = [
-                            pkg.tengra?.id,
-                            pkg.manifest?.id,
-                            pkg.id,
-                            pkg.name
-                        ].filter((id): id is string => typeof id === 'string' && id.length > 0);
+                if (!fs.existsSync(packageJsonPath)) {
+                    continue;
+                }
 
-                        if (candidateIds.some(id => id === extensionId || id.toLowerCase() === extensionId.toLowerCase())) {
-                            return extPath;
-                        }
-                    } catch {
-                        // ignore parse errors for individual package.json (might be corrupted)
+                try {
+                    const content = await fs.promises.readFile(packageJsonPath, 'utf-8');
+                    const pkg = JSON.parse(content) as ExtensionPackageJson;
+                    if (this.packageMatchesExtensionId(pkg, extensionId)) {
+                        return extPath;
                     }
+                } catch {
+                    // ignore parse errors for individual package.json (might be corrupted)
                 }
             }
         } catch (error) {
@@ -1348,7 +1323,54 @@ export class ExtensionService extends BaseService {
 
         return null;
     }
-}
 
+    private async deleteExtensionFromDisk(extensionPath: string): Promise<void> {
+        // Give some time for OS to release file handles after watcher/process closure
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        const stats = fs.lstatSync(extensionPath);
+        if (stats.isSymbolicLink()) {
+            fs.unlinkSync(extensionPath);
+            this.logInfo(`Extension symlink removed: ${extensionPath}`);
+            return;
+        }
+
+        const trashPath = `${extensionPath}.trash-${Date.now()}`;
+        try {
+            fs.renameSync(extensionPath, trashPath);
+            await fs.promises.rm(trashPath, { recursive: true, force: true });
+        } catch {
+            await this.removePathWithRetries(extensionPath);
+        }
+        this.logInfo(`Extension folder deleted: ${extensionPath}`);
+    }
+
+    private async removePathWithRetries(targetPath: string): Promise<void> {
+        let lastErr: Error | null = null;
+        for (let i = 0; i < 5; i++) {
+            try {
+                await fs.promises.rm(targetPath, { recursive: true, force: true });
+                return;
+            } catch (err) {
+                lastErr = err as Error;
+                await new Promise(resolve => setTimeout(resolve, 150 * (i + 1)));
+            }
+        }
+        if (lastErr) {
+            throw lastErr;
+        }
+    }
+
+    private packageMatchesExtensionId(pkg: ExtensionPackageJson, extensionId: string): boolean {
+        const normalizedId = extensionId.toLowerCase();
+        const candidateIds = [
+            pkg.tengra?.id,
+            pkg.manifest?.id,
+            pkg.id,
+            pkg.name
+        ].filter((id): id is string => typeof id === 'string' && id.length > 0);
+        return candidateIds.some(id => id.toLowerCase() === normalizedId);
+    }
+}
 
 

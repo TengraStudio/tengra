@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { ChevronDown, Loader2, SquareTerminal } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
@@ -6,6 +16,7 @@ import remarkGfm from 'remark-gfm';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { UI_PRIMITIVES } from '@/constants/ui-primitives';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { ToolResult } from '@/types';
@@ -187,10 +198,10 @@ export const TerminalView = React.memo(({
             )}
 
             {expanded && (
-                <CardContent className="space-y-3 px-4 pb-4 pt-0">
-                    <div className="overflow-hidden rounded-lg border border-border/40 bg-[#0b1016]">
-                        <div className="flex items-center justify-between border-b border-white/10 bg-black/15 px-3 py-2">
-                            <div className="flex items-center gap-1.5">
+                <CardContent className="space-y-3 px-4 pb-4 pt-0 text-left">
+                    <div className={UI_PRIMITIVES.COMMAND_OUTPUT_CONTAINER}>
+                        <div className={UI_PRIMITIVES.COMMAND_OUTPUT_HEADER}>
+                            <div className="flex items-center gap-1.5 opacity-60">
                                 <span className="h-2.5 w-2.5 rounded-full bg-red-400/85" />
                                 <span className="h-2.5 w-2.5 rounded-full bg-amber-300/85" />
                                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/85" />
@@ -268,3 +279,5 @@ export const TerminalView = React.memo(({
         </Card>
     );
 });
+
+TerminalView.displayName = 'TerminalView';

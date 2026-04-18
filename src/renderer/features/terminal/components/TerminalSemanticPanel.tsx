@@ -1,6 +1,22 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { AlertTriangle, Sparkles, Wrench } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_TERMINALSEMANTICPANEL_1 = "w-full text-left rounded-md px-2 py-1.5 hover:bg-accent/50 transition-colors border border-transparent hover:border-border/70 group";
+const C_TERMINALSEMANTICPANEL_2 = "p-1 rounded hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100";
+const C_TERMINALSEMANTICPANEL_3 = "p-1 rounded hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100";
+
 
 type TerminalSemanticIssue = {
     id: string;
@@ -62,7 +78,7 @@ export function TerminalSemanticPanel({
                     {activeSemanticIssues.map(issue => (
                         <div
                             key={issue.id}
-                            className="w-full text-left rounded-md px-2 py-1.5 hover:bg-accent/50 transition-colors border border-transparent hover:border-border/70 group"
+                            className={C_TERMINALSEMANTICPANEL_1}
                         >
                             <div className="flex items-center justify-between gap-2">
                                 <span
@@ -83,7 +99,7 @@ export function TerminalSemanticPanel({
                                                     e.stopPropagation();
                                                     void handleAiExplainError(issue);
                                                 }}
-                                                className="p-1 rounded hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
+                                                className={C_TERMINALSEMANTICPANEL_2}
                                                 title={t('terminal.aiExplainError')}
                                             >
                                                 <Sparkles className="w-3 h-3" />
@@ -93,7 +109,7 @@ export function TerminalSemanticPanel({
                                                     e.stopPropagation();
                                                     void handleAiFixError(issue);
                                                 }}
-                                                className="p-1 rounded hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
+                                                className={C_TERMINALSEMANTICPANEL_3}
                                                 title={t('terminal.aiFixError')}
                                             >
                                                 <Wrench className="w-3 h-3" />

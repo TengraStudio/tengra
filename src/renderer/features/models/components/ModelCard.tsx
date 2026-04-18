@@ -1,9 +1,28 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { HFModel, OllamaLibraryModel, UnifiedModel } from '@renderer/features/models/types';
 import { Download, Sparkles, Star } from 'lucide-react';
 import React, { memo } from 'react';
 
 import { motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_MODELCARD_1 = "flex items-center gap-2 text-xxs font-bold text-muted-foreground/80 bg-muted/30 px-3 py-1.5 rounded-xl border border-border/30";
+const C_MODELCARD_2 = "px-3 py-1.5 bg-muted/40 rounded-xl text-xxs font-bold text-muted-foreground/60 border border-transparent group-hover:border-primary/20 group-hover:bg-primary/5 group-hover:text-primary transition-all";
+const C_MODELCARD_3 = "inline-flex items-center gap-1 text-xxxs font-bold px-2 py-1 rounded-lg bg-primary/15 text-primary border border-primary/20";
+const C_MODELCARD_4 = "inline-flex items-center gap-1 text-xxxs font-bold px-2 py-1 rounded-lg bg-warning/15 text-warning border border-warning/20";
+const C_MODELCARD_5 = "mb-4 text-xxs font-bold text-muted-foreground flex items-center justify-between border border-border/30 rounded-lg px-3 py-2 bg-muted/20";
+const C_MODELCARD_6 = "absolute inset-x-0 bottom-0 h-1.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-full group-hover:translate-y-0";
+
 
 interface ModelCardProps {
     model: UnifiedModel;
@@ -38,7 +57,7 @@ function formatDownloads(downloads: number): string {
 }
 
 const DownloadBadge: React.FC<{ count: string | number }> = ({ count }) => (
-    <div className="flex items-center gap-2 text-xxs font-bold text-muted-foreground/80 bg-muted/30 px-3 py-1.5 rounded-xl border border-border/30">
+    <div className={C_MODELCARD_1}>
         <Download className="w-3.5 h-3.5" />
         {count}
     </div>
@@ -81,7 +100,7 @@ const ModelHeader: React.FC<ModelHeaderProps> = ({ isOllama, isInstalled, badgeC
 const ModelTags: React.FC<{ tags: string[] }> = ({ tags }) => (
     <div className="flex flex-wrap gap-2 mt-auto">
         {tags.slice(0, 4).map(tag => (
-            <span key={tag} className="px-3 py-1.5 bg-muted/40 rounded-xl text-xxs font-bold text-muted-foreground/60 border border-transparent group-hover:border-primary/20 group-hover:bg-primary/5 group-hover:text-primary transition-all">
+            <span key={tag} className={C_MODELCARD_2}>
                 {tag}
             </span>
         ))}
@@ -119,13 +138,13 @@ export const ModelCard = memo(({
                 {(isRecommended || isWatchlisted) && (
                     <div className="flex items-center gap-2 mb-3">
                         {isRecommended && (
-                            <span className="inline-flex items-center gap-1 text-xxxs font-bold px-2 py-1 rounded-lg bg-primary/15 text-primary border border-primary/20">
+                            <span className={C_MODELCARD_3}>
                                 <Sparkles className="w-3 h-3" />
                                 {t('modelExplorer.recommended')}
                             </span>
                         )}
                         {isWatchlisted && (
-                            <span className="inline-flex items-center gap-1 text-xxxs font-bold px-2 py-1 rounded-lg bg-warning/15 text-warning border border-warning/20">
+                            <span className={C_MODELCARD_4}>
                                 <Star className="w-3 h-3" />
                                 {t('modelExplorer.watchlist')}
                             </span>
@@ -144,14 +163,14 @@ export const ModelCard = memo(({
                     {model.description || t('modelExplorer.defaultDescription')}
                 </p>
                 {model.provider === 'huggingface' && (
-                    <div className="mb-4 text-xxs font-bold text-muted-foreground flex items-center justify-between border border-border/30 rounded-lg px-3 py-2 bg-muted/20">
+                    <div className={C_MODELCARD_5}>
                         <span>{t('modelExplorer.benchmarkScore')}</span>
                         <span className="text-primary">{Math.round((model as HFModel).recommendationScore ?? 0)}/100</span>
                     </div>
                 )}
                 <ModelTags tags={model.tags} />
             </div>
-            <div className="absolute inset-x-0 bottom-0 h-1.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-full group-hover:translate-y-0" />
+            <div className={C_MODELCARD_6} />
         </motion.div>
     );
 });

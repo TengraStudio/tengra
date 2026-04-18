@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { MemoizedAppHeader as AppHeader } from '@renderer/components/layout/AppHeader';
 import { AppModals } from '@renderer/components/layout/AppModals';
 import { DragDropWrapper } from '@renderer/components/layout/DragDropWrapper';
@@ -29,17 +39,15 @@ import { useAuthSettingsUi } from '@/context/AuthContext';
 import {
     useChatComposer,
     useChatHeader,
-    useChatLibrary,
     useChatShell,
     useChatWindowCommand,
 } from '@/context/ChatContext';
 import { useModel } from '@/context/ModelContext';
-import { useWorkspaceLibrary, useWorkspaceSelection } from '@/context/WorkspaceContext';
+import { useWorkspaceSelection } from '@/context/WorkspaceContext';
 import { useMarketplaceStore } from '@/store/marketplace.store';
 
 
 // Lazy load heavy layout components
-const CommandPalette = lazy(() => import('@renderer/components/layout/CommandPalette').then(m => ({ default: m.CommandPalette })));
 const UpdateNotification = lazy(() => import('@renderer/components/layout/UpdateNotification').then(m => ({ default: m.UpdateNotification })));
 const VoiceOverlay = lazy(() => import('@renderer/features/voice/components/VoiceOverlay').then(m => ({ default: m.VoiceOverlay })));
 const DetachedTerminalWindow = lazy(() => import('@renderer/features/terminal/components/DetachedTerminalWindow').then(m => ({ default: m.DetachedTerminalWindow })));
@@ -214,8 +222,6 @@ const VoiceActionsConnector: React.FC<{
 };
 
 const KeyboardShortcutsConnector: React.FC<{
-    showCommandPalette: boolean;
-    setShowCommandPalette: (show: boolean) => void;
     showShortcuts: boolean;
     setShowShortcuts: (show: boolean) => void;
     showSSHManager: boolean;
@@ -224,8 +230,6 @@ const KeyboardShortcutsConnector: React.FC<{
     onToggleSidebar: () => void;
     onOpenSettings: (category?: SettingsCategory) => void;
 }> = ({
-    showCommandPalette,
-    setShowCommandPalette,
     showShortcuts,
     setShowShortcuts,
     showSSHManager,
@@ -239,9 +243,6 @@ const KeyboardShortcutsConnector: React.FC<{
 
         const keyboardShortcutsConfig = useMemo(
             () => ({
-                onCommandPalette: () => {
-                    setShowCommandPalette(!showCommandPalette);
-                },
                 onNewChat: createNewChat,
                 onOpenSettings: () => {
                     onOpenSettings('general');
@@ -268,11 +269,9 @@ const KeyboardShortcutsConnector: React.FC<{
                     void window.electron.resetZoomFactor();
                 },
                 onCloseModals: () => {
-                    setShowCommandPalette(false);
                     setShowShortcuts(false);
                     setShowSSHManager(false);
                 },
-                showCommandPalette,
                 showShortcuts,
                 showSSHManager,
                 currentChatId,
@@ -284,10 +283,8 @@ const KeyboardShortcutsConnector: React.FC<{
                 onOpenSettings,
                 onToggleSidebar,
                 setCurrentView,
-                setShowCommandPalette,
                 setShowShortcuts,
                 setShowSSHManager,
-                showCommandPalette,
                 showShortcuts,
                 showSSHManager,
             ]
@@ -297,56 +294,6 @@ const KeyboardShortcutsConnector: React.FC<{
         return null;
     };
  
-const CommandPaletteConnector: React.FC<{
-    isOpen: boolean;
-    onClose: () => void;
-    setCurrentView: (view: AppView) => void;
-    t: (key: string) => string;
-    onOpenSettings: (category?: SettingsCategory) => void;
-}> = ({ isOpen, onClose, setCurrentView, t, onOpenSettings }) => {
-    const { chats, setCurrentChatId } = useChatLibrary();
-    const { clearMessages } = useChatHeader();
-    const { createNewChat } = useChatShell();
-    const { workspaces } = useWorkspaceLibrary();
-    const { setSelectedWorkspace } = useWorkspaceSelection();
-    const { models, loadModels, selectedModel, setSelectedModel } = useModel();
-
-    return (
-        <CommandPalette
-            isOpen={isOpen}
-            onClose={onClose}
-            chats={chats}
-            onSelectChat={(chatId: string) => {
-                setCurrentChatId(chatId);
-                setCurrentView('chat');
-            }}
-            onNewChat={createNewChat}
-            workspaces={workspaces}
-            onSelectWorkspace={(id: string) => {
-                const workspace = workspaces.find(item => item.id === id);
-                if (workspace) {
-                    setSelectedWorkspace(workspace);
-                    setCurrentView('workspace');
-                }
-            }}
-            onOpenSettings={onOpenSettings}
-            onOpenSSHManager={() => {
-                window.dispatchEvent(new CustomEvent('app:open-ssh-manager'));
-            }}
-            onRefreshModels={bypassCache => {
-                void loadModels(bypassCache);
-            }}
-            models={models}
-            onSelectModel={setSelectedModel}
-            selectedModel={selectedModel}
-            onClearChat={() => {
-                void clearMessages();
-            }}
-            t={t}
-        />
-    );
-};
-
 const WindowAppCommandConnector: React.FC<{
     setShowSSHManager: (show: boolean) => void;
 }> = ({ setShowSSHManager }) => {
@@ -486,7 +433,6 @@ function MainApp() {
         currentView,
         isSidebarCollapsed,
         setIsSidebarCollapsed,
-        setShowCommandPalette,
         addToast,
         setCurrentView,
     } = appState;
@@ -564,16 +510,6 @@ function MainApp() {
 
     const chatTemplates = useMemo(() => getChatTemplates(t), [t]);
 
-    useEffect(() => {
-        const openPalette = () => {
-            setShowCommandPalette(true);
-        };
-        window.addEventListener('app:open-command-palette', openPalette as EventListener);
-        return () => {
-            window.removeEventListener('app:open-command-palette', openPalette as EventListener);
-        };
-    }, [setShowCommandPalette]);
-
     return (
         <ErrorBoundary
             resetKeys={[appState.currentView]}
@@ -636,8 +572,6 @@ function MainApp() {
                             addToast={toast => addToast(toast)}
                         />
                         <KeyboardShortcutsConnector
-                            showCommandPalette={appState.showCommandPalette}
-                            setShowCommandPalette={appState.setShowCommandPalette}
                             showShortcuts={appState.showShortcuts}
                             setShowShortcuts={appState.setShowShortcuts}
                             showSSHManager={appState.showSSHManager}
@@ -652,19 +586,6 @@ function MainApp() {
                     </>
                 )}
                 <ToastsContainer toasts={appState.toasts} removeToast={appState.removeToast} />
-                {nonCriticalUiReady && (
-                    <Suspense fallback={null}>
-                        <CommandPaletteConnector
-                            isOpen={appState.showCommandPalette}
-                            onClose={() => {
-                                appState.setShowCommandPalette(false);
-                            }}
-                            setCurrentView={setCurrentView}
-                            t={t}
-                            onOpenSettings={openSettings}
-                        />
-                    </Suspense>
-                )}
                 <div className="absolute inset-0 flex flex-col overflow-hidden">
                     <LayoutManager
                         isSidebarCollapsed={appState.isSidebarCollapsed}

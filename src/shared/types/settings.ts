@@ -1,10 +1,22 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { InlineSuggestionSource } from '@shared/schemas/inline-suggestions.schema';
 
 import { JsonValue } from '@/types/common';
 
 import type { Workspace } from './workspace';
 
+export type McpPermission = 'read' | 'write' | 'delete' | 'network' | 'execute';
 export type McpPermissionProfile = 'read-only' | 'workspace-only' | 'network-enabled' | 'destructive' | 'full-access';
+
 export type AntigravityCreditUsageMode = 'auto' | 'ask-every-time';
 
 export type ModelGovernanceSettings = {
@@ -229,7 +241,9 @@ export interface AppSettings {
         y: number;
         zoomFactor?: number;
         fullscreen?: boolean;
+        maximized?: boolean;
         startOnStartup?: boolean;
+
         workAtBackground?: boolean; // Minimize to tray instead of closing
         lowPowerMode?: boolean; // Use lower resources in background
         autoHibernation?: boolean; // Hibernate heavy services after inactivity
@@ -406,6 +420,7 @@ export type MCPServerConfig = {
     env?: Record<string, string>;
     enabled?: boolean; // Default: false (user must explicitly enable)
     permissionProfile?: McpPermissionProfile;
+    permissions?: McpPermission[];
     tools?: { name: string; description: string }[];
     category?: string;
     publisher?: string;

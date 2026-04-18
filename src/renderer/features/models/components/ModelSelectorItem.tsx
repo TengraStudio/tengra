@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { ModelLifecycleBadge } from '@renderer/features/models/components/model-selector/ModelLifecycleBadge';
 import type { ModelListItem } from '@renderer/features/models/types';
 import { Check, ImageIcon, Info, Pin } from 'lucide-react';
@@ -145,7 +155,7 @@ const ModelActions: React.FC<{
         )}
         {(isPrimary || isSelected) && (
             <div className="bg-primary/10 p-1 rounded-full shadow-sm">
-                <Check className="w-3.5 h-3.5 text-primary stroke-[3]" />
+                <Check className="w-3.5 h-3.5 text-primary stroke-3" />
             </div>
         )}
         {isSelected && modelIndex !== undefined && modelIndex >= 0 && (
@@ -176,7 +186,7 @@ const ModelQuotaDisplay: React.FC<{
             <div className="mt-2 space-y-1">
                 <div className="flex items-center justify-between gap-2 text-xxxs font-bold">
                     <span className="text-muted-foreground/55">{t('statistics.quotaStatus')}</span>
-                    <span className={cn("rounded border px-1.5 py-0.5 leading-none", getQuotaTone(percent).split(' ').slice(1).join(' '))}>
+                    <span className={cn("rounded border px-1.5 py-0.5 leading-none", getQuotaTone(percent).split(' ').slice(1))}>
                         {percent}%
                     </span>
                 </div>

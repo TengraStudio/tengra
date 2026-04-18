@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { createAuthBridge } from '@main/preload/domains/auth.preload';
 import { createWindowControlsBridge } from '@main/preload/domains/window-controls.preload';
 import { describe, expect, it, vi } from 'vitest';

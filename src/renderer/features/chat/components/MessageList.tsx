@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { compactToolCallsForDisplay } from '@renderer/features/chat/components/message/tool-call-display.util';
 import { MessageBubble } from '@renderer/features/chat/components/MessageBubble';
 import { MessageSkeleton } from '@renderer/features/chat/components/MessageSkeleton';
@@ -441,7 +451,7 @@ export const MessageList = memo(({
             </div>
             <Virtuoso
                 ref={virtuosoRef}
-                style={{ height: '100%', width: '100%' }}
+                className="h-full w-full"
                 data={displayMessages}
                 // Avoid queuing smooth-scroll animations on every streamed chunk.
                 followOutput="auto"

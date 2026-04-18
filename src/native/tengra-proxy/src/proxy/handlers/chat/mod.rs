@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+pub mod compact;
 pub mod headers;
 pub mod request;
 pub mod response;
@@ -60,6 +70,7 @@ pub async fn execute_chat_completion_payload(
         .or_else(|| resolve_provider(&payload.model))
         .unwrap_or("codex")
         .to_string();
+    let payload = compact::compact_chat_request(provider.as_str(), payload);
 
     // 2. Load and decrypt key
     let accounts = crate::db::get_provider_accounts(&provider)

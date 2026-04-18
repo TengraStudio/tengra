@@ -1,5 +1,19 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { Awareness } from 'y-protocols/awareness';
+
+/* Batch-02: Extracted Long Classes */
+const C_COLLABORATORS_1 = "inline-block h-8 w-8 rounded-full ring-2 ring-background flex items-center justify-center typo-caption font-bold text-foreground shadow-sm";
+
 
 interface UserPresence {
     name: string;
@@ -56,7 +70,7 @@ export const Collaborators: React.FC<CollaboratorsProps> = ({ awareness }) => {
                 <div
                     key={clientId}
                     title={user.name}
-                    className="inline-block h-8 w-8 rounded-full ring-2 ring-background flex items-center justify-center typo-caption font-bold text-foreground shadow-sm"
+                    className={C_COLLABORATORS_1}
                     style={{ backgroundColor: user.color }}
                 >
                     {user.name.charAt(0).toUpperCase()}

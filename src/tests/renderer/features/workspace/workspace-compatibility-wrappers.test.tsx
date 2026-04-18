@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Workspace } from '@shared/types/workspace';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -12,8 +22,8 @@ interface MockSurfaceProps {
     activeMenuId: string | null
     setActiveMenuId: (id: string | null) => void
     onSelect: (workspace: Workspace) => void
-    onEdit: (workspace: Workspace, event?: React.MouseEvent) => void
-    onDelete: (workspace: Workspace, event?: React.MouseEvent) => void
+    onEdit: (workspace: Workspace) => void
+    onDelete: (workspace: Workspace) => void
     onArchive: (workspace: Workspace) => void
     t: (key: string) => string
     children: React.ReactNode
@@ -284,8 +294,8 @@ describe('workspace compatibility wrappers', () => {
         expect(surfaceProps.setActiveMenuId).toBe(setShowWorkspaceMenu);
         expect(onSelectWorkspace).toHaveBeenCalledWith(workspaceFixture);
         expect(setShowWorkspaceMenu).toHaveBeenCalledWith(null);
-        expect(startEdit).toHaveBeenCalledWith(workspaceFixture, undefined);
-        expect(startDelete).toHaveBeenCalledWith(workspaceFixture, undefined);
+        expect(startEdit).toHaveBeenCalledWith(workspaceFixture);
+        expect(startDelete).toHaveBeenCalledWith(workspaceFixture);
         expect(startArchive).toHaveBeenCalledWith(workspaceFixture);
     });
 });

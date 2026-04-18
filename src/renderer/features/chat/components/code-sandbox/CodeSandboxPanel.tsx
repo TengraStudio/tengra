@@ -1,9 +1,24 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React, { useCallback,useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 
 import { LanguageSelector } from './LanguageSelector';
 import { OutputDisplay } from './OutputDisplay';
+
+/* Batch-02: Extracted Long Classes */
+const C_CODESANDBOXPANEL_1 = "w-full resize-y rounded-lg border border-border/50 bg-muted/30 p-3 font-mono text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-1 focus:ring-primary/40";
+const C_CODESANDBOXPANEL_2 = "rounded-lg bg-primary px-4 py-1.5 text-sm font-medium text-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50";
+
 
 type SandboxLanguage = 'javascript' | 'typescript' | 'python' | 'shell';
 
@@ -89,7 +104,7 @@ export const CodeSandboxPanel: React.FC = () => {
                 placeholder={t('codeSandbox.codePlaceholder')}
                 disabled={isRunning}
                 rows={8}
-                className="w-full resize-y rounded-lg border border-border/50 bg-muted/30 p-3 font-mono text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-1 focus:ring-primary/40"
+                className={C_CODESANDBOXPANEL_1}
                 spellCheck={false}
             />
 
@@ -97,7 +112,7 @@ export const CodeSandboxPanel: React.FC = () => {
                 <button
                     onClick={() => void handleRun()}
                     disabled={isRunning || !code.trim()}
-                    className="rounded-lg bg-primary px-4 py-1.5 text-sm font-medium text-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    className={C_CODESANDBOXPANEL_2}
                 >
                     {isRunning ? t('codeSandbox.running') : t('codeSandbox.run')}
                 </button>

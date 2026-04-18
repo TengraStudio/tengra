@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { randomUUID } from 'crypto';
 import * as path from 'path';
 
@@ -72,8 +82,18 @@ export class ToolExecutor {
     private static readonly TOOL_DEFINITIONS_CACHE_TTL_MS = 5000;
     private static readonly TOOL_TIMEOUT_MS: Partial<Record<string, number>> = {
         execute_command: 180000,
+        'mcp__terminal__run_command': 180000,
         generate_image: 120000,
         terminal_session_wait: 125000,
+    };
+    private static readonly MCP_COMPAT_ALIASES: Record<string, string> = {
+        read_file: 'mcp__filesystem__read',
+        write_file: 'mcp__filesystem__write',
+        list_directory: 'mcp__filesystem__list',
+        list_dir: 'mcp__filesystem__list',
+        execute_command: 'mcp__terminal__run_command',
+        search_web: 'mcp__web__search',
+        get_system_info: 'mcp__system__get_info',
     };
 
     private idempotentTools = new Set([
@@ -87,7 +107,30 @@ export class ToolExecutor {
         'get_file_info',
         'create_directory',
         'get_system_info',
-        'search_web'
+        'search_web',
+        'mcp__filesystem__read',
+        'mcp__filesystem__list',
+        'mcp__system__get_info',
+        'mcp__web__search',
+        'mcp__web__read_page',
+        'mcp__web__fetch_json',
+        'mcp__terminal__list_sessions',
+        'mcp__git__status',
+        'mcp__git__diff',
+        'mcp__git__blame',
+        'mcp__git__log',
+        'mcp__git__branches',
+        'mcp__network__interfaces',
+        'mcp__network__ports',
+        'mcp__network__ping',
+        'mcp__network__traceroute',
+        'mcp__network__whois',
+        'mcp__internet__weather',
+        'mcp__workspace__listContainers',
+        'mcp__workspace__stats',
+        'mcp__workspace__listImages',
+        'mcp__llm__listModels',
+        'mcp__llm__ps'
     ]);
 
     private toolCache = new Map<string, { result: InternalToolResult; timestamp: number }>();
@@ -134,6 +177,17 @@ export class ToolExecutor {
         } else {
             definitions = toolDefinitions;
         }
+
+        // Avoid duplicate tool names to prevent downstream provider schema conflicts.
+        const seen = new Set<string>();
+        definitions = definitions.filter(tool => {
+            const name = tool.function.name;
+            if (seen.has(name)) {
+                return false;
+            }
+            seen.add(name);
+            return true;
+        });
 
         this.toolDefinitionsCache = { definitions, timestamp: Date.now() };
         return definitions;
@@ -231,13 +285,19 @@ export class ToolExecutor {
     }
 
     private resolveTimeoutMs(name: string): number {
-        return ToolExecutor.TOOL_TIMEOUT_MS[name] ?? ToolExecutor.DEFAULT_TIMEOUT_MS;
+        const canonicalName = ToolExecutor.MCP_COMPAT_ALIASES[name] ?? name;
+        return ToolExecutor.TOOL_TIMEOUT_MS[canonicalName] ?? ToolExecutor.DEFAULT_TIMEOUT_MS;
     }
 
     private async routeToolCall(name: string, args: JsonObject, context?: ToolExecutionContext): Promise<InternalToolResult> {
         try {
             if (name === 'update_plan_step' || name === 'propose_plan' || name === 'revise_plan') {
                 return await this.handleWorkspaceTool(name, args, context);
+            }
+
+            const canonicalName = ToolExecutor.MCP_COMPAT_ALIASES[name] ?? name;
+            if (canonicalName.startsWith('mcp__') || canonicalName.includes(':')) {
+                return await this.handleMcpTool(canonicalName, args);
             }
 
             const handlers: Partial<Record<string, (toolArgs: JsonObject) => Promise<InternalToolResult>>> = {

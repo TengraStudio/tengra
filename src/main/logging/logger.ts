@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 /* eslint-disable no-console */
 import * as fs from 'fs';
 import * as path from 'path';
@@ -674,19 +684,19 @@ function getLevelColor(level: LogLevel): string {
 function getLevelIcon(level: LogLevel): string {
     switch (level) {
         case LogLevel.TRACE:
-            return '🔍';
+            return '[T]';
         case LogLevel.DEBUG:
-            return '🐛';
+            return '[D]';
         case LogLevel.INFO:
-            return 'ℹ️ ';
+            return '[I]';
         case LogLevel.WARN:
-            return '⚠️ ';
+            return '[W]';
         case LogLevel.ERROR:
-            return '❌';
+            return '[E]';
         case LogLevel.FATAL:
-            return '💀';
+            return '[F]';
         default:
-            return '•';
+            return '[ ]';
     }
 }
 

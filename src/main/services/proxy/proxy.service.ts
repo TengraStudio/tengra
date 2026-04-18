@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import crypto from 'crypto';
 
 import { appLogger } from '@main/logging/logger';
@@ -1113,7 +1123,7 @@ export class ProxyService extends BaseService {
 
 
 
-  private makeRequest<T = JsonObject>(
+  public makeRequest<T = JsonObject>(
     path: string,
     apiKey?: string,
     method: 'GET' | 'POST' | 'DELETE' = 'GET',
@@ -1259,7 +1269,8 @@ export class ProxyService extends BaseService {
   /** Returns the proxy API key, generating one if needed. @returns Proxy API key string */
   async getProxyKey(): Promise<string> { return await this.ensureProxyKey(); }
 
-  private async getRuntimeProxyApiKey(): Promise<string> {
+    public async getRuntimeProxyApiKey(): Promise<string> {
+
     const runtimeKey = this.settingsService.getSettings().proxy?.apiKey?.trim() ?? '';
     if (runtimeKey) {
       return runtimeKey;

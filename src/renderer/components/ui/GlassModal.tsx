@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { X } from 'lucide-react';
 import React, { useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -104,14 +114,14 @@ export const GlassModal: React.FC<GlassModalProps> = ({
 
     return createPortal(
         <div
-            className="tengra-glass-modal"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
             role="dialog"
             aria-modal="true"
             aria-labelledby={title ? 'modal-title' : undefined}
         >
             {/* Backdrop with glassmorphism */}
             <div
-                className="tengra-glass-modal__overlay"
+                className="absolute inset-0 bg-background/60 backdrop-blur-8 animate-in fade-in duration-200"
                 onClick={closeOnBackdrop ? onClose : undefined}
                 aria-hidden="true"
             />
@@ -120,8 +130,14 @@ export const GlassModal: React.FC<GlassModalProps> = ({
             <div
                 ref={modalRef}
                 className={cn(
-                    'tengra-glass-modal__content',
-                    `tengra-glass-modal__content--${size}`,
+                    'relative w-full bg-background/80 backdrop-blur-2xl border border-border/40 rounded-2xl shadow-modal-foreground animate-in zoom-in-95 duration-300',
+                    {
+                        'max-w-sm': size === 'sm',
+                        'max-w-md': size === 'md',
+                        'max-w-lg': size === 'lg',
+                        'max-w-xl': size === 'xl',
+                        'max-w-3xl': size === 'full'
+                    },
                     className
                 )}
             >
@@ -129,7 +145,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
                 <ModalHeader title={title} showClose={showClose} onClose={onClose} />
 
                 {/* Body */}
-                <div className="tengra-glass-modal__body">
+                <div className="p-4 overflow-y-auto max-h-screen">
                     {children}
                 </div>
             </div>
@@ -152,11 +168,11 @@ const ModalHeader: React.FC<ModalHeaderProps> = ({ title, showClose, onClose }) 
     if (!showHeader) { return null; }
 
     return (
-        <div className="tengra-glass-modal__header">
-            {title && <h2 id="modal-title" className="tengra-glass-modal__title">{title}</h2>}
+        <div className="flex items-center justify-between p-4 border-b border-border/40">
+            {title && <h2 id="modal-title" className="text-lg font-semibold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">{title}</h2>}
             {showClose && (
-                <button onClick={onClose} className="tengra-glass-modal__close" aria-label={t('modal.close')}>
-                    <X className="tengra-glass-modal__close-icon" />
+                <button onClick={onClose} className="p-2 text-muted-foreground bg-transparent border-none rounded-lg cursor-pointer transition-colors hover:bg-muted/60 hover:text-foreground" aria-label={t('modal.close')}>
+                    <X className="w-5 h-5" />
                 </button>
             )}
         </div>

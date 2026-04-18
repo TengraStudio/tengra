@@ -1,22 +1,25 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { ToolDefinition } from '@shared/types/chat';
 
 export const toolDefinitions: ToolDefinition[] = [
     {
         type: 'function',
         function: {
-            name: 'resolve_path',
-            description: 'Resolves user-facing paths such as %USERPROFILE%/Desktop/projects, ~/Desktop, Desktop/projects, or relative workspace paths into an absolute path and reports whether the path and parent exist. Use before creating nested project folders when the parent path is ambiguous.',
+            name: 'mcp__filesystem__read',
+            description: 'Read a text file from disk.',
             parameters: {
                 type: 'object',
                 properties: {
-                    path: {
-                        type: 'string',
-                        description: 'Path to resolve. Supports %VAR%, $env:VAR, $VAR, ~, and common home-relative folders like Desktop/projects.'
-                    },
-                    basePath: {
-                        type: 'string',
-                        description: 'Optional base path for relative paths. Use the active workspace root when available.'
-                    }
+                    path: { type: 'string', description: 'Absolute or relative file path.' }
                 },
                 required: ['path']
             }
@@ -25,36 +28,13 @@ export const toolDefinitions: ToolDefinition[] = [
     {
         type: 'function',
         function: {
-            name: 'read_file',
-            description: 'Reads the content of the file at the specified path. Use for text files.',
+            name: 'mcp__filesystem__write',
+            description: 'Write or overwrite a file. Creates parent folders when needed.',
             parameters: {
                 type: 'object',
                 properties: {
-                    path: {
-                        type: 'string',
-                        description: 'Path of the file to be read. Prefer direct Windows environment-variable paths like %USERPROFILE%/Desktop. Only use get_system_info if direct access fails or you truly need host metadata.'
-                    }
-                },
-                required: ['path']
-            }
-        }
-    },
-    {
-        type: 'function',
-        function: {
-            name: 'write_file',
-            description: 'Writes a file to the specified path or updates an existing file. Use this when the user asks you to create local code/files; do not dump code into chat instead.',
-            parameters: {
-                type: 'object',
-                properties: {
-                    path: {
-                        type: 'string',
-                        description: 'Path of the file to be written'
-                    },
-                    content: {
-                        type: 'string',
-                        description: 'Content to be written to the file'
-                    }
+                    path: { type: 'string', description: 'Target file path.' },
+                    content: { type: 'string', description: 'File content to write.' }
                 },
                 required: ['path', 'content']
             }
@@ -63,67 +43,12 @@ export const toolDefinitions: ToolDefinition[] = [
     {
         type: 'function',
         function: {
-            name: 'write_files',
-            description: 'Writes multiple text files in one bounded operation. Use for creating apps/projects with several files instead of sending code blocks in chat or calling write_file repeatedly.',
+            name: 'mcp__filesystem__list',
+            description: 'List files and folders in a directory.',
             parameters: {
                 type: 'object',
                 properties: {
-                    files: {
-                        type: 'array',
-                        description: 'Files to write. Maximum 50 files per call.',
-                        items: {
-                            type: 'object',
-                            properties: {
-                                path: {
-                                    type: 'string',
-                                    description: 'Target file path.'
-                                },
-                                content: {
-                                    type: 'string',
-                                    description: 'Text content to write.'
-                                }
-                            },
-                            required: ['path', 'content']
-                        }
-                    }
-                },
-                required: ['files']
-            }
-        }
-    },
-    {
-        type: 'function',
-        function: {
-            name: 'patch_file',
-            description: 'Applies a small bounded edit to an existing text file. Prefer this over rewriting a whole file when only a region changes.',
-            parameters: {
-                type: 'object',
-                properties: {
-                    path: {
-                        type: 'string',
-                        description: 'Path of the file to patch.'
-                    },
-                    edits: {
-                        type: 'array',
-                        description: 'Line-based edits using 1-based inclusive line numbers. Maximum 20 edits per call.',
-                        items: {
-                            type: 'object',
-                            properties: {
-                                startLine: { type: 'number', description: '1-based start line.' },
-                                endLine: { type: 'number', description: '1-based inclusive end line.' },
-                                replacement: { type: 'string', description: 'Replacement text for the selected line range.' }
-                            },
-                            required: ['startLine', 'endLine', 'replacement']
-                        }
-                    },
-                    search: {
-                        type: 'string',
-                        description: 'Optional exact text to replace when edits are not provided.'
-                    },
-                    replace: {
-                        type: 'string',
-                        description: 'Replacement text for the exact search text.'
-                    }
+                    path: { type: 'string', description: 'Directory path to list.' }
                 },
                 required: ['path']
             }
@@ -132,58 +57,13 @@ export const toolDefinitions: ToolDefinition[] = [
     {
         type: 'function',
         function: {
-            name: 'read_many_files',
-            description: 'Reads multiple small text files in one bounded operation. Use when you need several files for context instead of repeated read_file calls.',
+            name: 'mcp__filesystem__extract_strings',
+            description: 'Extract printable strings from a file (useful for logs, binaries, dumps).',
             parameters: {
                 type: 'object',
                 properties: {
-                    paths: {
-                        type: 'array',
-                        description: 'File paths to read. Maximum 20 files per call.',
-                        items: { type: 'string' }
-                    }
-                },
-                required: ['paths']
-            }
-        }
-    },
-    {
-        type: 'function',
-        function: {
-            name: 'search_files',
-            description: 'Searches file names under a root directory, respecting ignored folders like node_modules and .git. Use this instead of execute_command for filename discovery.',
-            parameters: {
-                type: 'object',
-                properties: {
-                    rootPath: {
-                        type: 'string',
-                        description: 'Root directory to search under.'
-                    },
-                    pattern: {
-                        type: 'string',
-                        description: 'Filename substring to search for.'
-                    },
-                    maxResults: {
-                        type: 'number',
-                        description: 'Maximum number of results to return. Default 50, max 200.'
-                    }
-                },
-                required: ['rootPath', 'pattern']
-            }
-        }
-    },
-    {
-        type: 'function',
-        function: {
-            name: 'list_directory',
-            description: 'Lists files and subdirectories in the specified folder and returns complete count/list evidence for that path.',
-            parameters: {
-                type: 'object',
-                properties: {
-                    path: {
-                        type: 'string',
-                        description: 'Path of the folder to be listed. Prefer direct Windows environment-variable paths like %USERPROFILE%/Desktop or %USERPROFILE%/Documents. Do not call get_system_info first for ordinary file listing; use it only if direct access fails. After a successful list_directory result, answer count/list questions directly from that result instead of probing the same path again.'
-                    }
+                    path: { type: 'string', description: 'File path to inspect.' },
+                    minLength: { type: 'number', description: 'Minimum string length. Default: 4.' }
                 },
                 required: ['path']
             }
@@ -192,70 +72,44 @@ export const toolDefinitions: ToolDefinition[] = [
     {
         type: 'function',
         function: {
-            name: 'create_directory',
-            description: 'Creates a new folder idempotently and reports whether it already existed. Requires a non-empty target path. Use once for the top-level project folder, then write files inside it. If you do not yet know the target path, resolve or infer it first instead of calling this tool with placeholders.',
+            name: 'mcp__filesystem__unzip',
+            description: 'Extract a zip archive into a destination folder.',
             parameters: {
                 type: 'object',
                 properties: {
-                    path: {
-                        type: 'string',
-                        description: 'Path of the folder to be created. Must be a non-empty path such as %USERPROFILE%/Desktop/my-app or an absolute path.'
-                    }
+                    zipPath: { type: 'string', description: 'Path to the .zip file.' },
+                    destPath: { type: 'string', description: 'Destination directory for extracted files.' }
                 },
-                required: ['path']
+                required: ['zipPath', 'destPath']
             }
         }
     },
     {
         type: 'function',
         function: {
-            name: 'delete_file',
-            description: 'Deletes the specified file.',
+            name: 'mcp__filesystem__download',
+            description: 'Download a file from a URL and save it locally.',
             parameters: {
                 type: 'object',
                 properties: {
-                    path: {
-                        type: 'string',
-                        description: 'Path of the file to be deleted'
-                    }
+                    url: { type: 'string', description: 'Source URL.' },
+                    destPath: { type: 'string', description: 'Local target file path.' }
                 },
-                required: ['path']
+                required: ['url', 'destPath']
             }
         }
     },
     {
         type: 'function',
         function: {
-            name: 'file_exists',
-            description: 'Checks if a file exists.',
+            name: 'mcp__terminal__run_command',
+            description: 'Run a shell command in a persistent terminal session (works across Windows/macOS/Linux).',
             parameters: {
                 type: 'object',
                 properties: {
-                    path: {
-                        type: 'string',
-                        description: 'Path of the file to be checked. Avoid hardcoded usernames in Windows paths. Do not use this for a directory that was already listed successfully with list_directory.'
-                    }
-                },
-                required: ['path']
-            }
-        }
-    },
-    {
-        type: 'function',
-        function: {
-            name: 'execute_command',
-            description: 'Runs a one-shot PowerShell command. Use terminal_session_* tools instead for multi-step terminal work, dev servers, watchers, interactive prompts, or when shell state must persist. Use PowerShell syntax on Windows (e.g., $env:USERPROFILE, Test-Path, Get-ChildItem, New-Item), not CMD syntax. Prefer create_directory/write_file for scaffolding files and use this for short package manager or verification commands.',
-            parameters: {
-                type: 'object',
-                properties: {
-                    command: {
-                        type: 'string',
-                        description: 'PowerShell command to execute. Prefer PowerShell cmdlets/syntax; avoid CMD forms like "if not exist" and "%USERPROFILE%". If a prior command failed, inspect error/stderr/exitCode and change approach instead of repeating it.'
-                    },
-                    cwd: {
-                        type: 'string',
-                        description: 'Directory where the command will be executed (optional)'
-                    }
+                    command: { type: 'string', description: 'Command to execute.' },
+                    cwd: { type: 'string', description: 'Optional working directory.' },
+                    session_id: { type: 'string', description: 'Optional existing session id.' }
                 },
                 required: ['command']
             }
@@ -264,39 +118,51 @@ export const toolDefinitions: ToolDefinition[] = [
     {
         type: 'function',
         function: {
-            name: 'terminal_session_start',
-            description: 'Starts a persistent agent terminal session. Use this instead of execute_command for multi-step shell work, dev servers, test watchers, interactive prompts, or when cwd/env/history must persist across commands.',
+            name: 'mcp__terminal__list_sessions',
+            description: 'List active terminal sessions.',
+            parameters: { type: 'object', properties: {}, required: [] }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__terminal__resize',
+            description: 'Resize an existing terminal session.',
             parameters: {
                 type: 'object',
                 properties: {
-                    sessionId: {
-                        type: 'string',
-                        description: 'Optional stable session id. Omit to generate one.'
-                    },
-                    cwd: {
-                        type: 'string',
-                        description: 'Initial working directory. Prefer the active project root.'
-                    },
-                    shell: {
-                        type: 'string',
-                        description: 'Optional shell id or executable path. Omit to use the system default.'
-                    },
-                    title: {
-                        type: 'string',
-                        description: 'Optional user-visible title for the terminal session.'
-                    },
-                    cols: {
-                        type: 'number',
-                        description: 'Optional terminal columns, clamped to a safe range.'
-                    },
-                    rows: {
-                        type: 'number',
-                        description: 'Optional terminal rows, clamped to a safe range.'
-                    },
-                    backendId: {
-                        type: 'string',
-                        description: 'Optional terminal backend id. Omit unless a specific backend is required.'
-                    }
+                    session_id: { type: 'string', description: 'Terminal session id.' },
+                    rows: { type: 'number', description: 'Terminal rows.' },
+                    cols: { type: 'number', description: 'Terminal columns.' }
+                },
+                required: ['session_id']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__terminal__kill_session',
+            description: 'Terminate a terminal session.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    session_id: { type: 'string', description: 'Terminal session id.' }
+                },
+                required: ['session_id']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__git__status',
+            description: 'Show repository file status.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    cwd: { type: 'string', description: 'Repository directory (optional if path is given).' },
+                    path: { type: 'string', description: 'Repository directory (optional alias of cwd).' }
                 },
                 required: []
             }
@@ -305,107 +171,15 @@ export const toolDefinitions: ToolDefinition[] = [
     {
         type: 'function',
         function: {
-            name: 'terminal_session_write',
-            description: 'Writes a command or process input to an existing persistent terminal session. Commands are safety-validated by default; use inputKind=input only for responding to an already-running process prompt.',
+            name: 'mcp__git__diff',
+            description: 'Show patch diff for the repository or a single file.',
             parameters: {
                 type: 'object',
                 properties: {
-                    sessionId: {
-                        type: 'string',
-                        description: 'Terminal session id returned by terminal_session_start.'
-                    },
-                    input: {
-                        type: 'string',
-                        description: 'Command or input to write. If a prior command failed, inspect terminal output and change approach instead of repeating it.'
-                    },
-                    inputKind: {
-                        type: 'string',
-                        enum: ['command', 'input'],
-                        description: 'Use command for shell commands and input for interactive program input. Defaults to command.'
-                    },
-                    submit: {
-                        type: 'boolean',
-                        description: 'Whether to append Enter when the input does not already end with a newline. Defaults to true.'
-                    }
+                    cwd: { type: 'string', description: 'Repository directory (optional if path is given).' },
+                    path: { type: 'string', description: 'Repository directory (optional alias of cwd).' },
+                    file: { type: 'string', description: 'Optional file path filter.' }
                 },
-                required: ['sessionId', 'input']
-            }
-        }
-    },
-    {
-        type: 'function',
-        function: {
-            name: 'terminal_session_read',
-            description: 'Reads the tail of a persistent terminal session buffer. Use this to inspect command output before deciding what to do next.',
-            parameters: {
-                type: 'object',
-                properties: {
-                    sessionId: { type: 'string', description: 'Terminal session id.' },
-                    tailBytes: { type: 'number', description: 'Maximum output tail bytes to return. Defaults to 20000 and is capped.' }
-                },
-                required: ['sessionId']
-            }
-        }
-    },
-    {
-        type: 'function',
-        function: {
-            name: 'terminal_session_wait',
-            description: 'Waits for a terminal session to match a text pattern, become idle, or reach a timeout, then returns the latest output tail.',
-            parameters: {
-                type: 'object',
-                properties: {
-                    sessionId: { type: 'string', description: 'Terminal session id.' },
-                    pattern: { type: 'string', description: 'Optional text to wait for in the terminal buffer.' },
-                    idleMs: { type: 'number', description: 'How long output must stop changing before idle is reported. Defaults to 1000ms.' },
-                    timeoutMs: { type: 'number', description: 'Maximum wait time. Defaults to 30000ms and is capped.' },
-                    tailBytes: { type: 'number', description: 'Maximum output tail bytes to return.' }
-                },
-                required: ['sessionId']
-            }
-        }
-    },
-    {
-        type: 'function',
-        function: {
-            name: 'terminal_session_signal',
-            description: 'Sends a controlled terminal signal such as interrupt, eof, or enter to an existing terminal session.',
-            parameters: {
-                type: 'object',
-                properties: {
-                    sessionId: { type: 'string', description: 'Terminal session id.' },
-                    signal: {
-                        type: 'string',
-                        enum: ['interrupt', 'eof', 'enter'],
-                        description: 'Signal to send. Defaults to interrupt.'
-                    }
-                },
-                required: ['sessionId']
-            }
-        }
-    },
-    {
-        type: 'function',
-        function: {
-            name: 'terminal_session_stop',
-            description: 'Stops a persistent terminal session and cleans up its process.',
-            parameters: {
-                type: 'object',
-                properties: {
-                    sessionId: { type: 'string', description: 'Terminal session id.' }
-                },
-                required: ['sessionId']
-            }
-        }
-    },
-    {
-        type: 'function',
-        function: {
-            name: 'terminal_session_list',
-            description: 'Lists active terminal session ids, including agent-managed sessions.',
-            parameters: {
-                type: 'object',
-                properties: {},
                 required: []
             }
         }
@@ -413,43 +187,148 @@ export const toolDefinitions: ToolDefinition[] = [
     {
         type: 'function',
         function: {
-            name: 'terminal_session_snapshot',
-            description: 'Returns a terminal session output tail plus analytics such as byte count, line count, command count, and update time.',
+            name: 'mcp__git__blame',
+            description: 'Show who last changed each line in a file.',
             parameters: {
                 type: 'object',
                 properties: {
-                    sessionId: { type: 'string', description: 'Terminal session id.' },
-                    tailBytes: { type: 'number', description: 'Maximum output tail bytes to return. Defaults to 30000 and is capped.' }
+                    file: { type: 'string', description: 'File path relative to repository root.' },
+                    cwd: { type: 'string', description: 'Repository directory (optional).' },
+                    repo_path: { type: 'string', description: 'Repository directory (optional alias of cwd).' }
                 },
-                required: ['sessionId']
+                required: ['file']
             }
         }
     },
     {
         type: 'function',
         function: {
-            name: 'get_file_info',
-            description: 'Returns file/folder information (size, date, etc.).',
+            name: 'mcp__git__log',
+            description: 'List recent commits.',
             parameters: {
                 type: 'object',
                 properties: {
-                    path: {
-                        type: 'string',
-                        description: 'Path to get information for. On Windows, avoid guessing the username segment in C:/Users/... paths.'
-                    }
+                    cwd: { type: 'string', description: 'Repository directory.' },
+                    path: { type: 'string', description: 'Repository directory (optional alias of cwd).' },
+                    count: { type: 'number', description: 'Number of commits to return. Default: 10.' }
                 },
-                required: ['path']
+                required: ['cwd']
             }
         }
     },
     {
         type: 'function',
         function: {
-            name: 'get_system_info',
-            description: 'Returns system context (hostname, username, OS, platform, shell, homeDir). Use only when the task truly requires host metadata or when direct %USERPROFILE%-style paths failed.',
+            name: 'mcp__git__add',
+            description: 'Stage files for commit.',
             parameters: {
                 type: 'object',
-                properties: {},
+                properties: {
+                    cwd: { type: 'string', description: 'Repository directory.' },
+                    files: { type: 'string', description: 'File path to stage. Use "." to stage all.' }
+                },
+                required: ['cwd']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__git__commit',
+            description: 'Create a commit with a message.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    cwd: { type: 'string', description: 'Repository directory.' },
+                    message: { type: 'string', description: 'Commit message.' }
+                },
+                required: ['cwd', 'message']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__git__push',
+            description: 'Push local commits to remote.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    cwd: { type: 'string', description: 'Repository directory.' }
+                },
+                required: ['cwd']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__git__pull',
+            description: 'Pull changes from remote.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    cwd: { type: 'string', description: 'Repository directory.' }
+                },
+                required: ['cwd']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__git__checkout',
+            description: 'Switch to a branch or commit ref.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    cwd: { type: 'string', description: 'Repository directory.' },
+                    branch: { type: 'string', description: 'Branch or ref name.' }
+                },
+                required: ['cwd', 'branch']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__git__branches',
+            description: 'List local branches.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    cwd: { type: 'string', description: 'Repository directory.' }
+                },
+                required: ['cwd']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__system__get_info',
+            description: 'Get OS, CPU, memory, and host information.',
+            parameters: { type: 'object', properties: {}, required: [] }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__system__env_vars',
+            description: 'List environment variables.',
+            parameters: { type: 'object', properties: {}, required: [] }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__system__process_list',
+            description: 'List running processes with resource usage.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    limit: { type: 'number', description: 'Maximum number of processes. Default: 50.' }
+                },
                 required: []
             }
         }
@@ -457,60 +336,218 @@ export const toolDefinitions: ToolDefinition[] = [
     {
         type: 'function',
         function: {
-            name: 'copy_file',
-            description: 'Copies a file from one location to another.',
+            name: 'mcp__system__kill_process',
+            description: 'Terminate a process by PID.',
             parameters: {
                 type: 'object',
                 properties: {
-                    source: {
-                        type: 'string',
-                        description: 'Source file path'
-                    },
-                    destination: {
-                        type: 'string',
-                        description: 'Destination file path'
-                    }
+                    pid: { type: 'number', description: 'Process id.' }
                 },
-                required: ['source', 'destination']
+                required: ['pid']
             }
         }
     },
     {
         type: 'function',
         function: {
-            name: 'move_file',
-            description: 'Moves a file from one location to another.',
+            name: 'mcp__system__disk_space',
+            description: 'Get disk usage and available space.',
+            parameters: { type: 'object', properties: {}, required: [] }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__system__usage',
+            description: 'Alias for system info/usage summary.',
+            parameters: { type: 'object', properties: {}, required: [] }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__web__search',
+            description: 'Search the web and return ranked results.',
             parameters: {
                 type: 'object',
                 properties: {
-                    source: {
-                        type: 'string',
-                        description: 'Source file path'
-                    },
-                    destination: {
-                        type: 'string',
-                        description: 'Destination file path'
-                    }
+                    query: { type: 'string', description: 'Search query.' },
+                    count: { type: 'number', description: 'Maximum result count. Default: 5.' }
                 },
-                required: ['source', 'destination']
+                required: ['query']
             }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__web__read_page',
+            description: 'Fetch a web page and return its content.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    url: { type: 'string', description: 'HTTP/HTTPS URL.' }
+                },
+                required: ['url']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__web__fetch_view',
+            description: 'Alias for reading a web page.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    url: { type: 'string', description: 'HTTP/HTTPS URL.' }
+                },
+                required: ['url']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__web__fetch_json',
+            description: 'Fetch JSON response from a URL.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    url: { type: 'string', description: 'HTTP/HTTPS URL.' }
+                },
+                required: ['url']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__network__interfaces',
+            description: 'Show network interfaces and addresses.',
+            parameters: { type: 'object', properties: {}, required: [] }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__network__ports',
+            description: 'Show active/listening ports.',
+            parameters: { type: 'object', properties: {}, required: [] }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__network__ping',
+            description: 'Ping a host.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    host: { type: 'string', description: 'Host or IP address.' }
+                },
+                required: ['host']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__network__traceroute',
+            description: 'Trace route to a host.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    host: { type: 'string', description: 'Host or IP address.' }
+                },
+                required: ['host']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__network__whois',
+            description: 'Lookup domain/host registration metadata.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    domain: { type: 'string', description: 'Domain name.' },
+                    host: { type: 'string', description: 'Optional alias of domain.' }
+                },
+                required: []
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__internet__weather',
+            description: 'Get weather data for a location.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    location: { type: 'string', description: 'Location (city, region, etc.). Optional.' }
+                },
+                required: []
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__workspace__listContainers',
+            description: 'List Docker containers.',
+            parameters: { type: 'object', properties: {}, required: [] }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__workspace__stats',
+            description: 'Show Docker container resource usage.',
+            parameters: { type: 'object', properties: {}, required: [] }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__workspace__listImages',
+            description: 'List Docker images.',
+            parameters: { type: 'object', properties: {}, required: [] }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__llm__listModels',
+            description: 'List local LLM models from Ollama.',
+            parameters: { type: 'object', properties: {}, required: [] }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'mcp__llm__ps',
+            description: 'List currently running local LLM model processes.',
+            parameters: { type: 'object', properties: {}, required: [] }
         }
     },
     {
         type: 'function',
         function: {
             name: 'generate_image',
-            description: 'ONLY use when the user EXPLICITLY asks for a visual/image/drawing. Example: "draw me a cat", "create a sky visual", "generate an image of a sunset". NEVER use for normal chat, questions, or coding tasks.',
+            description: 'Generate one or more images from a prompt. Use only when the user explicitly asks for image creation.',
             parameters: {
                 type: 'object',
                 properties: {
                     prompt: {
                         type: 'string',
-                        description: 'Detailed prompt for the image (English or Turkish)'
+                        description: 'Image prompt text.'
                     },
                     count: {
                         type: 'number',
-                        description: 'Total number of images to generate. If the user asked for multiple images (e.g., "5 images..."), be sure to specify this parameter. (default: 1, max: 5)'
+                        description: 'Number of images to generate. Default: 1, max: 5.'
                     }
                 },
                 required: ['prompt']
@@ -521,22 +558,22 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'update_plan_step',
-            description: 'Updates the status of a step in the current implementation plan. Use to report your progress to the user.',
+            description: 'Update the status of one plan step during execution.',
             parameters: {
                 type: 'object',
                 properties: {
                     index: {
                         type: 'number',
-                        description: 'Index of the step to update (0-based).'
+                        description: '0-based step index.'
                     },
                     status: {
                         type: 'string',
                         enum: ['pending', 'running', 'completed', 'failed'],
-                        description: 'The new status of the step.'
+                        description: 'New step status.'
                     },
                     message: {
                         type: 'string',
-                        description: 'Optional status message about the step (e.g., "File created and tested").'
+                        description: 'Optional progress note.'
                     }
                 },
                 required: ['index', 'status']
@@ -547,7 +584,7 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'propose_plan',
-            description: 'MANDATORY: Submit an execution plan for user approval. You MUST call this tool after analyzing the task. Do NOT write the plan as text in the chat - always use this tool. The planning loop will stop once this tool is called.',
+            description: 'Submit a structured execution plan.',
             parameters: {
                 type: 'object',
                 properties: {
@@ -590,26 +627,26 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'revise_plan',
-            description: 'AGT-PLN-02: Dynamically modify the execution plan during execution. Use this when you realize the plan needs adjustment based on what you learned during execution.',
+            description: 'Modify an existing execution plan while work is in progress.',
             parameters: {
                 type: 'object',
                 properties: {
                     action: {
                         type: 'string',
                         enum: ['add', 'remove', 'modify', 'insert'],
-                        description: 'The type of revision: add (append step), remove (delete step), modify (change step text), insert (add step at position)'
+                        description: 'Revision type.'
                     },
                     index: {
                         type: 'number',
-                        description: 'The step index to modify/remove/insert at (0-based). Required for remove, modify, insert.'
+                        description: '0-based step index. Required for remove/modify/insert.'
                     },
                     step_text: {
                         type: 'string',
-                        description: 'The new step text. Required for add, modify, insert.'
+                        description: 'Step text. Required for add/modify/insert.'
                     },
                     reason: {
                         type: 'string',
-                        description: 'Explanation of why this revision is needed.'
+                        description: 'Why the revision is needed.'
                     }
                 },
                 required: ['action', 'reason']

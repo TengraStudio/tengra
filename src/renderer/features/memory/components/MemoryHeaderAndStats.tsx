@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { MemoryStatistics } from '@shared/types/advanced-memory';
 import {
     AlertTriangle,
@@ -21,6 +31,14 @@ import { cn } from '@/lib/utils';
 // Header component
 interface MemoryHeaderProps {
     isLoading: boolean;
+    healthStatus: 'healthy' | 'degraded';
+    runtime: {
+        status: 'healthy' | 'degraded' | 'unknown';
+        averageLookupDurationMs: number;
+        lookupTimeoutCount: number;
+        lookupFailureCount: number;
+        cacheHitRate: number;
+    };
     onRefresh: () => void;
     onRunDecay: () => void;
     onAddMemory: () => void;
@@ -31,6 +49,8 @@ interface MemoryHeaderProps {
 
 export const MemoryHeader: React.FC<MemoryHeaderProps> = ({
     isLoading,
+    healthStatus,
+    runtime,
     onRefresh,
     onRunDecay,
     onAddMemory,
@@ -39,11 +59,40 @@ export const MemoryHeader: React.FC<MemoryHeaderProps> = ({
     onRecategorize
 }) => {
     const { t } = useTranslation();
+    const runtimeTone = runtime.status === 'healthy'
+        ? 'text-success'
+        : runtime.status === 'degraded'
+            ? 'text-warning'
+            : 'text-muted-foreground';
+    const overallTone = healthStatus === 'healthy' ? 'text-success' : 'text-warning';
+    const runtimeLabel = runtime.status === 'healthy'
+        ? 'Lookup runtime healthy'
+        : runtime.status === 'degraded'
+            ? 'Lookup runtime degraded'
+            : 'Lookup runtime unknown';
+
     return (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
             <div>
                 <h1 className="text-3xl font-bold">{t('memory.title')}</h1>
                 <p className="text-muted-foreground mt-1">{t('memory.subtitle')}</p>
+                <div className="mt-2 flex items-center gap-4 text-xs font-semibold">
+                    <span className={overallTone}>
+                        Health: {healthStatus}
+                    </span>
+                    <span className={runtimeTone}>
+                        {runtimeLabel}
+                    </span>
+                    <span className="text-muted-foreground">
+                        Avg lookup: {runtime.averageLookupDurationMs}ms
+                    </span>
+                    <span className="text-muted-foreground">
+                        Hit rate: {runtime.cacheHitRate}%
+                    </span>
+                    <span className="text-muted-foreground">
+                        T/F: {runtime.lookupTimeoutCount}/{runtime.lookupFailureCount}
+                    </span>
+                </div>
             </div>
             <div className="flex items-center gap-3">
                 <Button variant="outline" size="sm" onClick={onRefresh} className="gap-2">

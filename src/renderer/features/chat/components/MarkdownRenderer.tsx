@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { MonacoBlock } from '@renderer/features/chat/components/MonacoBlock';
 import DOMPurify from 'dompurify';
 import { Code2 } from 'lucide-react';
@@ -9,6 +19,11 @@ import remarkMath from 'remark-math';
 
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_MARKDOWNRENDERER_1 = "max-w-full max-h-96 rounded-lg border border-border/50 cursor-pointer hover:opacity-90 transition-opacity whitespace-pre-wrap";
+const C_MARKDOWNRENDERER_2 = "absolute top-2 right-2 bg-background/85 hover:bg-background/90 backdrop-blur-md border border-border/50 text-foreground px-3 py-1.5 rounded-lg typo-caption font-bold opacity-0 group/image:opacity-100 transition-all flex items-center gap-2 transform translate-y-2 group-hover/image:translate-y-0";
+
 
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
@@ -122,7 +137,7 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                     },
                     img: ({ src, alt }) => (
                         <span className="block my-2 relative group/image">
-                            <img src={src} alt={alt ?? t('messageBubble.imageAlt')} className="max-w-full max-h-96 rounded-lg border border-border/50 cursor-pointer hover:opacity-90 transition-opacity whitespace-pre-wrap" onClick={() => { if (src) { window.electron.openExternal(src); } }} />
+                            <img src={src} alt={alt ?? t('messageBubble.imageAlt')} className={C_MARKDOWNRENDERER_1} onClick={() => { if (src) { window.electron.openExternal(src); } }} />
                             {alt && <span className="typo-caption text-muted-foreground mt-1 block font-medium">{alt}</span>}
                             {src && !isUser && onCodeConvert && (
                                 <button
@@ -130,7 +145,7 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                                         e.stopPropagation();
                                         onCodeConvert(src);
                                     }}
-                                    className="absolute top-2 right-2 bg-background/85 hover:bg-background/90 backdrop-blur-md border border-border/50 text-foreground px-3 py-1.5 rounded-lg typo-caption font-bold opacity-0 group/image:opacity-100 transition-all flex items-center gap-2 transform translate-y-2 group-hover/image:translate-y-0"
+                                    className={C_MARKDOWNRENDERER_2}
                                 >
                                     <Code2 className="w-3.5 h-3.5" />
                                     {t('workspace.convertToCode')}

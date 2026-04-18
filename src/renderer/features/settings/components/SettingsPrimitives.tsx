@@ -1,6 +1,20 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { cn } from '@renderer/lib/utils';
 import { Info } from 'lucide-react';
 import React from 'react';
+
+/* Batch-02: Extracted Long Classes */
+const C_SETTINGSPRIMITIVES_1 = "flex flex-col gap-3 rounded-md border border-border/40 bg-background px-3 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-5";
+
 
 export const SettingsPanel: React.FC<{
     title: string
@@ -63,7 +77,7 @@ export const SettingsToggleRow: React.FC<{
     control: React.ReactNode
     icon?: React.ComponentType<{ className?: string }>
 }> = ({ title, description, control, icon: Icon }) => (
-    <div className="flex flex-col gap-3 rounded-md border border-border/40 bg-background px-3 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-5">
+    <div className={C_SETTINGSPRIMITIVES_1}>
         <div className="flex gap-3">
             {Icon && <Icon className="mt-0.5 h-4 w-4 text-muted-foreground" />}
             <div className="space-y-1">

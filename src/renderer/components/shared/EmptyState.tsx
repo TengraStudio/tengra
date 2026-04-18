@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Reusable Empty State Component
  *
  * Displays a centered empty state with optional icon, title, description, and action button.
@@ -35,22 +45,22 @@ export const EmptyState: React.FC<EmptyStateProps> = memo(({
   description,
   action,
 }) => (
-  <div className="tengra-empty-state">
+  <div className="flex flex-col items-center justify-center py-20 px-4 text-center gap-4 bg-muted/10 border border-dashed border-border/50 rounded-2xl">
     {icon && (
-      <div className="tengra-empty-state__icon">
+      <div className="text-muted-foreground/20">
         {icon}
       </div>
     )}
-    <div className="tengra-empty-state__content">
-      <h3 className="tengra-empty-state__title">{title}</h3>
+    <div className="flex flex-col gap-1">
+      <h3 className="font-bold text-muted-foreground">{title}</h3>
       {description && (
-        <p className="tengra-empty-state__description">{description}</p>
+        <p className="text-xs text-muted-foreground/50 max-w-72 line-clamp-3">{description}</p>
       )}
     </div>
     {action && (
       <button
         onClick={action.onClick}
-        className="tengra-empty-state__action"
+        className="mt-2 py-2 px-4 bg-primary/20 text-primary border border-primary/30 rounded-lg text-xs font-bold hover:bg-primary/30 transition-colors"
       >
         {action.label}
       </button>

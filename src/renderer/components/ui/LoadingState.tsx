@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Loader2, X } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -9,6 +19,10 @@ import {
     updateLoadingOperationProgress,
 } from '@/store/loading-analytics.store';
 
+
+
+/* Batch-02: Extracted Long Classes */
+const C_LOADINGSTATE_1 = "inline-flex items-center gap-1 px-2.5 py-1 rounded border border-border/60 typo-caption text-foreground hover:bg-accent/40";
 
 export interface LoadingStateProps {
     /**
@@ -270,7 +284,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
                         }
                         onCancel();
                     }}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-border/60 typo-caption text-foreground hover:bg-accent/40"
+                    className={C_LOADINGSTATE_1}
                 >
                     <X className="w-3 h-3" />
                     {resolvedCancelLabel}

@@ -1,8 +1,23 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { CornerUpRight, Folder as FolderIcon, MessageSquare, Pin, Trash2 } from 'lucide-react';
 import React, { memo, useCallback } from 'react';
 
 import { cn } from '@/lib/utils';
 import { Chat, Folder } from '@/types';
+
+/* Batch-02: Extracted Long Classes */
+const C_CHATLISTITEM_1 = "opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all flex items-center gap-1 absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-l from-background to-transparent pl-2";
+const C_CHATLISTITEM_2 = "hidden group-hover/folder:block absolute right-0 top-full z-50 w-32 py-1 bg-card border border-border/40 rounded-md shadow-xl -mt-1";
+
 
 interface ChatListItemProps {
     chat: Chat;
@@ -52,11 +67,11 @@ export const ChatListItem = memo<ChatListItemProps>(({
                 <span className="truncate typo-caption flex-1 font-medium">{chat.title || t('sidebar.newChat')}</span>
             </button>
 
-            <div className="opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all flex items-center gap-1 absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-l from-background to-transparent pl-2">
+            <div className={C_CHATLISTITEM_1}>
                 {onMoveToFolder && folders && folders.length > 0 && (
                     <div className="relative group/folder pointer-events-auto">
                         <div className="p-1 hover:text-primary rounded-md cursor-pointer"><CornerUpRight className="w-3 h-3" /></div>
-                        <div className="hidden group-hover/folder:block absolute right-0 top-full z-50 w-32 py-1 bg-card border border-border/40 rounded-md shadow-xl -mt-1">
+                        <div className={C_CHATLISTITEM_2}>
                             {folders.map(f => (
                                 <div key={f.id} onClick={(e) => { e.stopPropagation(); onMoveToFolder(chat.id, f.id); }} className="px-2 py-1.5 hover:bg-primary/20 hover:text-primary cursor-pointer typo-caption truncate flex items-center gap-2">
                                     <FolderIcon className="w-3 h-3 opacity-50" /> {f.name}

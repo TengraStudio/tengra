@@ -1,9 +1,23 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Bell, Check, ChevronsUpDown, GitBranch, Loader2, } from 'lucide-react';
 import React from 'react';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_COMMANDSTRIP_1 = "w-full px-3 py-2 text-left typo-caption font-medium hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 text-foreground rounded-sm disabled:opacity-50 disabled:cursor-not-allowed";
+
 
 interface CommandStripProps {
     className?: string;
@@ -156,7 +170,7 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
                             side="top"
                             align="start"
                             sideOffset={8}
-                            className="w-auto tw-min-w-220 p-1 bg-popover border border-border rounded-lg"
+                            className="w-auto min-w-220 p-1 bg-popover border border-border rounded-lg"
                             onMouseDown={e => {
                                 e.stopPropagation();
                             }}
@@ -172,7 +186,7 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
                             ) : (
                                 <>
                                     {isBranchSwitching && (
-                                        <div className="px-3 py-2 tw-text-11 text-primary flex items-center gap-2">
+                                        <div className="px-3 py-2 text-11 text-primary flex items-center gap-2">
                                             <Loader2 className="w-3 h-3 animate-spin" />
                                             {t('workspace.switchingBranch')}
                                         </div>
@@ -188,7 +202,7 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
                                                 }
                                             }}
                                             disabled={isBranchSwitching}
-                                            className="w-full px-3 py-2 text-left typo-caption font-medium hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 text-foreground rounded-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className={C_COMMANDSTRIP_1}
                                         >
                                             <span className="truncate">{branch}</span>
                                             {branch === branchName && (

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Button } from '@renderer/components/ui/button';
 import {
     Select,
@@ -12,6 +22,11 @@ import { Check, Key, Trash2, User } from 'lucide-react';
 import React from 'react';
 
 import type { AntigravityCreditUsageMode } from '@/types/settings';
+
+/* Batch-02: Extracted Long Classes */
+const C_ACCOUNTROW_1 = "inline-flex items-center gap-1 rounded-md border border-success/20 bg-success/10 px-2.5 py-1 typo-caption font-medium text-success";
+const C_ACCOUNTROW_2 = "h-8 border-border/30 bg-background px-3 typo-caption font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground";
+
 
 interface AccountRowProps {
     account: LinkedAccountInfo
@@ -76,7 +91,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({
 
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                 {showAntigravityControls && (
-                    <div className="flex min-w-[172px] flex-col gap-1 rounded-xl border border-border/20 bg-background/70 px-3 py-2">
+                    <div className="flex min-w-172 flex-col gap-1 rounded-xl border border-border/20 bg-background/70 px-3 py-2">
                         {creditLabel && (
                             <div className="typo-caption font-medium text-muted-foreground">
                                 {creditLabel}
@@ -107,7 +122,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({
                     </div>
                 )}
                 {account.isActive ? (
-                    <span className="inline-flex items-center gap-1 rounded-md border border-success/20 bg-success/10 px-2.5 py-1 typo-caption font-medium text-success">
+                    <span className={C_ACCOUNTROW_1}>
                         <Check className="h-3 w-3" />
                         {t('accounts.active')}
                     </span>
@@ -121,7 +136,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({
                             void onSetActive(providerId, account.id);
                         }}
                         disabled={isBusy}
-                        className="h-8 border-border/30 bg-background px-3 typo-caption font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                        className={C_ACCOUNTROW_2}
                     >
                         {t('accounts.setActive')}
                     </Button>

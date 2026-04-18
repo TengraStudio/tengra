@@ -1,7 +1,21 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { ChevronLeft } from 'lucide-react';
 import React from 'react';
 
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_WIZARDSTEPCONTAINER_1 = "flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-all group px-4 py-2 rounded-xl hover:bg-muted/30 border border-transparent hover:border-border/40 disabled:opacity-40";
+
 
 interface WizardNavigationButton {
     label: string;
@@ -72,7 +86,7 @@ export const WizardStepContainer: React.FC<WizardStepContainerProps> = ({
                             type="button"
                             onClick={backButton.onClick}
                             disabled={backButton.disabled}
-                            className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-all group px-4 py-2 rounded-xl hover:bg-muted/30 border border-transparent hover:border-border/40 disabled:opacity-40"
+                            className={C_WIZARDSTEPCONTAINER_1}
                         >
                             <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-200" />
                             <span>{backButton.label}</span>

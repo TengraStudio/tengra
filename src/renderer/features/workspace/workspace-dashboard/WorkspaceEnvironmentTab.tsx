@@ -1,9 +1,25 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Eye, EyeOff, Plus, Save, Settings, Trash2 } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { appLogger } from '@/utils/renderer-logger';
+
+/* Batch-02: Extracted Long Classes */
+const C_WORKSPACEENVIRONMENTTAB_1 = "flex items-center gap-2 px-4 py-2 bg-muted/20 hover:bg-muted/30 border border-border/50 rounded-lg text-sm font-medium transition-colors";
+const C_WORKSPACEENVIRONMENTTAB_2 = "w-full bg-transparent border-b border-border/50 focus:border-primary/50 outline-none text-sm font-mono text-foreground py-1";
+const C_WORKSPACEENVIRONMENTTAB_3 = "flex-1 bg-transparent border-b border-border/40 focus:border-primary/50 outline-none text-sm font-mono text-foreground py-1";
+
 
 interface EnvVar {
     key: string
@@ -132,7 +148,7 @@ export const WorkspaceEnvironmentTab: React.FC<WorkspaceEnvironmentTabProps> = (
                 <div className="flex gap-2">
                     <button
                         onClick={addVar}
-                        className="flex items-center gap-2 px-4 py-2 bg-muted/20 hover:bg-muted/30 border border-border/50 rounded-lg text-sm font-medium transition-colors"
+                        className={C_WORKSPACEENVIRONMENTTAB_1}
                     >
                         <Plus className="w-4 h-4" />
                         {t('workspaceDashboard.envAddVar')}
@@ -172,7 +188,7 @@ export const WorkspaceEnvironmentTab: React.FC<WorkspaceEnvironmentTabProps> = (
                                         type="text"
                                         value={envVar.key}
                                         onChange={(e) => updateVar(idx, 'key', e.target.value)}
-                                        className="w-full bg-transparent border-b border-border/50 focus:border-primary/50 outline-none text-sm font-mono text-foreground py-1"
+                                        className={C_WORKSPACEENVIRONMENTTAB_2}
                                         placeholder={t('workspaceDashboard.envNamePlaceholder')}
                                     />
                                 </div>
@@ -181,7 +197,7 @@ export const WorkspaceEnvironmentTab: React.FC<WorkspaceEnvironmentTabProps> = (
                                         type={envVar.visible ? 'text' : 'password'}
                                         value={envVar.value}
                                         onChange={(e) => updateVar(idx, 'value', e.target.value)}
-                                        className="flex-1 bg-transparent border-b border-border/40 focus:border-primary/50 outline-none text-sm font-mono text-foreground py-1"
+                                        className={C_WORKSPACEENVIRONMENTTAB_3}
                                         placeholder={t('placeholder.envValue')}
                                     />
                                     <button

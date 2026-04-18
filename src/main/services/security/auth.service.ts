@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import {
     createCipheriv,
     createDecipheriv,
@@ -41,6 +51,7 @@ export interface LinkedAccountInfo {
     avatarUrl?: string
     isActive: boolean
     createdAt: number
+    decryptionError?: boolean
 }
 
 export interface ProviderHealthCheck {
@@ -1432,7 +1443,7 @@ export class AuthService extends BaseService {
     }
 
     private parseCredentialExportPackage(payloadText: string): CredentialExportPackage {
-        let parsed: RuntimeValue;
+        let parsed: JsonValue;
         try {
             parsed = JSON.parse(payloadText);
         } catch (error) {
@@ -1460,7 +1471,7 @@ export class AuthService extends BaseService {
     }
 
     private parseCredentialExportPayload(serializedPayload: string): CredentialExportPayload {
-        let parsed: RuntimeValue;
+        let parsed: JsonValue;
         try {
             parsed = JSON.parse(serializedPayload);
         } catch (error) {
@@ -1598,6 +1609,7 @@ export class AuthService extends BaseService {
     }
 
     private toPublicAccount(account: LinkedAccount): LinkedAccountInfo {
+        const decryptionError = this.hasDecryptionError(account);
         return {
             id: account.id,
             provider: this.normalizeProvider(account.provider),
@@ -1605,8 +1617,22 @@ export class AuthService extends BaseService {
             displayName: account.displayName,
             avatarUrl: account.avatarUrl,
             isActive: account.isActive,
-            createdAt: account.createdAt
+            createdAt: account.createdAt,
+            decryptionError
         };
+    }
+
+    private hasDecryptionError(account: LinkedAccount): boolean {
+        const props: Array<keyof LinkedAccount> = ['accessToken', 'refreshToken', 'sessionToken'];
+        for (const key of props) {
+            const val = account[key];
+            if (typeof val === 'string' && val.length > 0) {
+                if (this.securityService.decryptSync(val) === null) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private encrypt(text: string | undefined): string | undefined {
@@ -1668,5 +1694,3 @@ export class AuthService extends BaseService {
         return mappings[p] ?? p;
     }
 }
-
-

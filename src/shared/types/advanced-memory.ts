@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Advanced Memory System Types
  *
  * A sophisticated memory architecture that surpasses ChatGPT/Claude memory by implementing:
@@ -390,6 +400,38 @@ export interface MemorySearchAnalytics {
     averageResults: number;
     lastQueryAt?: number;
     topQueries: Array<{ query: string; count: number }>;
+}
+
+export interface MemoryContextRuntimeMetrics {
+    cacheHits: number;
+    cacheMisses: number;
+    inflightReuseCount: number;
+    lookupCount: number;
+    lookupTimeoutCount: number;
+    lookupFailureCount: number;
+    lastLookupDurationMs: number;
+    averageLookupDurationMs: number;
+    cacheSize: number;
+    inflightSize: number;
+}
+
+export interface AdvancedMemoryHealthSummary {
+    status: 'healthy' | 'degraded';
+    uiState: 'ready' | 'failure';
+    budgets: {
+        fastMs: number;
+        standardMs: number;
+        heavyMs: number;
+    };
+    metrics: {
+        totalCalls: number;
+        totalFailures: number;
+        totalRetries: number;
+        validationFailures: number;
+        budgetExceededCount: number;
+        errorRate: number;
+    };
+    memoryContext?: MemoryContextRuntimeMetrics;
 }
 
 export interface MemorySearchHistoryEntry {

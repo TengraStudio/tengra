@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Mic, MicOff, Paperclip, Send, Sparkles, Square } from 'lucide-react';
 import { memo } from 'react';
 
@@ -7,6 +17,11 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 import { useChatInputController } from '../../hooks/useChatInputController';
+
+/* Batch-02: Extracted Long Classes */
+const C_CHATINPUTACTIONS_1 = "mb-2 flex items-center gap-2 rounded-md border border-border/30 bg-muted/5 px-2.5 py-1.5 transition-all animate-in fade-in slide-in-from-top-1";
+const C_CHATINPUTACTIONS_2 = "ml-auto h-7 w-12 rounded-md border border-border/45 bg-background px-1.5 text-center typo-caption text-foreground outline-none transition-colors focus-visible:ring-1 focus-visible:ring-ring";
+
 
 type ControllerType = ReturnType<typeof useChatInputController>;
 
@@ -214,7 +229,7 @@ ComposerStateBadges.displayName = 'ComposerStateBadges';
  * ImageCountPanel - Settings for image generation models
  */
 export const ImageCountPanel = memo(({ ctrl }: { ctrl: ControllerType }) => (
-    <div className="mb-2 flex items-center gap-2 rounded-md border border-border/30 bg-muted/5 px-2.5 py-1.5 transition-all animate-in fade-in slide-in-from-top-1">
+    <div className={C_CHATINPUTACTIONS_1}>
         <span className="typo-body text-muted-foreground font-medium">{ctrl.t('input.imageCountLabel')}</span>
         <input
             type="number"
@@ -229,7 +244,7 @@ export const ImageCountPanel = memo(({ ctrl }: { ctrl: ControllerType }) => (
                 }
                 ctrl.setImageRequestCount(Math.max(1, Math.min(5, nextValue)));
             }}
-            className="ml-auto h-7 w-12 rounded-md border border-border/45 bg-background px-1.5 text-center typo-caption text-foreground outline-none transition-colors focus-visible:ring-1 focus-visible:ring-ring"
+            className={C_CHATINPUTACTIONS_2}
             aria-label={ctrl.t('input.imageCountLabel')}
         />
     </div>

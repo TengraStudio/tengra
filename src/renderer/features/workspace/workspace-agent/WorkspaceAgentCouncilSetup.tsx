@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import type { GroupedModels } from '@shared/types/model.types';
 import type {
     CouncilRunConfig,
@@ -14,6 +24,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+
+
+/* Batch-02: Extracted Long Classes */
+const C_WORKSPACEAGENTCOUNCILSETUP_1 = "rounded-2xl px-8 h-12 bg-primary hover:bg-primary/90 text-primary-foreground typo-caption font-bold tracking-20 shadow-primary-medium hover:shadow-primary-glow transition-all";
 
 interface WorkspaceAgentCouncilSetupProps {
     councilSetup: CouncilRunConfig;
@@ -88,7 +102,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
             
             <div className="grid gap-4 md:grid-cols-3">
                 <div className="rounded-2xl border border-border/30 bg-muted/40 p-4 transition-all hover:bg-muted/50">
-                    <div className="flex items-center gap-2 tw-text-10 font-bold tw-tracking-25 text-muted-foreground/30 mb-3">
+                    <div className="flex items-center gap-2 text-10 font-bold tracking-25 text-muted-foreground/30 mb-3">
                         <Bot className="h-3.5 w-3.5" />
                         <span>{t('council.chairman')}</span>
                     </div>
@@ -104,7 +118,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                     </div>
                 </div>
                 <div className="rounded-2xl border border-border/30 bg-muted/40 p-4 transition-all hover:bg-muted/50">
-                    <div className="flex items-center gap-2 tw-text-10 font-bold tw-tracking-25 text-muted-foreground/30 mb-3">
+                    <div className="flex items-center gap-2 text-10 font-bold tracking-25 text-muted-foreground/30 mb-3">
                         <Sparkles className="h-3.5 w-3.5" />
                         <span>{t('agents.strategy')}</span>
                     </div>
@@ -116,7 +130,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                     </div>
                 </div>
                 <div className="rounded-2xl border border-border/30 bg-muted/40 p-4 transition-all hover:bg-muted/50">
-                    <div className="flex items-center gap-2 tw-text-10 font-bold tw-tracking-25 text-muted-foreground/30 mb-3">
+                    <div className="flex items-center gap-2 text-10 font-bold tracking-25 text-muted-foreground/30 mb-3">
                         <Waypoints className="h-3.5 w-3.5" />
                         <span>{t('council.requestedSubagents')}</span>
                     </div>
@@ -132,7 +146,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
             <div className="space-y-6 rounded-3xl border border-border/30 bg-muted/30 p-6">
                 <div className="grid gap-6 md:grid-cols-3">
                     <div className="space-y-2.5">
-                        <label className="tw-text-10 font-bold text-muted-foreground/40 px-1">
+                        <label className="text-10 font-bold text-muted-foreground/40 px-1">
                             {t('council.chairman')}
                         </label>
                         <Select
@@ -162,7 +176,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                     </div>
 
                     <div className="space-y-2.5">
-                        <label className="tw-text-10 font-bold text-muted-foreground/40 px-1">
+                        <label className="text-10 font-bold text-muted-foreground/40 px-1">
                             {t('agents.strategy')}
                         </label>
                         <Select
@@ -186,7 +200,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                     </div>
 
                     <div className="space-y-2.5">
-                        <label className="tw-text-10 font-bold text-muted-foreground/40 px-1">
+                        <label className="text-10 font-bold text-muted-foreground/40 px-1">
                             {t('council.requestedSubagents')}
                         </label>
                         <Select
@@ -221,7 +235,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                 {councilSetup.chairman.mode === 'manual' && (
                     <div className="pt-6 border-t border-border/30 grid gap-6 md:grid-cols-2">
                         <div className="space-y-2.5">
-                            <label className="tw-text-10 font-bold text-muted-foreground/40 px-1">
+                            <label className="text-10 font-bold text-muted-foreground/40 px-1">
                                 {t('agent.aiProvider')}
                             </label>
                             <Select
@@ -255,7 +269,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                         </div>
 
                         <div className="space-y-2.5">
-                            <label className="tw-text-10 font-bold text-muted-foreground/40 px-1">
+                            <label className="text-10 font-bold text-muted-foreground/40 px-1">
                                 {t('agent.modelAssignment')}
                             </label>
                             <Select
@@ -292,13 +306,13 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                 <Button 
                     variant="ghost" 
                     onClick={onClose} 
-                    className="rounded-2xl px-6 tw-text-10 font-bold text-muted-foreground/40 hover:text-foreground hover:bg-muted/40 transition-all"
+                    className="rounded-2xl px-6 text-10 font-bold text-muted-foreground/40 hover:text-foreground hover:bg-muted/40 transition-all"
                 >
                     {t('common.cancel')}
                 </Button>
                 <Button 
                     onClick={onApplyCouncilSetup} 
-                    className="rounded-2xl px-8 h-12 bg-primary hover:bg-primary/90 text-primary-foreground typo-caption font-bold tw-tracking-20 tw-shadow-primary-medium tw-hover-shadow-primary-glow transition-all"
+                    className={C_WORKSPACEAGENTCOUNCILSETUP_1}
                 >
                     <Waypoints className="mr-2 h-4 w-4" />
                     {t('council.runCouncil')}

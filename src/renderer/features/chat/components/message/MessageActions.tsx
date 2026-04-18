@@ -1,9 +1,27 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { RotateCcw, Smile, Volume2, VolumeX } from 'lucide-react';
 import React, { memo } from 'react';
 
 import { Message } from '@/types';
 
 import { BookmarkButton, CopyButton, RatingButtons } from './CopierRatingBookmark';
+
+/* Batch-02: Extracted Long Classes */
+const C_MESSAGEACTIONS_1 = "absolute start-full ms-4 top-0 flex flex-col gap-1 opacity-0 group-hover/bubble:opacity-100 group-focus-within/bubble:opacity-100 transition-all duration-200 sm:flex-row";
+const C_MESSAGEACTIONS_2 = "p-1.5 bg-muted/20 hover:bg-muted/40 rounded-lg text-muted-foreground hover:text-foreground transition-all border border-border/50 backdrop-blur-sm";
+const C_MESSAGEACTIONS_3 = "p-1.5 bg-muted/20 hover:bg-muted/40 rounded-lg text-muted-foreground hover:text-foreground transition-all border border-border/50 backdrop-blur-sm";
+const C_MESSAGEACTIONS_4 = "p-1.5 bg-muted/20 hover:bg-muted/40 rounded-lg text-muted-foreground hover:text-foreground transition-all border border-border/50 backdrop-blur-sm";
+const C_MESSAGEACTIONS_5 = "absolute bottom-full mb-2 bg-popover border border-border/50 rounded-full px-2 py-1 shadow-xl flex gap-1 opacity-0 group-hover/react:opacity-100 group-focus-within/react:opacity-100 pointer-events-none group-hover/react:pointer-events-auto group-focus-within/react:pointer-events-auto transition-all scale-90 group-hover/react:scale-100 group-focus-within/react:scale-100 origin-bottom";
+
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
 
@@ -69,7 +87,7 @@ export const MessageActions = memo(
         t,
     }: MessageActionsProps) => (
         <div
-            className="absolute start-full ms-4 top-0 flex flex-col gap-1 opacity-0 group-hover/bubble:opacity-100 group-focus-within/bubble:opacity-100 transition-all duration-200"
+            className={C_MESSAGEACTIONS_1}
             role="toolbar"
             aria-label={t('messageBubble.actions')}
             aria-orientation="vertical"
@@ -89,7 +107,7 @@ export const MessageActions = memo(
                 <button
                     type="button"
                     onClick={() => onSpeak?.(displayContent)}
-                    className="p-1.5 bg-muted/20 hover:bg-muted/40 rounded-lg text-muted-foreground hover:text-foreground transition-all border border-border/50 backdrop-blur-sm"
+                    className={C_MESSAGEACTIONS_2}
                     title={t('messageBubble.speakAloud')}
                     aria-label={t('messageBubble.speakAloud')}
                 >
@@ -106,7 +124,7 @@ export const MessageActions = memo(
                 <button
                     type="button"
                     onClick={onRegenerate}
-                    className="p-1.5 bg-muted/20 hover:bg-muted/40 rounded-lg text-muted-foreground hover:text-foreground transition-all border border-border/50 backdrop-blur-sm"
+                    className={C_MESSAGEACTIONS_3}
                     title={t('messageBubble.regenerate')}
                     aria-label={t('messageBubble.regenerate')}
                 >
@@ -116,7 +134,7 @@ export const MessageActions = memo(
             <div className="relative group/react">
                 <button
                     type="button"
-                    className="p-1.5 bg-muted/20 hover:bg-muted/40 rounded-lg text-muted-foreground hover:text-foreground transition-all border border-border/50 backdrop-blur-sm"
+                    className={C_MESSAGEACTIONS_4}
                     title={t('messageBubble.react')}
                     aria-label={t('messageBubble.react')}
                     aria-haspopup="true"
@@ -124,7 +142,7 @@ export const MessageActions = memo(
                     <Smile className="w-3.5 h-3.5" />
                 </button>
                 <div
-                    className="absolute bottom-full mb-2 bg-popover border border-border/50 rounded-full px-2 py-1 shadow-xl flex gap-1 opacity-0 group-hover/react:opacity-100 group-focus-within/react:opacity-100 pointer-events-none group-hover/react:pointer-events-auto group-focus-within/react:pointer-events-auto transition-all scale-90 group-hover/react:scale-100 group-focus-within/react:scale-100 origin-bottom"
+                    className={C_MESSAGEACTIONS_5}
                     role="group"
                     aria-label={t('messageBubble.emojiReactions')}
                 >

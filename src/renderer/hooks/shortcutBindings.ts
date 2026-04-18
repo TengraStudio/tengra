@@ -1,5 +1,14 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 export type ShortcutActionId =
-    | 'commandPalette'
     | 'newChat'
     | 'openSettings'
     | 'clearChat'
@@ -21,7 +30,6 @@ export type ShortcutBindings = Record<ShortcutActionId, ShortcutBinding>;
 export const SHORTCUTS_STORAGE_KEY = 'app.keyboard-shortcuts.v1';
 
 export const DEFAULT_SHORTCUT_BINDINGS: ShortcutBindings = {
-    commandPalette: { key: 'k', mod: true },
     newChat: { key: 'n', mod: true },
     openSettings: { key: ',', mod: true },
     clearChat: { key: 'l', mod: true },

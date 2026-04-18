@@ -1,3 +1,12 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
 use axum::{
     extract::State,
     http::{HeaderMap, StatusCode},
@@ -17,6 +26,7 @@ pub async fn handle_messages(
     _headers: HeaderMap,
     Json(payload): Json<Value>,
 ) -> Result<Response, (StatusCode, Json<Value>)> {
+    let payload = crate::proxy::handlers::chat::compact::compact_claude_messages_payload(payload);
     forward_claude_request(payload, "https://api.anthropic.com/v1/messages").await
 }
 

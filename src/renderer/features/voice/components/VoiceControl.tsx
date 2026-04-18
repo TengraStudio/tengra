@@ -1,8 +1,19 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * VoiceControl Component - Main voice control interface
  * UI-11: Voice-first interface option
  */
 
+import { cn } from '@renderer/lib/utils';
 import { VoiceCommand } from '@shared/types/voice';
 import { useEffect, useState } from 'react';
 
@@ -24,6 +35,31 @@ interface VoiceControlProps {
     /** Show visual feedback */
     showVisualFeedback?: boolean;
 }
+
+/** Status color to class maps */
+const STATUS_CLASSES = {
+    icon: {
+        red: 'voice-control__icon--red',
+        blue: 'voice-control__icon--blue',
+        yellow: 'voice-control__icon--yellow',
+        green: 'voice-control__icon--green',
+        gray: 'voice-control__icon--gray',
+    },
+    button: {
+        red: 'voice-control__button--red',
+        blue: 'voice-control__button--blue',
+        yellow: 'voice-control__button--yellow',
+        green: 'voice-control__button--green',
+        gray: 'voice-control__button--gray',
+    },
+    dot: {
+        red: 'voice-control__status-dot--red',
+        blue: 'voice-control__status-dot--blue',
+        yellow: 'voice-control__status-dot--yellow',
+        green: 'voice-control__status-dot--green',
+        gray: 'voice-control__status-dot--gray',
+    },
+} as const;
 
 /** Voice control button and status indicator */
 export function VoiceControl({
@@ -84,7 +120,7 @@ export function VoiceControl({
 
     if (!isSpeechRecognitionAvailable()) {
         return (
-            <div className={`voice-control voice-control--unsupported ${className}`}>
+            <div className={cn('voice-control voice-control--unsupported', className)}>
                 <span className="voice-control__message">
                     {t('voice.notSupported')}
                 </span>
@@ -92,7 +128,7 @@ export function VoiceControl({
         );
     }
 
-    const getStatusColor = (): string => {
+    const getStatusColor = (): keyof typeof STATUS_CLASSES.icon => {
         if (session.error) {return 'red';}
         if (session.isSpeaking) {return 'blue';}
         if (session.isProcessing) {return 'yellow';}
@@ -111,13 +147,13 @@ export function VoiceControl({
     if (compact) {
         return (
             <button
-                className={`voice-control voice-control--compact ${className}`}
+                className={cn('voice-control voice-control--compact', className)}
                 onClick={toggleListening}
                 title={session.isListening ? t('voice.stopListening') : t('voice.startListening')}
                 aria-label={session.isListening ? t('voice.stopListening') : t('voice.startListening')}
                 aria-pressed={session.isListening}
             >
-                <span className={`voice-control__icon voice-control__icon--${getStatusColor()}`}>
+                <span className={cn('voice-control__icon', STATUS_CLASSES.icon[getStatusColor()])}>
                     {session.isListening ? '🎤' : '🎙️'}
                 </span>
                 {showVisualFeedback && session.isListening && (
@@ -128,10 +164,10 @@ export function VoiceControl({
     }
 
     return (
-        <div className={`voice-control ${className}`}>
+        <div className={cn('voice-control', className)}>
             <div className="voice-control__header">
                 <button
-                    className={`voice-control__button voice-control__button--${getStatusColor()}`}
+                    className={cn('voice-control__button', STATUS_CLASSES.button[getStatusColor()])}
                     onClick={toggleListening}
                     aria-pressed={session.isListening}
                 >
@@ -155,7 +191,7 @@ export function VoiceControl({
 
             {showVisualFeedback && (
                 <div className="voice-control__status">
-                    <span className={`voice-control__status-dot voice-control__status-dot--${getStatusColor()}`} />
+                    <span className={cn('voice-control__status-dot', STATUS_CLASSES.dot[getStatusColor()])} />
                     <span className="voice-control__status-text">{getStatusText()}</span>
                 </div>
             )}

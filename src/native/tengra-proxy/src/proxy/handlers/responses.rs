@@ -1,3 +1,12 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
 use async_stream::stream;
 use axum::{
     body::to_bytes,
@@ -448,7 +457,11 @@ fn openai_chat_to_responses(chat_response: Value) -> Value {
 
     if let Some(images) = message.get("images").and_then(Value::as_array) {
         for image in images {
-            if let Some(url) = image.get("image_url").and_then(|v| v.get("url")).and_then(Value::as_str) {
+            if let Some(url) = image
+                .get("image_url")
+                .and_then(|v| v.get("url"))
+                .and_then(Value::as_str)
+            {
                 if let Some(msg) = output.iter_mut().find(|i| i["type"] == "message") {
                     if let Some(content) = msg["content"].as_array_mut() {
                         content.push(json!({

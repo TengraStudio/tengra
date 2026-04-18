@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { SearchResults } from '@renderer/features/workspace/components/SearchResults';
 import { FileSearchResult } from '@shared/types/common';
 import {
@@ -10,6 +20,14 @@ import {
     X,
 } from 'lucide-react';
 import { useCallback, useDeferredValue, useMemo, useState } from 'react';
+
+import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_WORKSPACESEARCHTAB_1 = "flex flex-1 items-center gap-2 rounded-sm border border-border/60 bg-input/30 px-2 py-1 transition-colors focus-within:border-info/50";
+const C_WORKSPACESEARCHTAB_2 = "flex items-center gap-1 self-start rounded-sm px-1 py-0.5 text-xxs text-muted-foreground transition-colors hover:text-foreground";
+const C_WORKSPACESEARCHTAB_3 = "rounded-sm border border-border/40 bg-input/30 px-2 py-0.5 typo-caption text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-info/40";
+
 
 interface WorkspaceSearchTabProps {
     searchQuery: string;
@@ -92,7 +110,7 @@ export const WorkspaceSearchTab = ({
             <div className="flex flex-col gap-1 border-b border-border/50 px-3 pb-2 pt-2.5">
                 {/* Primary search row */}
                 <div className="flex items-center gap-1">
-                    <div className="flex flex-1 items-center gap-2 rounded-sm border border-border/60 bg-input/30 px-2 py-1 transition-colors focus-within:border-info/50">
+                    <div className={C_WORKSPACESEARCHTAB_1}>
                         <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                         <input
                             type="text"
@@ -126,7 +144,7 @@ export const WorkspaceSearchTab = ({
                 <button
                     type="button"
                     onClick={() => setFiltersExpanded(prev => !prev)}
-                    className="flex items-center gap-1 self-start rounded-sm px-1 py-0.5 text-xxs text-muted-foreground transition-colors hover:text-foreground"
+                    className={C_WORKSPACESEARCHTAB_2}
                 >
                     {filtersExpanded
                         ? <ChevronDown className="h-3 w-3" />
@@ -206,12 +224,12 @@ const SearchToggleButton = ({ icon, title }: SearchToggleButtonProps) => {
             type="button"
             title={title}
             onClick={() => setActive(prev => !prev)}
-            className={[
+            className={cn(
                 'rounded-sm p-1 transition-colors',
                 active
                     ? 'bg-info/15 text-info'
-                    : 'text-muted-foreground/60 hover:bg-accent/60 hover:text-muted-foreground',
-            ].join(' ')}
+                    : 'text-muted-foreground/60 hover:bg-accent/60 hover:text-muted-foreground'
+            )}
         >
             {icon}
         </button>
@@ -231,7 +249,7 @@ const FilterInput = ({ placeholder, value, onChange }: FilterInputProps) => (
         placeholder={placeholder}
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="rounded-sm border border-border/40 bg-input/30 px-2 py-0.5 typo-caption text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-info/40"
+        className={C_WORKSPACESEARCHTAB_3}
     />
 );
 

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { _electron as electron, ElectronApplication, expect, Page } from '@playwright/test';
 
 const ELECTRON_ENTRY = 'dist/main/main.js';
@@ -8,9 +18,10 @@ export interface E2eAppContext {
 }
 
 export async function launchElectronApp(): Promise<E2eAppContext> {
+    const { ELECTRON_RUN_AS_NODE: _ignoredElectronRunAsNode, ...launchEnv } = process.env;
     const electronApp = await electron.launch({
         args: [ELECTRON_ENTRY],
-        env: { ...process.env, NODE_ENV: 'test' }
+        env: { ...launchEnv, NODE_ENV: 'test' }
     });
     const appWindow = await electronApp.firstWindow();
     await appWindow.waitForLoadState('domcontentloaded');

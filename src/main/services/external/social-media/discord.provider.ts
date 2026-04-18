@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { appLogger } from '@main/logging/logger';
 import { Client, GatewayIntentBits, Message, Partials } from 'discord.js';
 
@@ -40,9 +50,9 @@ export class DiscordProvider extends SocialMediaProvider {
                 appLogger.info('DiscordProvider', `Logged in as ${this.client?.user?.tag ?? 'unknown'}`);
             });
 
-            this.client.on('messageCreate', async (msg: Message) => {
+            this.client.on('messageCreate', (msg: Message) => {
                 if (msg.author.bot) { return; }
-                await this.processMessage(msg);
+                void this.processMessage(msg);
             });
 
             await this.client.login(token);
@@ -91,7 +101,7 @@ export class DiscordProvider extends SocialMediaProvider {
     /** @see SocialMediaProvider.stop */
     async stop(): Promise<void> {
         if (this.client) {
-            this.client.destroy();
+            await Promise.resolve(this.client.destroy());
             this.client = null;
         }
         appLogger.info('DiscordProvider', 'Stopped');

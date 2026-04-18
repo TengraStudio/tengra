@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Badge } from '@renderer/components/ui/badge';
 import { Activity, Lock, Shield, Zap } from 'lucide-react';
 import React, { useMemo } from 'react';
@@ -8,6 +18,13 @@ import { AppSettings } from '@/types/settings';
 import { AntigravityLimitsSection } from './limits/AntigravityLimitsSection';
 import { CodexLimitsSection } from './limits/CodexLimitsSection';
 import { CopilotLimitsSection } from './limits/CopilotLimitsSection';
+
+/* Batch-02: Extracted Long Classes */
+const C_MODELUSAGELIMITSTAB_1 = "p-3.5 rounded-2xl bg-primary/10 text-primary shadow-2xl shadow-primary/10 group-hover:scale-110 transition-transform duration-700 ring-1 ring-primary/20";
+const C_MODELUSAGELIMITSTAB_2 = "bg-card rounded-card-xl border border-border/40 p-8 pt-10 shadow-sm relative overflow-hidden group/copilot hover:border-border/60 transition-all duration-500 lg:p-10";
+const C_MODELUSAGELIMITSTAB_3 = "bg-card rounded-card-xl border border-border/40 p-8 pt-10 shadow-sm relative overflow-hidden group/antigravity hover:border-border/60 transition-all duration-500 lg:p-10";
+const C_MODELUSAGELIMITSTAB_4 = "bg-card rounded-card-xl border border-border/40 p-8 pt-10 shadow-sm relative overflow-hidden group/codex hover:border-border/60 transition-all duration-500 lg:p-10";
+
 
 interface ModelUsageLimitsTabProps {
     settings: AppSettings | null;
@@ -131,7 +148,7 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
             {/* Page Header */}
             <div className="relative group px-1">
                 <div className="flex items-center gap-4 mb-3">
-                    <div className="p-3.5 rounded-2xl bg-primary/10 text-primary shadow-2xl shadow-primary/10 group-hover:scale-110 transition-transform duration-700 ring-1 ring-primary/20">
+                    <div className={C_MODELUSAGELIMITSTAB_1}>
                         <Shield className="w-7 h-7" />
                     </div>
                     <div>
@@ -154,7 +171,7 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
             {/* Limits Sections */}
             <div className="space-y-8 pb-20">
                 {/* Copilot Section */}
-                <div className="bg-card rounded-[2.5rem] border border-border/40 p-8 pt-10 shadow-sm relative overflow-hidden group/copilot hover:border-border/60 transition-all duration-500">
+                <div className={C_MODELUSAGELIMITSTAB_2}>
                     <div className="flex items-center justify-between px-1 mb-8 relative z-10">
                         <div className="flex items-center gap-3">
                             <Zap className="w-4 h-4 text-primary" />
@@ -170,11 +187,11 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
                             updateCopilotLimit={updateCopilotLimit}
                         />
                     </div>
-                    <div className="absolute -right-20 -top-20 w-80 h-80 bg-primary/5 rounded-full blur-[100px] opacity-30 pointer-events-none" />
+                    <div className="absolute -right-20 -top-20 w-80 h-80 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
                 </div>
 
                 {/* Antigravity Section */}
-                <div className="bg-card rounded-[2.5rem] border border-border/40 p-8 pt-10 shadow-sm relative overflow-hidden group/antigravity hover:border-border/60 transition-all duration-500">
+                <div className={C_MODELUSAGELIMITSTAB_3}>
                     <div className="flex items-center justify-between px-1 mb-8 relative z-10">
                         <div className="flex items-center gap-3">
                             <Activity className="w-4 h-4 text-primary" />
@@ -189,11 +206,11 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
                             updateAntigravityLimit={updateAntigravityLimit}
                         />
                     </div>
-                    <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-primary/5 rounded-full blur-[100px] opacity-30 pointer-events-none" />
+                    <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
                 </div>
 
                 {/* Codex Section */}
-                <div className="bg-card rounded-[2.5rem] border border-border/40 p-8 pt-10 shadow-sm relative overflow-hidden group/codex hover:border-border/60 transition-all duration-500">
+                <div className={C_MODELUSAGELIMITSTAB_4}>
                     <div className="flex items-center justify-between px-1 mb-8 relative z-10">
                         <div className="flex items-center gap-3">
                             <Lock className="w-4 h-4 text-primary" />
@@ -207,7 +224,7 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
                             updateCodexLimit={updateCodexLimit}
                         />
                     </div>
-                    <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-primary/5 rounded-full blur-[100px] opacity-30 pointer-events-none" />
+                    <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
                 </div>
             </div>
         </div>

@@ -1,8 +1,24 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { AlertTriangle, ArrowRightLeft, Clock, RefreshCw, WifiOff, X } from 'lucide-react';
 import React, { useMemo } from 'react';
 
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 import { ChatError, ChatErrorKind } from '@/types';
+
+/* Batch-02: Extracted Long Classes */
+const C_CHATERRORSTATE_1 = "flex items-center gap-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1.5 typo-caption font-medium transition-colors";
+const C_CHATERRORSTATE_2 = "flex items-center gap-1.5 rounded-lg border border-border/70 hover:bg-accent/50 text-muted-foreground hover:text-foreground px-3 py-1.5 typo-caption font-medium transition-colors";
+
 
 interface ChatErrorStateProps {
     error: ChatError;
@@ -47,7 +63,7 @@ const ERROR_ACTION_KEYS: Record<ChatErrorKind, string> = {
 
 /** Icon component per error kind */
 const ErrorIcon: React.FC<{ kind: ChatErrorKind; className?: string }> = ({ kind, className }) => {
-    const iconClass = `w-5 h-5 ${className ?? ''}`;
+    const iconClass = cn('w-5 h-5', className);
     if (kind === 'provider_unavailable') {
         return <WifiOff className={iconClass} />;
     }
@@ -87,10 +103,14 @@ export const ChatErrorState: React.FC<ChatErrorStateProps> = React.memo(({
     return (
         <div
             role="alert"
-            className={`mx-4 my-3 rounded-xl border ${style.border} ${style.bg} p-4 animate-in fade-in slide-in-from-bottom-2 duration-300`}
+            className={cn(
+                'mx-4 my-3 rounded-xl border p-4 animate-in fade-in slide-in-from-bottom-2 duration-300',
+                style.border,
+                style.bg
+            )}
         >
             <div className="flex items-start gap-3">
-                <div className={`shrink-0 mt-0.5 ${style.icon}`}>
+                <div className={cn('shrink-0 mt-0.5', style.icon)}>
                     <ErrorIcon kind={error.kind} />
                 </div>
 
@@ -116,7 +136,7 @@ export const ChatErrorState: React.FC<ChatErrorStateProps> = React.memo(({
                         <button
                             onClick={onRetry}
                             disabled={error.retryable === false}
-                            className="flex items-center gap-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1.5 typo-caption font-medium transition-colors"
+                            className={C_CHATERRORSTATE_1}
                         >
                             <RefreshCw className="w-3.5 h-3.5" />
                             {t(ERROR_ACTION_KEYS[error.kind])}
@@ -125,7 +145,7 @@ export const ChatErrorState: React.FC<ChatErrorStateProps> = React.memo(({
                         {showSwitchModel && onSwitchModel && (
                             <button
                                 onClick={onSwitchModel}
-                                className="flex items-center gap-1.5 rounded-lg border border-border/70 hover:bg-accent/50 text-muted-foreground hover:text-foreground px-3 py-1.5 typo-caption font-medium transition-colors"
+                                className={C_CHATERRORSTATE_2}
                             >
                                 <ArrowRightLeft className="w-3.5 h-3.5" />
                                 {t('chat.errorSwitchModel')}

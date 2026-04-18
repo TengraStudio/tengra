@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { ApiServerService } from '@main/api/api-server.service';
 import { Container } from '@main/core/container';
 import { createLazyServiceDependency, createLazyServiceProxy, type LazyServiceDependency, lazyServiceRegistry } from '@main/core/lazy-services';
@@ -27,6 +37,7 @@ import { SocialMediaService } from '@main/services/external/social-media.service
 import { WebService } from '@main/services/external/web.service';
 import type { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { AgentService } from '@main/services/llm/agent.service';
+import { BackgroundModelResolver } from '@main/services/llm/background-model-resolver.service';
 import type { BrainService } from '@main/services/llm/brain.service';
 import { ContextRetrievalService } from '@main/services/llm/context-retrieval.service';
 import { CopilotService } from '@main/services/llm/copilot.service';
@@ -391,8 +402,13 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
 
     container.register(
         'socialMediaService',
-        (ss, ls, eb) => new SocialMediaService(ss as SettingsService, ls as LLMService, eb as EventBusService),
-        ['settingsService', 'llmService', 'eventBusService']
+        (ss, ls, eb, ams) => new SocialMediaService(
+            ss as SettingsService,
+            ls as LLMService,
+            eb as EventBusService,
+            ams as AdvancedMemoryService
+        ),
+        ['settingsService', 'llmService', 'eventBusService', 'advancedMemoryService']
     );
 
     container.register(
@@ -555,14 +571,21 @@ function registerLLMServices() {
     ]);
     container.register(
         'modelCollaborationService',
-        ls => new ModelCollaborationService(ls as LLMService),
-        ['llmService']
+        (ls, ams) => new ModelCollaborationService(
+            ls as LLMService,
+            ams as AdvancedMemoryService
+        ),
+        ['llmService', 'advancedMemoryService']
     );
     container.register('multiLLMOrchestrator', () => new MultiLLMOrchestrator());
     container.register(
         'multiModelComparisonService',
-        (ls, mo) => new MultiModelComparisonService(ls as LLMService, mo as MultiLLMOrchestrator),
-        ['llmService', 'multiLLMOrchestrator']
+        (ls, mo, ams) => new MultiModelComparisonService(
+            ls as LLMService,
+            mo as MultiLLMOrchestrator,
+            ams as AdvancedMemoryService
+        ),
+        ['llmService', 'multiLLMOrchestrator', 'advancedMemoryService']
     );
     container.register(
         'promptTemplatesService',
@@ -592,17 +615,18 @@ function registerLLMServices() {
     container.register(
         'localImageService',
         (...args: RuntimeValue[]) => {
-            const [ss, ebs, as, ls, qs, ts] = args;
+            const [ss, ebs, as, ls, qs, ams, ts] = args;
             return new LocalImageService({
                 settingsService: ss as SettingsService,
                 eventBusService: ebs as EventBusService,
                 authService: as as AuthService,
                 llmService: ls as LLMService,
                 quotaService: qs as QuotaService,
+                advancedMemoryService: ams as AdvancedMemoryService,
                 telemetryService: ts as TelemetryService,
             });
         },
-        ['settingsService', 'eventBusService', 'authService', 'llmService', 'quotaService', 'telemetryService']
+        ['settingsService', 'eventBusService', 'authService', 'llmService', 'quotaService', 'advancedMemoryService', 'telemetryService']
     );
 
     // Model Registry Bundle
@@ -633,6 +657,15 @@ function registerLLMServices() {
         ['modelRegistryDeps', 'authService', 'tokenService']
     );
     container.register(
+        'backgroundModelResolver',
+        (as, ss) => new BackgroundModelResolver({
+            authService: as as AuthService,
+            settingsService: ss as SettingsService,
+            getModels: async () => container.resolve<ModelRegistryService>('modelRegistryService').getAllModels(),
+        }),
+        ['authService', 'settingsService']
+    );
+    container.register(
         'councilCapabilityService',
         (llm, quota) =>
             new CouncilCapabilityService({
@@ -655,8 +688,9 @@ function registerLazyServices() {
         const es = container.resolve<EmbeddingService>('embeddingService');
         const ls = container.resolve<LLMService>('llmService');
         const ss = container.resolve<SettingsService>('settingsService');
+        const bmr = container.resolve<BackgroundModelResolver>('backgroundModelResolver');
         const { AdvancedMemoryService } = await import('@main/services/llm/advanced-memory.service');
-        return new AdvancedMemoryService(dbs, es, ls, ss);
+        return new AdvancedMemoryService(dbs, es, ls, ss, bmr);
     });
 
     lazyServiceRegistry.register('memoryService', async () => {
@@ -670,8 +704,9 @@ function registerLazyServices() {
         const es = container.resolve<EmbeddingService>('embeddingService');
         const ls = container.resolve<LLMService>('llmService');
         const pm = container.resolve<ProcessManagerService>('processManagerService');
+        const bmr = container.resolve<BackgroundModelResolver>('backgroundModelResolver');
         const { BrainService } = await import('@main/services/llm/brain.service');
-        return new BrainService(dbs, es, ls, pm);
+        return new BrainService(dbs, es, ls, pm, bmr);
     });
 
     // Register services that are only needed conditionally
@@ -697,6 +732,7 @@ function registerLazyServices() {
             container.resolve<ImagePersistenceService>('imagePersistenceService');
         const authService = container.resolve<AuthService>('authService');
         const quotaService = container.resolve<QuotaService>('quotaService');
+        const advancedMemoryService = container.resolve<AdvancedMemoryService>('advancedMemoryService');
         const modelRegistryService = container.resolve<ModelRegistryService>('modelRegistryService');
         const { LogoService } = await import('@main/services/external/logo.service');
         return new LogoService({
@@ -706,6 +742,7 @@ function registerLazyServices() {
             imagePersistenceService,
             authService,
             quotaService,
+            advancedMemoryService,
             modelRegistryService
         });
     });
@@ -783,19 +820,24 @@ function registerWorkspaceServices() {
     container.register('terminalProfileService', () => new TerminalProfileService());
     container.register(
         'terminalSmartService',
-        (ls, ts) => new TerminalSmartService(ls as LLMService, ts as TerminalService),
-        ['llmService', 'terminalService']
+        (ls, ts, ams) => new TerminalSmartService(
+            ls as LLMService,
+            ts as TerminalService,
+            ams as AdvancedMemoryService
+        ),
+        ['llmService', 'terminalService', 'advancedMemoryService']
     );
     container.register('gitService', () => new GitService());
     // SSH and Docker services are now lazy-loaded
     container.register(
         'inlineSuggestionService',
-        (ls, as) =>
+        (ls, as, ams) =>
             new InlineSuggestionService({
                 llmService: ls as LLMService,
                 authService: as as AuthService,
+                advancedMemoryService: ams as AdvancedMemoryService,
             }),
-        ['llmService', 'authService']
+        ['llmService', 'authService', 'advancedMemoryService']
     );
     container.register(
         'codeIntelligenceService',
@@ -898,6 +940,7 @@ function registerMcpServices() {
                 modelCollaboration: services[15] as ModelCollaborationService,
                 auditLog: services[16] as AuditLogService,
                 workspace: services[17] as WorkspaceService,
+                proxy: services[18] as ProxyService,
             };
         },
         [
@@ -919,6 +962,7 @@ function registerMcpServices() {
             'modelCollaborationService',
             'auditLogService',
             'workspaceService',
+            'proxyService',
         ]
     );
 }

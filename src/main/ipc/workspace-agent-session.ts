@@ -1,8 +1,20 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import {
     Chat as StoredChat,
     DatabaseService,
 } from '@main/services/data/database.service';
+import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
+import { MemoryContextService } from '@main/services/llm/memory-context.service';
 import { ModelRegistryService } from '@main/services/llm/model-registry.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import {
@@ -352,12 +364,30 @@ async function requireChat(chatId: string, databaseService: DatabaseService) {
 export function registerWorkspaceAgentSessionIpc(
     getMainWindow: () => BrowserWindow | null,
     databaseService: DatabaseService,
-    modelRegistryService?: ModelRegistryService
+    modelRegistryService?: ModelRegistryService,
+    advancedMemoryService?: AdvancedMemoryService
 ): void {
     const validateSender = createMainWindowSenderValidator(
         getMainWindow,
         'workspace agent session operation'
     );
+
+    const memoryContextService = new MemoryContextService(advancedMemoryService);
+
+    const rememberSessionEvent = (
+        sessionId: string,
+        workspaceId: string | undefined,
+        message: string,
+        tags: string[]
+    ): void => {
+        memoryContextService.rememberInsight({
+            content: message,
+            sourceId: `workspace-agent:${sessionId}:${Date.now()}`,
+            category: 'workflow',
+            tags,
+            workspaceId
+        });
+    };
 
     ipcMain.handle(
         WORKSPACE_AGENT_SESSION_CHANNELS.LIST_BY_WORKSPACE,
@@ -430,6 +460,13 @@ export function registerWorkspaceAgentSessionIpc(
                     metadata,
                 });
 
+                rememberSessionEvent(
+                    chatId,
+                    payload.workspaceId,
+                    `Workspace agent session created. title=${payload.title}; strategy=${payload.strategy ?? 'reasoning-first'}`,
+                    ['workspace-agent', 'session-create']
+                );
+
                 const currentPersistence = getWorkspacePersistence(workspace.metadata);
                 const nextPersistence: WorkspaceAgentSessionPersistence = {
                     activeSessionId: chatId,
@@ -469,6 +506,12 @@ export function registerWorkspaceAgentSessionIpc(
                     title: payload.title,
                     updatedAt: new Date(),
                 });
+                rememberSessionEvent(
+                    chat.id,
+                    chat.workspaceId,
+                    `Workspace agent session renamed. newTitle=${payload.title}`,
+                    ['workspace-agent', 'session-rename']
+                );
 
                 return toWorkspaceAgentSession(
                     await requireChat(chat.id, databaseService),
@@ -510,6 +553,14 @@ export function registerWorkspaceAgentSessionIpc(
                 await databaseService.updateWorkspace(payload.workspaceId, {
                     metadata: mergeWorkspacePersistence(workspace.metadata, nextPersistence),
                 });
+                if (payload.sessionId) {
+                    rememberSessionEvent(
+                        payload.sessionId,
+                        payload.workspaceId,
+                        `Workspace agent active session selected. sessionId=${payload.sessionId}`,
+                        ['workspace-agent', 'session-select']
+                    );
+                }
                 return nextPersistence;
             },
             {
@@ -587,6 +638,12 @@ export function registerWorkspaceAgentSessionIpc(
                         councilConfig,
                     }),
                 });
+                rememberSessionEvent(
+                    chat.id,
+                    chat.workspaceId,
+                    `Workspace agent modes updated. ask=${String(modes.ask)}; plan=${String(modes.plan)}; agent=${String(modes.agent)}; council=${String(modes.council)}`,
+                    ['workspace-agent', 'modes-update']
+                );
 
                 return toWorkspaceAgentSession(
                     await requireChat(chat.id, databaseService),
@@ -621,6 +678,12 @@ export function registerWorkspaceAgentSessionIpc(
                         permissionPolicy: payload.permissionPolicy,
                     }),
                 });
+                rememberSessionEvent(
+                    chat.id,
+                    chat.workspaceId,
+                    `Workspace agent permissions updated. commandPolicy=${payload.permissionPolicy.commandPolicy}; pathPolicy=${payload.permissionPolicy.pathPolicy}`,
+                    ['workspace-agent', 'permissions-update']
+                );
                 return toWorkspaceAgentSession(
                     await requireChat(chat.id, databaseService),
                     databaseService,
@@ -658,6 +721,12 @@ export function registerWorkspaceAgentSessionIpc(
                         },
                     }),
                 });
+                rememberSessionEvent(
+                    chat.id,
+                    chat.workspaceId,
+                    `Workspace agent strategy updated. strategy=${payload.strategy}`,
+                    ['workspace-agent', 'strategy-update']
+                );
                 return toWorkspaceAgentSession(
                     await requireChat(chat.id, databaseService),
                     databaseService,
@@ -708,6 +777,12 @@ export function registerWorkspaceAgentSessionIpc(
                         status: payload.archived ? 'background' : sessionMetadata.status,
                     }),
                 });
+                rememberSessionEvent(
+                    chat.id,
+                    chat.workspaceId,
+                    `Workspace agent archive state changed. archived=${String(payload.archived)}`,
+                    ['workspace-agent', 'archive-state']
+                );
                 return toWorkspaceAgentSession(
                     await requireChat(chat.id, databaseService),
                     databaseService,
@@ -760,6 +835,14 @@ export function registerWorkspaceAgentSessionIpc(
                 await databaseService.updateWorkspace(payload.workspaceId, {
                     metadata: mergeWorkspacePersistence(workspace.metadata, nextPersistence),
                 });
+                if (payload.activeSessionId) {
+                    rememberSessionEvent(
+                        payload.activeSessionId,
+                        payload.workspaceId,
+                        `Workspace agent resumed background state. activeSessionId=${payload.activeSessionId}`,
+                        ['workspace-agent', 'session-resume']
+                    );
+                }
                 return nextPersistence;
             },
             {

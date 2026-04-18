@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Advanced Memory Inspector
  *
  * A sophisticated UI for the advanced memory system with:
@@ -17,6 +27,7 @@ import { Card } from '@/components/ui/card';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { useTranslation } from '@/i18n';
+import { useMemoryInspectorHealthStore } from '@/store/memory-inspector-health.store';
 
 import { appLogger } from '../../../utils/renderer-logger';
 import { useAddModal, useEditModal, useMemory } from '../hooks/useMemory';
@@ -109,7 +120,7 @@ const TabContent: React.FC<{
     }
 
     if (memoryData.stats) {
-        return <div className="flex-1 min-h-0 overflow-auto"><StatsPanel stats={memoryData.stats} /></div>;
+        return <div className="flex-1 min-h-0 overflow-auto"><StatsPanel stats={memoryData.stats} health={memoryData.memoryHealth} /></div>;
     }
 
     return null;
@@ -297,6 +308,8 @@ export const MemoryInspector: React.FC = () => {
     const [categoryFilter, setCategoryFilter] = useState<MemoryCategory | 'all'>('all');
     const [replaceOnImport, setReplaceOnImport] = useState(false);
     const [showReplaceImport, setShowReplaceImport] = useState(false);
+    const memoryHealthStatus = useMemoryInspectorHealthStore(state => state.status);
+    const memoryRuntime = useMemoryInspectorHealthStore(state => state.runtime);
 
     const {
         memoryData,
@@ -347,6 +360,8 @@ export const MemoryInspector: React.FC = () => {
         <div className="flex-1 flex flex-col h-full bg-background/50 backdrop-blur-xl overflow-hidden p-6 gap-6">
             <MemoryHeader
                 isLoading={memoryData.isLoading}
+                healthStatus={memoryHealthStatus}
+                runtime={memoryRuntime}
                 onRefresh={() => void memoryData.loadData()}
                 onRunDecay={() => void memoryData.handleRunDecay()}
                 onRecategorize={() => void memoryData.handleRecategorize()}

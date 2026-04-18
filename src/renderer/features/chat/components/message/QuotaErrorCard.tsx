@@ -1,5 +1,19 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { AlertCircle, Clock } from 'lucide-react';
 import { memo } from 'react';
+
+/* Batch-02: Extracted Long Classes */
+const C_QUOTAERRORCARD_1 = "p-4 rounded-2xl bg-gradient-to-br from-destructive/10 to-warning/10 border border-destructive/20 text-destructive max-w-md animate-in fade-in zoom-in duration-300 sm:p-5 lg:p-6";
+
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
 
@@ -14,7 +28,7 @@ export interface QuotaErrorCardProps {
  * Displays an error message when the AI model quota is exceeded.
  */
 export const QuotaErrorCard = memo(({ details, t }: QuotaErrorCardProps) => (
-    <div className="p-4 rounded-2xl bg-gradient-to-br from-destructive/10 to-warning/10 border border-destructive/20 text-destructive max-w-md animate-in fade-in zoom-in duration-300">
+    <div className={C_QUOTAERRORCARD_1}>
         <div className="flex items-center gap-3 mb-3">
             <div className="p-2 rounded-full bg-destructive/20">
                 <AlertCircle className="w-5 h-5" />

@@ -1,4 +1,15 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { HealthCheckResult, HealthCheckService, HealthStatus } from '@main/services/system/health-check.service';
+import { MemoryContextService } from '@main/services/llm/memory-context.service';
 import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { ipcMain } from 'electron';
 
@@ -45,4 +56,22 @@ export function registerHealthIpc(healthCheckService: HealthCheckService) {
         const status = healthCheckService.getStatus();
         return status.services.map(s => s.name);
     }, []));
+
+    /**
+     * Get runtime memory-context lookup metrics
+     */
+    ipcMain.handle('health:memoryContext', createSafeIpcHandler('health:memoryContext', async () => {
+        return MemoryContextService.getStats();
+    }, {
+        cacheHits: 0,
+        cacheMisses: 0,
+        inflightReuseCount: 0,
+        lookupCount: 0,
+        lookupTimeoutCount: 0,
+        lookupFailureCount: 0,
+        lastLookupDurationMs: 0,
+        averageLookupDurationMs: 0,
+        cacheSize: 0,
+        inflightSize: 0,
+    }));
 }

@@ -1,3 +1,13 @@
+/*
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 //! Database module - SQLite-based storage with vector search support
 
 use anyhow::{Context, Result};
@@ -496,21 +506,6 @@ impl Database {
                 "system_tables".to_string(),
                 format!(
                     r#"
-                -- Council sessions table
-                CREATE TABLE IF NOT EXISTS council_sessions (
-                    id TEXT PRIMARY KEY,
-                    goal TEXT NOT NULL,
-                    status TEXT NOT NULL,
-                    logs TEXT DEFAULT '[]',
-                    agents TEXT DEFAULT '[]',
-                    plan TEXT,
-                    solution TEXT,
-                    model TEXT,
-                    provider TEXT,
-                    created_at INTEGER NOT NULL,
-                    updated_at INTEGER NOT NULL
-                );
-
                 -- Token usage tracking
                 CREATE TABLE IF NOT EXISTS token_usage (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -539,13 +534,6 @@ impl Database {
                 );
                 CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp DESC);
                 CREATE INDEX IF NOT EXISTS idx_audit_logs_category ON audit_logs(category);
-
-                -- Job scheduler state
-                CREATE TABLE IF NOT EXISTS job_states (
-                    id TEXT PRIMARY KEY,
-                    last_run INTEGER,
-                    state TEXT
-                );
 
                 -- Linked accounts (auth)
                 CREATE TABLE IF NOT EXISTS linked_accounts (
@@ -609,7 +597,7 @@ impl Database {
                     updated_at INTEGER NOT NULL
                 );
 
-                -- Scheduler state table (alias for job_states compatibility)
+                -- Scheduler state table
                 CREATE TABLE IF NOT EXISTS scheduler_state (
                     id TEXT PRIMARY KEY,
                     last_run INTEGER

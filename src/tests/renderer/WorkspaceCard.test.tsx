@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -75,7 +85,7 @@ describe('WorkspaceCard', () => {
             </WorkspaceCardSurfaceProvider>
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'workspaces.archiveWorkspace' }));
+        fireEvent.click(screen.getByRole('menuitem', { name: 'workspaces.archiveWorkspace' }));
         expect(onArchive).toHaveBeenCalledWith(workspace);
         expect(setShowMenu).toHaveBeenCalledWith(null);
     });

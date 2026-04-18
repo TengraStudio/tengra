@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { useCallback, useMemo, useState } from 'react';
 
 import { useSettings } from '@/context/SettingsContext';
@@ -275,6 +285,49 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
         }
     }, [settings, updateSettings]);
 
+    const updateWindow = useCallback(async (patch: Partial<AppSettings['window']>) => {
+        if (!settings) { return; }
+        const startedAt = Date.now();
+        const updated = {
+            ...settings,
+            window: {
+                ...(settings.window ?? {}),
+                ...patch,
+            },
+        } as AppSettings;
+        if (!validateSettingsPayload(updated)) {
+            setSettingsUiState('failure');
+            setLastErrorCode(settingsPageErrorCodes.validation);
+            recordSettingsPageHealthEvent({
+                channel: 'settings.update',
+                status: 'validation-failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: settingsPageErrorCodes.validation,
+            });
+            return;
+        }
+
+        try {
+            await withRetry(() => updateSettings(updated, true), SETTINGS_RETRY_ATTEMPTS);
+            setSettingsUiState('ready');
+            setLastErrorCode(null);
+            recordSettingsPageHealthEvent({
+                channel: 'settings.update',
+                status: 'success',
+                durationMs: Date.now() - startedAt,
+            });
+        } catch {
+            setSettingsUiState('failure');
+            setLastErrorCode(settingsPageErrorCodes.saveFailed);
+            recordSettingsPageHealthEvent({
+                channel: 'settings.update',
+                status: 'failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: settingsPageErrorCodes.saveFailed,
+            });
+        }
+    }, [settings, updateSettings]);
+
     // Benchmark (Kept local as it is simple)
     const [benchmarkResult, setBenchmarkResult] = useState<{ tokensPerSec: number; latency: number } | null>(null);
     const [isBenchmarking, setIsBenchmarking] = useState(false);
@@ -332,6 +385,7 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
         updateEditor,
         updateSpeech,
         updateRemoteAccounts,
+        updateWindow,
         handleSave,
         reloadSettings,
 
@@ -349,7 +403,7 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
         isDirty: false
     }), [
         settings, setSettings, isSettingsLoading, isSaving, exposedStatusMessage, auth,
-        linkedAccounts, updateGeneral, updateEditor, updateSpeech, updateRemoteAccounts, handleSave, reloadSettings, settingsUiState, lastErrorCode,
+        linkedAccounts, updateGeneral, updateEditor, updateSpeech, updateRemoteAccounts, updateWindow, handleSave, reloadSettings, settingsUiState, lastErrorCode,
         stats, benchmarkResult, isBenchmarking, handleRunBenchmark, personas
     ]);
 }

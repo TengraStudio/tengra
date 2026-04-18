@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { useSettingsLogic } from '@renderer/features/settings/hooks/useSettingsLogic';
 import { SettingsCategory, SettingsSharedProps } from '@renderer/features/settings/types';
 import { ChevronRight } from 'lucide-react';
@@ -24,6 +34,10 @@ import {
     groupSettingsNavigationItems,
 } from './settings-navigation';
 
+
+
+/* Batch-02: Extracted Long Classes */
+const C_SETTINGSPAGE_1 = 'animate-in fade-in slide-in-from-top-2 rounded-md border border-success/25 bg-success/10 px-3 py-2 typo-caption font-medium text-success';
 
 export interface SettingsPageProps {
     installedModels: ModelInfo[]
@@ -76,7 +90,7 @@ export function SettingsPage({
         benchmarkResult, isBenchmarking, handleRunBenchmark,
         editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,
         linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
-        manualSessionModal, setManualSessionModal, handleSaveClaudeSession, reloadSettings
+        manualSessionModal, setManualSessionModal, handleSaveClaudeSession, reloadSettings, updateWindow
     } = useSettingsLogic(onRefreshModels);
 
     const { t } = useTranslation(settings?.general?.language ?? 'en');
@@ -182,10 +196,11 @@ export function SettingsPage({
         handleSaveClaudeSession,
         t,
         onRefreshModels: (bypassCache?: boolean) => { onRefreshModels?.(bypassCache); },
-        loadSettings: reloadSettings, setIsLoading: (_value: boolean) => { }, onReset: handleFactoryReset
+        loadSettings: reloadSettings, setIsLoading: (_value: boolean) => { }, onReset: handleFactoryReset,
+        updateWindow
     }), [
         settings, setSettings, isLoading, settingsUiState, lastErrorCode, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
-        updateGeneral, updateEditor, updateSpeech, updateRemoteAccounts, handleSave, startOllama, checkOllama, refreshAuthStatus,
+        updateGeneral, updateEditor, updateSpeech, updateRemoteAccounts, updateWindow, handleSave, startOllama, checkOllama, refreshAuthStatus,
         connectGitHubProfile, connectCopilot, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
         statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, setReloadTrigger,
         benchmarkResult, isBenchmarking, handleRunBenchmark,
@@ -210,22 +225,22 @@ export function SettingsPage({
     }, [statusMessage]);
 
     return (
-        <div className="settings-container h-full overflow-hidden">
-            <div className="settings-shell flex h-full min-h-0 flex-col gap-3 p-3 lg:flex-row lg:gap-4 lg:p-4">
+        <div className="settings-container h-full overflow-hidden bg-background">
+            <div className="settings-shell flex h-full min-h-0 flex-col gap-3 p-3 lg:flex-row lg:gap-6 lg:p-6">
                 <aside className="settings-rail flex h-full w-full shrink-0 flex-col lg:w-72">
-                    <div className="settings-shell-card flex min-h-0 flex-1 flex-col overflow-hidden p-2.5">
+                    <div className="settings-shell-card flex min-h-0 flex-1 flex-col overflow-hidden bg-card/50 p-3 backdrop-blur-sm">
                         {searchQuery && (
-                            <div className="settings-shell-note mb-3">
+                            <div className="settings-shell-note mb-4 px-3 py-2 text-xs font-medium text-primary/70">
                                 {filteredTabs.length > 0
                                     ? t('settings.searchResults', { count: filteredTabs.length })
                                     : t('settings.noResults')}
                             </div>
                         )}
 
-                        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1" role="tablist" aria-orientation="vertical">
+                        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pr-1" role="tablist" aria-orientation="vertical">
                             {groupedTabs.length > 0 ? groupedTabs.map(group => (
-                                <div key={group.label} className="space-y-2">
-                                    <p className="px-2.5 typo-caption font-medium text-muted-foreground/70">
+                                <div key={group.label} className="space-y-3">
+                                    <p className="px-3 text-10 font-bold uppercase tracking-widest text-muted-foreground/50">
                                         {group.label}
                                     </p>
                                     <div className="space-y-1">
@@ -243,28 +258,31 @@ export function SettingsPage({
                                                     aria-controls={`settings-panel-${item.id}`}
                                                     onClick={() => { handleSelectTab(item.id); }}
                                                     className={cn(
-                                                        'group flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left transition-colors duration-150',
+                                                        'group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-200',
                                                         isActive
-                                                            ? 'border border-border/45 bg-background text-foreground'
-                                                            : 'bg-transparent text-muted-foreground hover:bg-background/60 hover:text-foreground'
+                                                            ? 'bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20'
+                                                            : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                                                     )}
                                                 >
                                                     <span className={cn(
-                                                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors',
+                                                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all',
                                                         isActive
-                                                            ? 'bg-muted text-foreground'
-                                                            : 'bg-muted/25 text-muted-foreground group-hover:bg-muted/40 group-hover:text-foreground'
+                                                            ? 'bg-primary/20 text-primary'
+                                                            : 'bg-muted/30 text-muted-foreground group-hover:bg-muted/60 group-hover:text-foreground'
                                                     )}>
                                                         <Icon className="h-4 w-4" />
                                                     </span>
                                                     <span className="min-w-0 flex-1">
-                                                        <span className="block truncate text-sm font-semibold">
+                                                        <span className={cn(
+                                                            "block truncate text-sm transition-colors",
+                                                            isActive ? "font-bold" : "font-medium"
+                                                        )}>
                                                             {item.label}
                                                         </span> 
                                                     </span>
                                                     <ChevronRight className={cn(
-                                                        'h-4 w-4 shrink-0 transition-transform',
-                                                        isActive ? 'translate-x-0 text-foreground' : 'text-muted-foreground/45 group-hover:translate-x-1'
+                                                        'h-3.5 w-3.5 shrink-0 transition-transform duration-300',
+                                                        isActive ? 'translate-x-0 opacity-100' : '-translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-40'
                                                     )} />
                                                 </button>
                                             );
@@ -272,7 +290,7 @@ export function SettingsPage({
                                     </div>
                                 </div>
                             )) : (
-                                <div className="rounded-md border border-border/50 bg-muted/10 px-3 py-4 text-sm text-muted-foreground">
+                                <div className="rounded-xl border border-dashed border-border/50 bg-muted/5 px-4 py-8 text-center text-sm text-muted-foreground">
                                     {t('settings.noResults')}
                                 </div>
                             )}
@@ -280,15 +298,15 @@ export function SettingsPage({
                     </div>
                 </aside>
 
-                <main className="settings-main min-w-0 flex-1 overflow-y-auto">
-                    <div className="settings-stage flex min-h-full flex-col gap-5 pb-16">
-                        <section className="settings-shell-card p-4 lg:p-5"> 
-                            <div className="mt-3 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                <main className="settings-main min-w-0 flex-1 h-full flex flex-col overflow-hidden">
+                    <div className="flex h-full min-h-0 flex-col gap-6 pb-4">
+                        <section className="settings-shell-card bg-card/30 p-6 lg:p-8"> 
+                            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                                 <div className="space-y-2">
-                                    <h2 className="typo-body font-semibold text-foreground">
+                                    <h2 className="text-3xl font-bold tracking-tight text-foreground">
                                         {activeNavigationItem?.label ?? t('settings.title')}
                                     </h2>
-                                    <p className="max-w-2xl text-sm leading-6 text-muted-foreground/90">
+                                    <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground/70">
                                         {t('settings.subtitle')}
                                     </p>
                                 </div> 
@@ -296,7 +314,7 @@ export function SettingsPage({
                         </section>
 
                         {renderedStatusMessage !== '' && (
-                            <div className="animate-in fade-in slide-in-from-top-2 rounded-md border border-success/25 bg-success/10 px-3 py-2 typo-caption font-medium text-success">
+                            <div className={cn(C_SETTINGSPAGE_1, "mx-1")}>
                                 {renderedStatusMessage}
                             </div>
                         )}
@@ -306,28 +324,28 @@ export function SettingsPage({
                             role="tabpanel"
                             aria-labelledby={`settings-tab-${activeTab}`}
                             className={cn(
-                                'settings-shell-card p-3 lg:p-4',
-                                (activeTab === 'models' || activeTab === 'images') && 'max-w-none'
+                                'relative min-w-0 flex-1 min-h-0 overflow-hidden',
+                                // Fade in animation
+                                'animate-in fade-in slide-in-from-bottom-2 duration-500'
                             )}
                         >
                             {isLoading && settings === null ? (
-                                <div className="settings-shell-note p-4 text-sm">
-                                    {t('common.loading')}
+                                <div className="flex h-64 items-center justify-center rounded-2xl border border-border/20 bg-card/50 p-8 backdrop-blur-sm">
+                                    <div className="flex flex-col items-center gap-4 text-sm text-muted-foreground">
+                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                                        {t('common.loading')}
+                                    </div>
                                 </div>
                             ) : settingsUiState === 'failure' ? (
-                                <div className="rounded-md border border-destructive/25 bg-destructive/10 p-4 text-sm text-destructive">
+                                <div className="rounded-2xl border border-destructive/20 bg-destructive/10 p-6 text-sm text-destructive">
                                     {t('errors.unexpected')} ({lastErrorCode ?? settingsPageErrorCodes.saveFailed})
                                 </div>
-                            ) : settings === null ? (
-                                <div className="settings-shell-note p-4 text-sm">
-                                    {t('settings.noResults')}
-                                </div>
-                            ) : (searchQuery && !isActiveTabVisible) || hasInvalidSearchQuery ? (
-                                <div className="settings-shell-note p-4 text-sm">
-                                    {t('settings.noResults')}
+                            ) : settings === null || ((searchQuery && !isActiveTabVisible) || hasInvalidSearchQuery) ? (
+                                <div className="flex h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-border/20 bg-muted/5 p-8">
+                                    <p className="text-sm text-muted-foreground">{t('settings.noResults')}</p>
                                 </div>
                             ) : (
-                                <div className="settings-section">
+                                <div className="settings-section h-full overflow-y-auto pr-2">
                                     <SettingsTabContent
                                         activeTab={activeTab}
                                         sharedProps={sharedProps}
@@ -364,4 +382,3 @@ export function SettingsPage({
 export const MemoizedSettingsPage = memo(SettingsPage);
 
 export default MemoizedSettingsPage;
-

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { FileSearchResult } from '@shared/types/common';
 import { ChevronDown, ChevronRight, FileCode2 } from 'lucide-react';
 import React from 'react';
@@ -190,7 +200,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     if (normalizedResults.length >= VIRTUALIZATION_THRESHOLD) {
         return (
             <Virtuoso
-                style={{ height: '100%' }}
+                className="h-full"
                 data={groupedResults}
                 itemContent={(_index, group) => (
                     <FileGroup

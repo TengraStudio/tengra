@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import * as fs from 'fs';
 import * as path from 'path';
 import * as zlib from 'zlib';
@@ -9,7 +19,12 @@ import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobState } from '@main/services/system/job-scheduler.service';
 import { PromptTemplate } from '@main/utils/prompt-templates.util';
 import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
-import { AdvancedSemanticFragment, PendingMemory } from '@shared/types/advanced-memory';
+import {
+    AdvancedSemanticFragment,
+    PendingMemory,
+    SharedMemoryMergeConflict,
+    SharedMemoryNamespace
+} from '@shared/types/advanced-memory';
 import { IpcValue, JsonObject, JsonValue } from '@shared/types/common';
 import { AgentProfile } from '@shared/types/council';
 import { DatabaseAdapter, SqlParams, SqlValue } from '@shared/types/database';
@@ -1690,6 +1705,22 @@ export class DatabaseService extends BaseService {
 
     async deleteAdvancedMemory(id: string): Promise<void> {
         return this._knowledge.deleteAdvancedMemory(id);
+    }
+
+    async upsertSharedMemoryNamespace(namespace: SharedMemoryNamespace): Promise<void> {
+        return this._knowledge.upsertSharedMemoryNamespace(namespace);
+    }
+
+    async getSharedMemoryNamespaceById(namespaceId: string): Promise<SharedMemoryNamespace | null> {
+        return this._knowledge.getSharedMemoryNamespaceById(namespaceId);
+    }
+
+    async appendSharedMemoryConflicts(namespaceId: string, conflicts: SharedMemoryMergeConflict[]): Promise<void> {
+        return this._knowledge.appendSharedMemoryConflicts(namespaceId, conflicts);
+    }
+
+    async getSharedMemoryConflictCount(namespaceId: string): Promise<number> {
+        return this._knowledge.getSharedMemoryConflictCount(namespaceId);
     }
 
     // --- Agent Template Methods ---

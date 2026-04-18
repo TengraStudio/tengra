@@ -1,5 +1,17 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { BaseService } from '@main/services/base.service';
+import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { LLMService } from '@main/services/llm/llm.service';
+import { MemoryContextService } from '@main/services/llm/memory-context.service';
 import { AuthService } from '@main/services/security/auth.service';
 import {
     InlineSuggestionRequest,
@@ -15,7 +27,13 @@ interface InlineSuggestionRoute {
 interface InlineSuggestionServiceDeps {
     llmService: LLMService;
     authService: AuthService;
+    advancedMemoryService?: AdvancedMemoryService;
 }
+
+const INLINE_MEMORY_TIMEOUT_MS = 220;
+const INLINE_MEMORY_MATCH_LIMIT = 2;
+const INLINE_MEMORY_QUERY_MIN_LENGTH = 24;
+const INLINE_MEMORY_QUERY_MAX_LENGTH = 800;
 
 export class InlineSuggestionService extends BaseService {
     private static readonly KNOWN_CUSTOM_PROVIDERS = new Set([
@@ -33,6 +51,7 @@ export class InlineSuggestionService extends BaseService {
     ]);
     private readonly llmService: LLMService;
     private readonly authService: AuthService;
+    private readonly memoryContext: MemoryContextService;
     private readonly telemetry = {
         request: 0,
         show: 0,
@@ -46,14 +65,18 @@ export class InlineSuggestionService extends BaseService {
         super('InlineSuggestionService');
         this.llmService = deps.llmService;
         this.authService = deps.authService;
+        this.memoryContext = new MemoryContextService(deps.advancedMemoryService);
     }
 
-    private buildPrompt(request: InlineSuggestionRequest): string {
+    private buildPrompt(request: InlineSuggestionRequest, memoryContext?: string): string {
         const suffixSection = request.suffix?.trim()
             ? `Code after cursor:\n${request.suffix}`
             : 'Code after cursor:\n<empty>';
         const tokenHint = request.maxTokens
             ? `Keep the completion under ${request.maxTokens} tokens.`
+            : '';
+        const memorySection = memoryContext
+            ? `\nRelevant prior fixes or patterns:\n${memoryContext}\nUse only if it matches this code context.\n`
             : '';
 
         return `You are an expert code completion engine.
@@ -61,6 +84,7 @@ Continue the code at the cursor without explanation, markdown, or backticks.
 Return only the text that should be inserted at the cursor.
 Match the existing coding style, indentation, and language semantics.
 ${tokenHint}
+${memorySection}
 
 Language: ${request.language}
 Cursor: line ${request.cursorLine}, column ${request.cursorColumn}
@@ -180,7 +204,8 @@ ${suffixSection}`;
                 copilotAccountId || activeCopilotAccount?.id || copilotAccounts[0]?.id;
         }
 
-        const prompt = this.buildPrompt(request);
+        const memoryContext = await this.getMemoryContext(request);
+        const prompt = this.buildPrompt(request, memoryContext);
         const route = this.resolveRoute(request);
         try {
             const response = await this.withSelectedCopilotAccount(copilotAccountId, async () =>
@@ -241,4 +266,23 @@ ${suffixSection}`;
         this.recordTelemetry(event);
         return { success: true };
     }
+
+    private async getMemoryContext(request: InlineSuggestionRequest): Promise<string | undefined> {
+        const query = this.buildMemoryQuery(request);
+        return this.memoryContext.getResolutionContext(query, {
+            timeoutMs: INLINE_MEMORY_TIMEOUT_MS,
+            limit: INLINE_MEMORY_MATCH_LIMIT,
+            minQueryLength: INLINE_MEMORY_QUERY_MIN_LENGTH
+        });
+    }
+
+    private buildMemoryQuery(request: InlineSuggestionRequest): string {
+        const prefixTail = request.prefix.slice(-640);
+        const suffixHead = request.suffix?.slice(0, 160) ?? '';
+        const combined = `${request.language}\n${prefixTail}\n${suffixHead}`.trim();
+        return combined.length > INLINE_MEMORY_QUERY_MAX_LENGTH
+            ? combined.slice(combined.length - INLINE_MEMORY_QUERY_MAX_LENGTH)
+            : combined;
+    }
+
 }

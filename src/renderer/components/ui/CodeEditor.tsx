@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import type { Monaco, OnChange } from '@monaco-editor/react';
 import { useCodeEditorDiagnostics } from '@renderer/components/ui/code-editor-diagnostics';
 import { useCodeEditorDirtyDecorations } from '@renderer/components/ui/code-editor-dirty-decorations';
@@ -23,6 +33,7 @@ import React, { ComponentType,useCallback, useEffect, useMemo, useRef, useState 
 
 import { useTheme } from '@/hooks/useTheme';
 import { Language, useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 import { useSettingsStore } from '@/store/settings.store';
 import type { AppSettings } from '@/types/settings';
 import type { Workspace } from '@/types/workspace';
@@ -840,7 +851,7 @@ const useEditorLifecycle = (
 
 const LoadingOverlay = ({ className, t }: { className?: string; t: (k: string) => string }) => (
     <div
-        className={`relative w-full h-full overflow-hidden ${className} flex items-center justify-center`}
+        className={cn('relative w-full h-full overflow-hidden flex items-center justify-center', className)}
     >
         <div className="flex flex-col items-center gap-3 text-muted-foreground">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -888,7 +899,7 @@ const EditorContainer: React.FC<{
     options,
     className,
 }) => (
-        <div className={`relative w-full h-full overflow-hidden ${className}`}>
+        <div className={cn('relative w-full h-full overflow-hidden', className)}>
             <Editor
                 height="100%"
                 defaultLanguage={normalizedLanguage}

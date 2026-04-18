@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -67,9 +77,15 @@ export class SecurityService extends BaseService implements ISecurityService {
                 const rawContent = (await fs.promises.readFile(this.keyPath, 'utf8')).trim();
 
                 if (rawContent.startsWith('v2:')) {
-                    this.loadEncryptedKey(rawContent);
+                    try {
+                        this.loadEncryptedKey(rawContent);
+                    } catch (e) {
+                        appLogger.error('SecurityService', `Corrupted Master Key detected: ${getErrorMessage(e)}. Regenerating...`);
+                        await this.generateNewMasterKey();
+                    }
                 } else {
-                    throw new Error('error.auth.legacy_key_unsupported');
+                    appLogger.warn('SecurityService', 'Legacy or unsupported key format. Regenerating...');
+                    await this.generateNewMasterKey();
                 }
             } else {
                 await this.generateNewMasterKey();
@@ -460,7 +476,31 @@ export class SecurityService extends BaseService implements ISecurityService {
 
         return null;
     }
+
+    /**
+     * Resets the Master Key by deleting the key file and generating a new one.
+     * WARNING: This will make all existing encrypted data unreadable.
+     */
+    async resetMasterKey(): Promise<ServiceResponse> {
+        try {
+            this.logWarn('RESETTING MASTER KEY - All existing encrypted data will become unreadable!');
+            
+            // 1. Delete the key file
+            const keyExists = await fs.promises.access(this.keyPath).then(() => true).catch(() => false);
+            if (keyExists) {
+                await fs.promises.unlink(this.keyPath);
+            }
+
+            // 2. Generate and save a new key
+            await this.generateNewMasterKey();
+
+            // 3. Run self-test
+            this.testEncryption();
+
+            return { success: true };
+        } catch (error) {
+            this.logError('Failed to reset master key', error);
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
 }
-
-
-

@@ -1,3 +1,14 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+import { cn } from '@renderer/lib/utils';
 import React from 'react';
 
 import { LoadingSpinner } from '@/components/lazy';
@@ -39,8 +50,10 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
     return (
         <div
-            className={`border-l border-border/30 bg-background/40 backdrop-blur-xl shrink-0 transition-all duration-300 relative ${showAgentPanel ? 'opacity-100' : 'w-0 opacity-0 overflow-hidden'
-                }`}
+            className={cn(
+                'border-l border-border/30 bg-background/40 backdrop-blur-xl shrink-0 transition-all duration-300 relative',
+                showAgentPanel ? 'opacity-100' : 'w-0 opacity-0 overflow-hidden'
+            )}
             style={{ width: showAgentPanel ? agentPanelWidth : 0 }}
         >
             {hasActivatedAgentPanel && (

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { SavedProfileSelector } from '@renderer/features/workspace/workspace-shell/SavedProfileSelector';
 import { X } from 'lucide-react';
 import React, { Dispatch, SetStateAction } from 'react';
@@ -6,6 +16,18 @@ import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { MountForm, WorkspaceEntry } from '@/types';
 import { SSHConnection, SSHProfileTestResult } from '@/types/ssh';
+
+/* Batch-02: Extracted Long Classes */
+const C_WORKSPACEMOUNTMODALS_1 = "w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50";
+const C_WORKSPACEMOUNTMODALS_2 = "w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50";
+const C_WORKSPACEMOUNTMODALS_3 = "w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50";
+const C_WORKSPACEMOUNTMODALS_4 = "w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50";
+const C_WORKSPACEMOUNTMODALS_5 = "w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50";
+const C_WORKSPACEMOUNTMODALS_6 = "w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50";
+const C_WORKSPACEMOUNTMODALS_7 = "w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50";
+const C_WORKSPACEMOUNTMODALS_8 = "w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50";
+const C_WORKSPACEMOUNTMODALS_9 = "w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50";
+
 
 interface WorkspaceModalsProps {
     showMountModal: boolean;
@@ -80,7 +102,7 @@ const LocalMountForm: React.FC<LocalMountFormProps> = ({
                 type="text"
                 value={mountForm.rootPath || ''}
                 onChange={e => setMountForm(prev => ({ ...prev, rootPath: e.target.value }))}
-                className="w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
+                className={C_WORKSPACEMOUNTMODALS_1}
                 placeholder={t('workspace.placeholders.rootPath')}
             />
             <button
@@ -154,7 +176,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                     type="text"
                     value={mountForm.name || ''}
                     onChange={e => setMountForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
+                    className={C_WORKSPACEMOUNTMODALS_2}
                     placeholder={t('workspaceModals.mountNamePlaceholder')}
                 />
             </div>
@@ -166,7 +188,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                         type="text"
                         value={mountForm.host || ''}
                         onChange={e => setMountForm(prev => ({ ...prev, host: e.target.value }))}
-                        className="w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
+                        className={C_WORKSPACEMOUNTMODALS_3}
                     />
                 </div>
                 <div className="space-y-1">
@@ -175,7 +197,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                         type="text"
                         value={mountForm.port || ''}
                         onChange={e => setMountForm(prev => ({ ...prev, port: e.target.value }))}
-                        className="w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
+                        className={C_WORKSPACEMOUNTMODALS_4}
                     />
                 </div>
             </div>
@@ -186,7 +208,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                     type="text"
                     value={mountForm.username || ''}
                     onChange={e => setMountForm(prev => ({ ...prev, username: e.target.value }))}
-                    className="w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
+                    className={C_WORKSPACEMOUNTMODALS_5}
                 />
             </div>
 
@@ -196,7 +218,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                     <button
                         onClick={() => setMountForm(prev => ({ ...prev, authType: 'password' }))}
                         className={cn(
-                            "flex-1 py-1.5 tw-text-10   font-bold rounded border transition-all",
+                            "flex-1 py-1.5 text-10   font-bold rounded border transition-all",
                             mountForm.authType === 'password'
                                 ? "bg-success/10 border-success/50 text-success"
                                 : "bg-muted/40 border-border/40 text-muted-foreground hover:bg-muted/60"
@@ -207,7 +229,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                     <button
                         onClick={() => setMountForm(prev => ({ ...prev, authType: 'key' }))}
                         className={cn(
-                            "flex-1 py-1.5 tw-text-10   font-bold rounded border transition-all",
+                            "flex-1 py-1.5 text-10   font-bold rounded border transition-all",
                             mountForm.authType === 'key'
                                 ? "bg-primary/10 border-primary/50 text-primary"
                                 : "bg-muted/40 border-border/40 text-muted-foreground hover:bg-muted/60"
@@ -225,7 +247,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                         type="password"
                         value={mountForm.password || ''}
                         onChange={e => setMountForm(prev => ({ ...prev, password: e.target.value }))}
-                        className="w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
+                        className={C_WORKSPACEMOUNTMODALS_6}
                     />
                 </div>
             ) : (
@@ -237,7 +259,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                                 type="text"
                                 value={mountForm.privateKey || ''}
                                 onChange={e => setMountForm(prev => ({ ...prev, privateKey: e.target.value }))}
-                                className="w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
+                                className={C_WORKSPACEMOUNTMODALS_7}
                                 placeholder={t('workspaceModals.privateKey')}
                             />
                             <button
@@ -254,7 +276,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                             type="password"
                             value={mountForm.passphrase || ''}
                             onChange={e => setMountForm(prev => ({ ...prev, passphrase: e.target.value }))}
-                            className="w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
+                            className={C_WORKSPACEMOUNTMODALS_8}
                             placeholder={t('workspaceModals.optional')}
                         />
                     </div>
@@ -293,7 +315,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                 </button>
                 {testResult && (
                     <div className={cn(
-                        "mt-2 p-2 rounded tw-text-10 leading-relaxed border",
+                        "mt-2 p-2 rounded text-10 leading-relaxed border",
                         testResult.success
                             ? "bg-success/5 border-success/20 text-success/80"
                             : "bg-error/5 border-error/20 text-error/80"
@@ -458,7 +480,7 @@ const EntryModal: React.FC<EntryModalProps> = ({
                                     closeEntryModal();
                                 }
                             }}
-                            className="w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
+                            className={C_WORKSPACEMOUNTMODALS_9}
                             placeholder={t('workspace.placeholders.name')}
                             aria-label={t('workspaceModals.inputAriaLabel', { type: entryModal.type })}
                         />

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { PanelLeft, PanelLeftClose, Plus, Search } from 'lucide-react';
 import React from 'react';
 
@@ -5,6 +15,11 @@ import { Button } from '@/components/ui/button';
 import { AppView } from '@/hooks/useAppState';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_SIDEBARUI_1 = "w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform";
+const C_SIDEBARUI_2 = "absolute inset-0 bg-primary-foreground/10 -translate-x-full group-hover:translate-x-full transition-transform duration-700 skewed-highlight";
+
 
 interface SidebarHeaderProps {
     isCollapsed: boolean;
@@ -28,7 +43,7 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
                 className="flex items-center gap-2 group cursor-pointer"
                 onClick={() => onChangeView('chat')}
             >
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
+                <div className={C_SIDEBARUI_1}>
                     <span className="text-foreground font-bold typo-caption">O</span>
                 </div>
                 <SidebarAppName />
@@ -53,7 +68,7 @@ export const SidebarNewChatButton: React.FC<SidebarNewChatButtonProps> = ({
         <Button
             onClick={handleNewChat}
             className={cn(
-                'w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all duration-300 font-bold   h-10 group overflow-hidden relative',
+                'w-full flex items-center bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all duration-300 font-bold h-10 group overflow-hidden relative',
                 isCollapsed ? 'p-0 rounded-xl' : 'rounded-xl px-4'
             )}
             title={t('sidebar.newChat')}
@@ -71,7 +86,7 @@ export const SidebarNewChatButton: React.FC<SidebarNewChatButtonProps> = ({
                 </span>
             )}
             {!isCollapsed && (
-                <div className="absolute inset-0 bg-primary-foreground/10 -translate-x-full group-hover:translate-x-full transition-transform duration-700 skewed-highlight" />
+                <div className={C_SIDEBARUI_2} />
             )}
         </Button>
     </div>

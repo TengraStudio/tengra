@@ -1,10 +1,20 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Stats Panel Component
  *
  * Displays detailed memory statistics and health metrics.
  */
 
-import { MemoryCategory,MemoryStatistics } from '@shared/types/advanced-memory';
+import { AdvancedMemoryHealthSummary, MemoryCategory, MemoryStatistics } from '@shared/types/advanced-memory';
 import { Gauge,Sparkles, Tag } from 'lucide-react';
 import React from 'react';
 
@@ -16,14 +26,25 @@ import { CATEGORY_CONFIG } from './constants';
 
 interface StatsPanelProps {
   stats: MemoryStatistics;
+  health?: AdvancedMemoryHealthSummary | null;
 }
 
-export const StatsPanel: React.FC<StatsPanelProps> = ({ stats }) => (
-  <StatsPanelContent stats={stats} />
+export const StatsPanel: React.FC<StatsPanelProps> = ({ stats, health }) => (
+  <StatsPanelContent stats={stats} health={health} />
 );
 
-const StatsPanelContent = ({ stats }: { stats: MemoryStatistics }) => {
+const StatsPanelContent = ({
+  stats,
+  health
+}: {
+  stats: MemoryStatistics;
+  health?: AdvancedMemoryHealthSummary | null;
+}) => {
   const { t } = useTranslation();
+  const memoryContext = health?.memoryContext;
+  const hitRate = memoryContext && memoryContext.lookupCount > 0
+    ? (memoryContext.cacheHits / memoryContext.lookupCount) * 100
+    : 0;
   return (
     <div className="space-y-6">
       {/* By Category */}
@@ -91,6 +112,21 @@ const StatsPanelContent = ({ stats }: { stats: MemoryStatistics }) => {
           />
         </div>
       </Card>
+
+      {memoryContext && (
+        <Card className="p-6 bg-muted/20 border-border/40">
+          <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
+            <Gauge className="w-4 h-4 text-primary" />
+            Memory Lookup Runtime
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <MetricCard label="Cache hit rate" value={`${hitRate.toFixed(1)}%`} />
+            <MetricCard label="Avg lookup (ms)" value={memoryContext.averageLookupDurationMs} />
+            <MetricCard label="Timeouts / failures" value={`${memoryContext.lookupTimeoutCount} / ${memoryContext.lookupFailureCount}`} />
+            <MetricCard label="Cache / inflight" value={`${memoryContext.cacheSize} / ${memoryContext.inflightSize}`} />
+          </div>
+        </Card>
+      )}
     </div>
   );
 };

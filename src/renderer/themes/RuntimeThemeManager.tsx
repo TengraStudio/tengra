@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React, { useEffect, useSyncExternalStore } from 'react';
 
 import { useTheme } from '@/hooks/useTheme';
@@ -7,7 +17,7 @@ import { appLogger } from '@/utils/renderer-logger';
 /**
  * Runtime Theme Manager
  * Dynamically injects CSS variables from theme manifests into the DOM.
- * This allows marketplace themes to work without being hardcoded in index.css.
+ * This allows marketplace themes to work without being hardcoded in styles/index.css.
  */
 export const RuntimeThemeManager: React.FC = () => {
     const { theme } = useTheme();
@@ -21,9 +31,9 @@ export const RuntimeThemeManager: React.FC = () => {
     const manifest = themeRegistry.getTheme(theme);
 
     useEffect(() => {
-        // 'black' and 'white' are hardcoded in index.css for reliability/stability
+        // 'black' and 'white' are hardcoded in styles/index.css for reliability/stability
         if (theme === 'black' || theme === 'white') {
-            // Cleanup dynamic properties to ensure index.css takes over
+            // Cleanup dynamic properties to ensure styles/index.css takes over
             const root = document.documentElement;
             root.style.removeProperty('--primary');
             root.style.removeProperty('--background');

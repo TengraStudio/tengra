@@ -1,9 +1,23 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Loader2, Mic, StopCircle, Volume2, X } from 'lucide-react';
 import { useEffect } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_AUDIOCHATOVERLAY_1 = "absolute top-8 right-8 p-4 rounded-full bg-muted/30 hover:bg-muted/40 transition-all z-50 hover:scale-110 active:scale-95 shadow-xl";
+
 
 interface AudioChatOverlayProps {
     isOpen: boolean;
@@ -209,7 +223,7 @@ export function AudioChatOverlay({
             >
                 <button
                     onClick={onClose}
-                    className="absolute top-8 right-8 p-4 rounded-full bg-muted/30 hover:bg-muted/40 transition-all z-50 hover:scale-110 active:scale-95 shadow-xl"
+                    className={C_AUDIOCHATOVERLAY_1}
                 >
                     <X className="w-8 h-8 text-foreground/50 hover:text-foreground" />
                 </button>

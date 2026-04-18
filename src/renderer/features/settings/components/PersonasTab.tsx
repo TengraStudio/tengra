@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Badge } from '@renderer/components/ui/badge';
 import { Button } from '@renderer/components/ui/button';
 import { Input } from '@renderer/components/ui/input';
@@ -5,6 +15,7 @@ import { Textarea } from '@renderer/components/ui/textarea';
 import { Brain, Edit2, MessageSquare, Plus, Sparkles, Trash2, User, Users, X } from 'lucide-react';
 import React from 'react';
 
+import { cn } from '@/lib/utils';
 import { AppSettings } from '@/types/settings';
 
 type PersonaDraft = { name: string; description: string; prompt: string };
@@ -62,7 +73,7 @@ export const PersonasTab: React.FC<PersonasTabProps> = ({
                 <SummaryCard label={t('personas.summary.promptChars')} value={String(promptLength)} />
             </div>
 
-            <div className="grid gap-6 xl:grid-cols-[20rem_minmax(0,1fr)]">
+            <div className="grid gap-6 xl:grid-cols-80-main">
                 <section className="rounded-3xl border border-border/20 bg-muted/5 p-4">
                     <div className="mb-4 flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -85,10 +96,12 @@ export const PersonasTab: React.FC<PersonasTabProps> = ({
                                         setEditingPersonaId(persona.id);
                                         setPersonaDraft(persona);
                                     }}
-                                    className={`w-full rounded-2xl border px-4 py-3 text-left transition-colors ${isActive
-                                        ? 'border-foreground/15 bg-background text-foreground'
-                                        : 'border-border/15 bg-background/40 text-foreground hover:bg-background/70'
-                                        }`}
+                                    className={cn(
+                                        'w-full rounded-2xl border px-4 py-3 text-left transition-colors',
+                                        isActive
+                                            ? 'border-foreground/15 bg-background text-foreground'
+                                            : 'border-border/15 bg-background/40 text-foreground hover:bg-background/70'
+                                    )}
                                 >
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0">
@@ -204,7 +217,7 @@ export const PersonasTab: React.FC<PersonasTabProps> = ({
                                 onChange={event => {
                                     setPersonaDraft({ ...personaDraft, prompt: event.target.value });
                                 }}
-                                className="min-h-[260px] rounded-2xl border border-border/20 bg-background px-4 py-3 text-sm leading-6"
+                                className="min-h-260 rounded-2xl border border-border/20 bg-background px-4 py-3 text-sm leading-6"
                             />
                         </div>
                     </div>

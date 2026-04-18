@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * IPC Handlers for the Advanced Memory System
  *
  * Provides renderer access to:
@@ -11,6 +21,7 @@
 
 import { appLogger } from '@main/logging/logger';
 import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
+import { MemoryContextService } from '@main/services/llm/memory-context.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { WORKSPACE_COMPAT_ALIAS_VALUES } from '@shared/constants';
 import {
@@ -333,7 +344,8 @@ const createAdvancedMemoryHealthPayload = () => {
             validationFailures: advancedMemoryTelemetry.validationFailures,
             budgetExceededCount: advancedMemoryTelemetry.budgetExceededCount,
             errorRate
-        }
+        },
+        memoryContext: MemoryContextService.getStats()
     };
 };
 
@@ -639,6 +651,24 @@ function registerRecallHandlers(advancedMemoryService: AdvancedMemoryService): v
             return { success: true, data: [], uiState: 'empty' };
         }
         const memories = await advancedMemoryService.searchMemoriesHybrid(normalizedQuery, normalizeSearchLimit(limit));
+        return { success: true, data: memories, uiState: memories.length === 0 ? 'empty' : 'ready' };
+    }, {
+        onError: () => ({ success: true, data: [], uiState: 'empty' }),
+        retries: 2,
+        argsSchema: z.tuple([z.string(), z.number().optional()]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: z.array(AdvancedSemanticFragmentSchema),
+            uiState: z.string()
+        })
+    }));
+
+    ipcMain.handle('advancedMemory:searchResolutions', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string, number | undefined]>('advancedMemory:searchResolutions', async (_event, query, limit) => {
+        const normalizedQuery = normalizeOptionalQuery(query);
+        if (!normalizedQuery) {
+            return { success: true, data: [], uiState: 'empty' };
+        }
+        const memories = await advancedMemoryService.findResolutionMemories(normalizedQuery, normalizeSearchLimit(limit));
         return { success: true, data: memories, uiState: memories.length === 0 ? 'empty' : 'ready' };
     }, {
         onError: () => ({ success: true, data: [], uiState: 'empty' }),
@@ -983,7 +1013,7 @@ function registerManagementHandlers(advancedMemoryService: AdvancedMemoryService
         payload
     ) => {
         // SAFETY: payload is validated by argsSchema below
-        const namespace = advancedMemoryService.createSharedNamespace(payload as { id: string; name: string; workspaceIds: string[]; accessControl?: Record<string, string[]> });
+        const namespace = await advancedMemoryService.createSharedNamespace(payload as { id: string; name: string; workspaceIds: string[]; accessControl?: Record<string, string[]> });
         return { success: true, data: namespace };
     }, {
         onError: handleBasicError,
@@ -1150,7 +1180,8 @@ function registerHealthHandlers(): void {
                     validationFailures: advancedMemoryTelemetry.validationFailures,
                     budgetExceededCount: advancedMemoryTelemetry.budgetExceededCount,
                     errorRate: 1
-                }
+                },
+                memoryContext: MemoryContextService.getStats()
             },
             uiState: 'failure'
         }),

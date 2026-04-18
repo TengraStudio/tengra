@@ -1,8 +1,19 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Button } from '@renderer/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
 export interface WizardOption {
     id: string;
@@ -36,10 +47,18 @@ export const WizardOptionCard: React.FC<WizardOptionCardProps> = ({
         <Button
             variant="ghost"
             onClick={onClick}
-            className={`relative h-80 bg-card border border-border/30 rounded-3xl p-7 flex flex-col items-start justify-between text-left shadow-sm overflow-hidden hover:bg-muted/10 hover:border-border/60 transition-all group ${className}`}
+            className={cn(
+                'relative h-80 bg-card border border-border/30 rounded-3xl p-7 flex flex-col items-start justify-between text-left shadow-sm overflow-hidden hover:bg-muted/10 hover:border-border/60 transition-all group',
+                className
+            )}
         >
             <div
-                className={`w-14 h-14 rounded-2xl ${option.accentBg} flex items-center justify-center ${option.accentColor} ring-1 ${option.accentRing} group-hover:scale-110 transition-transform duration-300`}
+                className={cn(
+                    'w-14 h-14 rounded-2xl flex items-center justify-center ring-1 group-hover:scale-110 transition-transform duration-300',
+                    option.accentBg,
+                    option.accentColor,
+                    option.accentRing
+                )}
             >
                 <Icon className="w-7 h-7" />
             </div>
@@ -52,7 +71,7 @@ export const WizardOptionCard: React.FC<WizardOptionCardProps> = ({
                 </p>
             </div>
             <div className="opacity-80">
-                <div className={`flex items-center gap-2 ${option.accentColor} font-semibold text-sm group-hover:translate-x-1 transition-transform`}>
+                <div className={cn('flex items-center gap-2 font-semibold text-sm group-hover:translate-x-1 transition-transform', option.accentColor)}>
                     <span>{t('common.next')}</span>
                     <ArrowRight className="w-4 h-4" />
                 </div>

@@ -1,5 +1,19 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { FileCode, Sparkles } from 'lucide-react';
 import { memo } from 'react';
+
+/* Batch-02: Extracted Long Classes */
+const C_MESSAGESOURCES_1 = "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent/30 border border-border/30 hover:border-primary/50 hover:bg-primary/5 transition-all typo-caption text-muted-foreground hover:text-foreground group/chip";
+
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
 
@@ -35,7 +49,7 @@ export const MessageSources = memo(
                         <button
                             key={idx}
                             onClick={() => onSourceClick?.(path)}
-                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent/30 border border-border/30 hover:border-primary/50 hover:bg-primary/5 transition-all typo-caption text-muted-foreground hover:text-foreground group/chip"
+                            className={C_MESSAGESOURCES_1}
                             title={path}
                         >
                             <FileCode className="w-3.5 h-3.5 text-primary/60 group-hover/chip:text-primary" />

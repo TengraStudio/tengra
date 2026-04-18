@@ -1,6 +1,17 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import type { MarketplaceSkill } from '@shared/types/marketplace';
 import type { ProxySkill } from '@shared/types/skill';
 import {
+    CheckCircle2,
     ChevronLeft,
     ChevronRight,
     Download,
@@ -8,7 +19,6 @@ import {
     Search,
     Sparkles,
     Trash2,
-    CheckCircle2,
 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 
@@ -20,9 +30,15 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 import { pushNotification } from '@/store/notification-center.store';
 
 import type { MarketplaceQueryState } from '../marketplace-query.types';
+
+/* Batch-02: Extracted Long Classes */
+const C_SKILLSMARKETPLACE_1 = "w-full bg-muted/40 rounded-lg px-12 py-2.5 text-sm focus:outline-none transition-all font-medium placeholder:text-muted-foreground/30";
+const C_SKILLSMARKETPLACE_2 = "h-8 px-2 flex items-center gap-1.5 rounded-md text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95 text-xxxs font-bold uppercase tracking-wider";
+
 
 const PAGE_SIZE = 24;
 
@@ -174,7 +190,7 @@ export function SkillsMarketplace({
                             onChange={event => {
                                 onQueryChange(prev => ({ ...prev, search: event.target.value, page: 1 }));
                             }}
-                            className="w-full bg-muted/40 rounded-lg px-12 py-2.5 text-sm focus:outline-none transition-all font-medium placeholder:text-muted-foreground/30"
+                            className={C_SKILLSMARKETPLACE_1}
                         />
                     </div>
                 </div>
@@ -189,7 +205,7 @@ export function SkillsMarketplace({
                             }));
                         }}
                     >
-                        <SelectTrigger className="h-10 w-40 text-[10px] font-black bg-muted/20 border-none rounded-lg uppercase tracking-widest text-muted-foreground/60">
+                        <SelectTrigger className="h-10 w-40 text-xxxs font-black bg-muted/20 border-none rounded-lg uppercase tracking-widest text-muted-foreground/60">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="border-none shadow-2xl">
@@ -209,18 +225,18 @@ export function SkillsMarketplace({
                     return (
                         <div
                             key={item.id}
-                            className={`
-                                group relative flex items-start gap-4 p-4 transition-colors duration-200
-                                ${installed ? 'bg-primary/[0.03]' : 'bg-transparent hover:bg-muted/30'}
-                            `}
+                            className={cn(
+                                'group relative flex items-start gap-4 p-4 transition-colors duration-200',
+                                installed ? 'bg-primary/[0.03]' : 'bg-transparent hover:bg-muted/30'
+                            )}
                         >
                             {/* Icon */}
-                            <div className={`
-                                flex h-12 w-12 shrink-0 items-center justify-center rounded-lg transition-transform
-                                ${installed 
-                                    ? 'bg-primary/10 text-primary' 
-                                    : 'bg-muted/50 text-muted-foreground group-hover:scale-105'}
-                            `}>
+                            <div className={cn(
+                                'flex h-12 w-12 shrink-0 items-center justify-center rounded-lg transition-transform',
+                                installed
+                                    ? 'bg-primary/10 text-primary'
+                                    : 'bg-muted/50 text-muted-foreground group-hover:scale-105'
+                            )}>
                                 <Sparkles className="w-6 h-6" />
                             </div>
 
@@ -241,19 +257,19 @@ export function SkillsMarketplace({
                                             onClick={() => {
                                                 void handleInstall(item.id);
                                             }}
-                                            className={`
-                                                h-8 px-4 flex items-center gap-2 rounded-md transition-all active:scale-95 text-[10px] font-bold uppercase tracking-wider
-                                                ${installed 
-                                                    ? 'bg-success/10 text-success' 
-                                                    : isInstalling 
-                                                        ? 'bg-muted text-muted-foreground animate-pulse' 
-                                                        : 'bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground'}
-                                            `}
+                                            className={cn(
+                                            'h-8 px-4 flex items-center gap-2 rounded-md transition-all active:scale-95 text-xxxs font-bold uppercase tracking-wider',
+                                            installed
+                                                ? 'bg-success/10 text-success'
+                                                : isInstalling
+                                                    ? 'bg-muted text-muted-foreground animate-pulse'
+                                                    : 'bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground'
+                                        )}
                                         >
                                             {isInstalling ? (
                                                 <RefreshCw className="h-3.5 w-3.5 animate-spin" />
                                             ) : (
-                                                <Download className={`h-3.5 w-3.5 ${installed ? 'hidden' : ''}`} />
+                                                <Download className={cn('h-3.5 w-3.5', installed && 'hidden')} />
                                             )}
                                             {installed
                                                 ? t('modelExplorer.installed')
@@ -265,7 +281,7 @@ export function SkillsMarketplace({
                                                 onClick={() => {
                                                     void handleUninstall(item.id);
                                                 }}
-                                                className="h-8 px-2 flex items-center gap-1.5 rounded-md text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95 text-[10px] font-bold uppercase tracking-wider"
+                                                className={C_SKILLSMARKETPLACE_2}
                                             >
                                                 {isUninstalling ? (
                                                     <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -278,7 +294,7 @@ export function SkillsMarketplace({
                                     </div>
                                 </div>
 
-                                <div className="mt-1 flex items-center gap-2 text-[11px] font-medium text-muted-foreground/60">
+                                <div className="mt-1 flex items-center gap-2 text-xxs font-medium text-muted-foreground/60">
                                     <span className="truncate">{item.provider}</span>
                                     <span className="opacity-30">•</span>
                                     <span className="font-bold">v{item.version}</span>
@@ -303,7 +319,7 @@ export function SkillsMarketplace({
                     >
                         <ChevronLeft className="h-5 w-5" />
                     </button>
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/30">
+                    <span className="text-xxxs font-black uppercase tracking-super-wide text-muted-foreground/30">
                         {t('common.pageOf', { current: activePage, total: totalPages })}
                     </span>
                     <button

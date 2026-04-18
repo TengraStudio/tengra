@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React from 'react';
 
 import { formatReset } from '@/lib/formatters';
@@ -114,7 +124,7 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({
                                 {acc.success === false && <StatusBadge status={status} text={statusText} />}
                                 {acc.success !== false && isActiveAccount && <StatusBadge status={status} text={statusText} />}
                                 {creditLabel && (
-                                    <div className="tw-text-9 rounded-full border border-border/20 bg-background/70 px-2.5 py-0.5 font-bold text-muted-foreground">
+                                    <div className="text-9 rounded-full border border-border/20 bg-background/70 px-2.5 py-0.5 font-bold text-muted-foreground">
                                         {creditLabel}
                                     </div>
                                 )}
@@ -124,12 +134,12 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({
                                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 pt-2 md:grid-cols-2 xl:grid-cols-3">
                                     {models.map((m: ModelQuotaItem) => (
                                         <div key={m.id} className="space-y-2">
-                                            <div className="tw-text-10 flex items-center justify-between font-medium">
+                                            <div className="text-10 flex items-center justify-between font-medium">
                                                 <span className="text-muted-foreground truncate pr-2">{m.name || m.id}</span>
                                                 <span className="text-foreground/80 tabular-nums shrink-0">{Math.round(m.percentage || 0)}%</span>
                                             </div>
                                             <HorizontalProgressBar percentage={m.percentage || 0} color={getQuotaColor(m.percentage || 0)} />
-                                            <div className="tw-text-9 font-medium text-muted-foreground/40 mt-1">
+                                            <div className="text-9 font-medium text-muted-foreground/40 mt-1">
                                                 {formatReset(m.reset, locale)}
                                             </div>
                                         </div>

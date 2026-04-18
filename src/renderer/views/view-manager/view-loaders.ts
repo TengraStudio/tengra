@@ -1,11 +1,19 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { lazy } from 'react';
 
 import type { AppView } from '@/hooks/useAppState';
 
 const loadDockerDashboardView = () =>
     import('@/features/mcp/DockerDashboard').then(module => ({ default: module.DockerDashboard }));
-const loadMemoryInspectorView = () =>
-    import('@/features/memory/components/MemoryInspector').then(module => ({ default: module.MemoryInspector }));
 const loadModelsPageView = () =>
     import('@/features/models/pages/ModelsPage').then(module => ({ default: module.ModelsPage }));
 const loadChatViewWrapperView = () =>
@@ -43,9 +51,6 @@ const viewPreloaders: Partial<Record<AppView, () => Promise<void>>> = {
     mcp: async () => {
         await loadDockerDashboardView();
     },
-    memory: async () => {
-        await loadMemoryInspectorView();
-    },
     docker: async () => {
         await loadDockerDashboardView();
     },
@@ -60,7 +65,6 @@ const viewPreloaders: Partial<Record<AppView, () => Promise<void>>> = {
 const DEFAULT_PRELOAD_VIEWS: readonly AppView[] = ['chat', 'workspace', 'settings'];
 
 export const DockerDashboardView = lazy(loadDockerDashboardView);
-export const MemoryInspectorView = lazy(loadMemoryInspectorView);
 export const ModelsPageView = lazy(loadModelsPageView);
 export const ChatViewWrapperView = lazy(loadChatViewWrapperView);
 export const WorkspaceRouteView = lazy(loadWorkspaceView);

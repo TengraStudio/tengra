@@ -1,3 +1,12 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::pin::Pin;
@@ -23,6 +32,11 @@ struct GeminiStreamState {
     tool_calls_sent: bool,
 }
 
+#[derive(Default)]
+struct CopilotStreamState {
+    encrypted_reasoning_placeholder_sent: bool,
+}
+
 #[derive(Clone)]
 struct ClaudeToolCall {
     id: String,
@@ -40,13 +54,14 @@ pub fn translate_stream(
         let mut buffer = String::new();
         let mut claude_state = ClaudeStreamState::default();
         let mut gemini_state = GeminiStreamState::default();
+        let mut copilot_state = CopilotStreamState::default();
 
         while let Some(chunk) = input.next().await {
             match chunk {
                 Ok(bytes) => {
                     buffer.push_str(String::from_utf8_lossy(&bytes).as_ref());
                     while let Some(frame) = take_next_frame(&mut buffer) {
-                        for payload in translate_frame(provider.as_str(), frame.as_str(), &mut claude_state, &mut gemini_state, &state, &session_key) {
+                        for payload in translate_frame(provider.as_str(), frame.as_str(), &mut claude_state, &mut gemini_state, &mut copilot_state, &state, &session_key) {
                             yield Ok(Event::default().data(payload));
                         }
                     }
@@ -58,7 +73,7 @@ pub fn translate_stream(
         }
 
         if !buffer.trim().is_empty() {
-            for payload in translate_frame(provider.as_str(), buffer.trim(), &mut claude_state, &mut gemini_state, &state, &session_key) {
+            for payload in translate_frame(provider.as_str(), buffer.trim(), &mut claude_state, &mut gemini_state, &mut copilot_state, &state, &session_key) {
                 yield Ok(Event::default().data(payload));
             }
         }
@@ -82,12 +97,14 @@ fn translate_frame(
     frame: &str,
     claude_state: &mut ClaudeStreamState,
     gemini_state: &mut GeminiStreamState,
+    copilot_state: &mut CopilotStreamState,
     state: &State<Arc<AppState>>,
     session_key: &str,
 ) -> Vec<String> {
     match provider {
         "claude" => translate_claude_frame(frame, claude_state, state, session_key),
         "antigravity" => translate_gemini_frame(frame, gemini_state),
+        "copilot" => translate_copilot_frame(frame, copilot_state),
         _ => extract_data_payloads(frame),
     }
 }
@@ -113,6 +130,216 @@ fn translate_gemini_frame(frame: &str, state: &mut GeminiStreamState) -> Vec<Str
                 .map(|v| gemini_payload_to_openai_chunk(v, state))
         })
         .collect()
+}
+
+fn translate_copilot_frame(frame: &str, state: &mut CopilotStreamState) -> Vec<String> {
+    extract_data_payloads(frame)
+        .into_iter()
+        .flat_map(|payload| translate_copilot_payload(payload, state))
+        .collect()
+}
+
+fn translate_copilot_payload(payload: String, state: &mut CopilotStreamState) -> Vec<String> {
+    if payload == "[DONE]" {
+        return vec![payload];
+    }
+
+    let Ok(value) = serde_json::from_str::<Value>(&payload) else {
+        return vec![payload];
+    };
+
+    if let Some(chunk) = copilot_session_event_to_openai_chunk(&value, state) {
+        return vec![chunk];
+    }
+    if value
+        .get("type")
+        .and_then(Value::as_str)
+        .map(|event_type| event_type.starts_with("assistant."))
+        .unwrap_or(false)
+    {
+        return vec![];
+    }
+
+    if let Some(normalized) = normalize_copilot_openai_chunk(value, state) {
+        return vec![normalized.to_string()];
+    }
+
+    vec![payload]
+}
+
+fn copilot_session_event_to_openai_chunk(
+    value: &Value,
+    state: &mut CopilotStreamState,
+) -> Option<String> {
+    let event_type = value.get("type").and_then(Value::as_str)?;
+    match event_type {
+        "assistant.reasoning_delta" => {
+            let delta = value
+                .get("data")
+                .and_then(|data| data.get("deltaContent"))
+                .and_then(Value::as_str)
+                .unwrap_or_default();
+            if delta.is_empty() {
+                return None;
+            }
+            Some(openai_delta_chunk(
+                json!({ "reasoning_content": delta }),
+                None,
+            ))
+        }
+        "assistant.reasoning" => {
+            let data = value.get("data")?;
+            let content = data
+                .get("content")
+                .and_then(Value::as_str)
+                .unwrap_or_default();
+            if !content.is_empty() {
+                return Some(openai_delta_chunk(
+                    json!({ "reasoning_content": content }),
+                    None,
+                ));
+            }
+            let reasoning_id = data
+                .get("reasoningId")
+                .and_then(Value::as_str)
+                .unwrap_or_default();
+            encrypted_copilot_reasoning_placeholder(reasoning_id, state).map(|placeholder| {
+                openai_delta_chunk(json!({ "reasoning_content": placeholder }), None)
+            })
+        }
+        "assistant.message_delta" => {
+            let delta = value
+                .get("data")
+                .and_then(|data| data.get("deltaContent"))
+                .and_then(Value::as_str)
+                .unwrap_or_default();
+            if delta.is_empty() {
+                return None;
+            }
+            Some(openai_delta_chunk(json!({ "content": delta }), None))
+        }
+        "assistant.message" => {
+            let data = value.get("data")?;
+            copilot_message_reasoning_placeholder(data, state).map(|placeholder| {
+                openai_delta_chunk(json!({ "reasoning_content": placeholder }), None)
+            })
+        }
+        _ => None,
+    }
+}
+
+fn normalize_copilot_openai_chunk(
+    mut value: Value,
+    state: &mut CopilotStreamState,
+) -> Option<Value> {
+    let choices = value.get_mut("choices").and_then(Value::as_array_mut)?;
+    for choice in choices {
+        let Some(choice_object) = choice.as_object_mut() else {
+            continue;
+        };
+        normalize_copilot_choice_reasoning(choice_object, state);
+    }
+    Some(value)
+}
+
+fn normalize_copilot_choice_reasoning(
+    choice: &mut serde_json::Map<String, Value>,
+    state: &mut CopilotStreamState,
+) {
+    if let Some(delta) = choice.get_mut("delta").and_then(Value::as_object_mut) {
+        normalize_copilot_reasoning_fields(delta, state);
+    }
+    if let Some(message) = choice.get_mut("message").and_then(Value::as_object_mut) {
+        normalize_copilot_reasoning_fields(message, state);
+    }
+}
+
+fn normalize_copilot_reasoning_fields(
+    object: &mut serde_json::Map<String, Value>,
+    state: &mut CopilotStreamState,
+) {
+    if object
+        .get("reasoning_content")
+        .and_then(Value::as_str)
+        .map(|value| !value.is_empty())
+        .unwrap_or(false)
+    {
+        return;
+    }
+
+    if let Some(reasoning) = take_first_string_field(
+        object,
+        &[
+            "reasoning",
+            "reasoning_text",
+            "reasoningText",
+            "deltaContent",
+        ],
+    ) {
+        object.insert("reasoning_content".to_string(), Value::String(reasoning));
+        return;
+    }
+
+    if let Some(placeholder) = copilot_object_encrypted_reasoning_placeholder(object, state) {
+        object.insert("reasoning_content".to_string(), Value::String(placeholder));
+    }
+}
+
+fn take_first_string_field(
+    object: &mut serde_json::Map<String, Value>,
+    keys: &[&str],
+) -> Option<String> {
+    for key in keys {
+        let Some(value) = object.get(*key).and_then(Value::as_str) else {
+            continue;
+        };
+        if !value.is_empty() {
+            return Some(value.to_string());
+        }
+    }
+    None
+}
+
+fn copilot_message_reasoning_placeholder(
+    data: &Value,
+    state: &mut CopilotStreamState,
+) -> Option<String> {
+    if let Some(content) = data.get("reasoningText").and_then(Value::as_str) {
+        if !content.is_empty() {
+            return Some(content.to_string());
+        }
+    }
+    let marker = data
+        .get("reasoningOpaque")
+        .or_else(|| data.get("encryptedContent"))
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+    encrypted_copilot_reasoning_placeholder(marker, state)
+}
+
+fn copilot_object_encrypted_reasoning_placeholder(
+    object: &serde_json::Map<String, Value>,
+    state: &mut CopilotStreamState,
+) -> Option<String> {
+    let marker = object
+        .get("reasoning_opaque")
+        .or_else(|| object.get("reasoningOpaque"))
+        .or_else(|| object.get("encrypted_content"))
+        .or_else(|| object.get("encryptedContent"))
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+    encrypted_copilot_reasoning_placeholder(marker, state)
+}
+
+fn encrypted_copilot_reasoning_placeholder(
+    marker: &str,
+    state: &mut CopilotStreamState,
+) -> Option<String> {
+    if marker.is_empty() || state.encrypted_reasoning_placeholder_sent {
+        return None;
+    }
+    state.encrypted_reasoning_placeholder_sent = true;
+    Some("Copilot reasoning is encrypted for this turn.".to_string())
 }
 
 fn gemini_payload_to_openai_chunk(value: Value, state: &mut GeminiStreamState) -> String {
@@ -152,8 +379,14 @@ fn gemini_payload_to_openai_chunk(value: Value, state: &mut GeminiStreamState) -
         }
 
         if let Some(inline_data) = part.get("inlineData") {
-            let mime_type = inline_data.get("mimeType").and_then(Value::as_str).unwrap_or("image/png");
-            let data = inline_data.get("data").and_then(Value::as_str).unwrap_or_default();
+            let mime_type = inline_data
+                .get("mimeType")
+                .and_then(Value::as_str)
+                .unwrap_or("image/png");
+            let data = inline_data
+                .get("data")
+                .and_then(Value::as_str)
+                .unwrap_or_default();
             if !data.is_empty() {
                 images.push(json!({
                     "type": "image_url",
@@ -419,14 +652,16 @@ mod tests {
     use tokio::sync::Mutex;
 
     use super::{
-        take_next_frame, translate_claude_frame, translate_gemini_frame, ClaudeStreamState,
-        GeminiStreamState,
+        take_next_frame, translate_claude_frame, translate_copilot_frame, translate_gemini_frame,
+        ClaudeStreamState, CopilotStreamState, GeminiStreamState,
     };
 
     fn sample_app_state() -> State<Arc<crate::proxy::server::AppState>> {
         State(Arc::new(crate::proxy::server::AppState {
             signature_cache: Mutex::new(std::collections::HashMap::new()),
             session_id_cache: Mutex::new(std::collections::HashMap::new()),
+            terminal_manager: crate::terminal::TerminalManager::new(),
+            lsp_manager: crate::analysis::lsp_manager::LspManager::new(),
         }))
     }
 
@@ -548,5 +783,51 @@ mod tests {
         let p4 = "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Hello World\"},{\"thinking\":\"thinking... more!\"}]}}]}\n\n";
         let res4 = translate_gemini_frame(p4, &mut state);
         assert!(res4[0].contains("\"reasoning_content\":\" more!\""));
+    }
+
+    #[test]
+    fn translates_copilot_reasoning_delta_event() {
+        let mut state = CopilotStreamState::default();
+        let payloads = translate_copilot_frame(
+            "data: {\"type\":\"assistant.reasoning_delta\",\"data\":{\"reasoningId\":\"r1\",\"deltaContent\":\"thinking...\"}}\n\n",
+            &mut state,
+        );
+        assert_eq!(payloads.len(), 1);
+        assert!(payloads[0].contains("\"reasoning_content\":\"thinking...\""));
+    }
+
+    #[test]
+    fn translates_copilot_encrypted_reasoning_to_single_placeholder() {
+        let mut state = CopilotStreamState::default();
+        let frame = "data: {\"type\":\"assistant.message\",\"data\":{\"messageId\":\"m1\",\"content\":\"done\",\"reasoningOpaque\":\"opaque-token\",\"encryptedContent\":\"encrypted-token\"}}\n\n";
+        let first = translate_copilot_frame(frame, &mut state);
+        let second = translate_copilot_frame(frame, &mut state);
+        assert_eq!(first.len(), 1);
+        assert!(first[0]
+            .contains("\"reasoning_content\":\"Copilot reasoning is encrypted for this turn.\""));
+        assert!(second.is_empty());
+    }
+
+    #[test]
+    fn normalizes_copilot_openai_style_reasoning_text() {
+        let mut state = CopilotStreamState::default();
+        let payloads = translate_copilot_frame(
+            "data: {\"choices\":[{\"index\":0,\"delta\":{\"reasoning_text\":\"thinking...\"},\"finish_reason\":null}]}\n\n",
+            &mut state,
+        );
+        assert_eq!(payloads.len(), 1);
+        assert!(payloads[0].contains("\"reasoning_content\":\"thinking...\""));
+    }
+
+    #[test]
+    fn normalizes_copilot_openai_style_encrypted_reasoning() {
+        let mut state = CopilotStreamState::default();
+        let payloads = translate_copilot_frame(
+            "data: {\"choices\":[{\"index\":0,\"delta\":{\"encrypted_content\":\"secret\"},\"finish_reason\":null}]}\n\n",
+            &mut state,
+        );
+        assert_eq!(payloads.len(), 1);
+        assert!(payloads[0]
+            .contains("\"reasoning_content\":\"Copilot reasoning is encrypted for this turn.\""));
     }
 }

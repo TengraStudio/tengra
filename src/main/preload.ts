@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { AppSettings } from '@shared/types';
 import { IpcValue } from '@shared/types/common';
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
@@ -50,6 +60,7 @@ import { createUpdateBridge } from './preload/domains/update.preload';
 import { createUsageBridge } from './preload/domains/usage.preload';
 import { createLiveCollaborationBridge } from './preload/domains/user-collaboration.preload';
 import { createVoiceBridge } from './preload/domains/voice.preload';
+import { createSecurityBridge } from './preload/domains/security.preload';
 import { createWindowControlsBridge } from './preload/domains/window-controls.preload';
 import { createWorkspaceBridge } from './preload/domains/workspace.preload';
 
@@ -178,6 +189,7 @@ const api = {
     huggingface: createHuggingFaceBridge(ipcRenderer),
     export: createExportBridge(ipcRenderer),
     log: createLogBridge(ipcRenderer),
+    security: createSecurityBridge(ipcRenderer),
 };
 
 contextBridge.exposeInMainWorld('electron', api);

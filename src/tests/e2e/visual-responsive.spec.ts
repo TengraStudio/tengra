@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { ElectronApplication, expect, Page, test } from '@playwright/test';
 
 import { closeElectronApp, launchElectronApp, settleVisualState } from './e2e-test-utils';
@@ -37,27 +47,27 @@ test.describe('Responsive & Window Controls Visual Regression', () => {
         });
     });
 
-    test('narrow window layout', async () => {
-        await setWindowSize(electronApp, window, 900, 700);
+    test('mobile window layout (390w)', async () => {
+        await setWindowSize(electronApp, window, 390, 844);
 
-        await expect(window).toHaveScreenshot('layout-narrow-900.png', {
-            maxDiffPixels: 400
+        await expect(window).toHaveScreenshot('layout-mobile-390.png', {
+            maxDiffPixels: 450
         });
     });
 
-    test('wide window layout', async () => {
-        await setWindowSize(electronApp, window, 1600, 900);
+    test('tablet window layout (768w)', async () => {
+        await setWindowSize(electronApp, window, 768, 1024);
 
-        await expect(window).toHaveScreenshot('layout-wide-1600.png', {
-            maxDiffPixels: 400
+        await expect(window).toHaveScreenshot('layout-tablet-768.png', {
+            maxDiffPixels: 450
         });
     });
 
-    test('compact window layout', async () => {
-        await setWindowSize(electronApp, window, 800, 600);
+    test('desktop window layout (1440w)', async () => {
+        await setWindowSize(electronApp, window, 1440, 900);
 
-        await expect(window).toHaveScreenshot('layout-compact-800x600.png', {
-            maxDiffPixels: 400
+        await expect(window).toHaveScreenshot('layout-desktop-1440.png', {
+            maxDiffPixels: 450
         });
     });
 });

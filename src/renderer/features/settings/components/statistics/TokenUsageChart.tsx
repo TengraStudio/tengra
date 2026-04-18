@@ -1,7 +1,24 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Activity, Coins } from 'lucide-react';
 import React, { useMemo } from 'react';
 
 import { formatNumber } from '@/lib/formatters';
+
+/* Batch-02: Extracted Long Classes */
+const C_TOKENUSAGECHART_1 = "group relative flex h-full min-w-4 flex-1 flex-col justify-end rounded-t-sm transition-colors duration-200 hover:bg-muted/40";
+const C_TOKENUSAGECHART_2 = "absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50";
+const C_TOKENUSAGECHART_3 = "absolute -bottom-1.5 left-1/2 h-0 w-0 -translate-x-1/2 border-l-6 border-r-6 border-t-6 border-l-transparent border-r-transparent border-t-popover";
+const C_TOKENUSAGECHART_4 = "absolute top-full mt-2 left-1/2 -translate-x-1/2 text-xxxs font-medium text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity";
+
 
 interface TokenUsageChartProps {
     tokenTimeline: Array<{
@@ -54,7 +71,7 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                 </div>
             </div>
 
-            <div className="relative tw-h-240 w-full pt-4">
+            <div className="relative h-240 w-full pt-4">
                 <div className="absolute right-0 top-0 z-10 flex items-center gap-4">
                     <div className="flex items-center gap-2 rounded-full border border-border/30 bg-background px-2 py-1">
                         <div className="h-2.5 w-2.5 rounded-full bg-primary" />
@@ -87,10 +104,10 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                             return (
                                 <div
                                     key={data.timestamp}
-                                    className="group relative flex h-full tw-min-w-4 flex-1 flex-col justify-end rounded-t-sm transition-colors duration-200 hover:bg-muted/40"
+                                    className={C_TOKENUSAGECHART_1}
                                 >
-                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50">
-                                        <div className="tw-min-w-140 rounded-xl border border-border/50 bg-popover p-3 tw-shadow-elevated">
+                                    <div className={C_TOKENUSAGECHART_2}>
+                                        <div className="min-w-140 rounded-xl border border-border/50 bg-popover p-3 shadow-elevated">
                                             <div className="typo-caption font-bold text-foreground mb-2 pb-2 border-b border-border/30 text-center">
                                                 {new Date(data.timestamp).toLocaleDateString()}
                                                 <span className="block text-xxxs font-normal text-muted-foreground capitalize mt-0.5 opacity-70">
@@ -110,7 +127,7 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                                                     <div className="mt-2 pt-2 border-t border-border/20 space-y-1">
                                                         {Object.entries(data.modelBreakdown).map(([model, usage]) => (
                                                             <div key={model} className="flex justify-between items-center gap-2">
-                                                                <span className="text-xxxs text-muted-foreground truncate tw-max-w-80" title={model}>{model}</span>
+                                                                <span className="text-xxxs text-muted-foreground truncate max-w-80" title={model}>{model}</span>
                                                                 <span className="text-xxxs font-mono opacity-80">{formatNumber(usage.prompt + usage.completion)}</span>
                                                             </div>
                                                         ))}
@@ -118,19 +135,19 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="absolute -bottom-1.5 left-1/2 h-0 w-0 -translate-x-1/2 tw-border-l-6 tw-border-r-6 tw-border-t-6 border-l-transparent border-r-transparent border-t-popover" />
+                                        <div className={C_TOKENUSAGECHART_3} />
                                     </div>
 
-                                    <div className="relative flex h-full w-full flex-col justify-end tw-px-1px">
+                                    <div className="relative flex h-full w-full flex-col justify-end px-1px">
                                         <div
-                                            className="w-full tw-rounded-t-2px bg-success/85"
+                                            className="w-full rounded-t-2px bg-success/85"
                                             style={{
                                                 height: `${completionHeight}%`,
                                                 minHeight: data.completionTokens > 0 ? '2px' : '0'
                                             }}
                                         />
                                         <div
-                                            className="tw-mt-1px w-full tw-rounded-b-1px bg-primary/85"
+                                            className="mt-1px w-full rounded-b-1px bg-primary/85"
                                             style={{
                                                 height: `${promptHeight}%`,
                                                 minHeight: data.promptTokens > 0 ? '2px' : '0'
@@ -138,7 +155,7 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                                         />
                                     </div>
 
-                                    <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 text-xxxs font-medium text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className={C_TOKENUSAGECHART_4}>
                                         {getSimpleLabel(data.timestamp, period)}
                                     </div>
                                 </div>

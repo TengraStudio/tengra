@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Badge } from '@renderer/components/ui/badge';
 import { Button } from '@renderer/components/ui/button';
 import { Input } from '@renderer/components/ui/input';
@@ -7,6 +17,17 @@ import { CalendarClock, Plus, Zap } from 'lucide-react';
 import React from 'react';
 
 import { ImageScheduleEntry } from '../../types';
+
+/* Batch-02: Extracted Long Classes */
+const C_IMAGESETTINGSSCHEDULES_1 = "bg-card rounded-3xl border border-border/40 p-8 space-y-8 shadow-sm group/schedules hover:border-border/60 transition-all duration-500 overflow-hidden relative lg:p-10";
+const C_IMAGESETTINGSSCHEDULES_2 = "p-3 rounded-2xl bg-primary/10 text-primary shadow-lg shadow-primary/5 group-hover/schedules:scale-110 transition-transform duration-500";
+const C_IMAGESETTINGSSCHEDULES_3 = "h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 typo-caption font-bold placeholder:text-muted-foreground/30 shadow-inner group-hover:bg-muted/30 transition-all";
+const C_IMAGESETTINGSSCHEDULES_4 = "h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 typo-caption font-bold shadow-inner group-hover:bg-muted/30 transition-all";
+const C_IMAGESETTINGSSCHEDULES_5 = "h-12 px-8 rounded-2xl bg-foreground text-background hover:bg-primary hover:text-primary-foreground typo-body font-bold transition-all active:scale-95 shadow-xl shadow-black/10 flex items-center gap-3 w-full sm:w-auto";
+const C_IMAGESETTINGSSCHEDULES_6 = "flex flex-col items-center justify-center py-10 text-center bg-muted/5 border-2 border-dashed border-border/20 rounded-2xl opacity-40 sm:flex-row";
+const C_IMAGESETTINGSSCHEDULES_7 = "group/item flex flex-col gap-4 bg-background/50 border border-border/20 rounded-2xl p-5 transition-all hover:bg-muted/10 hover:border-border/40 shadow-sm sm:p-6 lg:p-8 sm:gap-5 lg:gap-6 sm:flex-row";
+const C_IMAGESETTINGSSCHEDULES_8 = "h-8 px-4 rounded-lg typo-body font-bold border-destructive/20 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all active:scale-95 shadow-sm shrink-0";
+
 
 interface ImageSettingsSchedulesProps {
     schedulePrompt: string;
@@ -40,10 +61,10 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
     t,
 }) => {
     return (
-        <div className="bg-card rounded-3xl border border-border/40 p-8 space-y-8 shadow-sm group/schedules hover:border-border/60 transition-all duration-500 overflow-hidden relative">
+        <div className={C_IMAGESETTINGSSCHEDULES_1}>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1 relative z-10">
                 <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-2xl bg-primary/10 text-primary shadow-lg shadow-primary/5 group-hover/schedules:scale-110 transition-transform duration-500">
+                    <div className={C_IMAGESETTINGSSCHEDULES_2}>
                         <CalendarClock className="w-6 h-6" />
                     </div>
                     <div>
@@ -65,7 +86,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                             value={schedulePrompt}
                             onChange={event => setSchedulePrompt(event.target.value)}
                             placeholder={t('settings.images.schedulePrompt')}
-                            className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 typo-caption font-bold placeholder:text-muted-foreground/30 shadow-inner group-hover:bg-muted/30 transition-all"
+                            className={C_IMAGESETTINGSSCHEDULES_3}
                         />
                     </div>
                     <div className="space-y-2">
@@ -74,7 +95,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                             type="datetime-local"
                             value={scheduleAt}
                             onChange={event => setScheduleAt(event.target.value)}
-                            className="h-12 px-6 rounded-2xl bg-muted/20 border-border/40 focus-visible:ring-primary/20 typo-caption font-bold shadow-inner group-hover:bg-muted/30 transition-all"
+                            className={C_IMAGESETTINGSSCHEDULES_4}
                         />
                     </div>
                     <div className="space-y-2">
@@ -112,7 +133,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                 </div>
                 <Button
                     onClick={() => { void handleCreateSchedule(); }}
-                    className="h-12 px-8 rounded-2xl bg-foreground text-background hover:bg-primary hover:text-primary-foreground typo-body font-bold transition-all active:scale-95 shadow-xl shadow-black/10 flex items-center gap-3 w-full sm:w-auto"
+                    className={C_IMAGESETTINGSSCHEDULES_5}
                 >
                     <Plus className="w-4 h-4" />
                     {t('settings.images.scheduleCreate')}
@@ -162,15 +183,15 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
 
             <div className="space-y-3 relative z-10">
                 {scheduleEntries.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-10 text-center bg-muted/5 border-2 border-dashed border-border/20 rounded-2xl opacity-40">
+                    <div className={C_IMAGESETTINGSSCHEDULES_6}>
                         <p className="typo-body font-bold text-muted-foreground px-6">
                             {t('settings.images.noSchedules')}
                         </p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 gap-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="grid grid-cols-1 gap-3 max-h-350 overflow-y-auto pr-2 custom-scrollbar">
                         {scheduleEntries.slice(0, 8).map(entry => (
-                            <div key={entry.id} className="group/item flex flex-col gap-4 bg-background/50 border border-border/20 rounded-2xl p-5 transition-all hover:bg-muted/10 hover:border-border/40 shadow-sm">
+                            <div key={entry.id} className={C_IMAGESETTINGSSCHEDULES_7}>
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="space-y-1.5 min-w-0 flex-1">
                                         <div className="typo-caption font-bold text-foreground truncate group-hover/item:text-primary transition-colors">
@@ -193,7 +214,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                                             variant="outline"
                                             size="sm"
                                             onClick={() => { void handleCancelSchedule(entry.id); }}
-                                            className="h-8 px-4 rounded-lg typo-body font-bold border-destructive/20 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all active:scale-95 shadow-sm shrink-0"
+                                            className={C_IMAGESETTINGSSCHEDULES_8}
                                         >
                                             {t('settings.images.scheduleCancel')}
                                         </Button>
@@ -215,7 +236,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                 )}
             </div>
 
-            <div className="absolute -left-24 -bottom-24 w-96 h-96 bg-primary/5 rounded-full blur-[100px] opacity-30 pointer-events-none" />
+            <div className="absolute -left-24 -bottom-24 w-96 h-96 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
         </div>
     );
 };

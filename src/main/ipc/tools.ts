@@ -1,8 +1,20 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import * as path from 'path';
 
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { DatabaseService } from '@main/services/data/database.service';
+import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
+import { MemoryContextService } from '@main/services/llm/memory-context.service';
 import { CommandService } from '@main/services/system/command.service';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { createSafeIpcHandler, createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
@@ -296,6 +308,7 @@ async function getWorkspaceAgentPermissionContext(
 ): Promise<{
     permissionPolicy: WorkspaceAgentPermissionPolicy;
     workspacePath: string;
+    workspaceId?: string;
 } | null> {
     const chat = await databaseService.getChat(sessionId);
     if (!chat?.workspaceId) {
@@ -319,7 +332,27 @@ async function getWorkspaceAgentPermissionContext(
             allowedPaths: [workspace.path],
         },
         workspacePath: workspace.path,
+        workspaceId: chat.workspaceId,
     };
+}
+
+function safeStringifyToolPayload(value: RuntimeValue): string {
+    try {
+        return JSON.stringify(value);
+    } catch {
+        return '[unserializable-tool-payload]';
+    }
+}
+
+function compactToolText(value: string, maxLength: number): string {
+    const normalized = value.replace(/\s+/g, ' ').trim();
+    return normalized.length > maxLength
+        ? `${normalized.slice(0, maxLength - 3)}...`
+        : normalized;
+}
+
+function looksLikeErrorText(value: string): boolean {
+    return /\b(error|exception|failed|failure|cannot|timeout|typeerror|referenceerror|enoent|eacces)\b/i.test(value);
 }
 
 async function guardWorkspaceAgentToolExecution(options: {
@@ -416,9 +449,11 @@ export function registerToolsIpc(
     getMainWindow: () => BrowserWindow | null,
     toolExecutor: ToolExecutor,
     commandService: CommandService,
-    databaseService: DatabaseService
+    databaseService: DatabaseService,
+    advancedMemoryService?: AdvancedMemoryService
 ) {
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'tools operation');
+    const memoryContextService = new MemoryContextService(advancedMemoryService);
 
     ipcMain.handle('tools:execute', createValidatedIpcHandler('tools:execute', async (event, payload: {
         toolName: string;
@@ -458,6 +493,22 @@ export function registerToolsIpc(
                 'tools',
                 `execute:permission-blocked tool=${payload.toolName}, toolCallId=${payload.toolCallId ?? 'none'}, durationMs=${Date.now() - startedAt}, error=${permissionResult.error}`
             );
+            if (advancedMemoryService) {
+                const workspaceContext = payload.workspaceAgentSessionId
+                    ? await getWorkspaceAgentPermissionContext(payload.workspaceAgentSessionId, databaseService)
+                    : null;
+                memoryContextService.rememberInsight({
+                    content:
+                    compactToolText(
+                        `Tool execution blocked by permission policy. tool=${payload.toolName}; reason=${permissionResult.error}`,
+                        800
+                    ),
+                    sourceId: `tools:${payload.toolCallId ?? payload.workspaceAgentSessionId ?? Date.now()}`,
+                    category: 'workflow',
+                    tags: ['tool-execution', 'permission-policy', `tool:${payload.toolName}`],
+                    workspaceId: workspaceContext?.workspaceId
+                });
+            }
             return permissionResult;
         }
 
@@ -466,6 +517,49 @@ export function registerToolsIpc(
             'tools',
             `execute:finish tool=${payload.toolName}, toolCallId=${payload.toolCallId ?? 'none'}, success=${String(result.success)}, durationMs=${Date.now() - startedAt}, errorType=${result.errorType ?? 'none'}`
         );
+
+        if (advancedMemoryService) {
+            const workspaceContext = payload.workspaceAgentSessionId
+                ? await getWorkspaceAgentPermissionContext(payload.workspaceAgentSessionId, databaseService)
+                : null;
+            const workspaceId = workspaceContext?.workspaceId;
+            const commandText = typeof payload.args.command === 'string'
+                ? payload.args.command
+                : typeof payload.args.input === 'string'
+                    ? payload.args.input
+                    : '';
+
+            if (!result.success) {
+                const failureContent = compactToolText(
+                    `Tool execution failed. tool=${payload.toolName}; errorType=${result.errorType ?? 'unknown'}; error=${result.error ?? 'unknown'}; command=${commandText || 'n/a'}`,
+                    1000
+                );
+                memoryContextService.rememberInsight({
+                    content: failureContent,
+                    sourceId: `tools:${payload.toolCallId ?? payload.workspaceAgentSessionId ?? Date.now()}`,
+                    category: 'technical',
+                    tags: ['tool-execution', 'error-fix', `tool:${payload.toolName}`],
+                    workspaceId
+                });
+            } else {
+                const serializedResult = safeStringifyToolPayload((result.result ?? null) as RuntimeValue);
+                const signalText = `${commandText}\n${serializedResult}`;
+                if (looksLikeErrorText(signalText)) {
+                    const successResolution = compactToolText(
+                        `Tool-assisted resolution path. tool=${payload.toolName}; command=${commandText || 'n/a'}; result=${serializedResult}`,
+                        1000
+                    );
+                    memoryContextService.rememberInsight({
+                        content: successResolution,
+                        sourceId: `tools:${payload.toolCallId ?? payload.workspaceAgentSessionId ?? Date.now()}`,
+                        category: 'technical',
+                        tags: ['tool-execution', 'resolution', `tool:${payload.toolName}`],
+                        workspaceId
+                    });
+                }
+            }
+        }
+
         return result;
     }, {
         argsSchema: z.tuple([toolExecuteRequestSchema]),

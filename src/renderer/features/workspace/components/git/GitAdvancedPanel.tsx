@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { useTranslation } from '@renderer/i18n';
 import {
     GitCompareArrows,
@@ -13,6 +23,10 @@ import { cn } from '@/lib/utils';
 
 import { confirmDialog, promptDialog } from '../../../terminal/utils/dialog';
 import { useGitAdvanced } from '../../hooks/useGitAdvanced';
+
+/* Batch-02: Extracted Long Classes */
+const C_GITADVANCEDPANEL_1 = "inline-flex items-center gap-1.5 px-3 rounded-lg bg-primary text-primary-foreground typo-caption font-medium hover:bg-primary/90 disabled:opacity-50";
+
 
 interface GitAdvancedPanelProps {
     workspacePath: string;
@@ -117,7 +131,7 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ workspacePat
                         <button
                             onClick={() => void handleCreateBranch()}
                             disabled={!newBranchName.trim()}
-                            className="inline-flex items-center gap-1.5 px-3 rounded-lg bg-primary text-primary-foreground typo-caption font-medium hover:bg-primary/90 disabled:opacity-50"
+                            className={C_GITADVANCEDPANEL_1}
                         >
                             <Plus className="w-3.5 h-3.5" />
                             {t('common.create')}

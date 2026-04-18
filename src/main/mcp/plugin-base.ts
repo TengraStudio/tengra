@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { McpDispatchResult, McpService } from '@main/mcp/types';
 import { JsonObject } from '@shared/types/common';
 
@@ -69,4 +79,79 @@ export class InternalMcpPlugin implements IMcpPlugin {
     }
 
     isAlive() { return true; }
+}
+
+/**
+ * Native MCP Plugin implementation.
+ * Forwards tool calls to the Rust-based tengra-proxy.
+ */
+export class NativeMcpPlugin implements IMcpPlugin {
+    public readonly source = 'core';
+
+    constructor(
+        private proxyService: import('@main/services/proxy/proxy.service').ProxyService,
+        public readonly name: string,
+        public readonly description: string,
+        private actions: Array<{ name: string; description: string }>
+    ) { }
+
+    async initialize(): Promise<void> {
+        // Native services are managed by the ProxyService lifecycle
+    }
+
+    async dispose(): Promise<void> {
+        // Managed by ProxyService
+    }
+
+    async getActions() {
+        return this.actions;
+    }
+
+    async dispatch(actionName: string, args: JsonObject): Promise<McpDispatchResult> {
+        try {
+            interface DispatchResponse {
+                success: boolean;
+                result?: JsonObject;
+                error?: string;
+            }
+
+            const response = await this.proxyService.makeRequest<DispatchResponse>(
+                '/v0/tools/dispatch',
+                await this.proxyService.getRuntimeProxyApiKey(),
+                'POST',
+                {
+                    service: this.name,
+                    action: actionName,
+                    arguments: args
+                }
+            ) as DispatchResponse;
+
+            if (response?.success) {
+                return { 
+                    success: true, 
+                    ...(response.result || {}),
+                    service: this.name, 
+                    action: actionName 
+                };
+            }
+
+            return { 
+                success: false, 
+                error: response?.error || 'Unknown native tool error',
+                service: this.name,
+                action: actionName
+            };
+        } catch (error) {
+            return { 
+                success: false, 
+                error: error instanceof Error ? error.message : String(error),
+                service: this.name,
+                action: actionName
+            };
+        }
+    }
+
+    isAlive() {
+        return this.proxyService.getEmbeddedProxyStatus().running;
+    }
 }

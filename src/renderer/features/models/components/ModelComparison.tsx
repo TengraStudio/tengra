@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Multi-Model Comparison View
  * Compare responses from multiple AI models side by side.
  */
@@ -19,6 +29,12 @@ import React, { useCallback, useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_MODELCOMPARISON_1 = "absolute top-full left-0 mt-1 w-56 bg-popover border border-border/50 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto";
+const C_MODELCOMPARISON_2 = "w-full h-24 bg-muted/30 border border-border/30 rounded-xl p-3 pr-24 text-sm resize-none outline-none focus:border-primary/50 transition-colors";
+const C_MODELCOMPARISON_3 = "mt-4 flex items-center justify-center gap-2 py-3 border-2 border-dashed border-border/50 hover:border-primary/50 rounded-xl text-muted-foreground hover:text-primary transition-colors";
+
 
 interface ModelResponse {
     model: string;
@@ -85,7 +101,7 @@ const ModelSelector = ({
                         aria-hidden="true"
                     />
                     <div
-                        className="absolute top-full left-0 mt-1 w-56 bg-popover border border-border/50 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto"
+                        className={C_MODELCOMPARISON_1}
                         role="listbox"
                     >
                         {availableModels.map(model => (
@@ -278,7 +294,7 @@ const PromptInput = ({
                 onChange={e => setPrompt(e.target.value)}
                 placeholder={t('modelComparison.promptPlaceholder')}
                 aria-label={t('modelComparison.promptPlaceholder')}
-                className="w-full h-24 bg-muted/30 border border-border/30 rounded-xl p-3 pr-24 text-sm resize-none outline-none focus:border-primary/50 transition-colors"
+                className={C_MODELCOMPARISON_2}
             />
             <div className="absolute right-2 bottom-2 flex gap-2">
                 <button
@@ -438,7 +454,7 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({
                 <button
                     onClick={addSlot}
                     aria-label={t('modelComparison.addModel')}
-                    className="mt-4 flex items-center justify-center gap-2 py-3 border-2 border-dashed border-border/50 hover:border-primary/50 rounded-xl text-muted-foreground hover:text-primary transition-colors"
+                    className={C_MODELCOMPARISON_3}
                 >
                     <Plus className="w-4 h-4" aria-hidden="true" />
                     {t('modelComparison.addModel')}

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Button } from '@renderer/components/ui/button';
 import { Checkbox } from '@renderer/components/ui/checkbox';
 import { Input } from '@renderer/components/ui/input';
@@ -10,6 +20,7 @@ import {
     SelectValue,
 } from '@renderer/components/ui/select';
 import { Language } from '@renderer/i18n';
+import { cn } from '@renderer/lib/utils';
 import {
     Archive,
     Download,
@@ -20,6 +31,11 @@ import {
     Trash2,
 } from 'lucide-react';
 import React from 'react';
+
+/* Batch-02: Extracted Long Classes */
+const C_WORKSPACEHEADER_1 = "h-12 px-6 bg-foreground text-background hover:bg-foreground/90 font-medium flex items-center gap-2 shadow-lg shadow-black/5";
+const C_WORKSPACEHEADER_2 = "absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-foreground transition-colors z-10";
+
 
 interface WorkspacesHeaderProps {
     title: string;
@@ -104,7 +120,7 @@ export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
             <div className="flex items-center gap-4">
                 <Button
                     onClick={onNewWorkspace}
-                    className="h-12 px-6 bg-foreground text-background hover:bg-foreground/90 font-medium flex items-center gap-2 shadow-lg shadow-black/5"
+                    className={C_WORKSPACEHEADER_1}
                 >
                     <Plus className="w-5 h-5" />
                     {newWorkspaceLabel}
@@ -127,7 +143,7 @@ export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
                 )}
 
                 <div className="flex-1 relative group max-w-md">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-foreground transition-colors z-10" />
+                    <Search className={C_WORKSPACEHEADER_2} />
                     <Input
                         type="text"
                         placeholder={searchPlaceholder}
@@ -141,7 +157,7 @@ export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
 
                 <div className="flex items-center gap-1 p-1 rounded-lg border border-border/40 bg-muted/20">
                     <Select value={listPreset} onValueChange={onListPresetChange}>
-                        <SelectTrigger className="h-9 w-[140px] px-2 typo-caption bg-background/70 border-border/40 text-muted-foreground focus:ring-0">
+                        <SelectTrigger className="h-9 w-140 px-2 typo-caption bg-background/70 border-border/40 text-muted-foreground focus:ring-0">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -172,11 +188,12 @@ export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
                         variant="ghost"
                         size="icon"
                         onClick={() => onViewModeChange('grid')}
-                        className={`p-2 h-9 w-9 transition-colors ${
+                        className={cn(
+                            'p-2 h-9 w-9 transition-colors',
                             viewMode === 'grid'
                                 ? 'bg-background text-foreground shadow-sm'
                                 : 'text-muted-foreground hover:text-foreground'
-                        }`}
+                        )}
                         title={t('aria.gridView')}
                     >
                         <LayoutGrid className="w-4 h-4" />
@@ -185,11 +202,12 @@ export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
                         variant="ghost"
                         size="icon"
                         onClick={() => onViewModeChange('list')}
-                        className={`p-2 h-9 w-9 transition-colors ${
+                        className={cn(
+                            'p-2 h-9 w-9 transition-colors',
                             viewMode === 'list'
                                 ? 'bg-background text-foreground shadow-sm'
                                 : 'text-muted-foreground hover:text-foreground'
-                        }`}
+                        )}
                         title={t('aria.listView')}
                     >
                         <List className="w-4 h-4" />

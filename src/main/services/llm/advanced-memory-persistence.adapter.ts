@@ -1,5 +1,20 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { DatabaseService } from '@main/services/data/database.service';
-import { AdvancedSemanticFragment, PendingMemory } from '@shared/types/advanced-memory';
+import {
+    AdvancedSemanticFragment,
+    PendingMemory,
+    SharedMemoryMergeConflict,
+    SharedMemoryNamespace
+} from '@shared/types/advanced-memory';
 
 export class AdvancedMemoryPersistenceAdapter {
     constructor(private readonly db: DatabaseService) {}
@@ -38,5 +53,21 @@ export class AdvancedMemoryPersistenceAdapter {
             stagingBuffer.set(item.id, item);
         }
         return pending.length;
+    }
+
+    async upsertSharedMemoryNamespace(namespace: SharedMemoryNamespace): Promise<void> {
+        await this.db.upsertSharedMemoryNamespace(namespace);
+    }
+
+    async getSharedMemoryNamespaceById(namespaceId: string): Promise<SharedMemoryNamespace | null> {
+        return this.db.getSharedMemoryNamespaceById(namespaceId);
+    }
+
+    async appendSharedMemoryConflicts(namespaceId: string, conflicts: SharedMemoryMergeConflict[]): Promise<void> {
+        await this.db.appendSharedMemoryConflicts(namespaceId, conflicts);
+    }
+
+    async getSharedMemoryConflictCount(namespaceId: string): Promise<number> {
+        return this.db.getSharedMemoryConflictCount(namespaceId);
     }
 }

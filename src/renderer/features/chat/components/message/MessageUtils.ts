@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { useMemo } from 'react';
 
 import { parseChatErrorFromText } from '@/features/chat/utils/chat-error-normalizer.util';
@@ -149,15 +159,17 @@ function stripDuplicatedThoughtFromDisplay(displayContent: string, thought: stri
 
 const parseTagSection = (
     content: string,
-    tagName: 'think' | 'plan'
+    tagNames: readonly string[]
 ): { value: string | null; content: string } => {
-    const pattern = new RegExp(`<${tagName}>([\\s\\S]*?)(?:<\\/${tagName}>|$)`, 'i');
+    const escapedTagNames = tagNames.map(tagName => tagName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const tagAlternation = escapedTagNames.join('|');
+    const pattern = new RegExp(`<(${tagAlternation})>([\\s\\S]*?)(?:<\\/\\1>|$)`, 'i');
     const match = pattern.exec(content);
     if (!match) {
         return { value: null, content };
     }
     return {
-        value: match[1],
+        value: match[2],
         content: stripPatternPreservingWordBoundary(content, pattern),
     };
 };
@@ -167,8 +179,8 @@ const parseMessageTaggedSections = (
     reasoning: string | undefined,
     streaming: string | undefined
 ): ParsedMessageSections => {
-    const thoughtSection = parseTagSection(content, 'think');
-    const planSection = parseTagSection(thoughtSection.content, 'plan');
+    const thoughtSection = parseTagSection(content, ['think', 'thinking']);
+    const planSection = parseTagSection(thoughtSection.content, ['plan', 'planing']);
     const reasoningSource = streaming ?? reasoning ?? thoughtSection.value;
     const cleanupPatterns = [
         /\{"name":\s*"[^"]+",\s*"parameters":\s*\{[\s\S]*?\}\}/g,

@@ -1,7 +1,21 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Activity, X } from 'lucide-react';
 import React from 'react';
 
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_WORKSPACENOTIFICATIONS_1 = "px-4 py-3 rounded-xl border shadow-2xl pointer-events-auto min-w-300 flex items-center gap-3 bg-primary/10 border-primary/20 text-primary";
+
 
 interface Notification {
     id: string
@@ -43,16 +57,16 @@ export const WorkspaceNotifications: React.FC<WorkspaceNotificationsProps> = ({ 
     }, [visibleNotifications]);
 
     return (
-        <div className="fixed bottom-6 right-6 tw-z-9999 flex flex-col gap-2 pointer-events-none">
+        <div className="fixed bottom-6 right-6 z-9999 flex flex-col gap-2 pointer-events-none">
             {summary && (
-                <div className="px-4 py-3 rounded-xl border shadow-2xl pointer-events-auto tw-min-w-300 flex items-center gap-3 bg-primary/10 border-primary/20 text-primary">
+                <div className={C_WORKSPACENOTIFICATIONS_1}>
                     <Activity className="w-4 h-4" />
                     <span className="typo-caption font-bold">{summary}</span>
                 </div>
             )}
             {(summary ? groupedNotifications.slice(-1) : groupedNotifications).map(n => (
                 <div key={n.id} className={cn(
-                    "px-4 py-3 rounded-xl border shadow-2xl animate-in slide-in-from-right-10 fade-in pointer-events-auto tw-min-w-300 flex items-center gap-3",
+                    "px-4 py-3 rounded-xl border shadow-2xl animate-in slide-in-from-right-10 fade-in pointer-events-auto min-w-300 flex items-center gap-3",
                     n.type === 'success' ? "bg-success/10 border-success/20 text-success" :
                         n.type === 'error' ? "bg-destructive/10 border-destructive/20 text-destructive" :
                             "bg-primary/10 border-primary/20 text-primary"

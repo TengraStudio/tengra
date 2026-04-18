@@ -1,4 +1,18 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React from 'react';
+
+/* Batch-02: Extracted Long Classes */
+const C_PALETTESECTION_1 = "absolute -bottom-6 left-1/2 -translate-x-1/2 bg-background text-xxxs px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50";
+
 
 interface PaletteProps {
     palette: string[]
@@ -32,7 +46,7 @@ export const PaletteSection: React.FC<PaletteProps> = ({
                             className="w-8 h-8 rounded-full border border-border/50 shadow-md transition-transform hover:scale-110 active:scale-90"
                             style={{ backgroundColor: c }}
                         />
-                        <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-background text-xxxs px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                        <div className={C_PALETTESECTION_1}>
                             {c}
                         </div>
                     </button>

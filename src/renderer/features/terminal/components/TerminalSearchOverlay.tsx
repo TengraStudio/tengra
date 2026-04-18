@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { ChevronDown, ChevronUp, Search, X } from 'lucide-react';
 import { type Dispatch, type RefObject, type SetStateAction } from 'react';
 
@@ -51,7 +61,7 @@ export function TerminalSearchOverlay({
     getSearchMatchLabel,
 }: TerminalSearchOverlayProps) {
     return (
-        <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-1 tw-min-w-300">
+        <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-1 min-w-300">
             <div className="flex items-center gap-1">
                 <Search className="w-3.5 h-3.5 text-muted-foreground" />
                 <input
@@ -90,7 +100,7 @@ export function TerminalSearchOverlay({
                         setSearchActiveMatchIndex(-1);
                     }}
                     className={cn(
-                        'h-6 px-1.5 tw-text-10 rounded border transition-colors',
+                        'h-6 px-1.5 text-10 rounded border transition-colors',
                         searchUseRegex
                             ? 'border-primary/70 text-primary bg-primary/10'
                             : 'border-border text-muted-foreground hover:text-foreground hover:bg-accent/40'
@@ -129,7 +139,7 @@ export function TerminalSearchOverlay({
             <div className="mt-1 flex items-center justify-between gap-2">
                 <span
                     className={cn(
-                        'tw-text-10',
+                        'text-10',
                         searchStatus === 'invalid-regex' || searchStatus === 'not-found'
                             ? 'text-destructive'
                             : 'text-muted-foreground'
@@ -144,7 +154,7 @@ export function TerminalSearchOverlay({
                                 : ''}
                 </span>
                 {searchHistory.length > 0 && (
-                    <div className="flex items-center gap-1 tw-max-w-180 overflow-hidden">
+                    <div className="flex items-center gap-1 max-w-180 overflow-hidden">
                         {searchHistory.slice(0, 3).map(entry => (
                             <button
                                 key={entry}
@@ -156,7 +166,7 @@ export function TerminalSearchOverlay({
                                     setSearchHistoryIndex(-1);
                                     resetActiveSearchCursor();
                                 }}
-                                className="px-1.5 py-0.5 rounded tw-text-10 text-muted-foreground hover:text-foreground hover:bg-accent/40 truncate tw-max-w-56"
+                                className="px-1.5 py-0.5 rounded text-10 text-muted-foreground hover:text-foreground hover:bg-accent/40 truncate max-w-56"
                                 title={entry}
                             >
                                 {entry}
@@ -174,7 +184,7 @@ export function TerminalSearchOverlay({
                                 jumpToSearchMatch(index);
                             }}
                             className={cn(
-                                'w-full text-left px-1.5 py-1 rounded tw-text-10 transition-colors',
+                                'w-full text-left px-1.5 py-1 rounded text-10 transition-colors',
                                 index === searchActiveMatchIndex
                                     ? 'bg-primary/10 text-primary'
                                     : 'text-muted-foreground hover:text-foreground hover:bg-accent/40'

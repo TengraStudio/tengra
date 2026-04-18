@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Plus, X } from 'lucide-react';
 import React, { useEffect,useRef, useState } from 'react';
 
@@ -90,8 +100,13 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
         <div
             ref={containerRef}
             className={cn(
-                'tengra-fab',
-                `tengra-fab--${position}`,
+                'fixed z-100 flex items-center justify-center p-4',
+                {
+                    'bottom-6 right-6': position === 'bottom-right',
+                    'bottom-6 left-6': position === 'bottom-left',
+                    'top-6 right-6': position === 'top-right',
+                    'top-6 left-6': position === 'top-left',
+                },
                 className
             )}
         >
@@ -106,15 +121,16 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                             setIsOpen(false);
                         }}
                         className={cn(
-                            'tengra-fab__action',
-                            isOpen && 'tengra-fab__action--visible'
+                            'absolute flex items-center justify-center w-12 h-12 rounded-full border border-white/10 shadow-lg text-white transition-all duration-300 pointer-events-none opacity-0',
+                            isOpen && 'pointer-events-auto opacity-100'
                         )}
                         style={{
                             transform: isOpen
                                 ? `translate(${x}px, ${y}px) scale(1)`
                                 : 'translate(0, 0) scale(0)',
                             transitionDelay: isOpen ? `${index * 50}ms` : '0ms',
-                            background: action.color ?? undefined
+                            backgroundColor: action.color || 'hsl(var(--card))',
+                            color: action.color ? 'white' : 'hsl(var(--foreground))'
                         }}
                         title={action.label}
                         aria-label={action.label}
@@ -130,12 +146,9 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                 return (
                     <span
                         key={`label-${action.label}`}
-                        className={cn(
-                            'tengra-fab__label',
-                            isOpen && 'tengra-fab__label--visible'
-                        )}
+                        className="absolute px-2 py-1 rounded-md bg-black/80 text-white text-10 font-medium whitespace-nowrap pointer-events-none animate-in fade-in duration-300"
                         style={{
-                            transform: `translate(${x - 40}px, ${y + 50}px)`
+                            transform: `translate(${x}px, ${y + 35}px)`
                         }}
                     >
                         {action.label}
@@ -147,8 +160,8 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={cn(
-                    'tengra-fab__main',
-                    isOpen && 'tengra-fab__main--open'
+                    "relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95",
+                    isOpen && "rotate-90 bg-destructive shadow-destructive/20"
                 )}
                 aria-label={isOpen ? t('fab.closeMenu') : t('fab.openMenu')}
                 aria-expanded={isOpen}

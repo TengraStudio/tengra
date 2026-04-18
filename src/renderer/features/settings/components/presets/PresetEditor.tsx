@@ -1,6 +1,20 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React from 'react';
 
 import { ParameterPreset } from '../ParameterPresets';
+
+/* Batch-02: Extracted Long Classes */
+const C_PRESETEDITOR_1 = "flex-1 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 typo-caption font-bold transition-colors";
+
 
 interface PresetEditorProps {
     preset: ParameterPreset
@@ -59,7 +73,7 @@ export const PresetEditor: React.FC<PresetEditorProps> = ({
                 </button>
                 <button
                     onClick={onSave}
-                    className="flex-1 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 typo-caption font-bold transition-colors"
+                    className={C_PRESETEDITOR_1}
                 >
                     {t('common.save')}
                 </button>

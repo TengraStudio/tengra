@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { ChildProcess, exec, spawn } from 'child_process';
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
@@ -514,7 +524,7 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
         try {
             const payload = JSON.parse(trimmed);
             // Support both standard {message: ...} and tracing-subscriber {fields: {message: ...}}
-            const message = payload.message || (payload.fields && payload.fields.message);
+            const message = payload.message || (payload.fields?.message);
             
             if (message) {
                 // Clean up context name (Rust often includes module paths)

@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import type { WorkspaceAgentSessionSummary } from '@shared/types/workspace-agent-session';
 import {
     Archive,
@@ -17,6 +27,10 @@ import { AnimatedProgressBar } from '@/components/ui/AnimatedProgressBar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_WORKSPACEAGENTPANELHEADER_1 = "grid grid-cols-1 sm:grid-cols-3 items-center gap-3 rounded-2xl border border-border/50 bg-card/60 px-3 py-2.5 transition-all hover:border-border hover:bg-accent/40";
+
 
 interface WorkspaceAgentPanelHeaderProps {
     recentSessions: WorkspaceAgentSessionSummary[];
@@ -101,7 +115,7 @@ function SessionCard({
     archiveTitle: string;
 }): JSX.Element {
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-3 rounded-2xl border border-border/50 bg-card/60 px-3 py-2.5 transition-all hover:border-border hover:bg-accent/40">
+        <div className={C_WORKSPACEAGENTPANELHEADER_1}>
             <div className="min-w-0">
                 <button onClick={onClick} className="w-full min-w-0 text-left">
                     <div className="truncate text-sm font-semibold text-foreground">

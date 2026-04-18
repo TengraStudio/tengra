@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { AlertTriangle } from 'lucide-react';
 
 import { useTranslation } from '@/i18n';
@@ -29,8 +39,8 @@ const FailoverIndicator: React.FC<FailoverIndicatorProps> = ({
   }
 
   return (
-    <div className="tengra-failover-indicator">
-      <AlertTriangle className="tengra-failover-indicator__icon" />
+    <div className="flex items-center gap-2 py-1.5 px-3 rounded-md bg-warning/15 text-warning font-medium text-sm border border-warning/20 animate-in fade-in slide-in-from-top-1 duration-300">
+      <AlertTriangle className="w-4 h-4 shrink-0" />
       <span>
         {t('common.failoverModelUsed', { fallback: fallbackModel, original: originalModel })}
       </span>

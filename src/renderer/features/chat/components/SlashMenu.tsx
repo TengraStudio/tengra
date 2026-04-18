@@ -1,7 +1,21 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
+
+/* Batch-02: Extracted Long Classes */
+const C_SLASHMENU_1 = "absolute bottom-full left-4 mb-2 w-64 bg-popover border border-border shadow-2xl rounded-xl overflow-hidden z-50 flex flex-col sm:flex-row";
+
 
 export interface SlashCommand {
     id: string
@@ -71,7 +85,7 @@ export const SlashMenu = React.memo(({ isOpen, onClose, query, onSelect, command
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute bottom-full left-4 mb-2 w-64 bg-popover border border-border shadow-2xl rounded-xl overflow-hidden z-50 flex flex-col"
+            className={C_SLASHMENU_1}
         >
             <div className="px-3 py-2 text-xxs font-bold text-muted-foreground bg-muted/20 border-b border-border/50">
                 {t('common.commands')}

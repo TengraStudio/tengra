@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { getSystemPrompt } from '@/lib/identity';
 import { generateId } from '@/lib/utils';
 import { ChatError, Message } from '@/types';
@@ -116,7 +126,10 @@ export function formatStreamErrorContent(
     existingContent: string,
     errorMessage: string
 ): string {
+    const normalizedError = errorMessage.toLowerCase().startsWith('error:')
+        ? errorMessage
+        : `Error: ${errorMessage}`;
     return existingContent
-        ? `${existingContent}\n\n[${errorMessage}]`
-        : errorMessage;
+        ? `${existingContent}\n\n[${normalizedError}]`
+        : normalizedError;
 }

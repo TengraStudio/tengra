@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Download, Keyboard, RotateCcw, Search, Upload, X } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -48,21 +58,18 @@ const ShortcutItem: React.FC<ShortcutItemProps> = ({
 }) => {
     const { t } = useTranslation();
     return (
-        <div className="tengra-shortcuts-modal__item">
-            <span className="tengra-shortcuts-modal__item-label">{label}</span>
-            <div className="tengra-shortcuts-modal__item-controls">
+        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/40 transition-colors hover:bg-muted/40 hover:border-border/60">
+            <span className="font-medium text-foreground">{label}</span>
+            <div className="flex items-center gap-2">
                 {keys.map((key, i) => (
-                    <kbd key={`${key}-${i}`} className="tengra-shortcuts-modal__kbd">
+                    <kbd key={`${key}-${i}`} className="inline-flex items-center justify-center h-7 min-w-7 px-2 font-mono text-xs font-semibold text-foreground bg-background border border-border/50 rounded shadow-sm">
                         {key}
                     </kbd>
                 ))}
                 {onCapture && (
                     <button
                         onClick={onCapture}
-                        className={cn(
-                            'tengra-shortcuts-modal__edit-btn',
-                            isRecording && 'tengra-shortcuts-modal__edit-btn--recording'
-                        )}
+                        className={cn('px-2.5 py-1 text-xs font-medium border rounded-md transition-colors cursor-pointer backdrop-blur-sm', isRecording ? 'bg-primary/10 text-primary border-primary/30 shadow-glow-primary-soft animate-pulse' : 'bg-transparent border-transparent text-muted-foreground hover:bg-muted hover:border-border/60 hover:text-foreground')}
                     >
                         {isRecording ? t('shortcuts.pressKeys') : t('common.edit')}
                     </button>
@@ -70,7 +77,7 @@ const ShortcutItem: React.FC<ShortcutItemProps> = ({
                 {onReset && (
                     <button
                         onClick={onReset}
-                        className="tengra-shortcuts-modal__reset-btn"
+                        className="p-1 text-muted-foreground/50 bg-transparent border-none rounded-md cursor-pointer transition-colors hover:bg-destructive/10 hover:text-destructive"
                         title={t('shortcuts.resetToDefault')}
                     >
                         {t('common.reset')}
@@ -94,7 +101,6 @@ interface ShortcutDefinition {
 }
 
 const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
-    { id: 'commandPalette', category: 'general', labelKey: 'shortcuts.commandPalette' },
     { id: 'newChat', category: 'general', labelKey: 'shortcuts.newChat' },
     { id: 'openSettings', category: 'general', labelKey: 'shortcuts.openSettings' },
     { id: 'toggleSidebar', category: 'general', labelKey: 'shortcuts.toggleSidebar' },
@@ -285,15 +291,16 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
 
     return (
         <div
-            className="tengra-shortcuts-modal"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
             role="dialog"
             aria-modal="true"
             aria-labelledby="shortcuts-modal-title"
         >
+            <div className="absolute inset-0 bg-background/60 backdrop-blur-4 animate-in fade-in duration-200" onClick={onClose} aria-hidden="true" />
             <div
                 ref={modalRef}
                 tabIndex={-1}
-                className="tengra-shortcuts-modal__dialog"
+                className="relative flex flex-col w-full max-w-3xl max-h-85vh bg-background border border-border/50 rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 outline-none"
             >
                 <input
                     ref={importInputRef}
@@ -304,56 +311,56 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
                 />
 
                 {/* Header */}
-                <div className="tengra-shortcuts-modal__header">
-                    <div className="tengra-shortcuts-modal__header-left">
-                        <Keyboard className="tengra-shortcuts-modal__icon" aria-hidden="true" />
-                        <h2 id="shortcuts-modal-title" className="tengra-shortcuts-modal__title">{t('shortcuts.title')}</h2>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-muted/10">
+                    <div className="flex items-center gap-3">
+                        <div className="flex justify-center items-center p-2 bg-primary/10 rounded-lg text-primary"><Keyboard className="w-5 h-5" aria-hidden="true" /></div>
+                        <h2 id="shortcuts-modal-title" className="text-lg font-bold text-foreground m-0">{t('shortcuts.title')}</h2>
                     </div>
                     <button
                         ref={closeButtonRef}
                         onClick={onClose}
-                        className="tengra-shortcuts-modal__close-btn"
+                        className="p-2 text-muted-foreground bg-transparent border-none rounded-lg cursor-pointer transition-colors hover:bg-muted hover:text-foreground"
                         aria-label={t('shortcuts.close')}
                     >
-                        <X className="tengra-shortcuts-modal__close-icon" aria-hidden="true" />
+                        <X className="w-5 h-5" aria-hidden="true" />
                     </button>
                 </div>
 
-                <div className="tengra-shortcuts-modal__toolbar">
-                    <div className="tengra-shortcuts-modal__search">
-                        <Search className="tengra-shortcuts-modal__search-icon" />
+                <div className="flex flex-wrap items-center gap-3 px-6 py-3 border-b border-border/50 bg-background/50">
+                    <div className="relative flex-1 min-w-200">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <input
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                             placeholder={t('shortcuts.searchPlaceholder')}
-                            className="tengra-shortcuts-modal__search-input"
+                            className="w-full h-9 pl-9 pr-4 text-sm bg-muted/20 border border-border/50 rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all font-sans"
                         />
                     </div>
                     <button
                         onClick={handleExport}
-                        className="tengra-shortcuts-modal__toolbar-btn"
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-foreground bg-background border border-border/50 rounded-md cursor-pointer transition-colors hover:bg-muted shadow-sm"
                     >
-                        <Download className="tengra-shortcuts-modal__toolbar-btn-icon" /> {t('shortcuts.export')}
+                        <Download className="w-3.5 h-3.5 text-muted-foreground" /> {t('shortcuts.export')}
                     </button>
                     <button
                         onClick={() => importInputRef.current?.click()}
-                        className="tengra-shortcuts-modal__toolbar-btn"
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-foreground bg-background border border-border/50 rounded-md cursor-pointer transition-colors hover:bg-muted shadow-sm"
                     >
-                        <Upload className="tengra-shortcuts-modal__toolbar-btn-icon" /> {t('shortcuts.import')}
+                        <Upload className="w-3.5 h-3.5 text-muted-foreground" /> {t('shortcuts.import')}
                     </button>
                     <button
                         onClick={handleResetAll}
-                        className="tengra-shortcuts-modal__toolbar-btn"
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-foreground bg-background border border-border/50 rounded-md cursor-pointer transition-colors hover:bg-muted shadow-sm"
                     >
-                        <RotateCcw className="tengra-shortcuts-modal__toolbar-btn-icon" /> {t('shortcuts.resetAll')}
+                        <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" /> {t('shortcuts.resetAll')}
                     </button>
                 </div>
 
                 {/* Content */}
-                <div className="tengra-shortcuts-modal__content">
-                    <div className="tengra-shortcuts-modal__category">
-                        <h3 className="tengra-shortcuts-modal__category-title">{t('shortcuts.general')}</h3>
-                        <div className="tengra-shortcuts-modal__category-list">
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-background">
+                    <div className="space-y-3">
+                        <h3 className="text-sm font-semibold text-primary/80 uppercase tracking-wider">{t('shortcuts.general')}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {grouped.general.map(def => (
                                 <ShortcutItem
                                     key={def.id}
@@ -368,9 +375,9 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
                         </div>
                     </div>
 
-                    <div className="tengra-shortcuts-modal__category">
-                        <h3 className="tengra-shortcuts-modal__category-title">{t('shortcuts.navigation')}</h3>
-                        <div className="tengra-shortcuts-modal__category-list">
+                    <div className="space-y-3">
+                        <h3 className="text-sm font-semibold text-primary/80 uppercase tracking-wider">{t('shortcuts.navigation')}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {grouped.navigation.map(def => (
                                 <ShortcutItem
                                     key={def.id}
@@ -384,9 +391,9 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
                         </div>
                     </div>
 
-                    <div className="tengra-shortcuts-modal__category">
-                        <h3 className="tengra-shortcuts-modal__category-title">{t('shortcuts.chat')}</h3>
-                        <div className="tengra-shortcuts-modal__category-list">
+                    <div className="space-y-3">
+                        <h3 className="text-sm font-semibold text-primary/80 uppercase tracking-wider">{t('shortcuts.chat')}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {grouped.chat.map(def => (
                                 <ShortcutItem
                                     key={def.id}
@@ -404,8 +411,8 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
                 </div>
 
                 {/* Footer */}
-                <div className="tengra-shortcuts-modal__footer">
-                    <p className="tengra-shortcuts-modal__footer-text">{t('shortcuts.footer')}</p>
+                <div className="p-4 border-t border-border/50 bg-muted/10 text-center">
+                    <p className="text-xs text-muted-foreground m-0">{t('shortcuts.footer')}</p>
                 </div>
             </div>
         </div>

@@ -1,9 +1,24 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+import { cn } from '@renderer/lib/utils';
 import { AlertTriangle, CheckCircle2, FileCode, Terminal } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
-import { CodeAnnotation,WorkspaceIssue } from '@/types';
+import { CodeAnnotation, WorkspaceIssue } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
+
+/* Batch-02: Extracted Long Classes */
+const C_TERMINALWORKSPACEISSUESTAB_1 = "px-1.5 py-0.5 bg-muted/30 rounded text-xxxs font-bold text-muted-foreground/60 border border-border/30 ml-auto flex items-center gap-1";
+
 
 interface TerminalWorkspaceIssuesTabProps {
     workspacePath?: string;
@@ -90,18 +105,18 @@ export function TerminalWorkspaceIssuesTab({
             >
                 <div className="flex items-start gap-3">
                     <div className="mt-1 flex-shrink-0">
-                        <AlertTriangle className={`w-4 h-4 ${isError ? 'text-destructive' : 'text-warning'}`} />
+                        <AlertTriangle className={cn('w-4 h-4', isError ? 'text-destructive' : 'text-warning')} />
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                            <span className={`text-xxxs font-bold   ${isError ? 'text-destructive/80' : 'text-warning/80'}`}>
+                            <span className={cn('text-xxxs font-bold', isError ? 'text-destructive/80' : 'text-warning/80')}>
                                 {isError ? t('terminal.workspaceIssuesError') : t('terminal.workspaceIssuesWarning')}
                             </span>
                             <span className="text-xxxs text-muted-foreground font-mono truncate opacity-60 group-hover:opacity-100 transition-opacity">
                                 {filePath}:{line}
                             </span>
                             {'source' in issue && (
-                                <span className="px-1.5 py-0.5 bg-muted/30 rounded text-xxxs font-bold text-muted-foreground/60 border border-border/30 ml-auto flex items-center gap-1">
+                                <span className={C_TERMINALWORKSPACEISSUESTAB_1}>
                                     {(issue as WorkspaceIssue).source}
                                 </span>
                             )}

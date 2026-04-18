@@ -1,8 +1,22 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { memo } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+
+/* Batch-02: Extracted Long Classes */
+const C_COLLABORATIONMEMORY_1 = "h-8 typo-caption font-medium placeholder:text-muted-foreground/50 border-muted-foreground/10 focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-all";
+
 
 interface CollaborationMemoryProps {
     sharedMemoryNote: string;
@@ -29,7 +43,7 @@ export const CollaborationMemory = memo(({
                     value={sharedMemoryNote}
                     onChange={(event) => { setSharedMemoryNote(event.target.value); }}
                     placeholder={t('chat.collaboration.memoryPlaceholder')}
-                    className="h-8 typo-caption font-medium placeholder:text-muted-foreground/50 border-muted-foreground/10 focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-all"
+                    className={C_COLLABORATIONMEMORY_1}
                 />
                 <Button
                     size="sm"

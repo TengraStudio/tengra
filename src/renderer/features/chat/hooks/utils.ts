@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { normalizeChatError } from '@/features/chat/utils/chat-error-normalizer.util';
 import { AppSettings, ChatError, Message, ToolCall } from '@/types';
 
@@ -43,13 +53,39 @@ const buildFallbackToolCallId = (toolCall: ToolCall, options?: MergeToolCallOpti
     return `${functionName}-${indexPart}`;
 };
 
+const normalizeToolCallFunction = (toolCall: ToolCall): ToolCall['function'] => {
+    const functionValue = toolCall.function;
+    const functionObject = functionValue && typeof functionValue === 'object'
+        ? functionValue
+        : { name: '', arguments: '' };
+    return {
+        ...functionObject,
+        name: typeof functionObject.name === 'string' ? functionObject.name : '',
+        arguments: typeof functionObject.arguments === 'string' ? functionObject.arguments : '',
+    };
+};
+
+const hasAnyToolCallPayload = (toolCall: ToolCall): boolean => {
+    const functionValue = toolCall.function;
+    const functionObject = functionValue && typeof functionValue === 'object'
+        ? functionValue
+        : { name: '', arguments: '' };
+    const id = typeof toolCall.id === 'string' ? toolCall.id : '';
+    const name = typeof functionObject.name === 'string' ? functionObject.name : '';
+    const args = typeof functionObject.arguments === 'string' ? functionObject.arguments : '';
+    return id.trim().length > 0 || name.trim().length > 0 || args.trim().length > 0;
+};
+
 const normalizeToolCallIdentity = (toolCall: ToolCall, options?: MergeToolCallOptions): ToolCall => {
+    const normalizedFunction = normalizeToolCallFunction(toolCall);
     const normalizedId = typeof toolCall.id === 'string' && toolCall.id.trim().length > 0
         ? toolCall.id
         : buildFallbackToolCallId(toolCall, options);
     return {
         ...toolCall,
         id: normalizedId,
+        type: 'function',
+        function: normalizedFunction,
     };
 };
 
@@ -62,6 +98,9 @@ export const mergeToolCalls = (
     const allowIndexMatch = options.allowIndexMatch ?? true;
 
     for (const rawIncomingToolCall of incomingToolCalls) {
+        if (!hasAnyToolCallPayload(rawIncomingToolCall)) {
+            continue;
+        }
         const incomingHadExplicitId = typeof rawIncomingToolCall.id === 'string' && rawIncomingToolCall.id.trim().length > 0;
         const incomingToolCall = normalizeToolCallIdentity(rawIncomingToolCall, options);
         const existingIndex = mergedToolCalls.findIndex(toolCall =>

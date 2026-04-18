@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import {
     Button,
 } from '@renderer/components/ui/button';
@@ -24,6 +34,10 @@ import React, { createContext, memo, useContext, useEffect } from 'react';
 
 import { Workspace } from '@/types';
 import { toSafeFileUrl } from '@/utils/safe-file-url.util';
+
+/* Batch-02: Extracted Long Classes */
+const C_WORKSPACECARD_1 = "w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary overflow-hidden shadow-inner border border-border/50 ml-6";
+
 
 interface WorkspaceCardSurfaceContextValue {
     activeMenuId: string | null
@@ -179,6 +193,9 @@ const WorkspaceLogo: React.FC<{ workspace: Workspace }> = ({ workspace }) => {
     return <img src={logoUrl} alt={workspace.title} className="w-full h-full object-cover" />;
 };
 
+const cardContainerClassName = 
+    "group bg-card border border-border/60 rounded-xl p-5 cursor-pointer transition-all hover:shadow-xl hover:shadow-black/5 flex flex-col gap-4 relative overflow-hidden";
+
 export const WorkspaceCard = memo<WorkspaceCardProps>(({
     workspace, index, isSelected, onToggleSelection
 }) => {
@@ -221,14 +238,14 @@ export const WorkspaceCard = memo<WorkspaceCardProps>(({
                 }
             }}
             className={cn(
-                "group bg-card border border-border/60 rounded-xl p-5 cursor-pointer transition-all hover:shadow-xl hover:shadow-black/5 flex flex-col gap-4 relative overflow-hidden",
+                cardContainerClassName,
                 isSelected ? "border-primary/50 bg-primary/5" : "hover:border-foreground/20"
             )}
         >
             <WorkspaceSelectionCheckbox isSelected={isSelected} onToggle={onToggleSelection} />
 
             <div className="flex items-start justify-between">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary overflow-hidden shadow-inner border border-border/50 ml-6">
+                <div className={C_WORKSPACECARD_1}>
                     <WorkspaceLogo workspace={workspace} />
                 </div>
 

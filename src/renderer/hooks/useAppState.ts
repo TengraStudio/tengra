@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * App State Management Hook
  * Centralizes UI state management for the App component
  */
@@ -15,7 +25,7 @@ import { setAppShellState, useUiLayoutStore } from '@/store/ui-layout.store';
 import { Toast } from '@/types';
 // SettingsCategory type is used by dependent modules via AppState interface
 
-export type AppView = 'chat' | 'workspace' | 'settings' | 'mcp' | 'memory' | 'docker' | 'terminal' | 'models' | 'marketplace' | string
+export type AppView = 'chat' | 'workspace' | 'settings' | 'mcp' | 'docker' | 'terminal' | 'models' | 'marketplace' | string
 
 export interface AppState {
     // View state
@@ -29,8 +39,6 @@ export interface AppState {
     setIsDragging: (dragging: boolean) => void
 
     // Modal state
-    showCommandPalette: boolean
-    setShowCommandPalette: (show: boolean) => void
     showSSHManager: boolean
     setShowSSHManager: (show: boolean) => void
     showShortcuts: boolean
@@ -66,7 +74,6 @@ export function useAppState(): AppState {
     const [isDragging, setIsDragging] = useState(false);
 
     // Modal state
-    const [showCommandPalette, setShowCommandPalette] = useState(false);
     const [showSSHManager, setShowSSHManager] = useState(false);
     const [showShortcuts, setShowShortcuts] = useState(false);
     const [showFileMenu, setShowFileMenu] = useState(false);
@@ -119,8 +126,6 @@ export function useAppState(): AppState {
         setIsSidebarCollapsed,
         isDragging,
         setIsDragging,
-        showCommandPalette,
-        setShowCommandPalette,
         showSSHManager,
         setShowSSHManager,
         showShortcuts,
@@ -142,7 +147,6 @@ export function useAppState(): AppState {
         setCurrentView,
         isSidebarCollapsed,
         isDragging,
-        showCommandPalette,
         showSSHManager,
         showShortcuts,
         showFileMenu,
@@ -153,7 +157,6 @@ export function useAppState(): AppState {
         removeToast,
         setIsSidebarCollapsed,
         setIsDragging,
-        setShowCommandPalette,
         setShowSSHManager,
         setShowShortcuts,
         setShowFileMenu,

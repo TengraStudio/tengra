@@ -1,7 +1,18 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Download, FileText, X } from 'lucide-react';
 import React, { useState } from 'react';
 
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 import { Chat, Message } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -74,14 +85,20 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, chat,
                     <div className="flex gap-2">
                         <button
                             onClick={() => setFormat('markdown')}
-                            className={`flex-1 p-3 border rounded-md flex flex-col items-center gap-2 ${format === 'markdown' ? 'border-primary bg-primary/5' : 'border-border'}`}
+                            className={cn(
+                                'flex-1 p-3 border rounded-md flex flex-col items-center gap-2',
+                                format === 'markdown' ? 'border-primary bg-primary/5' : 'border-border'
+                            )}
                         >
                             <FileText className="w-6 h-6" />
                             <span className="text-sm">{t('export.formatMarkdown')}</span>
                         </button>
                         <button
                             onClick={() => setFormat('pdf')}
-                            className={`flex-1 p-3 border rounded-md flex flex-col items-center gap-2 ${format === 'pdf' ? 'border-primary bg-primary/5' : 'border-border'}`}
+                            className={cn(
+                                'flex-1 p-3 border rounded-md flex flex-col items-center gap-2',
+                                format === 'pdf' ? 'border-primary bg-primary/5' : 'border-border'
+                            )}
                         >
                             <Download className="w-6 h-6" />
                             <span className="text-sm">{t('export.formatPdf')}</span>

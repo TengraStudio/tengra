@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import React from 'react';
 
 import LogoAntigravity from '@/assets/antigravity.svg';
@@ -6,6 +16,7 @@ import LogoClaude from '@/assets/claude.svg';
 import LogoCopilot from '@/assets/copilot.png';
 import LogoOllama from '@/assets/ollama.svg';
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
 interface AssistantIdentityProps {
     model?: string
@@ -80,7 +91,14 @@ const BrandIcon: React.FC<{ config: BrandConfig }> = ({ config }) => {
     const label = t(config.titleKey);
 
     return (
-        <div className={`w-6 h-6 rounded-md ${config.bgClass} border ${config.borderClass} flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1`} title={label}>
+        <div 
+            className={cn(
+                'w-6 h-6 rounded-md border flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1',
+                config.bgClass,
+                config.borderClass
+            )} 
+            title={label}
+        >
             {config.content(label)}
         </div>
     );

@@ -1,6 +1,17 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { AlertTriangle, TerminalSquare, X } from 'lucide-react';
 import React from 'react';
 
+import { UI_PRIMITIVES } from '@/constants/ui-primitives';
 import { cn } from '@/lib/utils';
 import { TerminalTab } from '@/types';
 
@@ -26,7 +37,7 @@ function resolveTerminalTabMetadata(tab: TerminalTab): TerminalTabMetadata {
     if (typeof tab.metadata !== 'object' || tab.metadata === null) {
         return {};
     }
-    const metadata = tab.metadata as Record<string, RendererDataValue>;
+    const metadata = tab.metadata as Record<string, unknown>;
     return {
         panelType: typeof metadata.panelType === 'string' ? metadata.panelType : undefined,
         closable: typeof metadata.closable === 'boolean' ? metadata.closable : undefined,
@@ -55,31 +66,18 @@ export function TerminalTabsBar({
                     <button
                         key={tab.id}
                         draggable={isClosable}
-                        onClick={() => {
-                            onSelectTab(tab.id);
-                        }}
-                        onDragStart={event => {
-                            if (!isClosable) {
-                                return;
-                            }
-                            onTabDragStart(event, tab.id);
-                        }}
-                        onDragOver={event => {
-                            onTabDragOver(event, tab.id);
-                        }}
-                        onDrop={event => {
-                            onTabDrop(event, tab.id);
-                        }}
+                        onClick={() => onSelectTab(tab.id)}
+                        onDragStart={event => isClosable && onTabDragStart(event, tab.id)}
+                        onDragOver={event => onTabDragOver(event, tab.id)}
+                        onDrop={event => onTabDrop(event, tab.id)}
                         onDragEnd={onTabDragEnd}
                         className={cn(
-                            'flex items-center gap-2 px-3 py-1.5 rounded-md typo-caption font-medium transition-all whitespace-nowrap border border-transparent min-w-24 max-w-48 flex-shrink-0',
+                            UI_PRIMITIVES.TERMINAL_TAB,
                             activeTabId === tab.id
                                 ? 'bg-accent text-foreground border-border shadow-sm'
                                 : 'text-muted-foreground hover:text-foreground hover:bg-accent/50',
                             draggingTabId === tab.id && 'opacity-60',
-                            dragOverTabId === tab.id &&
-                                draggingTabId !== tab.id &&
-                                'border-primary/70'
+                            dragOverTabId === tab.id && draggingTabId !== tab.id && 'border-primary/70'
                         )}
                     >
                         {isWorkspaceIssuesTab ? (

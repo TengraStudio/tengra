@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import type { ElectronAPI } from '@renderer/electron.d';
 import type {
     CollaborationResponse,
@@ -1460,6 +1470,7 @@ export const webElectronMock: ElectronAPI = {
             data: { memories: [], totalMatches: 0 },
         }),
         search: async (_query: string, _limit?: number) => ({ success: true, data: [] }),
+        searchResolutions: async (_query: string, _limit?: number) => ({ success: true, data: [] }),
         getSearchAnalytics: async () => ({
             success: true,
             data: {
@@ -1573,7 +1584,26 @@ export const webElectronMock: ElectronAPI = {
                 status: 'healthy' as const,
                 uiState: 'ready' as const,
                 budgets: { fastMs: 40, standardMs: 120, heavyMs: 250 },
-                metrics: {}
+                metrics: {
+                    totalCalls: 0,
+                    totalFailures: 0,
+                    totalRetries: 0,
+                    validationFailures: 0,
+                    budgetExceededCount: 0,
+                    errorRate: 0,
+                },
+                memoryContext: {
+                    cacheHits: 0,
+                    cacheMisses: 0,
+                    inflightReuseCount: 0,
+                    lookupCount: 0,
+                    lookupTimeoutCount: 0,
+                    lookupFailureCount: 0,
+                    lastLookupDurationMs: 0,
+                    averageLookupDurationMs: 0,
+                    cacheSize: 0,
+                    inflightSize: 0,
+                }
             }
         }),
     },

@@ -1,10 +1,22 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Model Collaboration Service
  * Enables multiple LLMs to work together on the same task
  */
 
 import { appLogger } from '@main/logging/logger';
+import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { LLMService } from '@main/services/llm/llm.service';
+import { MemoryContextService } from '@main/services/llm/memory-context.service';
 import { Message } from '@shared/types/chat';
 // Note: multiLLMOrchestrator could be used for task management in the future
 
@@ -35,21 +47,33 @@ export interface CollaborationResult {
     }
 }
 
+const COLLABORATION_MEMORY_TIMEOUT_MS = 450;
+const COLLABORATION_MEMORY_MATCH_LIMIT = 3;
+
 /**
  * Service for coordinating multiple LLMs to work together
  */
 export class ModelCollaborationService {
-    constructor(private llmService: LLMService) { }
+    private readonly memoryContext: MemoryContextService;
+
+    constructor(
+        private llmService: LLMService,
+        advancedMemoryService?: AdvancedMemoryService
+    ) {
+        this.memoryContext = new MemoryContextService(advancedMemoryService);
+    }
 
     /**
      * Run multiple models in parallel and combine results
      */
     async collaborate(request: CollaborationRequest): Promise<CollaborationResult> {
         const { messages, models, strategy, options } = request;
+        const memoryContext = await this.getResolutionMemoryContext(messages);
+        const memoryAwareMessages = this.memoryContext.prependMemoryMessage(messages, memoryContext);
 
         // Execute all models in parallel
         const promises = models.map(({ provider, model }) =>
-            this.executeModel(provider, model, messages, options)
+            this.executeModel(provider, model, memoryAwareMessages, options)
         );
 
         const responses = await Promise.allSettled(promises);
@@ -83,9 +107,11 @@ export class ModelCollaborationService {
                 collaborationResult.bestResponse = this.selectBestResponse(results);
                 break;
             case 'chain-of-thought':
-                collaborationResult.consensus = this.chainOfThought(results, messages);
+                collaborationResult.consensus = this.chainOfThought(results, memoryAwareMessages);
                 break;
         }
+
+        this.captureCollaborationMemory(memoryAwareMessages, strategy, collaborationResult);
 
         return collaborationResult;
     }
@@ -231,5 +257,59 @@ export class ModelCollaborationService {
         // For now, return combined responses
         // In a full implementation, this would call another model with the first response as context
         return responses.map(r => r.content).join('\n\n---\n\n');
+    }
+
+    private async getResolutionMemoryContext(messages: Message[]): Promise<string | undefined> {
+        const lastUserMessage = [...messages].reverse().find(message => message.role === 'user');
+        if (!lastUserMessage) {
+            return undefined;
+        }
+        const query = this.normalizeMessageContent(lastUserMessage.content).trim();
+        return this.memoryContext.getResolutionContext(query, {
+            timeoutMs: COLLABORATION_MEMORY_TIMEOUT_MS,
+            limit: COLLABORATION_MEMORY_MATCH_LIMIT
+        });
+    }
+
+    private normalizeMessageContent(content: Message['content']): string {
+        if (typeof content === 'string') {
+            return content;
+        }
+        return content
+            .map(item => item.type === 'text' ? item.text : item.image_url.url)
+            .join('\n');
+    }
+
+    private captureCollaborationMemory(
+        messages: Message[],
+        strategy: CollaborationRequest['strategy'],
+        result: CollaborationResult
+    ): void {
+        if (result.responses.length === 0) {
+            return;
+        }
+
+        let provider = result.responses[0].provider;
+        let model = result.responses[0].model;
+        let content = result.responses[0].content;
+
+        if (strategy === 'best-of-n' && result.bestResponse) {
+            provider = result.bestResponse.provider;
+            model = result.bestResponse.model;
+            content = result.bestResponse.content;
+        } else if ((strategy === 'consensus' || strategy === 'chain-of-thought') && result.consensus) {
+            content = result.consensus;
+        }
+
+        if (!content.trim()) {
+            return;
+        }
+
+        this.memoryContext.captureConversation({
+            provider,
+            model,
+            messages,
+            assistantContent: content
+        });
     }
 }

@@ -1,10 +1,22 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+mod analysis;
 mod auth;
 mod db;
 mod proxy;
 mod quota;
 mod security;
 mod static_config;
+mod terminal;
 mod token;
+mod tools;
 
 use auth::codex::client::CodexClient;
 use auth::codex::pkce::generate_pkce_codes;
@@ -56,10 +68,7 @@ async fn main() -> anyhow::Result<()> {
             let port: u16 = port_str.parse().unwrap_or(8317);
 
             if let Err(error) = db::migrate_legacy_browser_oauth_accounts().await {
-                tracing::warn!(
-                    "Failed to migrate legacy browser OAuth accounts: {}",
-                    error
-                );
+                tracing::warn!("Failed to migrate legacy browser OAuth accounts: {}", error);
             }
             match db::normalize_legacy_openai_linked_account_metadata().await {
                 Ok(updated) => {
@@ -108,7 +117,9 @@ async fn main() -> anyhow::Result<()> {
             tracing::info!("  tengra-proxy --auth <account_id>             # Codex Auth");
             tracing::info!("  tengra-proxy --auth-antigravity <account_id> # Antigravity Auth");
             tracing::info!("  tengra-proxy --auth-claude <account_id>      # Claude Auth");
-            tracing::info!("  tengra-proxy --set-key <provider> <api_key> [account_id]  # Set API Key");
+            tracing::info!(
+                "  tengra-proxy --set-key <provider> <api_key> [account_id]  # Set API Key"
+            );
             tracing::info!("  tengra-proxy --list-keys [provider]           # List API Keys");
             tracing::info!(
                 "  tengra-proxy --delete-key <provider> [account_id]         # Delete API Key"
@@ -192,7 +203,8 @@ async fn run_auth_flow(account_id: &str) -> anyhow::Result<()> {
                             if let Some(quota) = &quota_res.quota {
                                 tracing::info!(
                                     "Codex Kota: {} / {} ",
-                                    quota.remaining, quota.total
+                                    quota.remaining,
+                                    quota.total
                                 );
 
                                 // Save quota to DB
@@ -298,7 +310,9 @@ async fn run_antigravity_auth_flow(account_id: &str) -> anyhow::Result<()> {
                             if let Some(quota) = &quota_resp.quota {
                                 tracing::info!(
                                     "Kota: {} / {} (Reset: {:?})",
-                                    quota.remaining, quota.total, quota.reset_at
+                                    quota.remaining,
+                                    quota.total,
+                                    quota.reset_at
                                 );
 
                                 // Save quota to DB
@@ -428,14 +442,16 @@ async fn run_set_key(provider: &str, api_key: &str, account_id: &str) -> anyhow:
 
     tracing::info!(
         "API Key kaydediliyor: provider={}, account={}",
-        provider, account_id
+        provider,
+        account_id
     );
 
     match db::save_api_key(provider, api_key, account_id).await {
         Ok(()) => {
             tracing::info!(
                 "API key başarıyla kaydedildi: {} ({})",
-                provider, account_id
+                provider,
+                account_id
             );
             println!(
                 "{{\"success\":true,\"provider\":\"{}\",\"account_id\":\"{}\"}}",
@@ -491,7 +507,8 @@ async fn run_delete_key(provider: &str, account_id: &str) -> anyhow::Result<()> 
 
     tracing::info!(
         "API Key siliniyor: provider={}, account={}",
-        provider, account_id
+        provider,
+        account_id
     );
 
     match db::delete_api_key(provider, account_id).await {

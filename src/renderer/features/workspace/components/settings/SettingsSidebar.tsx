@@ -1,3 +1,13 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { Bot, Code, Cpu, FileCode2, FolderTree, Info, Play } from 'lucide-react';
 import React from 'react';
 
@@ -24,7 +34,7 @@ const NavButton: React.FC<NavButtonProps> = ({ active, onClick, icon: Icon, labe
     >
         <Icon
             className={cn(
-                'w-4 h-4 tw-translate-y-1px transition-transform duration-300',
+                'w-4 h-4 translate-y-1px transition-transform duration-300',
                 active ? 'text-primary-foreground scale-110' : 'text-muted-foreground'
             )}
         />

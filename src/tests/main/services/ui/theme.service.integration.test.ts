@@ -1,4 +1,14 @@
 /**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/**
  * Integration, edge-case, validation, and performance tests for ThemeService.
  * Covers B-0471 (edge cases), B-0472 (integration/regression), B-0473 (validation),
  * B-0474 (error codes), B-0476 (performance budgets).
