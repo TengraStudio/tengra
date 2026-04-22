@@ -237,7 +237,7 @@ function finalizeCategories(cats: ModelCategory[]): ModelCategory[] {
     }
     return cats.filter(cat => {
         // Only show categories if they actually have models from the API
-        if (cat.id === 'favorites') return cat.models.length > 0;
+        if (cat.id === 'favorites') {return cat.models.length > 0;}
         return cat.models.length > 0;
     });
 }

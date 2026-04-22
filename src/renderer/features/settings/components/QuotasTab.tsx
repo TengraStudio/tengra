@@ -12,10 +12,10 @@ import { Badge } from '@renderer/components/ui/badge';
 import { Activity, Layers, ShieldAlert } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
+import type { LinkedAccountInfo } from '@/electron';
 import { appLogger } from '@/utils/renderer-logger';
 
 import type { SettingsSharedProps } from '../types';
-import type { LinkedAccountInfo } from '@/electron';
 
 import { AntigravityCard } from './statistics/AntigravityCard';
 import { ClaudeCard } from './statistics/ClaudeCard';

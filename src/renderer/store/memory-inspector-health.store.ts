@@ -8,9 +8,8 @@
  * (at your option) any later version.
  */
 
-import { useSyncExternalStore } from 'react';
-
 import { AdvancedMemoryHealthSummary } from '@shared/types/advanced-memory';
+import { useSyncExternalStore } from 'react';
 
 type MemoryInspectorHealthStatus = 'success' | 'failure' | 'validation-failure';
 type MemoryInspectorHealthChannel = 'memory.loadData' | 'memory.import' | 'memory.operation';

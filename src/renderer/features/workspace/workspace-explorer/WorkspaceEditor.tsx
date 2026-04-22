@@ -20,7 +20,6 @@ import {
 } from 'react';
 
 import { CodeEditor } from '@/components/ui/CodeEditor';
-
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { EditorTab, Workspace } from '@/types';

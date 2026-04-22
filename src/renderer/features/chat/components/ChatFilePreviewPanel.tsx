@@ -8,8 +8,8 @@
  * (at your option) any later version.
  */
 
-import React from 'react';
 import { X } from 'lucide-react';
+import React from 'react';
 
 import { CodeEditor } from '@/components/ui/CodeEditor';
 import { DiffViewer } from '@/components/ui/DiffViewer';
@@ -99,7 +99,7 @@ export const ChatFilePreviewPanel = React.memo(({
     }
 
     return (
-        <div className="h-full w-[46%] min-w-[420px] max-w-[820px] border-l border-border/50 bg-background flex flex-col overflow-hidden">
+        <div className="h-full w-46p min-w-420 max-w-820 border-l border-border/50 bg-background flex flex-col overflow-hidden">
             <div className="flex items-center justify-between gap-2 border-b border-border/40 bg-muted/10 px-2 py-2">
                 <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
                     {tabs.map(tab => (
@@ -115,7 +115,7 @@ export const ChatFilePreviewPanel = React.memo(({
                             )}
                             title={tab.path}
                         >
-                            <span className="max-w-[220px] truncate">{tab.title}</span>
+                            <span className="max-w-220 truncate">{tab.title}</span>
                             <span
                                 className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
                                 onClick={(e) => {

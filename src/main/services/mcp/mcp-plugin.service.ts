@@ -18,7 +18,7 @@ import { McpDispatchResult } from '@main/mcp/types';
 import { BaseService } from '@main/services/base.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { JsonObject } from '@shared/types/common';
-import { MCPServerConfig, McpPermission, McpPermissionProfile } from '@shared/types/settings';
+import { McpPermission, McpPermissionProfile,MCPServerConfig } from '@shared/types/settings';
 
 const MCP_PLUGIN_MESSAGE_KEY = {
     PERMISSION_REQUEST_NOT_FOUND: 'mainProcess.mcpPlugin.permissionRequestNotFound',

@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import type { Workspace, ModelInfo } from '@/types';
+import type { ModelInfo,Workspace } from '@/types';
 
 export interface WorkspaceSettingsFormData {
     title: string

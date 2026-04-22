@@ -8,11 +8,11 @@
  * (at your option) any later version.
  */
 
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@renderer/components/ui/card';
+import { Input } from '@renderer/components/ui/input';
 import { Label } from '@renderer/components/ui/label';
 import { Switch } from '@renderer/components/ui/switch';
-import { Input } from '@renderer/components/ui/input';
 import { Textarea } from '@renderer/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@renderer/components/ui/card';
 import { Database, EyeOff, FileSearch, Zap } from 'lucide-react';
 import React from 'react';
 

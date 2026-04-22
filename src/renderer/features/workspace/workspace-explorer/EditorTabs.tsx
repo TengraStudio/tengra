@@ -283,7 +283,7 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                 })}
             </div>
             {activeTab && (
-                <div className="flex items-center gap-1 px-3 py-1.5 text-[12px] text-muted-foreground/85 border-t border-border/20">
+                <div className="flex items-center gap-1 px-3 py-1.5 text-12 text-muted-foreground/85 border-t border-border/20">
                     {buildBreadcrumbSegments(activeTab.path).map((segment, index) => (
                         <React.Fragment key={`${segment.path}:${index}`}>
                             {index > 0 && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/45" />}

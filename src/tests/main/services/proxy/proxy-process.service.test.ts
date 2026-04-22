@@ -96,6 +96,12 @@ describe('ProxyProcessManager runtime launch configuration', () => {
             linkAccount: vi.fn().mockResolvedValue(undefined),
             updateFromProxy: vi.fn().mockResolvedValue(undefined),
             reloadLinkedAccountsCache: vi.fn().mockResolvedValue(undefined),
+            getActiveToken: vi.fn().mockImplementation((provider) => {
+                if (provider === 'proxy_key') return Promise.resolve('proxy-api-key');
+                return Promise.resolve(null);
+            }),
+            getAccountsByProviderFull: vi.fn().mockResolvedValue([]),
+            getRuntimeMasterKeyHex: vi.fn().mockReturnValue('mock-key'),
         } as never as AuthService;
 
         service = new ProxyProcessManager(
@@ -117,15 +123,18 @@ describe('ProxyProcessManager runtime launch configuration', () => {
             proxyApiKey: 'proxy-api-key',
         });
         expect(fs.promises.writeFile).not.toHaveBeenCalled();
-        expect(authService.linkAccount).toHaveBeenCalledWith('nvidia_key', { accessToken: 'nvidia-key' });
+        expect(authService.linkAccount).toHaveBeenCalledWith('nvidia', { 
+            accessToken: 'nvidia-key',
+            metadata: { type: 'api_key', auth_type: 'api_key' }
+        });
         expect(settingsService.saveSettings).toHaveBeenCalledWith(expect.objectContaining({
             proxy: {
                 enabled: true,
                 url: 'http://127.0.0.1:8317/v1',
                 key: '',
-                apiKey: 'proxy-api-key',
+                apiKey: '',
                 authStoreKey: '',
-                managementPassword: 'management-password',
+                managementPassword: '',
                 port: 8317,
             },
         }));

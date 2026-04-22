@@ -14,13 +14,6 @@ import {
 import { useCallback, useRef, useState } from 'react';
 
 import { generateId } from '@/lib/utils';
-import { AppSettings, Chat, ChatError, Message, ToolDefinition } from '@/types';
-import { CatchError } from '@/types/common';
-import { appLogger } from '@/utils/renderer-logger';
-
-import {
-    buildAssistantPresentationMetadata,
-} from './ai-runtime-chat.util';
 import { 
     addMessageToStore, 
     setStreamingState, 
@@ -28,6 +21,13 @@ import {
     updateMessageInStore, 
     useChatStore 
 } from '@/store/chat.store';
+import { AppSettings, Chat, ChatError, Message, ToolDefinition } from '@/types';
+import { CatchError } from '@/types/common';
+import { appLogger } from '@/utils/renderer-logger';
+
+import {
+    buildAssistantPresentationMetadata,
+} from './ai-runtime-chat.util';
 import {
     getActiveAntigravityAccount,
     shouldConfirmAntigravityCreditUsage,

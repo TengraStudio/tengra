@@ -28,7 +28,7 @@ export function useThrottle<T>(value: T, limit: number = 100): T {
                 setThrottledValue(value);
                 lastRan.current = Date.now();
             } else {
-                if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                if (timeoutRef.current) {clearTimeout(timeoutRef.current);}
                 timeoutRef.current = setTimeout(() => {
                     if (Date.now() - lastRan.current >= limit) {
                         setThrottledValue(value);
@@ -41,7 +41,7 @@ export function useThrottle<T>(value: T, limit: number = 100): T {
         handler();
 
         return () => {
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            if (timeoutRef.current) {clearTimeout(timeoutRef.current);}
         };
     }, [value, limit]);
 

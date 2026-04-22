@@ -12,12 +12,12 @@ import { AiEvidenceRecord, AiIntentClassification } from '@shared/types/ai-runti
 import { composeDeterministicAnswer, doesEvidenceSatisfyIntent, isLowSignalProgressContent } from '@shared/utils/ai-runtime.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
-import { Message } from '@/types';
-import { appLogger } from '@/utils/renderer-logger';
 import { 
     getChatSnapshot, 
     updateChatInStore 
 } from '@/store/chat.store';
+import { Message } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 import {
     buildAssistantPresentationMetadata,

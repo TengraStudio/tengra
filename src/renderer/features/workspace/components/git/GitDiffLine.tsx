@@ -8,8 +8,8 @@
  * (at your option) any later version.
  */
 
-import React from 'react';
 import { cn } from '@renderer/lib/utils';
+import React from 'react';
 
 interface DiffLineProps {
     line: string;
@@ -26,12 +26,11 @@ export const GitDiffLine: React.FC<DiffLineProps> = ({ line, idx }) => {
         <div
             key={idx}
             className={cn(
-                "whitespace-pre font-mono text-[12px] leading-6 px-4 border-l-4 border-transparent transition-colors min-h-[1.5rem] flex items-center",
-                isAddition && "text-[#3fb950] bg-[#2ea04326] border-[#3fb950]",
-                isDeletion && "text-[#f85149] bg-[#f851491a] border-[#f85149]",
-                isHeader && "text-[#7d8590] font-bold bg-[#161b22] mt-4 first:mt-0 py-1 border-border/20 italic"
-            )}
-        >
+                "whitespace-pre font-mono text-12 leading-6 px-4 border-l-4 border-transparent transition-colors min-h-[1.5rem] flex items-center",
+                isAddition && "text-git-diff-added-text bg-git-diff-added-bg border-git-diff-added-border",
+                isDeletion && "text-git-diff-deleted-text bg-git-diff-deleted-bg border-git-diff-deleted-border",
+                isHeader && "text-git-diff-neutral-text font-bold bg-git-diff-neutral-bg mt-4 first:mt-0 py-1 border-border/20 italic"
+            )}>
             <span className="opacity-40 select-none mr-4 w-4 text-center">
                 {isAddition ? '+' : isDeletion ? '-' : ''}
             </span>

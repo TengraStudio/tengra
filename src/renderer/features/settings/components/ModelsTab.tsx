@@ -184,7 +184,7 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
     };
 
     const handleConfirmDelete = async () => {
-        if (!modelToDelete) return;
+        if (!modelToDelete) {return;}
         const { id: modelId, provider } = modelToDelete;
         setIsConfirmDeleteOpen(false);
         setModelToDelete(null);

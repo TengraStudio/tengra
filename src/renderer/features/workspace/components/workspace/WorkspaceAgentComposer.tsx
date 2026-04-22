@@ -8,13 +8,12 @@
  * (at your option) any later version.
  */
 
-import type { WorkspaceAgentPermissionPolicy } from '@shared/types/workspace-agent-session';
-import React from 'react';
-
+import type { WorkspaceAgentComposerPreset } from '@renderer/features/workspace/workspace-agent/WorkspaceAgentComposer';
 import {
     WorkspaceAgentComposer as CanonicalWorkspaceAgentComposer,
 } from '@renderer/features/workspace/workspace-agent/WorkspaceAgentComposer';
-import type { WorkspaceAgentComposerPreset } from '@renderer/features/workspace/workspace-agent/WorkspaceAgentComposer';
+import type { WorkspaceAgentPermissionPolicy } from '@shared/types/workspace-agent-session';
+import React from 'react';
 
 type WorkspaceAgentComposerProps = React.ComponentProps<typeof CanonicalWorkspaceAgentComposer>;
 

@@ -73,6 +73,10 @@ function createProxyService() {
         saveToken: vi.fn(),
         getToken: vi.fn(),
         getAuthToken: vi.fn(),
+        getActiveToken: vi.fn().mockResolvedValue(null),
+        getAccountsByProviderFull: vi.fn().mockResolvedValue([]),
+        getAccountsByProvider: vi.fn().mockResolvedValue([]),
+        linkAccount: vi.fn().mockResolvedValue(undefined),
     } as never as AuthService;
 
     const proxyService = new ProxyService({

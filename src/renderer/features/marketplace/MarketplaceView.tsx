@@ -13,12 +13,12 @@ import type { ProxySkill } from '@shared/types/skill';
 import {
     CheckCircle2,
     Globe,
+    Image,
     MessageSquare,
     Package,
     Palette,
     Sparkles,
     Zap,
-    Image,
 } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 

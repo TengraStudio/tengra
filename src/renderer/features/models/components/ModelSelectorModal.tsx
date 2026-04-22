@@ -141,23 +141,23 @@ const ModelSelectorQuotaBanner: React.FC<{
     if (items.length === 0) { return null; }
 
     return (
-        <div className="mx-2 mb-4 mt-1 px-4 py-2.5 rounded-xl border border-primary/10 bg-primary/[0.02] backdrop-blur-sm shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)]">
+        <div className="mx-2 mb-4 mt-1 px-4 py-2.5 rounded-xl border border-primary/10 bg-primary/[0.02] backdrop-blur-sm shadow-quota-banner">
             <div className="flex items-center gap-3 mb-2">
                 <Brain className="w-3 h-3 text-primary/50" />
-                <span className="text-[9px] font-black text-primary/40 uppercase tracking-widest">{t('statistics.quotaStatus')}</span>
+                <span className="text-9 font-black text-primary/40 uppercase tracking-widest">{t('statistics.quotaStatus')}</span>
             </div>
             <div className="space-y-3">
                 {items.map((item, idx) => (
                     <div key={idx} className="flex items-center gap-4 group">
                         {(item.label || item.value) && (
-                            <div className="flex flex-col min-w-[80px]">
+                            <div className="flex flex-col min-w-80">
                                 {item.label && (
-                                    <span className="text-[9px] font-bold text-muted-foreground/50 uppercase tracking-tight italic leading-none mb-0.5">
+                                    <span className="text-9 font-bold text-muted-foreground/50 uppercase tracking-tight italic leading-none mb-0.5">
                                         {item.label}
                                     </span>
                                 )}
                                 {item.value && (
-                                    <span className="text-[10px] font-black text-foreground/80 tabular-nums leading-none">
+                                    <span className="text-10 font-black text-foreground/80 tabular-nums leading-none">
                                         {item.value}
                                     </span>
                                 )}
@@ -175,7 +175,7 @@ const ModelSelectorQuotaBanner: React.FC<{
                                 />
                                 <div
                                     className={cn(
-                                        "absolute inset-0 opacity-20 blur-[2px]",
+                                        "absolute inset-0 opacity-20 blur-2px",
                                         item.percent <= 10 ? 'bg-destructive' : item.percent <= 30 ? 'bg-warning' : 'bg-primary'
                                     )}
                                     style={{ width: `${item.percent}%` }}
@@ -183,10 +183,10 @@ const ModelSelectorQuotaBanner: React.FC<{
                             </div>
 
                             <div className={cn(
-                                "flex items-baseline gap-1.5 min-w-[36px] justify-end",
+                                "flex items-baseline gap-1.5 min-w-36 justify-end",
                                 item.percent <= 10 ? 'text-destructive' : item.percent <= 30 ? 'text-warning' : 'text-primary'
                             )}>
-                                <span className="text-[11px] font-black tabular-nums italic">
+                                <span className="text-11 font-black tabular-nums italic">
                                     {item.percent}%
                                 </span>
                             </div>
@@ -481,7 +481,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
         <>
             {/* Backdrop for closing */}
             <div
-                className="fixed inset-0 z-[95] bg-transparent"
+                className="fixed inset-0 z-95 bg-transparent"
                 onMouseDown={(e) => {
                     // Only close if we're not clicking on the trigger that handles its own toggle
                     if (triggerRef?.current?.contains(e.target as Node)) {
@@ -494,7 +494,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                 ref={modalRef}
                 style={modalPosition}
                 className={cn(
-                    'fixed z-[100] w-[450px] h-[580px] flex flex-col',
+                    'fixed z-100 w-450 h-580 flex flex-col',
                     'bg-popover/98 backdrop-blur-2xl rounded-2xl shadow-modal-heavy border border-border/40',
                     'animate-in fade-in-0 zoom-in-95 duration-200 ease-out origin-top'
                 )}
@@ -515,7 +515,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                     </div>
 
                     {/* Provider Tabs - Real Logos, Horizontal only, Theme Supportive */}
-                    <div className="px-2 border-b border-border/40 flex items-center gap-2 overflow-x-auto overflow-y-hidden no-scrollbar bg-muted/10 h-[60px] shrink-0 whitespace-nowrap">
+                    <div className="px-2 border-b border-border/40 flex items-center gap-2 overflow-x-auto overflow-y-hidden no-scrollbar bg-muted/10 h-60 shrink-0 whitespace-nowrap">
                         {filteredCategories.map(cat => {
                             const isActive = activeProviderId === cat.id;
 
@@ -542,7 +542,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                     key={cat.id}
                                     onClick={() => setActiveProviderId(cat.id)}
                                     className={cn(
-                                        'inline-flex flex-col items-center justify-center min-w-[48px] h-[48px] p-2 rounded-xl transition-all duration-300',
+                                        'inline-flex flex-col items-center justify-center min-w-48 h-48 p-2 rounded-xl transition-all duration-300',
                                         isActive
                                             ? 'bg-primary/10 text-foreground shadow-sm ring-1 ring-primary/50'
                                             : 'text-muted-foreground/40 hover:bg-muted/10 hover:text-muted-foreground/60'
@@ -615,7 +615,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                     {searchQuery ? 'No models match your search' : `No models available for ${activeCategory?.name || 'this provider'}`}
                                 </div>
                                 {!searchQuery && (
-                                    <p className="text-[10px] text-muted-foreground/40 leading-relaxed max-w-[200px] mx-auto">
+                                    <p className="text-10 text-muted-foreground/40 leading-relaxed max-w-200 mx-auto">
                                         This might be because the account is not linked or the models are still loading.
                                     </p>
                                 )}
@@ -627,17 +627,17 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                         <div className="flex items-center justify-center gap-6">
                             {/* Mode Selection */}
                             <div className="space-y-1.5 flex flex-col items-center">
-                                <Label className="text-[10px] font-semibold uppercase tracking-[0.05em] text-muted-foreground/50 px-0.5">
+                                <Label className="text-10 font-semibold uppercase tracking-50 text-muted-foreground/50 px-0.5">
                                     {t('workspaceAgent.permissions.mode')}
                                 </Label>
                                 <Select
                                     value={chatMode}
                                     onValueChange={(value) => onChatModeChange?.(value as SelectorChatMode)}
                                 >
-                                    <SelectTrigger className="w-[110px] h-9 rounded-xl border-border/10 bg-muted/20 hover:bg-muted/30 hover:border-primary/20 transition-all shadow-sm ring-offset-background focus:ring-1 focus:ring-primary/20">
+                                    <SelectTrigger className="w-110 h-9 rounded-xl border-border/10 bg-muted/20 hover:bg-muted/30 hover:border-primary/20 transition-all shadow-sm ring-offset-background focus:ring-1 focus:ring-primary/20">
                                         <SelectValue className="text-xs" placeholder="Mode" />
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-border/10 shadow-2xl backdrop-blur-xl z-[150]">
+                                    <SelectContent className="rounded-2xl border-border/10 shadow-2xl backdrop-blur-xl z-150">
                                         {(['instant', 'thinking', 'agent'] as SelectorChatMode[]).map(mode => (
                                             <SelectItem
                                                 key={mode}
@@ -655,7 +655,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                 <>
                                     {/* Shell Protection */}
                                     <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-semibold uppercase tracking-[0.05em] text-muted-foreground/50 px-0.5 flex items-center justify-center gap-1.5">
+                                        <Label className="text-10 font-semibold uppercase tracking-50 text-muted-foreground/50 px-0.5 flex items-center justify-center gap-1.5">
                                             <Zap className="w-3 h-3 opacity-40 shrink-0" />
                                             <span className="truncate">{t('workspaceAgent.permissions.shell')}</span>
                                         </Label>
@@ -667,10 +667,10 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                                 }
                                             }}
                                         >
-                                            <SelectTrigger className="w-[110px] h-9 rounded-xl border-border/10 bg-muted/20 hover:bg-muted/30 hover:border-primary/20 transition-all shadow-sm ring-offset-background focus:ring-1 focus:ring-primary/20">
+                                            <SelectTrigger className="w-110 h-9 rounded-xl border-border/10 bg-muted/20 hover:bg-muted/30 hover:border-primary/20 transition-all shadow-sm ring-offset-background focus:ring-1 focus:ring-primary/20">
                                                 <SelectValue className="text-xs" placeholder="Shell" />
                                             </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-border/10 shadow-2xl backdrop-blur-xl z-[150]">
+                                            <SelectContent className="rounded-2xl border-border/10 shadow-2xl backdrop-blur-xl z-150">
                                                 <SelectItem value="blocked" className="text-xs font-medium py-2.5">{t('workspaceAgent.permissions.policy.blocked')}</SelectItem>
                                                 <SelectItem value="ask-every-time" className="text-xs font-medium py-2.5">{t('workspaceAgent.permissions.policy.ask-every-time')}</SelectItem>
                                                 <SelectItem value="allowlist" className="text-xs font-medium py-2.5">{t('workspaceAgent.permissions.policy.allowlist')}</SelectItem>
@@ -681,7 +681,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
 
                                     {/* Filesystem Protection */}
                                     <div className="space-y-1.5 flex flex-col items-center">
-                                        <Label className="text-[10px] font-semibold uppercase tracking-[0.05em] text-muted-foreground/50 px-0.5 flex items-center justify-center gap-1.5">
+                                        <Label className="text-10 font-semibold uppercase tracking-50 text-muted-foreground/50 px-0.5 flex items-center justify-center gap-1.5">
                                             <Brain className="w-3 h-3 opacity-40 shrink-0" />
                                             <span className="truncate">{t('workspaceAgent.permissions.filesystem')}</span>
                                         </Label>
@@ -693,10 +693,10 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                                 }
                                             }}
                                         >
-                                            <SelectTrigger className="w-[110px] h-9 rounded-xl border-border/10 bg-muted/20 hover:bg-muted/30 hover:border-primary/20 transition-all shadow-sm ring-offset-background focus:ring-1 focus:ring-primary/20">
+                                            <SelectTrigger className="w-110 h-9 rounded-xl border-border/10 bg-muted/20 hover:bg-muted/30 hover:border-primary/20 transition-all shadow-sm ring-offset-background focus:ring-1 focus:ring-primary/20">
                                                 <SelectValue className="text-xs" placeholder="Files" />
                                             </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-border/10 shadow-2xl backdrop-blur-xl z-[150]">
+                                            <SelectContent className="rounded-2xl border-border/10 shadow-2xl backdrop-blur-xl z-150">
                                                 <SelectItem value="workspace-root-only" className="text-xs font-medium py-2.5">{t('workspaceAgent.permissions.policy.workspace-root-only')}</SelectItem>
                                                 <SelectItem value="allowlist" className="text-xs font-medium py-2.5">{t('workspaceAgent.permissions.policy.allowlist')}</SelectItem>
                                                 <SelectItem value="restricted-off-dangerous" className="text-xs font-medium py-2.5">{t('workspaceAgent.permissions.policy.restricted-off-dangerous')}</SelectItem>

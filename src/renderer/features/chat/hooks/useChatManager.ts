@@ -26,16 +26,15 @@ import {
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 
 import { generateId } from '@/lib/utils';
-import { AppSettings, Chat, Message } from '@/types';
-import { CatchError } from '@/types/common';
-import { appLogger } from '@/utils/renderer-logger';
 import { 
-    useChatStore, 
+    getChatSnapshot, 
     setChats, 
     setCurrentChatId, 
     updateChatInStore, 
-    getChatSnapshot 
-} from '@/store/chat.store';
+    useChatStore} from '@/store/chat.store';
+import { AppSettings, Chat, Message } from '@/types';
+import { CatchError } from '@/types/common';
+import { appLogger } from '@/utils/renderer-logger';
 
 /** Maximum messages to keep in memory per chat to prevent memory leaks */
 const MAX_MESSAGES_IN_MEMORY = 100;
@@ -263,7 +262,7 @@ function useLazyMessageLoader(currentChatId: string | null, chats: Chat[]): void
                 const trimmedMessages = trimMessages(messages as Message[]);
                 const currentChatsSnapshot = getChatSnapshot().chats;
                 const updatedChats = currentChatsSnapshot.map(c => {
-                    if (c.id !== currentChatId) return c;
+                    if (c.id !== currentChatId) {return c;}
                     return { ...c, messages: deduplicateMessages([...c.messages, ...trimmedMessages]) };
                 });
                 setChats(updatedChats);
@@ -312,7 +311,7 @@ export function useChatManager(options: UseChatManagerOptions) {
     const prevChatIdRef = useRef<string | null>(null);
 
     useEffect(() => {
-        if (!appSettings) return;
+        if (!appSettings) {return;}
         const newPolicy = {
             commandPolicy: appSettings.general.agentCommandPolicy ?? 'ask-every-time',
             pathPolicy: appSettings.general.agentPathPolicy ?? 'workspace-root-only',
@@ -322,7 +321,7 @@ export function useChatManager(options: UseChatManagerOptions) {
         };
         const rafId = requestAnimationFrame(() => {
             setPermissionPolicy(prev => {
-                if (JSON.stringify(prev) === JSON.stringify(newPolicy)) return prev;
+                if (JSON.stringify(prev) === JSON.stringify(newPolicy)) {return prev;}
                 return newPolicy;
             });
         });
@@ -375,9 +374,9 @@ export function useChatManager(options: UseChatManagerOptions) {
     const { attachments, setAttachments, processFile, removeAttachment } = useAttachments();
 
     useEffect(() => {
-        if (!currentChatId) return;
+        if (!currentChatId) {return;}
         const chat = chats.find(c => c.id === currentChatId);
-        if (!chat) return;
+        if (!chat) {return;}
 
         const existingPolicy = readChatPermissionPolicy(chat);
         if (JSON.stringify(existingPolicy) !== JSON.stringify(permissionPolicy)) {
@@ -399,7 +398,7 @@ export function useChatManager(options: UseChatManagerOptions) {
 
     useEffect(() => {
         if (!currentChatId || prevChatIdRef.current === currentChatId) {
-            if (!currentChatId) prevChatIdRef.current = null;
+            if (!currentChatId) {prevChatIdRef.current = null;}
             return;
         }
         prevChatIdRef.current = currentChatId;
@@ -409,7 +408,7 @@ export function useChatManager(options: UseChatManagerOptions) {
         if (policy) {
             const rafId = requestAnimationFrame(() => {
                 setPermissionPolicy(prev => {
-                    if (JSON.stringify(prev) === JSON.stringify(policy)) return prev;
+                    if (JSON.stringify(prev) === JSON.stringify(policy)) {return prev;}
                     return policy;
                 });
             });
@@ -455,7 +454,7 @@ export function useChatManager(options: UseChatManagerOptions) {
         }
 
         const total = chat.messages.reduce((acc, msg) => {
-            if (msg.usage?.totalTokens) return acc + msg.usage.totalTokens;
+            if (msg.usage?.totalTokens) {return acc + msg.usage.totalTokens;}
             const contentLen = typeof msg.content === 'string' ? msg.content.length : 0;
             return acc + Math.ceil(contentLen / 4);
         }, 0);
@@ -484,7 +483,7 @@ export function useChatManager(options: UseChatManagerOptions) {
     const streamingReasoning = useMemo(() => currentStreamState?.reasoning ?? '', [currentStreamState]);
     const streamingSpeed = useMemo(() => currentStreamState?.speed ?? null, [currentStreamState]);
     const chatError = useMemo(() => {
-        if (!currentChatId) return lastChatError;
+        if (!currentChatId) {return lastChatError;}
         return currentStreamState?.error ?? lastChatError;
     }, [currentStreamState, lastChatError, currentChatId]);
     
@@ -519,8 +518,8 @@ export function useChatManager(options: UseChatManagerOptions) {
         const hasInputText = content.trim() !== '';
         const hasReadyAttachments = readyAttachments.length > 0;
         
-        if (isSendingRef.current) return;
-        if ((!hasInputText && !hasReadyAttachments) || !selectedModel || isLoading) return;
+        if (isSendingRef.current) {return;}
+        if ((!hasInputText && !hasReadyAttachments) || !selectedModel || isLoading) {return;}
 
         isSendingRef.current = true;
         try {
@@ -567,8 +566,8 @@ export function useChatManager(options: UseChatManagerOptions) {
 
             const timestamp = Date.now();
             const imageInputs = readyAttachments.flatMap(att => {
-                if (att.type === 'image' && typeof att.content === 'string' && att.content.startsWith('data:image/')) return [att.content];
-                if (att.type === 'video' && typeof att.preview === 'string' && att.preview.startsWith('data:image/')) return [att.preview];
+                if (att.type === 'image' && typeof att.content === 'string' && att.content.startsWith('data:image/')) {return [att.content];}
+                if (att.type === 'video' && typeof att.preview === 'string' && att.preview.startsWith('data:image/')) {return [att.preview];}
                 return [];
             });
             const attachmentContext = buildAttachmentPromptContext(readyAttachments, t('chat.attachmentPrompt.label'));
@@ -609,16 +608,16 @@ export function useChatManager(options: UseChatManagerOptions) {
 
     const regenerateMessage = useCallback(
         async (assistantMessageId: string) => {
-            if (!currentChatId || isLoading) return;
+            if (!currentChatId || isLoading) {return;}
             const chat = chats.find(c => c.id === currentChatId);
-            if (!chat) return;
+            if (!chat) {return;}
 
             const assistantIndex = chat.messages.findIndex(m => m.id === assistantMessageId && m.role === 'assistant');
-            if (assistantIndex <= 0) return;
+            if (assistantIndex <= 0) {return;}
 
             const previousUserMessage = [...chat.messages.slice(0, assistantIndex)].reverse().find(m => m.role === 'user');
             const prompt = previousUserMessage ? toTextContent(previousUserMessage.content) : '';
-            if (!prompt) return;
+            if (!prompt) {return;}
 
             await handleSend(prompt);
         },

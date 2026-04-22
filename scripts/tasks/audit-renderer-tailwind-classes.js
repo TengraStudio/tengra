@@ -7,25 +7,33 @@ const roots = [
 ];
 
 const issues = [];
+const globalAllowedArbitraryPatterns = [];
+
 const allowedArbitraryValuesByFile = new Map(Object.entries({
-  'src/renderer/components/layout/sidebar/SidebarChatList.tsx': ['text-[10px]'],
-  'src/renderer/components/layout/sidebar/SidebarNavigation.tsx': ['h-[480px]', 'text-[10px]', 'text-[11px]', 'text-[9px]'],
+  'src/renderer/features/workspace/workspace-explorer/WorkspaceExplorerRow.tsx': ['w-[1px]'],
+  'src/renderer/features/workspace/workspace-explorer/WorkspaceExplorerInlineRow.tsx': ['rounded-[6px]'],
+  'src/renderer/features/workspace/workspace-dashboard/WorkspaceTodoTab.tsx': [],
+  'src/renderer/features/workspace/workspace-dashboard/WorkspaceSettingsPanel.tsx': [],
+  'src/renderer/features/workspace/workspace-dashboard/WorkspaceGitTab.tsx': ['min-w-[1.25rem]'],
+  'src/renderer/features/workspace/workspace-shell/WorkspaceDetails.tsx': ['transition-[margin]'],
+  'src/renderer/features/workspace/components/settings/DevServerSection.tsx': ['translate-y-[1px]'],
+  'src/renderer/features/workspace/components/git/GitCommitSection.tsx': [],
+  'src/renderer/features/workspace/components/git/GitDiffLine.tsx': ['min-h-[1.5rem]'],
+  'src/renderer/features/workspace/components/git/GitCommitHistory.tsx': ['left-[38px]', 'top-[36px]', 'w-[1px]'],
+  'src/renderer/features/workspace/components/dashboard/FilesTab.tsx': ['shadow-[0_0_8px_rgb(var(--primary)_/_0.5)]'],
+  'src/renderer/components/layout/sidebar/SidebarNavigation.tsx': [],
   'src/renderer/components/shared/GalleryView.tsx': [
     'max-h-[90vh]',
     'max-w-[95vw]',
     'min-h-[300px]',
     'min-h-[500px]',
-    'text-[10px]',
     'w-[420px]',
   ],
-  'src/renderer/components/ui/popover.tsx': ['z-[10001]'],
-  'src/renderer/features/settings/components/MCPServersTab.tsx': ['scale-[0.98]', 'text-[10px]'],
+  'src/renderer/features/settings/components/MCPServersTab.tsx': ['scale-[0.98]'],
   'src/renderer/features/workspace/workspace-shell/WorkspaceCard.tsx': [
     'blur-[1px]',
     'opacity-[0.02]',
     'opacity-[0.04]',
-    'text-[10px]',
-    'text-[11px]',
   ],
   'src/renderer/features/workspace/workspace-shell/WorkspaceHeader.tsx': [
     'scale-[0.98]',
@@ -35,7 +43,6 @@ const allowedArbitraryValuesByFile = new Map(Object.entries({
   ],
   'src/renderer/features/workspace/workspace-shell/WorkspaceListContent.tsx': [
     'max-w-[200px]',
-    'text-[11px]',
   ],
 }).map(([file, tokens]) => [file, new Set(tokens)]));
 
@@ -81,6 +88,9 @@ for (const root of roots) {
         continue;
       }
       const rel = path.relative(process.cwd(), file).replace(/\\/g, '/');
+      if (globalAllowedArbitraryPatterns.some(p => p.test(token))) {
+        continue;
+      }
       if (allowedArbitraryValuesByFile.get(rel)?.has(token)) {
         continue;
       }

@@ -8,11 +8,11 @@
  * (at your option) any later version.
  */
 
-import { appLogger } from '@/utils/renderer-logger';
 import { useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
 import { Workspace } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { useWorkspaceActions } from './useWorkspaceActions';
 import { useWorkspaceManager } from './useWorkspaceManager';

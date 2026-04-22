@@ -59,7 +59,7 @@ export const WorkspaceListContent: React.FC<WorkspaceListContentProps> = ({
 
     return (
         <div className="rounded-2xl border border-border/40 overflow-hidden bg-card animate-in fade-in slide-in-from-bottom-2 duration-400 shadow-sm">
-            <div className="grid grid-cols-todo gap-3 px-6 py-4 bg-muted/20 border-b border-border/20 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            <div className="grid grid-cols-todo gap-3 px-6 py-4 bg-muted/20 border-b border-border/20 text-11 font-bold uppercase tracking-wider text-muted-foreground">
                 <div />
                 <button 
                     onClick={() => toggleSort('title')} 
@@ -97,14 +97,14 @@ export const WorkspaceListContent: React.FC<WorkspaceListContentProps> = ({
                             title={workspace.description || t('workspaces.noDescription')}
                         >
                             <div className="font-semibold truncate group-hover:text-primary transition-colors tracking-tight">{workspace.title}</div>
-                            <div className="text-[11px] text-muted-foreground/60 truncate mt-0.5 line-clamp-1">
+                            <div className="text-11 text-muted-foreground/60 truncate mt-0.5 line-clamp-1">
                                 {workspace.description || t('workspaces.noDescription')}
                             </div>
                         </button>
-                        <div className="text-[11px] text-muted-foreground/40 truncate font-mono bg-muted/20 px-2 py-0.5 rounded max-w-[200px]">
+                        <div className="text-11 text-muted-foreground/40 truncate font-mono bg-muted/20 px-2 py-0.5 rounded max-w-[200px]">
                             {workspace.path}
                         </div>
-                        <div className="text-[11px] text-muted-foreground/60 font-medium">
+                        <div className="text-11 text-muted-foreground/60 font-medium">
                             {new Date(workspace.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                         </div>
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity translate-x-1 group-hover:translate-x-0">

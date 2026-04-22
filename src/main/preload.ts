@@ -50,6 +50,7 @@ import { createProxyBridge } from './preload/domains/proxy.preload';
 import { createProxyEmbedBridge } from './preload/domains/proxy-embed.preload';
 import { createRuntimeBridge } from './preload/domains/runtime.preload';
 import { createSdCppBridge } from './preload/domains/sd-cpp.preload';
+import { createSecurityBridge } from './preload/domains/security.preload';
 import { createSessionBridge } from './preload/domains/session.preload';
 import { createSettingsBridge } from './preload/domains/settings.preload';
 import { createSharedPromptsBridge } from './preload/domains/shared-prompts.preload';
@@ -60,7 +61,6 @@ import { createUpdateBridge } from './preload/domains/update.preload';
 import { createUsageBridge } from './preload/domains/usage.preload';
 import { createLiveCollaborationBridge } from './preload/domains/user-collaboration.preload';
 import { createVoiceBridge } from './preload/domains/voice.preload';
-import { createSecurityBridge } from './preload/domains/security.preload';
 import { createWindowControlsBridge } from './preload/domains/window-controls.preload';
 import { createWorkspaceBridge } from './preload/domains/workspace.preload';
 

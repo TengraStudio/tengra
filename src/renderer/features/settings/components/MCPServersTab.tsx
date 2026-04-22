@@ -282,7 +282,7 @@ function ServerItem({
                                             <div className="min-w-0">
                                                 <div className="truncate text-xs font-bold text-foreground">{action.name}</div>
                                                 {action.description && (
-                                                    <div className="mt-0.5 line-clamp-1 text-[10px] font-medium text-muted-foreground/60">
+                                                    <div className="mt-0.5 line-clamp-1 text-10 font-medium text-muted-foreground/60">
                                                         {action.description}
                                                     </div>
                                                 )}
@@ -296,7 +296,7 @@ function ServerItem({
                                                         size="sm"
                                                         onClick={() => setActionPolicy(action.name, policy.id)}
                                                         className={cn(
-                                                            "h-7 rounded-md px-2 text-[10px] font-black uppercase tracking-wide",
+                                                            "h-7 rounded-md px-2 text-10 font-black uppercase tracking-wide",
                                                             draftActionPermissions[action.name] === policy.id
                                                                 ? policy.className
                                                                 : "border-border/40 bg-muted/20 text-muted-foreground hover:bg-muted"
@@ -342,7 +342,7 @@ function ServerItem({
                                             </div>
                                             <div className="flex-1 flex flex-col items-start text-left">
                                                 <span className="text-xs font-bold tracking-tight">{t(`settings.mcp.permissions.${perm.id}`)}</span>
-                                                <span className="text-[10px] opacity-60 line-clamp-1">{t(`settings.mcp.permissions.${perm.id}_desc`)}</span>
+                                                <span className="text-10 opacity-60 line-clamp-1">{t(`settings.mcp.permissions.${perm.id}_desc`)}</span>
                                             </div>
                                             <div className={cn(
                                                 "h-4 w-4 rounded-full border flex items-center justify-center transition-colors",

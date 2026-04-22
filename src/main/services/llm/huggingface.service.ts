@@ -12,7 +12,6 @@
 import { CircuitBreaker } from '@main/core/circuit-breaker';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
-import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
 import { HttpService } from '@main/services/external/http.service';
 import {
     LocalModelFileFormat,
@@ -20,6 +19,7 @@ import {
     resolveLocalModelFileFormat,
     resolveRuntimeProviderForLocalModel,
 } from '@main/services/llm/local-runtime.types';
+import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 
 interface HFApiModel {

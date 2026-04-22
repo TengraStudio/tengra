@@ -172,10 +172,10 @@ export function safeJsonParse<T>(jsonString: string | null | undefined, defaultV
  */
 export function fixPartialJson(json: string): string {
     let fixed = json.trim();
-    if (!fixed) return '{}';
+    if (!fixed) {return '{}';}
 
     // Basic heuristic for common partial JSON states
-    if (!fixed.startsWith('{')) fixed = '{' + fixed;
+    if (!fixed.startsWith('{')) {fixed = '{' + fixed;}
     
     let openQuotes = 0;
     for (let i = 0; i < fixed.length; i++) {
@@ -183,13 +183,13 @@ export function fixPartialJson(json: string): string {
             openQuotes++;
         }
     }
-    if (openQuotes % 2 !== 0) fixed += '"';
+    if (openQuotes % 2 !== 0) {fixed += '"';}
 
     // Count open braces
     let openBraces = 0;
     for (const char of fixed) {
-        if (char === '{') openBraces++;
-        if (char === '}') openBraces--;
+        if (char === '{') {openBraces++;}
+        if (char === '}') {openBraces--;}
     }
     while (openBraces > 0) {
         fixed += '}';

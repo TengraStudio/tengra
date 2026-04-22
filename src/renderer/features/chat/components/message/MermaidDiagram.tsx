@@ -41,7 +41,7 @@ export const MermaidDiagram = memo(({ code, t }: MermaidDiagramProps) => {
                     securityLevel: 'loose',
                     fontFamily: 'inherit',
                 });
-                const renderResult = await mermaid.render(id.replace(/:/g, ''), code) as any;
+                const renderResult = (await mermaid.render(id.replace(/:/g, ''), code)) as { svg: string } | string;
                 const renderedSvg = typeof renderResult === 'string' ? renderResult : renderResult.svg;
                 if (mounted) {
                     setSvg(DOMPurify.sanitize(renderedSvg));

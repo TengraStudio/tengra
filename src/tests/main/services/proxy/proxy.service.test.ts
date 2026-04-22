@@ -111,7 +111,7 @@ describe('ProxyService', () => {
             saveLinkedAccount: vi.fn().mockResolvedValue(undefined),
         } as never as DatabaseService;
 
-        const mockAuthService = { saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn() } as never as AuthService;
+        const mockAuthService = { saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn(), getActiveToken: vi.fn().mockResolvedValue(null), getAccountsByProviderFull: vi.fn().mockResolvedValue([]), getAccountsByProvider: vi.fn().mockResolvedValue([]), linkAccount: vi.fn().mockResolvedValue(undefined) } as never as AuthService;
 
         proxyService = new ProxyService({
             settingsService: mockSettingsService,
@@ -305,6 +305,10 @@ describe('ProxyService', () => {
 
             vi.mocked(net.request).mockReturnValue(mockReq as never);
             vi.mocked(mockProcessManager.getStatus).mockReturnValue({ running: false });
+            vi.mocked(mockProcessManager.start).mockImplementation(async () => {
+                vi.mocked(mockProcessManager.getStatus).mockReturnValue({ running: true, port: 8317 });
+                return { running: true };
+            });
 
             mockReq.on.mockImplementation((event: string, cb: ResponseCallback) => {
                 if (event === 'response') {
@@ -652,7 +656,7 @@ describe('ProxyService input validation', () => {
             generateConfig: vi.fn().mockResolvedValue(undefined),
         } as never as ProxyProcessManager;
 
-        const mockAuthService = { saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn() } as never as AuthService;
+        const mockAuthService = { saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn(), getActiveToken: vi.fn().mockResolvedValue(null), getAccountsByProviderFull: vi.fn().mockResolvedValue([]), getAccountsByProvider: vi.fn().mockResolvedValue([]), linkAccount: vi.fn().mockResolvedValue(undefined) } as never as AuthService;
 
         proxyService = new ProxyService({
             settingsService: mockSettingsService,

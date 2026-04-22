@@ -9,8 +9,8 @@
  */
 
 import { Badge } from '@renderer/components/ui/badge';
-import { ConfirmationModal } from '@renderer/components/ui/ConfirmationModal';
 import { Button } from '@renderer/components/ui/button';
+import { ConfirmationModal } from '@renderer/components/ui/ConfirmationModal';
 import { Input } from '@renderer/components/ui/input';
 import { Label } from '@renderer/components/ui/label';
 import {

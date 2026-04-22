@@ -23,9 +23,9 @@ import {
     Puzzle, 
     RefreshCw, 
     Sparkles, 
+    SwatchBook,
     Trash2,
     Zap,
-    SwatchBook,
 } from 'lucide-react';
 import type { ElementType } from 'react';
 

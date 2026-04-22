@@ -61,7 +61,7 @@ const MermaidDiagram = ({ code, t }: { code: string; t: TranslationFn }) => {
             try {
                 setLoading(true);
                 const mermaid = await loadMermaid();
-                const renderResult = await mermaid.render(id, code) as any;
+                const renderResult = (await mermaid.render(id, code)) as { svg: string } | string;
                 const renderedSvg = typeof renderResult === 'string' ? renderResult : renderResult.svg;
                 setSvg(DOMPurify.sanitize(renderedSvg));
                 setError(null);

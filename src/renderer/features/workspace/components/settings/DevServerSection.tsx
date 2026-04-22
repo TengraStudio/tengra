@@ -8,10 +8,10 @@
  * (at your option) any later version.
  */
 
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@renderer/components/ui/card';
 import { Input } from '@renderer/components/ui/input';
 import { Label } from '@renderer/components/ui/label';
 import { Switch } from '@renderer/components/ui/switch';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@renderer/components/ui/card';
 import { Play, Power, Server } from 'lucide-react';
 import React from 'react';
 
@@ -69,7 +69,7 @@ export const DevServerSection: React.FC<SettingsSectionProps> = ({ formData, set
                         />
                     </div>
 
-                    <div className="flex items-center justify-between p-3 px-4 bg-background/40 rounded-xl border border-border/20 self-end h-[40px]">
+                    <div className="flex items-center justify-between p-3 px-4 bg-background/40 rounded-xl border border-border/20 self-end h-40">
                         <Label className="text-sm font-medium translate-y-[1px]">{t('workspaces.autoStart')}</Label>
                         <Switch
                             checked={formData.devAutoStart}

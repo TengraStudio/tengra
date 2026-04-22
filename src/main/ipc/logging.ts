@@ -21,7 +21,7 @@ const logBuffer: Array<{
     message: string
 }> = [];
 const MAX_BUFFER_SIZE = 1000;
-let streamingEnabled = false;
+const streamingEnabled = false;
 const LOG_STREAM_BATCH_INTERVAL_MS = 50;
 const pendingLogEntries: Array<{
     id: string

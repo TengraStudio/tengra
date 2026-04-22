@@ -8,14 +8,14 @@
  * (at your option) any later version.
  */
 
-import React from 'react';
 import { ChevronRight } from 'lucide-react';
+import React from 'react';
 
 import { FileIcon, FolderIcon } from '@/lib/file-icons';
 import { cn } from '@/lib/utils';
 
 /* Batch-02: Extracted Long Classes */
-const C_WORKSPACEEXPLORERINLINEROW_1 = "h-6 w-full rounded-[6px] border border-primary/70 bg-background px-2 text-[11px] text-foreground outline-none ring-0 transition-colors focus:border-primary focus-visible:border-primary placeholder:text-muted-foreground/45";
+const C_WORKSPACEEXPLORERINLINEROW_1 = "h-6 w-full rounded-6px border border-primary/70 bg-background px-2 text-11 text-foreground outline-none ring-0 transition-colors focus:border-primary focus-visible:border-primary placeholder:text-muted-foreground/45";
 
 
 interface WorkspaceExplorerInlineRowProps {
@@ -57,7 +57,7 @@ export const WorkspaceExplorerInlineRow: React.FC<WorkspaceExplorerInlineRowProp
         <div
             ref={element => setRowRef?.(rowKey, element)}
             className={cn(
-                'px-2 py-0 h-[22px] flex items-center',
+                'px-2 py-0 h-22 flex items-center',
                 isFocused && 'bg-primary/5'
             )}
             style={{ paddingLeft: `${depth * 12 + 16}px` }}

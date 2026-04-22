@@ -17,9 +17,10 @@ import { WorkspaceEntry, WorkspaceMount } from '@shared/types';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { webElectronMock } from '@/web-bridge';
+
 import { ContextMenuAction, ContextMenuState } from '../../../../renderer/features/workspace/components/workspace/types';
 import { WorkspaceExplorer } from '../../../../renderer/features/workspace/components/WorkspaceExplorer';
-import { webElectronMock } from '@/web-bridge';
 
 // Mock the hooks
 vi.mock('@renderer/features/workspace/hooks/useWorkspaceExplorerLogic', () => ({

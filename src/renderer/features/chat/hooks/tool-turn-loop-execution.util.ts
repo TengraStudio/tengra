@@ -10,7 +10,6 @@
 
 import { AiIntentClassification } from '@shared/types/ai-runtime';
 import { JsonValue } from '@shared/types/common';
-import type { Dispatch, SetStateAction } from 'react';
 import {
     calculateToolCallSignature,
     composeDeterministicAnswer,
@@ -18,27 +17,28 @@ import {
     isLowSignalProgressContent,
 } from '@shared/utils/ai-runtime.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
+import type { Dispatch, SetStateAction } from 'react';
 
 import { compactToolCallsForDisplay } from '@/features/chat/components/message/tool-call-display.util';
 import { chatStream } from '@/lib/chat-stream';
 import { generateId } from '@/lib/utils';
-import { Chat, Message, ToolCall, ToolDefinition } from '@/types';
-import { appLogger } from '@/utils/renderer-logger';
 import { 
     getChatSnapshot,
     setChats,
-    StreamingState,
     setStreamingState, 
+    StreamingState,
     updateChatInStore, 
     updateMessageInStore 
 } from '@/store/chat.store';
+import { Chat, Message, ToolCall, ToolDefinition } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 import {
     buildRepeatedToolMessages,
     buildStoredToolResults,
+    deduplicateMessages,
     getToolMessageContent,
     readToolResultImages,
-    deduplicateMessages,
     shouldRecoverFromLowSignalFinalContent,
 } from './ai-runtime-chat.util';
 import {
@@ -49,8 +49,8 @@ import {
     TOOL_LOOP_LOW_SIGNAL_CONTENT_THRESHOLD,
     TOOL_LOOP_RECENT_SIGNATURE_WINDOW,
 } from './chat-runtime-policy.util';
-import { processChatStream } from './process-stream';
 import type { StreamStreamingState } from './process-stream';
+import { processChatStream } from './process-stream';
 import { executeBatchToolCalls } from './tool-batch-execution.util';
 import { executeToolCall } from './tool-call-execution.util';
 import {

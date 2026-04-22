@@ -8,13 +8,14 @@
  * (at your option) any later version.
  */
 
-import React from 'react';
-import { Database, EyeOff, FileSearch } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@renderer/components/ui/card';
-import { Label } from '@renderer/components/ui/label';
 import { Input } from '@renderer/components/ui/input';
+import { Label } from '@renderer/components/ui/label';
 import { Switch } from '@renderer/components/ui/switch';
 import { Textarea } from '@renderer/components/ui/textarea';
+import { Database, EyeOff, FileSearch } from 'lucide-react';
+import React from 'react';
+
 import { SettingsSectionProps } from './types';
 
 export const IndexingSection: React.FC<SettingsSectionProps> = ({ formData, setFormData, t }) => {

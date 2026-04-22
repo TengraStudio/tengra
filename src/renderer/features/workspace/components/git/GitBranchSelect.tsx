@@ -8,10 +8,10 @@
  * (at your option) any later version.
  */
 
-import React from 'react';
-import { GitBranch } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@renderer/components/ui/select';
 import { Badge } from '@renderer/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@renderer/components/ui/select';
+import { GitBranch } from 'lucide-react';
+import React from 'react';
 
 interface BranchSelectProps {
     branch: string | null;
@@ -44,7 +44,7 @@ export const GitBranchSelect: React.FC<BranchSelectProps> = ({ branch, branches,
                     </div>
                 </SelectValue>
             </SelectTrigger>
-            <SelectContent className="border-border/40 backdrop-blur-xl bg-background/90 min-w-[200px]">
+            <SelectContent className="border-border/40 backdrop-blur-xl bg-background/90 min-w-200">
                 {branches.map((b: string) => {
                     const isSelected = b === branch;
                     return (
@@ -55,7 +55,7 @@ export const GitBranchSelect: React.FC<BranchSelectProps> = ({ branch, branches,
                         >
                             <div className="flex items-center justify-between w-full">
                                 <span>{b}</span>
-                                {isSelected && <Badge variant="outline" className="ml-2 h-4 px-1 border-none bg-indigo-500/10 text-indigo-400 text-[8px] uppercase">Active</Badge>}
+                                {isSelected && <Badge variant="outline" className="ml-2 h-4 px-1 border-none bg-indigo-500/10 text-indigo-400 text-8 uppercase">Active</Badge>}
                             </div>
                         </SelectItem>
                     );

@@ -91,8 +91,10 @@ describe('ModelRegistryService', () => {
         };
         mockEventBus = { emit: vi.fn(), on: vi.fn(), onCustom: vi.fn() };
         mockAuthService = {
-            getActiveToken: vi.fn().mockResolvedValue('test-token'),
-            getActiveAccountFull: vi.fn().mockResolvedValue(null)
+            getActiveToken: vi.fn().mockResolvedValue(null),
+            getActiveAccountFull: vi.fn().mockResolvedValue(null),
+            getAccountsByProvider: vi.fn().mockResolvedValue([]),
+            getAccountsByProviderFull: vi.fn().mockResolvedValue([]),
         };
         mockTokenService = { ensureFreshToken: vi.fn().mockResolvedValue(undefined) };
         mockOllamaService = {
@@ -314,6 +316,13 @@ describe('ModelRegistryService', () => {
                     },
                     nvidia: { apiKey: 'nvapi-test', model: 'nvidia/llama3-chatqa-1.5-70b' }
                 });
+                // Bypass cold-start skip
+                Object.assign(service, { lastUpdate: Date.now() });
+
+                vi.mocked(mockAuthService.getActiveToken!).mockImplementation(async (provider) => {
+                    if (provider === 'nvidia') return 'nv-token';
+                    return undefined;
+                });
                 vi.mocked(mockProxyService.getRawModelCatalog!)
                     .mockResolvedValueOnce({
                         data: [{ id: 'nvidia/llama-3.1-nemotron-70b-instruct', name: 'Llama', provider: 'nvidia' }]
@@ -326,8 +335,9 @@ describe('ModelRegistryService', () => {
                     });
 
                 const modelsPromise = service.getRemoteModels();
-                await vi.advanceTimersByTimeAsync(1500);
-                const models = await modelsPromise;
+                await vi.advanceTimersByTimeAsync(10000);
+                await modelsPromise;
+                const models = await service.getRemoteModels();
 
                 expect(mockProxyService.getRawModelCatalog).toHaveBeenCalledTimes(2);
                 expect(models.filter(model => model.provider === 'nvidia')).toHaveLength(2);
@@ -350,6 +360,10 @@ describe('ModelRegistryService', () => {
                     },
                     copilot: { connected: true }
                 } as AppSettings);
+                // Bypass cold-start skip
+                Object.assign(service, { lastUpdate: Date.now() });
+                vi.mocked(mockAuthService.getAccountsByProvider!).mockResolvedValue([{ id: 'copilot-acc', isActive: true }] as any);
+
                 vi.mocked(mockProxyService.getRawModelCatalog!)
                     .mockResolvedValueOnce({
                         data: [{ id: 'gpt-4o', name: 'GPT-4o', provider: 'codex' }]
@@ -362,8 +376,9 @@ describe('ModelRegistryService', () => {
                     });
 
                 const modelsPromise = service.getRemoteModels();
-                await vi.advanceTimersByTimeAsync(1500);
-                const models = await modelsPromise;
+                await vi.advanceTimersByTimeAsync(10000);
+                await modelsPromise;
+                const models = await service.getRemoteModels();
 
                 expect(mockProxyService.getRawModelCatalog).toHaveBeenCalledTimes(2);
                 expect(models.some(model => model.providerCategory === 'copilot')).toBe(true);
@@ -384,6 +399,7 @@ describe('ModelRegistryService', () => {
                 },
                 copilot: { connected: true }
             } as AppSettings);
+            vi.mocked(mockAuthService.getAccountsByProvider!).mockResolvedValue([{ id: 'copilot-acc', isActive: true }] as any);
             vi.mocked(mockProxyService.getRawModelCatalog!)
                 .mockResolvedValueOnce({
                     data: [

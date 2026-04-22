@@ -20,14 +20,14 @@ import { ChevronDown } from 'lucide-react';
 import React, { useCallback, useRef } from 'react';
 import { VirtuosoHandle } from 'react-virtuoso';
 
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
 import { useModel } from '@/context/ModelContext';
 import { ChatFilePreviewPanel, ChatPreviewTab, createLoadingDiffTab, createLoadingFileTab } from '@/features/chat/components/ChatFilePreviewPanel';
+import { WORKSPACE_NAVIGATE_EVENT, WorkspaceNavigationAction } from '@/features/workspace/utils/workspace-navigation';
 import { useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
-import { Button } from '@/components/ui/button';
-import { WORKSPACE_NAVIGATE_EVENT, WorkspaceNavigationAction } from '@/features/workspace/utils/workspace-navigation';
 
 /* Batch-02: Extracted Long Classes */
 const C_CHATVIEW_1 = "absolute bottom-28 right-5 z-20 flex h-9 w-9 items-center justify-center rounded-md border border-border/50 bg-background text-foreground transition-colors hover:bg-accent";

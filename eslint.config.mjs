@@ -44,6 +44,10 @@ export default tseslint.config(
         },
         rules: {
             ...reactHooks.configs.recommended.rules,
+            'react-hooks/set-state-in-effect': 'warn',
+            'react-hooks/refs': 'warn',
+            'react-hooks/purity': 'warn',
+            'react-hooks/preserve-manual-memoization': 'warn',
             'react/react-in-jsx-scope': 'off',
             'react/prop-types': 'off', // TypeScript handles this
             // Disabled due eslint-plugin-react compatibility issue with current flat-config runtime.

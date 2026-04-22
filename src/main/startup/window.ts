@@ -305,7 +305,7 @@ function setupWindowStatePersistence(
 }
 
 export function setupTray(settingsService?: SettingsService) {
-    if (tray) return;
+    if (tray) {return;}
 
     try {
         const iconPath = app.isPackaged

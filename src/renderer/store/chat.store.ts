@@ -64,13 +64,13 @@ export function useChatStore<T>(selector: (snapshot: ChatState) => T): T {
 
 export function setChats(updater: Chat[] | ((prev: Chat[]) => Chat[])): void {
     const nextChats = typeof updater === 'function' ? updater(state.chats) : updater;
-    if (nextChats === state.chats) return;
+    if (nextChats === state.chats) {return;}
     state = { ...state, chats: nextChats };
     emit();
 }
 
 export function setCurrentChatId(id: string | null): void {
-    if (id === state.currentChatId) return;
+    if (id === state.currentChatId) {return;}
     state = { ...state, currentChatId: id };
     emit();
 }
@@ -79,7 +79,7 @@ export function updateChatInStore(chatId: string, updater: Partial<Chat> | ((pre
     state = {
         ...state,
         chats: state.chats.map(chat => {
-            if (chat.id !== chatId) return chat;
+            if (chat.id !== chatId) {return chat;}
             const updates = typeof updater === 'function' ? updater(chat) : updater;
             return { ...chat, ...updates };
         })
@@ -91,7 +91,7 @@ export function addMessageToStore(chatId: string, message: Message): void {
     state = {
         ...state,
         chats: state.chats.map(chat => {
-            if (chat.id !== chatId) return chat;
+            if (chat.id !== chatId) {return chat;}
             return {
                 ...chat,
                 messages: [...chat.messages, message],
@@ -106,7 +106,7 @@ export function updateMessageInStore(chatId: string, messageId: string, updates:
     state = {
         ...state,
         chats: state.chats.map(chat => {
-            if (chat.id !== chatId) return chat;
+            if (chat.id !== chatId) {return chat;}
             return {
                 ...chat,
                 messages: chat.messages.map(msg => 
@@ -131,7 +131,7 @@ export function setStreamingState(chatId: string, streaming: StreamingState | nu
 
 export function updateStreamingState(chatId: string, updates: Partial<StreamingState>): void {
     const current = state.streamingStates[chatId];
-    if (!current) return;
+    if (!current) {return;}
     
     state = {
         ...state,

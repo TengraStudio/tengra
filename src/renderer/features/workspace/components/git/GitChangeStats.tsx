@@ -8,23 +8,23 @@
  * (at your option) any later version.
  */
 
-import React from 'react';
+import { Badge } from '@renderer/components/ui/badge';
+import { Button } from '@renderer/components/ui/button';
+import { DiffViewer } from '@renderer/components/ui/DiffViewer';
+import { cn } from '@renderer/lib/utils';
 import { 
-    Plus, 
-    Minus, 
-    FileText, 
-    CheckSquare, 
-    FilePlus, 
-    FileMinus, 
     Activity,
+    CheckSquare, 
     ChevronDown,
     ChevronRight,
-    Loader2
-} from 'lucide-react';
-import { Button } from '@renderer/components/ui/button';
-import { Badge } from '@renderer/components/ui/badge';
-import { cn } from '@renderer/lib/utils';
-import { DiffViewer } from '@renderer/components/ui/DiffViewer';
+    FileMinus, 
+    FilePlus, 
+    FileText, 
+    Loader2,
+    Minus, 
+    Plus} from 'lucide-react';
+import React from 'react';
+
 import { DiffStats, GitData, GitFile } from './types';
 
 interface ChangeStatsProps {
@@ -92,12 +92,12 @@ const FileRow = ({
                 
                 <div className="flex-1 min-w-0 flex items-center gap-3">
                     <span className={cn(
-                        "text-[13px] font-medium",
+                        "text-13 font-medium",
                         isSelected ? "text-primary" : "text-foreground/80"
                     )}>
                         {file.path.split('/').pop()}
                     </span>
-                    <span className="text-[10px] text-muted-foreground/40 truncate font-mono">{file.path}</span>
+                    <span className="text-10 text-muted-foreground/40 truncate font-mono">{file.path}</span>
                 </div>
 
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
@@ -117,11 +117,11 @@ const FileRow = ({
 
             {/* Inline Diff Viewer */}
             {isSelected && (
-                <div className="px-6 pb-6 pt-2 h-[450px] animate-in fade-in slide-in-from-top-1 duration-200">
+                <div className="px-6 pb-6 pt-2 h-450 animate-in fade-in slide-in-from-top-1 duration-200">
                     {loadingDiff ? (
                         <div className="h-full flex flex-col items-center justify-center bg-muted/5 rounded-lg border border-dashed border-border/20">
                             <Loader2 className="w-5 h-5 animate-spin text-primary/40 mb-2" />
-                            <span className="text-[10px] font-bold uppercase text-muted-foreground/40 tracking-widest">Diff Generation...</span>
+                            <span className="text-10 font-bold uppercase text-muted-foreground/40 tracking-widest">Diff Generation...</span>
                         </div>
                     ) : fileDiff ? (
                         <DiffViewer 
@@ -156,8 +156,8 @@ export const GitChangeStats: React.FC<ChangeStatsProps> = ({
             {gitData.stagedFiles.length > 0 && (
                 <div className="space-y-2">
                     <div className="flex items-center justify-between px-1">
-                        <span className="text-[11px] font-bold text-muted-foreground/40 uppercase tracking-widest">Staged Changes</span>
-                        <Badge variant="outline" className="h-4 px-1.5 border-emerald-500/20 bg-emerald-500/10 text-emerald-500 text-[9px] font-bold">
+                        <span className="text-11 font-bold text-muted-foreground/40 uppercase tracking-widest">Staged Changes</span>
+                        <Badge variant="outline" className="h-4 px-1.5 border-emerald-500/20 bg-emerald-500/10 text-emerald-500 text-9 font-bold">
                             {gitData.stagedFiles.length}
                         </Badge>
                     </div>
@@ -182,8 +182,8 @@ export const GitChangeStats: React.FC<ChangeStatsProps> = ({
             {gitData.unstagedFiles.length > 0 && (
                 <div className="space-y-2">
                     <div className="flex items-center justify-between px-1">
-                        <span className="text-[11px] font-bold text-muted-foreground/40 uppercase tracking-widest">Untracked Changes</span>
-                        <Badge variant="outline" className="h-4 px-1.5 border-amber-500/20 bg-amber-500/10 text-amber-500 text-[9px] font-bold">
+                        <span className="text-11 font-bold text-muted-foreground/40 uppercase tracking-widest">Untracked Changes</span>
+                        <Badge variant="outline" className="h-4 px-1.5 border-amber-500/20 bg-amber-500/10 text-amber-500 text-9 font-bold">
                             {gitData.unstagedFiles.length}
                         </Badge>
                     </div>
@@ -208,7 +208,7 @@ export const GitChangeStats: React.FC<ChangeStatsProps> = ({
                 <div className="py-20 flex flex-col items-center justify-center text-center opacity-40">
                     <CheckSquare className="w-10 h-10 mb-4 text-emerald-500/40" />
                     <p className="text-sm font-semibold tracking-tight text-foreground/80">Everything is committed</p>
-                    <p className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground mt-1">Workspace Clean</p>
+                    <p className="text-11 uppercase font-bold tracking-widest text-muted-foreground mt-1">Workspace Clean</p>
                 </div>
             )}
         </div>

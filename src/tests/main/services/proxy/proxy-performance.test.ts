@@ -70,6 +70,10 @@ describe('ProxyService performance instrumentation', () => {
             saveToken: vi.fn(),
             getToken: vi.fn(),
             getAuthToken: vi.fn(),
+            getActiveToken: vi.fn().mockResolvedValue(null),
+            getAccountsByProviderFull: vi.fn().mockResolvedValue([]),
+            getAccountsByProvider: vi.fn().mockResolvedValue([]),
+            linkAccount: vi.fn().mockResolvedValue(undefined),
         } as never as AuthService;
 
         proxyService = new ProxyService({

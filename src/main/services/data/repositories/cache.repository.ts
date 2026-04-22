@@ -9,6 +9,7 @@
  */
 
 import { DatabaseAdapter } from '@shared/types/database';
+
 import { BaseRepository } from './base.repository';
 
 export interface CacheEntry {

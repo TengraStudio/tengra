@@ -8,18 +8,18 @@
  * (at your option) any later version.
  */
 
-import { useGitData } from '@renderer/features/workspace/hooks/useGitData';
-import { 
-    GitBranch, 
-    RefreshCw, 
-    ArrowUp,
-    ArrowDown
-} from 'lucide-react';
-import React, { useEffect, useState, useCallback } from 'react';
 import { Badge } from '@renderer/components/ui/badge';
 import { Button } from '@renderer/components/ui/button';
 import { ScrollArea } from '@renderer/components/ui/scroll-area';
+import { useGitData } from '@renderer/features/workspace/hooks/useGitData';
 import { cn } from '@renderer/lib/utils';
+import { 
+    ArrowDown,
+    ArrowUp,
+    GitBranch, 
+    RefreshCw} from 'lucide-react';
+import React, { useCallback,useEffect, useState } from 'react';
+
 import type { Workspace } from '@/types';
 
 import {
@@ -31,6 +31,7 @@ import {
     GitRemotes,
     GitStatusHeader
 } from '../components/git';
+import { GitFile } from '../components/git/types';
 
 interface WorkspaceGitTabProps {
     workspace: Workspace;
@@ -99,7 +100,7 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
     }, [activeTab, workspace.path, fetchGitData]);
 
     // Handle toggle for file selection
-    const onFileSelect = useCallback((file: any) => {
+    const onFileSelect = useCallback((file: GitFile | null) => {
         if (!file) {
             handleGitFileSelect(null);
             return;
@@ -174,7 +175,7 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
 
                 <div className="flex items-center gap-2">
                     {trackingInfo && (
-                        <div className="flex items-center gap-3 px-3 text-[11px] font-medium text-muted-foreground border-r border-border/40 mr-2 h-6">
+                        <div className="flex items-center gap-3 px-3 text-11 font-medium text-muted-foreground border-r border-border/40 mr-2 h-6">
                             <span className="flex items-center gap-1"><ArrowUp className="w-3 h-3 text-emerald-500/60" /> {trackingInfo.ahead}</span>
                             <span className="flex items-center gap-1"><ArrowDown className="w-3 h-3 text-indigo-500/60" /> {trackingInfo.behind}</span>
                         </div>

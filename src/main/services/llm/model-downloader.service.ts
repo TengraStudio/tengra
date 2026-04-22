@@ -13,10 +13,10 @@ import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
-import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
 import { HuggingFaceService } from '@main/services/llm/huggingface.service';
 import { LlamaService } from '@main/services/llm/llama.service';
 import { OllamaService } from '@main/services/llm/ollama.service';
+import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 
 export type DownloadProvider = 'ollama' | 'huggingface';

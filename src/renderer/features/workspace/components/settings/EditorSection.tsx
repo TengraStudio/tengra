@@ -8,9 +8,9 @@
  * (at your option) any later version.
  */
 
+import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card';
 import { Input } from '@renderer/components/ui/input';
 import { Label } from '@renderer/components/ui/label';
-import { Switch } from '@renderer/components/ui/switch';
 import {
     Select,
     SelectContent,
@@ -18,12 +18,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@renderer/components/ui/select';
+import { Switch } from '@renderer/components/ui/switch';
 import { Textarea } from '@renderer/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card';
-import { FileCode2, Layout, MousePointer2, Type, Braces, Settings2 } from 'lucide-react';
+import { Braces, FileCode2, Layout, MousePointer2, Settings2,Type } from 'lucide-react';
 import React from 'react';
 
-import { SettingsSectionProps } from './types';
+import { WorkspaceSettingsFormData, SettingsSectionProps } from './types';
 
 export const EditorSection: React.FC<SettingsSectionProps> = (props) => {
     const { formData, setFormData, t } = props;
@@ -75,7 +75,7 @@ export const EditorSection: React.FC<SettingsSectionProps> = (props) => {
                             <Label className="text-sm font-medium">{t('workspace.editor.lineNumbers')}</Label>
                             <Select 
                                 value={formData.editorLineNumbers} 
-                                onValueChange={(val) => setFormData(prev => ({ ...prev, editorLineNumbers: val as any }))}
+                                onValueChange={(val) => setFormData(prev => ({ ...prev, editorLineNumbers: val as WorkspaceSettingsFormData['editorLineNumbers'] }))}
                             >
                                 <SelectTrigger className="bg-background/50">
                                     <SelectValue />
@@ -153,7 +153,7 @@ export const EditorSection: React.FC<SettingsSectionProps> = (props) => {
                             <Label className="text-sm font-medium">{t('workspace.editor.wordWrap')}</Label>
                             <Select 
                                 value={formData.editorWordWrap} 
-                                onValueChange={(val) => setFormData(prev => ({ ...prev, editorWordWrap: val as any }))}
+                                onValueChange={(val) => setFormData(prev => ({ ...prev, editorWordWrap: val as WorkspaceSettingsFormData['editorWordWrap'] }))}
                             >
                                 <SelectTrigger className="bg-background/50">
                                     <SelectValue />

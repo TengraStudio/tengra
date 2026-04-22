@@ -32,6 +32,7 @@ import {
 import {
     DirectoryAnalysisSchema,
     GenerateLogoOptionsSchema,
+    LargeDataUriSchema,
     WorkspaceActiveRootPathSchema,
     WorkspaceActiveStateSchema,
     WorkspaceAnalysisSchema,
@@ -41,7 +42,6 @@ import {
     WorkspaceIdentitySchema,
     WorkspaceIdSchema,
     WorkspaceRootPathSchema,
-    LargeDataUriSchema,
 } from '@shared/schemas/service-hardening.schema';
 import { dialog, ipcMain } from 'electron';
 import { z } from 'zod';

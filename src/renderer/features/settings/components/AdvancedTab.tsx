@@ -19,11 +19,10 @@ import {
     SelectValue,
 } from '@renderer/components/ui/select';
 import { Textarea } from '@renderer/components/ui/textarea';
+import { useAppState } from '@renderer/hooks/useAppState';
 import { cn } from '@renderer/lib/utils';
 import { SERVICE_INTERVALS } from '@shared/constants';
 import { AppSettings } from '@shared/types/settings';
-import { useAppState } from '@renderer/hooks/useAppState';
-import { appLogger } from '@/utils/renderer-logger';
 import {
     Activity,
     Brain,
@@ -41,6 +40,7 @@ import {
 import React, { useCallback, useMemo, useState } from 'react';
 
 import type { ModelInfo } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 /* Batch-02: Extracted Long Classes */
 const C_ADVANCEDTAB_1 = "p-6 rounded-card-lg bg-muted/10 border border-border/40 space-y-4 group/interval hover:bg-muted/20 transition-all duration-500 lg:p-8";

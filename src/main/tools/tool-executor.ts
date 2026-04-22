@@ -693,7 +693,7 @@ export class ToolExecutor {
                 const changes = typeof details.changes === 'number' && Number.isFinite(details.changes) ? details.changes : (additions + deletions);
                 diffStats = (additions > 0 || deletions > 0) ? { additions, deletions, changes } : undefined;
                 existedBefore = typeof details.existedBefore === 'boolean' ? details.existedBefore : undefined;
-                if (diffId && diffId.trim().length === 0) {
+                if (diffId?.trim().length === 0) {
                     diffId = undefined;
                 }
             } else {

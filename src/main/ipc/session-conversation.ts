@@ -43,9 +43,9 @@ import {
 import { appLogger } from '@main/logging/logger';
 import { chatQueueManager, OrchestrationPolicy } from '@main/services/chat-queue.service';
 import { DatabaseService } from '@main/services/data/database.service';
+import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import type { BrainService } from '@main/services/llm/brain.service';
 import { ContextRetrievalService } from '@main/services/llm/context-retrieval.service';
-import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { MemoryContextService } from '@main/services/llm/memory-context.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';

@@ -244,7 +244,7 @@ async function handleModelStreamIteration(params: HandleModelStreamIterationPara
             
             // Re-fetch chat from store snapshot
             const chat = getChatSnapshot().chats.find(c => c.id === chatId);
-            if (!chat) continue;
+            if (!chat) {continue;}
 
             const updatedMessages = chat.messages.map(message => {
                 if (message.id !== assistantId) {

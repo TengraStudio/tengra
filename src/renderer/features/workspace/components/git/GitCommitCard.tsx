@@ -8,8 +8,9 @@
  * (at your option) any later version.
  */
 
+import { cn } from '@/lib/utils';
 import React from 'react';
-import { cn } from '@renderer/lib/utils';
+
 import { GitCommitInfo } from './types';
 
 interface CommitCardProps {
@@ -38,12 +39,12 @@ export const GitCommitCard: React.FC<CommitCardProps> = ({ commit, isSelected, o
                 )}>
                     {commit.message}
                 </span>
-                <span className="text-[10px] font-mono text-muted-foreground/50 shrink-0">
+                <span className="text-10 font-mono text-muted-foreground/50 shrink-0">
                     {commit.hash.substring(0, 7)}
                 </span>
             </div>
-            <div className="flex items-center justify-between text-[10px] text-muted-foreground/40 font-medium">
-                <span className="truncate max-w-[120px]">{commit.author}</span>
+            <div className="flex items-center justify-between text-10 text-muted-foreground/40 font-medium">
+                <span className="truncate max-w-120">{commit.author}</span>
                 <span>{date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
             </div>
         </div>

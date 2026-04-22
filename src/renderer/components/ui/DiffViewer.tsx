@@ -10,7 +10,8 @@
 
 import { DiffEditor } from '@monaco-editor/react';
 import { Loader2 } from 'lucide-react';
-import React, { useEffect, useState, useRef } from 'react';
+import type { editor } from 'monaco-editor';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/i18n';
@@ -37,7 +38,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
     const { isLight } = useTheme();
     const { t } = useTranslation();
     const [isMonacoReady, setIsMonacoReady] = useState(false);
-    const editorRef = useRef<any>(null);
+    const editorRef = useRef<editor.IStandaloneDiffEditor | null>(null);
 
     useEffect(() => {
         let active = true;
@@ -56,7 +57,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
         };
     }, []);
 
-    const handleEditorDidMount = (editor: any) => {
+    const handleEditorDidMount = (editor: editor.IStandaloneDiffEditor) => {
         editorRef.current = editor;
     };
 

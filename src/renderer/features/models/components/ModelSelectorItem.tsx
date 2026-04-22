@@ -160,7 +160,7 @@ const ModelQuotaDisplay: React.FC<{
         <div className="mt-2 space-y-1">
             {percent !== null && model.provider !== 'copilot' && (
                 <>
-                    <div className="flex items-center justify-between gap-2 text-[10px] font-bold">
+                    <div className="flex items-center justify-between gap-2 text-10 font-bold">
                         <span className="text-muted-foreground/55 uppercase tracking-tight">{t('statistics.quotaStatus')}</span>
                         <span className={cn("rounded border px-1.5 py-0.5 leading-none", getQuotaTone(percent).split(' ').slice(1))}>
                             {percent}%
@@ -180,12 +180,12 @@ const ModelQuotaDisplay: React.FC<{
 
             <div className="flex items-center justify-between gap-2 mt-1">
                 {creditLabel && (
-                    <div className="text-[10px] font-bold text-muted-foreground/45">
+                    <div className="text-10 font-bold text-muted-foreground/45">
                         {creditLabel}
                     </div>
                 )}
                 {creditMultiplier !== undefined && creditMultiplier > 0 && (
-                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-primary/5 border border-primary/10 text-[9px] font-black uppercase tracking-wider text-primary/70">
+                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-primary/5 border border-primary/10 text-9 font-black uppercase tracking-wider text-primary/70">
                         <Zap className="w-2.5 h-2.5 fill-current" />
                         <span>{creditMultiplier} {creditMultiplier === 1 ? 'Credit' : 'Credits'}</span>
                     </div>
@@ -247,7 +247,7 @@ export const ModelSelectorItem: React.FC<ModelSelectorItemProps> = ({
 
                     <div className="min-w-0 flex-1 flex flex-col">
                         <div className="flex items-center gap-2">
-                            <span className="truncate font-semibold tracking-tight text-foreground/90 text-[13px]">
+                            <span className="truncate font-semibold tracking-tight text-foreground/90 text-13">
                                 {model.label}
                             </span>
                             {model.supportsReasoning && (
@@ -293,7 +293,7 @@ export const ModelSelectorItem: React.FC<ModelSelectorItemProps> = ({
                 side="right"
                 align="start"
                 sideOffset={12}
-                className="w-64 p-4 space-y-4 rounded-2xl border-border/40 shadow-2xl backdrop-blur-3xl bg-popover/95 animate-in fade-in zoom-in-95 duration-200 z-[10002]"
+                className="w-64 p-4 space-y-4 rounded-2xl border-border/40 shadow-2xl backdrop-blur-3xl bg-popover/95 animate-in fade-in zoom-in-95 duration-200 z-10002"
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
             >
@@ -309,7 +309,7 @@ export const ModelSelectorItem: React.FC<ModelSelectorItemProps> = ({
                     {model.creditMultiplier !== undefined && (
                         <div className="flex flex-col gap-1 px-3 py-2 rounded-xl bg-muted/30 border border-border/10">
                             <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-tighter">Usage Cost</span>
+                                <span className="text-10 font-bold text-muted-foreground/50 uppercase tracking-tighter">Usage Cost</span>
                                 <div className="flex items-center gap-1 text-primary">
                                     <Zap className="w-3 h-3 fill-current" />
                                     <span className="text-xs font-black">{model.creditMultiplier} Credits</span>
@@ -321,7 +321,7 @@ export const ModelSelectorItem: React.FC<ModelSelectorItemProps> = ({
 
                 {model.supportsReasoning && model.thinkingLevels && model.thinkingLevels.length > 0 && (
                     <div className="space-y-3 pt-3 border-t border-border/10">
-                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 px-0.5">
+                        <div className="flex items-center gap-2 text-10 font-black uppercase tracking-widest text-muted-foreground/40 px-0.5">
                             <Brain className="w-3 h-3" />
                             Thinking Mode
                         </div>
@@ -338,7 +338,7 @@ export const ModelSelectorItem: React.FC<ModelSelectorItemProps> = ({
                                             onSelect(model.provider, model.id, false, level);
                                         }}
                                         className={cn(
-                                            "px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border",
+                                            "px-2.5 py-1 rounded-lg text-10 font-bold transition-all border",
                                             isActive
                                                 ? "bg-primary/10 text-primary border-primary/30 shadow-sm"
                                                 : "bg-muted/10 text-muted-foreground/60 border-transparent hover:bg-muted/20 hover:text-foreground"
@@ -353,11 +353,11 @@ export const ModelSelectorItem: React.FC<ModelSelectorItemProps> = ({
                 )}
 
                 <div className="pt-2 flex flex-col gap-1.5 border-t border-border/10">
-                    <div className="flex items-center justify-between text-[10px] font-medium text-muted-foreground/50">
+                    <div className="flex items-center justify-between text-10 font-medium text-muted-foreground/50">
                         <span>Context Window</span>
                         <span className="text-foreground/70 font-bold">{model.contextWindow || '128k'} tokens</span>
                     </div>
-                    <div className="flex items-center justify-between text-[10px] font-medium text-muted-foreground/50">
+                    <div className="flex items-center justify-between text-10 font-medium text-muted-foreground/50">
                         <span>Training Data</span>
                         <span className="text-foreground/70 font-bold">Up to 2024</span>
                     </div>

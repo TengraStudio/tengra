@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Bot, Code, FileCode2, FolderTree, Info, Play, Terminal, Brain, GitBranch, Database } from 'lucide-react';
+import { Bot, Brain, Code, Database,FileCode2, FolderTree, GitBranch, Info, Play, Terminal } from 'lucide-react';
 import React from 'react';
 
 import { cn } from '@/lib/utils';
@@ -49,7 +49,7 @@ export const SettingsSidebar: React.FC<{
 }> = ({ activeSection, setActiveSection, t }) => (
     <div className="w-64 border-r border-border/40 flex flex-col p-4 gap-4 shrink-0 bg-background/30 backdrop-blur-xl">
         <div className="space-y-1">
-            <h3 className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">{t('workspaces.coreCategory')}</h3>
+            <h3 className="px-4 text-10 font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">{t('workspaces.coreCategory')}</h3>
             <NavButton
                 active={activeSection === 'general'}
                 onClick={() => setActiveSection('general')}
@@ -65,7 +65,7 @@ export const SettingsSidebar: React.FC<{
         </div>
 
         <div className="space-y-1">
-            <h3 className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">{t('workspaces.intelligenceCategory')}</h3>
+            <h3 className="px-4 text-10 font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">{t('workspaces.intelligenceCategory')}</h3>
             <NavButton
                 active={activeSection === 'intelligence'}
                 onClick={() => setActiveSection('intelligence')}
@@ -93,7 +93,7 @@ export const SettingsSidebar: React.FC<{
         </div>
 
         <div className="space-y-1">
-            <h3 className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">{t('workspaces.developmentCategory')}</h3>
+            <h3 className="px-4 text-10 font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">{t('workspaces.developmentCategory')}</h3>
             <NavButton
                 active={activeSection === 'build'}
                 onClick={() => setActiveSection('build')}
@@ -115,7 +115,7 @@ export const SettingsSidebar: React.FC<{
         </div>
 
         <div className="space-y-1">
-            <h3 className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">{t('workspaces.advancedCategory')}</h3>
+            <h3 className="px-4 text-10 font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">{t('workspaces.advancedCategory')}</h3>
              <NavButton
                 active={activeSection === 'advanced'}
                 onClick={() => setActiveSection('advanced')}

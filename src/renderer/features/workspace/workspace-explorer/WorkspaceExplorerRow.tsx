@@ -54,49 +54,49 @@ interface WorkspaceExplorerRowProps {
 function GitStatusIndicator({ status, rawStatus }: { status: string; rawStatus?: string }): React.ReactElement | null {
     if (status === 'M') {
         return (
-            <div className="flex items-center text-[#e2c522]" title="Modified">
+            <div className="flex items-center text-git-modified" title="Modified">
                 <CircleDot className="w-3 h-3" />
             </div>
         );
     }
     if (status === 'A') {
         return (
-            <div className="flex items-center text-[#81b88b]" title="Added">
+            <div className="flex items-center text-git-added" title="Added">
                 <Plus className="w-3 h-3" />
             </div>
         );
     }
     if (status === 'D') {
         return (
-            <div className="flex items-center text-[#c74e39]" title="Deleted">
+            <div className="flex items-center text-git-deleted" title="Deleted">
                 <X className="w-3 h-3" />
             </div>
         );
     }
     if (status === 'U' || status === '?' || status === '?') {
         return (
-            <div className="flex items-center text-[#73c991]" title="Untracked">
+            <div className="flex items-center text-git-untracked" title="Untracked">
                 <CircleHelp className="w-3 h-3" />
             </div>
         );
     }
     if (status === 'I') {
         return (
-          <div className="flex items-center text-[#8e8e8e]" title="Ignored">
+          <div className="flex items-center text-git-ignored" title="Ignored">
               <CircleHelp className="w-3 h-3" />
           </div>
         );
     }
     if (status === 'R') {
         return (
-            <div className="flex items-center text-primary" title="Renamed">
+            <div className="flex items-center text-git-renamed" title="Renamed">
                 <RotateCcw className="w-3 h-3 -scale-x-100" />
             </div>
         );
     }
     
     return (
-        <span className="text-[9px] font-bold text-muted-foreground" title={rawStatus ?? status}>
+        <span className="text-9 font-bold text-muted-foreground" title={rawStatus ?? status}>
             {status}
         </span>
     );
@@ -168,7 +168,7 @@ const MountRowView: React.FC<{
             <Folder className="w-3.5 h-3.5 text-success/70" />
         )}
         <div className="flex-1 min-w-0 flex items-center gap-2">
-            <div className="text-[10px] font-black uppercase tracking-wider truncate text-muted-foreground/50">
+            <div className="text-10 font-black uppercase tracking-wider truncate text-muted-foreground/50">
                 {row.mount.name}
             </div>
             {row.loading && <Loader2 className="w-3 h-3 text-muted-foreground/60 animate-spin" />}
@@ -245,11 +245,11 @@ const EntryRowView: React.FC<{
             {...listeners}
             data-entry-id={entryId}
             className={cn(
-                'flex w-full min-w-0 items-center gap-1.5 py-0 px-2 cursor-pointer overflow-hidden transition-all select-none group border-y border-transparent outline-none relative h-[22px]',
+                'flex w-full min-w-0 items-center gap-1.5 py-0 px-2 cursor-pointer overflow-hidden transition-all select-none group border-y border-transparent outline-none relative h-22',
                 isSelected
-                    ? 'bg-[#37373d] text-white'
-                    : 'hover:bg-[#2a2d2e] text-[#cccccc] hover:text-white',
-                isFocused && !isSelected && 'bg-[#37373d]/50',
+                    ? 'bg-git-vsc-selected text-white'
+                    : 'hover:bg-git-vsc-hover text-git-vsc-dim hover:text-white',
+                isFocused && !isSelected && 'bg-git-vsc-selected/50',
                 isOver && 'bg-primary/20',
                 isDragging && 'opacity-20 cursor-grabbing bg-muted/40',
                 getIgnoredEntryClassName(row.entry.isGitIgnored)
@@ -301,10 +301,10 @@ const EntryRowView: React.FC<{
                     <FileIcon fileName={row.entry.name} className="w-3.5 h-3.5 shrink-0" />
                 )}
                 <span className={cn(
-                    "flex-1 min-w-0 truncate text-[11px] font-normal transition-colors",
-                    row.gitStatus === 'M' ? 'text-[#e2c522]' : 
-                    row.gitStatus === 'A' ? 'text-[#81b88b]' :
-                    row.gitStatus === '?' ? 'text-[#73c991]' :
+                    "flex-1 min-w-0 truncate text-11 font-normal transition-colors",
+                    row.gitStatus === 'M' ? 'text-git-modified' : 
+                    row.gitStatus === 'A' ? 'text-git-added' :
+                    row.gitStatus === '?' ? 'text-git-untracked' :
                     isSelected ? 'text-white' : ''
                 )}>
                     {row.entry.name}

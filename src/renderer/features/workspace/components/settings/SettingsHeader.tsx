@@ -8,10 +8,10 @@
  * (at your option) any later version.
  */
 
+import { Badge } from '@renderer/components/ui/badge';
+import { Button } from '@renderer/components/ui/button';
 import { RotateCcw, Save, Settings } from 'lucide-react';
 import React from 'react';
-import { Button } from '@renderer/components/ui/button';
-import { Badge } from '@renderer/components/ui/badge';
 
 interface SettingsHeaderProps {
     t: (key: string) => string;
@@ -39,7 +39,7 @@ export const SettingsHeader: React.FC<SettingsHeaderProps> = ({
                         {t('workspaces.workspaceSettings')}
                     </h2>
                     {isDirty && (
-                        <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 text-[10px] py-0 px-2 animate-pulse">
+                        <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 text-10 py-0 px-2 animate-pulse">
                             {t('workspaces.unsavedChanges')}
                         </Badge>
                     )}

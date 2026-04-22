@@ -8,13 +8,14 @@
  * (at your option) any later version.
  */
 
-import React from 'react';
-import { Brain, Settings2, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@renderer/components/ui/card';
 import { Label } from '@renderer/components/ui/label';
-import { Textarea } from '@renderer/components/ui/textarea';
-import { Slider } from '@renderer/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@renderer/components/ui/select';
+import { Slider } from '@renderer/components/ui/slider';
+import { Textarea } from '@renderer/components/ui/textarea';
+import { Brain, Settings2, Sparkles } from 'lucide-react';
+import React from 'react';
+
 import { SettingsSectionProps } from './types';
 
 export const IntelligenceSection: React.FC<SettingsSectionProps> = ({ formData, setFormData, t, models }) => {

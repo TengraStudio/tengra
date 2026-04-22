@@ -514,10 +514,10 @@ export class KnowledgeRepository extends BaseRepository {
     }
 
     private parseEmbedding(embeddingStr: string | null): number[] {
-        if (!embeddingStr) return [];
+        if (!embeddingStr) {return [];}
         try {
             const clean = embeddingStr.trim().replace(/^\[|\]$/g, '');
-            if (!clean) return [];
+            if (!clean) {return [];}
             return clean.split(/[\s,]+/).map(Number);
         } catch {
             return [];
@@ -525,7 +525,7 @@ export class KnowledgeRepository extends BaseRepository {
     }
 
     private cosineSimilarity(a: number[], b: number[]): number {
-        if (a.length !== b.length || a.length === 0) return 0;
+        if (a.length !== b.length || a.length === 0) {return 0;}
         let dotProduct = 0;
         let mA = 0;
         let mB = 0;
@@ -536,7 +536,7 @@ export class KnowledgeRepository extends BaseRepository {
         }
         mA = Math.sqrt(mA);
         mB = Math.sqrt(mB);
-        if (mA * mB === 0) return 0;
+        if (mA * mB === 0) {return 0;}
         return dotProduct / (mA * mB);
     }
 

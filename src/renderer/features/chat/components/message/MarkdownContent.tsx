@@ -12,8 +12,8 @@ import React, { isValidElement, lazy, memo, Suspense, useMemo } from 'react';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-import { useThrottle } from '@/hooks/useThrottle';
 
+import { useThrottle } from '@/hooks/useThrottle';
 import { cn } from '@/lib/utils';
 import { Attachment, ChatError, ToolCall } from '@/types';
 

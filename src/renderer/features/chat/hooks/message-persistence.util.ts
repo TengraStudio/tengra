@@ -11,6 +11,7 @@
 import { AiIntentClassification } from '@shared/types/ai-runtime';
 
 import { generateId } from '@/lib/utils';
+import { getChatSnapshot,updateChatInStore } from '@/store/chat.store';
 import { Chat, Message } from '@/types';
 
 import {
@@ -18,7 +19,6 @@ import {
     buildStoredToolResults,
     readToolResultImages,
 } from './ai-runtime-chat.util';
-import { updateChatInStore, getChatSnapshot } from '@/store/chat.store';
 
 export function upsertMessageInChat(
     messages: Message[],

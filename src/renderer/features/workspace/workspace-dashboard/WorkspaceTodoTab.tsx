@@ -161,7 +161,7 @@ const TaskCard = ({
             className={cn(
                 "p-4 mb-3 border-border/40 bg-card/60 backdrop-blur-sm cursor-grab active:cursor-grabbing transition-all",
                 isDragging && !isOverlay && "opacity-30",
-                isOverlay && "shadow-xl ring-1 ring-primary/20 cursor-grabbing rotate-1 scale-[1.02]",
+                isOverlay && "shadow-xl ring-1 ring-primary/20 cursor-grabbing rotate-1 scale-102",
                 "hover:border-primary/30 group border"
             )}
         >
@@ -170,11 +170,11 @@ const TaskCard = ({
                     <div className="flex flex-col gap-1.5 flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                             <priority.icon className={cn("w-3 h-3 shrink-0", priority.color)} />
-                            <span className={cn("text-[10px] font-medium uppercase tracking-tight", priority.color)}>
+                            <span className={cn("text-10 font-medium uppercase tracking-tight", priority.color)}>
                                 {priority.label}
                             </span>
                             {task.estimation && (
-                                <Badge variant="outline" className="h-4 px-1.5 text-[9px] border-border/10 bg-muted/20 text-muted-foreground/60 rounded-sm font-medium">
+                                <Badge variant="outline" className="h-4 px-1.5 text-9 border-border/10 bg-muted/20 text-muted-foreground/60 rounded-sm font-medium">
                                     <Zap className="w-2.5 h-2.5 mr-1 text-primary/40" />
                                     {task.estimation}
                                 </Badge>
@@ -214,7 +214,7 @@ const TaskCard = ({
 
                 {task.subtasks.length > 0 && (
                     <div className="space-y-2 py-1">
-                        <div className="flex items-center justify-between text-[10px] text-muted-foreground/40 font-medium">
+                        <div className="flex items-center justify-between text-10 text-muted-foreground/40 font-medium">
                             <span className="flex items-center gap-1.5">
                                 <CheckSquare className="w-3 h-3" />
                                 {completedSubtasks}/{task.subtasks.length}
@@ -250,13 +250,13 @@ const TaskCard = ({
 
                 <div className="flex items-center justify-between pt-2 border-t border-border/10">
                     {task.deadline ? (
-                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40 font-medium">
+                        <div className="flex items-center gap-1.5 text-10 text-muted-foreground/40 font-medium">
                             <CalendarIcon className="w-3 h-3 text-muted-foreground/20" />
                             {format(new Date(task.deadline), 'MMM d, yyyy')}
                         </div>
                     ) : <div />}
                     
-                    <div className="flex items-center gap-1 text-[9px] text-muted-foreground/20 font-medium opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest pl-2">
+                    <div className="flex items-center gap-1 text-9 text-muted-foreground/20 font-medium opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest pl-2">
                         <Hash className="w-2.5 h-2.5" />
                         {task.id.slice(0, 4)}
                     </div>
@@ -293,7 +293,7 @@ const TaskColumn = ({
                 <h3 className="text-sm font-semibold text-foreground/80 tracking-tight pt-0.5">
                     {category.label}
                 </h3>
-                <Badge variant="secondary" className="ml-auto bg-muted/40 text-muted-foreground/50 border-none font-medium text-[10px] px-2 h-5 rounded-md">
+                <Badge variant="secondary" className="ml-auto bg-muted/40 text-muted-foreground/50 border-none font-medium text-10 px-2 h-5 rounded-md">
                     {tasks.length}
                 </Badge>
             </div>
@@ -301,7 +301,7 @@ const TaskColumn = ({
             <div 
                 ref={setNodeRef}
                 className={cn(
-                    "flex-1 p-2.5 rounded-2xl transition-all min-h-[400px]",
+                    "flex-1 p-2.5 rounded-2xl transition-all min-h-400",
                     isOver ? "bg-primary/5 ring-1 ring-inset ring-primary/10 shadow-lg" : "bg-muted/5 border border-dashed border-border/10"
                 )}
             >
@@ -319,7 +319,7 @@ const TaskColumn = ({
                 {tasks.length === 0 && !isOver && (
                     <div className="h-full flex flex-col items-center justify-center py-24 grayscale opacity-20 transition-opacity hover:opacity-30">
                         <category.icon className="w-12 h-12 mb-4" />
-                        <span className="text-[11px] font-medium tracking-[0.2em] uppercase">Empty</span>
+                        <span className="text-11 font-medium tracking-200 uppercase">Empty</span>
                     </div>
                 )}
             </div>
@@ -568,13 +568,13 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
                         <div className="flex flex-col">
                             <h2 className="text-sm font-semibold tracking-tight text-foreground/80">Project Workspace</h2>
                             <div className="flex items-center gap-3 mt-0.5">
-                                <span className="text-[10px] text-muted-foreground/40 font-medium uppercase tracking-widest">{stats.total} Tasks</span>
+                                <span className="text-10 text-muted-foreground/40 font-medium uppercase tracking-widest">{stats.total} Tasks</span>
                                 <div className="w-1 h-1 rounded-full bg-border/40" />
-                                <span className="text-[10px] text-emerald-500/50 font-medium uppercase tracking-widest">{stats.completed} Done</span>
+                                <span className="text-10 text-emerald-500/50 font-medium uppercase tracking-widest">{stats.completed} Done</span>
                                 {stats.bugs > 0 && (
                                     <>
                                         <div className="w-1 h-1 rounded-full bg-border/40" />
-                                        <span className="text-[10px] text-rose-500/50 font-medium uppercase tracking-widest">{stats.bugs} Bugs</span>
+                                        <span className="text-10 text-rose-500/50 font-medium uppercase tracking-widest">{stats.bugs} Bugs</span>
                                     </>
                                 )}
                             </div>
@@ -669,7 +669,7 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
                                     placeholder={t('workspaceTodo.taskContextPlaceholder')}
                                     value={formData.description}
                                     onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                                    className="min-h-32 border-border/20 bg-background/40 focus-visible:ring-1 focus-visible:ring-primary/20 resize-none text-[13px] leading-relaxed"
+                                    className="min-h-32 border-border/20 bg-background/40 focus-visible:ring-1 focus-visible:ring-primary/20 resize-none text-13 leading-relaxed"
                                 />
                             </div>
 
@@ -744,7 +744,7 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
             />
 
             <Dialog open={isSubtaskPromptOpen} onOpenChange={setIsSubtaskPromptOpen}>
-                <DialogContent className="sm:max-w-[400px] border-border/40 backdrop-blur-xl bg-background/80 shadow-2xl p-0 overflow-hidden">
+                <DialogContent className="sm:max-w-400 border-border/40 backdrop-blur-xl bg-background/80 shadow-2xl p-0 overflow-hidden">
                     <div className="p-7">
                         <DialogHeader className="mb-4">
                             <DialogTitle className="text-lg font-semibold text-foreground/80">

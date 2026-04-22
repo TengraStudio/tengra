@@ -8,11 +8,12 @@
  * (at your option) any later version.
  */
 
-import { FolderPlus, MessageSquare, Search, Trash2, Folder as FolderIcon, FolderOpen, Pin as PinIcon, type LucideIcon } from 'lucide-react';
-import React, { useMemo, useCallback } from 'react';
+import { Folder as FolderIcon, FolderOpen, FolderPlus, type LucideIcon,MessageSquare, Pin as PinIcon, Search, Trash2 } from 'lucide-react';
+import React, { useCallback,useMemo } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
 import { Chat, Folder } from '@/types';
+
 import { SidebarItem } from './SidebarItem';
 
 interface SidebarChatListProps {
@@ -180,7 +181,7 @@ export const SidebarChatList = React.memo(
                     return (
                         <div className="flex flex-col items-center justify-center py-4 px-2 text-muted-foreground/30 overflow-hidden w-full">
                             {item.label === t('sidebar.noChats') && <MessageSquare className="w-6 h-6 mb-2 opacity-20" />}
-                            <p className="text-center text-[10px] italic font-medium truncate w-full">{item.label}</p>
+                            <p className="text-center text-10 italic font-medium truncate w-full">{item.label}</p>
                         </div>
                     );
                 case 'divider':

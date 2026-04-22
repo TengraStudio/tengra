@@ -8,22 +8,23 @@
  * (at your option) any later version.
  */
 
-import { useCallback, useState } from 'react';
 import { fetchModels, getSelectableProviderId } from '@renderer/features/models/utils/model-fetcher';
 import { appLogger } from '@renderer/utils/renderer-logger';
+import { ModelInfo } from '@/types';
+import { useCallback, useState } from 'react';
 
 interface AIProviderInfo {
     provider: string;
     accountId?: string;
     quota?: number;
-    models: any[];
+    models: ModelInfo[];
 }
 
 export const useAICommitGenerator = (workspacePath: string | undefined) => {
     const [isGenerating, setIsGenerating] = useState(false);
 
     const generateCommitMessage = useCallback(async () => {
-        if (!workspacePath) return null;
+        if (!workspacePath) {return null;}
         setIsGenerating(true);
 
         try {
@@ -42,7 +43,7 @@ export const useAICommitGenerator = (workspacePath: string | undefined) => {
             const quotaMap = new Map<string, number>();
             if (rawQuota?.accounts) {
                 rawQuota.accounts.forEach(q => {
-                    if (q.accountId) quotaMap.set(q.accountId, q.remainingQuota ?? 0);
+                    if (q.accountId) {quotaMap.set(q.accountId, q.remainingQuota ?? 0);}
                 });
             }
 
@@ -117,7 +118,7 @@ export const useAICommitGenerator = (workspacePath: string | undefined) => {
             let targetModel = selectedProvider.models[0];
             
             for (const kw of smallModelKeywords) {
-                const found = selectedProvider.models.find(m => m.id.toLowerCase().includes(kw));
+                const found = selectedProvider.models.find(m => m.id?.toLowerCase().includes(kw));
                 if (found) {
                     targetModel = found;
                     break;
@@ -142,7 +143,7 @@ ${diffResult.diff}`;
 
             const response = await window.electron.session.conversation.complete({
                 messages: [{ role: 'user', content: prompt, id: 'commit-gen-' + Date.now(), timestamp: new Date() }],
-                model: targetModel.id,
+                model: targetModel.id || '',
                 provider: selectedProvider.provider,
             });
 

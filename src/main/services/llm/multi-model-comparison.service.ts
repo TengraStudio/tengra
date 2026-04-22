@@ -15,8 +15,8 @@ import { LLMService } from '@main/services/llm/llm.service';
 import { MemoryContextService } from '@main/services/llm/memory-context.service';
 import { LLMTask, MultiLLMOrchestrator } from '@main/services/llm/multi-llm-orchestrator.service';
 import { ChatMessage, OpenAIResponse } from '@main/types/llm.types';
-import { Message as SharedMessage } from '@shared/types/chat';
 import { ServiceResponse } from '@shared/types';
+import { Message as SharedMessage } from '@shared/types/chat';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { v4 as uuidv4 } from 'uuid';
 

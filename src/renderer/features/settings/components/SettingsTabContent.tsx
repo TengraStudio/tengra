@@ -8,9 +8,9 @@
  * (at your option) any later version.
  */
 
+import { ErrorBoundary } from '@renderer/components/shared/ErrorBoundary';
 import React, { Suspense } from 'react';
 
-import { ErrorBoundary } from '@renderer/components/shared/ErrorBoundary';
 import { SettingsCategory } from '@/features/settings/types';
 import type { GroupedModels, ModelInfo } from '@/types';
 

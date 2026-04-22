@@ -170,7 +170,7 @@ const WorkspaceCardInfo: React.FC<{ workspace: Workspace }> = ({ workspace }) =>
         <h3 className="text-lg font-bold text-foreground truncate tracking-tight">
             {workspace.title}
         </h3>
-        <p className="text-[11px] text-muted-foreground/40 whitespace-pre font-mono bg-muted/20 px-2 py-0.5 rounded-md inline-block max-w-full overflow-hidden text-ellipsis">
+        <p className="text-11 text-muted-foreground/40 whitespace-pre font-mono bg-muted/20 px-2 py-0.5 rounded-md inline-block max-w-full overflow-hidden text-ellipsis">
             {workspace.path}
         </p>
     </div>
@@ -188,13 +188,13 @@ const WorkspaceCardFooter: React.FC<{ workspace: Workspace }> = ({ workspace }) 
     const showStatus = workspace.status !== 'active';
 
     return (
-        <div className="pt-4 border-t border-border/20 mt-auto flex items-center justify-between text-[11px] text-muted-foreground/50">
+        <div className="pt-4 border-t border-border/20 mt-auto flex items-center justify-between text-11 text-muted-foreground/50">
             <span className="flex items-center gap-1.5 font-medium">
                 <Calendar className="w-3.5 h-3.5" />
                 {new Date(workspace.createdAt).toLocaleDateString()}
             </span>
             {showStatus && (
-                <div className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-muted/50 border border-border/40 text-muted-foreground/80">
+                <div className="px-2 py-0.5 rounded-md text-10 font-bold uppercase tracking-wider bg-muted/50 border border-border/40 text-muted-foreground/80">
                     {t(statusTranslationKey[workspace.status])}
                 </div>
             )}

@@ -52,11 +52,11 @@ import type { MemoryService } from '@main/services/llm/memory.service';
 import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service';
 import { ModelDownloaderService } from '@main/services/llm/model-downloader.service';
 import { ModelFallbackService, modelFallbackService } from '@main/services/llm/model-fallback.service';
-import { ModelSelectionService } from '@main/services/llm/model-selection.service';
 import {
     ModelRegistryDependencies,
     ModelRegistryService,
 } from '@main/services/llm/model-registry.service';
+import { ModelSelectionService } from '@main/services/llm/model-selection.service';
 import { MultiLLMOrchestrator } from '@main/services/llm/multi-llm-orchestrator.service';
 import { MultiModelComparisonService } from '@main/services/llm/multi-model-comparison.service';
 import { OllamaService } from '@main/services/llm/ollama.service';

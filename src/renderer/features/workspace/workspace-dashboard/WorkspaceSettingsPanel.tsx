@@ -8,14 +8,13 @@
  * (at your option) any later version.
  */
 
-import { useWorkspaceSettingsForm } from '@renderer/features/workspace/hooks/useWorkspaceSettingsForm';
-import React, { useState, useCallback } from 'react';
-import { WorkspaceEnvironmentTab } from './WorkspaceEnvironmentTab';
-
-import { Language, useTranslation } from '@/i18n';
-import { Workspace } from '@/types';
-import { useModelManager } from '@/features/models/hooks/useModelManager';
 import { useSettings } from '@renderer/context/SettingsContext';
+import { useWorkspaceSettingsForm } from '@renderer/features/workspace/hooks/useWorkspaceSettingsForm';
+import React, { useCallback,useState } from 'react';
+
+import { useModelManager } from '@/features/models/hooks/useModelManager';
+import { Language, useTranslation } from '@/i18n';
+import { AppSettings, Workspace } from '@/types';
 
 import {
     AdvancedSection,
@@ -31,6 +30,8 @@ import {
     WorkspaceSection
 } from '../components/settings';
 import { WorkspaceSettingsSection } from '../components/settings/types';
+
+import { WorkspaceEnvironmentTab } from './WorkspaceEnvironmentTab';
 
 interface WorkspaceSettingsPanelProps {
     workspace: Workspace
@@ -50,7 +51,7 @@ const WorkspaceSettingsPanelBase: React.FC<WorkspaceSettingsPanelProps> = ({
 }) => {
     const { t } = useTranslation(language);
     const { settings, updateSettings } = useSettings();
-    const onSettingsUpdate = useCallback((s: any) => void updateSettings(s), [updateSettings]);
+    const onSettingsUpdate = useCallback((s: AppSettings) => void updateSettings(s), [updateSettings]);
     const { models: allModels } = useModelManager(settings, onSettingsUpdate);
 
     // Deduplicate models by ID to prevent duplicate keys in multiple sections
@@ -161,7 +162,7 @@ const WorkspaceSettingsPanelBase: React.FC<WorkspaceSettingsPanelProps> = ({
                                         {t('workspace.envDescription')}
                                     </p>
                                 </div>
-                                <div className="h-[600px] border border-border/40 rounded-xl overflow-hidden bg-background/30 backdrop-blur-sm">
+                                <div className="h-600 border border-border/40 rounded-xl overflow-hidden bg-background/30 backdrop-blur-sm">
                                     <WorkspaceEnvironmentTab
                                         workspacePath={workspace.path}
                                         language={language}

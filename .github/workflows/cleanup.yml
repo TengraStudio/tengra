@@ -23,12 +23,12 @@ jobs:
           node-version: 20
 
       - name: Cleanup Failed Runs (30+ days old)
-        run: node scripts/cleanup-workflow-runs.js --status=failure --older-than=30
+        run: node scripts/tasks/gh-workflow-cleanup.js --status=failure --older-than=30
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cleanup Old Success Runs (60+ days old, keep last 10)
-        run: node scripts/cleanup-workflow-runs.js --status=success --older-than=60 --keep-last=10
+        run: node scripts/tasks/gh-workflow-cleanup.js --status=success --older-than=60 --keep-last=10
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

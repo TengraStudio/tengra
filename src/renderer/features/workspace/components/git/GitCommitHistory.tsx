@@ -8,22 +8,22 @@
  * (at your option) any later version.
  */
 
-import React from 'react';
+import { Badge } from '@renderer/components/ui/badge';
+import { Button } from '@renderer/components/ui/button';
+import { cn } from '@renderer/lib/utils';
 import { 
-    History, 
-    RefreshCw, 
+    AlertCircle,
+    ArrowDownCircle,
+    Calendar,
     ChevronDown, 
     ChevronRight, 
-    Loader2, 
+    History, 
     ListTree, 
-    AlertCircle,
-    User,
-    Calendar,
-    ArrowDownCircle
-} from 'lucide-react';
-import { Button } from '@renderer/components/ui/button';
-import { Badge } from '@renderer/components/ui/badge';
-import { cn } from '@renderer/lib/utils';
+    Loader2, 
+    RefreshCw, 
+    User} from 'lucide-react';
+import React from 'react';
+
 import { GitCommitDiffView } from './GitCommitDiffView';
 import { GitCommitInfo, GitData } from './types';
 
@@ -79,7 +79,7 @@ const HistoryRow = ({
                     {/* Avatar / Icon with Timeline Point */}
                     <div className="relative mt-0.5">
                         <div className={cn(
-                            "w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shadow-sm border transition-all",
+                            "w-8 h-8 rounded-full flex items-center justify-center text-11 font-bold shadow-sm border transition-all",
                             isSelected 
                                 ? "bg-primary/20 text-primary border-primary/30" 
                                 : "bg-muted text-muted-foreground/60 border-border/40 group-hover:bg-muted/80"
@@ -91,20 +91,20 @@ const HistoryRow = ({
                     <div className="flex-1 min-w-0 flex flex-col gap-1.5">
                         <div className="flex items-center justify-between gap-4">
                             <span className={cn(
-                                "text-[13px] font-bold leading-tight truncate tracking-tight",
+                                "text-13 font-bold leading-tight truncate tracking-tight",
                                 isSelected ? "text-primary" : "text-foreground/90"
                             )}>
                                 {commit.message}
                             </span>
                             <div className="flex items-center gap-2 shrink-0">
-                                <Badge variant="outline" className="h-5 px-1.5 border-border/10 bg-muted/40 text-muted-foreground/40 rounded-md font-mono text-[9px] tracking-tight hover:bg-muted/60 transition-colors">
+                                <Badge variant="outline" className="h-5 px-1.5 border-border/10 bg-muted/40 text-muted-foreground/40 rounded-md font-mono text-9 tracking-tight hover:bg-muted/60 transition-colors">
                                     {commit.hash.substring(0, 7).toUpperCase()}
                                 </Badge>
                                 {isSelected ? <ChevronDown className="w-3.5 h-3.5 text-primary/60" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/10 group-hover:text-muted-foreground/30" />}
                             </div>
                         </div>
                         
-                        <div className="flex items-center gap-4 text-[10px] text-muted-foreground/40 font-bold uppercase tracking-widest leading-none">
+                        <div className="flex items-center gap-4 text-10 text-muted-foreground/40 font-bold uppercase tracking-widest leading-none">
                             <div className="flex items-center gap-1.5">
                                 <User className="w-2.5 h-2.5" />
                                 <span>{commit.author}</span>
@@ -122,13 +122,13 @@ const HistoryRow = ({
                         {loadingDiff ? (
                             <div className="flex flex-col items-center justify-center py-16 bg-muted/5 rounded-2xl border border-dashed border-border/10">
                                 <Loader2 className="w-6 h-6 animate-spin text-primary/40 mb-3" />
-                                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/30">Streaming Git Delta...</span>
+                                <span className="text-10 font-bold uppercase tracking-200 text-muted-foreground/30">Streaming Git Delta...</span>
                             </div>
                         ) : commitDiff ? (
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2 px-1 text-muted-foreground/30">
                                     <ListTree className="w-3.5 h-3.5" />
-                                    <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Detailed Changeset</span>
+                                    <span className="text-10 font-bold uppercase tracking-200">Detailed Changeset</span>
                                 </div>
                                 <GitCommitDiffView
                                     selectedCommit={commit}
@@ -140,8 +140,8 @@ const HistoryRow = ({
                         ) : (
                             <div className="py-12 flex flex-col items-center justify-center bg-muted/5 rounded-2xl text-center border border-dashed border-border/10">
                                 <AlertCircle className="w-6 h-6 text-amber-500/30 mb-3" />
-                                <span className="text-[11px] font-bold text-muted-foreground/40 uppercase tracking-widest">No Modifications Found</span>
-                                <p className="text-[9px] text-muted-foreground/20 max-w-[240px] mt-2 leading-relaxed">
+                                <span className="text-11 font-bold text-muted-foreground/40 uppercase tracking-widest">No Modifications Found</span>
+                                <p className="text-9 text-muted-foreground/20 max-w-240 mt-2 leading-relaxed">
                                     This commit contains no file-level changes. It could be a merge commit or metadata-only update.
                                 </p>
                             </div>
@@ -172,9 +172,9 @@ export const GitCommitHistory: React.FC<CommitHistoryProps> = ({
                 <div className="flex flex-col gap-1.5">
                     <div className="flex items-center gap-2 text-primary">
                         <History className="w-4 h-4" />
-                        <h2 className="text-sm font-black uppercase tracking-[0.1em]">Repository Timeline</h2>
+                        <h2 className="text-sm font-black uppercase tracking-100">Repository Timeline</h2>
                     </div>
-                    <div className="flex items-center gap-2.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/30">
+                    <div className="flex items-center gap-2.5 text-10 font-bold uppercase tracking-widest text-muted-foreground/30">
                         <span>Index: {gitData.recentCommits.length} Records</span>
                         <div className="w-1 h-1 rounded-full bg-border/20" />
                         <span>Live Sync Enabled</span>
@@ -187,7 +187,7 @@ export const GitCommitHistory: React.FC<CommitHistoryProps> = ({
                         size="sm" 
                         onClick={fetchGitData}
                         disabled={gitData.loading}
-                        className="h-9 px-4 text-[10px] font-bold uppercase tracking-widest bg-background/50 border-border/10 hover:border-primary/20 hover:text-primary transition-all shadow-sm"
+                        className="h-9 px-4 text-10 font-bold uppercase tracking-widest bg-background/50 border-border/10 hover:border-primary/20 hover:text-primary transition-all shadow-sm"
                     >
                         <RefreshCw className={cn("w-3.5 h-3.5 mr-2.5", gitData.loading && "animate-spin")} />
                         Re-Index
@@ -196,13 +196,13 @@ export const GitCommitHistory: React.FC<CommitHistoryProps> = ({
             </div>
 
             {/* Commits Container */}
-            <div className="border border-border/40 rounded-3xl bg-card shadow-2xl shadow-black/20 overflow-hidden min-h-[500px] flex flex-col">
+            <div className="border border-border/40 rounded-3xl bg-card shadow-2xl shadow-black/20 overflow-hidden min-h-500 flex flex-col">
                 {gitData.recentCommits.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center py-40 grayscale opacity-20">
                         <div className="p-6 rounded-full bg-muted mb-6">
                             <History className="w-10 h-10" />
                         </div>
-                        <span className="text-[11px] font-black tracking-[0.3em] uppercase">No Activity Detected</span>
+                        <span className="text-11 font-black tracking-300 uppercase">No Activity Detected</span>
                     </div>
                 ) : (
                     <div className="flex flex-col">
@@ -226,7 +226,7 @@ export const GitCommitHistory: React.FC<CommitHistoryProps> = ({
                                     variant="ghost"
                                     onClick={handleLoadMoreCommits}
                                     disabled={isLoadingMore}
-                                    className="group h-10 px-6 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 hover:text-primary hover:bg-primary/5 transition-all w-full md:w-auto"
+                                    className="group h-10 px-6 text-10 font-black uppercase tracking-200 text-muted-foreground/40 hover:text-primary hover:bg-primary/5 transition-all w-full md:w-auto"
                                 >
                                     {isLoadingMore ? (
                                         <Loader2 className="w-4 h-4 animate-spin mr-3" />
@@ -238,7 +238,7 @@ export const GitCommitHistory: React.FC<CommitHistoryProps> = ({
                             ) : (
                                 <div className="py-4 flex items-center gap-4 text-muted-foreground/20">
                                     <div className="h-px w-12 bg-current" />
-                                    <span className="text-[9px] font-black uppercase tracking-[0.4em]">End of History</span>
+                                    <span className="text-9 font-black uppercase tracking-400">End of History</span>
                                     <div className="h-px w-12 bg-current" />
                                 </div>
                             )}

@@ -8,12 +8,13 @@
  * (at your option) any later version.
  */
 
-import React from 'react';
-import { GitBranch, RefreshCw, Type } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@renderer/components/ui/card';
-import { Label } from '@renderer/components/ui/label';
 import { Input } from '@renderer/components/ui/input';
+import { Label } from '@renderer/components/ui/label';
 import { Switch } from '@renderer/components/ui/switch';
+import { GitBranch, RefreshCw, Type } from 'lucide-react';
+import React from 'react';
+
 import { SettingsSectionProps } from './types';
 
 export const GitSection: React.FC<SettingsSectionProps> = ({ formData, setFormData, t }) => {

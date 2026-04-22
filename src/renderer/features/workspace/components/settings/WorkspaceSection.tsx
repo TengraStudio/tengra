@@ -8,10 +8,11 @@
  * (at your option) any later version.
  */
 
-import { FolderTree, Plus, Trash2, AlertTriangle } from 'lucide-react';
-import React from 'react';
 import { Button } from '@renderer/components/ui/button';
 import { Card, CardContent } from '@renderer/components/ui/card';
+import { AlertTriangle,FolderTree, Plus, Trash2 } from 'lucide-react';
+import React from 'react';
+
 import { Workspace } from '@/types';
 
 interface WorkspaceSectionProps {

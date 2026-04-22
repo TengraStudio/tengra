@@ -8,9 +8,10 @@
  * (at your option) any later version.
  */
 
-import React from 'react';
-import { GitMerge, RefreshCw, ArrowDown, ArrowUp } from 'lucide-react';
 import { Button } from '@renderer/components/ui/button';
+import { ArrowDown, ArrowUp,GitMerge, RefreshCw } from 'lucide-react';
+import React from 'react';
+
 import { Remote, TrackingInfo } from './types';
 
 interface QuickActionsProps {
@@ -44,7 +45,7 @@ export const GitQuickActions: React.FC<QuickActionsProps> = ({
                     {isPulling ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ArrowDown className="w-4 h-4 text-indigo-400" />}
                     Pull
                     {trackingInfo && trackingInfo.behind > 0 && (
-                        <span className="ml-1 text-[10px] text-indigo-400">({trackingInfo.behind})</span>
+                        <span className="ml-1 text-10 text-indigo-400">({trackingInfo.behind})</span>
                     )}
                 </Button>
                 
@@ -65,7 +66,7 @@ export const GitQuickActions: React.FC<QuickActionsProps> = ({
             {!hasRemotes && (
                 <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/5 rounded-lg border border-amber-500/10">
                     <GitMerge className="w-3 h-3 text-amber-500/60" />
-                    <span className="text-[10px] font-bold text-amber-500/60 uppercase tracking-tight">No remotes configured</span>
+                    <span className="text-10 font-bold text-amber-500/60 uppercase tracking-tight">No remotes configured</span>
                 </div>
             )}
         </div>
