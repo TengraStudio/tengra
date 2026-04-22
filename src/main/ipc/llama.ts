@@ -13,7 +13,6 @@ import { appLogger } from '@main/logging/logger';
 import { LlamaService } from '@main/services/llm/llama.service';
 import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withOperationGuard } from '@main/utils/operation-wrapper.util';
-import { IpcValue } from '@shared/types/common';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
 /** Maximum model path length */
@@ -24,8 +23,6 @@ const MAX_MESSAGE_LENGTH = 100 * 1024;
 const MAX_SYSTEM_PROMPT_LENGTH = 50 * 1024;
 /** Maximum URL length */
 const MAX_URL_LENGTH = 2048;
-/** Maximum filename length */
-const MAX_FILENAME_LENGTH = 255;
 
 /**
  * Validates a path string
@@ -70,35 +67,7 @@ function validateSystemPrompt(value: RuntimeValue): string | undefined {
     return value;
 }
 
-/**
- * Validates a URL
- */
-function validateUrl(value: RuntimeValue): string | null {
-    if (typeof value !== 'string') {
-        return null;
-    }
-    const trimmed = value.trim();
-    if (!trimmed || trimmed.length > MAX_URL_LENGTH) {
-        return null;
-    }
-    // Basic URL validation
-    try {
-        new URL(trimmed);
-        return trimmed;
-    } catch {
-        return null;
-    }
-}
-
-/**
- * Validates a config object
- */
-function validateConfig(value: RuntimeValue): Record<string, IpcValue> {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) {
-        return {};
-    }
-    return value as Record<string, IpcValue>;
-}
+void MAX_URL_LENGTH;
 
 /**
  * Registers IPC handlers for Llama model operations
@@ -107,36 +76,7 @@ export function registerLlamaIpc(getMainWindow: () => BrowserWindow | null, llam
     appLogger.debug('LlamaIPC', 'Registering Llama IPC handlers');
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'llama operation');
 
-    ipcMain.handle(
-        'llama:loadModel',
-        createIpcHandler(
-            'llama:loadModel',
-            async (event: IpcMainInvokeEvent, modelPathRaw: RuntimeValue, configRaw: RuntimeValue) => {
-                validateSender(event);
-                const modelPath = validatePath(modelPathRaw);
-                if (!modelPath) {
-                    throw new Error('Invalid model path');
-                }
-                const config = validateConfig(configRaw);
-                appLogger.info('LlamaIPC', `Loading model from ${modelPath}`);
-                return await llamaService.loadModel(modelPath, config);
-            }
-        )
-    );
 
-    ipcMain.handle(
-        'llama:unloadModel',
-        createSafeIpcHandler(
-            'llama:unloadModel',
-            async (event) => {
-                validateSender(event);
-                appLogger.info('LlamaIPC', 'Unloading model');
-                await llamaService.stopServer();
-                return { success: true };
-            },
-            { success: false }
-        )
-    );
 
     ipcMain.handle(
         'llama:chat',
@@ -159,47 +99,8 @@ export function registerLlamaIpc(getMainWindow: () => BrowserWindow | null, llam
         )
     );
 
-    ipcMain.handle(
-        'llama:resetSession',
-        createSafeIpcHandler(
-            'llama:resetSession',
-            async (event) => {
-                validateSender(event);
-                await llamaService.resetSession();
-                return { success: true };
-            },
-            { success: false }
-        )
-    );
 
-    ipcMain.handle(
-        'llama:getModels',
-        createSafeIpcHandler(
-            'llama:getModels',
-            async (event) => {
-                validateSender(event);
-                return await llamaService.getModels();
-            },
-            []
-        )
-    );
 
-    ipcMain.handle(
-        'llama:downloadModel',
-        createIpcHandler(
-            'llama:downloadModel',
-            async (event: IpcMainInvokeEvent, urlRaw: RuntimeValue, filenameRaw: RuntimeValue) => {
-                validateSender(event);
-                const url = validateUrl(urlRaw);
-                const filename = validatePath(filenameRaw, MAX_FILENAME_LENGTH);
-                if (!url || !filename) {
-                    throw new Error('Invalid URL or filename');
-                }
-                appLogger.info('LlamaIPC', `Downloading model to ${filename}`);
-                return await llamaService.downloadModel(url, filename);
-            }
-        )
-    );
 
     ipcMain.handle(
         'llama:deleteModel',
@@ -216,53 +117,7 @@ export function registerLlamaIpc(getMainWindow: () => BrowserWindow | null, llam
         )
     );
 
-    ipcMain.handle(
-        'llama:getConfig',
-        createSafeIpcHandler(
-            'llama:getConfig',
-            async (event) => {
-                validateSender(event);
-                return llamaService.getConfig();
-            },
-            {}
-        )
-    );
 
-    ipcMain.handle(
-        'llama:setConfig',
-        createSafeIpcHandler(
-            'llama:setConfig',
-            async (event: IpcMainInvokeEvent, configRaw: RuntimeValue) => {
-                validateSender(event);
-                const config = validateConfig(configRaw);
-                llamaService.setConfig(config);
-                return { success: true };
-            },
-            { success: false }
-        )
-    );
 
-    ipcMain.handle(
-        'llama:getGpuInfo',
-        createSafeIpcHandler(
-            'llama:getGpuInfo',
-            async (event) => {
-                validateSender(event);
-                return await llamaService.getGpuInfo();
-            },
-            null
-        )
-    );
 
-    ipcMain.handle(
-        'llama:getModelsDir',
-        createSafeIpcHandler(
-            'llama:getModelsDir',
-            async (event) => {
-                validateSender(event);
-                return llamaService.getModelsDir();
-            },
-            ''
-        )
-    );
 }

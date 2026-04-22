@@ -23,6 +23,7 @@ import { EventBusService } from '@main/services/system/event-bus.service';
 import { JsonObject } from '@shared/types/common';
 import { AISystemType, DiffStats, FileDiff } from '@shared/types/file-diff';
 import { getErrorMessage } from '@shared/utils/error.util';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { createPatch } from 'diff';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -138,17 +139,39 @@ export class FileChangeTracker extends BaseService {
      */
     async revertFileChange(diffId: string): Promise<{ success: boolean; error?: string }> {
         try {
-            const diff = await this.databaseService.getFileDiff(diffId);
-            if (!diff) {
+            const row = await this.databaseService.getFileDiff(diffId);
+            if (!row) {
                 return { success: false, error: 'Diff not found' };
             }
 
-            // Write the before content back to the file
-            if (typeof diff.filePath === 'string' && typeof diff.beforeContent === 'string') {
-                await fs.writeFile(diff.filePath, diff.beforeContent, 'utf-8');
+            const raw = typeof row.diff === 'string' ? row.diff : '';
+            const parsed = raw ? safeJsonParse<FileDiff | null>(raw, null) : null;
+            if (!parsed || typeof parsed.filePath !== 'string') {
+                return { success: false, error: 'Invalid diff payload' };
             }
 
-            appLogger.info(this.name, `Reverted file change: ${path.basename(String(diff.filePath))}`);
+            // If the file didn't exist before (AI created it), undo should delete it.
+            const metadata = parsed.metadata as JsonObject | undefined;
+            const existedBefore = metadata && typeof metadata['existedBefore'] === 'boolean'
+                ? Boolean(metadata['existedBefore'])
+                : true;
+
+            if (!existedBefore) {
+                try {
+                    await fs.unlink(parsed.filePath);
+                } catch {
+                    // Ignore if already removed
+                }
+                appLogger.info(this.name, `Reverted file change by deleting created file: ${path.basename(String(parsed.filePath))}`);
+                return { success: true };
+            }
+
+            // Otherwise write the previous content back to the file.
+            if (typeof parsed.beforeContent === 'string') {
+                await fs.writeFile(parsed.filePath, parsed.beforeContent, 'utf-8');
+            }
+
+            appLogger.info(this.name, `Reverted file change: ${path.basename(String(parsed.filePath))}`);
             return { success: true };
 
         } catch (error) {

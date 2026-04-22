@@ -68,16 +68,6 @@ jobs:
     - name: Install Dependencies
       run: npm ci
 
-    - name: Validate Changelog
-      run: npm run changelog:sync
-      env:
-        NODE_OPTIONS: --max-old-space-size=6144
-
-    - name: Changelog i18n Gate
-      run: npm run changelog:i18n:gate
-      env:
-        NODE_OPTIONS: --max-old-space-size=6144
-
   security:
     timeout-minutes: 20
     runs-on: ubuntu-latest
@@ -130,7 +120,6 @@ jobs:
       run: npm run lint
       env:
         NODE_OPTIONS: --max-old-space-size=4096
-      continue-on-error: true
 
   tests:
     timeout-minutes: 30
@@ -155,7 +144,6 @@ jobs:
       run: npm test
       env:
         NODE_OPTIONS: --max-old-space-size=6144
-      continue-on-error: true
 
   build-preview:
     timeout-minutes: 25
@@ -182,7 +170,7 @@ jobs:
         CI: true
         NODE_OPTIONS: --max-old-space-size=8192
     - name: Check bundle sizes
-      run: npx tsx scripts/check-bundle-size.ts
+      run: node scripts/tasks/audit-bundle-size.js
     - name: Upload Preview Artifact
       uses: actions/upload-artifact@v4
       with:

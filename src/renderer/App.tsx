@@ -10,7 +10,6 @@
 
 import { MemoizedAppHeader as AppHeader } from '@renderer/components/layout/AppHeader';
 import { AppModals } from '@renderer/components/layout/AppModals';
-import { DragDropWrapper } from '@renderer/components/layout/DragDropWrapper';
 import { LayoutManager } from '@renderer/components/layout/LayoutManager';
 import { OfflineBanner } from '@renderer/components/layout/OfflineBanner';
 import { SessionLockOverlay } from '@renderer/components/layout/SessionLockOverlay';
@@ -18,7 +17,6 @@ import { Sidebar } from '@renderer/components/layout/Sidebar';
 import { ToastsContainer } from '@renderer/components/layout/ToastsContainer';
 import { ErrorBoundary } from '@renderer/components/shared/ErrorBoundary';
 import { ErrorFallback } from '@renderer/components/shared/ErrorFallback';
-import { validateDroppedFile } from '@renderer/features/chat/hooks/useAttachments';
 import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech';
 import { useVoiceInput } from '@renderer/features/chat/hooks/useVoiceInput';
 import { ChatTemplate } from '@renderer/features/chat/types';
@@ -293,7 +291,7 @@ const KeyboardShortcutsConnector: React.FC<{
         useKeyboardShortcuts(keyboardShortcutsConfig);
         return null;
     };
- 
+
 const WindowAppCommandConnector: React.FC<{
     setShowSSHManager: (show: boolean) => void;
 }> = ({ setShowSSHManager }) => {
@@ -343,77 +341,7 @@ const SelectionPersistenceConnector: React.FC = () => {
     }, [selectedWorkspace?.id]);
 
     return null;
-};
-
-const DragDropContent: React.FC<{
-    isDragging: boolean;
-    setIsDragging: (dragging: boolean) => void;
-    addToast: (toast: { type: 'error'; message: string }) => void;
-    currentView: AppView;
-    templates: ChatTemplate[];
-    messagesEndRef: React.RefObject<HTMLDivElement>;
-    fileInputRef: React.RefObject<HTMLInputElement>;
-    textareaRef: React.RefObject<HTMLTextAreaElement>;
-    onScrollToBottom: () => void;
-    showScrollButton: boolean;
-    setShowScrollButton: (show: boolean) => void;
-    showFileMenu: boolean;
-    setShowFileMenu: (show: boolean) => void;
-    settingsSearchQuery?: string;
-}> = ({
-    isDragging,
-    setIsDragging,
-    addToast,
-    currentView,
-    templates,
-    messagesEndRef,
-    fileInputRef,
-    textareaRef,
-    onScrollToBottom,
-    showScrollButton,
-    setShowScrollButton,
-    showFileMenu,
-    setShowFileMenu,
-    settingsSearchQuery,
-}) => {
-        const { processFile } = useChatComposer();
-        const { t } = useTranslation();
-
-        return (
-            <DragDropWrapper
-                isDragging={isDragging}
-                setIsDragging={setIsDragging}
-                onFileDrop={file => {
-                    void (async () => {
-                        const validation = await validateDroppedFile(file, t);
-                        if (!validation.valid) {
-                            addToast({
-                                type: 'error',
-                                message: validation.error || t('common.invalidInput'),
-                            });
-                            return;
-                        }
-                        void processFile(file);
-                    })();
-                }}
-            >
-                <ViewManager
-                    currentView={currentView}
-                    templates={templates}
-                    messagesEndRef={messagesEndRef}
-                    fileInputRef={fileInputRef}
-                    textareaRef={textareaRef}
-                    onScrollToBottom={onScrollToBottom}
-                    showScrollButton={showScrollButton}
-                    setShowScrollButton={setShowScrollButton}
-                    showFileMenu={showFileMenu}
-                    setShowFileMenu={setShowFileMenu}
-                    settingsSearchQuery={settingsSearchQuery}
-                />
-                <div id="modal-root" />
-            </DragDropWrapper>
-        );
-    };
+}; 
 
 export default function App() {
     if (isDetachedTerminalWindow) {
@@ -459,12 +387,12 @@ function MainApp() {
     const lastBreakpoint = React.useRef(breakpoint);
     useEffect(() => {
         if (lastBreakpoint.current !== breakpoint || !isSidebarCollapsed) {
-          trackResponsiveBreakpoint({
-              breakpoint,
-              width: window.innerWidth,
-              height: window.innerHeight,
-          });
-          lastBreakpoint.current = breakpoint;
+            trackResponsiveBreakpoint({
+                breakpoint,
+                width: window.innerWidth,
+                height: window.innerHeight,
+            });
+            lastBreakpoint.current = breakpoint;
         }
         document.documentElement.setAttribute('data-breakpoint', breakpoint);
         if (breakpoint === 'mobile' && !isSidebarCollapsed) {
@@ -579,7 +507,7 @@ function MainApp() {
                             setCurrentView={setCurrentView}
                             onToggleSidebar={handleToggleSidebar}
                             onOpenSettings={openSettings}
-                        /> 
+                        />
                         <Suspense fallback={null}>
                             <UpdateNotification />
                         </Suspense>
@@ -604,11 +532,8 @@ function MainApp() {
                                     currentView={appState.currentView}
                                     onOpenSettings={() => { openSettings(); }}
                                 />
-                                <DragDropContent
-                                    isDragging={appState.isDragging}
-                                    setIsDragging={appState.setIsDragging}
-                                    addToast={toast => appState.addToast(toast)}
-                                    currentView={appState.currentView}
+                                <ViewManager
+                                    currentView={currentView}
                                     templates={chatTemplates}
                                     messagesEndRef={appState.messagesEndRef}
                                     fileInputRef={appState.fileInputRef}
@@ -620,6 +545,7 @@ function MainApp() {
                                     setShowFileMenu={appState.setShowFileMenu}
                                     settingsSearchQuery={settingsSearchQuery}
                                 />
+                                <div id="modal-root" />
                             </>
                         }
                     />

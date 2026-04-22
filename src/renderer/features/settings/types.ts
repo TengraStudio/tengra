@@ -22,7 +22,6 @@ export type SettingsCategory =
     | 'statistics'
     | 'personas'
     | 'speech'
-    | 'developer'
     | 'advanced'
     | 'about'
     | 'images'

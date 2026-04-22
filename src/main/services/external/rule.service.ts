@@ -1,72 +1,69 @@
-/**
- * Tengra - Your Personal AI Assistant
- * Copyright (c) 2026 TengraStudio
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- */
-
-import { promises as fs } from 'fs';
-import path from 'path';
-
 import { appLogger } from '@main/logging/logger';
-import { isNodeError } from '@shared/utils/error.util';
+import { DatabaseService } from '@main/services/data/database.service';
 
 export interface WorkspaceRules {
-    content: string; // The raw or processed content of RULES.md
+    content: string; // The raw or processed content of project guidelines
     lastModified: number;
 }
 
 export class RuleService {
     private cache: Map<string, WorkspaceRules> = new Map();
 
-    constructor() { }
+    constructor(private readonly databaseService: DatabaseService) { }
 
     /**
-     * Reads .tengra/RULES.md from the given workspace root.
-     * Returns null if file doesn't exist.
+     * Reads rules for a specific workspace from the database.
+     * Returns null if no rules are set or workspace not found.
      */
-    async getRules(workspaceRoot: string): Promise<string | null> {
-        const rulesPath = path.join(workspaceRoot, '.tengra', 'RULES.md');
-
+    async getRules(workspaceId: string): Promise<string | null> {
         try {
-            const stats = await fs.stat(rulesPath);
-            const cached = this.cache.get(rulesPath);
+            const workspace = await this.databaseService.workspaces.getWorkspace(workspaceId);
 
-            // Return cached version if file hasn't changed
-            if (cached?.lastModified === stats.mtimeMs) {
-                return cached.content;
+            if (!workspace) {
+                return null;
             }
 
-            // Read fresh content
-            appLogger.info('rule.service', `[RuleService] Loading rules from ${rulesPath}`);
-            const content = await fs.readFile(rulesPath, 'utf-8');
+            if (workspace.rules && workspace.rules.trim().length > 0) {
+                const cached = this.cache.get(workspaceId);
+                const lastModified = workspace.updatedAt;
 
-            // Basic sanitization or parsing could happen here
-            // For now, we return the raw markdown content
+                if (cached?.lastModified === lastModified) {
+                    return cached.content;
+                }
 
-            this.cache.set(rulesPath, {
-                content,
-                lastModified: stats.mtimeMs
-            });
+                this.cache.set(workspaceId, { content: workspace.rules, lastModified });
+                return workspace.rules;
+            }
 
-            return content;
+            return null;
         } catch (error) {
-            if (isNodeError(error as Error) && (error as { code?: string }).code !== 'ENOENT') {
-                appLogger.warn('rule.service', `[RuleService] Error reading rules from ${rulesPath}: ${(error as Error).message}`);
+            appLogger.warn('rule.service', `[RuleService] Error fetching rules for workspace ${workspaceId}: ${(error as Error).message}`);
+            return null;
+        }
+    }
+
+    /**
+     * Updates rules for a specific workspace in the database.
+     */
+    async updateRules(workspaceId: string, content: string): Promise<boolean> {
+        try {
+            const result = await this.databaseService.workspaces.updateWorkspace(workspaceId, { rules: content });
+
+            if (result) {
+                this.cache.delete(workspaceId);
+                return true;
             }
-            return null; // File doesn't exist or error
+            return false;
+        } catch (error) {
+            appLogger.error('rule.service', `[RuleService] Failed to update rules for ${workspaceId}`, error as Error);
+            return false;
         }
     }
 
     /**
      * Clears cache for a specific workspace
      */
-    clearCache(workspaceRoot: string) {
-        const rulesPath = path.join(workspaceRoot, '.tengra', 'RULES.md');
-        this.cache.delete(rulesPath);
+    clearCache(workspaceId: string) {
+        this.cache.delete(workspaceId);
     }
 }
-

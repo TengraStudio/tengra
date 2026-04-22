@@ -94,7 +94,11 @@ export function registerIpcHandlers(
     registerLazyServicesIpc();
     registerContractIpc();
     registerCodeSandboxIpc(getMainWindow);
-    registerModelRegistryIpc(services.modelRegistryService);
+    registerModelRegistryIpc(
+        services.modelRegistryService,
+        services.eventBusService,
+        getMainWindow
+    );
     registerModelDownloaderIpc(services.modelDownloaderService);
     registerAuditIpc(services.auditLogService);
     registerPerformanceIpc(services.performanceService);
@@ -182,10 +186,6 @@ export function registerIpcHandlers(
         updateOpenAIConnection: () => {
             const mainWindow = getMainWindow();
             if (mainWindow) {
-                mainWindow.webContents.send(
-                    'openai:connection-status',
-                    services.llmService.isOpenAIConnected()
-                );
             }
         },
         updateOllamaConnection: async () => {
@@ -202,7 +202,7 @@ export function registerIpcHandlers(
         },
     });
 
-    registerFilesIpc(getMainWindow, services.fileSystemService, allowedFileRoots, services.auditLogService);
+    registerFilesIpc(getMainWindow, services.fileSystemService, allowedFileRoots, services.auditLogService, services.fileChangeTracker);
     registerHFModelIpc(services.llmService, services.huggingFaceService);
     registerMultiModelIpc(services.multiModelComparisonService);
     registerCollaborationIpc(getMainWindow, services.modelCollaborationService);

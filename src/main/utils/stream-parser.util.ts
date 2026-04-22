@@ -367,15 +367,6 @@ export class StreamParser {
         if (reasoning) { yield { reasoning }; }
     }
 
-    // @ts-expect-error reserved for future OpenCode done-event handling
-    private static *_handleOpenCodeDone(contentItems: StreamItemContent[]) {
-        const text = contentItems
-            .filter((c) => c.type === 'output_text')
-            .map((c) => c.text ?? '')
-            .join('');
-        if (text) { yield { content: text }; }
-    }
-
     private static updateOpenCodeToolCallState(json: StreamPayload, openCodeState: OpenCodeStreamState): void {
         const toolCallId = this.resolveOpenCodeToolCallId(json);
         if (!toolCallId) {

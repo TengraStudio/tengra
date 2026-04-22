@@ -8,20 +8,13 @@
  * (at your option) any later version.
  */
 
-import { promises as fs } from 'fs';
-import * as os from 'os';
-import * as path from 'path';
-
 import { appLogger } from '@main/logging/logger';
 import { ThemeService } from '@main/services/theme/theme.service';
 import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { themeStore } from '@main/utils/theme-store.util';
-import { CustomTheme, ThemeManifest } from '@shared/types/theme';
+import { ThemeManifest } from '@shared/types/theme';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent, shell } from 'electron';
 
 const MAX_ID_LENGTH = 64;
-const MAX_NAME_LENGTH = 128;
-const MAX_JSON_LENGTH = 1048576; // 1MB
 
 /**
  * Validates a theme ID string, allowing only alphanumeric characters, dashes, and underscores.
@@ -41,78 +34,6 @@ function validateThemeId(value: RuntimeValue): string | null {
         return null;
     }
     return trimmed;
-}
-
-/**
- * Validates a theme name string.
- * @param value - Raw theme name input to validate
- * @returns Trimmed theme name or null if invalid
- */
-function validateThemeName(value: RuntimeValue): string | null {
-    if (typeof value !== 'string') {
-        return null;
-    }
-    const trimmed = value.trim();
-    if (!trimmed || trimmed.length > MAX_NAME_LENGTH) {
-        return null;
-    }
-    return trimmed;
-}
-
-/**
- * Validates a JSON string input, enforcing a maximum length.
- * @param value - Raw JSON string to validate
- * @returns The JSON string or null if invalid
- */
-function validateJsonString(value: RuntimeValue): string | null {
-    if (typeof value !== 'string') {
-        return null;
-    }
-    if (value.length > MAX_JSON_LENGTH) {
-        return null;
-    }
-    return value;
-}
-
-type CustomThemeDraft = Omit<CustomTheme, 'id' | 'createdAt' | 'modifiedAt'>;
-
-/**
- * Validates a custom theme input object, checking required fields and allowed values.
- * @param value - Raw theme object to validate
- * @returns Validated custom theme draft or null if invalid
- */
-function validateCustomThemeInput(value: RuntimeValue): CustomThemeDraft | null {
-    if (!value || typeof value !== 'object') {
-        return null;
-    }
-    const candidate = value as Record<string, RuntimeValue>;
-    if (typeof candidate['name'] !== 'string' || candidate['name'].trim().length === 0) {
-        return null;
-    }
-    if (
-        candidate['category'] !== 'elite-dark' &&
-        candidate['category'] !== 'vibrant-neon' &&
-        candidate['category'] !== 'professional-light' &&
-        candidate['category'] !== 'artisanal'
-    ) {
-        return null;
-    }
-    if (typeof candidate['isDark'] !== 'boolean') {
-        return null;
-    }
-    if (candidate['isCustom'] !== true) {
-        return null;
-    }
-    if (
-        candidate['source'] !== 'user-created' &&
-        candidate['source'] !== 'imported'
-    ) {
-        return null;
-    }
-    if (!candidate['colors'] || typeof candidate['colors'] !== 'object') {
-        return null;
-    }
-    return candidate as CustomThemeDraft;
 }
 
 /**
@@ -175,186 +96,24 @@ export function registerThemeIpc(
     ));
 
     // Legacy theme store handlers (kept for backward compatibility)
-    ipcMain.handle('theme:getCurrent', createSafeIpcHandler('theme:getCurrent',
-        async () => {
-            return themeStore.getCurrentTheme();
-        }, null
-    ));
 
-    ipcMain.handle('theme:set', createSafeIpcHandler('theme:set',
-        async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue) => {
-            const themeId = validateThemeId(themeIdRaw);
-            if (!themeId) {
-                throw new Error('error.theme.invalid_id');
-            }
-            return themeStore.setTheme(themeId);
-        }, null
-    ));
 
-    ipcMain.handle('theme:getAll', createSafeIpcHandler('theme:getAll',
-        async () => {
-            return themeStore.getAllThemes();
-        }, []
-    ));
 
-    ipcMain.handle('theme:getDetails', createSafeIpcHandler('theme:getDetails',
-        async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue) => {
-            const themeId = validateThemeId(themeIdRaw);
-            if (!themeId) {
-                throw new Error('error.theme.invalid_id');
-            }
-            return themeStore.getThemeDetails(themeId);
-        }, null
-    ));
 
-    ipcMain.handle('theme:getCustom', createSafeIpcHandler('theme:getCustom',
-        async () => {
-            return themeStore.getCustomThemes();
-        }, []
-    ));
 
-    ipcMain.handle('theme:addCustom', createIpcHandler('theme:addCustom',
-        async (_event: IpcMainInvokeEvent, theme: RuntimeValue) => {
-            const validatedTheme = validateCustomThemeInput(theme);
-            if (!validatedTheme) {
-                throw new Error('error.theme.invalid_object');
-            }
-            return themeStore.addCustomTheme(validatedTheme);
-        }
-    ));
 
-    ipcMain.handle('theme:updateCustom', createIpcHandler('theme:updateCustom',
-        async (_event: IpcMainInvokeEvent, idRaw: RuntimeValue, updates: RuntimeValue) => {
-            const id = validateThemeId(idRaw);
-            if (!id) {
-                throw new Error('Invalid theme ID');
-            }
-            if (!updates || typeof updates !== 'object') {
-                throw new Error('error.theme.invalid_updates');
-            }
-            return themeStore.updateCustomTheme(id, updates);
-        }
-    ));
 
-    ipcMain.handle('theme:deleteCustom', createIpcHandler('theme:deleteCustom',
-        async (_event: IpcMainInvokeEvent, idRaw: RuntimeValue) => {
-            const id = validateThemeId(idRaw);
-            if (!id) {
-                throw new Error('Invalid theme ID');
-            }
-            return themeStore.deleteCustomTheme(id);
-        }
-    ));
 
-    ipcMain.handle('theme:toggleFavorite', createSafeIpcHandler('theme:toggleFavorite',
-        async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue) => {
-            const themeId = validateThemeId(themeIdRaw);
-            if (!themeId) {
-                throw new Error('error.theme.invalid_id');
-            }
-            return themeStore.toggleFavorite(themeId);
-        }, false
-    ));
 
-    ipcMain.handle('theme:getFavorites', createSafeIpcHandler('theme:getFavorites',
-        async () => {
-            return themeStore.getFavorites();
-        }, []
-    ));
 
-    ipcMain.handle('theme:isFavorite', createSafeIpcHandler('theme:isFavorite',
-        async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue) => {
-            const themeId = validateThemeId(themeIdRaw);
-            if (!themeId) {
-                throw new Error('error.theme.invalid_id');
-            }
-            return themeStore.isFavorite(themeId);
-        }, false
-    ));
 
-    ipcMain.handle('theme:getHistory', createSafeIpcHandler('theme:getHistory',
-        async () => {
-            return themeStore.getHistory();
-        }, []
-    ));
 
-    ipcMain.handle('theme:clearHistory', createSafeIpcHandler('theme:clearHistory',
-        async () => {
-            await themeStore.clearHistory();
-            return true;
-        }, false
-    ));
 
-    ipcMain.handle('theme:getPresets', createSafeIpcHandler('theme:getPresets',
-        async () => {
-            return themeStore.getPresets();
-        }, []
-    ));
 
-    ipcMain.handle('theme:applyPreset', createSafeIpcHandler('theme:applyPreset',
-        async (_event: IpcMainInvokeEvent, presetIdRaw: RuntimeValue) => {
-            const presetId = validateThemeId(presetIdRaw);
-            if (!presetId) {
-                throw new Error('error.theme.invalid_preset_id');
-            }
-            return themeStore.applyPreset(presetId);
-        }, null
-    ));
 
-    ipcMain.handle('theme:getCurrentPreset', createSafeIpcHandler('theme:getCurrentPreset',
-        async () => {
-            return themeStore.getCurrentPreset();
-        }, null
-    ));
 
-    ipcMain.handle('theme:clearPreset', createSafeIpcHandler('theme:clearPreset',
-        async () => {
-            await themeStore.clearPreset();
-            return true;
-        }, false
-    ));
 
-    ipcMain.handle('theme:export', createSafeIpcHandler('theme:export',
-        async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue) => {
-            const themeId = validateThemeId(themeIdRaw);
-            if (!themeId) {
-                throw new Error('error.theme.invalid_id');
-            }
 
-            const json = themeStore.exportTheme(themeId);
-            if (!json) {
-                return false;
-            }
 
-            const tempPath = path.join(os.tmpdir(), `tengra-theme-${themeId}-${Date.now()}.json`);
-            await fs.writeFile(tempPath, json);
-            await shell.openPath(tempPath);
-            return true;
-        }, false
-    ));
-
-    ipcMain.handle('theme:import', createIpcHandler('theme:import',
-        async (_event: IpcMainInvokeEvent, jsonStringRaw: RuntimeValue) => {
-            const jsonString = validateJsonString(jsonStringRaw);
-            if (!jsonString) {
-                throw new Error('error.theme.invalid_json');
-            }
-            return themeStore.importTheme(jsonString);
-        }
-    ));
-
-    ipcMain.handle('theme:duplicate', createIpcHandler('theme:duplicate',
-        async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue, newNameRaw: RuntimeValue) => {
-            const themeId = validateThemeId(themeIdRaw);
-            if (!themeId) {
-                throw new Error('error.theme.invalid_id');
-            }
-            const newName = validateThemeName(newNameRaw);
-            if (!newName) {
-                throw new Error('error.theme.invalid_name');
-            }
-            return themeStore.duplicateTheme(themeId, newName);
-        }
-    ));
 }
 

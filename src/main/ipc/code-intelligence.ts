@@ -77,13 +77,6 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
     /**
      * Query indexed symbols semantically
      */
-    ipcMain.handle('code:querySymbols', createValidatedIpcHandler('code:querySymbols', async (_, query: string) => {
-        return await codeIntelligenceService.queryIndexedSymbols(query);
-    }, {
-        defaultValue: [],
-        argsSchema: z.tuple([QuerySchema]),
-        responseSchema: z.array(FileSearchResultSchema),
-    }));
 
     /**
      * Get outline for a file
@@ -110,13 +103,6 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
     /**
      * Find usage for a symbol
      */
-    ipcMain.handle('code:findUsage', createValidatedIpcHandler('code:findUsage', async (_, rootPath: string, symbol: string) => {
-        return await codeIntelligenceService.findUsage(rootPath, symbol);
-    }, {
-        defaultValue: [],
-        argsSchema: z.tuple([RootPathSchema, QuerySchema]),
-        responseSchema: z.array(FileSearchResultSchema),
-    }));
 
     /**
      * Find references for a symbol

@@ -26,7 +26,6 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
-import { ModelSelector } from '@/components/shared/ModelSelector';
 import { useVoice } from '@/features/voice/hooks/useVoice';
 import { localeRegistry } from '@/i18n/locale-registry.service';
 import type { GroupedModels } from '@/types';
@@ -57,7 +56,6 @@ function normalizeCsvValue(value: string): string[] {
 export const GeneralTab: React.FC<GeneralTabProps> = ({
     settings,
     updateGeneral,
-    groupedModels,
     t,
 }) => {
     const { settings: voiceSettings, updateSettings: updateVoiceSettings } = useVoice();
@@ -113,23 +111,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                         </Select>
                     </SettingsField>
 
-                    <SettingsField
-                        label={t('settings.defaultModel')}
-                    >
-                        <ModelSelector
-                            selectedProvider={settings.general.lastProvider ?? ''}
-                            selectedModel={settings.general.defaultModel ?? ''}
-                            onSelect={(provider, model) => {
-                                void updateGeneral({
-                                    defaultModel: model,
-                                    lastModel: model,
-                                    lastProvider: provider,
-                                });
-                            }}
-                            settings={settings}
-                            groupedModels={groupedModels}
-                        />
-                    </SettingsField>
+
 
                     <SettingsField label={t('general.contextMessageLimit')}>
                         <Input

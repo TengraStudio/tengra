@@ -8,10 +8,9 @@
  * (at your option) any later version.
  */
 
-import { CheckedState } from '@radix-ui/react-checkbox';
-import { Checkbox } from '@renderer/components/ui/checkbox';
 import { Input } from '@renderer/components/ui/input';
 import { Label } from '@renderer/components/ui/label';
+import { Switch } from '@renderer/components/ui/switch';
 import {
     Select,
     SelectContent,
@@ -20,279 +19,180 @@ import {
     SelectValue,
 } from '@renderer/components/ui/select';
 import { Textarea } from '@renderer/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card';
+import { FileCode2, Layout, MousePointer2, Type, Braces, Settings2 } from 'lucide-react';
 import React from 'react';
 
 import { SettingsSectionProps } from './types';
 
-const panelClassName =
-    'space-y-4 rounded-xl border border-border/50 bg-muted/20 p-4';
-
-const EditorAppearanceFields: React.FC<SettingsSectionProps> = ({
-    formData,
-    setFormData,
-    t,
-}) => (
-    <>
-        <div className={panelClassName}>
-            <Label className="mb-2 block text-muted-foreground">{t('terminal.fontSize')}</Label>
-            <Input
-                type="number"
-                min={10}
-                max={32}
-                value={formData.editorFontSize}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    const nextValue = Number.parseInt(event.target.value, 10);
-                    setFormData(prev => ({
-                        ...prev,
-                        editorFontSize: Number.isNaN(nextValue) ? prev.editorFontSize : nextValue,
-                    }));
-                }}
-            />
-        </div>
-
-        <div className={panelClassName}>
-            <Label className="mb-2 block text-muted-foreground">{t('terminal.lineHeight')}</Label>
-            <Input
-                type="number"
-                min={1}
-                max={3}
-                step={0.1}
-                value={formData.editorLineHeight}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    const nextValue = Number.parseFloat(event.target.value);
-                    setFormData(prev => ({
-                        ...prev,
-                        editorLineHeight: Number.isNaN(nextValue) ? prev.editorLineHeight : nextValue,
-                    }));
-                }}
-            />
-        </div>
-    </>
-);
-
-const EditorBehaviorFields: React.FC<SettingsSectionProps> = ({
-    formData,
-    setFormData,
-    t,
-}) => (
-    <>
-        <div className={panelClassName}>
-            <Label className="mb-2 block text-muted-foreground">
-                {t('editor.suggestions.title')}
-            </Label>
-            <div className="flex items-center justify-between">
-                <span className="typo-caption text-muted-foreground">{t('workspaces.indexing')}</span>
-                <Checkbox
-                    checked={formData.editorInlayHints}
-                    onCheckedChange={(checked: CheckedState) =>
-                        setFormData(prev => ({ ...prev, editorInlayHints: checked === true }))
-                    }
-                />
-            </div>
-        </div>
-
-        <div className={panelClassName}>
-            <Label className="mb-2 block text-muted-foreground">{t('terminal.fontLigatures')}</Label>
-            <div className="flex items-center justify-between">
-                <span className="typo-caption text-muted-foreground">{t('common.preview')}</span>
-                <Checkbox
-                    checked={formData.editorFontLigatures}
-                    onCheckedChange={(checked: CheckedState) =>
-                        setFormData(prev => ({ ...prev, editorFontLigatures: checked === true }))
-                    }
-                />
-            </div>
-        </div>
-
-        <div className={panelClassName}>
-            <Label className="mb-2 block text-muted-foreground">{t('terminal.cursorBlink')}</Label>
-            <Select
-                value={formData.editorCursorBlinking}
-                onValueChange={(val: string) =>
-                    setFormData(prev => ({
-                        ...prev,
-                        editorCursorBlinking: val as NonNullable<typeof prev.editorCursorBlinking>,
-                    }))
-                }
-            >
-                <SelectTrigger>
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="blink">{t('settings.editor.cursorBlink.blink')}</SelectItem>
-                    <SelectItem value="smooth">{t('settings.editor.cursorBlink.smooth')}</SelectItem>
-                    <SelectItem value="phase">{t('settings.editor.cursorBlink.phase')}</SelectItem>
-                    <SelectItem value="expand">{t('settings.editor.cursorBlink.expand')}</SelectItem>
-                    <SelectItem value="solid">{t('settings.editor.cursorBlink.solid')}</SelectItem>
-                </SelectContent>
-            </Select>
-        </div>
-
-        <div className={panelClassName}>
-            <Label className="mb-2 block text-muted-foreground">{t('terminal.cursorStyle')}</Label>
-            <Select
-                value={formData.editorLineNumbers}
-                onValueChange={(val: string) =>
-                    setFormData(prev => ({
-                        ...prev,
-                        editorLineNumbers: val as NonNullable<typeof prev.editorLineNumbers>,
-                    }))
-                }
-            >
-                <SelectTrigger>
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="on">{t('settings.editor.lineNumbers.on')}</SelectItem>
-                    <SelectItem value="off">{t('settings.editor.lineNumbers.off')}</SelectItem>
-                    <SelectItem value="relative">{t('settings.editor.lineNumbers.relative')}</SelectItem>
-                    <SelectItem value="interval">{t('settings.editor.lineNumbers.interval')}</SelectItem>
-                </SelectContent>
-            </Select>
-        </div>
-    </>
-);
-
-const EditorLayoutFields: React.FC<SettingsSectionProps> = ({
-    formData,
-    setFormData,
-    t,
-}) => (
-    <div className={panelClassName}>
-        <Label className="mb-2 block text-muted-foreground">{t('common.layout')}</Label>
-        <div className="grid gap-3">
-            <div className="flex items-center justify-between">
-                <span className="typo-caption text-muted-foreground">{t('settings.editor.option.minimap')}</span>
-                <Checkbox
-                    checked={formData.editorMinimap}
-                    onCheckedChange={(checked: CheckedState) =>
-                        setFormData(prev => ({ ...prev, editorMinimap: checked === true }))
-                    }
-                />
-            </div>
-            <div className="flex items-center justify-between">
-                <span className="typo-caption text-muted-foreground">{t('settings.editor.option.folding')}</span>
-                <Checkbox
-                    checked={formData.editorFolding}
-                    onCheckedChange={(checked: CheckedState) =>
-                        setFormData(prev => ({ ...prev, editorFolding: checked === true }))
-                    }
-                />
-            </div>
-            <div className="flex items-center justify-between">
-                <span className="typo-caption text-muted-foreground">{t('settings.editor.option.codeLens')}</span>
-                <Checkbox
-                    checked={formData.editorCodeLens}
-                    onCheckedChange={(checked: CheckedState) =>
-                        setFormData(prev => ({ ...prev, editorCodeLens: checked === true }))
-                    }
-                />
-            </div>
-        </div>
-    </div>
-);
-
-const EditorFormattingFields: React.FC<SettingsSectionProps> = ({
-    formData,
-    setFormData,
-    t,
-}) => (
-    <div className={panelClassName}>
-        <Label className="mb-2 block text-muted-foreground">{t('common.edit')}</Label>
-        <div className="grid gap-3">
-            <Input
-                type="number"
-                min={1}
-                max={8}
-                value={formData.editorTabSize}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    const nextValue = Number.parseInt(event.target.value, 10);
-                    setFormData(prev => ({
-                        ...prev,
-                        editorTabSize: Number.isNaN(nextValue) ? prev.editorTabSize : nextValue,
-                    }));
-                }}
-            />
-            <Select
-                value={formData.editorWordWrap}
-                onValueChange={(val: string) =>
-                    setFormData(prev => ({
-                        ...prev,
-                        editorWordWrap: val as NonNullable<typeof prev.editorWordWrap>,
-                    }))
-                }
-            >
-                <SelectTrigger>
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="off">{t('settings.editor.wordWrap.off')}</SelectItem>
-                    <SelectItem value="on">{t('settings.editor.wordWrap.on')}</SelectItem>
-                    <SelectItem value="wordWrapColumn">{t('settings.editor.wordWrap.wordWrapColumn')}</SelectItem>
-                    <SelectItem value="bounded">{t('settings.editor.wordWrap.bounded')}</SelectItem>
-                </SelectContent>
-            </Select>
-            <div className="flex items-center justify-between">
-                <span className="typo-caption text-muted-foreground">{t('settings.editor.option.formatOnPaste')}</span>
-                <Checkbox
-                    checked={formData.editorFormatOnPaste}
-                    onCheckedChange={(checked: CheckedState) =>
-                        setFormData(prev => ({ ...prev, editorFormatOnPaste: checked === true }))
-                    }
-                />
-            </div>
-            <div className="flex items-center justify-between">
-                <span className="typo-caption text-muted-foreground">{t('settings.editor.option.smoothScrolling')}</span>
-                <Checkbox
-                    checked={formData.editorSmoothScrolling}
-                    onCheckedChange={(checked: CheckedState) =>
-                        setFormData(prev => ({ ...prev, editorSmoothScrolling: checked === true }))
-                    }
-                />
-            </div>
-        </div>
-    </div>
-);
-
-export const EditorSection: React.FC<SettingsSectionProps> = props => {
+export const EditorSection: React.FC<SettingsSectionProps> = (props) => {
     const { formData, setFormData, t } = props;
 
     return (
-        <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-                <h3 className="mb-1 text-lg font-semibold text-foreground">
-                    {t('workspace.editor')}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                    {t('editor.suggestions.description')}
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col gap-1.5">
+                <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                    <FileCode2 className="w-6 h-6 text-primary" />
+                    {t('workspace.editorTitle')}
+                </h2>
+                <p className="text-muted-foreground">
+                    {t('workspace.editorDescription')}
                 </p>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-                <EditorAppearanceFields {...props} />
-                <EditorBehaviorFields {...props} />
-                <EditorLayoutFields {...props} />
-                <EditorFormattingFields {...props} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden border-2 shadow-xl shadow-primary/5">
+                    <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
+                        <div className="flex items-center gap-2">
+                            <Type className="w-4 h-4 text-primary" />
+                            <CardTitle className="text-base font-semibold">{t('workspace.editorTypography')}</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-6 space-y-4">
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium">{t('appearance.fontSize')}</Label>
+                            <Input
+                                type="number"
+                                min={10}
+                                max={32}
+                                className="bg-background/50"
+                                value={formData.editorFontSize}
+                                onChange={(e) => setFormData(prev => ({ ...prev, editorFontSize: parseInt(e.target.value) || 14 }))}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden border-2 shadow-xl shadow-primary/5">
+                    <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
+                        <div className="flex items-center gap-2">
+                            <MousePointer2 className="w-4 h-4 text-primary" />
+                            <CardTitle className="text-base font-semibold">{t('workspace.editorInteraction')}</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-6 space-y-4">
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium">{t('workspace.editor.lineNumbers')}</Label>
+                            <Select 
+                                value={formData.editorLineNumbers} 
+                                onValueChange={(val) => setFormData(prev => ({ ...prev, editorLineNumbers: val as any }))}
+                            >
+                                <SelectTrigger className="bg-background/50">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="on">{t('settings.editor.lineNumbers.on')}</SelectItem>
+                                    <SelectItem value="off">{t('settings.editor.lineNumbers.off')}</SelectItem>
+                                    <SelectItem value="relative">{t('settings.editor.lineNumbers.relative')}</SelectItem>
+                                    <SelectItem value="interval">{t('settings.editor.lineNumbers.interval')}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-background/40 rounded-xl border border-border/20">
+                            <Label className="text-sm font-medium">{t('workspace.editor.smoothScrolling')}</Label>
+                            <Switch
+                                checked={formData.editorSmoothScrolling}
+                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, editorSmoothScrolling: checked }))}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden border-2 shadow-xl shadow-primary/5">
+                    <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
+                        <div className="flex items-center gap-2">
+                            <Layout className="w-4 h-4 text-primary" />
+                            <CardTitle className="text-base font-semibold">{t('common.layout')}</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-6 space-y-4">
+                        <div className="flex items-center justify-between p-3 bg-background/40 rounded-xl border border-border/20">
+                            <Label className="text-sm font-medium">{t('workspace.editor.minimap')}</Label>
+                            <Switch
+                                checked={formData.editorMinimap}
+                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, editorMinimap: checked }))}
+                            />
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-background/40 rounded-xl border border-border/20">
+                            <Label className="text-sm font-medium">{t('workspace.editor.folding')}</Label>
+                            <Switch
+                                checked={formData.editorFolding}
+                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, editorFolding: checked }))}
+                            />
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-background/40 rounded-xl border border-border/20">
+                            <Label className="text-sm font-medium">{t('workspace.editor.inlayHints')}</Label>
+                            <Switch
+                                checked={formData.editorInlayHints}
+                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, editorInlayHints: checked }))}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden border-2 shadow-xl shadow-primary/5">
+                    <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
+                        <div className="flex items-center gap-2">
+                            <Braces className="w-4 h-4 text-primary" />
+                            <CardTitle className="text-base font-semibold">{t('workspace.editor.editingAndTabs')}</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-6 space-y-4">
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium">{t('workspace.editor.tabSize')}</Label>
+                            <Input
+                                type="number"
+                                min={1}
+                                max={8}
+                                className="bg-background/50"
+                                value={formData.editorTabSize}
+                                onChange={(e) => setFormData(prev => ({ ...prev, editorTabSize: parseInt(e.target.value) || 4 }))}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium">{t('workspace.editor.wordWrap')}</Label>
+                            <Select 
+                                value={formData.editorWordWrap} 
+                                onValueChange={(val) => setFormData(prev => ({ ...prev, editorWordWrap: val as any }))}
+                            >
+                                <SelectTrigger className="bg-background/50">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="off">{t('settings.editor.wordWrap.off')}</SelectItem>
+                                    <SelectItem value="on">{t('settings.editor.wordWrap.on')}</SelectItem>
+                                    <SelectItem value="wordWrapColumn">{t('settings.editor.wordWrap.wordWrapColumn')}</SelectItem>
+                                    <SelectItem value="bounded">{t('settings.editor.wordWrap.bounded')}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-background/40 rounded-xl border border-border/20">
+                            <Label className="text-sm font-medium">{t('workspace.editor.formatOnPaste')}</Label>
+                            <Switch
+                                checked={formData.editorFormatOnPaste}
+                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, editorFormatOnPaste: checked }))}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
-            <div className={panelClassName}>
-                <Label className="mb-2 block text-muted-foreground">{t('common.edit')}</Label>
-                <Textarea
-                    value={formData.editorAdditionalOptions}
-                    onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) =>
-                        setFormData(prev => ({
-                            ...prev,
-                            editorAdditionalOptions: event.target.value,
-                        }))
-                    }
-                    rows={12}
-                    spellCheck={false}
-                    className="min-h-240 resize-y font-mono text-sm"
-                    placeholder="{}"
-                />
-            </div>
-        </section>
+            <Card className="border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden border-2 shadow-xl shadow-primary/5">
+                <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
+                    <div className="flex items-center gap-2">
+                        <Settings2 className="w-4 h-4 text-primary" />
+                        <CardTitle className="text-base font-semibold">{t('workspace.editor.additionalOptions')}</CardTitle>
+                    </div>
+                </CardHeader>
+                <CardContent className="pt-6">
+                    <Textarea
+                        value={formData.editorAdditionalOptions}
+                        onChange={(e) => setFormData(prev => ({ ...prev, editorAdditionalOptions: e.target.value }))}
+                        className="min-h-48 font-mono text-xs bg-background/50"
+                        placeholder="{}"
+                    />
+                </CardContent>
+            </Card>
+        </div>
     );
 };
-
-

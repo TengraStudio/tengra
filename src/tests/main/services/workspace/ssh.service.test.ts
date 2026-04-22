@@ -86,7 +86,7 @@ describe('SSHService', () => {
                 port: 22,
                 username: 'user',
                 authType: 'password' as const,
-                password: 'secret-password',
+                password: 'mock-secret-password',
                 connected: false
             };
 
@@ -94,7 +94,7 @@ describe('SSHService', () => {
             expect(success).toBe(true);
             expect(fs.promises.writeFile).toHaveBeenCalledWith(
                 expect.stringContaining('ssh-profiles.json'),
-                expect.stringContaining('secret-password')
+                expect.stringContaining('mock-secret-password')
             );
         });
 
@@ -129,7 +129,7 @@ describe('SSHService', () => {
 
     describe('SSH key management', () => {
         it('should generate managed key metadata', async () => {
-            const result = await service.generateManagedKey('My Key', 'secret-passphrase');
+            const result = await service.generateManagedKey('My Key', 'mock-secret-passphrase');
             expect(result.key.name).toBe('My Key');
             expect(result.key.algorithm).toBe('ed25519');
             expect(result.key.hasPassphrase).toBe(true);

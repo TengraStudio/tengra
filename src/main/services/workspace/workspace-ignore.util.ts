@@ -15,8 +15,7 @@ import { appLogger } from '@main/logging/logger';
 
 const WORKSPACE_IGNORE_CACHE_TTL_MS = 5_000;
 const WORKSPACE_IGNORE_FILES = [
-    '.gitignore',
-    '.tengraignore',
+    '.gitignore', 
     path.join('.git', 'info', 'exclude'),
 ] as const;
 

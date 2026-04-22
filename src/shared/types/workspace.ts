@@ -21,7 +21,6 @@ export type WorkspaceDashboardTab =
     | 'git'
     | 'env'
     | 'environment'
-    | 'logs'
     | 'settings'
     | 'chat'
     | 'editor';
@@ -76,6 +75,7 @@ export interface EditorTab {
     isPinned?: boolean;
     type: 'code' | 'image';
     initialLine?: number;
+    readOnly?: boolean;
 }
 
 export interface WorkspaceDefinitionLocation {
@@ -124,6 +124,7 @@ export interface Workspace {
     };
     status: 'active' | 'archived' | 'draft';
     logo?: string;
+    rules?: string;
     metadata?: JsonObject;
     type?: string;
     // Build Configuration
@@ -140,18 +141,34 @@ export interface Workspace {
         port?: number;              // e.g. 3000
         autoStart?: boolean;        // Start on workspace open
     };
+    // AI Configuration
+    intelligence?: {
+        defaultModelId?: string;    // Default model for this workspace
+        discussModelId?: string;    // Model for council discussions
+        systemPrompt?: string;      // Workspace-specific system prompt override
+        temperature?: number;       // AI temperature setting
+    };
+    // Source Control
+    git?: {
+        commitPrefix?: string;      // e.g. "[FEAT]"
+        branchPrefix?: string;      // e.g. "feature/"
+        autoFetch?: boolean;        // Automatically fetch from remote
+    };
     // Advanced Options
     advancedOptions?: {
         fileWatchEnabled?: boolean;     // Enable file change detection
         fileWatchIgnore?: string[];     // Patterns to ignore (e.g. ["node_modules", ".git"])
         indexingEnabled?: boolean;      // Enable code indexing for AI
         indexingInterval?: number;      // Re-index interval in minutes
+        indexingMaxFileSize?: number;   // Max file size to index in bytes
+        indexingExclude?: string[];     // Specific patterns to exclude from indexing
+        maxConcurrency?: number;        // Max parallel indexing tasks
         autoSave?: boolean;             // Auto-save files
         layoutProfile?: {
             sidebarCollapsed?: boolean;
             terminalVisible?: boolean;
             terminalHeight?: number;
-            panel?: 'chat' | 'terminal' | 'files' | 'explorer' | 'search' | 'git' | 'logs' | 'settings' | 'none';
+            panel?: 'chat' | 'terminal' | 'files' | 'explorer' | 'search' | 'git' | 'settings' | 'none';
         };
     };
     // Editor Settings
@@ -216,6 +233,21 @@ export interface WorkspaceIssue {
     code?: string | number;
 }
 
+export type WorkspaceDiagnosticsSourceStatus = 'ok' | 'failed' | 'skipped';
+
+export interface WorkspaceDiagnosticsSourceResult {
+    source: string;
+    status: WorkspaceDiagnosticsSourceStatus;
+    issueCount?: number;
+    message?: string;
+}
+
+export interface WorkspaceDiagnosticsStatus {
+    partial: boolean;
+    generatedAt: number;
+    sources: WorkspaceDiagnosticsSourceResult[];
+}
+
 export interface WorkspaceLspServerSupport {
     languageId: string;
     serverId: string;
@@ -242,6 +274,7 @@ export interface WorkspaceAnalysis {
     annotations?: CodeAnnotation[];
     lspDiagnostics?: WorkspaceIssue[];
     lspServers?: WorkspaceLspServerSupport[];
+    diagnosticsStatus?: WorkspaceDiagnosticsStatus;
 }
 
 export interface TodoItem {

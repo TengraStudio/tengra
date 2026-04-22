@@ -89,10 +89,10 @@ impl CopilotClient {
             .client
             .get(COPILOT_TOKEN_V2_URL)
             .header("Authorization", format!("token {}", github_token))
-            .header("User-Agent", "GithubCopilot/1.250.0")
-            .header("Editor-Version", "vscode/1.107")
-            .header("Editor-Plugin-Version", "copilot/1.250.0")
-            .header("X-GitHub-Api-Version", "2023-07-07")
+            .header("User-Agent", "gh-copilot/1.0.0")
+            .header("Editor-Version", "gh/2.61.0")
+            .header("Editor-Plugin-Version", "gh-copilot/1.0.0")
+            .header("X-GitHub-Api-Version", "2026-03-10")
             .header("Accept", "application/json")
             .send()
             .await?;
@@ -128,7 +128,7 @@ impl CopilotClient {
             .get(GITHUB_COPILOT_USER_URL)
             .header("Authorization", format!("token {}", github_token))
             .header("Accept", "application/json")
-            .header("User-Agent", "GithubCopilot/1.250.0")
+            .header("User-Agent", "gh-copilot/1.0.0")
             .send()
             .await?;
 
@@ -152,10 +152,10 @@ impl CopilotClient {
             .client
             .get(COPILOT_TOKEN_V1_URL)
             .header("Authorization", format!("token {}", github_token))
-            .header("User-Agent", "GithubCopilot/1.250.0")
-            .header("Editor-Version", "vscode/1.107")
-            .header("Editor-Plugin-Version", "copilot/1.250.0")
-            .header("X-GitHub-Api-Version", "2023-07-07")
+            .header("User-Agent", "gh-copilot/1.0.0")
+            .header("Editor-Version", "gh/2.61.0")
+            .header("Editor-Plugin-Version", "gh-copilot/1.0.0")
+            .header("X-GitHub-Api-Version", "2026-03-10")
             .header("Accept", "application/json")
             .send()
             .await?;

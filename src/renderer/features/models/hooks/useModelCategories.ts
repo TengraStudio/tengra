@@ -96,10 +96,23 @@ function populateCategories(props: PopulateProps) {
         antigravity: 'antigravity',
         opencode: 'opencode',
         nvidia: 'nvidia',
+        'nvidia-key': 'nvidia',
+        'nvidia_key': 'nvidia',
+        'nvidia-nim': 'nvidia',
+        'nvidia_nim': 'nvidia',
+        'nvidia_openai': 'nvidia',
+        nvapi: 'nvidia',
+        nim: 'nvidia',
+        tensorrt: 'nvidia',
         local: 'ollama',
         'local-ai': 'ollama',
         'lm_studio': 'ollama',
         huggingface: 'huggingface',
+        google: 'antigravity',
+        gemini: 'antigravity',
+        kimi: 'opencode',
+        moonshot: 'opencode',
+        cursor: 'copilot',
         'sd-cpp': 'custom',
         custom: 'custom'
     };
@@ -139,7 +152,7 @@ function formatDisplayLabel(m: ModelInfo): string {
 
 function extractPricing(pricing: ModelInfo['pricing']): { input?: number; output?: number } | undefined {
     if (!pricing || typeof pricing !== 'object' || Array.isArray(pricing)) { return undefined; }
-    const p = pricing as { input?: RendererDataValue; output?: RendererDataValue };
+    const p = pricing as { input?: number; output?: number };
     return {
         input: typeof p.input === 'number' ? p.input : undefined,
         output: typeof p.output === 'number' ? p.output : undefined
@@ -169,6 +182,27 @@ function mapModelToItem(
         (!pricing?.input && !pricing?.output));
     const lifecycleMeta = getModelLifecycleMeta(m);
 
+    // Robust reasoning detection for ALL providers (Claude, GPT-4, o1, Gemini models)
+    let finalThinkingLevels = thinkingLevels;
+    let finalSupportsReasoning = Array.isArray(thinkingLevels) && thinkingLevels.length > 0;
+
+    if (!finalSupportsReasoning) {
+        const lowerLabel = (m.label ?? m.name ?? id).toLowerCase();
+        // Detect Claude models (Anthropic, Antigravity, Copilot, etc.)
+        const isClaude = lowerLabel.includes('claude');
+        // Detect GPT-4 and reasoning models
+        const isReasoningModel = lowerLabel.includes('gpt-4o') || lowerLabel.includes('o1-') || lowerLabel.includes('gpt-4-turbo') || lowerLabel.includes('o3-') || lowerLabel.includes('reasoning');
+        // Detect high-end Gemini models
+        const isHighEndGemini = lowerLabel.includes('gemini-1.5-pro') || lowerLabel.includes('gemini-2.0-pro') || lowerLabel.includes('gemini-3');
+        // Detect open source high-end models
+        const isOpenSourceHighEnd = lowerLabel.includes('llama-3') || lowerLabel.includes('mistral-large') || lowerLabel.includes('mixtral-8x22b') || lowerLabel.includes('deepseek-v3') || lowerLabel.includes('deepseek-r1');
+
+        if (isClaude || isReasoningModel || isHighEndGemini || isOpenSourceHighEnd) {
+            finalThinkingLevels = ['low', 'high', 'max'];
+            finalSupportsReasoning = true;
+        }
+    }
+
     return {
         id,
         label: formatDisplayLabel(m),
@@ -179,17 +213,18 @@ function mapModelToItem(
         contextWindow: m.contextWindow,
         pricing,
         pinned: ctx.favorites.has(id),
-        thinkingLevels,
+        thinkingLevels: finalThinkingLevels,
         description,
         isLocal: isLocalProvider,
         isFree,
-        supportsReasoning: Array.isArray(thinkingLevels) && thinkingLevels.length > 0,
+        supportsReasoning: finalSupportsReasoning,
         lifecycle: lifecycleMeta.lifecycle,
         replacementModelId: lifecycleMeta.replacementModelId,
         sunsetDate: lifecycleMeta.sunsetDate,
         quotaInfo: m.quotaInfo,
         percentage: typeof m.percentage === 'number' ? m.percentage : undefined,
         reset: typeof m.reset === 'string' ? m.reset : undefined,
+        creditMultiplier: typeof m.creditMultiplier === 'number' ? m.creditMultiplier : undefined,
     };
 }
 
@@ -200,7 +235,11 @@ function finalizeCategories(cats: ModelCategory[]): ModelCategory[] {
         }
         cat.models.sort((a, b) => a.label.localeCompare(b.label));
     }
-    return cats.filter(cat => cat.models.length > 0);
+    return cats.filter(cat => {
+        // Only show categories if they actually have models from the API
+        if (cat.id === 'favorites') return cat.models.length > 0;
+        return cat.models.length > 0;
+    });
 }
 
 function shouldHideModel(modelId: string, label: string | undefined, provider: string): boolean {

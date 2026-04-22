@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Bot, Code, Cpu, FileCode2, FolderTree, Info, Play } from 'lucide-react';
+import { Bot, Code, FileCode2, FolderTree, Info, Play, Terminal, Brain, GitBranch, Database } from 'lucide-react';
 import React from 'react';
 
 import { cn } from '@/lib/utils';
@@ -26,16 +26,16 @@ const NavButton: React.FC<NavButtonProps> = ({ active, onClick, icon: Icon, labe
     <button
         onClick={onClick}
         className={cn(
-            'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300',
+            'flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-300',
             active
-                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-105 ring-2 ring-primary/40'
-                : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground hover:scale-102'
+                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-102 ring-1 ring-primary/30'
+                : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground hover:translate-x-1'
         )}
     >
         <Icon
             className={cn(
-                'w-4 h-4 translate-y-1px transition-transform duration-300',
-                active ? 'text-primary-foreground scale-110' : 'text-muted-foreground'
+                'w-4 h-4 transition-transform duration-300',
+                active ? 'text-primary-foreground' : 'text-muted-foreground'
             )}
         />
         {label}
@@ -47,49 +47,81 @@ export const SettingsSidebar: React.FC<{
     setActiveSection: (section: WorkspaceSettingsSection) => void;
     t: (key: string) => string;
 }> = ({ activeSection, setActiveSection, t }) => (
-    <div className="w-64 border-r border-border/40 flex flex-col p-3 gap-1 shrink-0 bg-background">
-        <NavButton
-            active={activeSection === 'general'}
-            onClick={() => setActiveSection('general')}
-            icon={Info}
-            label={t('workspaces.general')}
-        />
-        <NavButton
-            active={activeSection === 'council'}
-            onClick={() => setActiveSection('council')}
-            icon={Bot}
-            label={t('workspaces.councilAI')}
-        />
-        <NavButton
-            active={activeSection === 'workspace'}
-            onClick={() => setActiveSection('workspace')}
-            icon={FolderTree}
-            label={t('workspaces.workspace')}
-        />
-        <div className="h-px bg-muted/60 my-2" />
-        <NavButton
-            active={activeSection === 'build'}
-            onClick={() => setActiveSection('build')}
-            icon={Code}
-            label={t('workspaces.build')}
-        />
-        <NavButton
-            active={activeSection === 'dev'}
-            onClick={() => setActiveSection('dev')}
-            icon={Play}
-            label={t('workspaces.devServer')}
-        />
-        <NavButton
-            active={activeSection === 'editor'}
-            onClick={() => setActiveSection('editor')}
-            icon={FileCode2}
-            label={t('workspace.editor')}
-        />
-        <NavButton
-            active={activeSection === 'advanced'}
-            onClick={() => setActiveSection('advanced')}
-            icon={Cpu}
-            label={t('workspaces.advanced')}
-        />
+    <div className="w-64 border-r border-border/40 flex flex-col p-4 gap-4 shrink-0 bg-background/30 backdrop-blur-xl">
+        <div className="space-y-1">
+            <h3 className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">{t('workspaces.coreCategory')}</h3>
+            <NavButton
+                active={activeSection === 'general'}
+                onClick={() => setActiveSection('general')}
+                icon={Info}
+                label={t('workspaces.navigation.general')}
+            />
+            <NavButton
+                active={activeSection === 'workspace'}
+                onClick={() => setActiveSection('workspace')}
+                icon={FolderTree}
+                label={t('workspaces.navigation.workspace')}
+            />
+        </div>
+
+        <div className="space-y-1">
+            <h3 className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">{t('workspaces.intelligenceCategory')}</h3>
+            <NavButton
+                active={activeSection === 'intelligence'}
+                onClick={() => setActiveSection('intelligence')}
+                icon={Brain}
+                label={t('workspaces.navigation.intelligence')}
+            />
+            <NavButton
+                active={activeSection === 'council'}
+                onClick={() => setActiveSection('council')}
+                icon={Bot}
+                label={t('workspaces.navigation.council')}
+            />
+            <NavButton
+                active={activeSection === 'git'}
+                onClick={() => setActiveSection('git')}
+                icon={GitBranch}
+                label={t('workspaces.navigation.git')}
+            />
+            <NavButton
+                active={activeSection === 'environment'}
+                onClick={() => setActiveSection('environment')}
+                icon={Terminal}
+                label={t('workspaces.navigation.environment')}
+            />
+        </div>
+
+        <div className="space-y-1">
+            <h3 className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">{t('workspaces.developmentCategory')}</h3>
+            <NavButton
+                active={activeSection === 'build'}
+                onClick={() => setActiveSection('build')}
+                icon={Code}
+                label={t('workspaces.navigation.build')}
+            />
+            <NavButton
+                active={activeSection === 'dev'}
+                onClick={() => setActiveSection('dev')}
+                icon={Play}
+                label={t('workspaces.navigation.devServer')}
+            />
+            <NavButton
+                active={activeSection === 'editor'}
+                onClick={() => setActiveSection('editor')}
+                icon={FileCode2}
+                label={t('workspaces.navigation.editor')}
+            />
+        </div>
+
+        <div className="space-y-1">
+            <h3 className="px-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">{t('workspaces.advancedCategory')}</h3>
+             <NavButton
+                active={activeSection === 'advanced'}
+                onClick={() => setActiveSection('advanced')}
+                icon={Database}
+                label={t('workspaces.navigation.advanced')}
+            />
+        </div>
     </div>
 );

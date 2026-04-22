@@ -15,20 +15,19 @@ import {
     recordTerminalToolbarSuccess,
     setTerminalToolbarUiState,
 } from '@renderer/store/terminal-toolbar-health.store';
-import { Check, ChevronDown, Maximize2, Minimize2, Plus, TerminalSquare } from 'lucide-react';
-import type { ComponentProps } from 'react';
+import { AlertTriangle, Check, ChevronDown, Maximize2, Minimize2, Plus, TerminalSquare } from 'lucide-react';
 import { useEffect } from 'react';
 
+import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'; 
 import { UI_PRIMITIVES } from '@/constants/ui-primitives';
 import { cn } from '@/lib/utils';
 import { TerminalTab } from '@/types';
 
+import { TERMINAL_WORKSPACE_ISSUES_TAB_ID } from '../constants/terminal-panel-constants';
 import type { SplitAnalytics, SplitPreset } from '../utils/split-config';
 
-import { TerminalAppearanceModals } from './TerminalAppearanceModals';
 import { TerminalSplitControls } from './TerminalSplitControls';
-import { TerminalTabsBar } from './TerminalTabsBar';
 
 
 interface TerminalBackendInfo {
@@ -103,6 +102,8 @@ interface TerminalToolbarProps {
     toggleSynchronizedInput: () => void;
     toggleSplitOrientation: () => void;
     closeSplitView: () => void;
+    handleSplitDown: () => void;
+    handleSplitUp: () => void;
     isGalleryView: boolean;
     toggleGalleryView: () => void;
     toggleSemanticPanel: () => void;
@@ -114,7 +115,6 @@ interface TerminalToolbarProps {
     isMaximized: boolean;
     setIsMaximized: (maximized: boolean) => void;
     onToggle: () => void;
-    appearanceProps: ComponentProps<typeof TerminalAppearanceModals>;
 }
 
 export function TerminalToolbar({
@@ -160,41 +160,88 @@ export function TerminalToolbar({
     toggleSynchronizedInput,
     toggleSplitOrientation,
     closeSplitView,  
+    handleSplitDown,
+    handleSplitUp,
     toggleRecording,
     activeRecordingTabId,
     isMaximized,
     setIsMaximized,
     onToggle,
-    appearanceProps,
 }: TerminalToolbarProps) {
+    void draggingTabId;
+    void dragOverTabId;
+    void closeTab;
+    void handleTabDragStart;
+    void handleTabDragOver;
+    void handleTabDrop;
+    void resetTabDragState;
     void toggleRecording;
     void activeRecordingTabId;
-    void appearanceProps;
 
     useEffect(() => {
         setTerminalToolbarUiState('ready');
     }, []);
 
+    const workspaceIssuesTab = tabs.find(tab => tab.id === TERMINAL_WORKSPACE_ISSUES_TAB_ID) ?? null;
+    const sessionTabs = tabs.filter(tab => tab.id !== TERMINAL_WORKSPACE_ISSUES_TAB_ID);
+    const lastSessionTab = sessionTabs[sessionTabs.length - 1] ?? null;
+    const isWorkspaceIssuesActive = activeTabId === workspaceIssuesTab?.id;
+    const isTerminalActive = Boolean(activeTabId && activeTabId !== workspaceIssuesTab?.id);
+
+    const handleTerminalViewSelect = () => {
+        if (lastSessionTab) {
+            handleTabSelect(lastSessionTab.id);
+            return;
+        }
+        const preferredShellId = resolvePreferredShellId();
+        if (!preferredShellId) {
+            return;
+        }
+        createTerminal(preferredShellId, resolvedDefaultBackendId);
+    };
+
     return (
-        <div className={cn(UI_PRIMITIVES.PANEL_SUB_HEADER, "pl-0")}>
-            <TerminalTabsBar
-                tabs={tabs}
-                activeTabId={activeTabId}
-                draggingTabId={draggingTabId}
-                dragOverTabId={dragOverTabId}
-                onSelectTab={handleTabSelect}
-                onCloseTab={closeTab}
-                onTabDragStart={handleTabDragStart}
-                onTabDragOver={handleTabDragOver}
-                onTabDrop={handleTabDrop}
-                onTabDragEnd={resetTabDragState}
-            />
-            <div className="flex items-center gap-1 border-l border-border/50 pl-1 shrink-0">
+        <div className={cn(UI_PRIMITIVES.PANEL_SUB_HEADER, "pl-0 bg-background/95 border-b border-border/60")}>
+            <div className="flex-1 px-2 flex items-center gap-1.5">
+                {workspaceIssuesTab && (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            handleTabSelect(workspaceIssuesTab.id);
+                        }}
+                        aria-label={workspaceIssuesTab.name}
+                        title={workspaceIssuesTab.name}
+                        className={cn(
+                            'h-7 w-7 inline-flex items-center justify-center rounded-md transition-colors',
+                            isWorkspaceIssuesActive
+                                ? 'bg-accent/70 text-foreground'
+                                : 'text-muted-foreground hover:bg-accent/40 hover:text-foreground'
+                        )}
+                    >
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                    </button>
+                )}
+                <button
+                    type="button"
+                    onClick={handleTerminalViewSelect}
+                    aria-label={t('terminal.title')}
+                    title={t('terminal.title')}
+                    className={cn(
+                        'h-7 w-7 inline-flex items-center justify-center rounded-md transition-colors',
+                        isTerminalActive
+                            ? 'bg-accent/70 text-foreground'
+                            : 'text-muted-foreground hover:bg-accent/40 hover:text-foreground'
+                    )}
+                >
+                    <TerminalSquare className="h-3.5 w-3.5" />
+                </button>
+            </div>
+            <div className="flex items-center gap-1 border-l border-border/50 pl-2 pr-1 shrink-0">
                 <Popover open={isNewTerminalMenuOpen} onOpenChange={setIsNewTerminalMenuOpen}>
                     <PopoverTrigger asChild>
-                        <button className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground">
                             <Plus className="w-3.5 h-3.5" />
-                        </button>
+                        </Button>
                     </PopoverTrigger>
                     <PopoverContent
                         side="top"
@@ -367,13 +414,15 @@ export function TerminalToolbar({
                         toggleSynchronizedInput={toggleSynchronizedInput}
                         toggleSplitOrientation={toggleSplitOrientation}
                         closeSplitView={closeSplitView}
+                        handleSplitDown={handleSplitDown}
+                        handleSplitUp={handleSplitUp}
                     /> 
                       
                     <button
                         onClick={() => {
                             setIsMaximized(!isMaximized);
                         }}
-                        className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                        className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
                     >
                         {isMaximized ? (
                             <Minimize2 className="w-3.5 h-3.5" />
@@ -383,7 +432,7 @@ export function TerminalToolbar({
                     </button>
                     <button
                         onClick={onToggle}
-                        className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                        className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
                     >
                         <ChevronDown className="w-3.5 h-3.5" />
                     </button>

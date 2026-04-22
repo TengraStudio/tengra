@@ -41,25 +41,12 @@ import {
     getManagedRuntimeTempDir,
 } from './runtime-path.service';
 
-const ELECTRON_CACHE_DIRECTORIES = [
-    'blob_storage',
-    'Cache',
-    'Code Cache',
-    'DawnGraphiteCache',
-    'DawnWebGPUCache',
-    'GPUCache',
-    'Session Storage',
-] as const;
-
-const ELECTRON_CACHE_FILES = [
-    'DevToolsActivePort',
-    'SharedStorage',
-    'SharedStorage-wal',
-] as const;
-
 const LEGACY_SERVICE_ARTIFACTS = [
     'token-service.log',
     'tokens.store.json',
+] as const;
+const STALE_ELECTRON_CACHE_DIRECTORIES = [
+    'blob_storage',
 ] as const;
 
 const TERMINAL_LOG_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
@@ -244,6 +231,37 @@ export class RuntimeBootstrapService extends BaseService {
             envManifestUrl === undefined &&
             resolvedManifestUrl === NETWORK_DEFAULTS.RUNTIME_MANIFEST_URL;
 
+        // OPTIMIZATION: Load cached manifest immediately for sub-1s boot
+        let cachedManifest: RuntimeManifest | null = null;
+        try {
+            if (fs.existsSync(cachedManifestPath)) {
+                const cachedManifestText = await fsPromises.readFile(cachedManifestPath, 'utf8');
+                cachedManifest = this.runtimeManifestService.parseManifest(
+                    safeJsonParse<JsonObject>(cachedManifestText, {})
+                );
+            }
+        } catch (e) {
+            this.logDebug('Failed to read cached manifest during optimistic phase', e);
+        }
+
+        // If we have a cached manifest, trigger the network update in the background and return cache
+        if (cachedManifest && usesDefaultManifestUrl) {
+            void (async () => {
+                try {
+                    const response = await fetch(resolvedManifestUrl, { redirect: 'follow' });
+                    if (response.ok) {
+                        const manifestText = await response.text();
+                        await this.cacheManifest(manifestText);
+                        this.logDebug('Background runtime manifest update complete');
+                    }
+                } catch (e) {
+                    this.logDebug('Background runtime manifest update failed', e);
+                }
+            })();
+            return cachedManifest;
+        }
+
+        // Fallback for missing cache or custom URL: blocking load
         try {
             this.validateDownloadUrl(resolvedManifestUrl);
             const response = await fetch(resolvedManifestUrl, { redirect: 'follow' });
@@ -317,21 +335,14 @@ export class RuntimeBootstrapService extends BaseService {
 
     private async cleanupManagedAppData(): Promise<void> {
         const userDataRoot = app.getPath('userData');
-        await this.removeKnownCacheDirectories(userDataRoot);
-        await this.removeKnownCacheFiles(userDataRoot);
+        await this.removeStaleElectronCaches(userDataRoot);
         await this.removeLegacyServiceArtifacts(userDataRoot);
         await this.removeExpiredTerminalLogs(userDataRoot);
     }
 
-    private async removeKnownCacheDirectories(userDataRoot: string): Promise<void> {
-        for (const directoryName of ELECTRON_CACHE_DIRECTORIES) {
+    private async removeStaleElectronCaches(userDataRoot: string): Promise<void> {
+        for (const directoryName of STALE_ELECTRON_CACHE_DIRECTORIES) {
             await this.removePathIfPresent(path.join(userDataRoot, directoryName));
-        }
-    }
-
-    private async removeKnownCacheFiles(userDataRoot: string): Promise<void> {
-        for (const fileName of ELECTRON_CACHE_FILES) {
-            await this.removePathIfPresent(path.join(userDataRoot, fileName));
         }
     }
 

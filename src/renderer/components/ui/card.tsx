@@ -63,4 +63,14 @@ CardContentBase.displayName = 'CardContent';
 const CardContent = React.memo(CardContentBase);
 CardContent.displayName = 'CardContent';
 
-export { Card, CardContent, CardHeader, CardTitle };
+const CardDescriptionBase = React.forwardRef<
+    HTMLParagraphElement,
+    React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+    <p ref={ref} className={cn('text-sm text-muted-foreground', className)} {...props} />
+));
+CardDescriptionBase.displayName = 'CardDescription';
+const CardDescription = React.memo(CardDescriptionBase);
+CardDescription.displayName = 'CardDescription';
+
+export { Card, CardContent, CardDescription, CardHeader, CardTitle };

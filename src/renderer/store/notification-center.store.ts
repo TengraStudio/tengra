@@ -15,6 +15,7 @@ import type { Toast } from '@/types';
 
 const NOTIFICATION_CENTER_STORAGE_KEY = 'tengra.notification-center.v1';
 const NOTIFICATION_CENTER_VERSION = 1;
+const NOTIFICATIONS_ENABLED = false;
 const DEFAULT_NOTIFICATION_DURATION_MS = 5000;
 const MAX_ACTIVE_NOTIFICATIONS = 8;
 const MAX_NOTIFICATION_HISTORY = 240;
@@ -467,6 +468,14 @@ function hydrate(): void {
             return;
         }
         snapshot = sanitizeNotificationCenterSnapshot(JSON.parse(raw));
+        if (!NOTIFICATIONS_ENABLED) {
+            snapshot = {
+                ...snapshot,
+                active: [],
+                history: [],
+                scheduled: [],
+            };
+        }
     } catch {
         snapshot = defaultSnapshot;
     }
@@ -521,6 +530,9 @@ function registerActionHandlers(notificationId: string, actions: NotificationAct
 }
 
 export function pushNotification(input: NotificationInput): string | null {
+    if (!NOTIFICATIONS_ENABLED) {
+        return null;
+    }
     const message = input.message.trim();
     if (!message) {
         return null;
@@ -705,6 +717,9 @@ export function scheduleNotification(
     input: NotificationInput,
     deliverAt: number
 ): string | null {
+    if (!NOTIFICATIONS_ENABLED) {
+        return null;
+    }
     const scheduleAt = Number.isFinite(deliverAt) ? Math.floor(deliverAt) : NaN;
     if (!Number.isFinite(scheduleAt)) {
         return null;

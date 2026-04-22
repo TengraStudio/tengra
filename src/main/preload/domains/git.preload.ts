@@ -30,7 +30,8 @@ export interface GitBridge {
     }>;
     getRecentCommits: (
         cwd: string,
-        count?: number
+        count?: number,
+        skip?: number
     ) => Promise<{
         success: boolean;
         commits?: Array<{ hash: string; message: string; author: string; date: string }>;
@@ -101,6 +102,8 @@ export interface GitBridge {
         total?: { added: number; deleted: number; files: number };
         error?: string;
     }>;
+    getCommitDiff: (cwd: string, hash: string) => Promise<{ diff: string; success: boolean; error?: string }>;
+    getStagedDiff: (cwd: string) => Promise<{ diff: string; success: boolean; error?: string }>;
 }
 
 export function createGitBridge(ipc: IpcRenderer): GitBridge {
@@ -108,7 +111,7 @@ export function createGitBridge(ipc: IpcRenderer): GitBridge {
         getBranch: cwd => ipc.invoke('git:getBranch', cwd),
         getStatus: cwd => ipc.invoke('git:getStatus', cwd),
         getLastCommit: cwd => ipc.invoke('git:getLastCommit', cwd),
-        getRecentCommits: (cwd, count) => ipc.invoke('git:getRecentCommits', cwd, count),
+        getRecentCommits: (cwd, count, skip) => ipc.invoke('git:getRecentCommits', cwd, count, skip),
         getFileHistory: (cwd, filePath, count) =>
             ipc.invoke('git:getFileHistory', cwd, filePath, count),
         getBranches: cwd => ipc.invoke('git:getBranches', cwd),
@@ -126,5 +129,7 @@ export function createGitBridge(ipc: IpcRenderer): GitBridge {
         getTrackingInfo: cwd => ipc.invoke('git:getTrackingInfo', cwd),
         getCommitStats: (cwd, days) => ipc.invoke('git:getCommitStats', cwd, days),
         getDiffStats: cwd => ipc.invoke('git:getDiffStats', cwd),
+        getCommitDiff: (cwd: string, hash: string) => ipc.invoke('git:getCommitDiff', cwd, hash),
+        getStagedDiff: (cwd: string) => ipc.invoke('git:getStagedDiff', cwd),
     };
 }

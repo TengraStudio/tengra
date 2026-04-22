@@ -90,6 +90,11 @@ export function useTerminalPanelToggles({
     }, [clearSemanticIssues, activeTabIdRef]);
 
     const openTerminalContextMenu = useCallback((event: React.MouseEvent) => {
+        const target = event.target instanceof Element ? event.target : null;
+        const isTerminalArea = Boolean(target?.closest('.xterm'));
+        if (!isTerminalArea) {
+            return;
+        }
         event.preventDefault();
         setTerminalContextMenu({
             x: Math.min(event.clientX, window.innerWidth - 220),

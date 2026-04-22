@@ -18,6 +18,7 @@ import {
     Palette,
     Sparkles,
     Zap,
+    Image,
 } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -86,6 +87,7 @@ export function MarketplaceView(): JSX.Element {
         { id: 'models', icon: Zap },
         { id: 'prompts', icon: MessageSquare },
         { id: 'languages', icon: Globe },
+        { id: 'iconPacks', icon: Image },
     ];
     const tabLabels: Record<MarketplaceTab, string> = {
         mcp: t('marketplace.tabs.mcp'),
@@ -96,6 +98,7 @@ export function MarketplaceView(): JSX.Element {
         models: t('marketplace.tabs.models'),
         prompts: t('marketplace.tabs.prompts'),
         languages: t('marketplace.tabs.languages'),
+        iconPacks: t('marketplace.tabs.iconPacks'),
     };
     const registryItems = registry ?? {
         version: '',
@@ -107,6 +110,7 @@ export function MarketplaceView(): JSX.Element {
         prompts: [],
         languages: [],
         skills: [],
+        iconPacks: [],
     };
     const totalInstalled = (registryItems.themes?.filter(item => item.installed).length ?? 0)
         + (registryItems.mcp?.filter(item => item.installed).length ?? 0)
@@ -114,6 +118,7 @@ export function MarketplaceView(): JSX.Element {
         + (registryItems.models?.filter(item => item.installed).length ?? 0)
         + (registryItems.prompts?.filter(item => item.installed).length ?? 0)
         + (registryItems.languages?.filter(item => item.installed).length ?? 0)
+        + (registryItems.iconPacks?.filter(item => item.installed).length ?? 0)
         + installedSkills.length;
     const totalAvailable = (registryItems.themes?.length ?? 0)
         + (registryItems.mcp?.length ?? 0)
@@ -121,6 +126,7 @@ export function MarketplaceView(): JSX.Element {
         + (registryItems.models?.length ?? 0)
         + (registryItems.prompts?.length ?? 0)
         + (registryItems.languages?.length ?? 0)
+        + (registryItems.iconPacks?.length ?? 0)
         + marketplaceSkills.length;
     const updateActiveQuery = (updater: (prev: MarketplaceQueryState) => MarketplaceQueryState): void => {
         setQueries(prev => ({

@@ -10,11 +10,8 @@
 
 import { RotateCcw, Save, Settings } from 'lucide-react';
 import React from 'react';
-
-/* Batch-02: Extracted Long Classes */
-const C_SETTINGSHEADER_1 = "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-muted/40 transition-colors disabled:opacity-30";
-const C_SETTINGSHEADER_2 = "flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-50 shadow-lg shadow-primary/20";
-
+import { Button } from '@renderer/components/ui/button';
+import { Badge } from '@renderer/components/ui/badge';
 
 interface SettingsHeaderProps {
     t: (key: string) => string;
@@ -31,36 +28,46 @@ export const SettingsHeader: React.FC<SettingsHeaderProps> = ({
     onReset,
     onSave,
 }) => (
-    <div className="px-6 py-4 border-b border-border/40 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                <Settings className="w-5 h-5" />
+    <div className="px-8 py-5 border-b border-border/40 flex items-center justify-between shrink-0 bg-background/40 backdrop-blur-md">
+        <div className="flex items-center gap-4">
+            <div className="p-2.5 rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
+                <Settings className="w-5 h-5 animate-spin-slow" />
             </div>
             <div>
-                <h2 className="text-lg font-semibold text-foreground">
-                    {t('workspaces.workspaceSettings')}
-                </h2>
-                <p className="typo-caption text-muted-foreground">{workspaceTitle}</p>
+                <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-foreground tracking-tight">
+                        {t('workspaces.workspaceSettings')}
+                    </h2>
+                    {isDirty && (
+                        <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 text-[10px] py-0 px-2 animate-pulse">
+                            {t('workspaces.unsavedChanges')}
+                        </Badge>
+                    )}
+                </div>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mt-0.5">{workspaceTitle}</p>
             </div>
         </div>
 
         <div className="flex items-center gap-3">
-            <button
+            <Button
+                variant="ghost"
+                size="sm"
                 onClick={onReset}
                 disabled={!isDirty}
-                className={C_SETTINGSHEADER_1}
+                className="gap-2 text-muted-foreground hover:text-foreground"
             >
                 <RotateCcw className="w-4 h-4" />
                 {t('common.reset')}
-            </button>
-            <button
+            </Button>
+            <Button
+                size="sm"
                 onClick={onSave}
                 disabled={!isDirty}
-                className={C_SETTINGSHEADER_2}
+                className="gap-2 px-6 shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
             >
                 <Save className="w-4 h-4" />
                 {t('common.save')}
-            </button>
+            </Button>
         </div>
     </div>
 );

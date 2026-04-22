@@ -23,9 +23,9 @@ function installSSHMocks() {
         {
             id: 'conn-1',
             name: 'Production',
-            host: '10.0.0.5',
+            host: '127.0.0.1',
             port: 22,
-            username: 'agnes',
+            username: 'mockuser',
         },
     ]);
     const getConnections = vi.fn().mockResolvedValue([]);
@@ -74,9 +74,9 @@ describe('useSSHConnections', () => {
                 {
                     id: 'conn-1',
                     name: 'Production',
-                    host: '10.0.0.5',
+                    host: '127.0.0.1',
                     port: 22,
-                    username: 'agnes',
+                    username: 'mockuser',
                 },
             ]);
 
@@ -95,7 +95,7 @@ describe('useSSHConnections', () => {
         const mocks = installSSHMocks();
         mocks.getProfiles.mockResolvedValue([
             {
-                host: '10.0.0.5',
+                host: '127.0.0.1',
                 port: 22,
             },
         ]);

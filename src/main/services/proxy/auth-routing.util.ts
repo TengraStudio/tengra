@@ -27,7 +27,7 @@ import { SettingsService } from '@main/services/system/settings.service';
 import { AIProvider } from '@shared/types/ai';
 import { CredentialMode } from '@shared/utils/provider-credentials.util';
 
-import { QuotaService } from './quota.service';
+import { ProxyService } from './proxy.service';
 
 /** Result of resolving the auth route for a provider. */
 export interface AuthRouteResult {
@@ -40,13 +40,13 @@ const OAUTH_ONLY_PROVIDERS: ReadonlySet<string> = new Set<string>([
     'antigravity',
     'copilot',
     'codex',
+    'github',
 ]);
 
 /** Provider keys in AppSettings that carry an `apiKey` field. */
 const API_KEY_PROVIDERS: ReadonlySet<string> = new Set<string>([
     'openai',
     'anthropic',
-    'claude',
     'groq',
     'nvidia',
     'huggingface',
@@ -63,28 +63,28 @@ const API_KEY_PROVIDERS: ReadonlySet<string> = new Set<string>([
  * For OAuth-only providers (e.g. `antigravity`) the result is always `'oauth'`.
  *
  * @param provider   - The AI provider identifier.
- * @param quota      - QuotaService instance for checking remaining quota.
+ * @param proxy      - ProxyService instance for checking remaining quota.
  * @param auth       - AuthService instance for checking linked accounts.
- * @param settings   - SettingsService instance for reading API keys.
+ * @param _settings  - Unused legacy parameter kept for call-site compatibility.
  * @returns The resolved auth method and a human-readable reason.
  */
 export async function resolveAuthRoute(
     provider: AIProvider,
-    quota: QuotaService,
+    proxy: ProxyService,
     auth: AuthService,
-    settings: SettingsService
+    _settings: SettingsService
 ): Promise<AuthRouteResult> {
     if (OAUTH_ONLY_PROVIDERS.has(provider)) {
         return { method: 'oauth', reason: `${provider} is OAuth-only` };
     }
 
-    const oauthAvailable = await checkOAuthWithQuota(provider, quota, auth);
+    const oauthAvailable = await checkOAuthWithQuota(provider, proxy, auth);
     if (oauthAvailable) {
         appLogger.debug('AuthRouting', `${provider}: OAuth with quota available`);
         return { method: 'oauth', reason: 'OAuth session active with remaining quota' };
     }
 
-    const hasKey = checkApiKeyConfigured(provider, settings);
+    const hasKey = await checkApiKeyConfigured(provider, auth);
     if (hasKey) {
         appLogger.debug('AuthRouting', `${provider}: falling back to API key`);
         return { method: 'api', reason: 'API key configured, OAuth quota unavailable' };
@@ -98,13 +98,13 @@ export async function resolveAuthRoute(
  * Checks whether the provider has an active OAuth session with remaining quota.
  *
  * @param provider - The AI provider to check.
- * @param quota    - QuotaService for fetching quota data.
+ * @param proxy    - ProxyService for fetching quota data.
  * @param auth     - AuthService for verifying linked accounts.
  * @returns `true` if OAuth is linked and quota has not been exceeded.
  */
 async function checkOAuthWithQuota(
     provider: AIProvider,
-    quota: QuotaService,
+    proxy: ProxyService,
     auth: AuthService
 ): Promise<boolean> {
     const hasAccount = await auth.hasLinkedAccount(provider);
@@ -113,7 +113,7 @@ async function checkOAuthWithQuota(
     }
 
     try {
-        const quotaData = await fetchQuotaForProvider(provider, quota);
+        const quotaData = await fetchQuotaForProvider(provider, proxy);
         if (quotaData === null) {
             return false;
         }
@@ -131,26 +131,28 @@ async function checkOAuthWithQuota(
 }
 
 /**
- * Fetches quota data for the given provider using the appropriate QuotaService method.
+ * Fetches quota data for the given provider using the appropriate ProxyService method.
  *
  * @param provider - The AI provider.
- * @param quota    - QuotaService instance.
+ * @param proxy    - ProxyService instance.
  * @returns QuotaResponse-like object or `null` if unavailable.
  */
 async function fetchQuotaForProvider(
     provider: AIProvider,
-    quota: QuotaService
+    proxy: ProxyService
 ): Promise<{ status?: string; authExpired?: boolean } | null> {
     switch (provider) {
-        case 'antigravity':
-            return quota.fetchAntigravityQuota();
+        case 'antigravity': {
+            const quota = await proxy.getQuota();
+            return quota?.accounts?.length ? { status: 'OK', authExpired: false } : null;
+        }
         case 'openai': {
-            const codex = await quota.fetchCodexQuota();
-            return codex;
+            const codex = await proxy.getCodexUsage();
+            return codex.accounts.length > 0 ? { status: 'OK', authExpired: false } : null;
         }
         case 'anthropic':
         case 'claude': {
-            const claude = await quota.getClaudeQuota();
+            const claude = await proxy.getClaudeQuota();
             return claude.accounts.length > 0
                 ? { status: 'OK', authExpired: false }
                 : null;
@@ -163,30 +165,111 @@ async function fetchQuotaForProvider(
 /**
  * Checks whether an API key is configured for the given provider.
  *
- * @param provider - The AI provider to look up in settings.
- * @param settings - SettingsService for reading current configuration.
- * @returns `true` if a non-empty API key exists in settings.
+ * @param provider - The AI provider to inspect.
+ * @param auth - AuthService for reading linked accounts.
+ * @returns `true` when at least one account is classified as API key.
  */
-function checkApiKeyConfigured(
+async function checkApiKeyConfigured(
     provider: AIProvider,
-    settings: SettingsService
-): boolean {
+    auth: AuthService
+): Promise<boolean> {
     if (!API_KEY_PROVIDERS.has(provider)) {
         return false;
     }
 
-    const appSettings = settings.getSettings();
-    const providerConfig = appSettings[provider as keyof typeof appSettings];
+    const aliases: Record<string, string[]> = {
+        antigravity: ['antigravity', 'google', 'gemini'],
+        openai: ['openai', 'codex'],
+        codex: ['codex', 'openai'],
+        anthropic: ['anthropic'],
+        claude: ['claude'],
+        github: ['github', 'copilot'],
+        copilot: ['copilot', 'github'],
+        ollama: ['ollama'],
+        huggingface: ['huggingface'],
+        llama: ['llama'],
+        groq: ['groq'],
+        gemini: ['gemini', 'google', 'antigravity'],
+        nvidia: ['nvidia'],
+        mistral: ['mistral'],
+        together: ['together'],
+        perplexity: ['perplexity'],
+        cohere: ['cohere'],
+        xai: ['xai'],
+        deepseek: ['deepseek'],
+        openrouter: ['openrouter']
+    };
 
-    if (
-        providerConfig !== undefined &&
-        typeof providerConfig === 'object' &&
-        providerConfig !== null &&
-        'apiKey' in providerConfig
-    ) {
-        const key = (providerConfig as { apiKey: string }).apiKey;
-        return typeof key === 'string' && key.trim().length > 0;
+    for (const alias of aliases[provider] ?? [provider]) {
+        const accounts = await auth.getAccountsByProviderFull(alias);
+        const hasApiKey = accounts.some(accountHasApiKeyCredential);
+        if (hasApiKey) {
+            return true;
+        }
     }
 
     return false;
+}
+
+function accountHasApiKeyCredential(account: {
+    accessToken?: string;
+    refreshToken?: string;
+    sessionToken?: string;
+    metadata?: unknown;
+}): boolean {
+    const metadata = (account.metadata && typeof account.metadata === 'object' && !Array.isArray(account.metadata))
+        ? (account.metadata as Record<string, unknown>)
+        : undefined;
+    const authType = readMetadataString(metadata, 'auth_type', 'authType');
+    const metadataType = readMetadataString(metadata, 'type');
+    if (authType === 'oauth' || metadataType === 'oauth') {
+        return false;
+    }
+
+    if (authType === 'api_key' || metadataType === 'api_key') {
+        return typeof account.accessToken === 'string' && account.accessToken.trim().length > 0;
+    }
+
+    if (typeof account.refreshToken === 'string' && account.refreshToken.trim().length > 0) {
+        return false;
+    }
+    if (typeof account.sessionToken === 'string' && account.sessionToken.trim().length > 0) {
+        return false;
+    }
+
+    return looksLikeApiKey(account.accessToken);
+}
+
+function readMetadataString(
+    metadata: Record<string, unknown> | undefined,
+    ...keys: string[]
+): string | undefined {
+    if (!metadata) {
+        return undefined;
+    }
+    for (const key of keys) {
+        const value = metadata[key];
+        if (typeof value === 'string' && value.trim().length > 0) {
+            return value.trim().toLowerCase();
+        }
+    }
+    return undefined;
+}
+
+function looksLikeApiKey(token: string | undefined): boolean {
+    if (typeof token !== 'string') {
+        return false;
+    }
+    const normalized = token.trim().toLowerCase();
+    if (!normalized) {
+        return false;
+    }
+    return normalized.startsWith('sk-')
+        || normalized.startsWith('sk_')
+        || normalized.startsWith('gsk_')
+        || normalized.startsWith('hf_')
+        || normalized.startsWith('nvapi-')
+        || normalized.startsWith('aiza')
+        || normalized.startsWith('pplx-')
+        || normalized.startsWith('xai-');
 }

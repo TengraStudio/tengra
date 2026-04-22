@@ -1,287 +1,154 @@
 # Project Structure
 
-Tengra follows a strict organizational pattern to manage its multi-process architecture. This ensures a clear separation of concerns and makes the codebase easier to navigate for developers.
+Tengra is an Electron application with a React renderer, a Node/Electron main process, shared TypeScript contracts, and Rust native services.
 
-## Repository Overview
+## Repository Map
 
 ```text
 tengra/
-├── src/                # Primary source code for the application
-│   ├── main/           # Node.js code for the Electron Main process
-│   ├── renderer/       # React code for the Electron Renderer process
-│   ├── shared/         # Universal types and constants used across processes
-│   └── native/         # Native microservices (Rust and Go)
-├── docs/               # Technical documentation and project guides
-├── resources/          # Static assets, icons, and native binaries for distribution
-├── scripts/            # Automation scripts for builds, linting, and environment setup
-├── tests/              # Centralized test suites (Unit, Integration, E2E)
-├── vendor/             # External source trees and pre-compiled dependencies
-├── logs/               # Application logs (gitignored)
-└── plans/              # Planning documents and analysis
+├── src/
+│   ├── main/             # Electron main process, services, IPC, startup
+│   ├── renderer/         # React UI, feature modules, stores, hooks
+│   ├── shared/           # Cross-process types, schemas, constants, pure utilities
+│   ├── native/           # Rust workspace: db-service, memory-service, tengra-proxy
+│   └── tests/            # Main, renderer, shared, startup, and integration tests
+├── docs/                 # Project documentation
+├── resources/            # Static assets and runtime-adjacent resources
+├── public/               # Public renderer assets copied/served by Vite
+├── scripts/              # Build, verification, audit, and maintenance scripts
+├── build/                # Electron Builder support files
+├── .github/              # CI, release, and repository automation
+├── package.json          # npm scripts, dependencies, Electron Builder config
+└── vite.config.ts        # Vite/Electron build config
 ```
 
-## Main Process (src/main)
+Generated output and local state are intentionally excluded from source control:
 
-The Main process acts as the application's backend. It is responsible for low-level system access, service orchestration, and managing the lifecycle of the window and microservices.
+- `dist/`
+- `release/`
+- `node_modules/`
+- `logs/`
+- `src/native/target/`
+- local managed runtime binaries
 
-### Directory Structure
+## Main Process
+
+`src/main` is the application backend. It owns OS access, service lifecycle, native process startup, secure storage, IPC handlers, and external provider orchestration.
 
 ```text
 src/main/
-├── main.ts                 # Application entry point
-├── preload.ts              # Preload script for IPC bridge
-├── core/                   # Core infrastructure
-│   ├── container.ts        # Dependency injection container
-│   ├── service-registry.ts # Service discovery and registration
-│   ├── circuit-breaker.ts  # Resilience pattern implementation
-│   ├── lazy-services.ts    # Lazy loading utilities
-│   └── repository.interface.ts  # Data access interface
-├── ipc/                    # IPC handlers (50+ handlers)
-│   ├── index.ts            # Handler registration
-│   ├── auth.ts             # Authentication handlers
-│   ├── chat.ts             # Chat completion handlers
-│   ├── project.ts          # Project management handlers
-│   ├── terminal.ts         # Terminal handlers
-│   └── ...                 # Domain-specific handlers
-├── services/               # Domain-organized services
-│   ├── llm/                # AI/LLM services
-│   ├── data/               # Data persistence services
-│   ├── project/            # Project management services
-│   ├── security/           # Auth and encryption services
-│   ├── system/             # System utilities
-│   ├── analysis/           # Metrics and telemetry
-│   ├── proxy/              # Proxy management
-│   ├── external/           # External service integrations
-│   └── ui/                 # UI-related services
-├── startup/                # Application initialization
-│   ├── services.ts         # Service registration
-│   ├── ipc.ts              # IPC handler registration
-│   ├── window.ts           # Window creation
-│   ├── lifecycle.ts        # App lifecycle handlers
-│   └── splash.ts           # Splash screen
-├── logging/                # Logger infrastructure
-│   └── logger.ts           # Centralized logging
-├── mcp/                    # MCP plugin system
-│   ├── dispatcher.ts       # MCP dispatcher
-│   ├── plugin-base.ts      # Plugin base class
-│   ├── servers/            # Built-in MCP servers
-│   └── templates/          # Server templates
-├── tools/                  # Tool execution
-│   ├── tool-definitions.ts # Tool schemas
-│   └── tool-executor.ts    # Tool execution engine
-├── repositories/           # Data repositories
-│   ├── folder.repository.ts
-│   └── prompt.repository.ts
-└── utils/                  # Utility functions
-    ├── cache.util.ts       # LRU cache with TTL
-    ├── event-bus.util.ts   # Event broadcasting
-    ├── ipc-wrapper.util.ts # IPC handler utilities
-    └── ...                 # Validation, sanitization
+├── main.ts                 # Electron entry point
+├── preload.ts              # Preload bridge composition
+├── api/                    # Local API server
+├── core/                   # Container, registry, circuit breaker, service infra
+├── ipc/                    # Domain IPC handlers
+├── logging/                # Main-process logger
+├── mcp/                    # MCP/plugin dispatch and native plugin bridge
+├── preload/domains/        # Renderer-exposed bridge domains
+├── repositories/           # Smaller legacy repositories
+├── services/               # Domain services
+├── startup/                # Startup lifecycle, services, windows, runtime gates
+├── tools/                  # Built-in tool definitions and executor
+└── utils/                  # Main-process utilities
 ```
 
-### Service Domains
+Important service domains:
 
-| Domain | Folder | Purpose | Key Services |
-|--------|--------|---------|--------------|
-| **LLM** | `services/llm/` | AI model integration | LLMService, OllamaService, CopilotService |
-| **Data** | `services/data/` | Data persistence | DatabaseService, FileSystemService, BackupService |
-| **Project** | `services/project/` | Project management | ProjectService, GitService, TerminalService |
-| **Security** | `services/security/` | Auth & encryption | AuthService, TokenService, SecurityService |
-| **System** | `services/system/` | System utilities | CommandService, SystemService, NetworkService |
-| **Analysis** | `services/analysis/` | Metrics & telemetry | TelemetryService, PerformanceService |
-| **Proxy** | `services/proxy/` | API proxy | ProxyService, QuotaService |
-| **External** | `services/external/` | External APIs | WebService, HttpService, ContentService |
+| Folder | Purpose |
+| --- | --- |
+| `services/data` | Database, filesystem, backup, repositories |
+| `services/llm` | LLM providers, local image, memory, model flows |
+| `services/proxy` | Native proxy process integration |
+| `services/security` | Auth, encryption, token/account handling |
+| `services/system` | Command/process/runtime/bootstrap/system health |
+| `services/workspace` | Workspace, terminal, SSH, Git, Docker, LSP |
+| `services/ui` and `services/theme` | UI-facing settings/theme services |
 
-## Renderer Process (src/renderer)
+## Renderer Process
 
-The Renderer process is a standard React application. It is restricted from direct system access and communicates with the Main process via IPC.
-
-### Directory Structure
+`src/renderer` is the React UI. It must use the preload bridge for privileged operations.
 
 ```text
 src/renderer/
-├── main.tsx                # Application entry point
-├── App.tsx                 # Main application component
-├── AppShell.tsx            # App wrapper
-├── index.css               # Global styles
-├── typography.css          # Typography definitions
-├── web-bridge.ts           # Web preview bridge
-├── logging.ts              # Renderer logger
-├── assets/                 # Static assets
-│   ├── logo.png
-│   └── ...                 # Icons, images
-├── components/             # Reusable UI components
-│   ├── layout/             # Layout components
-│   │   ├── ActivityBar.tsx
-│   │   ├── AppHeader.tsx
-│   │   ├── CommandPalette.tsx
-│   │   ├── PanelLayout.tsx
-│   │   ├── Sidebar.tsx
-│   │   └── ...
-│   ├── ui/                 # Base UI components
-│   │   ├── button.tsx
-│   │   ├── card.tsx
-│   │   ├── modal.tsx
-│   │   └── ...
-│   ├── shared/             # Shared components
-│   └── lazy/               # Lazy-loaded components
-├── context/                # React contexts
-│   ├── AppProviders.tsx    # Provider hierarchy
-│   ├── SettingsContext.tsx
-│   ├── AuthContext.tsx
-│   ├── ThemeContext.tsx
-│   ├── ModelContext.tsx
-│   ├── ProjectContext.tsx
-│   └── ChatContext.tsx
-├── features/               # Feature modules
-│   ├── chat/               # Chat feature
-│   ├── settings/           # Settings feature
-│   ├── projects/           # Projects feature
-│   ├── terminal/           # Terminal feature
-│   ├── models/             # Model management
-│   ├── mcp/                # MCP management
-│   ├── memory/             # Memory inspection
-│   ├── ideas/              # Idea generation
-│   └── ...
-├── hooks/                  # Custom React hooks
-│   ├── useAppInitialization.ts
-│   ├── useKeyboardShortcuts.ts
-│   └── ...
-├── store/                  # State management
-│   ├── theme.store.ts
-│   ├── settings.store.ts
-│   ├── sidebar.store.ts
-│   ├── ui-layout.store.ts
-│   └── notification-center.store.ts
-├── views/                  # View components
-│   ├── ViewManager.tsx     # View routing
-│   └── view-manager/       # View wrappers
-├── i18n/                   # Internationalization
-│   ├── index.ts            # i18n setup
-│   ├── en.ts               # English (base)
-│   ├── tr.ts               # Turkish
-│   └── ...                 # Other languages
-├── themes/                 # Theme system
-│   ├── README.md
-│   ├── theme-registry.service.ts
-│   └── manifests/          # Theme definitions
-├── lib/                    # Libraries
-│   ├── ipc-client.ts       # IPC communication
-│   ├── animation-system.ts
-│   └── ...
-└── utils/                  # Utilities
-    ├── accessibility.tsx
-    ├── error-handler.util.ts
-    └── ...
+├── main.tsx
+├── App.tsx
+├── assets/
+├── components/            # Reusable layout/shared/ui components
+├── context/               # React providers
+├── electron-api/          # Renderer API type domains
+├── features/              # Product feature modules
+├── hooks/                 # Cross-feature hooks
+├── i18n/                  # Locale registry and locale files
+├── lib/                   # Renderer libraries and IPC client helpers
+├── store/                 # External stores and UI state
+├── themes/                # Theme registry and manifests
+├── utils/                 # Renderer utilities
+└── views/                 # View loading/routing layer
 ```
 
-### Feature Modules
+Current feature modules include:
 
-Each feature is self-contained with its own components, hooks, and types:
+| Feature | Purpose |
+| --- | --- |
+| `chat` | Chat UI, streaming, tool loop handling, message rendering |
+| `settings` | Settings tabs and account/model/runtime configuration |
+| `workspace` | Workspace shell, explorer, dashboard, agent sessions |
+| `terminal` | Terminal sessions and detached terminal UI |
+| `models` | Model discovery and selection |
+| `marketplace` | Marketplace views and install state |
+| `memory` | Memory inspection and visualization |
+| `ssh` | SSH manager, SFTP, tunnels, remote tools |
+| `voice` | Voice commands and speech UI |
 
-| Feature | Purpose | Key Components |
-|---------|---------|----------------|
-| `chat` | Main chat interface | ChatView, ChatInput, MessageBubble |
-| `settings` | Settings tabs | GeneralTab, AppearanceTab, ModelsTab |
-| `projects` | Project management | ProjectsPage, ProjectCard |
-| `terminal` | Terminal panel | TerminalPanel, TerminalInstance |
-| `models` | Model management | ModelsPage, ModelDetailsPanel |
-| `mcp` | MCP servers | DockerDashboard, MCPServersTab |
-| `memory` | Memory inspection | MemoryInspector |
-| `ideas` | AI idea generation | IdeasPage, IdeaCard |
+## Shared Code
 
-## Shared Code (src/shared)
-
-Code shared between Main and Renderer processes. Must contain only "pure" code without Node.js or browser-specific APIs.
+`src/shared` contains code safe to import from both main and renderer:
 
 ```text
 src/shared/
-├── types/                  # TypeScript definitions
-│   ├── settings.ts
-│   ├── chat.ts
-│   └── ...
-└── utils/                  # Shared utilities
-    ├── error.util.ts
-    └── ...
+├── constants/
+├── prompts/
+├── schemas/
+├── terminal-ipc/
+├── types/
+└── utils/
 ```
 
-## Native Microservices (src/native)
+Keep this layer free of Electron, Node-only, and browser-only side effects unless the file is explicitly typed as a contract.
 
-Source code for systems-level microservices:
+## Native Workspace
+
+`src/native` is a Rust workspace:
 
 ```text
 src/native/
-├── token-service/          # Rust token refresh service
-│   ├── Cargo.toml
-│   └── src/main.rs
-└── target/                 # Rust build artifacts
+├── Cargo.toml
+├── db-service/
+├── memory-service/
+└── tengra-proxy/
 ```
 
-## Tests (tests)
+The release binaries are copied into Tengra's managed runtime directory by `scripts/compile-native.js`.
 
-Centralized test suites:
+## Tests
+
+Tests live under `src/tests` and are split by runtime:
 
 ```text
-tests/
-├── renderer/               # Renderer unit tests
-│   ├── Button.test.tsx
-│   ├── ChatInput.test.tsx
-│   └── ...
-├── main/                   # Main process tests
-├── integration/            # Integration tests
-└── e2e/                    # End-to-end tests
+src/tests/
+├── main/
+├── renderer/
+└── shared/
 ```
 
-## Scripts (scripts)
+Use:
 
-Build and automation scripts:
-
-```text
-scripts/
-├── build-native.js         # Native binary compilation
-├── setup-build-env.js      # Environment setup
-├── changelog/              # Changelog utilities
-├── security/               # Security scripts
-└── docs/                   # Documentation generators
+```bash
+npm test
+npm run test:renderer
+npm run test:e2e
 ```
 
-## Documentation (docs)
+## Documentation
 
-Technical documentation:
-
-```text
-docs/
-├── AI_RULES.md             # AI agent guidelines
-├── ARCHITECTURE.md         # System architecture
-├── API_REFERENCE.md        # API documentation
-├── SERVICES.md             # Service documentation
-├── TODO.md                 # Task tracking
-├── adr/                    # Architecture Decision Records
-├── changelog/              # Changelog data
-└── openapi/                # OpenAPI specification
-```
-
-## File Naming Conventions
-
-```
-Correct naming:
-my-service.service.ts       # Service files
-user-profile.component.tsx  # React components
-use-chat-manager.hook.ts    # Custom hooks
-settings.types.ts           # Type definitions
-error.util.ts               # Utility functions
-
-Incorrect naming:
-myService.ts                # Missing suffix
-UserProfileComp.tsx         # Wrong suffix
-usechatmanager.ts           # Missing suffix, bad casing
-```
-
-## Protected Paths
-
-Never modify these paths:
-- `.git/` - Version control
-- `node_modules/` - Dependencies
-- `vendor/` - Third-party code
-- `.env`, `.env.local` - Environment files
-
+Use [README.md](./README.md) as the docs index. Do not add temporary notes under `docs/`; keep scratch material outside the documentation tree until it is ready to become a maintained document.

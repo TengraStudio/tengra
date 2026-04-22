@@ -46,40 +46,51 @@ export const registerProtocols = (allowedFileRoots: Set<string>): void => {
     const resolveSafeFilePath = (requestUrl: string): string => {
         const withoutFragment = requestUrl.split('#')[0] ?? requestUrl;
         const withoutQuery = withoutFragment.split('?')[0] ?? withoutFragment;
+        
         try {
             const parsed = new URL(withoutQuery);
             const decodedHost = decodeSafeFileUrlComponent(parsed.hostname);
             const decodedPathname = decodeSafeFileUrlComponent(parsed.pathname);
 
             if (process.platform === 'win32') {
-                // Browser URL normalization can rewrite "C:/..." into host="c", pathname="/...".
+                // Case 1: safe-file:///C:/Users/... (Hostname is empty, pathname starts with /C:/)
+                const winPathMatch = decodedPathname.match(/^\/([A-Za-z]):[\\/](.*)/);
+                if (winPathMatch) {
+                    const driveLetter = winPathMatch[1].toUpperCase();
+                    const relativePath = winPathMatch[2].replace(/\//g, '\\');
+                    return path.normalize(`${driveLetter}:\\${relativePath}`);
+                }
+
+                // Case 2: safe-file://C/Users/... (Browser might normalize C: to host)
                 if (/^[A-Za-z]$/.test(decodedHost)) {
                     const driveRoot = `${decodedHost.toUpperCase()}:\\`;
                     const relativePath = decodedPathname.replace(/^\/+/, '').replace(/\//g, '\\');
                     return path.normalize(path.join(driveRoot, relativePath));
                 }
 
+                // Case 3: Path already looks like an absolute Windows path after stripping protocol
                 const trimmedPath = decodedPathname.replace(/^\/+/, '');
                 if (/^[A-Za-z]:[\\/]/.test(trimmedPath)) {
                     return path.normalize(trimmedPath);
                 }
             }
 
+            // Fallback for Unix or other cases
             const combinedPath = decodedHost.length > 0
                 ? `/${decodedHost}${decodedPathname}`
                 : decodedPathname;
             return path.normalize(combinedPath);
         } catch {
-            let legacyPath = withoutQuery.replace(/^safe-file:\/\//i, '');
+            // Legacy/Fallback parsing for malformed URLs
+            let legacyPath = withoutQuery.replace(/^safe-file:\/+/i, '');
             legacyPath = decodeSafeFileUrlComponent(legacyPath);
 
             if (process.platform === 'win32') {
                 if (/^[A-Za-z]\//.test(legacyPath)) {
                     legacyPath = `${legacyPath[0]}:${legacyPath.slice(1)}`;
                 }
-                if (legacyPath.startsWith('/')) {
-                    legacyPath = legacyPath.slice(1);
-                }
+                // Convert slashes to backslashes
+                legacyPath = legacyPath.replace(/\//g, '\\');
             }
 
             return path.normalize(legacyPath);

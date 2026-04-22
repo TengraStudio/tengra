@@ -15,6 +15,7 @@ import * as path from 'path';
 import { appLogger } from '@main/logging/logger';
 import { DatabaseService, SemanticFragment } from '@main/services/data/database.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
+import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
 import {
     DEFAULT_WORKSPACE_SCAN_IGNORE_PATTERNS,
     getWorkspaceIgnoreMatcher,
@@ -30,7 +31,7 @@ import {
     WorkspaceDependencyGraphNode,
 } from '@shared/types';
 import type { FileSearchResult } from '@shared/types/common';
-import { app, BrowserWindow } from 'electron';
+import { BrowserWindow } from 'electron';
 
 interface IndexManifest {
     files: Record<string, number>;
@@ -198,8 +199,7 @@ export class CodeIntelligenceService {
         private readonly embedding: EmbeddingService
     ) {
         try {
-            const userDataPath = app.getPath('userData');
-            this.manifestPath = path.join(userDataPath, 'code-intel-manifests.json');
+            this.manifestPath = getDataFilePath('workspace', 'code-intel-manifests.json');
         } catch {
             this.manifestPath = '';
         }
@@ -231,12 +231,24 @@ export class CodeIntelligenceService {
 
     private async getWorkspaceIndexingConfig(
         workspaceId: string
-    ): Promise<{ enabled: boolean; ignorePatterns: string[] }> {
+    ): Promise<{
+        enabled: boolean;
+        ignorePatterns: string[];
+        maxFileSize: number;
+        maxConcurrency: number;
+    }> {
         try {
             const workspace = await this.db.getWorkspace(workspaceId);
+            const advanced = workspace?.advancedOptions;
             return {
-                enabled: workspace?.advancedOptions?.indexingEnabled !== false,
-                ignorePatterns: workspace?.advancedOptions?.fileWatchIgnore ?? [],
+                enabled: advanced?.indexingEnabled !== false,
+                ignorePatterns: [
+                    ...DEFAULT_WORKSPACE_SCAN_IGNORE_PATTERNS,
+                    ...(advanced?.fileWatchIgnore ?? []),
+                    ...(advanced?.indexingExclude ?? []),
+                ],
+                maxFileSize: advanced?.indexingMaxFileSize ?? 1024 * 1024 * 10, // 10MB default
+                maxConcurrency: advanced?.maxConcurrency ?? 5, // 5 default
             };
         } catch (error) {
             appLogger.warn(
@@ -246,7 +258,9 @@ export class CodeIntelligenceService {
             );
             return {
                 enabled: true,
-                ignorePatterns: [],
+                ignorePatterns: [...DEFAULT_WORKSPACE_SCAN_IGNORE_PATTERNS],
+                maxFileSize: 1024 * 1024 * 10,
+                maxConcurrency: 5,
             };
         }
     }
@@ -405,6 +419,11 @@ export class CodeIntelligenceService {
                 try {
                     const stats = await fs.stat(filePath);
                     newFileManifest[filePath] = stats.mtimeMs;
+
+                    if (stats.size > indexingConfig.maxFileSize) {
+                        continue;
+                    }
+
                     if (force || !manifest.files[filePath] || manifest.files[filePath] !== stats.mtimeMs) {
                         filesToIndex.push(filePath);
                     }
@@ -427,20 +446,16 @@ export class CodeIntelligenceService {
 
             appLogger.debug('code-intelligence.service', `[CodeIntelligence] Found ${filesToIndex.length} files that need indexing.`);
 
-            for (let index = 0; index < filesToIndex.length; index++) {
-                const filePath = filesToIndex[index];
-                if (!filePath) {
-                    continue;
-                }
-                
-                if (!force && manifest.files[filePath]) {
-                    await this.db.deleteCodeSymbolsForFile(rootPath, filePath);
-                    await this.db.deleteSemanticFragmentsForFile(rootPath, filePath);
-                }
-                
-                await this.processWorkspaceFile(workspaceId, rootPath, filePath, index, filesToIndex.length);
-                
-                if (index > 0 && index % 10 === 0) {
+            const concurrency = indexingConfig.maxConcurrency;
+            for (let i = 0; i < filesToIndex.length; i += concurrency) {
+                const batch = filesToIndex.slice(i, i + concurrency);
+                await Promise.all(
+                    batch.map((filePath, batchIndex) =>
+                        this.processWorkspaceFile(workspaceId, rootPath, filePath, i + batchIndex, filesToIndex.length)
+                    )
+                );
+
+                if (i > 0 && i % 50 === 0) {
                     await new Promise(r => setImmediate(r));
                 }
             }

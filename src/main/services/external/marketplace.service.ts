@@ -16,7 +16,7 @@ const execAsync = promisify(exec);
 import { appLogger } from '@main/logging/logger';
 import { PerformanceService } from '@main/services/analysis/performance.service';
 import { BaseService } from '@main/services/base.service';
-import { ExtensionService } from '@main/services/extension/extension.service'; 
+import { ExtensionService } from '@main/services/extension/extension.service';
 import { HuggingFaceService } from '@main/services/llm/huggingface.service';
 import { LlamaService } from '@main/services/llm/llama.service';
 import {
@@ -98,6 +98,7 @@ export class MarketplaceService extends BaseService {
     private readonly USER_PROMPTS_PATH = path.join(app.getPath('userData'), 'runtime', 'prompts');
     private readonly USER_LOCALES_PATH = path.join(app.getPath('userData'), 'runtime', 'locales');
     private readonly USER_SKILLS_PATH = path.join(app.getPath('userData'), 'runtime', 'skills');
+    private readonly USER_ICON_PACKS_PATH = path.join(app.getPath('userData'), 'runtime', 'icon-packs');
     private readonly USER_EXTENSIONS_PATH = path.join(app.getPath('userData'), 'extensions');
     private readonly liveUpdates = new Set<string>();
 
@@ -135,6 +136,7 @@ export class MarketplaceService extends BaseService {
         await fs.ensureDir(this.USER_PROMPTS_PATH);
         await fs.ensureDir(this.USER_LOCALES_PATH);
         await fs.ensureDir(this.USER_SKILLS_PATH);
+        await fs.ensureDir(this.USER_ICON_PACKS_PATH);
         await fs.ensureDir(this.USER_EXTENSIONS_PATH);
     }
 
@@ -189,6 +191,9 @@ export class MarketplaceService extends BaseService {
             if (item.updateAvailable) { count++; }
         });
         registry.prompts?.forEach(item => {
+            if (item.updateAvailable) { count++; }
+        });
+        registry.iconPacks?.forEach(item => {
             if (item.updateAvailable) { count++; }
         });
 
@@ -332,6 +337,11 @@ export class MarketplaceService extends BaseService {
                 case 'skill':
                     targetPath = this.USER_SKILLS_PATH;
                     fileName = `${sanitizedId}.skill.json`;
+                    payload = (await axios.get(item.downloadUrl)).data as RuntimeValue;
+                    break;
+                case 'icon-pack':
+                    targetPath = this.USER_ICON_PACKS_PATH;
+                    fileName = `${sanitizedId}.icon-pack.json`;
                     payload = (await axios.get(item.downloadUrl)).data as RuntimeValue;
                     break;
                 case 'extension': {
@@ -506,6 +516,14 @@ export class MarketplaceService extends BaseService {
                     return { success: true };
                 }
 
+                case 'icon-pack': {
+                    const iconPackPath = path.join(this.USER_ICON_PACKS_PATH, `${this.sanitizeFileNameStem(itemId)}.icon-pack.json`);
+                    if (await fs.pathExists(iconPackPath)) {
+                        await fs.remove(iconPackPath);
+                    }
+                    return { success: true };
+                }
+
                 case 'model': {
                     // We don't usually delete model binaries here as they might be used elsewhere,
                     // but we can try if there's a corresponding .model.json
@@ -621,15 +639,8 @@ export class MarketplaceService extends BaseService {
             }
             const validModels: Array<z.infer<typeof remoteModelRecordSchema>> = [];
             let invalidRecords = 0;
-            const MAX_MODELS_PER_SOURCE = 5000;
-            const totalToProcess = parsedSource.data.models.length;
 
             for (const item of parsedSource.data.models) {
-                if (validModels.length >= MAX_MODELS_PER_SOURCE) {
-                    this.logInfo(`Truncated model ingestion for ${source.provider} at ${MAX_MODELS_PER_SOURCE} records (Total: ${totalToProcess})`);
-                    break;
-                }
-
                 const rawModel = item as Record<string, unknown>;
                 if (!rawModel.id && typeof rawModel.modelId === 'string' && rawModel.modelId.length > 0) {
                     rawModel.id = rawModel.modelId;
@@ -1344,6 +1355,7 @@ export class MarketplaceService extends BaseService {
             languages: this.annotateInstalledItems(registry.languages ?? [], installedVersions.language),
             skills: this.annotateInstalledItems(registry.skills ?? [], installedVersions.skill),
             extensions: this.annotateInstalledItems(registry.extensions ?? [], installedVersions.extension),
+            iconPacks: this.annotateInstalledItems(registry.iconPacks ?? [], installedVersions['icon-pack']),
         };
     }
 
@@ -1398,6 +1410,7 @@ export class MarketplaceService extends BaseService {
             prompt: await this.readVersionsFromDirectory(this.USER_PROMPTS_PATH, '.prompt.json'),
             language: localeVersions,
             skill: await this.readVersionsFromDirectory(this.USER_SKILLS_PATH, '.skill.json'),
+            'icon-pack': await this.readVersionsFromDirectory(this.USER_ICON_PACKS_PATH, '.icon-pack.json'),
             extension: await this.readInstalledExtensionVersions(),
         };
     }

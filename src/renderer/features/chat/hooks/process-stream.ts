@@ -138,7 +138,7 @@ export interface StreamStreamingState {
     extractReasoning?: (content: string, reasoning: string) => string
     speed?: number | null
     sources?: string[]
-    variants?: Record<number, { content: string; reasoning: string }>
+    variants?: Record<string, { content: string; reasoning?: string }>
     toolCalls?: ToolCall[]
     error?: ChatError | null
 }
@@ -148,7 +148,7 @@ export interface StreamResult {
     finalReasoning: string;
     finalReasonings?: string[]; // Accumulated reasonings
     finalSources: string[];
-    finalVariants: Record<number, { content: string; reasoning: string }>;
+    finalVariants: Record<string, { content: string; reasoning?: string }>;
     finalToolCalls: ToolCall[];
     finalUsage?: { promptTokens: number; completionTokens: number; totalTokens: number };
 }
@@ -161,7 +161,7 @@ interface StateUpdateContext {
     finalReasoning: string;
     finalContent: string;
     finalToolCalls: ToolCall[];
-    finalVariants: Record<number, { content: string; reasoning: string }>;
+    finalVariants: Record<string, { content: string; reasoning?: string }>;
     finalImages: string[];
 }
 
@@ -227,7 +227,7 @@ const applyUpdateHandlers = (update: StreamingStateUpdate, state: StreamStreamin
     return newState;
 };
 
-const updateVariantsMap = (context: StateUpdateContext, finalVariants: Record<number, { content: string; reasoning: string }>): void => {
+const updateVariantsMap = (context: StateUpdateContext, finalVariants: Record<string, { content: string; reasoning?: string }>): void => {
     const { index, result } = context;
 
     if (result.newReasoning) {
@@ -240,7 +240,7 @@ const updateVariantsMap = (context: StateUpdateContext, finalVariants: Record<nu
 
 interface ChunkIterationParams {
     chunk: StreamChunk;
-    finalVariants: Record<number, { content: string; reasoning: string }>;
+    finalVariants: Record<string, { content: string; reasoning?: string }>;
     finalContent: string;
     finalReasoning: string;
     finalSources: string[];
@@ -484,7 +484,7 @@ const updateChatTitles = (params: UpdateChatTitlesParams): Chat[] => {
 interface ProcessStreamChunkUpdatesParams {
     chunk: StreamChunk;
     index: number;
-    finalVariants: Record<number, { content: string; reasoning: string }>;
+    finalVariants: Record<string, { content: string; reasoning?: string }>;
     finalContent: string;
     finalReasoning: string;
     finalSources: string[];
@@ -502,7 +502,7 @@ const processStreamChunkUpdates = (params: ProcessStreamChunkUpdatesParams): {
     const { index, finalVariants, finalContent, finalReasoning, finalSources, finalImages, finalToolCalls } = params;
     return {
         content: index === 0 ? finalContent : finalVariants[index].content,
-        reasoning: index === 0 ? finalReasoning : finalVariants[index].reasoning,
+        reasoning: index === 0 ? finalReasoning : (finalVariants[index].reasoning ?? ''),
         sources: index === 0 ? finalSources : [],
         images: index === 0 ? finalImages : [],
         toolCalls: index === 0 ? finalToolCalls : []
@@ -574,7 +574,7 @@ const handleChunkUpdate = (params: {
     finalReasoning: string;
     finalContent: string;
     finalToolCalls: ToolCall[];
-    finalVariants: Record<number, { content: string; reasoning: string }>;
+    finalVariants: Record<string, { content: string; reasoning?: string }>;
     finalImages: string[];
     activeModel: string;
     setStreamingStates: Dispatch<SetStateAction<Record<string, StreamStreamingState>>>;
@@ -609,7 +609,7 @@ const handleThrottledUpdates = (params: {
     language?: string;
     activeModel: string;
     finalReasoning: string;
-    finalVariants: Record<number, { content: string; reasoning: string }>;
+    finalVariants: Record<string, { content: string; reasoning?: string }>;
     finalSources: string[];
     finalImages: string[];
     finalToolCalls: ToolCall[];
@@ -710,7 +710,7 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
     let finalImages: string[] = [];
     let finalToolCalls: ToolCall[] = [];
     let finalUsage: { promptTokens: number; completionTokens: number; totalTokens: number } = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
-    const finalVariants: Record<number, { content: string; reasoning: string }> = {};
+    const finalVariants: Record<string, { content: string; reasoning?: string }> = {};
     const toolCallFallbackPrefix = `${assistantId}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
     let lastSaveTime = Date.now();
@@ -958,7 +958,7 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
     return { finalContent, finalReasoning: effectiveFinalReasoning, finalReasonings: allReasonings, finalSources, finalVariants, finalToolCalls, finalUsage };
 };
 
-const createVariantsArray = (assistantId: string, model: string, variantsMap: Record<number, { content: string; reasoning: string }>) => {
+const createVariantsArray = (assistantId: string, model: string, variantsMap: Record<string, { content: string; reasoning?: string }>) => {
     return Object.entries(variantsMap).map(([idx, v]) => ({
         id: `${assistantId}-v${idx}`,
         content: v.content,
@@ -978,7 +978,7 @@ interface UpdateChatsStateOptions {
     content: string
     reasoning: string
     reasonings?: string[]
-    variants: Record<number, { content: string; reasoning: string }>
+    variants: Record<string, { content: string; reasoning?: string }>
     sources?: string[]
     images?: string[]
     toolCalls?: ToolCall[]
@@ -1051,7 +1051,7 @@ interface SaveToDbOptions {
     content: string
     reasoning: string
     reasonings?: string[]
-    variants: Record<number, { content: string; reasoning: string }>
+    variants: Record<string, { content: string; reasoning?: string }>
     responseTime?: number
     sources?: string[]
     images?: string[]
@@ -1098,7 +1098,7 @@ interface CreateCompletedMessageOptions {
     reasoning: string
     sources: string[]
     images: string[]
-    variants: Record<number, { content: string; reasoning: string }>
+    variants: Record<string, { content: string; reasoning?: string }>
     responseTime: number
     toolCalls?: ToolCall[]
     reasonings?: string[]

@@ -21,7 +21,6 @@ import {
     ProxyTelemetryEvent
 } from '@main/services/proxy/proxy.service';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
-import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { SecurityService } from '@main/services/security/security.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
@@ -72,14 +71,6 @@ function buildService() {
         authService: {
             saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn(),
         } as never as AuthService,
-        quotaService: {
-            getQuota: vi.fn().mockResolvedValue(null),
-            getAntigravityAvailableModels: vi.fn().mockResolvedValue([]),
-            getCopilotQuota: vi.fn().mockResolvedValue({ accounts: [] }),
-            getClaudeQuota: vi.fn().mockResolvedValue({ accounts: [] }),
-            fetchCodexUsage: vi.fn().mockResolvedValue({}),
-            extractCodexUsageFromWham: vi.fn().mockReturnValue(null),
-        } as never as QuotaService,
         databaseService: {
             exec: vi.fn(),
             getLinkedAccounts: vi.fn().mockResolvedValue([]),

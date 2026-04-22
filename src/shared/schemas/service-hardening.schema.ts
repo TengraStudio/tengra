@@ -189,6 +189,7 @@ export const EmbeddingTextInputSchema = z.object({
 });
 
 export const WorkspaceRootPathSchema = z.string().trim().min(1).max(4096);
+export const LargeDataUriSchema = z.string().min(1).max(10 * 1024 * 1024); // 10MB limit for Base64/Logos
 export const WorkspaceActiveRootPathSchema = z.union([
     WorkspaceRootPathSchema,
     z.null(),
@@ -297,6 +298,19 @@ export const WorkspaceLspServerSupportSchema = z.object({
     fileCount: z.number().int().nonnegative(),
 });
 
+export const WorkspaceDiagnosticsSourceResultSchema = z.object({
+    source: z.string().max(128),
+    status: z.enum(['ok', 'failed', 'skipped']),
+    issueCount: z.number().int().nonnegative().optional(),
+    message: z.string().max(1000).optional(),
+});
+
+export const WorkspaceDiagnosticsStatusSchema = z.object({
+    partial: z.boolean(),
+    generatedAt: z.number().int().nonnegative(),
+    sources: z.array(WorkspaceDiagnosticsSourceResultSchema).max(32),
+});
+
 export const WorkspaceAnalysisSchema = z.object({
     type: z.string().max(100),
     frameworks: z.array(z.string().max(100)).max(100),
@@ -320,6 +334,7 @@ export const WorkspaceAnalysisSchema = z.object({
     annotations: z.array(CodeAnnotationSchema).max(1000).optional(),
     lspDiagnostics: z.array(WorkspaceIssueSchema).max(5000).optional(),
     lspServers: z.array(WorkspaceLspServerSupportSchema).max(100).optional(),
+    diagnosticsStatus: WorkspaceDiagnosticsStatusSchema.optional(),
 });
 
 export const WorkspaceFileDiagnosticsSchema = z.array(WorkspaceIssueSchema).max(2000);
@@ -338,7 +353,6 @@ export const WorkspaceDefinitionLocationsSchema = z.array(WorkspaceDefinitionLoc
 export const DirectoryAnalysisSchema = z.object({
     hasPackageJson: z.boolean(),
     pkg: z.record(z.string(), z.any()),
-    readme: z.string().nullable(),
     stats: WorkspaceStatsSchema
 });
 

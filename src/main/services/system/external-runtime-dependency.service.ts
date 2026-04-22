@@ -196,7 +196,12 @@ export class ExternalRuntimeDependencyService extends BaseService {
 
     private async isOllamaRunning(): Promise<boolean> {
         try {
-            const response = await fetch(`${NETWORK_DEFAULTS.OLLAMA_BASE_URL}/api/tags`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 1500);
+            const response = await fetch(`${NETWORK_DEFAULTS.OLLAMA_BASE_URL}/api/tags`, {
+                signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
             return response.ok;
         } catch {
             return false;

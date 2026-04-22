@@ -11,7 +11,6 @@
 import {
     BarChart,
     Bot,
-    Code,
     Database,
     FolderKanban,
     Image,
@@ -138,12 +137,7 @@ export function getSettingsNavigationItems(t: SettingsTranslationFn): SettingsNa
             sectionLabel: t('settings.categories.interaction'),
             icon: Share2,
         },
-        {
-            id: 'developer',
-            label: t('settings.tabs.developer'),
-            sectionLabel: t('settings.categories.tools'),
-            icon: Code,
-        },
+
         {
             id: 'advanced',
             label: t('settings.tabs.advanced'),

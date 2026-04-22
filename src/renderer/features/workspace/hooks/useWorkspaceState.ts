@@ -10,8 +10,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import {
-    pushNotification,
+import { 
     useNotificationCenterStore,
 } from '@/store/notification-center.store';
 import {
@@ -25,8 +24,7 @@ import {
     setWorkspaceExplorerSelectedEntries,
     useWorkspaceExplorerStore,
 } from '@/store/workspace-explorer.store';
-import { WorkspaceEntry } from '@/types';
-import { translateErrorMessage } from '@/utils/error-handler.util';
+import { WorkspaceEntry } from '@/types'; 
 import { appLogger } from '@/utils/renderer-logger';
 
 export function useWorkspaceState(workspaceId: string) {
@@ -131,15 +129,6 @@ export function useWorkspaceState(workspaceId: string) {
         });
     }, [terminalFloating, terminalMaximized, workspaceId]);
 
-    const notify = useCallback((type: 'success' | 'error' | 'info', message: string) => {
-        const resolvedMessage = type === 'error' ? translateErrorMessage(message) : message;
-        pushNotification({
-            type,
-            message: resolvedMessage,
-            source: 'workspace',
-        });
-    }, []);
-
     const logActivity = useCallback((title: string, detail?: string) => {
         appLogger.warn('Activity', `${title}: ${detail}`);
     }, []);
@@ -185,7 +174,6 @@ export function useWorkspaceState(workspaceId: string) {
         entryName,
         setEntryName,
         notifications,
-        notify,
         logActivity,
     };
 }

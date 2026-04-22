@@ -838,12 +838,18 @@ export function useWorkspaceExplorerTree({
 
     const closeContextMenu = useCallback(() => setContextMenu(null), []);
 
+    const collapseAll = useCallback(() => {
+        setExpandedTreeNodes({});
+        saveExpandedTreeState(treeStorageKey, {});
+    }, [treeStorageKey]);
+
     return {
         contextMenu,
         visibleRows,
         toggleMount,
         toggleNode,
         revealPath,
+        collapseAll,
         handleContextMenu,
         handleMountContextMenu,
         handleContextAction,

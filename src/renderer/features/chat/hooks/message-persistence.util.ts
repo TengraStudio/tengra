@@ -18,6 +18,7 @@ import {
     buildStoredToolResults,
     readToolResultImages,
 } from './ai-runtime-chat.util';
+import { updateChatInStore, getChatSnapshot } from '@/store/chat.store';
 
 export function upsertMessageInChat(
     messages: Message[],
@@ -57,7 +58,6 @@ export async function persistAssistantMessage(
 export async function persistToolExecutionMetadata(options: {
     chatId: string;
     assistantId: string;
-    setChats: React.Dispatch<React.SetStateAction<Chat[]>>;
     toolCalls: NonNullable<Message['toolCalls']>;
     toolMessages: Message[];
     selectedProvider: string;
@@ -65,11 +65,14 @@ export async function persistToolExecutionMetadata(options: {
     intentClassification: AiIntentClassification;
     language?: string;
     reasonings?: string[];
+    content?: string;
+    reasoning?: string;
+    images?: string[];
+    sources?: string[];
 }): Promise<void> {
     const {
         chatId,
         assistantId,
-        setChats,
         toolCalls,
         toolMessages,
         selectedProvider,
@@ -77,6 +80,10 @@ export async function persistToolExecutionMetadata(options: {
         intentClassification,
         language,
         reasonings,
+        content,
+        reasoning,
+        images,
+        sources,
     } = options;
     if (toolCalls.length === 0) {
         return;
@@ -89,30 +96,41 @@ export async function persistToolExecutionMetadata(options: {
         reasonings,
         metadata: buildAssistantPresentationMetadata({
             intent: intentClassification,
+            content,
+            reasoning,
             toolCalls,
             toolResults: storedToolResults,
+            images,
+            sources,
             language,
             reasonings,
         }),
     };
+    if (content !== undefined) {
+        updates.content = content;
+    }
+    if (reasoning !== undefined) {
+        updates.reasoning = reasoning;
+    }
+    if (images && images.length > 0) {
+        updates.images = images;
+    }
+    if (sources && sources.length > 0) {
+        updates.sources = sources;
+    }
 
-    setChats(prev => prev.map(chat => (
-        chat.id === chatId
-            ? {
-                ...chat,
-                messages: upsertMessageInChat(chat.messages, assistantId, existing => ({
-                    id: assistantId,
-                    role: 'assistant',
-                    timestamp: existing?.timestamp ?? new Date(),
-                    provider: selectedProvider,
-                    model: activeModel,
-                    ...existing,
-                    ...updates,
-                    content: existing?.content ?? '',
-                })),
-            }
-            : chat
-    )));
+    updateChatInStore(chatId, (chat: Chat) => ({
+        messages: upsertMessageInChat(chat.messages, assistantId, existing => ({
+            id: assistantId,
+            role: 'assistant',
+            timestamp: existing?.timestamp ?? new Date(),
+            provider: selectedProvider,
+            model: activeModel,
+            ...existing,
+            ...updates,
+            content: content ?? existing?.content ?? '',
+        })),
+    }));
 
     await persistAssistantMessage(assistantId, chatId, updates);
 }
@@ -124,7 +142,6 @@ export async function completeDirectImageMessage(options: {
     requestedCount: number;
     activeModel: string;
     selectedProvider: string;
-    setChats: React.Dispatch<React.SetStateAction<Chat[]>>;
     t: (key: string) => string;
     intentClassification: AiIntentClassification;
     language?: string;
@@ -136,7 +153,6 @@ export async function completeDirectImageMessage(options: {
         requestedCount,
         activeModel,
         selectedProvider,
-        setChats,
         t,
         intentClassification,
         language,
@@ -176,24 +192,19 @@ export async function completeDirectImageMessage(options: {
         }),
     };
 
-    setChats(prev => prev.map(chat => (
-        chat.id === chatId
-            ? {
-                ...chat,
-                isGenerating: false,
-                messages: upsertMessageInChat(chat.messages, assistantId, existing => ({
-                    id: assistantId,
-                    role: 'assistant',
-                    timestamp: existing?.timestamp ?? new Date(),
-                    provider: selectedProvider,
-                    model: activeModel,
-                    ...existing,
-                    ...updates,
-                    content: '',
-                })),
-            }
-            : chat
-    )));
+    updateChatInStore(chatId, {
+        isGenerating: false,
+        messages: upsertMessageInChat(getChatSnapshot().chats.find(c => c.id === chatId)?.messages ?? [], assistantId, existing => ({
+            id: assistantId,
+            role: 'assistant',
+            timestamp: existing?.timestamp ?? new Date(),
+            provider: selectedProvider,
+            model: activeModel,
+            ...existing,
+            ...updates,
+            content: '',
+        })),
+    });
 
     await persistAssistantMessage(assistantId, chatId, updates);
 }

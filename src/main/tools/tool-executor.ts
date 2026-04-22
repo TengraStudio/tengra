@@ -9,6 +9,7 @@
  */
 
 import { randomUUID } from 'crypto';
+import { existsSync } from 'fs';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
@@ -295,11 +296,6 @@ export class ToolExecutor {
                 return await this.handleWorkspaceTool(name, args, context);
             }
 
-            const canonicalName = ToolExecutor.MCP_COMPAT_ALIASES[name] ?? name;
-            if (canonicalName.startsWith('mcp__') || canonicalName.includes(':')) {
-                return await this.handleMcpTool(canonicalName, args);
-            }
-
             const handlers: Partial<Record<string, (toolArgs: JsonObject) => Promise<InternalToolResult>>> = {
                 resolve_path: (toolArgs) => this.handleResolvePath(toolArgs),
                 read_file: (toolArgs) => this.handleFileRead(toolArgs),
@@ -336,7 +332,8 @@ export class ToolExecutor {
             if (handler) {
                 result = await handler(args);
             } else {
-                result = await this.handleMcpTool(name, args);
+                const canonicalName = ToolExecutor.MCP_COMPAT_ALIASES[name] ?? name;
+                result = await this.handleMcpTool(canonicalName, args);
             }
 
             // Categorize errors if result failed but didn't throw
@@ -513,6 +510,28 @@ export class ToolExecutor {
         return expandedPath;
     }
 
+    private getDefaultFsBasePath(): string {
+        const homePath = process.env.USERPROFILE ?? process.env.HOME ?? '';
+        if (homePath.trim().length === 0) {
+            return process.cwd();
+        }
+        const desktopCandidate = path.join(homePath, 'Desktop');
+        return existsSync(desktopCandidate) ? desktopCandidate : homePath;
+    }
+
+    private resolveFsPathCandidate(candidatePath: string, basePath?: string): string {
+        const trimmed = candidatePath.trim();
+        const effectiveBase = (typeof basePath === 'string' && basePath.trim().length > 0)
+            ? basePath.trim()
+            : this.getDefaultFsBasePath();
+
+        if (trimmed === '.' || trimmed === './' || trimmed === '.\\') {
+            return path.resolve(this.expandPathInput(effectiveBase));
+        }
+
+        return this.resolveUserPath(trimmed, effectiveBase);
+    }
+
     private resolveUserPath(inputPath: string, basePath?: string): string {
         const expandedPath = this.expandPathInput(inputPath);
         const rewriteWindowsUserHome = (candidatePath: string): string => {
@@ -594,7 +613,8 @@ export class ToolExecutor {
 
     private async handleFileRead(args: JsonObject): Promise<InternalToolResult> {
         if (typeof args['path'] !== 'string') { return { success: false, error: "Missing 'path' argument" }; }
-        const path = args['path'];
+        const basePath = typeof args['basePath'] === 'string' ? args['basePath'] : undefined;
+        const path = this.resolveFsPathCandidate(args['path'], basePath);
         try {
             const response = await this.options.fileSystem.readFile(path);
             if (!response.success || typeof response.data !== 'string') {
@@ -608,7 +628,10 @@ export class ToolExecutor {
 
     private async handleReadManyFiles(args: JsonObject): Promise<InternalToolResult> {
         if (!Array.isArray(args['paths'])) { return { success: false, error: "Missing 'paths' argument" }; }
-        const paths = args['paths'].filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+        const basePath = typeof args['basePath'] === 'string' ? args['basePath'] : undefined;
+        const paths = args['paths']
+            .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+            .map(item => this.resolveFsPathCandidate(item, basePath));
         if (paths.length === 0) {
             return { success: false, error: 'At least one path is required' };
         }
@@ -647,10 +670,35 @@ export class ToolExecutor {
     private async handleFileWrite(args: JsonObject): Promise<InternalToolResult> {
         if (typeof args['path'] !== 'string') { return { success: false, error: "Missing 'path' argument" }; }
         if (typeof args['content'] !== 'string') { return { success: false, error: "Missing 'content' argument" }; }
-        const path = args['path'];
+        const basePath = typeof args['basePath'] === 'string' ? args['basePath'] : undefined;
+        const path = this.resolveFsPathCandidate(args['path'], basePath);
         const content = args['content'];
         try {
-            await this.options.fileSystem.writeFile(path, content);
+            const tracking = this.getFileTrackingContext(args);
+            let diffId: string | undefined;
+            let diffStats: JsonObject | undefined;
+            let existedBefore: boolean | undefined;
+
+            if (tracking) {
+                const response = await this.options.fileSystem.writeFileWithTracking(path, content, tracking);
+                if (!response.success) {
+                    return { success: false, error: response.error ?? 'Failed to write file' };
+                }
+                const details = response.details && typeof response.details === 'object' && !Array.isArray(response.details)
+                    ? response.details as Record<string, unknown>
+                    : {};
+                diffId = typeof details.diffId === 'string' ? details.diffId : undefined;
+                const additions = typeof details.additions === 'number' && Number.isFinite(details.additions) ? details.additions : 0;
+                const deletions = typeof details.deletions === 'number' && Number.isFinite(details.deletions) ? details.deletions : 0;
+                const changes = typeof details.changes === 'number' && Number.isFinite(details.changes) ? details.changes : (additions + deletions);
+                diffStats = (additions > 0 || deletions > 0) ? { additions, deletions, changes } : undefined;
+                existedBefore = typeof details.existedBefore === 'boolean' ? details.existedBefore : undefined;
+                if (diffId && diffId.trim().length === 0) {
+                    diffId = undefined;
+                }
+            } else {
+                await this.options.fileSystem.writeFile(path, content);
+            }
             const bytesWritten = Buffer.byteLength(content, 'utf8');
             return {
                 success: true,
@@ -659,6 +707,9 @@ export class ToolExecutor {
                     resultKind: 'file_write',
                     path,
                     bytesWritten,
+                    ...(diffId ? { diffId } : {}),
+                    ...(diffStats ? { diffStats } : {}),
+                    ...(typeof existedBefore === 'boolean' ? { existedBefore, created: !existedBefore } : {}),
                     complete: true,
                     displaySummary: `Wrote ${bytesWritten} bytes to ${path}`,
                 },
@@ -677,6 +728,7 @@ export class ToolExecutor {
             return { success: false, error: `Too many files requested (max ${ToolExecutor.MAX_BATCH_WRITE_FILES})`, errorType: 'limit' };
         }
 
+        const basePath = typeof args['basePath'] === 'string' ? args['basePath'] : undefined;
         const files = await Promise.all(args['files'].map(async (entry): Promise<JsonObject> => {
             if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
                 return { success: false, path: null, bytesWritten: 0, error: 'Invalid file entry' };
@@ -687,12 +739,28 @@ export class ToolExecutor {
             if (typeof filePath !== 'string' || typeof content !== 'string') {
                 return { success: false, path: typeof filePath === 'string' ? filePath : null, bytesWritten: 0, error: 'Invalid path or content' };
             }
-            const response = await this.options.fileSystem.writeFile(filePath, content);
+            const resolvedPath = this.resolveFsPathCandidate(filePath, basePath);
+            const tracking = this.getFileTrackingContext(args);
+            const response = tracking
+                ? await this.options.fileSystem.writeFileWithTracking(resolvedPath, content, tracking)
+                : await this.options.fileSystem.writeFile(resolvedPath, content);
             const bytesWritten = response.success ? Buffer.byteLength(content, 'utf8') : 0;
+            const details = response.details && typeof response.details === 'object' && !Array.isArray(response.details)
+                ? response.details as Record<string, unknown>
+                : {};
+            const diffId = typeof details.diffId === 'string' && details.diffId.trim().length > 0 ? details.diffId : null;
+            const additions = typeof details.additions === 'number' && Number.isFinite(details.additions) ? details.additions : 0;
+            const deletions = typeof details.deletions === 'number' && Number.isFinite(details.deletions) ? details.deletions : 0;
+            const changes = typeof details.changes === 'number' && Number.isFinite(details.changes) ? details.changes : (additions + deletions);
+            const diffStats = (additions > 0 || deletions > 0) ? { additions, deletions, changes } : null;
+            const existedBefore = typeof details.existedBefore === 'boolean' ? details.existedBefore : null;
             return {
                 success: response.success,
-                path: filePath,
+                path: resolvedPath,
                 bytesWritten,
+                diffId,
+                diffStats,
+                existedBefore,
                 error: response.success ? null : response.error ?? 'Failed to write file',
             };
         }));
@@ -753,14 +821,26 @@ export class ToolExecutor {
 
     private async handlePatchFile(args: JsonObject): Promise<InternalToolResult> {
         if (typeof args['path'] !== 'string') { return { success: false, error: "Missing 'path' argument" }; }
-        const filePath = args['path'];
+        const basePath = typeof args['basePath'] === 'string' ? args['basePath'] : undefined;
+        const filePath = this.resolveFsPathCandidate(args['path'], basePath);
         const edits = this.parseLineEdits(args['edits'] ?? null);
 
         if (edits) {
-            const response = await this.options.fileSystem.applyEdits(filePath, edits);
+            const tracking = this.getFileTrackingContext(args);
+            const response = tracking
+                ? await this.options.fileSystem.applyEditsWithTracking(filePath, edits, tracking)
+                : await this.options.fileSystem.applyEdits(filePath, edits);
             if (!response.success) {
                 return { success: false, error: response.error ?? 'Failed to apply edits' };
             }
+            const details = response.details && typeof response.details === 'object' && !Array.isArray(response.details)
+                ? response.details as Record<string, unknown>
+                : {};
+            const diffId = typeof details.diffId === 'string' && details.diffId.trim().length > 0 ? details.diffId : undefined;
+            const additions = typeof details.additions === 'number' && Number.isFinite(details.additions) ? details.additions : 0;
+            const deletions = typeof details.deletions === 'number' && Number.isFinite(details.deletions) ? details.deletions : 0;
+            const changes = typeof details.changes === 'number' && Number.isFinite(details.changes) ? details.changes : (additions + deletions);
+            const diffStats = (additions > 0 || deletions > 0) ? { additions, deletions, changes } : undefined;
             return {
                 success: true,
                 result: {
@@ -768,6 +848,8 @@ export class ToolExecutor {
                     resultKind: 'file_patch',
                     path: filePath,
                     editCount: edits.length,
+                    ...(diffId ? { diffId } : {}),
+                    ...(diffStats ? { diffStats } : {}),
                     complete: true,
                     displaySummary: `Applied ${edits.length} line edit(s) to ${filePath}`,
                 },
@@ -785,10 +867,21 @@ export class ToolExecutor {
             return { success: false, error: 'Search text was not found in file', errorType: 'notFound' };
         }
         const nextContent = readResponse.data.replace(args['search'], args['replace']);
-        const writeResponse = await this.options.fileSystem.writeFile(filePath, nextContent);
+        const tracking = this.getFileTrackingContext(args);
+        const writeResponse = tracking
+            ? await this.options.fileSystem.writeFileWithTracking(filePath, nextContent, tracking)
+            : await this.options.fileSystem.writeFile(filePath, nextContent);
         if (!writeResponse.success) {
             return { success: false, error: writeResponse.error ?? 'Failed to write patched file' };
         }
+        const details = writeResponse.details && typeof writeResponse.details === 'object' && !Array.isArray(writeResponse.details)
+            ? writeResponse.details as Record<string, unknown>
+            : {};
+        const diffId = typeof details.diffId === 'string' && details.diffId.trim().length > 0 ? details.diffId : undefined;
+        const additions = typeof details.additions === 'number' && Number.isFinite(details.additions) ? details.additions : 0;
+        const deletions = typeof details.deletions === 'number' && Number.isFinite(details.deletions) ? details.deletions : 0;
+        const changes = typeof details.changes === 'number' && Number.isFinite(details.changes) ? details.changes : (additions + deletions);
+        const diffStats = (additions > 0 || deletions > 0) ? { additions, deletions, changes } : undefined;
         return {
             success: true,
             result: {
@@ -796,6 +889,8 @@ export class ToolExecutor {
                 resultKind: 'file_patch',
                 path: filePath,
                 editCount: 1,
+                ...(diffId ? { diffId } : {}),
+                ...(diffStats ? { diffStats } : {}),
                 complete: true,
                 displaySummary: `Applied exact-text patch to ${filePath}`,
             },
@@ -811,7 +906,9 @@ export class ToolExecutor {
             ? Math.floor(args['maxResults'])
             : 50;
         const maxResults = Math.max(1, Math.min(requestedLimit, ToolExecutor.MAX_SEARCH_RESULTS));
-        const response = await this.options.fileSystem.searchFiles(args['rootPath'], args['pattern'], maxResults);
+        const basePath = typeof args['basePath'] === 'string' ? args['basePath'] : undefined;
+        const resolvedRootPath = this.resolveFsPathCandidate(args['rootPath'], basePath);
+        const response = await this.options.fileSystem.searchFiles(resolvedRootPath, args['pattern'], maxResults);
         if (!response.success || !Array.isArray(response.data)) {
             return { success: false, error: response.error ?? 'Failed to search files' };
         }
@@ -821,7 +918,7 @@ export class ToolExecutor {
             result: {
                 success: true,
                 resultKind: 'file_search',
-                rootPath: args['rootPath'],
+                rootPath: resolvedRootPath,
                 pattern: args['pattern'],
                 resultCount: results.length,
                 truncated: response.data.length > results.length,
@@ -834,7 +931,8 @@ export class ToolExecutor {
 
     private async handleListDir(args: JsonObject): Promise<InternalToolResult> {
         if (typeof args['path'] !== 'string') { return { success: false, error: "Missing 'path' argument" }; }
-        const path = args['path'];
+        const basePath = typeof args['basePath'] === 'string' ? args['basePath'] : undefined;
+        const path = this.resolveFsPathCandidate(args['path'], basePath);
         try {
             const response = await this.options.fileSystem.listDirectory(path);
             if (!response.success || !response.data) {
@@ -862,7 +960,8 @@ export class ToolExecutor {
 
     private async handleFileExists(args: JsonObject): Promise<InternalToolResult> {
         if (typeof args['path'] !== 'string') { return { success: false, error: "Missing 'path' argument" }; }
-        const path = args['path'];
+        const basePath = typeof args['basePath'] === 'string' ? args['basePath'] : undefined;
+        const path = this.resolveFsPathCandidate(args['path'], basePath);
         try {
             const response = await this.options.fileSystem.fileExists(path);
             return { success: true, result: response.exists };
@@ -873,7 +972,8 @@ export class ToolExecutor {
 
     private async handleGetFileInfo(args: JsonObject): Promise<InternalToolResult> {
         if (typeof args['path'] !== 'string') { return { success: false, error: "Missing 'path' argument" }; }
-        const path = args['path'];
+        const basePath = typeof args['basePath'] === 'string' ? args['basePath'] : undefined;
+        const path = this.resolveFsPathCandidate(args['path'], basePath);
         try {
             const response = await this.options.fileSystem.getFileInfo(path);
             if (!response.success || !response.data) {
@@ -902,7 +1002,8 @@ export class ToolExecutor {
             };
         }
         const inputPath = args['path'].trim();
-        const path = this.resolveUserPath(inputPath);
+        const basePath = typeof args['basePath'] === 'string' ? args['basePath'] : undefined;
+        const path = this.resolveFsPathCandidate(inputPath, basePath);
         try {
             const existedBefore = (await this.options.fileSystem.fileExists(path)).exists;
             const response = await this.options.fileSystem.createDirectory(path);
@@ -945,10 +1046,34 @@ export class ToolExecutor {
 
     private async handleDeleteFile(args: JsonObject): Promise<InternalToolResult> {
         if (typeof args['path'] !== 'string') { return { success: false, error: "Missing 'path' argument" }; }
-        const path = args['path'];
+        const basePath = typeof args['basePath'] === 'string' ? args['basePath'] : undefined;
+        const path = this.resolveFsPathCandidate(args['path'], basePath);
         try {
-            const response = await this.options.fileSystem.deleteFile(path);
-            return { success: response.success, error: response.error ?? undefined };
+            const tracking = this.getFileTrackingContext(args);
+            const response = tracking
+                ? await this.options.fileSystem.deleteFileWithTracking(path, tracking)
+                : await this.options.fileSystem.deleteFile(path);
+            const details = response.details && typeof response.details === 'object' && !Array.isArray(response.details)
+                ? response.details as Record<string, unknown>
+                : {};
+            const diffId = typeof details.diffId === 'string' && details.diffId.trim().length > 0 ? details.diffId : undefined;
+            const additions = typeof details.additions === 'number' && Number.isFinite(details.additions) ? details.additions : 0;
+            const deletions = typeof details.deletions === 'number' && Number.isFinite(details.deletions) ? details.deletions : 0;
+            const changes = typeof details.changes === 'number' && Number.isFinite(details.changes) ? details.changes : (additions + deletions);
+            const diffStats = (additions > 0 || deletions > 0) ? { additions, deletions, changes } : undefined;
+            return {
+                success: response.success,
+                result: {
+                    success: response.success,
+                    resultKind: 'file_delete',
+                    path,
+                    ...(diffId ? { diffId } : {}),
+                    ...(diffStats ? { diffStats } : {}),
+                    complete: true,
+                    displaySummary: response.success ? `Deleted file ${path}` : `Failed to delete file ${path}`,
+                },
+                error: response.success ? undefined : response.error ?? undefined,
+            };
         } catch (e) {
             return { success: false, error: String(e) };
         }
@@ -959,7 +1084,10 @@ export class ToolExecutor {
         if (typeof args['destination'] !== 'string') { return { success: false, error: "Missing 'destination' argument" }; }
 
         try {
-            const response = await this.options.fileSystem.copyFile(args['source'], args['destination']);
+            const basePath = typeof args['basePath'] === 'string' ? args['basePath'] : undefined;
+            const source = this.resolveFsPathCandidate(args['source'], basePath);
+            const destination = this.resolveFsPathCandidate(args['destination'], basePath);
+            const response = await this.options.fileSystem.copyFile(source, destination);
             return { success: response.success, error: response.error ?? undefined };
         } catch (e) {
             return { success: false, error: String(e) };
@@ -971,11 +1099,29 @@ export class ToolExecutor {
         if (typeof args['destination'] !== 'string') { return { success: false, error: "Missing 'destination' argument" }; }
 
         try {
-            const response = await this.options.fileSystem.moveFile(args['source'], args['destination']);
+            const basePath = typeof args['basePath'] === 'string' ? args['basePath'] : undefined;
+            const source = this.resolveFsPathCandidate(args['source'], basePath);
+            const destination = this.resolveFsPathCandidate(args['destination'], basePath);
+            const response = await this.options.fileSystem.moveFile(source, destination);
             return { success: response.success, error: response.error ?? undefined };
         } catch (e) {
             return { success: false, error: String(e) };
         }
+    }
+
+    private getFileTrackingContext(args: JsonObject): { aiSystem: 'workspace'; chatSessionId?: string; changeReason?: string; metadata?: JsonObject } | null {
+        const sessionId = typeof args['__chatSessionId'] === 'string' && args['__chatSessionId'].trim().length > 0
+            ? args['__chatSessionId'].trim()
+            : null;
+        if (!sessionId) {
+            return null;
+        }
+        return {
+            aiSystem: 'workspace',
+            chatSessionId: sessionId,
+            changeReason: 'AI file modification',
+            metadata: {},
+        };
     }
 
     private getTailBytes(args: JsonObject, defaultBytes: number): number {
@@ -1343,7 +1489,34 @@ export class ToolExecutor {
                 tool = parts[1] ?? name;
             }
 
-            const result = await this.options.mcp.dispatch(server, tool, args);
+            const normalizedArgs: JsonObject = { ...args };
+            if (server === 'filesystem') {
+                const basePath = typeof normalizedArgs['basePath'] === 'string' ? (normalizedArgs['basePath'] as string) : undefined;
+                const pathKeys = ['path', 'rootPath', 'zipPath', 'destPath', 'source', 'destination'] as const;
+                for (const key of pathKeys) {
+                    const value = normalizedArgs[key];
+                    if (typeof value === 'string' && value.trim().length > 0) {
+                        normalizedArgs[key] = this.resolveFsPathCandidate(value, basePath);
+                    }
+                }
+
+                const filesValue = normalizedArgs['files'];
+                if (Array.isArray(filesValue)) {
+                    normalizedArgs['files'] = filesValue.map(entry => {
+                        if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+                            return entry;
+                        }
+                        const record = entry as JsonObject;
+                        const filePath = record['path'];
+                        if (typeof filePath === 'string' && filePath.trim().length > 0) {
+                            return { ...record, path: this.resolveFsPathCandidate(filePath, basePath) };
+                        }
+                        return record;
+                    });
+                }
+            }
+
+            const result = await this.options.mcp.dispatch(server, tool, normalizedArgs);
             return {
                 success: result.success,
                 result: result.data ?? null,

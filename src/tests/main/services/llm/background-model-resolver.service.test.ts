@@ -14,16 +14,12 @@ import { describe, expect, it, vi } from 'vitest';
 
 function createResolver(options: {
     models?: ModelProviderInfo[];
-    settings?: Record<string, unknown>;
-    tokens?: Record<string, string | undefined>;
+    accountsByProvider?: Record<string, Array<{ accessToken?: string; refreshToken?: string; sessionToken?: string; metadata?: Record<string, unknown> }>>;
 }) {
-    const tokens = options.tokens ?? {};
+    const accountsByProvider = options.accountsByProvider ?? {};
     return new BackgroundModelResolver({
         authService: {
-            getActiveToken: vi.fn(async (provider: string) => tokens[provider])
-        } as never,
-        settingsService: {
-            getSettings: vi.fn(() => options.settings ?? {})
+            getAccountsByProviderFull: vi.fn(async (provider: string) => accountsByProvider[provider] ?? [])
         } as never,
         getModels: vi.fn(async () => options.models ?? []),
     });
@@ -32,11 +28,9 @@ function createResolver(options: {
 describe('BackgroundModelResolver', () => {
     it('prefers active OAuth models over OpenAI API-key defaults', async () => {
         const resolver = createResolver({
-            settings: {
-                copilot: { connected: true },
-                openai: { apiKey: 'sk-test', model: 'gpt-4o-mini' },
+            accountsByProvider: {
+                copilot: [{ accessToken: 'github-oauth-token', metadata: { auth_type: 'oauth' } }],
             },
-            tokens: { copilot: 'github-oauth-token' },
             models: [
                 {
                     id: 'gpt-5 mini',
@@ -93,8 +87,8 @@ describe('BackgroundModelResolver', () => {
 
     it('falls back to OpenAI only when an OpenAI API key exists', async () => {
         const resolver = createResolver({
-            settings: {
-                openai: { apiKey: 'sk-test', model: 'gpt-4o-mini' },
+            accountsByProvider: {
+                openai: [{ accessToken: 'sk-test', metadata: { auth_type: 'api_key' } }],
             },
         });
 

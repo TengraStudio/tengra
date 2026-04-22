@@ -156,7 +156,6 @@ export function useWorkspaceAgentSessions({
         stopGeneration,
     } = useChatGenerator({
         chats,
-        setChats,
         appSettings: appSettings ?? undefined,
         selectedModel,
         selectedProvider,

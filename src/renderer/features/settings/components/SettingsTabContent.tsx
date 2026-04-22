@@ -20,7 +20,7 @@ const AboutTab = React.lazy(() => import('@/features/settings/components/AboutTa
 const AccountsTab = React.lazy(() => import('@/features/settings/components/AccountsTab').then(m => ({ default: m.AccountsTab })));
 const AdvancedTab = React.lazy(() => import('@/features/settings/components/AdvancedTab').then(m => ({ default: m.AdvancedTab })));
 const AppearanceTab = React.lazy(() => import('@/features/settings/components/AppearanceTab').then(m => ({ default: m.AppearanceTab })));
-const DeveloperTab = React.lazy(() => import('@/features/settings/components/DeveloperTab').then(m => ({ default: m.DeveloperTab })));
+
 const EditorTab = React.lazy(() => import('@/features/settings/components/EditorTab').then(m => ({ default: m.EditorTab })));
 const GeneralTab = React.lazy(() => import('@/features/settings/components/GeneralTab').then(m => ({ default: m.GeneralTab })));
 const ImageSettingsTab = React.lazy(() => import('@/features/settings/components/ImageSettingsTab').then(m => ({ default: m.ImageSettingsTab })));
@@ -72,7 +72,7 @@ const SettingsTabRenderer: React.FC<SettingsTabContentProps> = ({
         case 'statistics': return <StatisticsTab {...sharedProps} />;
         case 'personas': return <PersonasTab {...sharedProps} />;
         case 'speech': return <SpeechTab {...sharedProps} />;
-        case 'developer': return <DeveloperTab {...sharedProps} />;
+
         case 'advanced': return <AdvancedTab {...sharedProps} installedModels={installedModels} proxyModels={proxyModels} />;
         case 'about': return <AboutTab {...sharedProps} onReset={() => { void handleFactoryReset(); }} />;
         case 'usage-limits': return <ModelUsageLimitsTab {...sharedProps} groupedModels={groupedModels} />;

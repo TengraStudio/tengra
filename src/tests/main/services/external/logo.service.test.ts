@@ -13,7 +13,7 @@ import { LogoService } from '@main/services/external/logo.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
 import { ModelProviderInfo, ModelRegistryService } from '@main/services/llm/model-registry.service';
-import { QuotaService } from '@main/services/proxy/quota.service';
+import { ProxyService } from '@main/services/proxy/proxy.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { WorkspaceAnalysis, WorkspaceService } from '@main/services/workspace/workspace.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -70,11 +70,11 @@ const createService = (): LogoTestContext => {
             setActiveAccount: vi.fn<AuthService['setActiveAccount']>().mockResolvedValue(undefined),
             getAccountsByProvider: vi.fn<AuthService['getAccountsByProvider']>().mockResolvedValue([]),
         } as never as AuthService,
-        quotaService: {
-            getQuota: vi.fn<QuotaService['getQuota']>().mockResolvedValue({ accounts: [] }),
-            getCopilotQuota: vi.fn<QuotaService['getCopilotQuota']>().mockResolvedValue({ accounts: [] }),
-            getClaudeQuota: vi.fn<QuotaService['getClaudeQuota']>().mockResolvedValue({ accounts: [] }),
-        } as never as QuotaService,
+        proxyService: {
+            getQuota: vi.fn<ProxyService['getQuota']>().mockResolvedValue({ accounts: [] }),
+            getCopilotQuota: vi.fn<ProxyService['getCopilotQuota']>().mockResolvedValue({ accounts: [] }),
+            getClaudeQuota: vi.fn<ProxyService['getClaudeQuota']>().mockResolvedValue({ accounts: [] }),
+        } as never as ProxyService,
         modelRegistryService: {
             getAllModels: getAllModelsMock,
         } as never as ModelRegistryService,

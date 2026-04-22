@@ -31,10 +31,16 @@ const BrowserWindow: typeof ElectronBrowserWindow = electronModule.BrowserWindow
 // Set the application name early
 app.setName('Tengra');
 
+const ROAMING_ROOT = path.join(app.getPath('appData'), 'Tengra');
+const ELECTRON_SESSION_DATA_ROOT = path.join(ROAMING_ROOT, 'electron');
+app.setPath('userData', ROAMING_ROOT);
+app.setPath('sessionData', ELECTRON_SESSION_DATA_ROOT);
+
 import { appLogger, LogLevel } from '@main/logging/logger';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import type { DockerService } from '@main/services/workspace/docker.service';
 import type { SSHService } from '@main/services/workspace/ssh.service';
+import { registerDeferredIpcHandlers, registerPostInteractiveIpcHandlers, registerPostStartupIpcHandlers } from '@main/startup/ipc';
 import { container, createServices, type Services, startDeferredServices } from '@main/startup/services';
 import { validateEnvironmentVariables } from '@main/utils/env-validator.util';
 import { OPERATION_TIMEOUTS } from '@shared/constants/timeouts';
@@ -45,7 +51,7 @@ import { registerLifecycleHandlers } from './startup/lifecycle';
 import { preRegisterProtocols, registerProtocols } from './startup/protocols';
 import { getRuntimeStartupDecisions } from './startup/runtime-startup-gate';
 import { closeSplashWindow, shouldShowSplashWindow, showSplashWindow } from './startup/splash';
-import { createWindow, getMainWindow, setupTray } from './startup/window';
+import { createWindow, getMainWindow } from './startup/window';
 
 type StartupMetricEvent = Exclude<keyof StartupMetrics, 'startTime' | 'totalTime'>;
 type SourceMapsEnabledFn = (enabled: boolean) => void;
@@ -163,7 +169,6 @@ app.whenReady().then(async () => {
     appLogger.installConsoleRedirect();
     appLogger.info('Main', `Logger configured: level=${LogLevel[runtimeLogLevel]}, debug=${debugLogsEnabled}`);
 
-    appLogger.info('Startup', 'Validating environment variables...');
     validateEnvironmentVariables();
 
     const shouldShowSplash = shouldShowSplashWindow();
@@ -185,86 +190,70 @@ app.whenReady().then(async () => {
 
     // Register Protocols
     registerProtocols(allowedFileRoots);
+    let backgroundInitPromise: Promise<unknown> | null = null;
 
-    // Initialize Services
+    // 1. Initial Minimal Services Map (for early window boot)
     const services = await createServices(allowedFileRoots);
     recordStartupPhase(services, 'coreServicesReadyTime');
-    const runtimeBootstrapResult = services.runtimeBootstrapService.getLatestExecutionResult();
-    if (
-        runtimeBootstrapResult?.summary.blockingFailures ||
-        runtimeBootstrapResult?.summary.installRequired
-    ) {
-        appLogger.warn(
-            'Main',
-            `Managed runtime scan requires attention: installRequired=${runtimeBootstrapResult.summary.installRequired}, blockingFailures=${runtimeBootstrapResult.summary.blockingFailures}`
-        );
+
+    // 2. Create Window IMMEDIATELY (with loading screen)
+    const mainWindow = createWindow(services.settingsService);
+    recordStartupPhase(services, 'windowCreatedTime');
+
+    if (shouldShowSplash) {
+        mainWindow.once('ready-to-show', () => closeSplashWindow());
+        mainWindow.webContents.once('did-fail-load', () => closeSplashWindow());
     }
+
+    // 3. Parallel Background Initialization
+    const runtimeBootstrapResult = services.runtimeBootstrapService.getLatestExecutionResult();
     const runtimeStartupDecisions = getRuntimeStartupDecisions(runtimeBootstrapResult);
 
-    if (runtimeStartupDecisions.database.shouldStart) {
-        try {
-            await services.databaseService.initialize();
-            const workspaces = await services.databaseService.workspaces.getWorkspaces();
-            for (const workspace of workspaces) {
-                if (workspace.path) {
-                    allowedFileRoots.add(path.resolve(workspace.path));
+    // Database initialization task (background)
+    const initDatabaseTask = (async () => {
+        if (runtimeStartupDecisions.database.shouldStart) {
+            try {
+                await services.databaseService.initialize();
+                const workspaces = await services.databaseService.workspaces.getWorkspaces();
+                for (const workspace of workspaces) {
+                    if (workspace.path) {
+                        allowedFileRoots.add(path.resolve(workspace.path));
+                    }
                 }
+                appLogger.info('Main', `Database initialized background; loaded ${workspaces.length} workspaces`);
+            } catch (error) {
+                appLogger.error('Main', 'Database init background failed', error as Error);
             }
-            appLogger.info('Main', `Populated allowedFileRoots with ${workspaces.length} workspace paths`);
-        } catch (error) {
-            appLogger.error('Main', 'Failed to populate allowedFileRoots from workspaces', error as Error);
         }
-    } else {
-        appLogger.warn(
-            'Main',
-            `Skipping DB init because managed runtime component ${runtimeStartupDecisions.database.componentId} is ${runtimeStartupDecisions.database.status ?? 'missing'}`
-        );
-        // Fallback: still try DB init so chat persistence continues even if runtime manifest is stale.
-        try {
-            await services.databaseService.initialize();
-            const workspaces = await services.databaseService.workspaces.getWorkspaces();
-            for (const workspace of workspaces) {
-                if (workspace.path) {
-                    allowedFileRoots.add(path.resolve(workspace.path));
-                }
-            }
-            appLogger.info('Main', `DB fallback init succeeded; loaded ${workspaces.length} workspace paths`);
-        } catch (error) {
-            appLogger.error('Main', 'DB fallback init failed', error as Error);
-        }
-    }
-    if (runtimeStartupDecisions.embeddedProxy.shouldStart) {
-        void services.proxyService.startEmbeddedProxy().catch(e => appLogger.error('Main', `Proxy Init Failed: ${e}`));
-    } else {
-        appLogger.warn(
-            'Main',
-            `Skipping embedded proxy init because managed runtime component ${runtimeStartupDecisions.embeddedProxy.componentId} is ${runtimeStartupDecisions.embeddedProxy.status ?? 'missing'}`
-        );
-    }
+    })();
 
-    // Hardened Tool Executor
-    // mcpPluginService.initialize() is intentionally deferred to after window creation;
-    // McpDispatcher holds the reference and will find plugins populated once deferred init runs.
-    const [{ McpDispatcher }, { ToolExecutor }, { ApiServerService }] = await Promise.all([
+    // Lazy load non-critical modules (background)
+    const loadModulesTask = Promise.all([
         import('@main/mcp/dispatcher'),
         import('@main/tools/tool-executor'),
         import('@main/api/api-server.service'),
+        import('@main/startup/ipc'),
     ]);
-    const mcpDispatcher = new McpDispatcher(new Set<string>(), services.settingsService, services.mcpPluginService);
 
-    const toolExecutor = new ToolExecutor({
-        fileSystem: services.fileSystemService,
-        eventBus: services.eventBusService,
-        command: services.commandService,
-        web: services.webService,
-        docker: container.resolve<DockerService>('dockerService'),
-        ssh: container.resolve<SSHService>('sshService'),
-        embedding: services.embeddingService,
-        memory: services.memoryService,
-        localImage: services.localImageService,
-        system: services.systemService,
-        network: services.networkService,
-        file: services.fileManagementService,
+    // 4. Wait for minimal requirements to register IPC and show content
+    backgroundInitPromise = Promise.all([loadModulesTask, initDatabaseTask]).then(async ([modules]) => {
+        const [{ McpDispatcher }, { ToolExecutor }, { ApiServerService }, { registerIpcHandlers }] = modules;
+
+        const mcpDispatcher = new McpDispatcher(new Set<string>(), services.settingsService, services.mcpPluginService);
+
+        const toolExecutor = new ToolExecutor({
+            fileSystem: services.fileSystemService,
+            eventBus: services.eventBusService,
+            command: services.commandService,
+            web: services.webService,
+            docker: container.resolve<DockerService>('dockerService'),
+            ssh: container.resolve<SSHService>('sshService'),
+            embedding: services.embeddingService,
+            memory: services.memoryService,
+            localImage: services.localImageService,
+            system: services.systemService,
+            network: services.networkService,
+            file: services.fileManagementService,
             git: services.gitService,
             security: services.securityService,
             mcp: mcpDispatcher,
@@ -272,84 +261,56 @@ app.whenReady().then(async () => {
             terminal: services.terminalService,
         });
 
-    // Initialize Local API Server
-    const proxyProcessManager = services.proxyService['processManager'] as ProxyProcessManager;
-    const apiServerService = new ApiServerService({
-        port: 42069,
-        settingsService: services.settingsService,
-        proxyProcessManager: proxyProcessManager,
-        toolExecutor: toolExecutor,
-        llmService: services.llmService,
-        modelRegistry: services.modelRegistryService
+        // Initialize Local API Server
+        const proxyProcessManager = services.proxyService['processManager'] as ProxyProcessManager;
+        const apiServerService = new ApiServerService({
+            port: 42069,
+            settingsService: services.settingsService,
+            proxyProcessManager: proxyProcessManager,
+            toolExecutor: toolExecutor,
+            llmService: services.llmService,
+            modelRegistry: services.modelRegistryService,
+        });
+        services.apiServerService = apiServerService;
+        container.registerInstance('apiServerService', apiServerService);
+
+        // Register main IPC handlers
+        registerIpcHandlers(services, toolExecutor, getMainWindow, allowedFileRoots, mcpDispatcher);
+        recordStartupPhase(services, 'ipcReadyTime');
+
+        // Start proxy in background if permitted
+        if (runtimeStartupDecisions.embeddedProxy.shouldStart) {
+            void services.proxyService
+                .startEmbeddedProxy()
+                .catch(e => appLogger.error('Main', `Proxy Init Failed: ${e}`));
+        }
     });
-    services.apiServerService = apiServerService;
 
-    // Manual registration so Container.dispose() finds it and calls cleanup()
-    container.registerInstance('apiServerService', apiServerService);
-
-    // Register IPC & Lifecycle
-    const {
-        registerDeferredIpcHandlers,
-        registerIpcHandlers,
-        registerPostInteractiveIpcHandlers,
-        registerPostStartupIpcHandlers,
-    } = await import('@main/startup/ipc');
-    registerIpcHandlers(services, toolExecutor, getMainWindow, allowedFileRoots, mcpDispatcher);
     registerLifecycleHandlers(services.settingsService);
-    recordStartupPhase(services, 'ipcReadyTime');
-
-    // Configure Auto-Start
-    const settings = services.settingsService.getSettings();
-    if (app.isPackaged && settings.window?.startOnStartup !== undefined) {
-        const shouldStartHidden = settings.window.workAtBackground ?? false;
-        app.setLoginItemSettings({
-            openAtLogin: settings.window.startOnStartup,
-            openAsHidden: shouldStartHidden,
-            path: process.execPath,
-            args: shouldStartHidden ? ['--hidden'] : []
-        });
-    }
-
-    if (settings.window?.workAtBackground) {
-        setupTray(services.settingsService);
-    }
-
-    // Create Window
-    const mainWindow = createWindow(services.settingsService);
-    recordStartupPhase(services, 'windowCreatedTime');
-    if (shouldShowSplash) {
-        mainWindow.once('ready-to-show', () => {
-            closeSplashWindow();
-        });
-
-        mainWindow.webContents.once('did-fail-load', () => {
-            closeSplashWindow();
-        });
-    }
 
     let deferredTasksStarted = false;
     let postInteractiveTasksStarted = false;
+
     const runDeferredStartupTasks = () => {
-        if (deferredTasksStarted) {
-            return;
-        }
+        if (deferredTasksStarted) { return; }
         deferredTasksStarted = true;
-        void Promise.resolve().then(async () => {
+        void Promise.resolve(backgroundInitPromise).then(async () => {
             recordStartupPhase(services, 'deferredStartTime');
             await initializeDeferredCoreFeatures(services);
             registerPostStartupIpcHandlers(services, getMainWindow);
             await registerDeferredIpcHandlers(services, getMainWindow);
 
-            // Initialize deferred (non-critical) services first
+            // Initialize deferred (non-critical) services (now includes runtime bootstrap)
             await services.mcpPluginService.initialize();
             await startDeferredServices();
             recordStartupPhase(services, 'deferredServicesReadyTime');
 
             await services.localAIService.maybeStartOllama().catch(error => {
-                appLogger.warn('Main', `Headless Ollama auto-start fallback failed: ${getErrorMessage(error)}`);
+                appLogger.warn('Main', `Headless Ollama auto-start failed: ${getErrorMessage(error)}`);
             });
             const { startOllama } = await import('@main/startup/ollama');
             void startOllama(getMainWindow, false).catch(err => appLogger.error('Main', `Ollama Fail: ${err}`));
+
             const openedMainWindow = getMainWindow();
             if (openedMainWindow) {
                 services.updateService.init(openedMainWindow);
@@ -358,10 +319,9 @@ app.whenReady().then(async () => {
             appLogger.error('Main', 'Deferred startup tasks failed', error as Error);
         });
     };
+
     const runPostInteractiveTasks = () => {
-        if (postInteractiveTasksStarted) {
-            return;
-        }
+        if (postInteractiveTasksStarted) { return; }
         postInteractiveTasksStarted = true;
         void Promise.resolve().then(() => {
             registerPostInteractiveIpcHandlers(services, getMainWindow);
@@ -369,6 +329,7 @@ app.whenReady().then(async () => {
             appLogger.error('Main', 'Post-interactive startup tasks failed', error as Error);
         });
     };
+
     mainWindow.once('ready-to-show', () => {
         recordStartupPhase(services, 'readyTime');
         if (process.env.TENGRA_BENCHMARK) {
@@ -378,11 +339,14 @@ app.whenReady().then(async () => {
         setTimeout(runDeferredStartupTasks, 0);
         setTimeout(runPostInteractiveTasks, OPERATION_TIMEOUTS.DEFERRED_STARTUP);
     });
+
     mainWindow.webContents.once('did-finish-load', () => {
         services.performanceService.recordStartupEvent('loadTime');
         runDeferredStartupTasks();
         setTimeout(runPostInteractiveTasks, 0);
     });
+
+    // Fallback timers for deferred tasks
     setTimeout(runDeferredStartupTasks, OPERATION_TIMEOUTS.DEFERRED_STARTUP);
     setTimeout(runPostInteractiveTasks, OPERATION_TIMEOUTS.DEFERRED_STARTUP * 2);
 
@@ -390,6 +354,5 @@ app.whenReady().then(async () => {
     closeSplashWindow();
     const normalizedError = e instanceof Error ? e : new Error(getErrorMessage(e));
     appLogger.error('Main', 'Critical failure on startup', normalizedError);
-    appLogger.error('Main', `Critical failure details: ${getErrorMessage(e)}`);
     app.exit(1);
 });

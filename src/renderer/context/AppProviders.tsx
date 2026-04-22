@@ -19,6 +19,7 @@ import { ModelProvider } from '@/context/ModelContext';
 import { SettingsProvider } from '@/context/SettingsContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { WorkspaceProvider } from '@/context/WorkspaceContext';
+import { RuntimeIconPackManager } from '@/themes/RuntimeIconPackManager';
 import { RuntimeThemeManager } from '@/themes/RuntimeThemeManager';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -116,6 +117,7 @@ function LocalizedRuntimeProviders({ children }: { children: ReactNode }) {
                                             >
                                                 <ChatProvider>
                                                     <RuntimeThemeManager />
+                                                    <RuntimeIconPackManager />
                                                     {children}
                                                 </ChatProvider>
                                             </ProviderBoundary>

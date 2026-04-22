@@ -8,15 +8,19 @@
  * (at your option) any later version.
  */
 
+import { randomUUID } from 'crypto';
+
 import { appLogger } from '@main/logging/logger';
 import { McpDispatchResult } from '@main/mcp/types';
 import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { ToolDefinition } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
-import { MCPServerConfig, McpPermission } from '@shared/types/settings';
+import { AppSettings, McpPermission, MCPServerConfig } from '@shared/types/settings';
 
 type McpInstallConfig = Omit<MCPServerConfig, 'id'> & { id?: string };
+type McpActionPolicy = 'allow' | 'deny' | 'ask';
+type McpPermissionRequest = NonNullable<AppSettings['mcpPermissionRequests']>[number];
 
 function getActionPermissionCategory(actionName: string): McpPermission {
     const normalized = actionName.toLowerCase();
@@ -158,6 +162,9 @@ export class McpDispatcher {
                 ? plugin.permissions
                 : undefined;
             for (const action of plugin.actions) {
+                if (this.getExplicitActionPermission(settings, plugin.name, action.name) === 'deny') {
+                    continue;
+                }
                 if (allowedPermissions && !allowedPermissions.includes(getActionPermissionCategory(action.name))) {
                     continue;
                 }
@@ -183,6 +190,15 @@ export class McpDispatcher {
         if (!this.pluginService) {
             return { success: false, error: 'MCP Plugin Service not initialized' };
         }
+        const permission = await this.checkActionPermission(serviceName, actionName, args);
+        if (!permission.allowed) {
+            return {
+                success: false,
+                service: serviceName,
+                action: actionName,
+                error: permission.error
+            };
+        }
         return this.pluginService.dispatch(serviceName, actionName, args);
     }
 
@@ -193,25 +209,151 @@ export class McpDispatcher {
         return this.pluginService.getDispatchMetrics();
     }
 
-    /**
-     * @deprecated Used by old permission center, now using granular system in settings
-     */
-    async getPermissionRequests() {
-        return [];
+    async getPermissionRequests(): Promise<McpPermissionRequest[]> {
+        return this.settingsService.getSettings().mcpPermissionRequests ?? [];
     }
 
-    /**
-     * @deprecated Use MCPServersTab in UI to set granular permissions
-     */
-    async setActionPermission(_service: string, _action: string, _policy: 'allow' | 'deny' | 'ask') {
+    async setActionPermission(service: string, action: string, policy: McpActionPolicy) {
+        const settings = this.settingsService.getSettings();
+        const requestStatus: McpPermissionRequest['status'] =
+            policy === 'allow' ? 'approved' : policy === 'deny' ? 'denied' : 'pending';
+        const pendingRequests = (settings.mcpPermissionRequests ?? []).map(request => {
+            if (request.service !== service || request.action !== action || request.status !== 'pending') {
+                return request;
+            }
+            return {
+                ...request,
+                status: requestStatus
+            };
+        });
+
+        await this.settingsService.saveSettings({
+            mcpActionPermissions: {
+                ...(settings.mcpActionPermissions ?? {}),
+                [this.getPrimaryPermissionKey(service, action)]: policy
+            },
+            mcpPermissionRequests: pendingRequests
+        });
+
         return { success: true };
     }
 
-    /**
-     * @deprecated Per-action requests are obsolete
-     */
-    async resolvePermissionRequest(_requestId: string, _decision: 'approved' | 'denied') {
+    async resolvePermissionRequest(requestId: string, decision: 'approved' | 'denied') {
+        const settings = this.settingsService.getSettings();
+        const requests = settings.mcpPermissionRequests ?? [];
+        const request = requests.find(item => item.id === requestId);
+        if (!request) {
+            return { success: false, error: 'Permission request not found' };
+        }
+
+        const nextPolicy: McpActionPolicy = decision === 'approved' ? 'allow' : 'deny';
+        await this.settingsService.saveSettings({
+            mcpActionPermissions: {
+                ...(settings.mcpActionPermissions ?? {}),
+                [this.getPrimaryPermissionKey(request.service, request.action)]: nextPolicy
+            },
+            mcpPermissionRequests: requests.map(item => (
+                item.id === requestId
+                    ? { ...item, status: decision }
+                    : item
+            ))
+        });
+
         return { success: true };
+    }
+
+    private async checkActionPermission(
+        service: string,
+        action: string,
+        args: JsonObject
+    ): Promise<{ allowed: true } | { allowed: false; error: string }> {
+        const settings = this.settingsService.getSettings();
+        const policy = this.getExplicitActionPermission(settings, service, action);
+
+        if (!policy || policy === 'allow') {
+            return { allowed: true };
+        }
+
+        if (policy === 'deny') {
+            return {
+                allowed: false,
+                error: `MCP action permission denied for ${service}:${action}`
+            };
+        }
+
+        await this.ensurePermissionRequest(settings, service, action, args);
+        return {
+            allowed: false,
+            error: `MCP action permission required for ${service}:${action}`
+        };
+    }
+
+    private async ensurePermissionRequest(
+        settings: AppSettings,
+        service: string,
+        action: string,
+        args: JsonObject
+    ): Promise<void> {
+        const requests = settings.mcpPermissionRequests ?? [];
+        const existing = requests.find(request => (
+            request.service === service &&
+            request.action === action &&
+            request.status === 'pending'
+        ));
+
+        if (existing) {
+            return;
+        }
+
+        const nextRequests: McpPermissionRequest[] = [
+            ...requests,
+            {
+                id: randomUUID(),
+                service,
+                action,
+                createdAt: Date.now(),
+                argsPreview: this.createArgsPreview(args),
+                status: 'pending' as const
+            }
+        ].slice(-100);
+
+        await this.settingsService.saveSettings({ mcpPermissionRequests: nextRequests });
+    }
+
+    private createArgsPreview(args: JsonObject): string {
+        try {
+            const serialized = JSON.stringify(args);
+            return serialized.length > 500 ? `${serialized.slice(0, 497)}...` : serialized;
+        } catch {
+            return '[unserializable arguments]';
+        }
+    }
+
+    private getExplicitActionPermission(
+        settings: AppSettings,
+        service: string,
+        action: string
+    ): McpActionPolicy | undefined {
+        const permissions = settings.mcpActionPermissions ?? {};
+        for (const key of this.getPermissionKeys(service, action)) {
+            const policy = permissions[key];
+            if (policy) {
+                return policy;
+            }
+        }
+        return undefined;
+    }
+
+    private getPrimaryPermissionKey(service: string, action: string): string {
+        return `${service}:${action}`;
+    }
+
+    private getPermissionKeys(service: string, action: string): string[] {
+        return [
+            this.getPrimaryPermissionKey(service, action),
+            `${service}.${action}`,
+            `mcp__${service}__${action}`
+        ];
     }
 
     async installService(config: McpInstallConfig) {

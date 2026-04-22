@@ -8,141 +8,189 @@
  * (at your option) any later version.
  */
 
-// Re-export shared types for backward compatibility
-export type { GroupedModels, ModelInfo } from '@/types/model.types';
-
-import type { GroupedModels, ModelInfo } from '@/types/model.types';
+import type { GroupedModels, ModelInfo } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
-// Simple in-memory cache for model fetches
-let modelCache: { data: ModelInfo[]; timestamp: number } | null = null;
-let inFlightModelRequest: Promise<ModelInfo[]> | null = null;
-const CACHE_DURATION_MS = 60000; // 1 minute cache
+let cachedModels: ModelInfo[] | null = null;
 
-function normalizeProviderId(provider: string | undefined): string {
-    const raw = (provider ?? '').trim().toLowerCase();
-    if (raw === '') {
-        return 'custom';
-    }
-    if (raw === 'github' || raw === 'github_token' || raw === 'copilot_token') {
-        return 'copilot';
-    }
-    if (raw === 'nvidia_key' || raw === 'nim' || raw === 'nim_openai') {
+/**
+ * Normalizes a provider ID string to a standard set of known IDs.
+ */
+function normalizeProviderId(rawId: string): string {
+    const id = rawId.trim().toLowerCase();
+
+    // NVIDIA aliases
+    if (
+        id === 'nvidia' ||
+        id === 'nvapi' ||
+        id === 'nim' ||
+        id === 'nim_openai' ||
+        id === 'nvidia_nim' ||
+        id === 'nvidia-nim' ||
+        id === 'nvidia_key' ||
+        id === 'nvidia-key' ||
+        id === 'tensorrt'
+    ) {
         return 'nvidia';
     }
-    return raw;
-}
 
-function normalizeProviderCategoryId(
-    providerCategory: string | undefined,
-    provider: string,
-    sourceProvider?: string
-): string {
-    const raw = (providerCategory ?? '').trim().toLowerCase();
-    if (raw !== '') {
-        return normalizeProviderId(raw);
-    }
-    const source = (sourceProvider ?? '').trim().toLowerCase();
-    if (source !== '') {
-        if (source === 'github' || source === 'copilot' || source === 'github_token' || source === 'copilot_token') {
-            return 'copilot';
-        }
-        if (source === 'anthropic' || source === 'claude') {
-            return 'claude';
-        }
-        return source;
-    }
-    if (provider === 'github' || provider === 'copilot') {
+    // GitHub / Copilot aliases
+    if (id === 'github' || id === 'copilot' || id === 'github-copilot' || id === 'github_copilot') {
         return 'copilot';
     }
-    if (provider === 'anthropic' || provider === 'claude') {
+
+    // Anthropic / Claude aliases
+    if (id === 'anthropic' || id === 'claude') {
         return 'claude';
     }
-    return provider;
-}
 
-function resolveDisplayName(model: ModelInfo): string {
-    const id = typeof model.id === 'string' ? model.id : '';
-    const label = typeof model.label === 'string' ? model.label : '';
-    const name = typeof model.name === 'string' ? model.name : '';
-    return name || label || id;
-}
-
-export function getSelectableProviderId(model: Pick<ModelInfo, 'provider' | 'providerCategory'>): string {
-    const categoryProvider = normalizeProviderId(model.providerCategory);
-    if (categoryProvider !== 'custom' || (model.providerCategory ?? '').trim() !== '') {
-        return categoryProvider;
+    // Local / Ollama aliases
+    if (
+        id === 'ollama' ||
+        id === 'local' ||
+        id === 'local-ai' ||
+        id === 'local_ai' ||
+        id === 'lm_studio' ||
+        id === 'lm-studio'
+    ) {
+        return 'ollama';
     }
-    return normalizeProviderId(model.provider);
+
+    if (id === 'openai') { return 'openai'; }
+    if (id === 'antigravity') { return 'antigravity'; }
+    if (id === 'opencode') { return 'opencode'; }
+    if (id === 'codex') { return 'codex'; }
+    if (id === 'huggingface') { return 'huggingface'; }
+
+    return id || 'custom';
 }
 
-function processFetchedModels(models: ModelInfo[]): ModelInfo[] {
-    return models.map(m => {
-        const provider = normalizeProviderId(m.provider);
-        const providerCategory = normalizeProviderCategoryId(m.providerCategory, provider, m.sourceProvider);
-        return {
-            ...m,
-            provider,
-            providerCategory,
-            name: resolveDisplayName(m)
-        };
-    });
+/**
+ * Returns a user-friendly label for a normalized provider ID.
+ */
+function getProviderLabel(provider: string): string {
+    const labels: Record<string, string> = {
+        copilot: 'GitHub Copilot',
+        openai: 'OpenAI',
+        claude: 'Anthropic',
+        antigravity: 'Antigravity',
+        ollama: 'Ollama',
+        codex: 'Codex',
+        opencode: 'OpenCode',
+        huggingface: 'HuggingFace',
+        nvidia: 'NVIDIA',
+        custom: 'Custom Proxy'
+    };
+    return labels[provider] || provider.charAt(0).toUpperCase() + provider.slice(1);
 }
 
-function isCacheFresh(): boolean {
-    return modelCache !== null && Date.now() - modelCache.timestamp < CACHE_DURATION_MS;
+/**
+ * Extracts and normalizes the provider ID for a specific model.
+ */
+export function getSelectableProviderId(model: ModelInfo): string {
+    const rawId = (model.providerCategory || model.sourceProvider || model.provider || '').toLowerCase();
+    return normalizeProviderId(rawId);
 }
 
-export function primeModelCache(): Promise<ModelInfo[]> {
-    return fetchModels(false);
+/**
+ * Clears the local models cache.
+ */
+export function clearModelsInfoCache() {
+    cachedModels = null;
 }
 
+/**
+ * Fetches models from the backend, optionally bypassing the local cache.
+ * Aggregates results from multiple IPC sources to ensure all providers are covered.
+ */
 export async function fetchModels(bypassCache = false): Promise<ModelInfo[]> {
-    try {
-        // PERF-005-1: Return cached models if still fresh
-        if (!bypassCache && isCacheFresh() && modelCache) {
-            return modelCache.data;
-        }
-
-        if (inFlightModelRequest) {
-            return inFlightModelRequest;
-        }
-
-        inFlightModelRequest = window.electron.modelRegistry
-            .getAllModels()
-            .catch(() => [])
-            .then(models => {
-                const processedModels = processFetchedModels(models);
-                modelCache = {
-                    data: processedModels,
-                    timestamp: Date.now()
-                };
-                return processedModels;
-            })
-            .finally(() => {
-                inFlightModelRequest = null;
-            });
-
-        return await inFlightModelRequest;
-    } catch (error) {
-        appLogger.error('ModelFetcher', 'Failed to fetch models', error as Error);
-        return [];
+    if (!bypassCache && cachedModels) {
+        return cachedModels;
     }
+
+    const aggregatedModelsMap = new Map<string, ModelInfo>();
+
+    const addModels = (rawList: unknown[], _source: string) => {
+        if (!Array.isArray(rawList)) {
+            return;
+        }
+
+        const foundProviders = new Set<string>();
+        rawList.forEach((item: unknown) => {
+            const m = item as Record<string, unknown>;
+            if (!m?.id) {
+                return;
+            }
+            const rawProvider = (m.providerCategory || m.sourceProvider || m.provider || '') as string;
+            const normalizedProvider = normalizeProviderId(rawProvider);
+            
+            foundProviders.add(`${rawProvider} -> ${normalizedProvider}`);
+
+            const modelInfo: ModelInfo = {
+                ...(m as unknown as ModelInfo),
+                provider: normalizedProvider,
+                providerCategory: normalizedProvider
+            };
+
+            // Use ID and provider as key for deduplication
+            const key = `${modelInfo.id}:${modelInfo.provider}`;
+            aggregatedModelsMap.set(key, modelInfo);
+        });
+    };
+
+    try {
+        // 1. Primary source: The aggregated model registry which handles local (Ollama), 
+        // remote (Proxy, NVIDIA, OpenCode, HuggingFace), and installed models.
+        try {
+            const registryModels = await window.electron.invoke('model-registry:get-all') as ModelInfo[];
+            if (Array.isArray(registryModels)) {
+                addModels(registryModels, 'registry');
+            }
+        } catch (e) {
+            appLogger.warn('ModelFetcher', 'model-registry:get-all failed', { error: e });
+        }
+
+        // 2. Secondary/Legacy fallback: Fetching through proxy service directly
+        // This ensures we don't miss anything if the registry is still warming up.
+        try {
+            const proxyResponse = (await window.electron.getProxyModels()) as unknown as Record<string, unknown> | unknown[];
+            if (proxyResponse && !Array.isArray(proxyResponse) && Array.isArray(proxyResponse.data)) {
+                addModels(proxyResponse.data as unknown[], 'proxy-data');
+            } else if (Array.isArray(proxyResponse)) {
+                addModels(proxyResponse, 'proxy-root');
+            }
+        } catch (_e) {
+            // Error ignored as this is a fallback source
+        }
+    } catch (error) {
+        appLogger.error('ModelFetcher', 'Aggregation failed', error as Error);
+    }
+
+    const allModels = Array.from(aggregatedModelsMap.values());
+    if (allModels.length > 0) {
+        cachedModels = allModels;
+    }
+    return allModels;
 }
 
+/**
+ * Groups models by their normalized provider ID.
+ */
 export function groupModels(models: ModelInfo[]): GroupedModels {
-    const groups: GroupedModels = {};
+    const grouped: GroupedModels = {};
 
-    models.forEach(m => {
-        const providerCategory = m.providerCategory ?? m.provider ?? 'custom';
-        if (!(providerCategory in groups)) {
-            groups[providerCategory] = {
-                label: m.label ?? providerCategory,
+    for (const model of models) {
+        const providerId = getSelectableProviderId(model);
+        if (!providerId) { continue; }
+
+        if (!grouped[providerId]) {
+            grouped[providerId] = {
+                label: getProviderLabel(providerId),
                 models: []
             };
         }
-        groups[providerCategory].models.push(m);
-    });
+        grouped[providerId].models.push(model);
+    }
 
-    return groups;
+    return grouped;
 }

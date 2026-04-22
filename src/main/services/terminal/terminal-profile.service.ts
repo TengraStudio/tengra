@@ -9,12 +9,11 @@
  */
 
 import * as fs from 'fs';
-import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
+import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { app } from 'electron';
 
 export interface TerminalProfile {
     id: string;
@@ -52,7 +51,7 @@ export class TerminalProfileService extends BaseService {
     constructor() {
         super('TerminalProfileService');
         try {
-            this.persistencePath = path.join(app.getPath('userData'), 'terminal-profiles.json');
+            this.persistencePath = getDataFilePath('terminal', 'profiles.json');
         } catch {
             this.persistencePath = '';
         }

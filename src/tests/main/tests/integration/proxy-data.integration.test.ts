@@ -28,7 +28,6 @@ vi.mock('electron', () => ({
 const mockSettingsService = { getSettings: vi.fn(() => ({ proxy: {} })), saveSettings: vi.fn() } as never;
 const mockSecurityService = { encryptSync: vi.fn(d => d), decryptSync: vi.fn(d => d) } as never;
 const mockProcessManager = {} as never;
-const mockQuotaService = {} as never;
 const mockEventBus = { on: vi.fn(), off: vi.fn(), emit: vi.fn(), emitCustom: vi.fn() } as never;
 const mockAuthService = { saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn() } as never;
 
@@ -47,7 +46,6 @@ describe('Proxy-Data Integration', () => {
             dataService,
             securityService: mockSecurityService,
             processManager: mockProcessManager,
-            quotaService: mockQuotaService,
             authService: mockAuthService,
             eventBus: mockEventBus,
             databaseService: {} as never

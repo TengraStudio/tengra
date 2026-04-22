@@ -9,7 +9,7 @@
  */
 
 import { McpDispatchResult, McpService } from '@main/mcp/types';
-import { JsonObject } from '@shared/types/common';
+import { JsonObject, JsonValue } from '@shared/types/common';
 
 /**
  * Interface for an MCP Plugin.
@@ -111,7 +111,7 @@ export class NativeMcpPlugin implements IMcpPlugin {
         try {
             interface DispatchResponse {
                 success: boolean;
-                result?: JsonObject;
+                result?: JsonValue;
                 error?: string;
             }
 
@@ -127,11 +127,11 @@ export class NativeMcpPlugin implements IMcpPlugin {
             ) as DispatchResponse;
 
             if (response?.success) {
-                return { 
-                    success: true, 
-                    ...(response.result || {}),
-                    service: this.name, 
-                    action: actionName 
+                return {
+                    success: true,
+                    data: response.result ?? null,
+                    service: this.name,
+                    action: actionName
                 };
             }
 

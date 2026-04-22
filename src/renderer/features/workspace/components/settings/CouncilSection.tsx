@@ -66,8 +66,7 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
             <div className="space-y-3">
                 <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <Shield className="w-4 h-4" />
-                    {t('workspaces.consensusThreshold')} ({Math.round(formData.consensusThreshold * 100)}
-                    %)
+                    {t('workspaces.consensusThreshold')} ({t('common.percentage', { value: Math.round(formData.consensusThreshold * 100) })})
                 </Label>
                 <Slider
                     min={0}
@@ -139,4 +138,3 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
         </div>
     </section>
 );
-

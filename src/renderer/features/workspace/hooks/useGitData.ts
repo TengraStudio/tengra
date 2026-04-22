@@ -203,8 +203,10 @@ export function useGitData(workspace: Workspace) {
     const [remotes, setRemotes] = useState<Remote[]>([]);
     const [trackingInfo, setTrackingInfo] = useState<TrackingInfo | null>(null);
     const [diffStats, setDiffStats] = useState<DiffStats | null>(null);
-    const [commitStats, setCommitStats] = useState<Record<string, number>>({});
     const [sectionStates, setSectionStates] = useState<GitSectionStates>(createGitSectionStates(false));
+    const [commitsOffset, setCommitsOffset] = useState(0);
+    const [hasMoreCommits, setHasMoreCommits] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
 
     const fetchGitData = useCallback(async () => {
         if (!workspace.path) { return; }
@@ -222,7 +224,8 @@ export function useGitData(workspace: Workspace) {
             setRemotes(data.remotes);
             setTrackingInfo(data.trackingInfo);
             setDiffStats(data.diffStats);
-            setCommitStats(data.commitStats);
+            setCommitsOffset(0);
+            setHasMoreCommits(true);
             setSectionStates(createGitSectionStates(false, data.sectionErrors));
         } catch (error) {
             appLogger.error('useGitData', 'Failed to fetch git data', error as Error);
@@ -252,9 +255,13 @@ export function useGitData(workspace: Workspace) {
         }
     }, [workspace.path]);
 
-    const handleGitFileSelect = useCallback(async (file: GitFile) => {
+    const handleGitFileSelect = useCallback(async (file: GitFile | null) => {
         setSelectedFile(file);
-        await loadFileDiff(file.path, file.staged);
+        if (file) {
+            await loadFileDiff(file.path, file.staged);
+        } else {
+            setFileDiff(null);
+        }
     }, [loadFileDiff]);
 
     const {
@@ -278,6 +285,13 @@ export function useGitData(workspace: Workspace) {
 
     const handleCommitSelect = useCallback(async (commit: GitCommitInfo | null) => {
         if (!workspace.path) { return; }
+        // Toggle selection
+        if (selectedCommit?.hash === commit?.hash) {
+            setSelectedCommit(null);
+            setCommitDiff(null);
+            return;
+        }
+        
         setSelectedCommit(commit);
         if (!commit) {
             setCommitDiff(null);
@@ -294,7 +308,33 @@ export function useGitData(workspace: Workspace) {
         } finally {
             setLoadingDiff(false);
         }
-    }, [workspace.path]);
+    }, [workspace.path, selectedCommit?.hash]);
+
+    const handleLoadMoreCommits = useCallback(async () => {
+        if (!workspace.path || !hasMoreCommits || isLoadingMore) { return; }
+        setIsLoadingMore(true);
+        try {
+            const newOffset = commitsOffset + 20;
+            const result = await window.electron.git.getRecentCommits(workspace.path, 20, newOffset);
+            if (result.success && result.commits) {
+                if (result.commits.length < 20) {
+                    setHasMoreCommits(false);
+                }
+                setGitData(prev => ({
+                    ...prev,
+                    recentCommits: [...prev.recentCommits, ... (result.commits as GitCommitInfo[])]
+                }));
+                setCommitsOffset(newOffset);
+            } else {
+                setHasMoreCommits(false);
+            }
+        } catch (e) {
+            appLogger.error('useGitData', 'Failed to load more commits', e as Error);
+            setHasMoreCommits(false);
+        } finally {
+            setIsLoadingMore(false);
+        }
+    }, [workspace.path, commitsOffset, hasMoreCommits, isLoadingMore]);
 
     return {
         gitData,
@@ -307,7 +347,6 @@ export function useGitData(workspace: Workspace) {
         remotes,
         trackingInfo,
         diffStats,
-        commitStats,
         commitMessage,
         setCommitMessage,
         isCommitting,
@@ -316,6 +355,8 @@ export function useGitData(workspace: Workspace) {
         isCheckingOut,
         lastActionError,
         sectionStates,
+        isLoadingMore,
+        hasMoreCommits,
         fetchGitData,
         handleGitFileSelect,
         handleStageFile,
@@ -324,6 +365,7 @@ export function useGitData(workspace: Workspace) {
         handleCommit,
         handlePush,
         handlePull,
-        handleCommitSelect
+        handleCommitSelect,
+        handleLoadMoreCommits
     };
 }

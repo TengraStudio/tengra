@@ -9,24 +9,17 @@
  */
 
 import { appLogger } from '@main/logging/logger';
-import { DatabaseService } from '@main/services/data/database.service';
-import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { ipcMain } from 'electron';
+import type { DatabaseService } from '@main/services/data/database.service';
 
 /**
  * Registers IPC handlers for database migration management
  */
-export function registerMigrationIpc(databaseService: DatabaseService) {
+export function registerMigrationIpc(_databaseService: DatabaseService) {
     appLogger.info('MigrationIPC', 'Registering migration IPC handlers');
 
     /**
      * Get migration status
      */
-    ipcMain.handle('migration:status', createSafeIpcHandler('migration:status',
-        async () => {
-            return databaseService.getMigrationStatus();
-        }, null
-    ));
 
     /**
      * Note: Actual migration/rollback operations are handled automatically

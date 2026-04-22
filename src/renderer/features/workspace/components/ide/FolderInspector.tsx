@@ -8,22 +8,18 @@
  * (at your option) any later version.
  */
 
-import { Activity, FileText, Folder, Package } from 'lucide-react';
+import { WorkspaceStats } from '@shared/types/workspace';
+import { Activity, Folder, Package } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import type { IpcValue } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
-/* Batch-02: Extracted Long Classes */
-const C_FOLDERINSPECTOR_1 = "bg-muted/30 rounded-lg p-3 border border-border/50 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-muted typo-caption text-muted-foreground leading-relaxed";
-
-
 interface DirectoryAnalysis {
     hasPackageJson: boolean;
     pkg: Record<string, IpcValue>;
-    readme: string | null;
-    stats: { fileCount: number; totalSize: number };
+    stats: WorkspaceStats;
 }
 
 interface FolderInspectorProps {
@@ -171,22 +167,6 @@ const PackageInfoSection = ({ pkg }: { pkg: Record<string, IpcValue> }) => {
     );
 };
 
-const ReadmeSection = ({ readme }: { readme: string }) => {
-    const { t } = useTranslation();
-    const displayText = readme.slice(0, 500) + (readme.length > 500 ? '...' : '');
-
-    return (
-        <div className="space-y-3">
-            <h3 className="typo-caption font-bold text-muted-foreground flex items-center gap-2">
-                <FileText className="w-3.5 h-3.5" /> {t('workspaceDashboard.folderInspector.readme')}
-            </h3>
-            <div className={C_FOLDERINSPECTOR_1}>
-                <pre className="whitespace-pre-wrap font-sans">{displayText}</pre>
-            </div>
-        </div>
-    );
-};
-
 const FolderContentView = ({
     data,
     folderPath,
@@ -218,7 +198,7 @@ const FolderContentView = ({
 
                 {data.hasPackageJson && <PackageInfoSection pkg={data.pkg} />}
 
-                {data.readme && <ReadmeSection readme={data.readme} />}
+
             </div>
         </div>
     );

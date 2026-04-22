@@ -10,7 +10,8 @@
 
 import { BaseService } from '@main/services/base.service';
 import { LLMService } from '@main/services/llm/llm.service';
-import { QuotaService } from '@main/services/proxy/quota.service';
+import { ModelSelectionService } from '@main/services/llm/model-selection.service';
+import { ProxyService } from '@main/services/proxy/proxy.service';
 import {
     ModelRoutingRule,
     StepModelConfig,
@@ -42,7 +43,8 @@ const DEFAULT_ROUTING_RULES: ModelRoutingRule[] = [
 
 export interface CouncilCapabilityDependencies {
     llm: LLMService;
-    quota: QuotaService;
+    proxy: ProxyService;
+    modelSelectionService: ModelSelectionService;
 }
 
 /**
@@ -95,13 +97,26 @@ export class CouncilCapabilityService extends BaseService {
     ): Promise<StepModelConfig> {
         const availableProviders = await this.deps.llm.getAvailableProviders();
         const taskType = step.taskType || this.detectTaskType(step.text);
-        const defaultConfig = this.routeByTaskType(taskType, availableProviders);
+        let defaultConfig = this.routeByTaskType(taskType, availableProviders);
+        const recommendation = await this.deps.modelSelectionService.recommendBackgroundModel();
+        const suggested = recommendation.selection;
+        if (
+            suggested &&
+            availableProviders.includes(suggested.provider) &&
+            (taskType === 'general' || taskType === 'planning')
+        ) {
+            defaultConfig = {
+                provider: suggested.provider,
+                model: suggested.model,
+                reason: `ModelSelectionService recommendation: ${recommendation.reason}`,
+            };
+        }
 
         try {
             const provider = defaultConfig.provider.toLowerCase();
 
             if (provider.includes('antigravity') || provider.includes('google')) {
-                const quotas = await this.deps.quota.getAntigravityAvailableModels();
+                const quotas = await this.deps.proxy.getAntigravityAvailableModels();
                 const modelQuota = quotas.find(
                     quota =>
                         quota.id === defaultConfig.model ||
@@ -119,7 +134,7 @@ export class CouncilCapabilityService extends BaseService {
                     }
                 }
             } else if (provider.includes('claude')) {
-                const claudeQuotas = await this.deps.quota.getClaudeQuota();
+                const claudeQuotas = await this.deps.proxy.getClaudeQuota();
                 const bestAccount = [...claudeQuotas.accounts].sort(
                     (left, right) =>
                         (right.fiveHour?.utilization ?? 0) -

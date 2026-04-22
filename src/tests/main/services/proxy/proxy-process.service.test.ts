@@ -254,7 +254,7 @@ describe('ProxyProcessManager runtime launch configuration', () => {
 
         processProxyLogLine?.call(
             service,
-            '__TENGRA_AUTH_UPDATE__:{"provider":"codex","accountId":"codex_default","tokenData":{"accessToken":"secret"}}',
+            '__TENGRA_AUTH_UPDATE__:{"provider":"codex","accountId":"codex_default","tokenData":{"accessToken":"mock-secret"}}',
             'info'
         );
 
@@ -265,7 +265,7 @@ describe('ProxyProcessManager runtime launch configuration', () => {
             provider: 'codex',
             accountId: 'codex_default',
             tokenData: {
-                accessToken: 'secret',
+                accessToken: 'mock-secret',
             },
         });
         expect(authService.reloadLinkedAccountsCache).toHaveBeenCalledTimes(1);
@@ -304,15 +304,15 @@ describe('ProxyProcessManager runtime launch configuration', () => {
 
     it('falls back to the local cargo binary when available', () => {
         vi.unstubAllEnvs();
-        vi.stubEnv('USERPROFILE', 'C:\\Users\\agnes');
+        vi.stubEnv('USERPROFILE', 'C:\\Users\\mockuser');
         const normalizeSlashes = (value: string): string => value.split('/').join('\\');
         vi.mocked(fs.existsSync).mockImplementation((target) =>
-            normalizeSlashes(String(target)) === 'C:\\Users\\agnes\\.cargo\\bin\\cargo.exe'
+            normalizeSlashes(String(target)) === 'C:\\Users\\mockuser\\.cargo\\bin\\cargo.exe'
         );
 
         const resolveCargoCommand = Reflect.get(service, 'resolveCargoCommand') as (() => string) | undefined;
         expect(resolveCargoCommand).toBeTypeOf('function');
         const resolved = resolveCargoCommand?.call(service);
-        expect(resolved ? normalizeSlashes(resolved) : resolved).toBe('"C:\\Users\\agnes\\.cargo\\bin\\cargo.exe"');
+        expect(resolved ? normalizeSlashes(resolved) : resolved).toBe('"C:\\Users\\mockuser\\.cargo\\bin\\cargo.exe"');
     });
 });

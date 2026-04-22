@@ -19,11 +19,15 @@ use crate::auth::session::{
 use crate::proxy::server::AppState;
 use axum::{
     extract::{Query, State},
+    response::sse::{Event, KeepAlive, Sse},
     Json,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::convert::Infallible;
 use std::sync::Arc;
+use std::time::Duration;
+use tokio_stream::{wrappers::IntervalStream, StreamExt};
 
 const OLLAMA_AUTHORIZED_FALLBACK_URL: &str = "https://ollama.com/connect";
 
@@ -283,6 +287,162 @@ pub async fn handle_get_quota(
         Ok(res) => Ok(Json(serde_json::to_value(res).unwrap_or_default())),
         Err(e) => Err((axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string())),
     }
+}
+
+pub async fn handle_get_quota_snapshot(
+    _state: State<Arc<AppState>>,
+) -> Result<Json<Value>, (axum::http::StatusCode, String)> {
+    let snapshot = build_quota_snapshot().await.map_err(|e| {
+        (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            e.to_string(),
+        )
+    })?;
+    Ok(Json(snapshot))
+}
+
+pub async fn handle_stream_quota(
+    _state: State<Arc<AppState>>,
+) -> Sse<impl futures::Stream<Item = Result<Event, Infallible>>> {
+    let stream = IntervalStream::new(tokio::time::interval(Duration::from_secs(20))).then(|_| async {
+        let payload = match build_quota_snapshot().await {
+            Ok(snapshot) => snapshot,
+            Err(error) => json!({
+                "timestamp_ms": chrono::Utc::now().timestamp_millis(),
+                "accounts": [],
+                "error": error.to_string()
+            }),
+        };
+
+        Ok(Event::default()
+            .event("snapshot")
+            .data(payload.to_string()))
+    });
+
+    Sse::new(stream).keep_alive(
+        KeepAlive::new()
+            .interval(Duration::from_secs(10))
+            .text("keepalive"),
+    )
+}
+
+async fn build_quota_snapshot() -> anyhow::Result<Value> {
+    let accounts = crate::db::get_all_linked_accounts().await?;
+    let tasks = accounts.into_iter().filter_map(|account| {
+        let provider_raw = account
+            .get("provider")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .trim()
+            .to_ascii_lowercase();
+        if provider_raw.is_empty() {
+            return None;
+        }
+        if !matches!(
+            provider_raw.as_str(),
+            "antigravity"
+                | "google"
+                | "codex"
+                | "openai"
+                | "claude"
+                | "anthropic"
+                | "copilot"
+                | "github"
+        ) {
+            return None;
+        }
+
+        let access_token = account
+            .get("access_token")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .unwrap_or("")
+            .to_string();
+        if access_token.is_empty() {
+            return None;
+        }
+
+        let account_id = account
+            .get("id")
+            .and_then(Value::as_str)
+            .map(str::to_string);
+        let email = account
+            .get("email")
+            .and_then(Value::as_str)
+            .map(str::to_string);
+        let is_active = parse_is_active(&account);
+
+        Some(async move {
+            let token = match decrypt_access_token(access_token.as_str()) {
+                Ok(value) => value,
+                Err(error) => {
+                    return json!({
+                        "provider": provider_raw,
+                        "account_id": account_id,
+                        "email": email,
+                        "is_active": is_active,
+                        "success": false,
+                        "error": format!("token_decrypt_failed: {}", error)
+                    });
+                }
+            };
+
+            match tokio::time::timeout(
+                Duration::from_millis(900),
+                crate::quota::check_quota(provider_raw.as_str(), token.as_str())
+            ).await {
+                Ok(Ok(quota)) => json!({
+                    "provider": provider_raw,
+                    "account_id": account_id,
+                    "email": email,
+                    "is_active": is_active,
+                    "success": true,
+                    "quota": quota
+                }),
+                Ok(Err(error)) => json!({
+                    "provider": provider_raw,
+                    "account_id": account_id,
+                    "email": email,
+                    "is_active": is_active,
+                    "success": false,
+                    "error": error.to_string()
+                }),
+                Err(_) => json!({
+                    "provider": provider_raw,
+                    "account_id": account_id,
+                    "email": email,
+                    "is_active": is_active,
+                    "success": false,
+                    "error": "quota_check_timeout"
+                }),
+            }
+        })
+    });
+
+    let results: Vec<Value> = futures::future::join_all(tasks).await;
+
+    Ok(json!({
+        "timestamp_ms": chrono::Utc::now().timestamp_millis(),
+        "accounts": results
+    }))
+}
+
+fn parse_is_active(account: &Value) -> bool {
+    match account.get("is_active") {
+        Some(Value::Bool(value)) => *value,
+        Some(Value::Number(value)) => value.as_i64().unwrap_or(0) != 0,
+        Some(Value::String(value)) => matches!(value.as_str(), "1" | "true" | "TRUE"),
+        _ => true,
+    }
+}
+
+fn decrypt_access_token(access_token: &str) -> anyhow::Result<String> {
+    if !access_token.starts_with("Tengra:v1:") {
+        return Ok(access_token.to_string());
+    }
+    let master_key = crate::security::load_master_key()?;
+    let token = crate::security::decrypt_token(access_token, &master_key)?;
+    Ok(token)
 }
 
 pub async fn handle_manual_oauth_callback(

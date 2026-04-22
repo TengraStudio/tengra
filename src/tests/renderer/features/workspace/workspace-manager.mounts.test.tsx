@@ -76,13 +76,11 @@ function mountElectronMock() {
 
 interface WorkspaceMountHarnessProps {
     workspace: Workspace;
-    notify: (type: 'success' | 'error' | 'info', message: string) => void;
 }
 
-const WorkspaceMountHarness: React.FC<WorkspaceMountHarnessProps> = ({ workspace, notify }) => {
+const WorkspaceMountHarness: React.FC<WorkspaceMountHarnessProps> = ({ workspace }) => {
     const manager = useWorkspaceManager({
         workspace,
-        notify,
         logActivity: () => undefined,
         t: key => key,
     });
@@ -117,11 +115,11 @@ const WorkspaceMountHarness: React.FC<WorkspaceMountHarnessProps> = ({ workspace
                         type: 'ssh',
                         name: 'Prod',
                         rootPath: '',
-                        host: '10.0.0.2',
+                        host: '127.0.0.1',
                         port: '22',
-                        username: 'agnes',
+                        username: 'mockuser',
                         authType: 'password',
-                        password: 'pw',
+                        password: 'mock-pw',
                         privateKey: '',
                         passphrase: '',
                         saveProfile: true,
@@ -157,9 +155,8 @@ describe('useWorkspaceManager mount flows', () => {
 
     it('blocks invalid SSH mount and keeps mount list unchanged', async () => {
         mountElectronMock();
-        const notify = vi.fn<(type: 'success' | 'error' | 'info', message: string) => void>();
 
-        render(<WorkspaceMountHarness workspace={workspaceFixture} notify={notify} />);
+        render(<WorkspaceMountHarness workspace={workspaceFixture} />);
         expect(screen.getByTestId('mount-count').textContent).toBe('1');
 
         fireEvent.click(screen.getByRole('button', { name: 'set-invalid-ssh' }));
@@ -168,7 +165,6 @@ describe('useWorkspaceManager mount flows', () => {
         await waitFor(() => {
             expect(screen.getByTestId('mount-count').textContent).toBe('1');
         });
-        expect(notify).toHaveBeenCalledWith('error', 'errors.unexpected');
     });
 
     it('retries test connection and succeeds on second attempt', async () => {
@@ -182,8 +178,7 @@ describe('useWorkspaceManager mount flows', () => {
                 message: 'ok',
             } satisfies SSHProfileTestResult);
 
-        const notify = vi.fn<(type: 'success' | 'error' | 'info', message: string) => void>();
-        render(<WorkspaceMountHarness workspace={workspaceFixture} notify={notify} />);
+        render(<WorkspaceMountHarness workspace={workspaceFixture} />);
 
         fireEvent.click(screen.getByRole('button', { name: 'set-valid-ssh' }));
         fireEvent.click(screen.getByRole('button', { name: 'test-connection' }));
@@ -196,14 +191,12 @@ describe('useWorkspaceManager mount flows', () => {
 
     it('does not emit render-phase update warnings when workspace props change', () => {
         mountElectronMock();
-        const notify = vi.fn<(type: 'success' | 'error' | 'info', message: string) => void>();
         const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
         const { rerender } = renderHook(
             ({ workspace }) =>
                 useWorkspaceManager({
-                    workspace,
-                    notify,
+                    workspace, 
                     logActivity: () => undefined,
                     t: key => key,
                 }),
@@ -225,11 +218,11 @@ describe('useWorkspaceManager mount flows', () => {
                         type: 'ssh',
                         rootPath: '/srv/app',
                         ssh: {
-                            host: '10.0.0.2',
+                            host: '127.0.0.1',
                             port: 22,
-                            username: 'agnes',
+                            username: 'mockuser',
                             authType: 'password',
-                            password: 'pw',
+                            password: 'mock-pw',
                             privateKey: '',
                             passphrase: '',
                         },

@@ -14,11 +14,10 @@ import * as path from 'path';
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { SettingsService } from '@main/services/system/settings.service';
-import { validateCommand } from '@main/utils/command-validator.util';
-import { createIpcHandler, createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { createWindowsSpawnCommand } from '@main/utils/windows-command.util';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import { BrowserWindow, ipcMain, shell } from 'electron';
 import { z } from 'zod';
 
 import { commandSchema, cwdSchema, urlSchema } from './validation';
@@ -27,13 +26,10 @@ const COMPACT_WIDTH = 400;
 const COMPACT_HEIGHT = 600;
 const DEFAULT_WIDTH = 1200;
 const DEFAULT_HEIGHT = 800;
-const DETACHED_TERMINAL_WIDTH = 1000;
-const DETACHED_TERMINAL_HEIGHT = 420;
 const MAX_TEXT_LENGTH = 512;
 const WINDOW_ZOOM_STEP = 0.1;
 const WINDOW_ZOOM_MIN = 0.5;
 const WINDOW_ZOOM_MAX = 2;
-const detachedTerminalWindows = new Map<string, BrowserWindow>();
 const SENSITIVE_QUERY_KEYS = new Set([
     'token', 'access_token', 'refresh_token', 'code', 'state', 'sessionkey', 'session_key',
     'apikey', 'api_key', 'authorization', 'password', 'passphrase'
@@ -92,18 +88,6 @@ const WINDOW_ERROR_MESSAGE = {
     RATE_LIMIT_EXCEEDED: 'Rate limit exceeded'
 } as const;
 
-interface DetachedTerminalWindowOptions {
-    sessionId: string;
-    title?: string;
-    shell?: string;
-    cwd?: string;
-}
-
-interface TerminalSpawnCommand {
-    command: string;
-    args: string[];
-}
-
 /**
  * Registers all window-related IPC handlers including window controls, shell operations, and cookies.
  * @param getMainWindow - Factory function that returns the main BrowserWindow instance
@@ -159,31 +143,7 @@ function normalizeExecutableName(command: string): string {
  * AUD-SEC-034: Enforce HTTPS-only policy for cookie-capture URL allowlist
  * Only HTTPS is allowed for remote hosts; HTTP only for localhost
  */
-function isCookieCaptureUrlAllowed(rawUrl: string): boolean {
-    try {
-        const parsed = new URL(rawUrl);
-        const host = parsed.hostname.toLowerCase();
-
-        // Check for localhost with HTTP or HTTPS
-        if (host === 'localhost' || host === '127.0.0.1') {
-            return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-        }
-
-        // All other hosts must use HTTPS only
-        if (parsed.protocol !== 'https:') {
-            return false;
-        }
-
-        // Check against allowed hosts list
-        return COOKIE_CAPTURE_ALLOWED_HOSTS.has(host)
-            || host.endsWith('.claude.ai')
-            || host.endsWith('.anthropic.com')
-            || host.endsWith('.github.com')
-            || host.endsWith('.google.com');
-    } catch {
-        return false;
-    }
-}
+void COOKIE_CAPTURE_ALLOWED_HOSTS;
 
 /**
  * Registers IPC handlers for window control operations (minimize, maximize, close, resize, fullscreen, detached terminal).
@@ -213,33 +173,6 @@ async function persistZoomFactor(
     });
 }
 
-function escapeForDoubleQuotedAppleScript(input: string): string {
-    return input.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
-
-function createTerminalSpawnCommand(command: string): TerminalSpawnCommand {
-    if (process.platform === 'win32') {
-        return { command: 'cmd', args: ['/k', command] };
-    }
-
-    if (process.platform === 'darwin') {
-        const escapedCommand = escapeForDoubleQuotedAppleScript(command);
-        return {
-            command: 'osascript',
-            args: [
-                '-e',
-                `tell application "Terminal" to do script "${escapedCommand}"`,
-                '-e',
-                'tell application "Terminal" to activate'
-            ]
-        };
-    }
-
-    return {
-        command: 'x-terminal-emulator',
-        args: ['-e', 'sh', '-lc', command]
-    };
-}
 
 function registerWindowControlHandlers(
     getMainWindow: () => BrowserWindow | null,
@@ -318,18 +251,6 @@ function registerWindowControlHandlers(
         }
     });
 
-    ipcMain.on('window:toggle-fullscreen', event => {
-        try {
-            const win = getMainWindow();
-            validateSender(event);
-            if (!win) {
-                return;
-            }
-            win.setFullScreen(!win.isFullScreen());
-        } catch {
-            /* ignore */
-        }
-    });
 
     const zoomResponseSchema = z.object({ zoomFactor: z.number().min(WINDOW_ZOOM_MIN).max(WINDOW_ZOOM_MAX) });
 
@@ -390,84 +311,6 @@ function registerWindowControlHandlers(
         })
     );
 
-    ipcMain.handle('window:openDetachedTerminal', async (event, optionsRaw: RuntimeValue) => {
-        validateSender(event);
-        const win = getMainWindow();
-        if (!win) {
-            return false;
-        }
-
-        const options = parseDetachedTerminalOptions(optionsRaw);
-        if (!options) {
-            return false;
-        }
-
-        const existing = detachedTerminalWindows.get(options.sessionId);
-        if (existing && !existing.isDestroyed()) {
-            if (existing.isMinimized()) {
-                existing.restore();
-            }
-            existing.focus();
-            return true;
-        }
-
-        try {
-            const detachedWindow = new BrowserWindow({
-                width: DETACHED_TERMINAL_WIDTH,
-                height: DETACHED_TERMINAL_HEIGHT,
-                minWidth: 640,
-                minHeight: 260,
-                show: false,
-                autoHideMenuBar: true,
-                backgroundColor: '#000000',
-                title: options.title ? `${options.title} - Terminal` : 'Detached Terminal',
-                webPreferences: {
-                    preload: path.join(__dirname, '../preload/preload.js'),
-                    sandbox: true,
-                    contextIsolation: true,
-                    nodeIntegration: false,
-                },
-            });
-
-            const query = {
-                detachedTerminal: '1',
-                sessionId: options.sessionId,
-                title: options.title ?? options.sessionId,
-                shell: options.shell ?? '',
-                cwd: options.cwd ?? '',
-            };
-
-            if (!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) {
-                const url = new URL(process.env['ELECTRON_RENDERER_URL']);
-                Object.entries(query).forEach(([key, value]) => {
-                    url.searchParams.set(key, value);
-                });
-                await detachedWindow.loadURL(url.toString());
-            } else {
-                await detachedWindow.loadFile(path.join(__dirname, '../renderer/index.html'), {
-                    query,
-                });
-            }
-
-            detachedWindow.on('ready-to-show', () => {
-                detachedWindow.show();
-                detachedWindow.focus();
-            });
-
-            detachedWindow.on('closed', () => {
-                detachedTerminalWindows.delete(options.sessionId);
-            });
-
-            detachedTerminalWindows.set(options.sessionId, detachedWindow);
-            return true;
-        } catch (error) {
-            appLogger.error(
-                'WindowIPC',
-                `Failed to open detached terminal: ${getErrorMessage(error)}`
-            );
-            return false;
-        }
-    });
 }
 
 /**
@@ -475,35 +318,7 @@ function registerWindowControlHandlers(
  * @param value - Raw options object to parse
  * @returns Validated options or null if invalid
  */
-function parseDetachedTerminalOptions(value: RuntimeValue): DetachedTerminalWindowOptions | null {
-    if (!value || typeof value !== 'object') {
-        return null;
-    }
-
-    const raw = value as Record<string, RuntimeValue>;
-    const sessionId = typeof raw.sessionId === 'string' ? raw.sessionId.trim() : '';
-    if (!sessionId) {
-        return null;
-    }
-
-    const normalize = (input: RuntimeValue): string | undefined => {
-        if (typeof input !== 'string') {
-            return undefined;
-        }
-        const trimmed = input.trim();
-        if (!trimmed) {
-            return undefined;
-        }
-        return trimmed.slice(0, MAX_TEXT_LENGTH);
-    };
-
-    return {
-        sessionId: sessionId.slice(0, MAX_TEXT_LENGTH),
-        title: normalize(raw.title),
-        shell: normalize(raw.shell),
-        cwd: normalize(raw.cwd),
-    };
-}
+void MAX_TEXT_LENGTH;
 
 type ShellOpenExternalFailure = {
     success: false;
@@ -607,55 +422,6 @@ function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowe
         )
     }));
 
-    ipcMain.handle('shell:openTerminal', createValidatedIpcHandler('shell:openTerminal', async (event, command: string) => {
-        validateSender(event);
-        // AUD-SEC-037: Hardened shell command validation
-        const MAX_COMMAND_LENGTH = 1024;
-        if (command.length > MAX_COMMAND_LENGTH) {
-            appLogger.warn('WindowIPC', 'Command exceeds maximum length');
-            return false;
-        }
-
-        const commandPolicy = validateCommand(command);
-        if (!commandPolicy.allowed) {
-            appLogger.warn('WindowIPC', `Command blocked by validator: ${commandPolicy.reason}`);
-            return false;
-        }
-
-        const allowedPattern = /^[a-zA-Z0-9\s\-_./\\:]+$/;
-        if (!allowedPattern.test(command)) {
-            appLogger.warn('WindowIPC', `Command contains forbidden characters: ${command}`);
-            return false;
-        }
-
-        const dangerousPatterns = [
-            /\b(rm|del|format|fdisk|mkfs|dd|shutdown|reboot|halt|poweroff)\b/i,
-            /\b(reg|registry|regedit|regsvr32)\b/i,
-            /\b(net|netsh|ipconfig|route|arp)\b/i,
-            /\b(taskkill|tasklist|wmic|powershell|pwsh|cmd|command)\b/i,
-            /\b(curl|wget|nc|netcat|telnet|ftp|tftp)\b/i,
-            /\b(python|perl|ruby|node|npm|npx|yarn|pnpm)\b/i,
-            /\b(git\s+push|git\s+reset|git\s+clean|git\s+checkout)\b/i,
-        ];
-
-        for (const pattern of dangerousPatterns) {
-            if (pattern.test(command)) {
-                appLogger.warn('WindowIPC', `Command contains dangerous pattern: ${command}`);
-                return false;
-            }
-        }
-
-        const spawnCommand = createTerminalSpawnCommand(command);
-        return await new Promise<boolean>((resolve) => {
-            const child = spawn(spawnCommand.command, spawnCommand.args, { shell: false });
-            child.once('error', () => resolve(false));
-            child.once('spawn', () => resolve(true));
-        });
-    }, {
-        argsSchema: z.tuple([commandSchema]),
-        wrapResponse: true,
-        defaultValue: false
-    }));
 
     ipcMain.handle('shell:runCommand', createValidatedIpcHandler<RunCommandResult, [string, string[], string | undefined]>('shell:runCommand', async (event, command: string, args: string[], cwd?: string) => {
         validateSender(event);
@@ -762,87 +528,10 @@ function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowe
  * Registers IPC handlers for cookie capture operations via hidden browser windows.
  */
 function registerCookieHandlers(getMainWindow: () => BrowserWindow | null) {
-    const validateSender = createMainWindowSenderValidator(getMainWindow, 'window operation');
+    const _validateSender = createMainWindowSenderValidator(getMainWindow, 'window operation');
+    void _validateSender;
     /**
      * Opens a hidden BrowserWindow to capture cookies from a URL.
      * Useful for capturing session cookies after OAuth completes in an external browser.
      */
-    ipcMain.handle('window:captureCookies', createIpcHandler('window:captureCookies', async (event, url: string, timeoutMs = 5000) => {
-        validateSender(event);
-        return new Promise<{ success: boolean }>(resolve => {
-            try {
-                if (!isCookieCaptureUrlAllowed(url)) {
-                    appLogger.warn('Security', `Denied cookie capture URL: ${redactUrlForLogs(url)}`);
-                    resolve({ success: false });
-                    return;
-                }
-                appLogger.info(
-                    'WindowIPC',
-                    `Creating hidden window to capture cookies from: ${redactUrlForLogs(url)}`
-                );
-
-                const hiddenWin = new BrowserWindow({
-                    width: 1,
-                    height: 1,
-                    show: false,
-                    webPreferences: {
-                        partition: 'default', // Use default session for cookie sharing
-                        sandbox: true,
-                        contextIsolation: true,
-                        nodeIntegration: false,
-                    },
-                });
-
-                let resolved = false;
-
-                const timeoutDuration = typeof timeoutMs === 'number' ? timeoutMs : 5000;
-                // Close window after timeout
-                const timeout = setTimeout(() => {
-                    if (!resolved) {
-                        resolved = true;
-                        if (!hiddenWin.isDestroyed()) {
-                            hiddenWin.close();
-                        }
-                        appLogger.info('WindowIPC', 'Cookie capture window closed after timeout');
-                        resolve({ success: true });
-                    }
-                }, timeoutDuration);
-
-                // Close window once page loads (cookies should be set by then)
-                hiddenWin.webContents.once('did-finish-load', () => {
-                    if (!resolved) {
-                        resolved = true;
-                        clearTimeout(timeout);
-                        // Wait a bit for cookies to be set
-                        setTimeout(() => {
-                            if (!hiddenWin.isDestroyed()) {
-                                hiddenWin.close();
-                            }
-                            appLogger.info(
-                                'WindowIPC',
-                                'Cookie capture window closed after page load'
-                            );
-                            resolve({ success: true });
-                        }, 1000);
-                    }
-                });
-
-                hiddenWin.on('closed', () => {
-                    if (!resolved) {
-                        resolved = true;
-                        clearTimeout(timeout);
-                        resolve({ success: true });
-                    }
-                });
-
-                void hiddenWin.loadURL(url);
-            } catch (error) {
-                appLogger.error(
-                    'WindowIPC',
-                    `Failed to create cookie capture window: ${getErrorMessage(error)}`
-                );
-                resolve({ success: false });
-            }
-        });
-    }, { wrapResponse: true }));
 }

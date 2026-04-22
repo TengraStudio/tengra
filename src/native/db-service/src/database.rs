@@ -10,7 +10,7 @@
 
 //! Database module - SQLite-based storage with vector search support
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use rusqlite::{params, Connection, OpenFlags, OptionalExtension};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -37,6 +37,7 @@ const SEMANTIC_FRAGMENTS_SEGMENT: &str = "semantic_fragments";
 const STATUS_SEGMENT: &str = "status";
 const TOKEN_USAGE_SEGMENT: &str = "token_usage";
 const UPDATED_SEGMENT: &str = "updated";
+const RAW_SQL_MIGRATION_MARKER: &str = "/* tengra-internal-migration */";
 
 fn join_segments(separator: &str, parts: &[&str]) -> String {
     parts.join(separator)
@@ -690,6 +691,21 @@ impl Database {
                 ALTER TABLE token_usage RENAME COLUMN project_path TO workspace_path;
                 ALTER TABLE code_symbols RENAME COLUMN project_path TO workspace_path;
                 "# .to_string(),
+            ),
+            (
+                10,
+                "add_agent_archives_table".to_string(),
+                r#"
+                -- Agent archives table for soft-delete and recovery
+                CREATE TABLE IF NOT EXISTS agent_archives (
+                    id TEXT PRIMARY KEY,
+                    original_id TEXT NOT NULL,
+                    payload TEXT NOT NULL,
+                    deleted_at INTEGER NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_agent_archives_original_id ON agent_archives(original_id);
+                CREATE INDEX IF NOT EXISTS idx_agent_archives_deleted_at ON agent_archives(deleted_at);
+                "#.to_string(),
             ),
         ]
     }
@@ -1540,6 +1556,8 @@ impl Database {
     // ========================================================================
 
     pub async fn execute_query(&self, req: QueryRequest) -> Result<QueryResponse> {
+        validate_raw_sql_policy(&req.sql)?;
+
         let conn = self.conn.lock().await;
 
         // Convert JSON params to SQLite params
@@ -1568,10 +1586,12 @@ impl Database {
         let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
 
         // Check if it's a SELECT query
-        let is_select = req.sql.trim().to_uppercase().starts_with("SELECT");
+        let executable_sql = strip_raw_sql_migration_marker(&req.sql);
+        let first_keyword = first_sql_keyword(executable_sql).unwrap_or_default();
+        let returns_rows = matches!(first_keyword.as_str(), "SELECT" | "WITH" | "PRAGMA");
 
-        if is_select {
-            let mut stmt = conn.prepare(&req.sql)?;
+        if returns_rows {
+            let mut stmt = conn.prepare(executable_sql)?;
             let column_count = stmt.column_count();
             let column_names: Vec<String> = (0..column_count)
                 .map(|i| stmt.column_name(i).unwrap_or("").to_string())
@@ -1600,13 +1620,195 @@ impl Database {
                 rows: result,
                 affected_rows: 0,
             })
+        } else if req.sql.trim_start().starts_with(RAW_SQL_MIGRATION_MARKER)
+            && has_multiple_sql_statements(executable_sql)
+        {
+            conn.execute_batch(executable_sql)?;
+            Ok(QueryResponse {
+                rows: vec![],
+                affected_rows: 0,
+            })
         } else {
-            let affected = conn.execute(&req.sql, param_refs.as_slice())?;
+            let affected = conn.execute(executable_sql, param_refs.as_slice())?;
             Ok(QueryResponse {
                 rows: vec![],
                 affected_rows: affected,
             })
         }
+    }
+}
+
+fn validate_raw_sql_policy(sql: &str) -> Result<()> {
+    let trimmed = sql.trim();
+    if trimmed.is_empty() {
+        bail!("SQL statement must be non-empty");
+    }
+
+    let migration_mode = trimmed.starts_with(RAW_SQL_MIGRATION_MARKER);
+    if !migration_mode && has_multiple_sql_statements(trimmed) {
+        bail!("Raw SQL endpoint accepts exactly one statement");
+    }
+    let executable_sql = strip_raw_sql_migration_marker(trimmed).trim_start();
+    let first_keyword = first_sql_keyword(executable_sql)
+        .ok_or_else(|| anyhow::anyhow!("SQL statement must start with a keyword"))?;
+    let normalized = executable_sql.to_uppercase();
+
+    if matches!(first_keyword.as_str(), "ATTACH" | "DETACH") {
+        bail!("ATTACH and DETACH are not allowed through the raw SQL endpoint");
+    }
+
+    if first_keyword == "PRAGMA" {
+        validate_raw_pragma_policy(&normalized, migration_mode)?;
+        return Ok(());
+    }
+
+    if matches!(first_keyword.as_str(), "CREATE" | "ALTER" | "DROP") {
+        if migration_mode {
+            return Ok(());
+        }
+        bail!("Schema mutation requires internal migration mode");
+    }
+
+    if matches!(
+        first_keyword.as_str(),
+        "SELECT" | "WITH" | "INSERT" | "UPDATE" | "DELETE" | "REPLACE"
+    ) {
+        return Ok(());
+    }
+
+    bail!("SQL statement type '{}' is not allowed", first_keyword)
+}
+
+fn strip_raw_sql_migration_marker(sql: &str) -> &str {
+    sql.trim_start()
+        .strip_prefix(RAW_SQL_MIGRATION_MARKER)
+        .unwrap_or(sql)
+        .trim_start()
+}
+
+fn first_sql_keyword(sql: &str) -> Option<String> {
+    sql.trim_start()
+        .split(|ch: char| !ch.is_ascii_alphabetic())
+        .find(|part| !part.is_empty())
+        .map(|part| part.to_ascii_uppercase())
+}
+
+fn validate_raw_pragma_policy(normalized_sql: &str, migration_mode: bool) -> Result<()> {
+    if normalized_sql.contains("WRITABLE_SCHEMA") {
+        bail!("PRAGMA writable_schema is not allowed");
+    }
+    if migration_mode {
+        return Ok(());
+    }
+    if normalized_sql.contains('=') {
+        bail!("Mutating PRAGMA statements require internal migration mode");
+    }
+
+    let allowed_read_pragmas = [
+        "PRAGMA TABLE_INFO",
+        "PRAGMA INDEX_LIST",
+        "PRAGMA INDEX_INFO",
+        "PRAGMA FOREIGN_KEY_LIST",
+        "PRAGMA DATABASE_LIST",
+        "PRAGMA USER_VERSION",
+        "PRAGMA SCHEMA_VERSION",
+    ];
+
+    if allowed_read_pragmas
+        .iter()
+        .any(|prefix| normalized_sql.starts_with(prefix))
+    {
+        return Ok(());
+    }
+
+    bail!("PRAGMA statement is not allowed through the raw SQL endpoint")
+}
+
+fn has_multiple_sql_statements(sql: &str) -> bool {
+    let mut chars = sql.char_indices().peekable();
+    let mut in_single_quote = false;
+    let mut in_double_quote = false;
+    let mut in_line_comment = false;
+    let mut in_block_comment = false;
+
+    while let Some((index, ch)) = chars.next() {
+        if in_line_comment {
+            if ch == '\n' {
+                in_line_comment = false;
+            }
+            continue;
+        }
+        if in_block_comment {
+            if ch == '*' && chars.peek().is_some_and(|(_, next)| *next == '/') {
+                let _ = chars.next();
+                in_block_comment = false;
+            }
+            continue;
+        }
+        if in_single_quote {
+            if ch == '\'' {
+                if chars.peek().is_some_and(|(_, next)| *next == '\'') {
+                    let _ = chars.next();
+                } else {
+                    in_single_quote = false;
+                }
+            }
+            continue;
+        }
+        if in_double_quote {
+            if ch == '"' {
+                in_double_quote = false;
+            }
+            continue;
+        }
+
+        if ch == '-' && chars.peek().is_some_and(|(_, next)| *next == '-') {
+            let _ = chars.next();
+            in_line_comment = true;
+            continue;
+        }
+        if ch == '/' && chars.peek().is_some_and(|(_, next)| *next == '*') {
+            let _ = chars.next();
+            in_block_comment = true;
+            continue;
+        }
+        if ch == '\'' {
+            in_single_quote = true;
+            continue;
+        }
+        if ch == '"' {
+            in_double_quote = true;
+            continue;
+        }
+        if ch == ';' {
+            return has_sql_content_after(&sql[index + ch.len_utf8()..]);
+        }
+    }
+
+    false
+}
+
+fn has_sql_content_after(mut sql: &str) -> bool {
+    loop {
+        sql = sql.trim_start();
+        if sql.is_empty() {
+            return false;
+        }
+        if let Some(rest) = sql.strip_prefix("--") {
+            if let Some(newline) = rest.find('\n') {
+                sql = &rest[newline + 1..];
+                continue;
+            }
+            return false;
+        }
+        if let Some(rest) = sql.strip_prefix("/*") {
+            if let Some(end) = rest.find("*/") {
+                sql = &rest[end + 2..];
+                continue;
+            }
+            return false;
+        }
+        return true;
     }
 }
 
@@ -1624,5 +1826,70 @@ fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
         0.0
     } else {
         dot_product / (norm_a * norm_b)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{validate_raw_sql_policy, RAW_SQL_MIGRATION_MARKER};
+
+    #[test]
+    fn raw_sql_policy_allows_single_dml_and_reads() {
+        assert!(validate_raw_sql_policy("SELECT * FROM chats LIMIT 1").is_ok());
+        assert!(validate_raw_sql_policy("WITH recent AS (SELECT 1) SELECT * FROM recent").is_ok());
+        assert!(validate_raw_sql_policy("UPDATE chats SET title = ? WHERE id = ?").is_ok());
+        assert!(validate_raw_sql_policy("PRAGMA table_info(chats)").is_ok());
+    }
+
+    #[test]
+    fn raw_sql_policy_rejects_multi_statement_and_attach() {
+        assert!(validate_raw_sql_policy("SELECT 1; SELECT 2").is_err());
+        assert!(validate_raw_sql_policy("SELECT ';'; SELECT 2").is_err());
+        assert!(validate_raw_sql_policy("ATTACH DATABASE 'x' AS external").is_err());
+        assert!(validate_raw_sql_policy("DETACH DATABASE external").is_err());
+    }
+
+    #[test]
+    fn raw_sql_policy_requires_migration_marker_for_schema_mutation() {
+        assert!(validate_raw_sql_policy("CREATE INDEX idx_chats_title ON chats(title)").is_err());
+        assert!(validate_raw_sql_policy("ALTER TABLE workspaces ADD COLUMN logo TEXT").is_err());
+        assert!(validate_raw_sql_policy("DROP INDEX IF EXISTS idx_chats_title").is_err());
+
+        assert!(validate_raw_sql_policy(&format!(
+            "{} CREATE INDEX IF NOT EXISTS idx_chats_title ON chats(title)",
+            RAW_SQL_MIGRATION_MARKER
+        ))
+        .is_ok());
+        assert!(validate_raw_sql_policy(&format!(
+            "{} ALTER TABLE workspaces ADD COLUMN logo TEXT",
+            RAW_SQL_MIGRATION_MARKER
+        ))
+        .is_ok());
+    }
+
+    #[test]
+    fn raw_sql_policy_allows_multi_statement_only_with_migration_marker() {
+        assert!(validate_raw_sql_policy("CREATE TABLE test_a(id INTEGER); CREATE INDEX test_idx ON test_a(id)").is_err());
+        assert!(validate_raw_sql_policy(&format!(
+            "{} CREATE TABLE test_a(id INTEGER); CREATE INDEX test_idx ON test_a(id)",
+            RAW_SQL_MIGRATION_MARKER
+        ))
+        .is_ok());
+    }
+
+    #[test]
+    fn raw_sql_policy_rejects_mutating_or_dangerous_pragmas() {
+        assert!(validate_raw_sql_policy("PRAGMA user_version = 2").is_err());
+        assert!(validate_raw_sql_policy("PRAGMA writable_schema = ON").is_err());
+        assert!(validate_raw_sql_policy(&format!(
+            "{} PRAGMA user_version = 2",
+            RAW_SQL_MIGRATION_MARKER
+        ))
+        .is_ok());
+        assert!(validate_raw_sql_policy(&format!(
+            "{} PRAGMA writable_schema = ON",
+            RAW_SQL_MIGRATION_MARKER
+        ))
+        .is_err());
     }
 }

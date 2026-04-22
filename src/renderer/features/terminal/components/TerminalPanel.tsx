@@ -20,6 +20,9 @@ export interface TerminalPanelProps {
     onMaximizeChange?: (isMaximized: boolean) => void;
     workspaceId?: string;
     workspacePath?: string;
+    activeFilePath?: string;
+    activeFileContent?: string;
+    activeFileType?: 'code' | 'image';
     tabs: TerminalTab[];
     activeTabId: string | null;
     setTabs: (tabs: TerminalTab[] | ((prev: TerminalTab[]) => TerminalTab[])) => void;

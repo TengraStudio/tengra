@@ -20,9 +20,7 @@ import {
     deviceCodeSchema,
     pollIntervalSchema,
     providerSchema,
-    revokeAccountOptionsSchema,
-    sessionIdSchema,
-    sessionLimitSchema
+    revokeAccountOptionsSchema
 } from '@main/ipc/validation';
 import { appLogger } from '@main/logging/logger';
 import { AuditLogService } from '@main/services/analysis/audit-log.service';
@@ -224,13 +222,6 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
         schemaVersion: 1
     }));
 
-    ipcMain.handle('auth:detect-provider', createValidatedIpcHandler('auth:detect-provider', async (_event, providerHint?: string, tokenData?: TokenData) => {
-        const provider = authService.detectProvider(providerHint, tokenData);
-        return { provider };
-    }, {
-        argsSchema: z.tuple([providerSchema.optional(), authTokenDataSchema.optional()]),
-        schemaVersion: 1
-    }));
 
     ipcMain.handle('auth:detect-auth-provider', createValidatedIpcHandler('auth:detect-auth-provider', async (_event, payload: { providerHint?: string, tokenData?: TokenData }) => {
         const provider = authService.detectProvider(payload.providerHint, payload.tokenData);
@@ -361,56 +352,12 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
         schemaVersion: 1
     }));
 
-    ipcMain.handle('auth:start-session', createValidatedIpcHandler('auth:start-session', async (
-        _event,
-        provider: string,
-        accountId?: string,
-        source?: string
-    ) => {
-        return { sessionId: authService.startSession(provider, accountId, source) };
-    }, {
-        argsSchema: z.tuple([providerSchema, accountIdSchema.optional(), z.string().max(128).optional()]),
-        schemaVersion: 1
-    }));
 
-    ipcMain.handle('auth:touch-session', createValidatedIpcHandler('auth:touch-session', async (_event, sessionId: string) => {
-        return { success: authService.touchSession(sessionId) };
-    }, {
-        argsSchema: z.tuple([sessionIdSchema]),
-        schemaVersion: 1
-    }));
 
-    ipcMain.handle('auth:end-session', createValidatedIpcHandler('auth:end-session', async (_event, sessionId: string) => {
-        return { success: authService.endSession(sessionId) };
-    }, {
-        argsSchema: z.tuple([sessionIdSchema]),
-        schemaVersion: 1
-    }));
 
-    ipcMain.handle('auth:set-session-limit', createValidatedIpcHandler('auth:set-session-limit', async (_event, provider: string, limit: number) => {
-        return { limit: authService.setSessionLimit(provider, limit) };
-    }, {
-        argsSchema: z.tuple([providerSchema, sessionLimitSchema]),
-        schemaVersion: 1
-    }));
 
-    ipcMain.handle('auth:get-session-analytics', createValidatedIpcHandler('auth:get-session-analytics', async (_event, provider?: string) => {
-        return authService.getSessionAnalytics(provider);
-    }, {
-        argsSchema: z.tuple([providerSchema.optional()]),
-        schemaVersion: 1
-    }));
 
-    ipcMain.handle('auth:set-session-timeout', createValidatedIpcHandler('auth:set-session-timeout', async (_event, timeoutMs: number) => {
-        return { timeoutMs: authService.setSessionIdleTimeout(timeoutMs) };
-    }, {
-        argsSchema: z.tuple([z.number().int().min(60_000).max(7 * 24 * 60 * 60 * 1000)]),
-        schemaVersion: 1
-    }));
 
-    ipcMain.handle('auth:get-session-timeout', createValidatedIpcHandler('auth:get-session-timeout', async () => {
-        return { timeoutMs: authService.getSessionIdleTimeout() };
-    }, { schemaVersion: 1 }));
 
     // Note: auth:has-linked-account is registered in batch handlers below
 

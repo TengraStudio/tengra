@@ -55,6 +55,15 @@ export function createWindow(settingsService?: SettingsService): BrowserWindow {
     // Setup Security & Event Handlers
     setupWebContentsSecurity(win);
     setupConsoleRedirect(win);
+    win.on('close', () => {
+        appLogger.info('Window', 'Main window close event');
+    });
+    win.on('closed', () => {
+        appLogger.info('Window', 'Main window closed');
+    });
+    win.webContents.on('render-process-gone', (_event, details) => {
+        appLogger.error('Window', `Renderer process gone: reason=${details.reason}; exitCode=${details.exitCode}`);
+    });
     win.webContents.setZoomFactor(zoomFactor);
     setupWindowStatePersistence(win, settingsService, 1280, 800);
     setupWindowReadyState(win, settingsService);

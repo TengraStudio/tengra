@@ -65,7 +65,6 @@ export class AgentService extends BaseService {
     }
 
     override async initialize(): Promise<void> {
-        await this.ensureArchiveTable();
         await this.seedBuiltInAgents();
     }
 
@@ -315,29 +314,6 @@ export class AgentService extends BaseService {
                 this.logWarn(`Failed to seed agent ${agent.name}`, error as Error);
             }
         }
-    }
-
-    private async ensureArchiveTable(): Promise<void> {
-        const db = this.dbService.getDatabase();
-        await db.prepare(`
-            CREATE TABLE IF NOT EXISTS agents (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL UNIQUE,
-                system_prompt TEXT NOT NULL,
-                tools TEXT NOT NULL DEFAULT '[]',
-                parent_model TEXT NOT NULL,
-                created_at INTEGER NOT NULL,
-                updated_at INTEGER NOT NULL
-            )
-        `).run();
-        await db.prepare(`
-            CREATE TABLE IF NOT EXISTS agent_archives (
-                id TEXT PRIMARY KEY,
-                original_id TEXT NOT NULL,
-                payload TEXT NOT NULL,
-                deleted_at INTEGER NOT NULL
-            )
-        `).run();
     }
 
     private getAgentWorkspacesRoot(): string {

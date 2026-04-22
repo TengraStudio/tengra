@@ -142,6 +142,7 @@ test.describe('Performance Regression Guardrails', () => {
         if (memory > 0) {
             expect(memory).toBeLessThan(BUDGETS.rendererHeapMb);
         } else {
+            // FIXME: Skipped due to unreliable JS heap measurement in headless browsers
             test.skip();
         }
     });

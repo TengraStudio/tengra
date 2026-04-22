@@ -10,11 +10,11 @@
 
 import { memo } from 'react';
 
-import LogoAntigravity from '@/assets/antigravity.svg';
-import LogoOpenAI from '@/assets/chatgpt.svg';
-import LogoClaude from '@/assets/claude.svg';
-import LogoCopilot from '@/assets/copilot.png';
-import LogoOllama from '@/assets/ollama.svg';
+import LogoAntigravity from '@/assets/antigravity.svg?url';
+import LogoOpenAI from '@/assets/chatgpt.svg?url';
+import LogoClaude from '@/assets/claude.svg?url';
+import LogoCopilot from '@/assets/copilot.svg?url';
+import LogoOllama from '@/assets/ollama.svg?url';
 import { UI_PRIMITIVES } from '@/constants/ui-primitives';
 import { cn } from '@/lib/utils';
 
@@ -129,7 +129,14 @@ export const AssistantLogo = memo(({ displayModel, provider, backend, t }: Assis
     if (info.logo) {
         return (
             <div className={containerClasses} title={info.key.toUpperCase()}>
-                <img src={info.logo} className="w-full h-full opacity-70" alt={info.key} />
+                <img 
+                    src={info.logo} 
+                    className={cn(
+                        'w-full h-full opacity-70 transition-all duration-300',
+                        info.key !== 'antigravity' && 'theme-logo-invert'
+                    )} 
+                    alt={info.key} 
+                />
             </div>
         );
     }

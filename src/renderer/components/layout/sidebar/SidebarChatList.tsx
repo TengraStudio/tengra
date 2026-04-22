@@ -8,14 +8,12 @@
  * (at your option) any later version.
  */
 
-import { FolderPlus, MessageSquare, Pin, Search } from 'lucide-react';
-import React, { useMemo } from 'react';
+import { FolderPlus, MessageSquare, Search, Trash2, Folder as FolderIcon, FolderOpen, Pin as PinIcon, type LucideIcon } from 'lucide-react';
+import React, { useMemo, useCallback } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
 import { Chat, Folder } from '@/types';
-
-import { SidebarFolderSection } from './SidebarFolderSection';
-
+import { SidebarItem } from './SidebarItem';
 
 interface SidebarChatListProps {
     isCollapsed: boolean;
@@ -35,6 +33,13 @@ interface SidebarChatListProps {
     onClearAll?: () => void;
 }
 
+type SidebarListItem = 
+    | { type: 'header', label: string, icon?: LucideIcon, action?: { label: string, icon: LucideIcon, onClick: () => void } }
+    | { type: 'chat', chat: Chat, isIndented?: boolean }
+    | { type: 'folder', folder: Folder, isExpanded: boolean, count: number }
+    | { type: 'empty-state', label: string }
+    | { type: 'divider' };
+
 export const SidebarChatList = React.memo(
     ({
         isCollapsed,
@@ -53,35 +58,143 @@ export const SidebarChatList = React.memo(
         renderChatItem,
         onClearAll,
     }: SidebarChatListProps) => {
-        const folderChatsById = useMemo(() => {
-            const mapping = new Map<string, Chat[]>();
-            for (const chat of filteredChats) {
-                if (!chat.folderId) {
-                    continue;
+
+        const flattenedItems = useMemo(() => {
+            const items: SidebarListItem[] = [];
+
+            // 1. Pinned
+            if (pinnedChats.length > 0) {
+                if (!isCollapsed) {
+                    items.push({ type: 'header', label: t('sidebar.pinned'), icon: PinIcon });
                 }
-                const existing = mapping.get(chat.folderId);
-                if (existing) {
-                    existing.push(chat);
-                } else {
-                    mapping.set(chat.folderId, [chat]);
-                }
+                pinnedChats.forEach(chat => {
+                    items.push({ type: 'chat', chat });
+                });
+                items.push({ type: 'divider' });
             }
-            return mapping;
-        }, [filteredChats]);
-        const pinnedListHeight = useMemo(
-            () => Math.min(Math.max(pinnedChats.length * 42, 84), 320),
-            [pinnedChats.length]
-        );
-        const recentListHeight = useMemo(
-            () => Math.min(Math.max(recentChats.length * 42, 84), 320),
-            [recentChats.length]
-        );
+
+            // 2. Folders
+            if (activeFolders.length > 0) {
+                if (!isCollapsed) {
+                    items.push({ 
+                        type: 'header', 
+                        label: t('sidebar.folders'), 
+                        action: { label: t('sidebar.newFolder'), icon: FolderPlus, onClick: () => createFolder(t('sidebar.newFolder')) } 
+                    });
+                }
+
+                const folderChatsById = new Map<string, Chat[]>();
+                filteredChats.forEach(chat => {
+                    if (chat.folderId) {
+                        const existing = folderChatsById.get(chat.folderId) || [];
+                        existing.push(chat);
+                        folderChatsById.set(chat.folderId, existing);
+                    }
+                });
+
+                activeFolders.forEach(folder => {
+                    const isExpanded = expandedFolders.has(folder.id);
+                    const chats = folderChatsById.get(folder.id) || [];
+                    items.push({ type: 'folder', folder, isExpanded, count: chats.length });
+                    
+                    if (isExpanded) {
+                        if (chats.length > 0) {
+                            chats.forEach(chat => {
+                                items.push({ type: 'chat', chat, isIndented: true });
+                            });
+                        } else if (!isCollapsed) {
+                            items.push({ type: 'empty-state', label: t('sidebar.emptyFolder') });
+                        }
+                    }
+                });
+                items.push({ type: 'divider' });
+            }
+
+            // 3. Recent
+            if (recentChats.length > 0) {
+                if (!isCollapsed) {
+                    items.push({ 
+                        type: 'header', 
+                        label: t('sidebar.recent'),
+                        action: onClearAll ? { label: t('sidebar.clearHistory'), icon: Trash2, onClick: onClearAll } : undefined
+                    });
+                }
+                recentChats.forEach(chat => {
+                    items.push({ type: 'chat', chat });
+                });
+            }
+
+            if (chatsCount === 0 && !isCollapsed && searchQuery === '') {
+                items.push({ type: 'empty-state', label: t('sidebar.noChats') });
+            }
+
+            return items;
+        }, [pinnedChats, recentChats, activeFolders, expandedFolders, filteredChats, isCollapsed, t, createFolder, onClearAll, chatsCount, searchQuery]);
+
+        const renderItem = useCallback((_index: number, item: SidebarListItem) => {
+            switch (item.type) {
+                case 'header':
+                    return (
+                        <div className="flex items-center justify-between px-2 py-1 mt-2 first:mt-0">
+                            <p className="text-xxs font-semibold text-muted-foreground/50 flex items-center gap-1 uppercase tracking-wider">
+                                {item.icon && <item.icon className="w-2.5 h-2.5" />}
+                                {item.label}
+                            </p>
+                            {item.action && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); item.action?.onClick(); }}
+                                    className="p-0.5 text-muted-foreground/40 hover:text-foreground transition-colors"
+                                    title={item.action.label}
+                                >
+                                    <item.action.icon className="w-3 h-3" />
+                                </button>
+                            )}
+                        </div>
+                    );
+                case 'chat':
+                    return (
+                        <div className={item.isIndented ? "ml-3 pl-2 border-l border-border/20" : ""}>
+                            {renderChatItem(item.chat)}
+                        </div>
+                    );
+                case 'folder':
+                    return (
+                        <SidebarItem
+                            icon={item.isExpanded ? FolderOpen : FolderIcon}
+                            label={item.folder.name}
+                            onClick={() => toggleFolder(item.folder.id)}
+                            badge={item.count}
+                            className="py-1.5 font-medium"
+                            isCollapsed={isCollapsed}
+                            actions={(
+                                <button
+                                    onClick={e => { e.stopPropagation(); deleteFolder(item.folder.id); }}
+                                    className="p-1 hover:bg-destructive/10 hover:text-destructive rounded text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <Trash2 className="w-3 h-3" />
+                                </button>
+                            )}
+                        />
+                    );
+                case 'empty-state':
+                    return (
+                        <div className="flex flex-col items-center justify-center py-4 px-2 text-muted-foreground/30 overflow-hidden w-full">
+                            {item.label === t('sidebar.noChats') && <MessageSquare className="w-6 h-6 mb-2 opacity-20" />}
+                            <p className="text-center text-[10px] italic font-medium truncate w-full">{item.label}</p>
+                        </div>
+                    );
+                case 'divider':
+                    return <div className="h-2" />;
+                default:
+                    return null;
+            }
+        }, [isCollapsed, t, toggleFolder, deleteFolder, renderChatItem]);
 
         return (
-            <>
+            <div className="flex flex-col h-full overflow-x-hidden overflow-y-hidden">
                 {/* Search */}
                 {!isCollapsed && (
-                    <div className="px-3 pb-2">
+                    <div className="px-3 pb-2 shrink-0">
                         <div className="relative">
                             <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
                             <input
@@ -95,104 +208,17 @@ export const SidebarChatList = React.memo(
                     </div>
                 )}
 
-                {/* Chat List */}
-                <div className="flex-1 space-y-1 overflow-y-auto px-2 scrollbar-thin scrollbar-thumb-border/30">
-                    {/* Pinned */}
-                    {pinnedChats.length > 0 && (
-                        <div>
-                            {!isCollapsed && (
-                                <p className="px-2 py-1 text-xxs font-semibold text-muted-foreground/50 flex items-center gap-1">
-                                    <Pin className="w-3 h-3" /> {t('sidebar.pinned')}
-                                </p>
-                            )}
-                            <div>
-                                <Virtuoso
-                                    style={{ height: pinnedListHeight }}
-                                    data={pinnedChats}
-                                    itemContent={(_index, chat) => (
-                                        <div className="animate-in fade-in slide-in-from-left-1 duration-200 fill-mode-backwards">
-                                            {renderChatItem(chat)}
-                                        </div>
-                                    )}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Folders */}
-                    {activeFolders.length > 0 && (
-                        <div>
-                            {!isCollapsed && (
-                                <div className="flex items-center justify-between px-2 py-1">
-                                    <p className="text-xxs font-semibold text-muted-foreground/50">
-                                        {t('sidebar.folders')}
-                                    </p>
-                                    <button
-                                        onClick={() => createFolder(t('sidebar.newFolder'))}
-                                        className="p-0.5 text-muted-foreground/50 hover:text-foreground"
-                                    >
-                                        <FolderPlus className="w-3.5 h-3.5" />
-                                    </button>
-                                </div>
-                            )}
-                            <div className="space-y-0.5">
-                                {activeFolders.map(folder => (
-                                    <SidebarFolderSection
-                                        key={folder.id}
-                                        folder={folder}
-                                        isExpanded={expandedFolders.has(folder.id)}
-                                        folderChats={folderChatsById.get(folder.id) ?? []}
-                                        isCollapsed={isCollapsed}
-                                        toggleFolder={toggleFolder}
-                                        deleteFolder={deleteFolder}
-                                        renderChatItem={renderChatItem}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Recent */}
-                    {recentChats.length > 0 && (
-                        <div>
-                            {!isCollapsed && (
-                                <div className="flex items-center justify-between px-2 py-1">
-                                    <p className="text-xxs font-semibold text-muted-foreground/50">
-                                        {t('sidebar.recent')}
-                                    </p>
-                                    {onClearAll && (
-                                        <button
-                                            onClick={onClearAll}
-                                            className="text-xxs text-muted-foreground/40 hover:text-destructive transition-colors"
-                                            title={t('sidebar.clearHistory')}
-                                        >
-                                            {t('sidebar.clearHistory')}
-                                        </button>
-                                    )}
-                                </div>
-                            )}
-                            <div>
-                                <Virtuoso
-                                    style={{ height: recentListHeight }}
-                                    data={recentChats}
-                                    itemContent={(_index, chat) => (
-                                        <div className="animate-in fade-in slide-in-from-left-1 duration-200 fill-mode-backwards">
-                                            {renderChatItem(chat)}
-                                        </div>
-                                    )}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    {chatsCount === 0 && !isCollapsed && (
-                        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground/50">
-                            <MessageSquare className="w-8 h-8 mb-2 opacity-30" />
-                            <p className="typo-caption">{t('sidebar.noChats')}</p>
-                        </div>
-                    )}
+                {/* Virtualized List */}
+                <div className="flex-1 min-h-0">
+                    <Virtuoso
+                        data={flattenedItems}
+                        itemContent={renderItem}
+                        className="scrollbar-thin scrollbar-thumb-border/30 px-2 overflow-x-hidden"
+                        followOutput="auto"
+                        atBottomThreshold={60}
+                    />
                 </div>
-            </>
+            </div>
         );
     }
 );

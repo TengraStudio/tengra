@@ -55,6 +55,7 @@ interface WorkspaceMainProps {
     onDeleteWorkspace?: () => void;
     selectedEntry?: { path: string; isDirectory: boolean } | null;
     onOpenFile?: (path: string, line?: number) => void;
+    editorBottomInsetPx?: number;
 }
 
 export const WorkspaceMain: FC<WorkspaceMainProps> = ({
@@ -83,6 +84,7 @@ export const WorkspaceMain: FC<WorkspaceMainProps> = ({
     onDeleteWorkspace,
     selectedEntry,
     onOpenFile,
+    editorBottomInsetPx = 0,
 }) => {
     const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -139,6 +141,8 @@ export const WorkspaceMain: FC<WorkspaceMainProps> = ({
                         copyTabAbsolutePath={copyTabAbsolutePath}
                         copyTabRelativePath={copyTabRelativePath}
                         revealTabInExplorer={revealTabInExplorer}
+                        workspacePath={workspace.path}
+                        onOpenFile={onOpenFile}
                         t={t}
                     />
                 </div>
@@ -159,6 +163,7 @@ export const WorkspaceMain: FC<WorkspaceMainProps> = ({
                         workspaceKey={workspace.id}
                         workspacePath={workspace.path}
                         workspaceEditorSettings={workspace.editor}
+                        editorBottomInsetPx={editorBottomInsetPx}
                         onOpenFile={onOpenFile}
                         emptyState={null}
                     />

@@ -9,55 +9,88 @@
  */
 
 import { useGitData } from '@renderer/features/workspace/hooks/useGitData';
-import { AlertTriangle, CheckCircle2, FileCode, Minus, Plus, RefreshCw } from 'lucide-react';
-import React, { useEffect } from 'react';
-
+import { 
+    GitBranch, 
+    RefreshCw, 
+    ArrowUp,
+    ArrowDown
+} from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Badge } from '@renderer/components/ui/badge';
+import { Button } from '@renderer/components/ui/button';
+import { ScrollArea } from '@renderer/components/ui/scroll-area';
+import { cn } from '@renderer/lib/utils';
 import type { Workspace } from '@/types';
 
 import {
     GitAdvancedPanel,
+    GitBranchSelect,
     GitChangeStats,
     GitCommitHistory,
     GitCommitSection,
-    GitQuickActions,
     GitRemotes,
     GitStatusHeader
 } from '../components/git';
 
 interface WorkspaceGitTabProps {
-    workspace: Workspace
-    t: (key: string) => string
-    activeTab: string
+    workspace: Workspace;
+    t: (key: string) => string;
+    activeTab: string;
 }
 
 export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, activeTab }) => {
     const {
         gitData,
-        branches,
         remotes,
         trackingInfo,
         diffStats,
-        commitStats,
         commitMessage,
         setCommitMessage,
         isCommitting,
-        isPushing,
         isPulling,
-        isCheckingOut,
         lastActionError,
         fetchGitData,
         handleStageFile,
         handleUnstageFile,
-        handleCheckout,
         handleCommit,
-        handlePush,
         handlePull,
         selectedCommit,
         commitDiff,
         loadingDiff,
-        sectionStates,
-        handleCommitSelect
+        handleCommitSelect,
+        selectedFile,
+        fileDiff,
+        handleGitFileSelect,
+        isLoadingMore,
+        hasMoreCommits,
+        handleLoadMoreCommits,
+        branches,
+        isCheckingOut,
+        handleCheckout
     } = useGitData(workspace);
+
+    const [view, setView] = useState<'changes' | 'history'>('changes');
+
+    useEffect(() => {
+        const handler = (e: Event) => {
+            const customEvent = e as CustomEvent<{ path?: string }>;
+            const targetPath = typeof customEvent.detail?.path === 'string' ? customEvent.detail.path : '';
+            if (!targetPath || activeTab !== 'git') {
+                return;
+            }
+            setView('changes');
+            void fetchGitData().finally(() => {
+                const normalized = targetPath.replace(/\\/g, '/');
+                const workspaceRoot = (workspace.path ?? '').replace(/\\/g, '/').replace(/\/+$/g, '');
+                const relative = workspaceRoot && normalized.toLowerCase().startsWith(workspaceRoot.toLowerCase() + '/')
+                    ? normalized.slice(workspaceRoot.length + 1)
+                    : normalized;
+                void handleGitFileSelect({ path: relative, staged: false, status: '' });
+            });
+        };
+        window.addEventListener('tengra:workspace-git-open-diff', handler);
+        return () => window.removeEventListener('tengra:workspace-git-open-diff', handler);
+    }, [activeTab, fetchGitData, handleGitFileSelect, workspace.path]);
 
     useEffect(() => {
         if (activeTab === 'git' && workspace.path) {
@@ -65,139 +98,175 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
         }
     }, [activeTab, workspace.path, fetchGitData]);
 
-    const getStatusIcon = (status: string) => {
-        if (status.startsWith('A')) { return <Plus className="w-3.5 h-3.5 text-success" />; }
-        if (status.startsWith('D')) { return <Minus className="w-3.5 h-3.5 text-destructive" />; }
-        if (status.startsWith('M')) { return <FileCode className="w-3.5 h-3.5 text-warning" />; }
-        if (status.startsWith('R')) { return <FileCode className="w-3.5 h-3.5 text-primary" />; }
-        return <FileCode className="w-3.5 h-3.5 text-muted-foreground" />;
-    };
+    // Handle toggle for file selection
+    const onFileSelect = useCallback((file: any) => {
+        if (!file) {
+            handleGitFileSelect(null);
+            return;
+        }
+        if (selectedFile && selectedFile.path === file.path && selectedFile.staged === file.staged) {
+            handleGitFileSelect(null);
+        } else {
+            handleGitFileSelect(file);
+        }
+    }, [selectedFile, handleGitFileSelect]);
 
-    const sectionDescriptors: Array<{ key: keyof typeof sectionStates; label: string }> = [
-        { key: 'status', label: t('workspaceDashboard.gitSectionStatus') },
-        { key: 'actions', label: t('workspaceDashboard.gitSectionActions') },
-        { key: 'remotes', label: t('workspaceDashboard.gitSectionRemotes') },
-        { key: 'commits', label: t('workspaceDashboard.gitSectionCommits') },
-        { key: 'changes', label: t('workspaceDashboard.gitSectionChanges') },
-    ];
+    if (!gitData.isRepository) {
+        return (
+            <div className="flex flex-1 items-center justify-center p-12">
+                <div className="text-center space-y-4">
+                    <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mx-auto mb-6">
+                        <GitBranch className="w-8 h-8 text-muted-foreground/30" />
+                    </div>
+                    <h3 className="text-lg font-medium">{t('workspaceDashboard.notAGitRepo')}</h3>
+                    <Button variant="outline" className="rounded-lg px-8">
+                        Initialize Repository
+                    </Button>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="h-full flex flex-col gap-6 overflow-y-auto px-6 py-6">
-            {!gitData.isRepository ? (
-                <div className="flex-1 flex items-center justify-center">
-                    <div className="text-center space-y-2">
-                        <div className="text-muted-foreground text-sm">{t('workspaceDashboard.notAGitRepo')}</div>
+        <div className="h-full flex flex-col bg-background select-none">
+            {/* Top Toolbar */}
+            <div className="flex items-center justify-between px-6 h-14 border-b border-border/40 shrink-0">
+                <div className="flex items-center gap-4">
+                    <GitBranchSelect 
+                        branch={gitData.branch} 
+                        branches={branches} 
+                        isCheckingOut={isCheckingOut} 
+                        handleCheckout={handleCheckout} 
+                    />
+                    
+                    <div className="h-4 w-px bg-border/40 mx-1" />
+                    
+                    <div className="flex items-center gap-2">
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className={cn(
+                                "h-8 px-3 text-xs font-semibold rounded-md",
+                                view === 'changes' ? "bg-muted text-foreground" : "text-muted-foreground"
+                            )}
+                            onClick={() => setView('changes')}
+                        >
+                            Changes
+                            {gitData.changedFiles.length > 0 && (
+                                <Badge variant="secondary" className="ml-2 h-4 px-1 bg-primary/10 text-primary border-none min-w-[1.25rem] flex justify-center">
+                                    {gitData.changedFiles.length}
+                                </Badge>
+                            )}
+                        </Button>
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className={cn(
+                                "h-8 px-3 text-xs font-semibold rounded-md",
+                                view === 'history' ? "bg-muted text-foreground" : "text-muted-foreground"
+                            )}
+                            onClick={() => setView('history')}
+                        >
+                            History
+                        </Button>
                     </div>
                 </div>
-            ) : (
-                <>
-                    {lastActionError && lastActionError.toLowerCase().includes('lock') && (
-                        <div className="rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 typo-caption text-warning">
-                            {lastActionError}
-                        </div>
-                    )}
-                    {gitData.loading && (
-                        <div className="flex items-center gap-2 typo-caption text-muted-foreground bg-muted/30 border border-border/50 rounded-xl px-3 py-2">
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin text-primary" />
-                            {t('workspaceDashboard.loadingGit')}
-                        </div>
-                    )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                        {sectionDescriptors.map(section => {
-                            const state = sectionStates[section.key];
-                            return (
-                                <div key={section.key} className="bg-card/60 border border-border/50 rounded-xl px-3 py-2 space-y-1">
-                                    <div className="text-11 text-muted-foreground">{section.label}</div>
-                                    <div className="flex items-center gap-1.5 typo-caption font-medium">
-                                        {state.loading ? (
-                                            <>
-                                                <RefreshCw className="w-3 h-3 animate-spin text-warning" />
-                                                <span className="text-warning">{t('workspaceDashboard.gitSectionLoading')}</span>
-                                            </>
-                                        ) : state.error ? (
-                                            <>
-                                                <AlertTriangle className="w-3 h-3 text-destructive" />
-                                                <span className="text-destructive">{t('workspaceDashboard.gitSectionError')}</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <CheckCircle2 className="w-3 h-3 text-success" />
-                                                <span className="text-success">{t('workspaceDashboard.gitSectionReady')}</span>
-                                            </>
-                                        )}
-                                    </div>
-                                    {state.error && (
-                                        <div className="text-10 text-muted-foreground truncate" title={state.error}>
-                                            {state.error}
-                                        </div>
-                                    )}
+                <div className="flex items-center gap-2">
+                    {trackingInfo && (
+                        <div className="flex items-center gap-3 px-3 text-[11px] font-medium text-muted-foreground border-r border-border/40 mr-2 h-6">
+                            <span className="flex items-center gap-1"><ArrowUp className="w-3 h-3 text-emerald-500/60" /> {trackingInfo.ahead}</span>
+                            <span className="flex items-center gap-1"><ArrowDown className="w-3 h-3 text-indigo-500/60" /> {trackingInfo.behind}</span>
+                        </div>
+                    )}
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 px-2 hover:bg-muted text-muted-foreground"
+                        onClick={() => fetchGitData()}
+                    >
+                        <RefreshCw className={cn("w-3.5 h-3.5", gitData.loading && "animate-spin")} />
+                    </Button>
+                    <Button 
+                        size="sm" 
+                        className="h-8 px-4 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-md"
+                        onClick={() => handlePull()}
+                        disabled={isPulling}
+                    >
+                        {isPulling ? <RefreshCw className="w-3.5 h-3.5 animate-spin mr-2" /> : "Sync Changes"}
+                    </Button>
+                </div>
+            </div>
+
+            <div className="flex-1 flex overflow-hidden">
+                {/* Main Content Area */}
+                <div className="flex-1 flex flex-col min-w-0">
+                    <ScrollArea className="flex-1">
+                        <div className="p-6 pb-20 max-w-5xl">
+                            {lastActionError && (
+                                <div className="mb-6 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-xs text-destructive flex items-center justify-between">
+                                    <span>{lastActionError}</span>
+                                    <Button variant="ghost" size="sm" className="h-6 px-2 hover:bg-destructive/10">Dismiss</Button>
                                 </div>
-                            );
-                        })}
-                    </div>
+                            )}
 
-                    <GitStatusHeader
-                        gitData={gitData}
-                        branches={branches}
-                        trackingInfo={trackingInfo}
-                        isCheckingOut={isCheckingOut}
-                        handleCheckout={handleCheckout}
-                        fetchGitData={fetchGitData}
-                        t={t}
-                    />
+                            {view === 'changes' ? (
+                                <div className="space-y-10">
+                                    {/* Commit Section moved to TOP */}
+                                    {gitData.changedFiles.length > 0 && (
+                                        <GitCommitSection
+                                            commitMessage={commitMessage}
+                                            setCommitMessage={setCommitMessage}
+                                            isCommitting={isCommitting}
+                                            handleCommit={handleCommit}
+                                            workspacePath={workspace.path}
+                                            t={t}
+                                        />
+                                    )}
 
-                    <div className="bg-card/80 backdrop-blur-md rounded-2xl border border-border/50 p-6">
-                        <GitQuickActions
-                            isPulling={isPulling}
-                            isPushing={isPushing}
-                            remotes={remotes}
-                            trackingInfo={trackingInfo}
-                            handlePull={handlePull}
-                            handlePush={handlePush}
-                            t={t}
-                        />
+                                    <GitChangeStats
+                                        diffStats={diffStats || { staged: { added: 0, deleted: 0, files: 0 }, unstaged: { added: 0, deleted: 0, files: 0 }, total: { added: 0, deleted: 0, files: 0 } }}
+                                        gitData={gitData}
+                                        handleStageFile={handleStageFile}
+                                        handleUnstageFile={handleUnstageFile}
+                                        getStatusIcon={() => null}
+                                        handleGitFileSelect={onFileSelect}
+                                        selectedFile={selectedFile}
+                                        fileDiff={fileDiff}
+                                        loadingDiff={loadingDiff}
+                                        t={t}
+                                    />
+                                </div>
+                            ) : (
+                                    <GitCommitHistory
+                                        gitData={gitData}
+                                        selectedCommit={selectedCommit}
+                                        loadingDiff={loadingDiff}
+                                        commitDiff={commitDiff}
+                                        isLoadingMore={isLoadingMore}
+                                        hasMoreCommits={hasMoreCommits}
+                                        handleCommitSelect={handleCommitSelect}
+                                        handleLoadMoreCommits={handleLoadMoreCommits}
+                                        fetchGitData={fetchGitData}
+                                        t={t}
+                                    />
+                            )}
+                        </div>
+                    </ScrollArea>
+                </div>
 
-                        {gitData.stagedFiles.length > 0 && (
-                            <GitCommitSection
-                                commitMessage={commitMessage}
-                                setCommitMessage={setCommitMessage}
-                                isCommitting={isCommitting}
-                                handleCommit={handleCommit}
-                                t={t}
-                            />
-                        )}
-                    </div>
-
-                    <GitRemotes remotes={remotes} t={t} />
-
-                    <div className="bg-card/80 backdrop-blur-md rounded-2xl border border-border/50 p-6">
-                        <GitCommitHistory
+                <div className="w-80 border-l border-border/40 bg-muted/5 p-6 space-y-10 overflow-y-auto hidden lg:block">
+                    {gitData && (
+                        <GitStatusHeader
                             gitData={gitData}
-                            selectedCommit={selectedCommit}
-                            commitStats={commitStats}
-                            loadingDiff={loadingDiff}
-                            commitDiff={commitDiff}
-                            handleCommitSelect={handleCommitSelect}
-                            fetchGitData={fetchGitData}
-                            t={t}
-                        />
-                    </div>
-
-                    {diffStats && (diffStats.total.added > 0 || diffStats.total.deleted > 0 || diffStats.total.files > 0 || gitData.changedFiles.length > 0) && (
-                        <GitChangeStats
-                            diffStats={diffStats}
-                            gitData={gitData}
-                            handleStageFile={handleStageFile}
-                            handleUnstageFile={handleUnstageFile}
-                            getStatusIcon={getStatusIcon}
+                            diffStats={diffStats || { staged: { added: 0, deleted: 0, files: 0 }, unstaged: { added: 0, deleted: 0, files: 0 }, total: { added: 0, deleted: 0, files: 0 } }}
                             t={t}
                         />
                     )}
-
+                    <GitRemotes remotes={remotes} t={t} />
                     <GitAdvancedPanel workspacePath={workspace.path} />
-                </>
-            )}
+                </div>
+            </div>
         </div>
     );
 };

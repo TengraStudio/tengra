@@ -22,7 +22,7 @@ vi.mock('@main/logging/logger', () => ({
     }
 }));
 
-type TestValue = string | number | boolean | string[] | any[];
+type TestValue = string | number | boolean | string[] | any[] | Record<string, unknown>;
 
 function createMockSettingsService(overrides: Record<string, TestValue> = {}): SettingsService {
     return {
@@ -130,6 +130,47 @@ describe('McpDispatcher', () => {
             expect(pluginService.dispatch).toHaveBeenCalledWith('git', 'status', { verbose: true });
             expect(result).toEqual(expectedResult);
         });
+
+        it('should block dispatch when an action permission is denied', async () => {
+            settingsService = createMockSettingsService({
+                mcpActionPermissions: { 'terminal:run_command': 'deny' }
+            });
+            pluginService = createMockPluginService({
+                dispatch: vi.fn().mockResolvedValue({ success: true })
+            });
+            dispatcher = new McpDispatcher(new Set<string>(), settingsService, pluginService);
+
+            const result = await dispatcher.dispatch('terminal', 'run_command', { command: 'echo hi' });
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('permission denied');
+            expect(pluginService.dispatch).not.toHaveBeenCalled();
+        });
+
+        it('should create a pending permission request for ask policy', async () => {
+            settingsService = createMockSettingsService({
+                mcpActionPermissions: { 'git:push': 'ask' },
+                mcpPermissionRequests: []
+            });
+            pluginService = createMockPluginService({
+                dispatch: vi.fn().mockResolvedValue({ success: true })
+            });
+            dispatcher = new McpDispatcher(new Set<string>(), settingsService, pluginService);
+
+            const result = await dispatcher.dispatch('git', 'push', { remote: 'origin' });
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('permission required');
+            expect(settingsService.saveSettings).toHaveBeenCalledWith(expect.objectContaining({
+                mcpPermissionRequests: [expect.objectContaining({
+                    service: 'git',
+                    action: 'push',
+                    status: 'pending',
+                    argsPreview: '{"remote":"origin"}'
+                })]
+            }));
+            expect(pluginService.dispatch).not.toHaveBeenCalled();
+        });
     });
 
     describe('getToolDefinitions', () => {
@@ -177,20 +218,54 @@ describe('McpDispatcher', () => {
         });
     });
 
-    describe('permission management (obsolete)', () => {
-        it('should return empty for getPermissionRequests (now handled by settings)', async () => {
+    describe('permission management', () => {
+        it('should return permission requests from settings', async () => {
+            settingsService = createMockSettingsService({
+                mcpPermissionRequests: [{
+                    id: 'req-1',
+                    service: 'git',
+                    action: 'push',
+                    createdAt: 1,
+                    status: 'pending'
+                }]
+            });
+            dispatcher = new McpDispatcher(new Set<string>(), settingsService, pluginService);
+
             const result = await dispatcher.getPermissionRequests();
-            expect(result).toEqual([]);
+            expect(result).toEqual([expect.objectContaining({ id: 'req-1' })]);
         });
 
-        it('should return success for setActionPermission (compatibility mode)', async () => {
+        it('should save action permissions', async () => {
             const result = await dispatcher.setActionPermission('git', 'delete', 'deny');
+
             expect(result.success).toBe(true);
+            expect(settingsService.saveSettings).toHaveBeenCalledWith(expect.objectContaining({
+                mcpActionPermissions: { 'git:delete': 'deny' }
+            }));
         });
 
-        it('should return success for resolvePermissionRequest (compatibility mode)', async () => {
+        it('should resolve permission requests and persist the matching policy', async () => {
+            settingsService = createMockSettingsService({
+                mcpPermissionRequests: [{
+                    id: 'req-1',
+                    service: 'git',
+                    action: 'push',
+                    createdAt: 1,
+                    status: 'pending'
+                }]
+            });
+            dispatcher = new McpDispatcher(new Set<string>(), settingsService, pluginService);
+
             const result = await dispatcher.resolvePermissionRequest('req-1', 'approved');
+
             expect(result.success).toBe(true);
+            expect(settingsService.saveSettings).toHaveBeenCalledWith(expect.objectContaining({
+                mcpActionPermissions: { 'git:push': 'allow' },
+                mcpPermissionRequests: [expect.objectContaining({
+                    id: 'req-1',
+                    status: 'approved'
+                })]
+            }));
         });
     });
 

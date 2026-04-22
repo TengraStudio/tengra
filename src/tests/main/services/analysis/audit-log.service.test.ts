@@ -164,13 +164,13 @@ describe('AuditLogService', () => {
         it('should include optional fields in the persisted entry', async () => {
             await service.log({
                 action: 'login', category: 'authentication', success: false,
-                error: 'bad password', userId: 'user-42', ipAddress: '10.0.0.1',
+                error: 'bad password', userId: 'user-42', ipAddress: '127.0.0.1',
                 userAgent: 'TestAgent/1.0', details: { attempt: 3 }
             });
             const entry = vi.mocked(mockDbService.addAuditLog).mock.calls[0]![0];
             expect(entry.error).toBe('bad password');
             expect(entry.userId).toBe('user-42');
-            expect(entry.ipAddress).toBe('10.0.0.1');
+            expect(entry.ipAddress).toBe('127.0.0.1');
             expect(entry.userAgent).toBe('TestAgent/1.0');
         });
 

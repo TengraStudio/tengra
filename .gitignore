@@ -171,6 +171,10 @@ nul
 dist/
 node_modules/
 /tmp/
+scratch/
+tmp-hardcoded.json
+all_t_keys.txt
+t_keys.txt
 
 docs/components_checklist.md
 docs/changelog/i18n/.tr.translation.cache.json
@@ -194,3 +198,6 @@ stryker.log
 stryker-results.json
 *.audit.json
 *.dump.txt
+
+# Monaco Editor Static Assets
+/public/monaco

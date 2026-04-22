@@ -15,14 +15,15 @@ import { useCommandStripResize } from './useCommandStripResize';
 const MIN_TERMINAL_HEIGHT = 150;
 const FLOATING_TERMINAL_MAX_WIDTH_PX = 980;
 const AGENT_PANEL_VISIBLE_WIDTH_PX = 350;
-const EXPANDED_EXPLORER_LEFT_INSET_PX = 18 * 16 + 8;
-const COLLAPSED_EXPLORER_LEFT_INSET_PX = 8;
+export const WORKSPACE_EXPLORER_WIDTH_PX = 18 * 16;
+export const EXPANDED_EXPLORER_LEFT_INSET_PX = WORKSPACE_EXPLORER_WIDTH_PX;
+export const COLLAPSED_EXPLORER_LEFT_INSET_PX = 0;
 
 /** Minimum height for the resizable handle when floating. */
 export const MIN_RESIZABLE_TERMINAL_HEIGHT = 56;
 
 /** Bottom offset for docked terminal positioning. */
-export const DOCKED_TERMINAL_BOTTOM_OFFSET_PX = 40;
+export const DOCKED_TERMINAL_BOTTOM_OFFSET_PX = 31;
 
 interface UseTerminalLayoutParams {
     showTerminal: boolean;
@@ -50,12 +51,11 @@ export function useTerminalLayout({
     onTerminalLayoutStateChange,
     showAgentPanel,
     sidebarCollapsed,
-    tabsCount,
+    tabsCount: _tabsCount,
 }: UseTerminalLayoutParams) {
     const [isMaximizedTerminal, setIsMaximizedTerminal] = React.useState(initialMaximizedTerminal);
     const [isResizingTerminal, setIsResizingTerminal] = React.useState(false); 
     const [viewportWidth, setViewportWidth] = React.useState(() => window.innerWidth);
-    const prevTabsCountRef = React.useRef(tabsCount);
     const lastExpandedTerminalHeightRef = React.useRef(
         Math.max(terminalHeight, MIN_TERMINAL_HEIGHT)
     );
@@ -77,7 +77,7 @@ export function useTerminalLayout({
     });
 
     const dockedTerminalRightInsetPx = React.useMemo(() => {
-        const baseInset = 8;
+        const baseInset = 0;
         if (!showAgentPanel) {
             return baseInset;
         }
@@ -101,16 +101,6 @@ export function useTerminalLayout({
         const leftPx = workspaceLeftInsetPx + Math.max(0, (availableWidthPx - widthPx) / 2);
         return { leftPx, widthPx };
     }, [dockedTerminalRightInsetPx, viewportWidth, workspaceLeftInsetPx]);
-
-    // Close terminal when all tabs are removed
-    React.useEffect(() => {
-        const prevTabsCount = prevTabsCountRef.current;
-        prevTabsCountRef.current = tabsCount;
-        if (showTerminal && prevTabsCount > 0 && tabsCount === 0) {
-            setShowTerminal(false);
-            setIsMaximizedTerminal(false);
-        }
-    }, [showTerminal, tabsCount, setShowTerminal]);
 
     // Reset floating/maximized state when terminal is hidden
     React.useEffect(() => {

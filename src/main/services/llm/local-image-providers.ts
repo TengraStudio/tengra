@@ -16,10 +16,11 @@ import { LinkedAccount } from '@main/services/data/database.service';
 import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { MemoryContextService } from '@main/services/llm/memory-context.service';
-import { QuotaModel, QuotaService } from '@main/services/proxy/quota.service';
+import { ProxyService } from '@main/services/proxy/proxy.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { getManagedRuntimeTempDir } from '@main/services/system/runtime-path.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { ModelQuotaItem } from '@shared/types/quota';
 import { getErrorMessage } from '@shared/utils/error.util';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
@@ -27,7 +28,6 @@ import WebSocket from 'ws';
 
 import type {
     AntigravityAccount,
-    AntigravityUpstreamQuotaResponse,
     ComfyWorkflowTemplate,
     ImageEditOptions,
     ImageGenerationOptions,
@@ -38,7 +38,7 @@ interface ProviderDeps {
     settingsService: SettingsService;
     authService?: AuthService;
     llmService?: LLMService;
-    quotaService?: QuotaService;
+    proxyService?: ProxyService;
     advancedMemoryService?: AdvancedMemoryService;
 }
 
@@ -468,21 +468,25 @@ export class LocalImageProviders {
     }
 
     private async getAntigravityAccountWithQuota(): Promise<AntigravityAccount | null> {
-        if (!this.deps.authService || !this.deps.quotaService) {
+        if (!this.deps.authService || !this.deps.proxyService) {
             return null;
         }
         try {
-            const allAccounts = await this.deps.authService.getAllAccountsFull();
-            const antigravityAccounts = allAccounts.filter(a =>
-                a.provider.startsWith('antigravity') || a.provider.startsWith('google')
-            );
-            if (antigravityAccounts.length === 0) {
+            const quota = await this.deps.proxyService.getQuota();
+            if (!quota?.accounts?.length) {
                 appLogger.info('LocalImageProviders', 'No Antigravity accounts found');
                 return null;
             }
-            appLogger.info('LocalImageProviders', `Found ${antigravityAccounts.length} Antigravity account(s), checking quota...`);
-            for (const account of antigravityAccounts) {
-                const result = await this.checkAccountQuota(account);
+
+            appLogger.info('LocalImageProviders', `Found ${quota.accounts.length} Antigravity account(s), checking quota...`);
+            const allAccounts = await this.deps.authService.getAllAccountsFull();
+
+            for (const quotaAccount of quota.accounts) {
+                const account = allAccounts.find(a => a.id === quotaAccount.accountId);
+                if (!account) {
+                    continue;
+                }
+                const result = this.checkAccountQuota(account, quotaAccount.models ?? []);
                 if (result) { return result; }
             }
             appLogger.warn('LocalImageProviders', 'No Antigravity accounts with sufficient quota');
@@ -493,12 +497,13 @@ export class LocalImageProviders {
         }
     }
 
-    private async checkAccountQuota(account: LinkedAccount): Promise<AntigravityAccount | null> {
+    private checkAccountQuota(account: LinkedAccount, models: ModelQuotaItem[]): AntigravityAccount | null {
         if (!account.accessToken) {
             appLogger.debug('LocalImageProviders', `Skipping account ${account.email ?? account.id}: no access token`);
             return null;
         }
-        const quotaInfo = await this.fetchImageQuota(account);
+        const imageModel = this.extractImageModel(models);
+        const quotaInfo = imageModel?.quotaInfo ?? null;
         if (!quotaInfo) { return null; }
         const quotaPercentage = this.calculateQuotaPercentage(quotaInfo);
         if (quotaPercentage > 5) {
@@ -507,30 +512,6 @@ export class LocalImageProviders {
         }
         appLogger.warn('LocalImageProviders', `Account ${account.email ?? account.id} quota too low: ${quotaPercentage}%`);
         return null;
-    }
-
-    private async fetchImageQuota(
-        account: LinkedAccount
-    ): Promise<{ remainingFraction?: number; remainingQuota?: number; totalQuota?: number } | null> {
-        try {
-            if (!this.deps.quotaService) {
-                throw new Error('QuotaService not available');
-            }
-            const response = await this.deps.quotaService.fetchAntigravityUpstreamForToken(account) as AntigravityUpstreamQuotaResponse;
-            if (!response?.models) {
-                appLogger.debug('LocalImageProviders', `No quota data for account ${account.email ?? account.id}`);
-                return null;
-            }
-            const imageModel = this.extractImageModel(response.models);
-            if (!imageModel) {
-                appLogger.debug('LocalImageProviders', `Account ${account.email ?? account.id} doesn't have image model access`);
-                return null;
-            }
-            return imageModel.quotaInfo ?? null;
-        } catch (error) {
-            appLogger.error('LocalImageProviders', `Failed to check quota for ${account.email ?? account.id}: ${getErrorMessage(error as Error)}`);
-            return null;
-        }
     }
 
     private calculateQuotaPercentage(quotaInfo: { remainingFraction?: number; remainingQuota?: number; totalQuota?: number }): number {
@@ -543,12 +524,12 @@ export class LocalImageProviders {
         return 100;
     }
 
-    private extractImageModel(models: Record<string, QuotaModel>): QuotaModel | null {
-        let bestMatch: QuotaModel | null = null;
+    private extractImageModel(models: ModelQuotaItem[]): ModelQuotaItem | null {
+        let bestMatch: ModelQuotaItem | null = null;
         let bestScore = -1;
 
-        for (const [key, model] of Object.entries(models)) {
-            const score = this.scoreImageModel(key, model);
+        for (const model of models) {
+            const score = this.scoreImageModel(model.id, model);
             if (score <= bestScore) {
                 continue;
             }
@@ -559,9 +540,9 @@ export class LocalImageProviders {
         return bestMatch;
     }
 
-    private scoreImageModel(key: string, model: QuotaModel): number {
+    private scoreImageModel(key: string, model: ModelQuotaItem): number {
         const normalizedKey = this.normalizeImageModelToken(key);
-        const normalizedName = this.normalizeImageModelToken(model.displayName);
+        const normalizedName = this.normalizeImageModelToken(model.name);
         const combined = `${normalizedKey} ${normalizedName}`.trim();
 
         if (combined.length === 0) {

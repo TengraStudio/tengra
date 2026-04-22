@@ -24,7 +24,8 @@ import {
     RefreshCw, 
     Sparkles, 
     Trash2,
-    Zap 
+    Zap,
+    SwatchBook,
 } from 'lucide-react';
 import type { ElementType } from 'react';
 
@@ -65,6 +66,7 @@ export function MarketCard({
     onInstall,
     onUninstall,
     onActivateLanguage,
+    onActivateIconPack,
 }: {
     item: MarketplaceItem;
     isActive: boolean;
@@ -72,6 +74,7 @@ export function MarketCard({
     onInstall: (item: MarketplaceItem) => void;
     onUninstall?: (item: MarketplaceItem) => void;
     onActivateLanguage?: (item: MarketplaceLanguage) => void;
+    onActivateIconPack?: (item: MarketplaceItem) => void;
 }) {
     const { t } = useTranslation();
     const languageItem = item.itemType === 'language' ? (item as MarketplaceLanguage) : null;
@@ -91,6 +94,7 @@ export function MarketCard({
         language: Globe,
         skill: Sparkles,
         extension: Puzzle,
+        'icon-pack': SwatchBook,
     } as Record<string, ElementType>)[item.itemType] || Package);
 
     const versionDisplay = (
@@ -229,6 +233,20 @@ export function MarketCard({
                                 if (onActivateLanguage && languageItem) {
                                     onActivateLanguage(languageItem);
                                 }
+                            }}
+                            className={C_MARKETCARD_6}
+                        >
+                            {t('common.activate')}
+                        </button>
+                    </div>
+                )}
+
+                {item.itemType === 'icon-pack' && item.installed && !isActive && (
+                    <div className="mt-3 flex items-center justify-end">
+                        <button
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                onActivateIconPack?.(item);
                             }}
                             className={C_MARKETCARD_6}
                         >

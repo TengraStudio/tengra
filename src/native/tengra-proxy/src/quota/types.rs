@@ -24,6 +24,14 @@ pub struct QuotaInfo {
     pub remaining: f64,
     pub total: f64,
     pub reset_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub five_hour_used_percent: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub five_hour_reset_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub weekly_used_percent: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub weekly_reset_at: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

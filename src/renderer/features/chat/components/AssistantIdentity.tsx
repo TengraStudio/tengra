@@ -10,11 +10,11 @@
 
 import React from 'react';
 
-import LogoAntigravity from '@/assets/antigravity.svg';
-import LogoOpenAI from '@/assets/chatgpt.svg';
-import LogoClaude from '@/assets/claude.svg';
-import LogoCopilot from '@/assets/copilot.png';
-import LogoOllama from '@/assets/ollama.svg';
+import LogoAntigravity from '@/assets/antigravity.svg?url';
+import LogoOpenAI from '@/assets/chatgpt.svg?url';
+import LogoClaude from '@/assets/claude.svg?url';
+import LogoCopilot from '@/assets/copilot.svg?url';
+import LogoOllama from '@/assets/ollama.svg?url';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -36,12 +36,12 @@ type ProviderKey = 'openai' | 'anthropic' | 'antigravity' | 'copilot' | 'groq' |
 type ModelKey = 'llama' | 'mistral' | 'deepseek' | 'qwen' | 'phi';
 
 const PROVIDER_CONFIGS: Record<ProviderKey, BrandConfig> = {
-    openai: { bgClass: 'bg-success/10', borderClass: 'border-success/10', titleKey: 'assistantIdentity.openai', content: (label) => <img src={LogoOpenAI} className="w-full h-full opacity-70" alt={label} /> },
-    anthropic: { bgClass: 'bg-warning/10', borderClass: 'border-warning/30', titleKey: 'assistantIdentity.anthropic', content: (label) => <img src={LogoClaude} className="w-full h-full opacity-70" alt={label} /> },
+    openai: { bgClass: 'bg-success/10', borderClass: 'border-success/10', titleKey: 'assistantIdentity.openai', content: (label) => <img src={LogoOpenAI} className="w-full h-full opacity-70 theme-logo-invert" alt={label} /> },
+    anthropic: { bgClass: 'bg-warning/10', borderClass: 'border-warning/30', titleKey: 'assistantIdentity.anthropic', content: (label) => <img src={LogoClaude} className="w-full h-full opacity-70 theme-logo-invert" alt={label} /> },
     antigravity: { bgClass: 'bg-warning/10', borderClass: 'border-warning/30', titleKey: 'assistantIdentity.antigravity', content: (label) => <img src={LogoAntigravity} className="w-full h-full opacity-70" alt={label} /> },
-    copilot: { bgClass: 'bg-background', borderClass: 'border-border/50', titleKey: 'assistantIdentity.copilot', content: (label) => <img src={LogoCopilot} className="w-full h-full object-cover opacity-70" alt={label} /> },
+    copilot: { bgClass: 'bg-background', borderClass: 'border-border/50', titleKey: 'assistantIdentity.copilot', content: (label) => <img src={LogoCopilot} className="w-full h-full opacity-70 theme-logo-invert" alt={label} /> },
     groq: { bgClass: 'bg-warning/10', borderClass: 'border-warning/30', titleKey: 'assistantIdentity.groq', content: () => <span className="font-bold text-warning text-xxs">G</span> },
-    ollama: { bgClass: 'bg-muted/30', borderClass: 'border-border/50', titleKey: 'assistantIdentity.ollama', content: (label) => <img src={LogoOllama} className="w-full h-full opacity-50" alt={label} /> },
+    ollama: { bgClass: 'bg-muted/30', borderClass: 'border-border/50', titleKey: 'assistantIdentity.ollama', content: (label) => <img src={LogoOllama} className="w-full h-full opacity-50 theme-logo-invert" alt={label} /> },
 };
 
 const MODEL_CONFIGS: Record<ModelKey, BrandConfig> = {

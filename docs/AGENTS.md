@@ -1,368 +1,111 @@
-# AI Agent Guide for Tengra
+# AI Agent Guide
 
-CRITICAL: Read this document completely before making any changes to the codebase.
+This file is for AI coding agents working in the Tengra repository. Human contributors should usually start with [README.md](../README.md) and [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-## Quick Start
+## First Steps
 
-1. READ RULES FIRST: Call view_file on [MASTER_COMMANDMENTS.md](MASTER_COMMANDMENTS.md) and [AI_RULES.md](AI_RULES.md) before ANY code work.
-2. Check [TODO.md](TODO.md) - Current tasks and priorities.
-3. VALIDATE: Run npm run build && npm run lint && npm run type-check && npm run test before every commit.
-4. FRIDAY BAN: No commits on Fridays. NO EXCEPTIONS.
+1. Read [MASTER_COMMANDMENTS.md](./MASTER_COMMANDMENTS.md) and [AI_RULES.md](./AI_RULES.md) before broad code changes.
+2. Check [TODO.md](./TODO.md) for active and historical project notes.
+3. Inspect the existing source before editing. Prefer local patterns over new abstractions.
+4. Preserve user changes in the working tree. Do not revert unrelated edits.
+5. Validate the touched area before handing work back.
 
-
-## Project Overview
-
-Tengra is a desktop AI assistant application built with Electron, React, and TypeScript. It provides multi-LLM support, project management, terminal integration, and extensibility via MCP (Model Context Protocol) plugins.
-
-### Technology Stack
+## Current Stack
 
 | Layer | Technology |
-|-------|------------|
-| Desktop Framework | Electron 40+ |
-| Frontend | React 18, TypeScript, Tailwind CSS |
-| Backend | Node.js (Main Process) |
-| Database | PGlite (PostgreSQL in-process) |
-| Local AI | Ollama, Llama.cpp, SD-CPP |
-| IPC | Electron IPC with typed bridge |
+| --- | --- |
+| Desktop shell | Electron |
+| Renderer | React 18, TypeScript, Tailwind CSS |
+| Main process | Node.js and Electron APIs |
+| Native runtime | Rust sidecar services under `src/native` |
+| Local models | Ollama and local provider integrations |
+| Editor/terminal | Monaco Editor and xterm.js |
+| IPC | Context-isolated preload bridge with main-process handlers |
 
-### Architecture
+Go is not part of the active native runtime. The current managed binaries are `tengra-db-service`, `tengra-memory-service`, and `tengra-proxy`.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    RENDERER PROCESS                         │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-│  │   React UI  │  │   Contexts  │  │    Hooks    │        │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘        │
-│         └────────────────┼────────────────┘                │
-│                          │                                  │
-│                    ┌─────▼─────┐                           │
-│                    │ IPC Bridge│                           │
-└────────────────────┴─────┬─────┴───────────────────────────┘
-                           │
-┌──────────────────────────┼──────────────────────────────────┐
-│                    ┌─────▼─────┐                            │
-│                    │IPC Handlers│          MAIN PROCESS     │
-│                    └─────┬─────┘                            │
-│         ┌────────────────┼────────────────┐                 │
-│    ┌────▼────┐     ┌─────▼─────┐    ┌─────▼─────┐         │
-│    │Services │     │ Database  │    │  Proxy    │         │
-│    └────┬────┘     └───────────┘    └───────────┘         │
-│         │                                                   │
-│    ┌────▼────────────────────────────────────┐             │
-│    │ LLM │ Data │ Project │ Security │ System │            │
-│    └─────────────────────────────────────────┘             │
-└─────────────────────────────────────────────────────────────┘
-```
+## Repository Map
 
-## Directory Structure
-
-```
+```text
 tengra/
 ├── src/
-│   ├── main/                 # Electron main process
-│   │   ├── services/         # Backend services
-│   │   ├── ipc/              # IPC handlers
-│   │   ├── mcp/              # MCP system
-│   │   └── logging/          # Logger
-│   ├── renderer/             # React frontend
-│   │   ├── features/         # Feature modules
-│   │   └── components/       # UI components
-│   ├── shared/               # Shared code (types, utils, schemas)
-│   ├── native/               # Native microservices (Rust)
-│   ├── services/             # Native microservices (cliproxy)
-│   └── tests/                # All tests (unit, main, renderer, shared, e2e)
-├── resources/          # Static assets
-├── scripts/            # Build scripts
-├── logs/               # Application logs
-└── package.json        # Configuration
+│   ├── main/        Electron main process, IPC handlers, services
+│   ├── renderer/    React UI, feature modules, stores, hooks
+│   ├── shared/      shared types, schemas, and utilities
+│   ├── native/      Rust workspace for managed sidecar services
+│   └── tests/       unit, integration, renderer, main, and e2e tests
+├── resources/       packaged assets
+├── public/          web assets copied by frontend tooling
+├── scripts/         build, audit, release, and maintenance helpers
+├── docs/            project documentation
+├── build/           Electron packaging assets
+└── .github/         CI and release automation
 ```
 
-## Service Architecture
+See [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md) and [ARCHITECTURE.md](./ARCHITECTURE.md) for the fuller map.
 
-### Core Principles
+## Working Rules
 
-1. BaseService Pattern: All services extend BaseService
-2. Dependency Injection: Services are managed by DI container
-3. Domain Organization: Services grouped by responsibility
-4. Lifecycle Hooks: initialize() and cleanup() methods
+- Use TypeScript strictly. Avoid `any`, `@ts-ignore`, and unchecked casts.
+- Use existing loggers instead of `console.log`.
+- Keep user-facing strings localizable.
+- Validate untrusted renderer input before privileged main-process work.
+- Keep IPC changes typed and domain-specific.
+- Do not add new dependencies unless the benefit is clear and the package is maintained.
+- Do not edit generated output unless the generated file is intentionally committed source.
+- Keep docs in sync when changing commands, native binaries, release flow, or public setup instructions.
 
-### Service Template
+## IPC Guidance
 
-```typescript
-import { BaseService } from '@main/services/base.service'
-import { appLogger } from '@main/logging/logger'
+Renderer code should call the preload bridge. It should not import Node APIs or access privileged resources directly.
 
-export class MyService extends BaseService {
-    constructor(
-        private dependency1: Dependency1,
-        private dependency2: Dependency2
-    ) {
-        super('MyService');
-    }
+Main-process handlers should:
 
-    async initialize(): Promise<void> {
-        appLogger.info('MyService', 'Initializing...');
-        // Initialization logic
-    }
+- live near the relevant domain under `src/main/ipc`
+- validate input before filesystem, process, network, or credential work
+- return stable, typed results
+- log failures with enough context to debug without leaking secrets
 
-    async someMethod(): Promise<Result> {
-        try {
-            // Business logic
-            return { success: true, data: result };
-        } catch (error) {
-            appLogger.error('MyService', 'someMethod failed', error as Error);
-            throw error;
-        }
-    }
+Common domains include window/process, auth/security, AI/model operations, workspace/tools, data, and settings.
 
-    async dispose(): Promise<void> {
-        appLogger.info('MyService', 'Disposing...');
-        // Cleanup logic
-    }
-}
-```
+## Native Runtime Guidance
 
-### Service Domains
+The Rust workspace under `src/native` owns the bundled sidecar binaries:
 
-| Domain | Folder | Examples |
-|--------|--------|----------|
-| AI/LLM | `services/llm/` | OllamaService, CopilotService, ModelRegistryService |
-| Data | `services/data/` | DatabaseService, DataService, ChatEventService |
-| Project | `services/project/` | ProjectService, GitService, DockerService |
-| Security | `services/security/` | TokenService, KeyRotationService, RateLimitService |
-| System | `services/system/` | CommandService, SystemService |
-| Analysis | `services/analysis/` | TelemetryService, PerformanceService |
-| Proxy | `services/proxy/` | ProxyService, QuotaService |
+- `db-service` builds `tengra-db-service`
+- `memory-service` builds `tengra-memory-service`
+- `proxy` builds `tengra-proxy`
 
-## IPC Communication
+Build and packaging coordination lives in `scripts/compile-native.js` and the Electron builder configuration. If native service names, paths, or startup behavior change, update [MANAGED_RUNTIME.md](./MANAGED_RUNTIME.md).
 
-### Handler Pattern
+## Validation Commands
 
-```typescript
-// In src/main/ipc/
-import { createIpcHandler, createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
-
-// Basic handler
-export const registerMyHandler = createIpcHandler(
-    'my:action',
-    async (_event, param: string) => {
-        // Implementation
-        return result;
-    }
-);
-
-// Validated handler with Zod
-export const registerValidatedHandler = createValidatedIpcHandler(
-    'my:validated-action',
-    InputSchema,
-    OutputSchema,
-    async (_event, input) => {
-        // Implementation
-        return output;
-    }
-);
-```
-
-### IPC Categories
-
-- Window/System: `window:`, `process:`, `health:`
-- Auth/Security: `auth:`, `key-rotation:`, `audit:`
-- AI/LLM: `chat:`, `ollama:`, `llama:`, `memory:`
-- Project: `project:`, `git:`, `terminal:`, `ssh:`
-- Data: `db:`, `files:`, `backup:`
-- UI: `settings:`, `theme:`, `clipboard:`
-
-## Frontend Architecture
-
-### Context Hierarchy
-
-```
-SettingsProvider → LanguageProvider → AuthProvider → ThemeProvider → ModelProvider → ProjectProvider → ChatProvider
-```
-
-### State Management
-
-Uses external store pattern with useSyncExternalStore:
-
-- `theme.store` - Theme persistence
-- `settings.store` - App settings
-- `sidebar.store` - Sidebar state
-- `ui-layout.store` - Panel layout
-- `notification-center.store` - Notifications
-
-### Feature Modules
-
-| Feature | Purpose |
-|---------|---------|
-| `chat` | Main chat interface |
-| `settings` | Settings tabs |
-| `projects` | Project management |
-| `terminal` | Terminal panel |
-| `models` | Model management |
-| `mcp` | MCP server management |
-| `memory` | Memory inspection |
-| `ideas` | AI idea generation |
-
-## Critical Rules
-
-### Forbidden Actions
-
-- NEVER use any type
-- NEVER use console.log - Use appLogger
-- NEVER use @ts-ignore
-- NEVER delete entire files to edit them
-- NEVER use while(true) without bounds
-- NEVER hardcode user-facing strings
-
-### Required Actions
-
-- ALWAYS run npm run build && npm run lint before committing
-- ALWAYS update TODO.md after completing tasks
-- ALWAYS use t('key') for translations
-- ALWAYS check return values
-- ALWAYS handle Promise rejections
-- ALWAYS use JSDoc for public methods
-
-### NASA Power of Ten Rules
-
-1. No recursion
-2. Fixed loop bounds
-3. Short functions (max 60 lines)
-4. Check all return values
-5. Minimal variable scope
-
-## Build Commands
+Use the narrowest reliable validation for small changes, and run the broader set before release or wide refactors.
 
 ```bash
-npm run build        # Build the application
-npm run dev          # Start development server
-npm run lint         # Check for lint errors
-npm run type-check   # TypeScript validation
-npm run test         # Run tests
+npm run type-check
+npm run lint
+npm test
+npm run build
+npm run secrets:scan
+npm run audit:deps:gate
 ```
 
-## Workflow
+For release preparation, also follow [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md).
 
-1. Read AI_RULES.md
-2. Make changes
-3. npm run build && npm run lint
-4. Update TODO.md (mark [x], don't delete)
-5. Commit and push
+## Documentation Rules
 
-## Logging
+- Keep root [README.md](../README.md) short.
+- Put onboarding, architecture, and release detail in `docs/`.
+- Update [docs/README.md](./README.md) when adding or removing documentation.
+- Avoid documenting retired services as current behavior.
+- Keep temporary notes out of `docs/`; use a scratch directory or an issue draft.
 
-### Log Levels
+## Handoff Format
 
-| Level | Usage |
-|-------|-------|
-| `error` | Unrecoverable errors, exceptions |
-| `warn` | Recoverable issues, deprecations |
-| `info` | Important events, state changes |
-| `debug` | Development debugging only |
+When finishing a task, report:
 
-### Logger Usage
-
-```typescript
-import { appLogger } from '@main/logging/logger';
-
-appLogger.info('ServiceName', 'Operation completed');
-appLogger.warn('ServiceName', 'Resource running low', { remaining: 10 });
-appLogger.error('ServiceName', 'Operation failed', error as Error);
-appLogger.debug('ServiceName', 'Debug info', { data: someData });
-```
-
-### Log File Rules
-
-- Log files MUST be placed in logs/ directory only
-- Valid extensions: .log, .txt, .json
-- Format: {service}_{date}.log
-
-## i18n
-
-### Supported Languages
-
-- Turkish (tr) - Default
-- English (en)
-- German (de)
-- French (fr)
-- Spanish (es)
-- Japanese (ja)
-- Chinese (zh)
-- Arabic (ar) - RTL support
-
-### Usage
-
-```typescript
-const { t } = useTranslation();
-
-// Simple translation
-const text = t('settings.general.title');
-
-// With interpolation
-const greeting = t('greeting', { name: 'John' });
-
-// Pluralization
-const items = t('items.count', { count: 5 });
-```
-
-## Protected Paths
-
-Never modify these paths:
-- .git/
-- node_modules/
-- vendor/
-- .env, .env.local
-
-## Performance Guidelines
-
-1. Lazy Loading: Use React.lazy() for heavy components
-2. Memoization: Use useMemo/useCallback for computations
-3. IPC Batching: Combine IPC calls to minimize overhead
-4. Virtualization: Virtualize lists > 50 items
-5. Indexing: Mandatory indexes for query-critical fields
-6. Disposal: Call dispose()/cleanup for all resources
-
-## Testing
-
-```bash
-npm run test              # Run all tests
-npm run test:unit         # Unit tests only
-npm run test:integration  # Integration tests
-npm run test:e2e          # E2E tests
-```
-
-### Test File Location
-
-- Unit tests: `src/tests/unit/`, `src/tests/main/`, `src/tests/renderer/`
-- Integration tests: `src/tests/integration/`
-- E2E tests: `src/tests/e2e/`
-
-## MCP Plugin System
-
-MCP (Model Context Protocol) enables extending AI capabilities:
-
-- Filesystem operations
-- Git operations
-- Web search
-- Terminal commands
-- Database administration
-- CI/CD integration
-
-### MCP Server Template
-
-Located in `src/main/mcp/templates/server.template.ts`
-
-## Troubleshooting
-
-### Common Issues
-
-1. Build fails: Check TypeScript errors with npm run type-check
-2. Lint errors: Run npm run lint -- --fix for auto-fixable issues
-3. Database issues: Check PGlite logs in logs/ directory
-4. Proxy issues: Verify proxy process is running on expected port
-
-### Getting Help
-
-- Check TODO.md
-- Review ARCHITECTURE.md
-- Check API.md
+- what changed
+- which files matter
+- which validation commands ran and their results
+- any remaining risks or follow-up items

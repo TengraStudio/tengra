@@ -317,8 +317,7 @@ export class AuthAPIService extends BaseService {
         acc: import('@main/services/data/database.service').LinkedAccount
     ) {
         const normalizedProvider = this.normalizeProviderName(acc.provider);
-        // Go proxy expects 'claude' for model routing
-        const providerForGo = normalizedProvider === 'anthropic' ? 'claude' : normalizedProvider;
+        const providerForGo = normalizedProvider;
         const isClaudeProvider = providerForGo === 'claude';
         const isCodexProvider = providerForGo === 'codex';
 
@@ -430,8 +429,8 @@ export class AuthAPIService extends BaseService {
             antigravity_token: 'antigravity',
             google: 'antigravity',
             google_token: 'antigravity',
-            anthropic: 'claude',
-            anthropic_key: 'claude',
+            anthropic: 'anthropic',
+            anthropic_key: 'anthropic',
             claude: 'claude',
             openai: 'codex',
             openai_key: 'codex',

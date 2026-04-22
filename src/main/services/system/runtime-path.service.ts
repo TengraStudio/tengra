@@ -14,15 +14,16 @@ import * as path from 'path';
 import { app } from 'electron';
 
 const RUNTIME_ROOT_FOLDER = 'runtime';
+const RUNTIME_MANAGED_FOLDER = 'managed';
+const RUNTIME_CACHE_FOLDER = 'cache';
 const RUNTIME_BIN_FOLDER = 'bin';
 const RUNTIME_MODELS_FOLDER = 'models';
 const RUNTIME_TEMP_FOLDER = 'temp';
 const RUNTIME_DOWNLOADS_FOLDER = 'downloads';
 const RUNTIME_MANIFESTS_FOLDER = 'manifests';
-const APP_FOLDER_NAME = 'Tengra';
 
 function getManagedAppRoot(): string {
-    return path.join(app.getPath('appData'), APP_FOLDER_NAME);
+    return app.getPath('userData');
 }
 
 function ensureDirectory(targetPath: string): string {
@@ -41,7 +42,11 @@ function normalizeExecutableName(name: string): string {
 }
 
 export function getManagedRuntimeRoot(): string {
-    return ensureDirectory(path.join(getManagedAppRoot(), RUNTIME_ROOT_FOLDER));
+    return ensureDirectory(path.join(getManagedAppRoot(), RUNTIME_ROOT_FOLDER, RUNTIME_MANAGED_FOLDER));
+}
+
+export function getManagedRuntimeCacheRoot(): string {
+    return ensureDirectory(path.join(getManagedAppRoot(), RUNTIME_ROOT_FOLDER, RUNTIME_CACHE_FOLDER));
 }
 
 export function getManagedRuntimeBinDir(): string {
@@ -53,15 +58,15 @@ export function getManagedRuntimeModelsDir(): string {
 }
 
 export function getManagedRuntimeTempDir(): string {
-    return ensureDirectory(path.join(getManagedRuntimeRoot(), RUNTIME_TEMP_FOLDER));
+    return ensureDirectory(path.join(getManagedRuntimeCacheRoot(), RUNTIME_TEMP_FOLDER));
 }
 
 export function getManagedRuntimeDownloadsDir(): string {
-    return ensureDirectory(path.join(getManagedRuntimeRoot(), RUNTIME_DOWNLOADS_FOLDER));
+    return ensureDirectory(path.join(getManagedRuntimeCacheRoot(), RUNTIME_DOWNLOADS_FOLDER));
 }
 
 export function getManagedRuntimeManifestsDir(): string {
-    return ensureDirectory(path.join(getManagedRuntimeRoot(), RUNTIME_MANIFESTS_FOLDER));
+    return ensureDirectory(path.join(getManagedRuntimeCacheRoot(), RUNTIME_MANIFESTS_FOLDER));
 }
 
 export function getManagedRuntimeBinaryPath(executable: string): string {

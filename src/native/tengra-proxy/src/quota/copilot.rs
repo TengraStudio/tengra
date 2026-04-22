@@ -118,6 +118,10 @@ pub async fn fetch_copilot_quota(token: &str) -> anyhow::Result<crate::quota::ty
             remaining: quota_res.remaining as f64,
             total: quota_res.limit as f64,
             reset_at: quota_res.reset.clone(),
+            five_hour_used_percent: None,
+            five_hour_reset_at: None,
+            weekly_used_percent: None,
+            weekly_reset_at: None,
         })
     } else {
         None

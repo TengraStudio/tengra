@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { FileText, GitBranch, Layout, ListTodo, Play, Search, Settings } from 'lucide-react';
+import { GitBranch, Layout, ListTodo, Play, Search, Settings } from 'lucide-react';
 import React from 'react';
 
 import { cn } from '@/lib/utils';
@@ -32,8 +32,6 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
         { id: 'tasks', icon: ListTodo, title: t('workspaceDashboard.todoList') },
         { id: 'search', icon: Search, title: t('workspaceDashboard.search') },
         { id: 'git', icon: GitBranch, title: t('workspaceDashboard.git') },
-        { id: 'env', icon: Settings, title: t('workspaceDashboard.environment') },
-        { id: 'logs', icon: FileText, title: t('workspaceDashboard.logs') },
         { id: 'settings', icon: Settings, title: t('workspaceDashboard.settings') },
     ] as const;
 

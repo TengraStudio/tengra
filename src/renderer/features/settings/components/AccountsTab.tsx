@@ -8,12 +8,12 @@
  * (at your option) any later version.
  */
 
-import antigravityLogo from '@renderer/assets/antigravity.svg';
-import chatgptLogo from '@renderer/assets/chatgpt.svg';
-import claudeLogo from '@renderer/assets/claude.svg';
-import copilotLogo from '@renderer/assets/copilot.png';
+import antigravityLogo from '@renderer/assets/antigravity.svg?url';
+import chatgptLogo from '@renderer/assets/chatgpt.svg?url';
+import claudeLogo from '@renderer/assets/claude.svg?url';
+import copilotLogo from '@renderer/assets/copilot.svg?url';
 import geminiLogo from '@renderer/assets/gemini.png';
-import ollamaLogo from '@renderer/assets/ollama.svg';
+import ollamaLogo from '@renderer/assets/ollama.svg?url';
 import { Badge } from '@renderer/components/ui/badge';
 import { Button } from '@renderer/components/ui/button';
 import { Input } from '@renderer/components/ui/input';
@@ -196,12 +196,10 @@ function ProviderIdentity({
                     src={logo}
                     alt=""
                     className={cn(
-                        'h-7 w-7 object-contain',
-                        LOGO_INVERT_PROVIDERS.has(providerId) && 'theme-logo-invert'
+                        'h-7 w-7 object-contain transition-all duration-300',
+                        !['antigravity', 'gemini', 'huggingface', 'nvidia'].includes(providerId) && 'theme-logo-invert',
+                        LOGO_INVERT_PROVIDERS.has(providerId) ? 'opacity-90' : 'opacity-60'
                     )}
-                    onError={event => {
-                        event.currentTarget.style.display = 'none';
-                    }}
                 />
             ) : IconComponent ? (
                 <IconComponent className="h-6 w-6 text-foreground/80" />
@@ -231,6 +229,7 @@ interface AccountsTabProps {
     deviceCodeModal?: DeviceCodeModalState
     closeDeviceCodeModal?: () => void
     setManualSessionModal: (state: import('./ManualSessionModal').ManualSessionModalState) => void
+    linkAccount?: (provider: string, tokenData: { key?: string; accessToken?: string; metadata?: Record<string, unknown> }) => Promise<void>
     t: (key: string) => string
 }
 
@@ -595,31 +594,30 @@ const ApiKeyProvidersSection = React.memo(({
     settings,
     setSettings,
     handleSave,
+    linkedAccounts,
     t
 }: {
     settings: AppSettings
     setSettings: (s: AppSettings) => Promise<void>
     handleSave: (s?: AppSettings) => Promise<void>
+    linkedAccounts: UseLinkedAccountsResult
     t: (k: string) => string
 }) => {
-    // ... same logic for getApiKeys, handleAddKey, handleRemoveKey ...
     const getApiKeys = (providerId: ApiKeyProviderConfig['id']): string[] => {
-        const provider = settings[providerId];
-        if (!provider) {
-            return [];
-        }
-        if ('apiKeys' in provider && Array.isArray(provider.apiKeys)) {
-            return provider.apiKeys;
-        }
-        if ('apiKey' in provider && typeof provider.apiKey === 'string' && provider.apiKey) {
-            return [provider.apiKey];
-        }
-        return [];
+        // API keys are database-backed; renderer only shows masked account entries.
+        const dbAccounts = linkedAccounts.getAccountsByProvider(providerId);
+        return dbAccounts.map(_a => '••••••••');
     };
 
-    const handleAddKey = (providerId: ApiKeyProviderConfig['id'], key: string) => {
-        const currentKeys = getApiKeys(providerId);
-        const newKeys = [...currentKeys, key];
+    const handleAddKey = async (providerId: ApiKeyProviderConfig['id'], key: string) => {
+        if (linkedAccounts.linkAccount) {
+            await linkedAccounts.linkAccount(providerId, { 
+                key,
+                accessToken: key,
+                metadata: { type: 'api_key', auth_type: 'api_key' }
+            });
+        }
+        
         const defaultModels: Record<string, string> = {
             openai: 'gpt-4o', anthropic: 'claude-3-5-sonnet-20240620', gemini: 'gemini-1.5-pro',
             mistral: 'mistral-large-latest', groq: 'llama-3.1-70b-versatile', together: 'meta-llama/Llama-3-70b-chat-hf',
@@ -631,7 +629,8 @@ const ApiKeyProvidersSection = React.memo(({
             ...settings,
             [providerId]: {
                 ...settings[providerId],
-                apiKeys: newKeys,
+                apiKeys: [],
+                apiKey: '',
                 model: settings[providerId]?.model ?? defaultModels[providerId] ?? ''
             }
         };
@@ -639,21 +638,10 @@ const ApiKeyProvidersSection = React.memo(({
         void handleSave(nextSettings);
     };
 
-    const handleRemoveKey = (providerId: ApiKeyProviderConfig['id'], index: number) => {
-        const currentKeys = getApiKeys(providerId);
-        const newKeys = currentKeys.filter((_, i) => i !== index);
-        if (newKeys.length === 0) {
-            const newSettings = { ...settings };
-            delete newSettings[providerId];
-            void setSettings(newSettings);
-            void handleSave(newSettings);
-        } else {
-            const nextSettings = {
-                ...settings,
-                [providerId]: { ...settings[providerId], apiKeys: newKeys }
-            };
-            void setSettings(nextSettings);
-            void handleSave(nextSettings);
+    const handleRemoveKey = async (providerId: ApiKeyProviderConfig['id'], index: number) => {
+        const dbAccounts = linkedAccounts.getAccountsByProvider(providerId);
+        if (dbAccounts[index]) {
+            await linkedAccounts.unlinkAccount(dbAccounts[index].id);
         }
     };
 
@@ -676,8 +664,8 @@ const ApiKeyProvidersSection = React.memo(({
                         key={provider.id}
                         provider={provider}
                         apiKeys={getApiKeys(provider.id)}
-                        onAddKey={(key) => handleAddKey(provider.id, key)}
-                        onRemoveKey={(index) => handleRemoveKey(provider.id, index)}
+                        onAddKey={(key) => { void handleAddKey(provider.id, key); }}
+                        onRemoveKey={(index) => { void handleRemoveKey(provider.id, index); }}
                         t={t}
                     />
                 ))}
@@ -715,7 +703,11 @@ const OllamaSection = React.memo(({
             <div className="group overflow-hidden rounded-2xl border border-border/30 bg-card transition-colors hover:border-border/50">
                 <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:gap-5 sm:p-5">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border/20 bg-muted/30">
-                        <img src={ollamaLogo} alt={t('accounts.providers.ollama.name')} className="h-7 w-7 object-contain theme-logo-invert" />
+                        <img 
+                            src={ollamaLogo} 
+                            alt={t('accounts.providers.ollama.name')} 
+                            className="h-7 w-7 object-contain theme-logo-invert" 
+                        />
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="text-sm font-semibold text-foreground">{t('accounts.providers.ollama.name')}</div>
@@ -955,6 +947,7 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
                     settings={settings}
                     setSettings={setSettings}
                     handleSave={handleSave}
+                    linkedAccounts={linkedAccounts}
                     t={t}
                 />
 

@@ -36,8 +36,7 @@ import { Workspace } from '@/types';
 import { toSafeFileUrl } from '@/utils/safe-file-url.util';
 
 /* Batch-02: Extracted Long Classes */
-const C_WORKSPACECARD_1 = "w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary overflow-hidden shadow-inner border border-border/50 ml-6";
-
+const C_WORKSPACECARD_1 = "w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-muted-foreground overflow-hidden shadow-inner border border-border/50";
 
 interface WorkspaceCardSurfaceContextValue {
     activeMenuId: string | null
@@ -87,15 +86,26 @@ const WorkspaceSelectionCheckbox: React.FC<{ isSelected?: boolean; onToggle?: ()
     return (
         <div
             className={cn(
-                "absolute top-3 left-3 z-10 transition-all duration-300",
+                "absolute top-3 left-3 z-30 transition-all duration-300",
                 isSelected ? "opacity-100 scale-100" : "opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100"
             )}
+            onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }}
+            onMouseDown={(e) => {
+                e.stopPropagation();
+            }}
         >
             <Checkbox
                 checked={isSelected}
-                onCheckedChange={() => onToggle?.()}
+                onCheckedChange={(checked) => {
+                    if (checked !== isSelected) {
+                        onToggle?.();
+                    }
+                }}
                 aria-label={t('common.select')}
-                className="w-5 h-5"
+                className="w-5 h-5 border-border/60 data-[state=checked]:bg-primary data-[state=checked]:border-primary transition-all"
             />
         </div>
     );
@@ -119,15 +129,18 @@ const WorkspaceCardMenu: React.FC<{ workspace: Workspace }> = ({ workspace }) =>
                     variant="ghost"
                     size="icon"
                     className={cn(
-                        "h-8 w-8 rounded-md text-muted-foreground hover:text-foreground transition-colors",
-                        showMenu ? "opacity-100 bg-muted/30 text-foreground" : "opacity-0 group-hover:opacity-100"
+                        "h-8 w-8 rounded-md text-muted-foreground hover:text-foreground transition-all hover:bg-muted/80 active:scale-95",
+                        showMenu ? "opacity-100 bg-muted text-foreground" : "opacity-0 group-hover:opacity-100"
                     )}
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                    }}
                 >
                     <MoreVertical className="w-4 h-4" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuContent align="end" className="w-40 border-border/40 shadow-xl">
                 <DropdownMenuItem onClick={() => onEdit(workspace)}>
                     <Pencil className="mr-2 h-3.5 w-3.5 text-primary" />
                     <span>{t('common.edit')}</span>
@@ -153,11 +166,11 @@ const WorkspaceCardMenu: React.FC<{ workspace: Workspace }> = ({ workspace }) =>
 };
 
 const WorkspaceCardInfo: React.FC<{ workspace: Workspace }> = ({ workspace }) => (
-    <div className="flex-1 min-w-0">
-        <h3 className="text-base font-bold text-foreground truncate">
+    <div className="flex-1 min-w-0 space-y-1">
+        <h3 className="text-lg font-bold text-foreground truncate tracking-tight">
             {workspace.title}
         </h3>
-        <p className="typo-caption text-muted-foreground/60 truncate mt-1 font-mono">
+        <p className="text-[11px] text-muted-foreground/40 whitespace-pre font-mono bg-muted/20 px-2 py-0.5 rounded-md inline-block max-w-full overflow-hidden text-ellipsis">
             {workspace.path}
         </p>
     </div>
@@ -170,31 +183,69 @@ const WorkspaceCardFooter: React.FC<{ workspace: Workspace }> = ({ workspace }) 
         archived: 'workspaces.statusArchived',
         draft: 'workspaces.statusDraft'
     };
+    
+    // Default workspaces don't need an 'Active' badge as it's clear they are current
+    const showStatus = workspace.status !== 'active';
+
     return (
-        <div className="pt-4 border-t border-border/40 mt-auto flex items-center justify-between typo-caption text-muted-foreground">
-            <span className="flex items-center gap-1.5">
+        <div className="pt-4 border-t border-border/20 mt-auto flex items-center justify-between text-[11px] text-muted-foreground/50">
+            <span className="flex items-center gap-1.5 font-medium">
                 <Calendar className="w-3.5 h-3.5" />
                 {new Date(workspace.createdAt).toLocaleDateString()}
             </span>
-            <span className={cn("px-2 py-0.5 rounded-full bg-muted/50  text-xxs font-bold ", workspace.status === 'active' ? "text-success" : "")}>
-                {t(statusTranslationKey[workspace.status])}
-            </span>
+            {showStatus && (
+                <div className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-muted/50 border border-border/40 text-muted-foreground/80">
+                    {t(statusTranslationKey[workspace.status])}
+                </div>
+            )}
         </div>
     );
 };
 
-const WorkspaceLogo: React.FC<{ workspace: Workspace }> = ({ workspace }) => {
+const WorkspaceLogo: React.FC<{ workspace: Workspace; className?: string }> = ({ workspace, className }) => {
+    const [error, setError] = React.useState(false);
     const baseLogoUrl = toSafeFileUrl(workspace.logo);
-    const logoUrl = baseLogoUrl ? `${baseLogoUrl}?v=${workspace.updatedAt}` : null;
+    const logoUrl = baseLogoUrl && !error ? (baseLogoUrl.startsWith('data:') ? baseLogoUrl : `${baseLogoUrl}?v=${workspace.updatedAt}`) : null;
+    
     if (!logoUrl) {
-        return <Terminal className="w-5 h-5" />;
+        return <Terminal className={cn("w-5 h-5 text-muted-foreground/50", className)} />;
     }
 
-    return <img src={logoUrl} alt={workspace.title} className="w-full h-full object-cover" />;
+    return (
+        <img 
+            src={logoUrl} 
+            alt={workspace.title} 
+            className={cn("w-full h-full object-cover", className)} 
+            onError={() => setError(true)}
+        />
+    );
+};
+
+const WorkspaceBackgroundLogo: React.FC<{ workspace: Workspace }> = ({ workspace }) => {
+    const [error, setError] = React.useState(false);
+    const baseLogoUrl = toSafeFileUrl(workspace.logo);
+    const logoUrl = baseLogoUrl && !error ? (baseLogoUrl.startsWith('data:') ? baseLogoUrl : `${baseLogoUrl}?v=${workspace.updatedAt}`) : null;
+    
+    if (!logoUrl) {
+        return (
+            <div className="absolute -right-4 -bottom-4 opacity-[0.02] text-foreground pointer-events-none select-none rotate-12 z-0">
+                <Terminal size={140} strokeWidth={1} />
+            </div>
+        );
+    }
+
+    return (
+        <img 
+            src={logoUrl} 
+            alt="" 
+            className="absolute -right-8 -bottom-8 w-48 h-48 opacity-[0.04] grayscale brightness-0 invert pointer-events-none select-none rotate-12 z-0 object-contain transition-all duration-700 blur-[1px] group-hover:scale-110 group-hover:rotate-6" 
+            onError={() => setError(true)}
+        />
+    );
 };
 
 const cardContainerClassName = 
-    "group bg-card border border-border/60 rounded-xl p-5 cursor-pointer transition-all hover:shadow-xl hover:shadow-black/5 flex flex-col gap-4 relative overflow-hidden";
+    "group bg-card border border-border/40 rounded-xl p-5 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:shadow-black/10 hover:border-primary/40 flex flex-col gap-5 relative overflow-hidden ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 
 export const WorkspaceCard = memo<WorkspaceCardProps>(({
     workspace, index, isSelected, onToggleSelection
@@ -224,7 +275,7 @@ export const WorkspaceCard = memo<WorkspaceCardProps>(({
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: animationDelay }}
             role="button"
@@ -239,27 +290,34 @@ export const WorkspaceCard = memo<WorkspaceCardProps>(({
             }}
             className={cn(
                 cardContainerClassName,
-                isSelected ? "border-primary/50 bg-primary/5" : "hover:border-foreground/20"
+                isSelected ? "border-primary/50 bg-primary/[0.03] shadow-inner" : ""
             )}
         >
+            <WorkspaceBackgroundLogo workspace={workspace} />
+            
             <WorkspaceSelectionCheckbox isSelected={isSelected} onToggle={onToggleSelection} />
 
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between relative z-10">
                 <div className={C_WORKSPACECARD_1}>
                     <WorkspaceLogo workspace={workspace} />
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <ArrowRight className="w-5 h-5 text-muted-foreground -rotate-44 group-hover:rotate-0 transition-transform duration-300" />
+                    <div className="opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-300">
+                        <ArrowRight className="w-5 h-5 text-muted-foreground/40" />
                     </div>
 
                     <WorkspaceCardMenu workspace={workspace} />
                 </div>
             </div>
 
-            <WorkspaceCardInfo workspace={workspace} />
-            <WorkspaceCardFooter workspace={workspace} />
+            <div className="relative z-10">
+                <WorkspaceCardInfo workspace={workspace} />
+            </div>
+            
+            <div className="relative z-10 mt-auto">
+                <WorkspaceCardFooter workspace={workspace} />
+            </div>
         </motion.div>
     );
 });

@@ -14,25 +14,37 @@ function normalizeSafeFilePath(inputPath: string): string {
         return '';
     }
 
+    // Pass through already valid or prefixed URLs
     if (/^(https?:|data:|blob:)/i.test(trimmedPath)) {
         return trimmedPath;
     }
 
+    // If it's already a safe-file URL, check if it's a valid Windows path inside it
     if (/^safe-file:\/\//i.test(trimmedPath)) {
+        // Fix common Windows path issues inside safe-file://
+        // e.g. safe-file://c/Users -> safe-file:///c:/Users
+        const inner = trimmedPath.replace(/^safe-file:\/+/i, '');
+        if (/^[A-Za-z]\//.test(inner)) {
+             return `safe-file:///${inner[0]}:/${inner.slice(2)}`;
+        }
         return trimmedPath;
     }
 
     const normalizedSlashes = trimmedPath.replace(/\\/g, '/');
-    const encodedPath = encodeURI(normalizedSlashes);
+    
+    // Windows absolute path: C:/...
     if (/^[A-Za-z]:\//.test(normalizedSlashes)) {
-        return `safe-file:///${encodedPath}`;
+        // Use 3 slashes for absolute Windows paths: safe-file:///C:/...
+        return `safe-file:///${encodeURI(normalizedSlashes)}`;
     }
 
+    // Unix absolute path: /usr/...
     if (normalizedSlashes.startsWith('/')) {
-        return `safe-file://${encodedPath}`;
+        return `safe-file://${encodeURI(normalizedSlashes)}`;
     }
 
-    return `safe-file:///${encodedPath}`;
+    // Fallback for other paths - assume they should be absolute-ish
+    return `safe-file:///${encodeURI(normalizedSlashes)}`;
 }
 
 export function toSafeFileUrl(inputPath: string | null | undefined): string | null {

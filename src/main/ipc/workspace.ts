@@ -41,6 +41,7 @@ import {
     WorkspaceIdentitySchema,
     WorkspaceIdSchema,
     WorkspaceRootPathSchema,
+    LargeDataUriSchema,
 } from '@shared/schemas/service-hardening.schema';
 import { dialog, ipcMain } from 'electron';
 import { z } from 'zod';
@@ -704,8 +705,8 @@ export const registerWorkspaceIpc = (
                 }
             },
             {
-                argsSchema: z.tuple([WorkspaceRootPathSchema, WorkspaceRootPathSchema]),
-                responseSchema: z.string().max(4096),
+                argsSchema: z.tuple([WorkspaceRootPathSchema, LargeDataUriSchema]),
+                responseSchema: LargeDataUriSchema,
                 wrapResponse: true
             }
         )
@@ -817,7 +818,7 @@ export const registerWorkspaceIpc = (
             },
             {
                 argsSchema: z.tuple([WorkspaceRootPathSchema]),
-                responseSchema: z.string().max(4096).nullable(),
+                responseSchema: LargeDataUriSchema.nullable(),
                 wrapResponse: true
             }
         )

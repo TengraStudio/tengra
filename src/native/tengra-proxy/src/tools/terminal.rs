@@ -49,28 +49,49 @@ async fn run_command(state: Arc<AppState>, arguments: Value) -> ToolDispatchResp
 
     let session_id = arguments.get("session_id").and_then(|v| v.as_str());
 
-    let session = if let Some(id) = session_id {
-        state.terminal_manager.get_session(id)
+    let session: Arc<crate::terminal::TerminalSession> = if let Some(id) = session_id {
+        if let Some(s) = state.terminal_manager.get_session(id) {
+            s
+        } else {
+            // Session IDs can go stale (app reload / cleanup). Fall back to a fresh session.
+            match state.terminal_manager.create_session(cwd, None) {
+                Ok(new_id) => match state.terminal_manager.get_session(&new_id) {
+                    Some(s) => s,
+                    None => {
+                        return ToolDispatchResponse {
+                            success: false,
+                            result: None,
+                            error: Some("Terminal session not found".to_string()),
+                        }
+                    }
+                },
+                Err(e) => {
+                    return ToolDispatchResponse {
+                        success: false,
+                        result: None,
+                        error: Some(format!("Failed to create terminal session: {}", e)),
+                    }
+                }
+            }
+        }
     } else {
         match state.terminal_manager.create_session(cwd, None) {
-            Ok(id) => state.terminal_manager.get_session(&id),
+            Ok(id) => match state.terminal_manager.get_session(&id) {
+                Some(s) => s,
+                None => {
+                    return ToolDispatchResponse {
+                        success: false,
+                        result: None,
+                        error: Some("Terminal session not found".to_string()),
+                    }
+                }
+            },
             Err(e) => {
                 return ToolDispatchResponse {
                     success: false,
                     result: None,
                     error: Some(format!("Failed to create terminal session: {}", e)),
                 }
-            }
-        }
-    };
-
-    let session: Arc<crate::terminal::TerminalSession> = match session {
-        Some(s) => s,
-        None => {
-            return ToolDispatchResponse {
-                success: false,
-                result: None,
-                error: Some("Terminal session not found".to_string()),
             }
         }
     };
@@ -87,9 +108,10 @@ async fn run_command(state: Arc<AppState>, arguments: Value) -> ToolDispatchResp
         };
     }
 
-    // Wait 1 second to capture initial output for the LLM
+    // Capture a short initial burst of output for the LLM/UI.
+    // Some commands need a bit more than 1s to flush output on Windows.
     let mut output_bytes = Vec::new();
-    let timeout = tokio::time::sleep(std::time::Duration::from_millis(1000));
+    let timeout = tokio::time::sleep(std::time::Duration::from_millis(1500));
     tokio::pin!(timeout);
 
     loop {

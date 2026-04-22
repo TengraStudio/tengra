@@ -477,7 +477,21 @@ Bu aşamada build/lint/type-check/test henüz özellikle çalıştırılmadı. S
 - [x] Remove the legacy main-process `CopilotRateLimitManager` and direct Copilot request stack once all Copilot chat/rate-limit enforcement lives in `tengra-proxy`
 - [x] Remove remaining main-process Antigravity quota-triggered token refresh loop so quota/token authority stays with `tengra-proxy`
 - [x] Remove the final JS-side token refresh/retry paths so 401 handling no longer performs proactive refresh outside `tengra-proxy`
-- [ ] Secure `db-service` localhost port against outside bindings or implement local token authentication
+- [x] Secure `db-service` localhost API routes with local bearer-token authentication shared through `TENGRA_DB_SERVICE_TOKEN` / `%APPDATA%/Tengra/services/db-service.token`; keep `/health` public for readiness probes.
+- [x] Restrict `db-service` raw SQL `/api/v1/query` with a statement policy that blocks multi-statement SQL, `ATTACH`/`DETACH`, dangerous `PRAGMA`, and schema mutation unless an explicit internal migration marker is present.
+- [ ] Convert `db-service` handlers from always-200 `{ success: false }` responses to typed HTTP statuses for validation, not-found, auth, and database failures.
+- [ ] Move blocking SQLite work in `db-service` behind `spawn_blocking`, a write queue, or a read/write connection pool so long queries do not block the async runtime.
+- [ ] Add sqlite vector-search acceleration or an indexed approximate-search strategy for semantic/code searches; cap embedding dimensions and request limits before scanning.
+- [ ] Add request body limits, response/output caps, and per-route timeouts to both native services, especially file download/unzip, raw query, chat proxying, and tool dispatch routes.
+- [ ] Add `db-service` migration hardening: per-migration transaction wrapper, checksum/version validation, startup integrity checks, and fixture tests for legacy schema repair.
+- [ ] Split oversized native service modules (`db-service/src/database.rs`, `tengra-proxy/src/db/mod.rs`, `tengra-proxy/src/proxy/model_service.rs`) into focused repository/provider/migration modules.
+- [ ] Add Rust tests for `db-service` CRUD, migration, raw query auth, query policy, vector search, and error-status behavior; current db-service test suite has no functional tests.
+- [x] Research how the existing Electron workspace-agent/MCP permission systems should map onto native `tengra-proxy` `/v0/tools/dispatch` before adding or changing per-tool enforcement there. Current finding: native proxy tools are registered as internal MCP plugins in Electron; Rust proxy has API-key auth middleware only, while MCP action permission state lives in `mcpActionPermissions` / `mcpPermissionRequests`.
+- [x] Route native proxy tool calls through the existing main-process MCP action permission engine before `NativeMcpPlugin` forwards them to `tengra-proxy` `/v0/tools/dispatch`.
+- [x] Add settings UI controls for per-action permissions on internal/native MCP tools instead of showing them as immutable full-access entries.
+- [x] Replace production `unwrap()` calls in native proxy filesystem extraction/unzip handlers with structured `ToolDispatchResponse` errors.
+- [x] Replace production `unwrap()`/`expect()` calls in native proxy git tool handlers with structured `ToolDispatchResponse` errors.
+- [ ] Add workspace-root/path policy enforcement for native filesystem and terminal handlers now that action-level permission ownership is in the main-process MCP dispatcher.
 - [x] Migrate `token_data` storage in DB from plaintext to AES/Keychain encrypted blobs
 - [x] Optimize sequential `reqwest` DB calls in the proxy auth handlers (lazy caching)
 - [x] Add OpenAI bridge readiness endpoint (`/api/auth/oauth/bridge/readiness`) reporting bind status and target route health.

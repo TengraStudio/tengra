@@ -103,7 +103,7 @@ export function registerSettingsIpc(options: {
     updateOpenAIConnection: () => void
     updateOllamaConnection: () => void | Promise<void>
 }) {
-    const { getMainWindow, settingsService, llmService, copilotService, auditLogService, updateOpenAIConnection, updateOllamaConnection } = options;
+    const { getMainWindow, settingsService, copilotService, auditLogService, updateOpenAIConnection, updateOllamaConnection } = options;
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'settings operation');
     const settingsTelemetry = {
         getCount: 0,
@@ -232,9 +232,7 @@ export function registerSettingsIpc(options: {
     }
 
     function updateServices(finalSettings: AppSettings, newSettings: AppSettings) {
-        if (finalSettings.openai?.apiKey) { llmService.setOpenAIApiKey(finalSettings.openai.apiKey); }
-        if (finalSettings.anthropic?.apiKey) { llmService.setAnthropicApiKey(finalSettings.anthropic.apiKey); }
-        if (newSettings.groq?.apiKey) { llmService.setGroqApiKey(newSettings.groq.apiKey); }
+        void newSettings;
         if (finalSettings.github?.token) { copilotService.setGithubToken(finalSettings.github.token); }
     }
 

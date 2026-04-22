@@ -12,11 +12,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
+import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
 import { RuntimeValue } from '@shared/types/common';
 import { AntigravityCreditUsageMode, AppSettings } from '@shared/types/settings';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { app } from 'electron';
 
 const DEFAULT_SETTINGS: AppSettings = {
     ollama: {
@@ -211,6 +211,27 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 const ANTIGRAVITY_CREDIT_USAGE_MODES: readonly AntigravityCreditUsageMode[] = ['auto', 'ask-every-time'];
+const API_KEY_PROVIDER_PATHS = [
+    'openai',
+    'claude',
+    'anthropic',
+    'gemini',
+    'mistral',
+    'groq',
+    'together',
+    'perplexity',
+    'cohere',
+    'xai',
+    'deepseek',
+    'openrouter',
+    'nvidia',
+] as const;
+type TokenSyncKind = 'oauth' | 'api_key';
+interface TokenSyncMapping {
+    provider: string;
+    token: string;
+    kind?: TokenSyncKind;
+}
 
 function isAntigravityCreditUsageMode(value: RuntimeValue): value is AntigravityCreditUsageMode {
     return typeof value === 'string'
@@ -290,7 +311,7 @@ export class SettingsService extends BaseService {
         if (dataService) {
             this.settingsPath = path.join(dataService.getPath('config'), 'settings.json');
         } else {
-            this.settingsPath = path.join(app.getPath('userData'), 'settings.json');
+            this.settingsPath = getDataFilePath('config', 'settings.json');
         }
 
         this.settings = { ...DEFAULT_SETTINGS };
@@ -307,6 +328,8 @@ export class SettingsService extends BaseService {
         // Proactively sync tokens from settings to AuthService
         if (this.authService) {
             await this.syncAllTokensToAuth();
+            this.stripProviderApiKeys(this.settings);
+            await this.persistSettingsToDisk();
         }
 
         appLogger.info('SettingsService', 'Initialized successfully');
@@ -557,8 +580,6 @@ export class SettingsService extends BaseService {
             enabled: loaded?.enabled ?? def.enabled,
             url: loaded?.url ?? def.url,
             key: token,
-            apiKey: loaded?.apiKey,
-            managementPassword: loaded?.managementPassword,
             port: loaded?.port,
             authStoreKey: loaded?.authStoreKey,
         };
@@ -741,6 +762,7 @@ export class SettingsService extends BaseService {
 
         if (this.authService) {
             await this.syncTokensToAuth(newSettings, currentSettings);
+            this.stripProviderApiKeys(this.settings);
         }
 
         const persisted = await this.persistSettingsToDisk();
@@ -768,10 +790,8 @@ export class SettingsService extends BaseService {
         }
 
         const mappings = this.getTokenMappings(newSettings, oldSettings);
-        for (const [key, val] of Object.entries(mappings)) {
-            if (val) {
-                await this.authService.linkAccount(key, { accessToken: val });
-            }
+        for (const item of mappings) {
+            await this.syncProviderToken(item.provider, item.token, item.kind);
         }
     }
 
@@ -786,23 +806,33 @@ export class SettingsService extends BaseService {
         }
 
         const settings = this.getSettings();
-        const providers: Record<string, string | undefined> = {
-            openai_key: settings.openai?.apiKey,
-            anthropic_key: settings.anthropic?.apiKey,
-            groq_key: settings.groq?.apiKey,
-            nvidia_key: settings.nvidia?.apiKey,
-            proxy_key: settings.proxy?.key,
-            remote_discord: settings.remoteAccounts?.discord?.token,
-            remote_telegram: settings.remoteAccounts?.telegram?.token,
-            remote_whatsapp: settings.remoteAccounts?.whatsapp?.token,
-        };
 
-        for (const [providerKey, token] of Object.entries(providers)) {
-            await this.syncProviderToken(providerKey, token);
+        const staticTokenMappings: Array<{ provider: string; token: string | undefined }> = [
+            { provider: 'github', token: settings.github?.token },
+            { provider: 'copilot', token: settings.copilot?.token },
+            { provider: 'antigravity', token: settings.antigravity?.token },
+            { provider: 'proxy_key', token: settings.proxy?.key },
+            { provider: 'remote_discord', token: settings.remoteAccounts?.discord?.token },
+            { provider: 'remote_telegram', token: settings.remoteAccounts?.telegram?.token },
+            { provider: 'remote_whatsapp', token: settings.remoteAccounts?.whatsapp?.token },
+        ];
+        for (const mapping of staticTokenMappings) {
+            await this.syncProviderToken(mapping.provider, mapping.token);
+        }
+
+        for (const provider of API_KEY_PROVIDER_PATHS) {
+            const providerSettings = settings[provider] as RuntimeValue;
+            for (const token of this.extractProviderApiKeys(providerSettings)) {
+                await this.syncProviderToken(provider, token, 'api_key');
+            }
         }
     }
 
-    private async syncProviderToken(providerKey: string, token: string | undefined): Promise<void> {
+    private async syncProviderToken(
+        providerKey: string,
+        token: string | undefined,
+        kind: TokenSyncKind = 'oauth'
+    ): Promise<void> {
         if (!this.authService || !token || token.length <= 5 || token === 'connected') {
             return;
         }
@@ -818,7 +848,12 @@ export class SettingsService extends BaseService {
                     'SettingsService',
                     `Syncing token for ${providerKey} to AuthService`
                 );
-                await this.authService.linkAccount(providerKey, { accessToken: token });
+                await this.authService.linkAccount(providerKey, {
+                    accessToken: token,
+                    metadata: kind === 'api_key'
+                        ? { type: 'api_key', auth_type: 'api_key' }
+                        : { auth_type: 'oauth' }
+                });
             }
         } catch (error) {
             appLogger.warn(
@@ -831,47 +866,63 @@ export class SettingsService extends BaseService {
     private getTokenMappings(
         newSettings: Partial<AppSettings>,
         oldSettings: AppSettings
-    ): Record<string, string | undefined> {
-        const mappings: Record<string, string | undefined> = {};
+    ): TokenSyncMapping[] {
+        const mappings: TokenSyncMapping[] = [];
 
         this.addCoreMappings(mappings, newSettings, oldSettings);
         this.addProviderMappings(mappings, newSettings, oldSettings);
-
         return mappings;
     }
 
     private addCoreMappings(
-        mappings: Record<string, string | undefined>,
+        mappings: TokenSyncMapping[],
         newSettings: Partial<AppSettings>,
         oldSettings: AppSettings
     ): void {
         this.checkTokenMapping(
             mappings,
-            'github_token',
+            'github',
             newSettings.github?.token,
             oldSettings.github?.token
         );
         this.checkTokenMapping(
             mappings,
-            'copilot_token',
+            'copilot',
             newSettings.copilot?.token,
             oldSettings.copilot?.token
+        );
+        this.checkTokenMapping(
+            mappings,
+            'antigravity',
+            newSettings.antigravity?.token,
+            oldSettings.antigravity?.token
         );
     }
 
     private addProviderMappings(
-        mappings: Record<string, string | undefined>,
+        mappings: TokenSyncMapping[],
         newSettings: Partial<AppSettings>,
         oldSettings: AppSettings
     ): void {
-        const { openai, anthropic, groq, nvidia, proxy } = newSettings;
-        const { openai: oO, anthropic: oA, groq: oG, nvidia: oN, proxy: oP } = oldSettings;
+        const { proxy } = newSettings;
+        const { proxy: oP } = oldSettings;
 
-        this.checkTokenMapping(mappings, 'openai_key', openai?.apiKey, oO?.apiKey);
-        this.checkTokenMapping(mappings, 'anthropic_key', anthropic?.apiKey, oA?.apiKey);
-        this.checkTokenMapping(mappings, 'groq_key', groq?.apiKey, oG?.apiKey);
-        this.checkTokenMapping(mappings, 'nvidia_key', nvidia?.apiKey, oN?.apiKey);
         this.checkTokenMapping(mappings, 'proxy_key', proxy?.key, oP?.key);
+
+        for (const provider of API_KEY_PROVIDER_PATHS) {
+            const newProviderConfig = newSettings[provider] as RuntimeValue;
+            if (newProviderConfig === undefined) {
+                continue;
+            }
+
+            const oldProviderConfig = oldSettings[provider] as RuntimeValue;
+            const oldKeys = new Set(this.extractProviderApiKeys(oldProviderConfig));
+            for (const key of this.extractProviderApiKeys(newProviderConfig)) {
+                if (!oldKeys.has(key)) {
+                    mappings.push({ provider, token: key, kind: 'api_key' });
+                }
+            }
+        }
 
         if (newSettings.remoteAccounts) {
             const { discord, telegram, whatsapp } = newSettings.remoteAccounts;
@@ -883,14 +934,44 @@ export class SettingsService extends BaseService {
     }
 
     private checkTokenMapping(
-        mappings: Record<string, string | undefined>,
+        mappings: TokenSyncMapping[],
         key: string,
         newVal: string | undefined,
         oldVal: string | undefined
     ): void {
         if (newVal && newVal !== oldVal && newVal !== 'connected') {
-            mappings[key] = newVal;
+            mappings.push({ provider: key, token: newVal, kind: 'oauth' });
         }
+    }
+
+    private extractProviderApiKeys(value: RuntimeValue): string[] {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+            return [];
+        }
+
+        const providerValue = value as Record<string, RuntimeValue>;
+        const result: string[] = [];
+
+        if (typeof providerValue.apiKey === 'string') {
+            const apiKey = providerValue.apiKey.trim();
+            if (apiKey) {
+                result.push(apiKey);
+            }
+        }
+
+        if (Array.isArray(providerValue.apiKeys)) {
+            for (const key of providerValue.apiKeys) {
+                if (typeof key !== 'string') {
+                    continue;
+                }
+                const normalized = key.trim();
+                if (normalized) {
+                    result.push(normalized);
+                }
+            }
+        }
+
+        return [...new Set(result)];
     }
 
     private async persistSettingsToDisk(): Promise<boolean> {
@@ -945,6 +1026,7 @@ export class SettingsService extends BaseService {
         if (settings.nvidia) {
             settings.nvidia.apiKey = '';
         }
+        this.stripProviderApiKeys(settings);
 
         if (settings.remoteAccounts) {
             if (settings.remoteAccounts.discord) {
@@ -974,6 +1056,22 @@ export class SettingsService extends BaseService {
         }
         if (proxy && proxy.key !== 'connected') {
             proxy.key = '';
+        }
+    }
+
+    private stripProviderApiKeys(settings: AppSettings): void {
+        for (const provider of API_KEY_PROVIDER_PATHS) {
+            const providerConfig = settings[provider] as RuntimeValue;
+            if (!providerConfig || typeof providerConfig !== 'object' || Array.isArray(providerConfig)) {
+                continue;
+            }
+            const mutableProvider = providerConfig as Record<string, RuntimeValue>;
+            if ('apiKey' in mutableProvider) {
+                mutableProvider.apiKey = '';
+            }
+            if ('apiKeys' in mutableProvider) {
+                mutableProvider.apiKeys = [];
+            }
         }
     }
 
@@ -1213,7 +1311,16 @@ export class SettingsService extends BaseService {
         preserveToken('antigravity');
         preserveToken('openai', 'apiKey');
         preserveToken('anthropic', 'apiKey');
+        preserveToken('claude', 'apiKey');
+        preserveToken('gemini', 'apiKey');
+        preserveToken('mistral', 'apiKey');
         preserveToken('groq', 'apiKey');
+        preserveToken('together', 'apiKey');
+        preserveToken('perplexity', 'apiKey');
+        preserveToken('cohere', 'apiKey');
+        preserveToken('xai', 'apiKey');
+        preserveToken('deepseek', 'apiKey');
+        preserveToken('openrouter', 'apiKey');
         preserveToken('nvidia', 'apiKey');
         preserveToken('proxy', 'key');
 
@@ -1234,9 +1341,6 @@ export class SettingsService extends BaseService {
         const newProxy = newSettings.proxy;
         const oldProxy = this.settings.proxy;
         if (newProxy && oldProxy) {
-            newProxy.apiKey = newProxy.apiKey ?? oldProxy.apiKey;
-            newProxy.managementPassword =
-                newProxy.managementPassword ?? oldProxy.managementPassword;
             newProxy.authStoreKey = newProxy.authStoreKey ?? oldProxy.authStoreKey;
             newProxy.port = newProxy.port ?? oldProxy.port;
         }

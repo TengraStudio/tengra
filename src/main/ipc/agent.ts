@@ -19,7 +19,6 @@ import {
     AgentDeleteOptionsSchema,
     AgentDeleteResultSchema,
     AgentOperationResultSchema,
-    AgentTemplateSchema,
     AgentValidationResultSchema
 } from '@shared/schemas/service-hardening.schema';
 import { BrowserWindow, ipcMain } from 'electron';
@@ -146,14 +145,6 @@ export function registerAgentIpc(getMainWindow: () => BrowserWindow | null, agen
     /**
      * Get the built-in and user-defined templates library
      */
-    ipcMain.handle('agent:get-templates-library', createValidatedIpcHandler('agent:get-templates-library', async (event): Promise<z.infer<typeof AgentTemplateSchema>[]> => {
-        validateSender(event);
-        return await agentService.getAgentTemplatesLibrary();
-    }, {
-        defaultValue: [],
-        responseSchema: z.array(AgentTemplateSchema),
-        wrapResponse: true
-    }));
 
     /**
      * Validate an agent template before creation

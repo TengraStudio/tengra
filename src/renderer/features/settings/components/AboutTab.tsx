@@ -90,7 +90,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                     <Button
                         variant="outline"
                         onClick={() =>
-                            window.electron.openExternal('https://github.com/agnes0912491/Tengra')
+                            window.electron.openExternal('https://github.com/TengraStudio/tengra')
                         }
                         className={C_ABOUTTAB_3}
                     >
@@ -100,7 +100,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                     <Button
                         variant="outline"
                         onClick={() =>
-                            window.electron.openExternal('https://github.com/agnes0912491/Tengra')
+                            window.electron.openExternal('https://github.com/TengraStudio/tengra')
                         }
                         className={C_ABOUTTAB_4}
                     >

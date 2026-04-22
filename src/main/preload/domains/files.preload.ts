@@ -42,6 +42,7 @@ export interface FilesBridge {
     copyPath: (sourcePath: string, destinationPath: string) => Promise<FileWriteResponse>;
     renamePath: (oldPath: string, newPath: string) => Promise<FileWriteResponse>;
     searchFiles: (rootPath: string, pattern: string) => Promise<SearchFilesResponse>;
+    revertFileChange: (diffId: string) => Promise<{ success: boolean; error?: string }>;
     searchFilesStream: (
         rootPath: string,
         pattern: string,
@@ -77,6 +78,7 @@ export function createFilesBridge(ipc: IpcRenderer): FilesBridge {
             ipc.invoke('files:copyPath', sourcePath, destinationPath),
         renamePath: (oldPath: string, newPath: string) => ipc.invoke('files:renamePath', oldPath, newPath),
         searchFiles: (rootPath: string, pattern: string) => ipc.invoke('files:searchFiles', rootPath, pattern),
+        revertFileChange: (diffId: string) => ipc.invoke('files:revertFileChange', diffId),
         searchFilesStream: (rootPath, pattern, onResult, onComplete) => {
             const jobId = Math.random().toString(36).substring(7);
             const listener = (_event: IpcRendererEvent, path: string) => onResult(path);

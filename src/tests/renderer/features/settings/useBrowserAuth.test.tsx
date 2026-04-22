@@ -31,6 +31,7 @@ function createLinkedAccountsMock(): UseLinkedAccountsResult {
         refreshAccounts: vi.fn().mockResolvedValue(undefined),
         unlinkAccount: vi.fn().mockResolvedValue(undefined),
         setActiveAccount: vi.fn().mockResolvedValue(undefined),
+        linkAccount: vi.fn().mockResolvedValue(undefined),
     };
 }
 

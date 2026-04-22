@@ -9,20 +9,8 @@
  */
 
 import { JsonObject, JsonValue } from '@shared/types/common';
-import {
-    ChevronDown,
-    CircleAlert,
-    FileText,
-    Github,
-    ListFilter,
-    Loader2,
-    Search,
-    TerminalSquare,
-    Wrench,
-} from 'lucide-react';
+import { ChevronDown, Loader2 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 
 import { UI_PRIMITIVES } from '@/constants/ui-primitives';
 import { navigateToWorkspace } from '@/features/workspace/utils/workspace-navigation';
@@ -68,6 +56,58 @@ const FriendlyToolNames: Record<string, string> = {
     'list_files': 'analyzingProject',
     'search_files': 'searchingFiles',
 };
+
+function normalizeToolName(toolName: string, args: JsonObject): string {
+    // Tool calls may come through directly (read_file) or via MCP (mcp__filesystem__read).
+    switch (toolName) {
+        case 'mcp__filesystem__read':
+            return 'read_file';
+        case 'mcp__filesystem__write':
+            return Array.isArray(args.files) ? 'write_files' : 'write_file';
+        case 'mcp__filesystem__list':
+            return 'list_directory';
+        case 'mcp__terminal__run_command':
+            return 'execute_command';
+        case 'mcp__web__search':
+            return 'search_web';
+        default:
+            return toolName;
+    }
+}
+
+function getFilePathsFromArgs(args: JsonObject): string[] {
+    const paths: string[] = [];
+    if (Array.isArray(args.files)) {
+        for (const f of args.files) {
+            if (!f || typeof f !== 'object' || Array.isArray(f)) {
+                continue;
+            }
+            const fileRecord = f as JsonObject;
+            const path = typeof fileRecord.path === 'string'
+                ? fileRecord.path
+                : (typeof fileRecord.file === 'string' ? fileRecord.file : '');
+            if (path.trim().length > 0) {
+                paths.push(path);
+            }
+        }
+    }
+    const primary = getPrimaryPath(args);
+    if (primary.trim().length > 0) {
+        paths.push(primary);
+    }
+    return Array.from(new Set(paths));
+}
+
+function summarizeNameList(names: string[], max: number = 3): string {
+    const cleaned = names.map(n => n.trim()).filter(Boolean);
+    if (cleaned.length === 0) {
+        return '';
+    }
+    if (cleaned.length <= max) {
+        return cleaned.join(', ');
+    }
+    return `${cleaned.slice(0, max).join(', ')} +${cleaned.length - max}`;
+}
 
 function getPrimaryPath(args: JsonObject): string {
     if (Array.isArray(args.files) && args.files.length > 0) {
@@ -149,7 +189,22 @@ function getToolSummaryText(
     t: Translator
 ): string {
     const toolName = toolCall.name;
+    const filePaths = getFilePathsFromArgs(toolCall.arguments);
+    const fileNames = filePaths.map(summarizePathValue).filter(Boolean);
+    const fileList = summarizeNameList(fileNames);
+    const primaryPath = summarizePathValue(getPrimaryPath(toolCall.arguments));
+
     if (isExecuting) {
+        if (toolName === 'read_file') {
+            const path = primaryPath || fileList;
+            return path ? t('tools.analyzingFile', { path }) : t('tools.readingFiles');
+        }
+        if (toolName === 'list_directory' || toolName === 'list_files' || toolName === 'list_dir') {
+            return primaryPath ? t('tools.analyzingPath', { path: primaryPath }) : t('tools.analyzingProject');
+        }
+        if (toolName === 'write_file' || toolName === 'write_files') {
+            return t('tools.writingFiles', { count: fileNames.length || 1 });
+        }
         const key = FriendlyToolNames[toolName] || 'usingTool';
         return t(`tools.${key}`);
     }
@@ -158,37 +213,25 @@ function getToolSummaryText(
         return t('tools.failed');
     }
 
-    const primaryPath = summarizePathValue(getPrimaryPath(toolCall.arguments));
     if (toolName === 'list_directory' || toolName === 'list_files') {
         return t('tools.listDirSummary', {
             count: countResultItems(result?.result ?? []),
-            path: primaryPath,
         });
     }
     if (toolName === 'read_file') {
-        return t('tools.readFileSummary', {
-            count: countResultItems(result?.result ?? ''),
-            path: primaryPath,
-        });
+        return t('tools.readFileSummary', { path: primaryPath });
     }
     if (toolName === 'write_file' || toolName === 'write_files') {
-        return t('tools.writeFileSummary', { path: primaryPath });
+        return t('tools.filesWrittenSummary', {
+            count: fileNames.length || 1,
+            files: fileList || primaryPath,
+        });
     }
     if (toolName === 'patch_file' || toolName === 'edit_file') {
         return t('tools.editFileSummary', { path: primaryPath });
     }
 
     return t('tools.completed');
-}
-
-function getToolIcon(toolName: string): React.ReactNode {
-    if (toolName === 'execute_command') {
-        return <TerminalSquare className="h-4 w-4" />;
-    }
-    if (toolName.includes('search')) {
-        return <Search className="h-4 w-4" />;
-    }
-    return <Wrench className="h-4 w-4" />;
 }
 
 function readToolError(result?: ToolResult): string | undefined {
@@ -229,37 +272,6 @@ function useAutoExpandCommand(
     }, [toolName, isExecuting, execError, execStderr, setExpanded]);
 }
 
-function ToolArguments({ name, args, t }: { name: string; args: JsonObject; t: (key: string) => string }) {
-    if (name === 'read_file' || name === 'write_file') {
-        const pathValue = typeof args.path === 'string'
-            ? args.path
-            : (typeof args.file === 'string' ? args.file : '');
-        return (
-            <div className="inline-flex rounded-md border border-primary/20 bg-primary/10 px-2 py-1 font-mono typo-caption text-primary">
-                {t('tools.path')} {pathValue}
-            </div>
-        );
-    }
-    return (
-        <pre className={UI_PRIMITIVES.CODE_BLOCK}>
-            {JSON.stringify(args, null, 2)}
-        </pre>
-    );
-}
-
-function extractStringContent(result: JsonValue): string {
-    if (typeof result === 'string') {
-        return result;
-    }
-    if (result && typeof result === 'object' && !Array.isArray(result)) {
-        const content = (result as JsonObject).content;
-        if (typeof content === 'string') {
-            return content;
-        }
-    }
-    return '';
-}
-
 function extractSearchResults(result: JsonValue): JsonObject[] {
     if (!result || typeof result !== 'object' || Array.isArray(result)) {
         return [];
@@ -269,6 +281,48 @@ function extractSearchResults(result: JsonValue): JsonObject[] {
         return [];
     }
     return resultsValue.filter((item): item is JsonObject => !!item && typeof item === 'object' && !Array.isArray(item));
+}
+
+type DirectoryEntry = { name: string; isDirectory: boolean };
+
+function extractDirectoryEntries(result: JsonValue): DirectoryEntry[] {
+    if (!result || typeof result !== 'object' || Array.isArray(result)) {
+        return [];
+    }
+    const record = result as JsonObject;
+    const entriesValue = Array.isArray(record.entries)
+        ? record.entries
+        : (Array.isArray(record.files) ? record.files : (Array.isArray(record.items) ? record.items : null));
+
+    if (!entriesValue) {
+        return [];
+    }
+
+    const entries: DirectoryEntry[] = [];
+    for (const entry of entriesValue) {
+        if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+            continue;
+        }
+        const obj = entry as JsonObject;
+        const name = typeof obj.name === 'string'
+            ? obj.name
+            : (typeof obj.path === 'string' ? obj.path : '');
+        if (name.trim().length === 0) {
+            continue;
+        }
+        const isDirectory = Boolean(obj.isDirectory === true || obj.directory === true || obj.type === 'directory');
+        entries.push({ name, isDirectory });
+    }
+    return entries;
+}
+
+function joinPath(basePath: string, segment: string): string {
+    if (basePath.trim().length === 0) {
+        return segment;
+    }
+    const normalizedBase = basePath.replace(/[\\/]+$/, '');
+    const sep = normalizedBase.includes('\\') ? '\\' : '/';
+    return `${normalizedBase}${sep}${segment}`;
 }
 
 function extractImageUrl(result: JsonValue): string | null {
@@ -301,102 +355,50 @@ function FileSystemSummary({ name, args }: { name: string; args: JsonObject }) {
         }
     };
 
-    if (name === 'write_file') {
-        const path = getPath(args);
+    const renderFileButton = (path: string, type: 'diff' | 'editor') => {
         const fileName = path.split(/[\\/]/).pop() || path;
+        if (!path) {
+            return null;
+        }
         return (
-            <div className="flex items-center gap-2 rounded-xl border border-success/20 bg-success/5 px-4 py-3 text-sm">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-success/10 text-success">
-                    <FileText className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                    <button 
-                        onClick={(e) => handleLinkClick(e, 'diff', path)}
-                        className="truncate font-semibold text-success hover:underline transition-all block"
-                    >
-                        {fileName}
-                    </button>
-                </div>
-            </div>
+            <button
+                type="button"
+                onClick={(e) => handleLinkClick(e, type, path)}
+                className="block w-full truncate rounded-md px-2 py-1 text-left text-sm text-foreground/80 hover:bg-muted/15 hover:text-primary"
+            >
+                {fileName}
+            </button>
         );
+    };
+
+    if (name === 'write_file') {
+        return <div className="space-y-1">{renderFileButton(getPath(args), 'diff')}</div>;
     }
 
     if (name === 'write_files') {
         const files = Array.isArray(args.files) ? args.files : [];
+        const paths = files
+            .map((f: unknown) => getPath((f ?? {}) as Record<string, unknown>))
+            .filter(Boolean);
         return (
-            <div className="grid grid-cols-1 gap-2">
-                {files.map((f: unknown, i: number) => {
-                    const fileObj = f as Record<string, unknown>;
-                    const path = getPath(fileObj);
-                    const fileName = path.split(/[\\/]/).pop() || path;
-                    return (
-                        <div key={i} className="flex items-center gap-2 rounded-xl border border-success/20 bg-success/5 px-3 py-2 text-sm">
-                            <FileText className="h-4 w-4 text-success/70" />
-                            <button 
-                                onClick={(e) => handleLinkClick(e, 'diff', path)}
-                                className="truncate font-medium text-success hover:underline transition-all"
-                            >
-                                {fileName}
-                            </button>
-                        </div>
-                    );
-                })}
+            <div className="space-y-1">
+                {paths.map((path, i) => (
+                    <div key={`${i}-${path}`}>{renderFileButton(path, 'diff')}</div>
+                ))}
             </div>
         );
     }
 
     if (name === 'patch_file') {
-        const path = getPath(args);
-        const fileName = path.split(/[\\/]/).pop() || path;
-        return (
-            <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Github className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                    <button 
-                        onClick={(e) => handleLinkClick(e, 'diff', path)}
-                        className="truncate font-semibold text-primary hover:underline transition-all block"
-                    >
-                        {fileName}
-                    </button>
-                </div>
-            </div>
-        );
+        return <div className="space-y-1">{renderFileButton(getPath(args), 'diff')}</div>;
     }
 
-    if (name === 'search_files' || name === 'grep_search' || name === 'list_directory') {
+    if (name === 'search_files') {
         const path = getPath(args) || (typeof args.rootPath === 'string' ? args.rootPath : '');
-        const fileName = path.split(/[\\/]/).pop() || path;
-        return (
-            <div className="flex items-center gap-2 rounded-xl border border-muted/20 bg-muted/5 px-4 py-3 text-sm">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/20 text-muted-foreground">
-                    <Search className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                    <button 
-                        onClick={(e) => handleLinkClick(e, 'editor', path)}
-                        className="truncate font-semibold text-muted-foreground hover:underline transition-all block"
-                    >
-                        {fileName || 'Project Root'}
-                    </button>
-                </div>
-            </div>
-        );
+        return <div className="space-y-1">{renderFileButton(path, 'editor')}</div>;
     }
 
     return null;
-}
-
-function FilePreview({ content, t }: { content: string; t: (key: string) => string }) {
-    return (
-        <div className="space-y-2">
-            <span className="typo-caption font-semibold uppercase tracking-wider text-muted-foreground/70">
-                {t('tools.filePreview')}
-            </span>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{`\`\`\`\n${content}\n\`\`\``}</ReactMarkdown>
-        </div>
-    );
 }
 
 function JsonOutput({ value }: { value: JsonValue }) {
@@ -416,81 +418,130 @@ function JsonOutput({ value }: { value: JsonValue }) {
 
 function ToolOutput({ name, args, result, t }: { name: string; args: JsonObject; result: JsonValue; t: (path: string, options?: Record<string, unknown>) => string }) {
     if (name === 'read_file') {
-        const content = extractStringContent(result);
+        const pathValue = typeof args.path === 'string'
+            ? args.path
+            : (typeof args.file === 'string' ? args.file : '');
+        const fileName = pathValue.split(/[\\/]/).pop() || pathValue;
         return (
-            <div className="space-y-3">
-                <FilePreview content={content} t={t} />
+            <div className="space-y-1">
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (pathValue) {
+                            navigateToWorkspace({ type: 'open_file', path: pathValue });
+                        }
+                    }}
+                    className="block w-full truncate rounded-md px-2 py-1 text-left text-sm text-foreground/80 hover:bg-muted/15 hover:text-primary"
+                >
+                    {fileName || t('tools.openFile')}
+                </button>
             </div>
         );
     }
 
-    if (['write_file', 'write_files', 'patch_file', 'list_directory', 'search_files', 'grep_search'].includes(name)) {
+    if (['write_file', 'write_files', 'patch_file', 'search_files'].includes(name)) {
         return <FileSystemSummary name={name} args={args} />;
     }
 
-    if (name === 'grep_search' || name === 'list_dir' || name === 'list_files') {
-        const items = extractSearchResults(result);
-        const folderPath = typeof args.path === 'string' ? args.path : (typeof args.SearchPath === 'string' ? args.SearchPath : '');
-        
+    if (name === 'list_directory' || name === 'list_dir' || name === 'list_files') {
+        const entries = extractDirectoryEntries(result);
+        const folderPath = typeof args.path === 'string'
+            ? args.path
+            : (typeof args.SearchPath === 'string' ? args.SearchPath : '');
+        const visible = entries.slice(0, 12);
+        const hiddenCount = Math.max(0, entries.length - visible.length);
+
         return (
-            <div className="space-y-3">
-                <div className="flex items-center gap-3 rounded-xl border border-border/40 bg-muted/10 px-4 py-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/20 text-muted-foreground">
-                        <ListFilter className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                        <div className="truncate text-xs font-mono text-muted-foreground/60">{folderPath}</div>
-                    </div>
-                </div>
-                
-                {items.length > 0 && (
-                    <div className="grid gap-1.5 max-h-48 overflow-y-auto pr-1">
-                        {items.map((item, idx) => {
-                            const path = typeof item.path === 'string' ? item.path : (typeof item.File === 'string' ? item.File : '');
-                            const fileName = path.split(/[\\/]/).pop() || path;
-                            return (
-                                <button
-                                    key={`${idx}-${path}`}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        navigateToWorkspace({ type: 'open_file', path });
-                                    }}
-                                    className={UI_PRIMITIVES.FILE_LIST_ITEM}
-                                >
-                                    <FileText className="h-3.5 w-3.5 text-muted-foreground/50 group-hover/file:text-primary/70" />
-                                    <span className="truncate text-xs font-medium text-foreground/80 group-hover/file:text-primary">
-                                        {fileName}
-                                    </span>
-                                </button>
-                            );
-                        })}
+            <div className="space-y-1">
+                {visible.map((entry, idx) => {
+                    const fullPath = joinPath(folderPath, entry.name);
+                    const fileName = entry.name.split(/[\\/]/).pop() || entry.name;
+                    return (
+                        <button
+                            key={`${idx}-${fullPath}`}
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (!entry.isDirectory) {
+                                    navigateToWorkspace({ type: 'open_file', path: fullPath });
+                                }
+                            }}
+                            className={cn(
+                                'block w-full truncate rounded-md px-2 py-1 text-left text-sm text-foreground/80 hover:bg-muted/15',
+                                entry.isDirectory ? 'opacity-70 cursor-default' : 'hover:text-primary'
+                            )}
+                        >
+                            {fileName}
+                        </button>
+                    );
+                })}
+                {hiddenCount > 0 && (
+                    <div className="px-2 py-1 text-xs text-muted-foreground/70">
+                        {t('tools.andMore', { count: hiddenCount })}
                     </div>
                 )}
             </div>
         );
     }
 
+    if (name === 'grep_search') {
+        const items = extractSearchResults(result);
+        if (items.length > 0) {
+            const visible = items.slice(0, 12);
+            const hiddenCount = Math.max(0, items.length - visible.length);
+            return (
+                <div className="space-y-1">
+                    {visible.map((item, idx) => {
+                        const path = typeof item.path === 'string' ? item.path : (typeof item.File === 'string' ? item.File : '');
+                        const fileName = path.split(/[\\/]/).pop() || path;
+                        return (
+                            <button
+                                key={`${idx}-${path}`}
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigateToWorkspace({ type: 'open_file', path });
+                                }}
+                                className="block w-full truncate rounded-md px-2 py-1 text-left text-sm text-foreground/80 hover:bg-muted/15 hover:text-primary"
+                            >
+                                {fileName}
+                            </button>
+                        );
+                    })}
+                    {hiddenCount > 0 && (
+                        <div className="px-2 py-1 text-xs text-muted-foreground/70">
+                            {t('tools.andMore', { count: hiddenCount })}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+    }
+
     if (name === 'search_web') {
         const searchResults = extractSearchResults(result);
         if (searchResults.length > 0) {
+            const visible = searchResults.slice(0, 8);
+            const hiddenCount = Math.max(0, searchResults.length - visible.length);
             return (
-                <div className="grid gap-2">
-                    {searchResults.map((item, index) => (
+                <div className="space-y-1">
+                    {visible.map((item, index) => (
                         <a
                             key={`${index}-${String(item.url ?? '')}`}
                             href={typeof item.url === 'string' ? item.url : ''}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="rounded-md border border-border/50 bg-background/70 p-2 typo-caption transition-colors hover:border-primary/40"
+                            className="block truncate rounded-md px-2 py-1 text-sm text-foreground/80 hover:bg-muted/15 hover:text-primary"
                         >
-                            <div className="truncate font-medium text-primary">
-                                {typeof item.title === 'string' ? item.title : ''}
-                            </div>
-                            <div className="mt-1 line-clamp-2 text-muted-foreground">
-                                {(typeof item.content === 'string' ? item.content : '') || (typeof item.snippet === 'string' ? item.snippet : '')}
-                            </div>
+                            {typeof item.title === 'string' ? item.title : ''}
                         </a>
                     ))}
+                    {hiddenCount > 0 && (
+                        <div className="px-2 py-1 text-xs text-muted-foreground/70">
+                            {t('tools.andMore', { count: hiddenCount })}
+                        </div>
+                    )}
                 </div>
             );
         }
@@ -503,32 +554,29 @@ function ToolOutput({ name, args, result, t }: { name: string; args: JsonObject;
         }
     }
 
-    if (typeof result === 'string') {
-        return <ReactMarkdown remarkPlugins={[remarkGfm]}>{result}</ReactMarkdown>;
-    }
-
     return <JsonOutput value={result} />;
 }
 
 export const ToolDisplay = React.memo(({ toolCall, result, isExecuting, language = 'en' }: ToolDisplayProps) => {
     const { t } = useTranslation(language);
+    const normalizedName = normalizeToolName(toolCall.name, toolCall.arguments);
+    const displayToolCall = normalizedName === toolCall.name ? toolCall : { ...toolCall, name: normalizedName };
     const toolError = readToolError(result);
     const hasError = Boolean(toolError);
     const resultData = result?.result as CommandExecutionResult | undefined;
     const [commandExpanded, setCommandExpanded] = useState(false);
     const [isExpanded, setIsExpanded] = useState(Boolean(isExecuting));
-    const [showInput, setShowInput] = useState(false);
 
-    useAutoExpandCommand(toolCall.name, isExecuting, resultData?.error, resultData?.stderr, setCommandExpanded);
+    useAutoExpandCommand(displayToolCall.name, isExecuting, resultData?.error, resultData?.stderr, setCommandExpanded);
     const status: ToolStatus = isExecuting ? 'running' : (hasError ? 'failed' : 'completed');
-    const summaryText = getToolSummaryText(toolCall, result, Boolean(isExecuting), hasError, t);
+    const summaryText = getToolSummaryText(displayToolCall, result, Boolean(isExecuting), hasError, t);
     const expanded = Boolean(isExecuting) || isExpanded;
 
-    if (toolCall.name === 'execute_command') {
+    if (displayToolCall.name === 'execute_command') {
         return (
             <TerminalView
-                toolCallId={toolCall.id}
-                command={String(toolCall.arguments.command ?? '')}
+                toolCallId={displayToolCall.id}
+                command={String(displayToolCall.arguments.command ?? '')}
                 result={result}
                 isExecuting={isExecuting}
                 expanded={commandExpanded}
@@ -554,88 +602,53 @@ export const ToolDisplay = React.memo(({ toolCall, result, isExecuting, language
                     setIsExpanded(prev => !prev);
                 }}
                 className={cn(
-                    'flex w-full items-center justify-between gap-3 px-3 py-2 text-left transition-all duration-300 rounded-xl group/tool',
-                    expanded ? 'bg-muted/30 mb-2' : 'hover:bg-muted/20 bg-transparent'
+                    'flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition-colors',
+                    expanded ? 'bg-muted/20' : 'hover:bg-muted/15'
                 )}
                 aria-label={expanded ? t('chat.collapse') : t('chat.expand')}
             >
-                <div className="flex min-w-0 items-center gap-3">
-                    <div className={cn(
-                        UI_PRIMITIVES.TOOL_STATUS_ICON,
-                        status === 'running' ? 'border-primary/30 bg-primary/10 animate-pulse' : 
-                        status === 'failed' ? 'border-destructive/30 bg-destructive/10' :
-                        'border-border/50 bg-background/50 group-hover/tool:border-primary/30'
-                    )}>
-                        {status === 'running' && <Loader2 className="h-3 w-3 animate-spin" />}
-                        {status === 'failed' && <CircleAlert className="h-3 w-3 text-destructive" />}
-                        {status === 'completed' && (
-                            <div className="text-muted-foreground group-hover/tool:text-primary transition-colors">
-                                {getToolIcon(toolCall.name)}
-                            </div>
+                <div className="flex min-w-0 items-center gap-2">
+                    <span
+                        className={cn(
+                            'h-2 w-2 rounded-full',
+                            status === 'running'
+                                ? 'bg-primary/70'
+                                : status === 'failed'
+                                    ? 'bg-destructive/70'
+                                    : 'bg-muted-foreground/60'
                         )}
-                    </div>
-                    <div className="min-w-0">
-                        <div className={cn(
-                            'truncate text-sm font-medium transition-colors',
-                            status === 'running' ? 'text-primary' : 'text-foreground/90'
-                        )}>
-                            {summaryText}
-                        </div>
-                        {expanded && (
-                            <div className="mt-0.5 text-xxs font-mono text-muted-foreground/60">
-                                {toolCall.name}
-                            </div>
-                        )}
+                    />
+                    <div className={cn('truncate text-sm font-medium', status === 'running' && 'text-primary')}>
+                        {summaryText}
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <ChevronDown className={cn(
-                        'h-4 w-4 text-muted-foreground/50 transition-transform duration-300',
-                        expanded && 'rotate-180 text-primary'
+                        'h-4 w-4 text-muted-foreground/60 transition-transform',
+                        expanded && 'rotate-180'
                     )} />
                 </div>
             </button>
 
             {expanded && (
-                <div className="space-y-3 px-1 pb-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className={UI_PRIMITIVES.TOOL_CARD}>
-                        {isExecuting && !result && (
-                            <div className="flex items-center gap-3 py-1 text-xs text-muted-foreground">
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                                <span>{t('tools.executing')}</span>
-                            </div>
-                        )}
+                <div className="px-3 pb-2 pt-2">
+                    {isExecuting && !result && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            <span>{t('tools.executing')}</span>
+                        </div>
+                    )}
 
-                        {!isExecuting && (
-                            <div className="space-y-4">
-                                <ToolOutput name={toolCall.name} args={toolCall.arguments} result={result?.result ?? {}} t={t} />
-                                
-                                {typeof toolError === 'string' && toolError.trim().length > 0 && (
-                                    <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive font-mono">
-                                        {toolError}
-                                    </div>
-                                )}
-
-                                <div className="pt-2 border-t border-border/20">
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setShowInput(prev => !prev);
-                                        }}
-                                        className="text-xxs uppercase tracking-wider font-bold text-muted-foreground/40 float-right hover:text-primary transition-colors"
-                                    >
-                                        {t('tools.input')}
-                                    </button>
-                                    {showInput && (
-                                        <div className="clear-both pt-2">
-                                            <ToolArguments name={toolCall.name} args={toolCall.arguments} t={t} />
-                                        </div>
-                                    )}
+                    {!isExecuting && (
+                        <div className="space-y-2">
+                            <ToolOutput name={displayToolCall.name} args={displayToolCall.arguments} result={result?.result ?? {}} t={t} />
+                            {typeof toolError === 'string' && toolError.trim().length > 0 && (
+                                <div className="rounded-md border border-destructive/25 bg-destructive/5 px-2 py-1 text-xs text-destructive">
+                                    {toolError}
                                 </div>
-                            </div>
-                        )}
-                    </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
         </div>

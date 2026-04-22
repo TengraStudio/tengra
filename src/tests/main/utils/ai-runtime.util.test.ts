@@ -142,7 +142,7 @@ describe('ai-runtime.util', () => {
                 toolCallId: 'call-rp-1',
                 name: 'resolve_path',
                 result: {
-                    path: 'C:/Users/agnes/Desktop/projects/todo-app',
+                    path: 'C:/Users/mockuser/Desktop/projects/todo-app',
                     pathExists: false,
                     parentExists: true,
                 },
@@ -155,7 +155,7 @@ describe('ai-runtime.util', () => {
             timestamp: Date.now(),
             kind: 'tool_result',
             toolName: 'resolve_path',
-            summary: 'Resolved path: C:/Users/agnes/Desktop/projects/todo-app',
+            summary: 'Resolved path: C:/Users/mockuser/Desktop/projects/todo-app',
             scope: 'turn',
             sourceSurface: 'chat',
             isReusable: true,

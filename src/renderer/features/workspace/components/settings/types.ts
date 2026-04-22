@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import type { Workspace } from '@/types';
+import type { Workspace, ModelInfo } from '@/types';
 
 export interface WorkspaceSettingsFormData {
     title: string
@@ -46,19 +46,36 @@ export interface WorkspaceSettingsFormData {
     editorCodeLens: boolean
     editorInlayHints: boolean
     editorAdditionalOptions: string
+    // Intelligence
+    intelligenceModelId: string
+    intelligenceDiscussModelId: string
+    intelligenceSystemPrompt: string
+    intelligenceTemperature: number
+    // Git
+    gitCommitPrefix: string
+    gitBranchPrefix: string
+    gitAutoFetch: boolean
+    // Indexing
+    indexingMaxFileSize: number
+    indexingExclude: string
+    indexingMaxConcurrency: number
 }
 
 export type WorkspaceSettingsSection =
     | 'general'
+    | 'intelligence'
     | 'council'
+    | 'git'
     | 'workspace'
     | 'build'
     | 'dev'
     | 'editor'
     | 'advanced'
+    | 'environment'
 
 export interface SettingsSectionProps {
     formData: WorkspaceSettingsFormData
     setFormData: React.Dispatch<React.SetStateAction<WorkspaceSettingsFormData>>
-    t: (key: string) => string
+    t: (key: string, options?: Record<string, unknown>) => string
+    models: ModelInfo[]
 }

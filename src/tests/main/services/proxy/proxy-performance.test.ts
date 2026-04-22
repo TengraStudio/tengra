@@ -16,7 +16,6 @@ import {
     ProxyService
 } from '@main/services/proxy/proxy.service';
 import { PROXY_PROCESS_PERFORMANCE_BUDGETS, ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
-import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { SecurityService } from '@main/services/security/security.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
@@ -78,7 +77,6 @@ describe('ProxyService performance instrumentation', () => {
             dataService: { getPath: vi.fn().mockReturnValue('/mock') } as never as DataService,
             securityService: {} as never as SecurityService,
             processManager: mockProcessManager,
-            quotaService: {} as never as QuotaService,
             authService: mockAuthService,
             eventBus: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), emitCustom: vi.fn() } as never as EventBusService,
             databaseService: {} as never as DatabaseService,

@@ -42,7 +42,7 @@ interface TransferItem {
 }
 
 const REMOTE_TREE_CACHE_TTL_MS = 30_000;
-const TRANSFER_DOWNLOAD_BASE = 'C:\\Users\\agnes\\Downloads';
+const TRANSFER_DOWNLOAD_BASE = 'C:\\Downloads';
 
 export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
     const { t } = useTranslation();

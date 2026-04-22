@@ -129,6 +129,11 @@ export class GitService {
         this.activeOperations.delete(normalizedOperationId);
         return true;
     }
+    async getStagedDiff(cwd: string): Promise<string> {
+        const { stdout } = await this.executeArgs(['diff', '--staged'], cwd);
+        return stdout ?? '';
+    }
+
 
     private async executeArgs(args: string[], cwd: string, options?: GitExecutionOptions): Promise<GitExecutionResult> {
         const timeoutMs = this.normalizeTimeoutMs(options?.timeoutMs);
@@ -217,14 +222,17 @@ export class GitService {
         return await this.execute('pull', cwd);
     }
 
-    async getLog(cwd: string, count: number = 10) {
+    async getLog(cwd: string, count: number = 10, skip: number = 0) {
         const safeCwd = cwd?.trim();
         if (!safeCwd) {
             return [];
         }
 
         const safeCount = Number.isFinite(count) && count > 0 ? Math.floor(count) : 10;
-        const { stdout } = await this.executeArgs(['log', '-n', `${safeCount}`, '--pretty=format:%h|%s|%an|%cI'], safeCwd);
+        const safeSkip = Number.isFinite(skip) && skip >= 0 ? Math.floor(skip) : 0;
+        
+        const args = ['log', '-n', `${safeCount}`, '--skip', `${safeSkip}`, '--pretty=format:%h|%s|%an|%cI'];
+        const { stdout } = await this.executeArgs(args, safeCwd);
         if (!stdout) { return []; }
 
         return stdout.split('\n')

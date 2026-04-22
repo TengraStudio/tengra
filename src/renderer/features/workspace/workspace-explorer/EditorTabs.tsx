@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Pin, X } from 'lucide-react';
+import { ChevronRight, Pin, X } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -29,6 +29,8 @@ interface EditorTabsProps {
     copyTabAbsolutePath: (id: string) => Promise<void>;
     copyTabRelativePath: (id: string) => Promise<void>;
     revealTabInExplorer: (id: string) => Promise<void>;
+    workspacePath?: string;
+    onOpenFile?: (path: string, line?: number) => void;
     t: (key: string) => string;
 }
 
@@ -36,6 +38,12 @@ interface TabContextMenuState {
     tabId: string;
     x: number;
     y: number;
+}
+
+interface BreadcrumbDropdownState {
+    x: number;
+    y: number;
+    items: Array<{ name: string; path: string; isDirectory: boolean }>;
 }
 
 function sortTabsForDisplay(tabs: EditorTab[]): EditorTab[] {
@@ -61,10 +69,18 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
     copyTabAbsolutePath,
     copyTabRelativePath,
     revealTabInExplorer,
+    workspacePath,
+    onOpenFile,
     t,
 }) => {
     const [contextMenu, setContextMenu] = useState<TabContextMenuState | null>(null);
+    const [deletedTabIds, setDeletedTabIds] = useState<Set<string>>(new Set());
+    const [breadcrumbDropdown, setBreadcrumbDropdown] = useState<BreadcrumbDropdownState | null>(null);
     const orderedTabs = useMemo(() => sortTabsForDisplay(openTabs), [openTabs]);
+    const activeTab = useMemo(
+        () => orderedTabs.find(tab => tab.id === activeTabId) ?? null,
+        [activeTabId, orderedTabs]
+    );
     const contextTab = useMemo(
         () => orderedTabs.find(tab => tab.id === contextMenu?.tabId) ?? null,
         [contextMenu?.tabId, orderedTabs]
@@ -84,6 +100,111 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
             window.removeEventListener('resize', closeMenu);
         };
     }, [contextMenu]);
+
+    useEffect(() => {
+        if (!breadcrumbDropdown) {
+            return;
+        }
+        const closeDropdown = () => setBreadcrumbDropdown(null);
+        window.addEventListener('mousedown', closeDropdown);
+        window.addEventListener('resize', closeDropdown);
+        return () => {
+            window.removeEventListener('mousedown', closeDropdown);
+            window.removeEventListener('resize', closeDropdown);
+        };
+    }, [breadcrumbDropdown]);
+
+    useEffect(() => {
+        let cancelled = false;
+        const checkDeletedTabs = async () => {
+            const nextDeleted = new Set<string>();
+            await Promise.all(
+                orderedTabs.map(async tab => {
+                    try {
+                        const result = await window.electron.files.readFile(tab.path);
+                        if (result.success) {
+                            return;
+                        }
+                        const errorText = String(result.error ?? '').toLowerCase();
+                        if (
+                            errorText.includes('enoent')
+                            || errorText.includes('not found')
+                            || errorText.includes('no such file')
+                        ) {
+                            nextDeleted.add(tab.id);
+                        }
+                    } catch {
+                        // Ignore read failures that are not explicit missing-file errors.
+                    }
+                })
+            );
+            if (!cancelled) {
+                setDeletedTabIds(nextDeleted);
+            }
+        };
+        void checkDeletedTabs();
+        return () => {
+            cancelled = true;
+        };
+    }, [orderedTabs]);
+
+    const buildBreadcrumbSegments = (tabPath: string): Array<{ label: string; path: string; isFile: boolean }> => {
+        const separator = tabPath.includes('\\') ? '\\' : '/';
+        const parts = tabPath.split(/[\\/]+/).filter(Boolean);
+        return parts.map((label, index) => ({
+            label,
+            path: parts.slice(0, index + 1).join(separator),
+            isFile: index === parts.length - 1,
+        }));
+    };
+
+    const resolveBreadcrumbPath = (rawPath: string): string => {
+        const isAbsolute = /^[a-z]:[\\/]/i.test(rawPath) || rawPath.startsWith('/') || rawPath.startsWith('\\');
+        if (isAbsolute || !workspacePath) {
+            return rawPath;
+        }
+        const separator = workspacePath.includes('\\') ? '\\' : '/';
+        const normalizedRoot = workspacePath.replace(/[\\/]+$/, '');
+        return `${normalizedRoot}${separator}${rawPath}`;
+    };
+
+    const openBreadcrumbPath = (rawPath: string): void => {
+        const resolvedPath = resolveBreadcrumbPath(rawPath);
+        const encodedPath = encodeURIComponent(resolvedPath);
+        void window.electron.openExternal(`safe-file://${encodedPath}`);
+    };
+
+    const openFolderDropdown = async (
+        rawPath: string,
+        anchorX: number,
+        anchorY: number
+    ): Promise<void> => {
+        const resolvedPath = resolveBreadcrumbPath(rawPath);
+        const response = await window.electron.files.listDirectory(resolvedPath);
+        const data = Array.isArray((response as { data?: unknown }).data)
+            ? ((response as { data: Array<{ name: string; path?: string; isDirectory?: boolean }> }).data)
+            : Array.isArray(response)
+                ? (response as Array<{ name: string; path?: string; isDirectory?: boolean }>)
+                : [];
+        const items = data
+            .map(item => ({
+                name: item.name,
+                path: item.path && item.path.length > 0 ? item.path : `${resolvedPath}/${item.name}`,
+                isDirectory: Boolean(item.isDirectory),
+            }))
+            .sort((left, right) => {
+                if (left.isDirectory !== right.isDirectory) {
+                    return left.isDirectory ? -1 : 1;
+                }
+                return left.name.localeCompare(right.name);
+            })
+            .slice(0, 120);
+        setBreadcrumbDropdown({
+            x: anchorX,
+            y: anchorY,
+            items,
+        });
+    };
 
     const contextTabIndex = contextTab
         ? orderedTabs.findIndex(tab => tab.id === contextTab.id)
@@ -113,10 +234,12 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
     };
 
     return (
-        <div className="flex bg-background overflow-x-auto border-b border-border/30 scrollbar-none">
-            {orderedTabs.map(tab => {
+        <div className="border-b border-border/30 bg-background">
+            <div className="flex overflow-x-auto scrollbar-none">
+                {orderedTabs.map(tab => {
                 const isActive = tab.id === activeTabId;
                 const isDirty = tab.content !== tab.savedContent;
+                const isDeleted = deletedTabIds.has(tab.id);
                 return (
                     <button
                         key={tab.id}
@@ -128,12 +251,16 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                         className={cn(
                             'group flex items-center gap-2 px-3 py-2 typo-caption border-r border-border/30 transition-all min-w-120 max-w-200',
                             isActive
-                                ? 'bg-muted text-success border-t-2 border-t-emerald-500'
-                                : 'text-muted-foreground hover:bg-muted/50 hover:text-muted-foreground border-t-2 border-t-transparent'
+                                ? 'bg-muted/70 text-foreground border-t-2 border-t-primary'
+                                : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground border-t-2 border-t-transparent'
                         )}
                     >
                         <span
-                            className={cn('truncate flex-1 text-left', isActive && 'font-medium')}
+                            className={cn(
+                                'truncate flex-1 text-left',
+                                isActive && 'font-medium',
+                                isDeleted && 'italic line-through opacity-75'
+                            )}
                         >
                             {tab.name}
                         </span>
@@ -153,7 +280,65 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                         </span>
                     </button>
                 );
-            })}
+                })}
+            </div>
+            {activeTab && (
+                <div className="flex items-center gap-1 px-3 py-1.5 text-[12px] text-muted-foreground/85 border-t border-border/20">
+                    {buildBreadcrumbSegments(activeTab.path).map((segment, index) => (
+                        <React.Fragment key={`${segment.path}:${index}`}>
+                            {index > 0 && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/45" />}
+                            <button
+                                type="button"
+                                onClick={event => {
+                                    if (!segment.isFile) {
+                                        event.stopPropagation();
+                                        const rect = event.currentTarget.getBoundingClientRect();
+                                        void openFolderDropdown(segment.path, rect.left, rect.bottom + 6);
+                                        return;
+                                    }
+                                    openBreadcrumbPath(segment.path);
+                                }}
+                                className={cn(
+                                    'max-w-220 truncate transition-colors hover:text-foreground',
+                                    segment.isFile ? 'text-foreground/90' : 'text-muted-foreground/85 hover:underline'
+                                )}
+                                title={segment.path}
+                            >
+                                {segment.label}
+                            </button>
+                        </React.Fragment>
+                    ))}
+                </div>
+            )}
+            {breadcrumbDropdown && (
+                <div
+                    className="fixed z-50 min-w-240 max-w-320 max-h-320 overflow-auto rounded-md border border-border/60 bg-popover shadow-2xl p-1"
+                    style={{ left: breadcrumbDropdown.x, top: breadcrumbDropdown.y }}
+                    onMouseDown={event => event.stopPropagation()}
+                >
+                    {breadcrumbDropdown.items.length === 0 ? (
+                        <div className="px-2 py-1.5 text-xs text-muted-foreground">{t('workspaceDashboard.empty')}</div>
+                    ) : (
+                        breadcrumbDropdown.items.map(item => (
+                            <button
+                                key={item.path}
+                                type="button"
+                                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-foreground/90 hover:bg-muted/60"
+                                onClick={() => {
+                                    setBreadcrumbDropdown(null);
+                                    if (item.isDirectory) {
+                                        openBreadcrumbPath(item.path);
+                                        return;
+                                    }
+                                    onOpenFile?.(item.path);
+                                }}
+                            >
+                                <span className="truncate">{item.name}</span>
+                            </button>
+                        ))
+                    )}
+                </div>
+            )}
             {contextMenu && contextTab && (
                 <EditorTabContextMenu
                     position={{ x: contextMenu.x, y: contextMenu.y }}

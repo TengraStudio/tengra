@@ -16,6 +16,7 @@
  * HTTP calls to the external db-service.
  */
 
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as fsPromises from 'fs/promises';
 import * as http from 'http';
@@ -76,9 +77,11 @@ const PORT_FILE_CACHE_TTL_MS = 5_000;
 const WORKSPACE_LIST_CACHE_TTL_MS = 5_000;
 
 const SERVICE_NAME = 'db-service';
-const MAX_HEALTH_RETRIES = 30;
+const MAX_HEALTH_RETRIES = 60;
 const HEALTH_RETRY_DELAY_MS = 500;
 const WORKSPACE_COMPAT_PATH_FIELD = WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN;
+const DB_SERVICE_TOKEN_ENV = 'TENGRA_DB_SERVICE_TOKEN';
+const DB_SERVICE_TOKEN_FILE = 'db-service.token';
 
 // PERF-003-4: HTTP agent configuration for connection pooling
 const HTTP_AGENT_CONFIG = {
@@ -96,7 +99,8 @@ export class DatabaseClientService extends BaseService {
     private apiClient: AxiosInstance;
     private servicePort: number | null = null;
     private isReady = false;
-    // PERF-003-4: HTTP agent for connection pooling
+    private isInitializing = false;
+    private initPromise: Promise<void> | null = null;
     private httpAgent: http.Agent;
     private pendingRequests = 0;
     private maxPendingRequests = 200;
@@ -156,9 +160,20 @@ export class DatabaseClientService extends BaseService {
      * Initialize the database client
      */
     override async initialize(): Promise<void> {
+        if (this.initPromise) {
+            return this.initPromise;
+        }
+
+        this.initPromise = this.doInitialize();
+        return this.initPromise;
+    }
+
+    private async doInitialize(): Promise<void> {
+        this.isInitializing = true;
         this.logInfo('Initializing database client...');
 
         try {
+            await this.ensureDbServiceToken();
             // Discover or start the db-service
             this.servicePort = await this.discoverOrStartService();
 
@@ -183,6 +198,8 @@ export class DatabaseClientService extends BaseService {
             this.logError('Failed to initialize database client', error);
             this.eventBus.emit('db:error', { error: getErrorMessage(error) });
             throw error;
+        } finally {
+            this.isInitializing = false;
         }
     }
 
@@ -290,6 +307,34 @@ export class DatabaseClientService extends BaseService {
         return roots.map(root => path.join(appData, root, 'services', `${SERVICE_NAME}.port`));
     }
 
+    private getServiceTokenFilePath(): string {
+        return path.join(app.getPath('appData'), 'Tengra', 'services', DB_SERVICE_TOKEN_FILE);
+    }
+
+    private async ensureDbServiceToken(): Promise<string> {
+        const existingEnvToken = process.env[DB_SERVICE_TOKEN_ENV]?.trim();
+        if (existingEnvToken) {
+            return existingEnvToken;
+        }
+
+        const tokenFile = this.getServiceTokenFilePath();
+        try {
+            const existingFileToken = (await fsPromises.readFile(tokenFile, 'utf8')).trim();
+            if (existingFileToken) {
+                process.env[DB_SERVICE_TOKEN_ENV] = existingFileToken;
+                return existingFileToken;
+            }
+        } catch {
+            // Token file will be created below.
+        }
+
+        const token = crypto.randomBytes(32).toString('hex');
+        await fsPromises.mkdir(path.dirname(tokenFile), { recursive: true });
+        await fsPromises.writeFile(tokenFile, token, { encoding: 'utf8', mode: 0o600 });
+        process.env[DB_SERVICE_TOKEN_ENV] = token;
+        return token;
+    }
+
     /**
      * Check if a port is open
      */
@@ -338,12 +383,28 @@ export class DatabaseClientService extends BaseService {
     private async apiCall<T>(
         method: 'GET' | 'POST' | 'PUT' | 'DELETE',
         path: string,
-        data?: RuntimeValue,
-        isRetry = false
+        data?: unknown,
+        retryCount = 0
     ): Promise<DbApiResponse<T>> {
-        if (!this.servicePort) {
-            throw new Error('db-service not connected');
+        const MAX_RETRIES = 5;
+        const INITIAL_RETRY_DELAY_MS = 500;
+
+        // Wait for initialization if in progress, but NOT if we are the one initializing
+        if (!this.isReady && this.initPromise && !this.isInitializing) {
+            await this.initPromise;
         }
+
+        if (!this.servicePort) {
+            // Try to discover port if missing
+            this.servicePort = await this.discoverService();
+            if (!this.servicePort) {
+                return {
+                    success: false,
+                    error: 'db-service not connected and port discovery failed'
+                };
+            }
+        }
+
         if (this.pendingRequests >= this.maxPendingRequests) {
             return {
                 success: false,
@@ -361,6 +422,9 @@ export class DatabaseClientService extends BaseService {
                 method,
                 url,
                 data,
+                headers: {
+                    Authorization: `Bearer ${process.env[DB_SERVICE_TOKEN_ENV] ?? ''}`,
+                },
             });
             return response.data as DbApiResponse<T>;
         } catch (error) {
@@ -371,23 +435,23 @@ export class DatabaseClientService extends BaseService {
                     error.code === 'ETIMEDOUT' ||
                     error.code === 'ECONNRESET');
 
-            if (isConnectionError && !isRetry) {
+            if (isConnectionError && retryCount < MAX_RETRIES) {
+                const backoff = INITIAL_RETRY_DELAY_MS * Math.pow(2, retryCount);
                 this.logWarn(
-                    `Connection to db-service failed (${(error as AxiosError).code}). Attempting to re-discover...`
+                    `Connection to db-service failed (${(error as AxiosError).code}). Retrying ${retryCount + 1}/${MAX_RETRIES} in ${backoff}ms...`
                 );
-                // Try to discover new port
-                const newPort = await this.discoverService();
-                if (newPort && newPort !== this.servicePort) {
-                    this.logInfo(`Discovered new port for db-service: ${newPort}. Retrying...`);
-                    this.servicePort = newPort;
-                    return this.apiCall<T>(method, path, data, true);
-                }
+                
+                // Clear cached port and try to re-discover before retry
+                this.servicePort = await this.discoverService();
+                await delay(backoff);
+                
+                return this.apiCall<T>(method, path, data, retryCount + 1);
             }
 
-            this.logError(`API call failed: ${method} ${path}`, error);
+            this.logError(`API call failed: ${method} ${path}`, error as Error);
             return {
                 success: false,
-                error: getErrorMessage(error),
+                error: getErrorMessage(error as Error),
             };
         } finally {
             this.pendingRequests = Math.max(0, this.pendingRequests - 1);

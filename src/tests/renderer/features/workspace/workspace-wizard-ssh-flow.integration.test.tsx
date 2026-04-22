@@ -56,7 +56,7 @@ describe('Workspace wizard SSH integration flow', () => {
         );
 
         const hostInput = screen.getByPlaceholderText('workspaceWizard.placeholder.example');
-        fireEvent.change(hostInput, { target: { value: '10.0.0.5' } });
+        fireEvent.change(hostInput, { target: { value: '127.0.0.1' } });
         expect(setSshForm).toHaveBeenCalled();
     });
 

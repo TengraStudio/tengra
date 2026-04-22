@@ -177,9 +177,7 @@ const extractSectionErrors = ({
         ? null
         : [detailedStatus, diffStatsResult]
             .map((result, index) => {
-                if (result.success) {
-                    return null;
-                }
+                if (result.success) { return null; }
                 return index === 0
                     ? normalizeSectionError(result.error, 'detailedStatus')
                     : normalizeSectionError(result.error, 'diffStats');
@@ -195,7 +193,7 @@ export async function fetchFullGitData(workspacePath: string): Promise<FullGitDa
     const batchedGitData = await CommonBatches.loadWorkspaceData(workspacePath);
 
     const [recentCommitsResult, detailedStatus, remotesResult, trackingResult, diffStatsResult, commitStatsResult] = await Promise.all([
-        window.electron.git.getRecentCommits(workspacePath, 10),
+        window.electron.git.getRecentCommits(workspacePath, 100),
         window.electron.git.getDetailedStatus(workspacePath),
         window.electron.git.getRemotes(workspacePath),
         window.electron.git.getTrackingInfo(workspacePath),

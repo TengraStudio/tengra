@@ -191,6 +191,26 @@ export async function executeToolCall(
         : toolCall.function.arguments;
 
     const normalizedArgs = normalizeToolArgs(toolArgs);
+
+    // When a workspace is active, make filesystem tools resolve relative paths from the workspace root.
+    // If no workspace is active, the main process will fall back to the user's Desktop/Home.
+    if (
+        typeof activeWorkspacePath === 'string'
+        && activeWorkspacePath.trim().length > 0
+        && typeof normalizedArgs.basePath !== 'string'
+        && typeof toolCall.function?.name === 'string'
+        && (
+            toolCall.function.name.startsWith('mcp__filesystem__')
+            || toolCall.function.name === 'read_file'
+            || toolCall.function.name === 'write_file'
+            || toolCall.function.name === 'write_files'
+            || toolCall.function.name === 'list_directory'
+            || toolCall.function.name === 'list_dir'
+            || toolCall.function.name === 'search_files'
+        )
+    ) {
+        normalizedArgs.basePath = activeWorkspacePath;
+    }
     const validationFailure = validateToolArguments(toolCall.function.name, normalizedArgs);
     if (validationFailure) {
         return {

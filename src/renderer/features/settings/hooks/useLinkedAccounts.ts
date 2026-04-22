@@ -38,6 +38,7 @@ export interface UseLinkedAccountsResult {
     refreshAccounts: () => Promise<void>
     unlinkAccount: (accountId: string) => Promise<void>
     setActiveAccount: (provider: string, accountId: string) => Promise<void>
+    linkAccount: (provider: string, tokenData: { key?: string; accessToken?: string; metadata?: Record<string, any> }) => Promise<void>
 }
 
 /**
@@ -110,6 +111,15 @@ export function useLinkedAccounts(): UseLinkedAccountsResult {
         }
     }, [refreshAccounts]);
 
+    const linkAccount = useCallback(async (provider: string, tokenData: { key?: string; accessToken?: string; metadata?: Record<string, any> }) => {
+        try {
+            await window.electron.linkAccount(provider, tokenData);
+            await refreshAccounts();
+        } catch (error) {
+            appLogger.error('LinkedAccounts', 'Failed to link account', error as Error);
+        }
+    }, [refreshAccounts]);
+
     // Memoize the entire return object to prevent unnecessary re-renders
     return useMemo(() => ({
         accounts,
@@ -119,6 +129,7 @@ export function useLinkedAccounts(): UseLinkedAccountsResult {
         hasAccount,
         refreshAccounts,
         unlinkAccount,
-        setActiveAccount
-    }), [accounts, loading, getAccountsByProvider, getActiveAccount, hasAccount, refreshAccounts, unlinkAccount, setActiveAccount]);
+        setActiveAccount,
+        linkAccount
+    }), [accounts, loading, getAccountsByProvider, getActiveAccount, hasAccount, refreshAccounts, unlinkAccount, setActiveAccount, linkAccount]);
 }

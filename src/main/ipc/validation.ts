@@ -82,6 +82,7 @@ export const providerSchema = z.string().trim().min(1).max(64);
 export const accountIdSchema = z.string().trim().min(1).max(128);
 
 export const authTokenDataSchema = z.object({
+    key: z.string().min(1).optional(),
     accessToken: z.string().min(1).optional(),
     refreshToken: z.string().min(1).optional(),
     sessionToken: z.string().min(1).optional(),
@@ -92,7 +93,7 @@ export const authTokenDataSchema = z.object({
     scope: z.string().max(1024).optional(),
     metadata: z.record(z.string(), z.unknown()).optional()
 }).refine(
-    data => Boolean(data.accessToken || data.refreshToken || data.sessionToken),
+    data => Boolean(data.key || data.accessToken || data.refreshToken || data.sessionToken),
     { message: IPC_VALIDATION_TOKEN_REQUIRED }
 );
 

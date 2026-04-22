@@ -638,25 +638,10 @@ function registerKeyManagementHandlers(
 }
 
 function registerHealthHandlers(
-    sshService: SSHService,
-    secureHandle: <Args extends RuntimeValue[]>(
+    _sshService: SSHService,
+    _secureHandle: <Args extends RuntimeValue[]>(
         channel: string,
         handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<RuntimeValue>
     ) => void
 ) {
-    secureHandle('ssh:health', async () => {
-        const activeConnections = sshService.getAllConnections();
-        const poolStats = sshService.getConnectionPoolStats();
-
-        // Determine health status based on metrics
-        const status = 'healthy';
-
-        return {
-            status,
-            activeConnections: activeConnections.length,
-            connectedCount: activeConnections.filter(c => c.connected).length,
-            poolStats: poolStats,
-            timestamp: Date.now(),
-        };
-    });
 }

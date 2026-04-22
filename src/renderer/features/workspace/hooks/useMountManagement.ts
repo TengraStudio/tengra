@@ -28,7 +28,6 @@ interface UseMountManagementProps {
     workspaceId: string;
     mounts: WorkspaceMount[];
     setMounts: (mounts: WorkspaceMount[]) => void;
-    notify: (type: 'success' | 'error' | 'info', message: string) => void;
     t: (key: string) => string;
 }
 
@@ -52,9 +51,7 @@ const DEFAULT_MOUNT_FORM: MountForm = {
  */
 function usePersistMounts(
     workspaceId: string,
-    setMounts: (mounts: WorkspaceMount[]) => void,
-    notify: (type: 'success' | 'error' | 'info', message: string) => void,
-    t: (key: string) => string
+    setMounts: (mounts: WorkspaceMount[]) => void
 ): (nextMounts: WorkspaceMount[]) => Promise<boolean> {
     return useCallback(
         async (nextMounts: WorkspaceMount[]): Promise<boolean> => {
@@ -70,7 +67,6 @@ function usePersistMounts(
                 return true;
             } catch (error) {
                 appLogger.error('useMountManagement', 'Failed to save mounts', error as Error);
-                notify('error', t('errors.unexpected'));
                 recordWorkspacesPageHealthEvent({
                     channel: 'workspace.persistMounts',
                     status: 'failure',
@@ -80,7 +76,7 @@ function usePersistMounts(
                 return false;
             }
         },
-        [workspaceId, notify, setMounts, t]
+        [workspaceId, setMounts]
     );
 }
 
@@ -90,7 +86,6 @@ function usePersistMounts(
 async function saveSSHProfileIfNeeded(
     mountForm: MountForm,
     parsedPort: number,
-    notify: (type: 'success' | 'error' | 'info', message: string) => void,
     t: (key: string) => string,
     startedAt: number
 ): Promise<void> {
@@ -108,10 +103,8 @@ async function saveSSHProfileIfNeeded(
             privateKey: mountForm.privateKey,
             passphrase: mountForm.passphrase,
         });
-        notify('success', t('workspaceModals.profileSaved'));
     } catch (error) {
         appLogger.error('useMountManagement', 'Failed to save SSH profile', error as Error);
-        notify('error', t('errors.unexpected'));
         recordWorkspacesPageHealthEvent({
             channel: 'workspace.addMount',
             status: 'failure',
@@ -129,17 +122,15 @@ export function useMountManagement({
     workspaceId,
     mounts,
     setMounts,
-    notify,
     t,
 }: UseMountManagementProps) {
-    const persistMounts = usePersistMounts(workspaceId, setMounts, notify, t);
+    const persistMounts = usePersistMounts(workspaceId, setMounts);
     const [mountForm, setMountForm] = useState<MountForm>(DEFAULT_MOUNT_FORM);
 
     const addMount = useCallback(async () => {
         const startedAt = Date.now();
         const validation = validateWorkspaceMountForm(mountForm);
         if (!validation.success) {
-            notify('error', t(validation.messageKey ?? 'errors.unexpected'));
             recordWorkspacesPageHealthEvent({
                 channel: 'workspace.addMount',
                 status: 'validation-failure',
@@ -167,7 +158,7 @@ export function useMountManagement({
                     : undefined,
         };
 
-        await saveSSHProfileIfNeeded(mountForm, validation.parsedPort, notify, t, startedAt);
+        await saveSSHProfileIfNeeded(mountForm, validation.parsedPort, t, startedAt);
 
         const nextMounts = [...mounts, newMount];
         const persisted = await persistMounts(nextMounts);
@@ -187,7 +178,7 @@ export function useMountManagement({
             status: 'success',
             durationMs: Date.now() - startedAt,
         });
-    }, [mountForm, mounts, notify, persistMounts, t]);
+    }, [mountForm, mounts, persistMounts, t]);
 
     const testConnection = useCallback(async (form: MountForm): Promise<SSHProfileTestResult> => {
         const validation = validateWorkspaceMountForm({ ...form, type: 'ssh' });

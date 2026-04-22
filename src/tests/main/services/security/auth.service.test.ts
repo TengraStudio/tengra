@@ -309,11 +309,11 @@ describe('AuthService - Account Management', () => {
             provider: 'antigravity',
             accessToken: 'enc:old-access',
             refreshToken: 'enc:old-refresh',
-            email: 'agnes@example.com',
-            displayName: 'Agnes',
+            email: 'mockuser@example.com',
+            displayName: 'agnes',
             expiresAt: 12345,
             metadata: {
-                email: 'agnes@example.com',
+                email: 'mockuser@example.com',
                 refresh_token: 'old-refresh'
             }
         });
@@ -331,8 +331,8 @@ describe('AuthService - Account Management', () => {
                 provider: 'antigravity',
                 accessToken: 'enc:new-access',
                 refreshToken: 'enc:old-refresh',
-                email: 'agnes@example.com',
-                displayName: 'Agnes',
+                email: 'mockuser@example.com',
+                displayName: 'agnes',
                 expiresAt: 12345
             })
         );
@@ -344,11 +344,11 @@ describe('AuthService - Account Management', () => {
             provider: 'antigravity',
             accessToken: 'enc:old-access',
             refreshToken: 'enc:old-refresh',
-            email: 'agnes@example.com',
-            displayName: 'Agnes',
+            email: 'mockuser@example.com',
+            displayName: 'agnes',
             isActive: true,
             metadata: {
-                email: 'agnes@example.com',
+                email: 'mockuser@example.com',
                 refresh_token: 'old-refresh'
             }
         });
@@ -366,7 +366,7 @@ describe('AuthService - Account Management', () => {
                 provider: 'antigravity',
                 accessToken: 'enc:shadow-access',
                 refreshToken: 'enc:old-refresh',
-                email: 'agnes@example.com',
+                email: 'mockuser@example.com',
                 isActive: true
             })
         );

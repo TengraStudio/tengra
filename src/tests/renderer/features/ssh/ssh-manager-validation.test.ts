@@ -19,28 +19,28 @@ import {
 describe('ssh-manager-validation', () => {
     it('normalizes a valid password-based connection form', () => {
         const result = validateSSHConnectionForm({
-            host: ' 10.0.0.2 ',
+            host: ' 127.0.0.1 ',
             port: 22,
-            username: ' agnes ',
-            password: ' secret ',
+            username: ' mockuser ',
+            password: ' mock-secret ',
             privateKey: '',
             name: '  production ',
         });
 
         expect(result.success).toBe(true);
         if (result.success) {
-            expect(result.normalized.host).toBe('10.0.0.2');
-            expect(result.normalized.username).toBe('agnes');
-            expect(result.normalized.password).toBe('secret');
+            expect(result.normalized.host).toBe('127.0.0.1');
+            expect(result.normalized.username).toBe('mockuser');
+            expect(result.normalized.password).toBe('mock-secret');
             expect(result.normalized.name).toBe('production');
         }
     });
 
     it('fails validation when both password and key are missing', () => {
         const result = validateSSHConnectionForm({
-            host: '10.0.0.2',
+            host: '127.0.0.1',
             port: 22,
-            username: 'agnes',
+            username: 'mockuser',
             password: '',
             privateKey: '',
         });

@@ -14,6 +14,7 @@ import { Package, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useModel } from '@/context/ModelContext';
+import { useSettings } from '@/context/SettingsContext';
 import { useLanguage, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { marketplaceStore } from '@/store/marketplace.store';
@@ -215,6 +216,7 @@ export function McpMarketplace({
     const { t } = useTranslation();
     const { language: activeLanguage, setLanguage } = useLanguage();
     const { refreshModels } = useModel();
+    const { settings, updateSettings } = useSettings();
     const [installingId, setInstallingId] = useState<string | null>(null);
     const [hfReadmeByModelId, setHfReadmeByModelId] = useState<Record<string, string>>({});
     const [hfPreviewByModelId, setHfPreviewByModelId] = useState<Record<string, HFPreviewData>>({});
@@ -302,6 +304,15 @@ export function McpMarketplace({
                 await onRefreshMcpPlugins();
             }
             await onRefreshRegistry(true);
+            if (item.itemType === 'icon-pack' && settings) {
+                await updateSettings({
+                    ...settings,
+                    general: {
+                        ...settings.general,
+                        workspaceIconPack: item.id,
+                    },
+                }, true);
+            }
             void refreshModels(); // Background refresh of local models
             pushNotification({ type: 'success', message: t('marketplace.installSuccess', { name: item.name }) });
         } catch (error: unknown) {
@@ -310,7 +321,21 @@ export function McpMarketplace({
         } finally {
             setInstallingId(null);
         }
-    }, [installingId, onRefreshMcpPlugins, onRefreshRegistry, refreshModels, t]);
+    }, [installingId, onRefreshMcpPlugins, onRefreshRegistry, refreshModels, settings, t, updateSettings]);
+
+    const handleActivateIconPack = useCallback(async (item: MarketplaceItem) => {
+        if (!settings) {
+            return;
+        }
+        await updateSettings({
+            ...settings,
+            general: {
+                ...settings.general,
+                workspaceIconPack: item.id,
+            },
+        }, true);
+        pushNotification({ type: 'success', message: t('common.activate') });
+    }, [settings, t, updateSettings]);
 
     useEffect(() => {
         const fetchBulkHuggingFaceMetadata = async (): Promise<void> => {
@@ -541,13 +566,24 @@ export function McpMarketplace({
         if (installingId) { return; }
         setInstallingId(item.id);
         try {
-            const result = await window.electron.extension.uninstall(item.id);
+            const result = item.itemType === 'extension'
+                ? await window.electron.extension.uninstall(item.id)
+                : await window.electron.marketplace.uninstall(item.id, item.itemType);
             if (!result.success) {
                 throw new Error(result.error || t('marketplace.uninstallFailure'));
             }
 
             if (item.itemType === 'mcp') {
                 await onRefreshMcpPlugins();
+            }
+            if (item.itemType === 'icon-pack' && settings?.general.workspaceIconPack === item.id) {
+                await updateSettings({
+                    ...settings,
+                    general: {
+                        ...settings.general,
+                        workspaceIconPack: '',
+                    },
+                }, true);
             }
             await onRefreshRegistry(true);
 
@@ -567,7 +603,7 @@ export function McpMarketplace({
         } finally {
             setInstallingId(null);
         }
-    }, [installingId, onRefreshMcpPlugins, onRefreshRegistry, t]);
+    }, [installingId, onRefreshMcpPlugins, onRefreshRegistry, settings, t, updateSettings]);
 
     if (loading) { return <Loader t={t} />; }
 
@@ -631,11 +667,15 @@ export function McpMarketplace({
                                         ) : (
                                             <MarketCard
                                                 item={entry.item}
-                                                isActive={entry.item.itemType === 'language' && (entry.item as MarketplaceLanguage).locale === activeLanguage}
+                                                isActive={
+                                                    (entry.item.itemType === 'language' && (entry.item as MarketplaceLanguage).locale === activeLanguage)
+                                                    || (entry.item.itemType === 'icon-pack' && settings?.general.workspaceIconPack === entry.item.id)
+                                                }
                                                 isInstalling={installingId === entry.item.id}
                                                 onInstall={(it) => void handleInstall(it)}
                                                 onUninstall={(it) => void handleUninstall(it)}
                                                 onActivateLanguage={(it) => void handleActivateLanguage(it)}
+                                                onActivateIconPack={(it) => void handleActivateIconPack(it)}
                                             />
                                         )}
                                     </div>
@@ -703,6 +743,7 @@ function EmptyState({
         models: 'marketplace.tabs.models',
         prompts: 'marketplace.tabs.prompts',
         languages: 'marketplace.tabs.languages',
+        iconPacks: 'marketplace.tabs.iconPacks',
     };
     return (
         <div className="py-32 flex flex-col items-center justify-center text-center">

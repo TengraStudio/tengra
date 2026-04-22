@@ -552,68 +552,8 @@ function registerRebaseHandlers(gitService: GitService, validateSender: SenderVa
         argsSchema: z.tuple([PathSchema, SimpleArgSchema])
     }));
 
-    ipcMain.handle('git:startRebase', createValidatedIpcHandler('git:startRebase', async (event, cwd: string, baseBranch: string) => {
-        validateSender(event);
-        const result = await withOperationGuard('git', () =>
-            gitService.executeRaw(cwd, `rebase ${baseBranch}`)
-        );
-        return {
-            success: result.success,
-            error: result.error,
-            stdout: result.stdout,
-            stderr: result.stderr,
-        };
-    }, {
-        defaultValue: {
-            success: false,
-            error: 'Failed to start rebase',
-            stdout: undefined,
-            stderr: undefined,
-        },
-        argsSchema: z.tuple([PathSchema, SimpleArgSchema])
-    }));
 
-    ipcMain.handle('git:continueRebase', createValidatedIpcHandler('git:continueRebase', async (event, cwd: string) => {
-        validateSender(event);
-        const result = await withOperationGuard('git', () =>
-            gitService.executeRaw(cwd, 'rebase --continue')
-        );
-        return {
-            success: result.success,
-            error: result.error,
-            stdout: result.stdout,
-            stderr: result.stderr,
-        };
-    }, {
-        defaultValue: {
-            success: false,
-            error: 'Failed to continue rebase',
-            stdout: undefined,
-            stderr: undefined,
-        },
-        argsSchema: z.tuple([PathSchema])
-    }));
 
-    ipcMain.handle('git:abortRebase', createValidatedIpcHandler('git:abortRebase', async (event, cwd: string) => {
-        validateSender(event);
-        const result = await withOperationGuard('git', () =>
-            gitService.executeRaw(cwd, 'rebase --abort')
-        );
-        return {
-            success: result.success,
-            error: result.error,
-            stdout: result.stdout,
-            stderr: result.stderr,
-        };
-    }, {
-        defaultValue: {
-            success: false,
-            error: 'Failed to abort rebase',
-            stdout: undefined,
-            stderr: undefined,
-        },
-        argsSchema: z.tuple([PathSchema])
-    }));
 }
 
 /**
@@ -659,78 +599,10 @@ function registerSubmoduleHandlers(gitService: GitService, validateSender: Sende
         argsSchema: z.tuple([PathSchema])
     }));
 
-    ipcMain.handle('git:initSubmodules', createValidatedIpcHandler('git:initSubmodules', async (event, cwd: string, recursive?: boolean) => {
-        validateSender(event);
-        const result = await withOperationGuard('git', () =>
-            gitService.executeRaw(
-                cwd,
-                recursive
-                    ? 'submodule update --init --recursive'
-                    : 'submodule update --init'
-            )
-        );
-        return { success: result.success, error: result.error };
-    }, {
-        defaultValue: { success: false, error: 'Failed to init submodules' },
-        argsSchema: z.tuple([PathSchema, z.boolean().optional()])
-    }));
 
-    ipcMain.handle('git:updateSubmodules', createValidatedIpcHandler('git:updateSubmodules', async (event, cwd: string, remote?: boolean) => {
-        validateSender(event);
-        const result = await withOperationGuard('git', () =>
-            gitService.executeRaw(
-                cwd,
-                remote
-                    ? 'submodule update --remote --recursive'
-                    : 'submodule update --recursive'
-            )
-        );
-        return { success: result.success, error: result.error };
-    }, {
-        defaultValue: { success: false, error: 'Failed to update submodules' },
-        argsSchema: z.tuple([PathSchema, z.boolean().optional()])
-    }));
 
-    ipcMain.handle('git:syncSubmodules', createValidatedIpcHandler('git:syncSubmodules', async (event, cwd: string) => {
-        validateSender(event);
-        const result = await withOperationGuard('git', () =>
-            gitService.executeRaw(cwd, 'submodule sync --recursive')
-        );
-        return { success: result.success, error: result.error };
-    }, {
-        defaultValue: { success: false, error: 'Failed to sync submodules' },
-        argsSchema: z.tuple([PathSchema])
-    }));
 
-    ipcMain.handle('git:addSubmodule', createValidatedIpcHandler('git:addSubmodule', async (event, cwd: string, url: string, submodulePath: string, branch?: string) => {
-        validateSender(event);
-        const branchArg = branch ? ` -b ${branch}` : '';
-        const result = await withOperationGuard('git', () =>
-            gitService.executeRaw(
-                cwd,
-                `submodule add${branchArg} ${url} "${shellEscapeQuoted(submodulePath)}"`
-            )
-        );
-        return { success: result.success, error: result.error };
-    }, {
-        defaultValue: { success: false, error: 'Failed to add submodule' },
-        argsSchema: z.tuple([PathSchema, SimpleArgSchema, FilePathArgSchema, SimpleArgSchema.optional()])
-    }));
 
-    ipcMain.handle('git:removeSubmodule', createValidatedIpcHandler('git:removeSubmodule', async (event, cwd: string, submodulePath: string) => {
-        validateSender(event);
-        const safePath = shellEscapeQuoted(submodulePath);
-        await withOperationGuard('git', () =>
-            gitService.executeRaw(cwd, `submodule deinit -f -- "${safePath}"`)
-        );
-        const result = await withOperationGuard('git', () =>
-            gitService.executeRaw(cwd, `rm -f "${safePath}"`)
-        );
-        return { success: result.success, error: result.error };
-    }, {
-        defaultValue: { success: false, error: 'Failed to remove submodule' },
-        argsSchema: z.tuple([PathSchema, FilePathArgSchema])
-    }));
 }
 
 /**
@@ -917,19 +789,6 @@ function registerHookHandlers(gitService: GitService, validateSender: SenderVali
         argsSchema: z.tuple([PathSchema, HookNameSchema])
     }));
 
-    ipcMain.handle('git:exportHooks', createValidatedIpcHandler('git:exportHooks', async (event, cwd: string) => {
-        validateSender(event);
-        const hooks = await listHooks(gitService, cwd);
-        const payload = {
-            exportedAt: new Date().toISOString(),
-            hooks,
-        };
-
-        return { success: true, payload };
-    }, {
-        defaultValue: { success: false, payload: { exportedAt: '', hooks: [] } },
-        argsSchema: z.tuple([PathSchema])
-    }));
 }
 
 /**

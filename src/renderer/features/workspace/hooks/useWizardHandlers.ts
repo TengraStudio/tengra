@@ -142,9 +142,6 @@ export const useCreateWorkspaceHandler = (options: CreateWorkspaceOptions): () =
             await window.electron.files.createDirectory(workspacesDir);
             await window.electron.files.createDirectory(workspacePath);
 
-            const readmeContent = `# ${formData.name}\n\n${formData.description}\n`;
-            await window.electron.files.writeFile(`${workspacePath}\\README.md`, readmeContent);
-
             const success = await onWorkspaceCreated(workspacePath, formData.name, formData.description);
             if (success) {
                 onClose();
@@ -152,7 +149,6 @@ export const useCreateWorkspaceHandler = (options: CreateWorkspaceOptions): () =
             }
             setError(t('workspace.errors.wizard.createWorkspaceFailed'));
             setStep('details');
-
         } catch (err) {
             const errorToReport = err instanceof Error ? err : new Error(t('workspace.errors.wizard.createWorkspaceFailed'));
             appLogger.error('useWizardHandlers', 'Workspace Creation Failed', errorToReport);
@@ -234,4 +230,3 @@ export const useSSHBrowserNextHandler = (options: SSHBrowserNextOptions): () => 
 
     return handleSSHBrowserNext;
 };
-

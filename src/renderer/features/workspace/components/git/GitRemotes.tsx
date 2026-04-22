@@ -8,8 +8,8 @@
  * (at your option) any later version.
  */
 
+import React from 'react';
 import { Globe } from 'lucide-react';
-
 import { Remote } from './types';
 
 interface RemotesProps {
@@ -17,27 +17,28 @@ interface RemotesProps {
     t: (key: string) => string;
 }
 
-export const GitRemotes: React.FC<RemotesProps> = ({ remotes, t }) => {
-    if (remotes.length === 0) { return null; }
+export const GitRemotes: React.FC<RemotesProps> = ({ remotes }) => {
     return (
-        <div className="bg-card/80 backdrop-blur-md rounded-2xl border border-border/50 p-6">
-            <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-                <Globe className="w-4 h-4" />
-                {t('workspaceDashboard.remotes')}
-            </h3>
-            <div className="space-y-2">
-                {remotes.map((remote: Remote) => (
-                    <div key={remote.name} className="bg-muted/30 rounded-xl p-3 flex items-center justify-between">
-                        <div>
-                            <div className="text-sm font-semibold text-foreground">{remote.name}</div>
-                            <div className="typo-caption text-muted-foreground">{remote.url}</div>
-                        </div>
-                        <div className="flex items-center gap-2 typo-caption text-muted-foreground">
-                            {remote.fetch && <span>{t('workspaceDashboard.fetch')}</span>}
-                            {remote.push && <span>{t('workspaceDashboard.push')}</span>}
-                        </div>
+        <div className="space-y-3">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1">Remotes</span>
+            <div className="p-4 rounded-lg bg-card border border-border/40 space-y-3">
+                {remotes.length === 0 ? (
+                    <div className="py-4 text-center text-[10px] text-muted-foreground/30 font-bold uppercase tracking-widest">
+                        Local Only
                     </div>
-                ))}
+                ) : (
+                    remotes.map((remote) => (
+                        <div key={remote.name} className="flex flex-col gap-1 overflow-hidden">
+                            <div className="flex items-center gap-2">
+                                <Globe className="w-3 h-3 text-primary/40" />
+                                <span className="text-xs font-bold text-foreground/80">{remote.name}</span>
+                            </div>
+                            <div className="text-[10px] font-medium text-muted-foreground/50 truncate font-mono">
+                                {remote.url}
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
         </div>
     );

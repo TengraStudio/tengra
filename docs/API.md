@@ -1,80 +1,70 @@
-# Tengra API & IPC Reference
+# API and IPC Reference
 
-This document defines the high-level API and IPC contracts available in Tengra.
+This document gives a high-level map of Tengra's local REST API, renderer IPC bridge, and extension/MCP integration surfaces. Source schemas and handler implementations remain the authoritative reference.
 
-## 1. REST API (Browser Extension Integration)
+## Local REST API
 
-Tengra exposes a local REST API for integration with browser-based IDEs and utilities.
+Tengra exposes a local API server for controlled integrations such as browser tooling, local utilities, and extension workflows.
 
-### Authenticated Handlers
-All requests MUST include `X-Tengra-Session` header.
+Typical route groups:
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/v1/auth/status` | `GET` | Get current authentication status |
-| `/api/v1/chat/completions` | `POST` | OpenAI-compatible chat completion endpoint |
-| `/api/v1/projects` | `GET` | List available workspace projects |
-| `/api/v1/files/read` | `GET` | Read file content from a project |
-| `/api/v1/files/write` | `POST` | Write content to a project file |
+| Area | Example Routes | Purpose |
+| --- | --- | --- |
+| Auth | `/api/v1/auth/status` | Check linked-account/auth state |
+| Chat | `/api/v1/chat/completions` | OpenAI-compatible local chat entrypoint |
+| Workspaces | `/api/v1/workspaces`, workspace-scoped file routes | Workspace metadata and file operations |
+| Models | model/provider catalog routes | Provider and local model discovery |
+| Runtime | health/status routes | Runtime and service health |
 
----
+Request authentication and exact route contracts are implemented in `src/main/api/api-server.service.ts`.
 
-## 2. IPC Guide (Main ↔ Renderer)
+## Renderer IPC Bridge
 
-Tengra utilizes a strictly typed IPC bridge.
+The renderer does not access Node.js or the OS directly. It calls functions exposed by preload domain bridges under `src/main/preload/domains`.
 
-### Core Architecture
-- **Validated IPC**: Handlers are registered with Zod schemas for request and response validation.
-- **IPC Response Wrapper**: All IPC calls return a wrapped response:
-  ```typescript
-  interface IpcResponse<T> {
-    success: boolean;
-    data?: T;
-    error?: {
-      code: string;
-      message: string;
-      details?: any;
-    };
-  }
-  ```
+Key bridge/domain areas:
 
-### Key Domain Namespaces
-| Namespace | Responsibility |
-|-----------|----------------|
-| `auth:` | Authentication flows and token management |
-| `chat:` | LLM interaction and streaming |
-| `project:` | Project lifecycle, indexing, and analysis |
-| `files:` | Secure filesystem operations |
-| `terminal:` | Terminal emulation and session handling |
-| `settings:` | Application preferences and configuration |
+| Domain | Typical Responsibility |
+| --- | --- |
+| `auth` / linked accounts | OAuth, account state, tokens, auth sessions |
+| `session` / conversation | chat streaming and session conversation flow |
+| `db` | chats, messages, folders, workspaces, stats |
+| `files` | filesystem read/write/list operations |
+| `workspace` | workspace analysis, code intelligence, inline suggestions |
+| `terminal` / `process` | shell sessions and process output |
+| `ssh` | SSH profiles, connections, SFTP, remote execution |
+| `mcp` / marketplace / extension | plugin and marketplace lifecycle |
+| `runtime` | managed runtime status and repair |
+| `settings` / theme | user preferences and UI runtime state |
 
-### Auto-Generated IPC Channel List
-Full list of all 600+ IPC channels can be found in [IPC_CHANNELS.md](./IPC_CHANNELS.md).
+Shared renderer-facing API types live in:
 
----
+- `src/renderer/electron.d.ts`
+- `src/renderer/electron-api/`
+- `src/shared/types/electron-api.types.ts`
+- `src/shared/schemas/`
 
-## 3. Marketplace API
+## IPC Contract Rules
 
-Extensions are managed by the `ExtensionService` and use the following IPC channels.
+- Validate external or cross-process payloads with shared schemas where a schema exists.
+- Keep privileged work in the main process or native services.
+- Keep renderer API additions mirrored in preload domain types and renderer declarations.
+- Return structured errors; do not leak raw tokens, headers, or provider credentials.
+- Add tests when changing channel shape, response shape, or validation behavior.
 
-### Extension Lifecycle
-| Channel | Args | Returns |
-|---------|------|---------|
-| `extension:get-all` | — | All installed extensions |
-| `extension:get` | `id: string` | Single extension by ID |
-| `extension:activate` | `id: string` | Trigger activation |
-| `extension:deactivate` | `id: string` | Deactivate extension |
+## Tool and MCP Execution
 
-### Extension Context
-Extensions receive a scoped `ExtensionContext` with access to:
-- `globalState`: Persistent storage.
-- `workspaceState`: Per-project storage.
-- `logger`: Scoped logging.
-- `configuration`: Settings access.
-- `subscriptions`: Cleanup management.
+Tool execution is centered around:
 
----
+- `src/main/tools/tool-definitions.ts`
+- `src/main/tools/tool-executor.ts`
+- `src/main/mcp/dispatcher.ts`
+- `src/main/mcp/plugin-base.ts`
 
-## 4. OpenAPI Specification
+Native proxy tools are bridged through the existing MCP permission path before calls reach `tengra-proxy`.
 
-The formal OpenAPI 3.0 specification for the internal REST API is located in [tengra-api.openapi.yaml](./tengra-api.openapi.yaml).
+## Provider Proxy API
+
+Provider routing, token refresh, quota checks, and model catalog behavior are consolidated in `tengra-proxy` under `src/native/tengra-proxy`.
+
+The proxy exposes compatibility handlers for common chat/model endpoints and management flows. Electron remains responsible for app lifecycle, secure account storage, UI, and IPC mediation.

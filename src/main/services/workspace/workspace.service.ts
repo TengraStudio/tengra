@@ -8,12 +8,17 @@
  * (at your option) any later version.
  */
 
+import { spawn } from 'child_process';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
+import { ProxyService } from '@main/services/proxy/proxy.service';
+import { CacheService } from '@main/services/system/cache.service';
+import { UtilityProcessService } from '@main/services/system/utility-process.service';
+import { getBundledUtilityWorkerPath } from '@main/services/system/utility-worker-path.util';
 import { LspService } from '@main/services/workspace/lsp.service';
 import {
     DEFAULT_WORKSPACE_SCAN_IGNORE_PATTERNS,
@@ -31,6 +36,8 @@ import type {
     CodeAnnotation,
     WorkspaceAnalysis,
     WorkspaceDefinitionLocation,
+    WorkspaceDiagnosticsSourceResult,
+    WorkspaceDiagnosticsStatus,
     WorkspaceFilesPageMeta,
     WorkspaceIssue,
     WorkspaceLspServerSupport,
@@ -51,10 +58,28 @@ export interface WorkspaceFilesPageResult extends WorkspaceFilesPageMeta {
     files: string[]
 }
 
+interface FileScanResult {
+    files: string[];
+    complete: boolean;
+}
+
 interface WorkspaceDirectorySizeEntry {
     path: string;
     size: number;
     fileCount: number;
+}
+
+interface StaticIssuesScanResult {
+    issues: WorkspaceIssue[];
+    diagnosticsStatus: WorkspaceDiagnosticsStatus;
+}
+
+interface StaticDiagnosticsCommandResult {
+    exitCode: number | null;
+    stdout: string;
+    stderr: string;
+    timedOut: boolean;
+    commandNotFound: boolean;
 }
 
 const LSP_PROJECT_ROOT_MARKERS: Partial<Record<string, readonly string[]>> = {
@@ -281,6 +306,7 @@ function normalizeWorkspacePath(value: string): string {
 }
 
 export class WorkspaceService extends BaseService {
+    private static readonly WORKER_FILE_NAME = 'workspace-scanner.worker.cjs';
     private watchers: Map<string, import('fs').FSWatcher> = new Map();
     private watchCallbacks: Map<string, Set<WorkspaceChangeCallback>> = new Map();
     private analysisCache: Map<string, { data: WorkspaceAnalysis; timestamp: number }> = new Map();
@@ -296,8 +322,18 @@ export class WorkspaceService extends BaseService {
     private readonly WORKSPACE_FILES_PAGE_SIZE = 1000;
     private readonly INITIAL_STATS_SAMPLE_LIMIT = 400;
     private readonly LSP_PRIME_WAIT_MS = 400;
+    private readonly STATIC_DIAGNOSTICS_TIMEOUT_MS = 12_000;
+    private readonly MAX_STATIC_ISSUES = 1000;
 
-    constructor(private lspService?: LspService) {
+    private workerProcessId: string | null = null;
+    private workerDisabled = false;
+
+    constructor(
+        private lspService?: LspService,
+        private utilityProcessService?: UtilityProcessService,
+        private cacheService?: CacheService,
+        private proxyService?: ProxyService
+    ) {
         super('WorkspaceService');
     }
 
@@ -328,6 +364,10 @@ export class WorkspaceService extends BaseService {
     /** Closes all file watchers and clears caches. */
     async cleanup(): Promise<void> {
         this.logInfo('Cleaning up WorkspaceService watchers...');
+        if (this.workerProcessId && this.utilityProcessService) {
+            this.utilityProcessService.terminate(this.workerProcessId);
+            this.workerProcessId = null;
+        }
         if (this.lspService) {
             await this.lspService.dispose();
         }
@@ -568,7 +608,7 @@ export class WorkspaceService extends BaseService {
         const languages = await this.calculateLanguages(files);
         const monorepo = await this.detectMonorepo(rootPath, files);
         const initialFilePage = this.paginateFiles(files, 0, this.WORKSPACE_FILES_PAGE_SIZE);
-        const issues = includeIssues ? await this.findStaticIssues(rootPath, files) : undefined;
+        const staticIssues = includeIssues ? await this.findStaticIssues(rootPath, files) : undefined;
         const annotations = includeIssues ? await this.findAnnotations(rootPath, files) : undefined;
         const lspDiagnostics = includeIssues ? [] : undefined;
         const lspServers = this.collectLspServerSupport(rootPath, files);
@@ -592,10 +632,11 @@ export class WorkspaceService extends BaseService {
                 },
                 monorepo,
                 todos: [],
-                issues,
+                issues: staticIssues?.issues,
                 annotations,
                 lspDiagnostics,
                 lspServers,
+                diagnosticsStatus: staticIssues?.diagnosticsStatus,
             },
             scanComplete: scanResult.complete,
             files,
@@ -616,7 +657,24 @@ export class WorkspaceService extends BaseService {
         const cached = this.analysisCache.get(rootPath);
         if (cached !== undefined && (Date.now() - cached.timestamp < this.ANALYSIS_CACHE_TTL_MS)) {
             this.logDebug('Returning cached workspace analysis for:', rootPath);
-            return cached.data;
+            const cachedFiles = this.fileListCache.get(rootPath)?.files ?? [];
+            const ignoreMatcher = await this.getScanIgnoreMatcher(rootPath);
+            if (cachedFiles.length > 0) {
+                await this.ensureLspReady(rootPath, cachedFiles, cached.data.type);
+            }
+            const refreshedDiagnostics = this.collectLspDiagnostics(
+                rootPath,
+                rootPath,
+                undefined,
+                ignoreMatcher
+            );
+            const refreshedAnalysis: WorkspaceAnalysis = {
+                ...cached.data,
+                lspDiagnostics: refreshedDiagnostics,
+                lspServers: this.collectLspServerSupport(rootPath, cachedFiles),
+            };
+            this.analysisCache.set(rootPath, { data: refreshedAnalysis, timestamp: Date.now() });
+            return refreshedAnalysis;
         }
 
         const existingRequest = this.analysisInFlight.get(rootPath);
@@ -627,8 +685,13 @@ export class WorkspaceService extends BaseService {
 
         const analysisRequest = (async (): Promise<WorkspaceAnalysis> => {
             const { analysis, scanComplete, files } = await this.buildWorkspaceAnalysis(rootPath);
+            const ignoreMatcher = await this.getScanIgnoreMatcher(rootPath);
             await this.ensureLspReady(rootPath, files, analysis.type);
-            analysis.lspDiagnostics = this.collectLspDiagnostics(rootPath);
+            analysis.lspDiagnostics = await this.waitForWorkspaceDiagnostics(
+                rootPath,
+                rootPath,
+                ignoreMatcher
+            );
             analysis.lspServers = this.collectLspServerSupport(rootPath, files);
 
             const timestamp = Date.now();
@@ -690,6 +753,10 @@ export class WorkspaceService extends BaseService {
         const normalizedRootPath = this.resolveAndValidateRootPath(rootPath);
         const normalizedFilePath = this.resolveWorkspaceFilePath(normalizedRootPath, filePath);
         const normalizedContent = typeof content === 'string' ? content : '';
+        const ignoreMatcher = await this.getScanIgnoreMatcher(normalizedRootPath);
+        if (ignoreMatcher.ignoresAbsolute(normalizedFilePath)) {
+            return [];
+        }
 
         if (!this.lspService) {
             return [];
@@ -717,7 +784,8 @@ export class WorkspaceService extends BaseService {
         return this.waitForFileDiagnostics(
             lspWorkspaceRoot,
             normalizedRootPath,
-            this.toFileUri(normalizedFilePath)
+            this.toFileUri(normalizedFilePath),
+            ignoreMatcher
         );
     }
 
@@ -816,7 +884,7 @@ export class WorkspaceService extends BaseService {
                 const stats = await this.calculateStats(rootPath, fullScan.files);
                 const languages = await this.calculateLanguages(fullScan.files);
                 const monorepo = await this.detectMonorepo(rootPath, fullScan.files);
-                const issues = await this.findStaticIssues(rootPath, fullScan.files);
+                const staticIssues = await this.findStaticIssues(rootPath, fullScan.files);
                 const annotations = await this.findAnnotations(rootPath, fullScan.files);
                 this.fileListCache.set(rootPath, {
                     files: fullScan.files,
@@ -849,8 +917,9 @@ export class WorkspaceService extends BaseService {
                                 hasMore: initialFilePage.hasMore,
                             },
                             monorepo,
-                            issues,
+                            issues: staticIssues.issues,
                             annotations,
+                            diagnosticsStatus: staticIssues.diagnosticsStatus,
                         },
                     });
                 }
@@ -1039,23 +1108,436 @@ export class WorkspaceService extends BaseService {
         return [];
     }
 
-    private async findStaticIssues(rootPath: string, files: string[]): Promise<WorkspaceIssue[]> {
-        void rootPath;
-        void files;
-        return [];
+    private async findStaticIssues(rootPath: string, files: string[]): Promise<StaticIssuesScanResult> {
+        const issueBuckets: WorkspaceIssue[] = [];
+        const sources: WorkspaceDiagnosticsSourceResult[] = [];
+        const ignoreMatcher = await this.getScanIgnoreMatcher(rootPath);
+
+        const hasJsOrTsSources = files.some(file => /\.(?:[cm]?js|jsx|[cm]?ts|tsx)$/i.test(file));
+        const hasTypeScriptConfig = await this.workspaceHasAnyFile(rootPath, ['tsconfig.json', 'jsconfig.json']);
+        if (hasJsOrTsSources && hasTypeScriptConfig) {
+            const tscResult = await this.runStaticDiagnosticsCommand(
+                rootPath,
+                ['--no-install', 'tsc', '--noEmit', '--pretty', 'false'],
+                this.STATIC_DIAGNOSTICS_TIMEOUT_MS
+            );
+            if (tscResult.commandNotFound) {
+                sources.push({
+                    source: 'tsc',
+                    status: 'failed',
+                    message: 'npx or tsc not found on PATH.',
+                });
+            } else if (tscResult.timedOut) {
+                sources.push({
+                    source: 'tsc',
+                    status: 'failed',
+                    message: `Timed out after ${this.STATIC_DIAGNOSTICS_TIMEOUT_MS}ms.`,
+                });
+            } else {
+                const parsed = this.parseTypeScriptIssues(rootPath, tscResult.stdout, tscResult.stderr);
+                issueBuckets.push(...parsed);
+                sources.push({
+                    source: 'tsc',
+                    status: tscResult.exitCode === 0 || tscResult.exitCode === 1 || tscResult.exitCode === 2 ? 'ok' : 'failed',
+                    issueCount: parsed.length,
+                    message: tscResult.exitCode === 0 || tscResult.exitCode === 1 || tscResult.exitCode === 2
+                        ? undefined
+                        : `Exited with code ${tscResult.exitCode ?? 'unknown'}.`,
+                });
+            }
+        } else {
+            sources.push({
+                source: 'tsc',
+                status: 'skipped',
+                message: 'No TypeScript/JavaScript project config detected.',
+            });
+        }
+
+        const hasEslintConfig = await this.hasEslintConfig(rootPath);
+        if (hasJsOrTsSources && hasEslintConfig) {
+            const eslintResult = await this.runStaticDiagnosticsCommand(
+                rootPath,
+                ['--no-install', 'eslint', '.', '--format', 'json', '--no-error-on-unmatched-pattern'],
+                this.STATIC_DIAGNOSTICS_TIMEOUT_MS
+            );
+            if (eslintResult.commandNotFound) {
+                sources.push({
+                    source: 'eslint',
+                    status: 'failed',
+                    message: 'npx or eslint not found on PATH.',
+                });
+            } else if (eslintResult.timedOut) {
+                sources.push({
+                    source: 'eslint',
+                    status: 'failed',
+                    message: `Timed out after ${this.STATIC_DIAGNOSTICS_TIMEOUT_MS}ms.`,
+                });
+            } else {
+                const parsed = this.parseEslintIssues(rootPath, eslintResult.stdout, eslintResult.stderr);
+                issueBuckets.push(...parsed);
+                sources.push({
+                    source: 'eslint',
+                    status: eslintResult.exitCode === 0 || eslintResult.exitCode === 1 ? 'ok' : 'failed',
+                    issueCount: parsed.length,
+                    message: eslintResult.exitCode === 0 || eslintResult.exitCode === 1
+                        ? undefined
+                        : `Exited with code ${eslintResult.exitCode ?? 'unknown'}.`,
+                });
+            }
+        } else {
+            sources.push({
+                source: 'eslint',
+                status: 'skipped',
+                message: hasJsOrTsSources
+                    ? 'No ESLint config found.'
+                    : 'No JavaScript/TypeScript source files detected.',
+            });
+        }
+
+        const filteredIssues = issueBuckets
+            .filter(issue => !ignoreMatcher.ignoresAbsolute(path.resolve(rootPath, issue.file)))
+            .slice(0, this.MAX_STATIC_ISSUES);
+
+        return {
+            issues: filteredIssues,
+            diagnosticsStatus: {
+                partial: sources.some(source => source.status === 'failed'),
+                generatedAt: Date.now(),
+                sources,
+            },
+        };
+    }
+
+    private async runStaticDiagnosticsCommand(
+        rootPath: string,
+        args: string[],
+        timeoutMs: number
+    ): Promise<StaticDiagnosticsCommandResult> {
+        const toolName = args[1];
+        const toolArgs = args.slice(2);
+
+        const localToolBinaryPath = await this.resolveLocalDiagnosticBinary(rootPath, toolName);
+        if (localToolBinaryPath) {
+            const localResult = await this.executeStaticDiagnosticsCommand(
+                rootPath,
+                localToolBinaryPath,
+                toolArgs,
+                timeoutMs
+            );
+            if (!localResult.commandNotFound && !/EINVAL/i.test(localResult.stderr)) {
+                return localResult;
+            }
+        }
+
+        const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+        const npxResult = await this.executeStaticDiagnosticsCommand(
+            rootPath,
+            npxCommand,
+            args,
+            timeoutMs
+        );
+        if (npxResult.commandNotFound || /EINVAL/i.test(npxResult.stderr)) {
+            return await this.executeStaticDiagnosticsCommand(
+                rootPath,
+                'npx',
+                args,
+                timeoutMs,
+                true
+            );
+        }
+        return npxResult;
+    }
+
+    private async executeStaticDiagnosticsCommand(
+        rootPath: string,
+        command: string,
+        args: string[],
+        timeoutMs: number,
+        shell = false
+    ): Promise<StaticDiagnosticsCommandResult> {
+        const proxyResult = await this.executeStaticDiagnosticsViaProxy(rootPath, command, args, timeoutMs);
+        if (proxyResult) {
+            return proxyResult;
+        }
+
+        return await new Promise(resolve => {
+            let child: import('child_process').ChildProcess;
+            try {
+                child = spawn(command, args, {
+                    cwd: rootPath,
+                    shell,
+                    windowsHide: true,
+                });
+            } catch (error) {
+                const message = getErrorMessage(error as Error);
+                resolve({
+                    exitCode: null,
+                    stdout: '',
+                    stderr: message,
+                    timedOut: false,
+                    commandNotFound: /ENOENT/i.test(message),
+                });
+                return;
+            }
+
+            let stdout = '';
+            let stderr = '';
+            let timedOut = false;
+            let commandNotFound = false;
+            const timeoutHandle = setTimeout(() => {
+                timedOut = true;
+                child.kill();
+            }, timeoutMs);
+
+            child.stdout?.on('data', chunk => {
+                stdout += String(chunk);
+            });
+            child.stderr?.on('data', chunk => {
+                stderr += String(chunk);
+            });
+            child.on('error', error => {
+                const message = getErrorMessage(error);
+                commandNotFound = /ENOENT/i.test(message);
+                stderr += message;
+            });
+            child.on('close', code => {
+                clearTimeout(timeoutHandle);
+                resolve({
+                    exitCode: code,
+                    stdout,
+                    stderr,
+                    timedOut,
+                    commandNotFound,
+                });
+            });
+        });
+    }
+
+    private async executeStaticDiagnosticsViaProxy(
+        rootPath: string,
+        command: string,
+        args: string[],
+        timeoutMs: number
+    ): Promise<StaticDiagnosticsCommandResult | null> {
+        if (!this.proxyService) {
+            return null;
+        }
+
+        try {
+            const response = await this.proxyService.dispatchTool('system', 'exec', {
+                command,
+                args,
+                cwd: rootPath,
+                timeoutMs,
+            });
+            if (!response.success) {
+                return null;
+            }
+
+            const result = (response.result && typeof response.result === 'object' && !Array.isArray(response.result))
+                ? response.result as Record<string, unknown>
+                : undefined;
+            if (!result) {
+                return null;
+            }
+
+            return {
+                exitCode: typeof result.exitCode === 'number' ? result.exitCode : null,
+                stdout: typeof result.stdout === 'string' ? result.stdout : '',
+                stderr: typeof result.stderr === 'string' ? result.stderr : '',
+                timedOut: result.timedOut === true,
+                commandNotFound: result.commandNotFound === true,
+            };
+        } catch {
+            return null;
+        }
+    }
+
+    private async resolveLocalDiagnosticBinary(
+        rootPath: string,
+        toolName: string | undefined
+    ): Promise<string | null> {
+        if (!toolName) {
+            return null;
+        }
+        const binaryName =
+            process.platform === 'win32'
+                ? `${toolName}.cmd`
+                : toolName;
+        const binaryPath = path.join(rootPath, 'node_modules', '.bin', binaryName);
+        try {
+            await fs.access(binaryPath);
+            return binaryPath;
+        } catch {
+            return null;
+        }
+    }
+
+    private parseTypeScriptIssues(rootPath: string, stdout: string, stderr: string): WorkspaceIssue[] {
+        const combinedOutput = `${stdout}\n${stderr}`;
+        const lines = combinedOutput.split(/\r?\n/);
+        const diagnostics: WorkspaceIssue[] = [];
+        for (const line of lines) {
+            const compactLine = line.trim();
+            if (!compactLine) {
+                continue;
+            }
+            let match = compactLine.match(/^(.*)\((\d+),(\d+)\):\s*error\s+(TS\d+):\s*(.+)$/i);
+            if (!match) {
+                match = compactLine.match(/^(.*):(\d+):(\d+)\s*-\s*error\s+(TS\d+):\s*(.+)$/i);
+            }
+            if (!match) {
+                continue;
+            }
+            const file = this.normalizeToolIssueFilePath(rootPath, match[1]);
+            if (!file) {
+                continue;
+            }
+            diagnostics.push({
+                file,
+                line: Number(match[2]),
+                column: Number(match[3]),
+                severity: 'error',
+                source: 'tsc',
+                code: match[4],
+                message: match[5],
+            });
+        }
+        return diagnostics;
+    }
+
+    private parseEslintIssues(rootPath: string, stdout: string, stderr: string): WorkspaceIssue[] {
+        const output = stdout.trim();
+        if (!output.startsWith('[')) {
+            if (stderr.trim().length > 0) {
+                this.logWarn(`ESLint output parse skipped: ${stderr.split(/\r?\n/)[0]}`);
+            }
+            return [];
+        }
+        const report = safeJsonParse<Array<{
+            filePath?: string;
+            messages?: Array<{
+                line?: number;
+                column?: number;
+                severity?: number;
+                message?: string;
+                ruleId?: string | null;
+            }>;
+        }>>(output, []);
+        const diagnostics: WorkspaceIssue[] = [];
+        for (const entry of report) {
+            const file = this.normalizeToolIssueFilePath(rootPath, entry.filePath ?? '');
+            if (!file || !entry.messages) {
+                continue;
+            }
+            for (const message of entry.messages) {
+                if (!message.message || !message.line) {
+                    continue;
+                }
+                diagnostics.push({
+                    file,
+                    line: message.line,
+                    column: message.column,
+                    severity: message.severity === 2 ? 'error' : 'warning',
+                    source: 'eslint',
+                    code: message.ruleId ?? undefined,
+                    message: message.message,
+                });
+            }
+        }
+        return diagnostics;
+    }
+
+    private normalizeToolIssueFilePath(rootPath: string, rawFilePath: string): string | null {
+        if (!rawFilePath || rawFilePath.trim().length === 0) {
+            return null;
+        }
+        const normalizedRoot = path.resolve(rootPath);
+        const absolutePath = path.isAbsolute(rawFilePath)
+            ? path.resolve(rawFilePath)
+            : path.resolve(normalizedRoot, rawFilePath);
+        const relativePath = path.relative(normalizedRoot, absolutePath);
+        if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+            return null;
+        }
+        return relativePath.replace(/\\/g, '/');
+    }
+
+    private async hasEslintConfig(rootPath: string): Promise<boolean> {
+        const configFiles = [
+            'eslint.config.js',
+            'eslint.config.cjs',
+            'eslint.config.mjs',
+            'eslint.config.ts',
+            'eslint.config.cts',
+            'eslint.config.mts',
+            '.eslintrc',
+            '.eslintrc.js',
+            '.eslintrc.cjs',
+            '.eslintrc.mjs',
+            '.eslintrc.json',
+            '.eslintrc.yaml',
+            '.eslintrc.yml',
+        ];
+        if (await this.workspaceHasAnyFile(rootPath, configFiles)) {
+            return true;
+        }
+        try {
+            const packageJsonPath = path.join(rootPath, 'package.json');
+            const packageJsonContent = await fs.readFile(packageJsonPath, 'utf-8');
+            const parsed = safeJsonParse<{ eslintConfig?: unknown }>(packageJsonContent, {});
+            return parsed.eslintConfig !== undefined;
+        } catch {
+            return false;
+        }
+    }
+
+    private async workspaceHasAnyFile(rootPath: string, relativePaths: string[]): Promise<boolean> {
+        for (const relativePath of relativePaths) {
+            try {
+                await fs.access(path.join(rootPath, relativePath));
+                return true;
+            } catch {
+                continue;
+            }
+        }
+        return false;
     }
 
     private async waitForFileDiagnostics(
         lspWorkspaceRoot: string,
         workspaceRootPath: string,
-        fileUri: string
+        fileUri: string,
+        ignoreMatcher?: WorkspaceIgnoreMatcher
     ): Promise<WorkspaceIssue[]> {
         const maxAttempts = 12;
         for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
             const diagnostics = this.collectLspDiagnostics(
                 lspWorkspaceRoot,
                 workspaceRootPath,
-                fileUri
+                fileUri,
+                ignoreMatcher
+            );
+            if (diagnostics.length > 0 || attempt === maxAttempts - 1) {
+                return diagnostics;
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        return [];
+    }
+
+    private async waitForWorkspaceDiagnostics(
+        lspWorkspaceRoot: string,
+        workspaceRootPath: string,
+        ignoreMatcher?: WorkspaceIgnoreMatcher
+    ): Promise<WorkspaceIssue[]> {
+        const maxAttempts = 12;
+        for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+            const diagnostics = this.collectLspDiagnostics(
+                lspWorkspaceRoot,
+                workspaceRootPath,
+                undefined,
+                ignoreMatcher
             );
             if (diagnostics.length > 0 || attempt === maxAttempts - 1) {
                 return diagnostics;
@@ -1082,7 +1564,8 @@ export class WorkspaceService extends BaseService {
     private collectLspDiagnostics(
         lspWorkspaceRoot: string,
         workspaceRootPath = lspWorkspaceRoot,
-        targetUri?: string
+        targetUri?: string,
+        ignoreMatcher?: WorkspaceIgnoreMatcher
     ): WorkspaceIssue[] {
         if (!this.lspService) {
             return [];
@@ -1096,6 +1579,9 @@ export class WorkspaceService extends BaseService {
             }
             const fileName = this.resolveLspUriToWorkspaceRelativePath(workspaceRootPath, item.uri);
             if (!fileName) {
+                continue;
+            }
+            if (!this.shouldIncludeLspDiagnostic(workspaceRootPath, fileName, ignoreMatcher)) {
                 continue;
             }
             for (const diagnostic of item.diagnostics) {
@@ -1114,6 +1600,18 @@ export class WorkspaceService extends BaseService {
         }
 
         return diagnostics;
+    }
+
+    private shouldIncludeLspDiagnostic(
+        workspaceRootPath: string,
+        fileName: string,
+        ignoreMatcher?: WorkspaceIgnoreMatcher
+    ): boolean {
+        if (!ignoreMatcher) {
+            return true;
+        }
+        const absoluteFilePath = path.resolve(workspaceRootPath, fileName);
+        return !ignoreMatcher.ignoresAbsolute(absoluteFilePath);
     }
 
     private collectLspServerSupport(rootPath: string, files: string[]): WorkspaceLspServerSupport[] | undefined {
@@ -1174,12 +1672,12 @@ export class WorkspaceService extends BaseService {
     private resolveWorkspaceFilePath(rootPath: string, filePath: string): string {
         const normalizedFilePath = path.resolve(filePath);
         const normalizedRootPath = path.resolve(rootPath);
-        
+
         // On Windows, handle case insensitivity and drive letter formatting differences
         const isWin = process.platform === 'win32';
         const comparisonFilePath = isWin ? normalizedFilePath.toLowerCase() : normalizedFilePath;
         const comparisonRootPath = isWin ? normalizedRootPath.toLowerCase() : normalizedRootPath;
-        
+
         const relativePath = path.relative(comparisonRootPath, comparisonFilePath);
 
         if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
@@ -1250,7 +1748,6 @@ export class WorkspaceService extends BaseService {
     async analyzeDirectory(dirPath: string): Promise<{
         hasPackageJson: boolean
         pkg: JsonObject
-        readme: string | null
         stats: WorkspaceStats
     }> {
         dirPath = this.resolveAndValidateRootPath(dirPath);
@@ -1267,16 +1764,6 @@ export class WorkspaceService extends BaseService {
             this.logDebug(`[WorkspaceService] package.json not found in ${dirPath}:`, getErrorMessage(error as Error));
         }
 
-        // 2. Check for README.md
-        let readme: string | null = null;
-        try {
-            const readmePath = path.join(dirPath, 'README.md');
-            readme = await fs.readFile(readmePath, 'utf-8');
-        } catch (error) {
-            /* README.md not found */
-            this.logDebug(`README.md not found in ${dirPath}:`, getErrorMessage(error as Error));
-        }
-
         // 3. Stats for this folder
         let files: string[] = [];
         try {
@@ -1289,7 +1776,7 @@ export class WorkspaceService extends BaseService {
 
         const stats = await this.calculateStats(dirPath, files);
 
-        return { hasPackageJson, pkg, readme, stats };
+        return { hasPackageJson, pkg, stats };
     }
 
     private resolveLanguageName(filePath: string): string | null {
@@ -1358,8 +1845,97 @@ export class WorkspaceService extends BaseService {
 
     private async scanFiles(
         rootPath: string,
+        options?: { budgetMs?: number; maxFiles?: number; useCache?: boolean }
+    ): Promise<FileScanResult> {
+        const useCache = options?.useCache !== false;
+
+        // 1. Check persistent cache if allowed
+        const cached = useCache ? await this.tryGetScanCache(rootPath) : null;
+        if (cached) {
+            return cached;
+        }
+
+        // 2. Try Worker-based scanning
+        if (this.shouldUseWorker()) {
+            const workerResult = await this.tryWorkerScan(rootPath, options?.maxFiles);
+            if (workerResult) {
+                await this.trySetScanCache(rootPath, workerResult);
+                return workerResult;
+            }
+        }
+
+        // 3. Fallback to Main Process Scan
+        const result = await this.performMainProcessScan(rootPath, options);
+        await this.trySetScanCache(rootPath, result);
+
+        return result;
+    }
+
+    private async tryGetScanCache(rootPath: string): Promise<FileScanResult | null> {
+        if (!this.cacheService?.isReady()) {
+            return null;
+        }
+
+        try {
+            const cached = await this.cacheService.get<FileScanResult>('workspace-scan', rootPath);
+            if (cached) {
+                this.logDebug(`Returning persistent cache result for ${rootPath} (${cached.files.length} files)`);
+                return cached;
+            }
+        } catch (error) {
+            this.logWarn(`Failed to read persistent cache for ${rootPath}:`, getErrorMessage(error as Error));
+        }
+        return null;
+    }
+
+    private async trySetScanCache(rootPath: string, result: FileScanResult): Promise<void> {
+        if (!result.complete || !this.cacheService?.isReady()) {
+            return;
+        }
+
+        try {
+            await this.cacheService.set('workspace-scan', rootPath, result, 3600); // 1 hour TTL
+        } catch (error) {
+            this.logWarn(`Failed to update persistent cache for ${rootPath}:`, getErrorMessage(error as Error));
+        }
+    }
+
+    private async tryWorkerScan(rootPath: string, maxFiles?: number): Promise<FileScanResult | null> {
+        if (!this.utilityProcessService) {
+            return null;
+        }
+
+        try {
+            await this.ensureWorkerStarted();
+            if (!this.workerProcessId) {
+                return null;
+            }
+
+            const ignoreMatcher = await this.getScanIgnoreMatcher(rootPath);
+            const response = await this.utilityProcessService.request(
+                this.workerProcessId,
+                'workspace.scan',
+                {
+                    root: rootPath,
+                    patterns: ignoreMatcher.patterns,
+                    maxFiles
+                },
+                60000 // Large timeout for huge workspaces
+            );
+
+            if (this.isScanResult(response)) {
+                return response;
+            }
+        } catch (error) {
+            this.logWarn(`Worker scan failed: ${getErrorMessage(error as Error)}`);
+        }
+        return null;
+    }
+
+    private async performMainProcessScan(
+        rootPath: string,
         options?: { budgetMs?: number; maxFiles?: number }
-    ): Promise<{ files: string[]; complete: boolean }> {
+    ): Promise<FileScanResult> {
         const files: string[] = [];
         const dirsToVisit: string[] = [rootPath];
         const ignoreMatcher = await this.getScanIgnoreMatcher(rootPath);
@@ -1407,10 +1983,41 @@ export class WorkspaceService extends BaseService {
             }
         }
 
-        this.logInfo(
-            `Workspace analysis scan complete for ${rootPath}: ${files.length} files${complete ? '' : ' (partial)'}`
-        );
         return { files: files.sort(), complete };
+    }
+
+    private async ensureWorkerStarted(): Promise<void> {
+        if (!this.utilityProcessService || this.workerProcessId || this.workerDisabled) {
+            return;
+        }
+
+        try {
+            this.workerProcessId = this.utilityProcessService.spawn({
+                name: 'workspace-scanner',
+                entryPoint: getBundledUtilityWorkerPath(WorkspaceService.WORKER_FILE_NAME),
+            });
+            this.logInfo('Workspace scanner worker spawned.');
+        } catch (error) {
+            this.workerProcessId = null;
+            this.workerDisabled = true;
+            this.logWarn('Failed to spawn workspace scanner worker:', getErrorMessage(error as Error));
+        }
+    }
+
+    private shouldUseWorker(): boolean {
+        return Boolean(this.utilityProcessService && !this.workerDisabled);
+    }
+
+    private isScanResult(value: unknown): value is FileScanResult {
+        if (value === null || typeof value !== 'object') {
+            return false;
+        }
+
+        const candidate = value as Record<string, unknown>;
+        return (
+            Array.isArray(candidate.files) &&
+            typeof candidate.complete === 'boolean'
+        );
     }
 
     private async getScanIgnoreMatcher(rootPath: string): Promise<WorkspaceIgnoreMatcher> {
@@ -1441,7 +2048,7 @@ export class WorkspaceService extends BaseService {
             'artifacts', '.system_generated', 'logs', 'bower_components',
             'jspm_packages', '.npm', '.eslintcache', '.stylelintcache',
             '.awscache', '.cache-loader', 'build-artifacts', 'cache-loader',
-            'minified', 'compiled', 'output', 'reports', 'test-results', 
+            'minified', 'compiled', 'output', 'reports', 'test-results',
             '.tox', '.nox', '.pants.d', '.scons_cache', '.bundle', '.pnpm-store',
             '.vercel', '.netlify', '.docker', '.firebase', '.gitlab'
         ];

@@ -10,6 +10,7 @@
 
 import { AiIntentClassification } from '@shared/types/ai-runtime';
 import { JsonValue } from '@shared/types/common';
+import type { Dispatch, SetStateAction } from 'react';
 import {
     calculateToolCallSignature,
     composeDeterministicAnswer,
@@ -23,23 +24,33 @@ import { chatStream } from '@/lib/chat-stream';
 import { generateId } from '@/lib/utils';
 import { Chat, Message, ToolCall, ToolDefinition } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
+import { 
+    getChatSnapshot,
+    setChats,
+    StreamingState,
+    setStreamingState, 
+    updateChatInStore, 
+    updateMessageInStore 
+} from '@/store/chat.store';
 
 import {
     buildRepeatedToolMessages,
     buildStoredToolResults,
     getToolMessageContent,
     readToolResultImages,
+    deduplicateMessages,
     shouldRecoverFromLowSignalFinalContent,
 } from './ai-runtime-chat.util';
 import {
-    REPEATED_TOOL_RESULT_HINT,
     isExecutableToolCall,
     isMonotonousToolFamily,
+    REPEATED_TOOL_RESULT_HINT,
     TOOL_LOOP_DIRECT_ANSWER_HINT,
     TOOL_LOOP_LOW_SIGNAL_CONTENT_THRESHOLD,
     TOOL_LOOP_RECENT_SIGNATURE_WINDOW,
 } from './chat-runtime-policy.util';
-import { processChatStream, StreamStreamingState } from './process-stream';
+import { processChatStream } from './process-stream';
+import type { StreamStreamingState } from './process-stream';
 import { executeBatchToolCalls } from './tool-batch-execution.util';
 import { executeToolCall } from './tool-call-execution.util';
 import {
@@ -226,19 +237,14 @@ function updateInFlightToolProgress(params: {
     assistantId: string;
     toolCallsHistory: ToolCall[];
     toolEvidenceState: ReturnType<typeof createToolEvidenceState>;
-    setChats: (updater: (prev: Chat[]) => Chat[]) => void;
 }) {
-    const { chatId, assistantId, toolCallsHistory, toolEvidenceState, setChats } = params;
+    const { chatId, assistantId, toolCallsHistory, toolEvidenceState } = params;
     const stored = buildStoredToolResults(toolCallsHistory, toolEvidenceState.toolMessages);
-    setChats(prev => prev.map(chat => {
-        if (chat.id !== chatId) {
-            return chat;
-        }
-        return {
-            ...chat,
-            messages: chat.messages.map(m => m.id === assistantId ? { ...m, toolCalls: compactToolCallsForDisplay(toolCallsHistory) ?? m.toolCalls, toolResults: stored } : m),
-        };
-    }));
+    updateChatInStore(chatId, {
+        messages: (getChatSnapshot().chats.find(c => c.id === chatId)?.messages || []).map((m: Message) => 
+            m.id === assistantId ? { ...m, toolCalls: compactToolCallsForDisplay(toolCallsHistory) ?? m.toolCalls, toolResults: stored } : m
+        ),
+    });
 }
 
 function summarizeIteration(params: {
@@ -247,20 +253,19 @@ function summarizeIteration(params: {
     chatId: string;
     assistantId: string;
     toolCallsHistory: ToolCall[];
-    setChats: (updater: (prev: Chat[]) => Chat[]) => void;
     activeWorkspacePath: string | undefined;
     t: (key: string, options?: Record<string, unknown>) => string;
 }) {
-    const { toolEvidenceState, validExecutableToolCalls, chatId, assistantId, toolCallsHistory, setChats, activeWorkspacePath, t } = params;
+    const { toolEvidenceState, validExecutableToolCalls, chatId, assistantId, toolCallsHistory, activeWorkspacePath, t } = params;
     rememberToolCalls(toolEvidenceState, validExecutableToolCalls);
     updateInFlightToolProgress({
-        chatId, assistantId, toolCallsHistory, toolEvidenceState, setChats,
+        chatId, assistantId, toolCallsHistory, toolEvidenceState,
     });
     return executeBatchToolCalls({
         toolCalls: validExecutableToolCalls, workspacePath: activeWorkspacePath, t, chatId,
         accumulatedMessages: toolEvidenceState.toolMessages, executeToolCall: (tc, wp, tr, cid) => executeToolCall(tc, wp, tr, readToolResultImages, cid),
         onToolProgress: () => updateInFlightToolProgress({
-            chatId, assistantId, toolCallsHistory, toolEvidenceState, setChats,
+            chatId, assistantId, toolCallsHistory, toolEvidenceState,
         }),
     });
 }
@@ -278,8 +283,6 @@ interface ExecuteToolTurnLoopParams {
     handleSpeak: (id: string, content: string) => void;
     t: (key: string, options?: Record<string, unknown>) => string;
     language: string;
-    setStreamingStates: React.Dispatch<React.SetStateAction<Record<string, StreamStreamingState>>>;
-    setChats: React.Dispatch<React.SetStateAction<Chat[]>>;
     activeWorkspacePath: string | undefined;
     systemMode: 'thinking' | 'agent' | 'fast';
     intentClassification: AiIntentClassification;
@@ -301,14 +304,8 @@ async function performModelTurn(params: {
     tools: ToolDefinition[];
     toolsAllowed: boolean;
     selectedProvider: string;
-    fullOptions: Record<string, RendererDataValue>;
-    activeWorkspacePath: string | undefined;
-    chatId: string;
-    assistantId: string;
     workspaceId: string | undefined;
     systemMode: 'thinking' | 'agent' | 'fast';
-    setStreamingStates: React.Dispatch<React.SetStateAction<Record<string, StreamStreamingState>>>;
-    setChats: React.Dispatch<React.SetStateAction<Chat[]>>;
     t: (key: string, options?: Record<string, unknown>) => string;
     autoReadEnabled: boolean;
     handleSpeak: (id: string, content: string) => void;
@@ -318,12 +315,16 @@ async function performModelTurn(params: {
     accumulatedContent: string;
     toolCallsHistory: ToolCall[];
     traceId: string;
+    chatId: string;
+    assistantId: string;
+    activeWorkspacePath?: string;
+    fullOptions: Record<string, RendererDataValue>;
     iteration: number;
 }): Promise<ModelTurnResult> {
     const {
         currentMessages, activeModel, tools, toolsAllowed, selectedProvider,
         fullOptions, activeWorkspacePath, chatId, assistantId, workspaceId,
-        systemMode, setStreamingStates, setChats, t, autoReadEnabled,
+        systemMode, t, autoReadEnabled,
         handleSpeak, intentClassification, language, reasonings,
         accumulatedContent, toolCallsHistory, traceId, iteration,
     } = params;
@@ -345,8 +346,16 @@ async function performModelTurn(params: {
         stream,
         chatId,
         assistantId,
-        setStreamingStates,
-        setChats,
+        setStreamingStates: (updater: SetStateAction<Record<string, StreamStreamingState>>) => {
+            if (typeof updater === 'function') {
+                const snapshot = getChatSnapshot().streamingStates;
+                const next = updater(snapshot);
+                setStreamingState(chatId, next[chatId] as StreamingState);
+            } else {
+                setStreamingState(chatId, updater[chatId] as StreamingState);
+            }
+        },
+        setChats: setChats as Dispatch<SetStateAction<Chat[]>>,
         streamStartTime,
         activeModel,
         selectedProvider,
@@ -388,15 +397,7 @@ async function performModelTurn(params: {
     if (turnToolCalls.length > 0 && turnDisplayContent.trim().length === 0) {
         turnDisplayContent = buildInFlightToolProgressMessage(turnToolCalls, t);
         if (turnDisplayContent.trim().length > 0) {
-            setChats(prev => prev.map(chat => {
-                if (chat.id !== chatId) { return chat; }
-                return {
-                    ...chat,
-                    messages: chat.messages.map(message => (
-                        message.id === assistantId ? { ...message, content: turnDisplayContent } : message
-                    )),
-                };
-            }));
+            updateMessageInStore(chatId, assistantId, { content: turnDisplayContent });
             void window.electron.db.updateMessage(assistantId, { content: turnDisplayContent }).catch(err => {
                 appLogger.error('useChatGenerator', 'Failed to persist in-flight tool progress', err as Error);
             });
@@ -450,7 +451,7 @@ async function handleTurnConclusion(params: {
     const { finalContent } = turnResult;
     const assistantContent = finalContent.trim();
     const {
-        chatId, assistantId, selectedProvider, activeModel, setChats,
+        chatId, assistantId, selectedProvider, activeModel,
         intentClassification, language,
     } = loopParams;
 
@@ -500,7 +501,9 @@ async function handleTurnConclusion(params: {
     await finalizeToolTurn({
         assistantId, chatId, callMap: toolEvidenceState.toolCallMap,
         messages: toolEvidenceState.toolMessages, provider: selectedProvider,
-        model: activeModel, setChats, intentClassification, language, reasonings,
+        model: activeModel, intentClassification, language, reasonings,
+        content: finalContent,
+        reasoning: turnResult.finalReasoning,
     });
     return { shouldBreak: true, lowSignalRecoveryCount, noProgressToolTurnCount, wasSafetyBreak: false };
 }
@@ -541,8 +544,8 @@ function processTurnToolCalls(params: {
 export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Promise<string> {
     const {
         initialMessages, chatId, assistantId, activeModel, selectedProvider,
-        tools, fullOptions, workspaceId, t, language, setStreamingStates,
-        setChats, activeWorkspacePath, systemMode, intentClassification,
+        tools, fullOptions, workspaceId, t, language,
+        activeWorkspacePath, systemMode, intentClassification,
         confirmAntigravityCreditUsage,
     } = params;
     const toolLoopBudget = getAiToolLoopBudget(intentClassification);
@@ -611,7 +614,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
         if (executableToolCalls.length === 0) {
             await handleMalformedToolCalls({
                 result: { ...turnResult, finalToolCalls: turnToolCalls },
-                assistantId, chatId, setChats, provider: selectedProvider,
+                assistantId, chatId, provider: selectedProvider,
                 model: activeModel, callMap: toolEvidenceState.toolCallMap,
                 messages: toolEvidenceState.toolMessages, intentClassification, t, language, reasonings,
             });
@@ -684,7 +687,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
             rememberToolCalls(toolEvidenceState, validExecutableToolCalls);
             lastToolResults = repeatedToolResults;
             updateInFlightToolProgress({
-                chatId, assistantId, toolCallsHistory, toolEvidenceState, setChats,
+                chatId, assistantId, toolCallsHistory, toolEvidenceState,
             });
 
             const hasSuccessfulEvidence = hasSuccessfulToolEvidence(toolEvidenceState.toolMessages);
@@ -703,12 +706,22 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
                 recentToolSignatures, executedToolTurnCount, noProgressThreshold: toolLoopBudget.noProgressThreshold,
                 maxExecutedToolTurns: toolLoopBudget.maxExecutedToolTurns, activeModel, selectedProvider,
                 fullOptions, activeWorkspacePath, systemMode, chatId, workspaceId, intentClassification,
-                currentAssistantId: assistantId, setStreamingStates, setChats, accumulatedToolCallMap: toolEvidenceState.toolCallMap,
+                currentAssistantId: assistantId, accumulatedToolCallMap: toolEvidenceState.toolCallMap,
                 accumulatedToolMessages: toolEvidenceState.toolMessages, evidenceRecords: toolEvidenceState.evidenceRecords, t, language,
             }, { recentSignatureWindow: TOOL_LOOP_RECENT_SIGNATURE_WINDOW, directAnswerHint: TOOL_LOOP_DIRECT_ANSWER_HINT });
             if (loopAction.action === 'break') {
                 wasSafetyBreak = true;
                 break;
+            }
+            const finalAssistantMessage = buildAssistantMessage({
+                id: assistantId, content: turnDisplayContent, provider: selectedProvider,
+                model: activeModel, turnToolCalls, reasonings,
+            });
+            const visibleChats = getChatSnapshot().chats.find(c => c.id === chatId);
+            if (visibleChats) {
+                updateChatInStore(chatId, {
+                    messages: deduplicateMessages([...visibleChats.messages, finalAssistantMessage])
+                });
             }
             currentMessages = [
                 ...buildModelConversation(currentMessages, assistantMsg, repeatedToolResults),
@@ -730,7 +743,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
                 recentToolSignatures, executedToolTurnCount, noProgressThreshold: toolLoopBudget.noProgressThreshold,
                 maxExecutedToolTurns: toolLoopBudget.maxExecutedToolTurns, activeModel, selectedProvider,
                 fullOptions, activeWorkspacePath, systemMode, chatId, workspaceId, intentClassification,
-                currentAssistantId: assistantId, setStreamingStates, setChats, accumulatedToolCallMap: toolEvidenceState.toolCallMap,
+                currentAssistantId: assistantId, accumulatedToolCallMap: toolEvidenceState.toolCallMap,
                 accumulatedToolMessages: toolEvidenceState.toolMessages, evidenceRecords: toolEvidenceState.evidenceRecords, t, language,
             }, { recentSignatureWindow: TOOL_LOOP_RECENT_SIGNATURE_WINDOW, directAnswerHint: TOOL_LOOP_DIRECT_ANSWER_HINT });
             if (loopAction.action === 'break') {
@@ -747,14 +760,17 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
         consecutiveSameFamilyTurns = (currentTurnFamily === lastToolFamily && currentTurnFamily.length > 0) ? consecutiveSameFamilyTurns + 1 : (currentTurnFamily.length > 0 ? 1 : 0);
         lastToolFamily = currentTurnFamily;
 
-        if (noProgressToolTurnCount >= 2 && (isMonotonousToolFamily(recentToolSignatures, 3) || consecutiveSameFamilyTurns >= 3)) {
+        const isAgenticWorkflow = intentClassification.intent === 'agentic_workflow';
+        const isRepeatedExactToolSignature = repeatedToolSignatureCount >= 2;
+        const hasMonotonousToolFamily = isMonotonousToolFamily(recentToolSignatures, 3) || consecutiveSameFamilyTurns >= 3;
+        if (noProgressToolTurnCount >= 2 && hasMonotonousToolFamily && (!isAgenticWorkflow || isRepeatedExactToolSignature)) {
             wasSafetyBreak = true;
             break;
         }
 
         const { toolResults, generatedImages } = await summarizeIteration({
             toolEvidenceState, validExecutableToolCalls, chatId, assistantId, 
-            toolCallsHistory, setChats, activeWorkspacePath, t,
+            toolCallsHistory, activeWorkspacePath, t,
         });
         lastToolResults = toolResults;
         executedToolTurnCount++;
@@ -769,7 +785,10 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
         }
         
         const contentLen = turnResult.finalContent.trim().length;
-        const currentTurnMadeProgress = contentLen > TOOL_LOOP_LOW_SIGNAL_CONTENT_THRESHOLD || (hasSuccessfulToolEvidence(toolResults) && validExecutableToolCalls.some(tc => !seenToolFamilies.has(tc.function.name)));
+        const hasNewToolFamily = validExecutableToolCalls.some(tc => !seenToolFamilies.has(tc.function.name));
+        const hasNewToolSignature = repeatedToolSignatureCount === 1;
+        const currentTurnMadeProgress = contentLen > TOOL_LOOP_LOW_SIGNAL_CONTENT_THRESHOLD
+            || (hasSuccessfulToolEvidence(toolResults) && (hasNewToolFamily || (isAgenticWorkflow && hasNewToolSignature)));
         for (const tc of validExecutableToolCalls) {
             seenToolFamilies.add(tc.function.name);
         }
@@ -778,7 +797,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
         if (generatedImages.length > 0) {
             await finalizeWithImages({
                 result: turnResult, assistantId, chatId, images: generatedImages, calls: executableToolCalls,
-                results: toolResults, provider: selectedProvider, model: activeModel, setChats,
+                results: toolResults, provider: selectedProvider, model: activeModel,
                 callMap: toolEvidenceState.toolCallMap, messages: toolEvidenceState.toolMessages,
                 intentClassification, language,
             });
@@ -791,7 +810,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
             recentToolSignatures, executedToolTurnCount, noProgressThreshold: toolLoopBudget.noProgressThreshold,
             maxExecutedToolTurns: toolLoopBudget.maxExecutedToolTurns, activeModel, selectedProvider,
             fullOptions, activeWorkspacePath, systemMode, chatId, workspaceId, intentClassification,
-            currentAssistantId: assistantId, setStreamingStates, setChats, accumulatedToolCallMap: toolEvidenceState.toolCallMap,
+            currentAssistantId: assistantId, accumulatedToolCallMap: toolEvidenceState.toolCallMap,
             accumulatedToolMessages: toolEvidenceState.toolMessages, evidenceRecords: toolEvidenceState.evidenceRecords, t, language,
         }, { recentSignatureWindow: TOOL_LOOP_RECENT_SIGNATURE_WINDOW, directAnswerHint: TOOL_LOOP_DIRECT_ANSWER_HINT });
 
@@ -810,7 +829,7 @@ export async function executeToolTurnLoop(params: ExecuteToolTurnLoopParams): Pr
             toolResults: lastToolResults, noProgressToolTurnCount, recentToolSignatures, executedToolTurnCount,
             noProgressThreshold: toolLoopBudget.noProgressThreshold, maxExecutedToolTurns: toolLoopBudget.maxExecutedToolTurns,
             currentMessages, activeModel, selectedProvider, fullOptions, activeWorkspacePath, systemMode,
-            intentClassification, chatId, workspaceId, currentAssistantId: assistantId, setStreamingStates, setChats,
+            intentClassification, chatId, workspaceId, currentAssistantId: assistantId,
             accumulatedToolCallMap: toolEvidenceState.toolCallMap, accumulatedToolMessages: toolEvidenceState.toolMessages,
             evidenceRecords: toolEvidenceState.evidenceRecords, t, language,
         }, { lowSignalContentThreshold: TOOL_LOOP_LOW_SIGNAL_CONTENT_THRESHOLD });

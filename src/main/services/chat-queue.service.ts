@@ -12,7 +12,6 @@ import { EventEmitter } from 'events';
 
 import { appLogger } from '@main/logging/logger';
 import { multiLLMOrchestrator } from '@main/services/llm/multi-llm-orchestrator.service';
-import { BrowserWindow } from 'electron';
 import { v4 as uuidv4 } from 'uuid';
 
 export type OrchestrationPolicy = 'auto' | 'fifo' | 'parallel'
@@ -88,11 +87,8 @@ export class ChatQueueManager extends EventEmitter {
             this.generatingChats.delete(chatId);
         }
 
-        // Broadcast to all windows for Sidebar UI
-        const windows = BrowserWindow.getAllWindows();
-        windows.forEach(win => {
-            win.webContents.send('chat:generation-status', { chatId, isGenerating });
-        });
+        void chatId;
+        void isGenerating;
     }
 
     private async processQueue() {

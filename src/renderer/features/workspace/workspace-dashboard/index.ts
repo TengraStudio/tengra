@@ -16,7 +16,6 @@ export * from './WorkspaceDashboardHeader';
 export * from './WorkspaceEnvironmentTab';
 export * from './WorkspaceFilesTab';
 export * from './WorkspaceGitTab';
-export * from './WorkspaceLogsTab';
 export * from './WorkspaceOverviewTab';
 export * from './WorkspaceSearchTab';
 export * from './WorkspaceSettingsPanel';

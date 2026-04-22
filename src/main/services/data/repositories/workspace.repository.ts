@@ -151,6 +151,11 @@ export class WorkspaceRepository extends BaseRepository {
             fields.push('logo = ?');
             values.push(updates.logo);
         }
+        if (updates.rules !== undefined) {
+            const currentMetadata = this.parseRowJsonObjectField(currentWorkspace?.metadata) ?? {};
+            fields.push('metadata = ?');
+            values.push(JSON.stringify({ ...currentMetadata, rules: updates.rules }));
+        }
         if (updates.mounts !== undefined) {
             fields.push('mounts = ?');
             values.push(JSON.stringify(this.normalizeMounts(updates.mounts)));
@@ -168,6 +173,8 @@ export class WorkspaceRepository extends BaseRepository {
             updates.buildConfig !== undefined ||
             updates.devServer !== undefined ||
             updates.editor !== undefined ||
+            updates.intelligence !== undefined ||
+            updates.git !== undefined ||
             updates.advancedOptions !== undefined;
         if (shouldPersistMetadata) {
             const mergedMetadata = this.mergeWorkspaceMetadata(currentWorkspace?.metadata, updates);
@@ -239,6 +246,7 @@ export class WorkspaceRepository extends BaseRepository {
             councilConfig: this.normalizeCouncilConfig(row.council_config),
             status: row.status as 'active' | 'archived' | 'draft',
             logo: row.logo as string | undefined,
+            rules: (metadata.rules as string) ?? undefined,
             metadata,
             buildConfig: rowBuildConfig ?? metadataSettings.buildConfig,
             devServer: rowDevServer ?? metadataSettings.devServer,
@@ -296,13 +304,21 @@ export class WorkspaceRepository extends BaseRepository {
             updates.editor !== undefined
                 ? this.normalizeEditor(updates.editor)
                 : currentSettings.editor;
+        const nextIntelligence =
+            updates.intelligence !== undefined
+                ? this.normalizeIntelligence(updates.intelligence)
+                : currentSettings.intelligence;
+        const nextGit =
+            updates.git !== undefined
+                ? this.normalizeGit(updates.git)
+                : currentSettings.git;
         const nextAdvancedOptions =
             updates.advancedOptions !== undefined
                 ? this.normalizeAdvancedOptions(updates.advancedOptions)
                 : currentSettings.advancedOptions;
 
         const hasWorkspaceSettings = Boolean(
-            nextBuildConfig ?? nextDevServer ?? nextEditor ?? nextAdvancedOptions
+            nextBuildConfig ?? nextDevServer ?? nextEditor ?? nextIntelligence ?? nextGit ?? nextAdvancedOptions
         );
         if (hasWorkspaceSettings) {
             const workspaceSettings: JsonObject = {};
@@ -314,6 +330,12 @@ export class WorkspaceRepository extends BaseRepository {
             }
             if (nextEditor) {
                 workspaceSettings.editor = nextEditor as RuntimeValue as JsonObject;
+            }
+            if (nextIntelligence) {
+                workspaceSettings.intelligence = nextIntelligence as RuntimeValue as JsonObject;
+            }
+            if (nextGit) {
+                workspaceSettings.git = nextGit as RuntimeValue as JsonObject;
             }
             if (nextAdvancedOptions) {
                 workspaceSettings.advancedOptions = nextAdvancedOptions as RuntimeValue as JsonObject;
@@ -336,6 +358,8 @@ export class WorkspaceRepository extends BaseRepository {
         buildConfig?: Workspace['buildConfig'];
         devServer?: Workspace['devServer'];
         editor?: Workspace['editor'];
+        intelligence?: Workspace['intelligence'];
+        git?: Workspace['git'];
         advancedOptions?: Workspace['advancedOptions'];
     } {
         if (!this.isObject(metadata)) {
@@ -352,8 +376,37 @@ export class WorkspaceRepository extends BaseRepository {
             buildConfig: this.normalizeBuildConfig(settingsContainer.buildConfig),
             devServer: this.normalizeDevServer(settingsContainer.devServer),
             editor: this.normalizeEditor(settingsContainer.editor),
+            intelligence: this.normalizeIntelligence(settingsContainer.intelligence),
+            git: this.normalizeGit(settingsContainer.git),
             advancedOptions: this.normalizeAdvancedOptions(settingsContainer.advancedOptions),
         };
+    }
+
+    private normalizeIntelligence(value: RuntimeValue): Workspace['intelligence'] | undefined {
+        if (!this.isObject(value)) {
+            return undefined;
+        }
+        const v = value as Record<string, RuntimeValue>;
+        const result: Workspace['intelligence'] = {
+            ...(typeof v.defaultModelId === 'string' ? { defaultModelId: v.defaultModelId } : {}),
+            ...(typeof v.discussModelId === 'string' ? { discussModelId: v.discussModelId } : {}),
+            ...(typeof v.systemPrompt === 'string' ? { systemPrompt: v.systemPrompt } : {}),
+            ...(typeof v.temperature === 'number' ? { temperature: v.temperature } : {}),
+        };
+        return Object.keys(result).length > 0 ? result : undefined;
+    }
+
+    private normalizeGit(value: RuntimeValue): Workspace['git'] | undefined {
+        if (!this.isObject(value)) {
+            return undefined;
+        }
+        const v = value as Record<string, RuntimeValue>;
+        const result: Workspace['git'] = {
+            ...(typeof v.commitPrefix === 'string' ? { commitPrefix: v.commitPrefix } : {}),
+            ...(typeof v.branchPrefix === 'string' ? { branchPrefix: v.branchPrefix } : {}),
+            ...(typeof v.autoFetch === 'boolean' ? { autoFetch: v.autoFetch } : {}),
+        };
+        return Object.keys(result).length > 0 ? result : undefined;
     }
 
     private normalizeBuildConfig(value: RuntimeValue): Workspace['buildConfig'] | undefined {
@@ -407,6 +460,15 @@ export class WorkspaceRepository extends BaseRepository {
                 : {}),
             ...(typeof v.indexingInterval === 'number'
                 ? { indexingInterval: v.indexingInterval }
+                : {}),
+            ...(typeof v.indexingMaxFileSize === 'number'
+                ? { indexingMaxFileSize: v.indexingMaxFileSize }
+                : {}),
+            ...(Array.isArray(v.indexingExclude)
+                ? { indexingExclude: v.indexingExclude as string[] }
+                : {}),
+            ...(typeof v.maxConcurrency === 'number'
+                ? { maxConcurrency: v.maxConcurrency }
                 : {}),
             ...(typeof v.autoSave === 'boolean' ? { autoSave: v.autoSave } : {}),
             ...(this.isObject(v.layoutProfile)

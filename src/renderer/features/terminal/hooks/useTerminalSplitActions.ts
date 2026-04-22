@@ -198,6 +198,70 @@ export function useTerminalSplitActions({
         setTerminalContextMenu(null);
     }, [availableBackends, availableShells, createTerminal, resolveDefaultBackendId, updateSplitAnalytics, tabsRef, activeTabIdRef, setSplitView, setSplitFocusedPane, setTerminalContextMenu]);
 
+    const handleSplitDown = useCallback(() => {
+        const currentTabs = tabsRef.current;
+        if (currentTabs.length === 0) {
+            return;
+        }
+
+        const activeId = activeTabIdRef.current ?? currentTabs[0]?.id;
+        if (!activeId) {
+            return;
+        }
+
+        let secondaryId = resolveSecondarySplitTabId(currentTabs, activeId);
+        if (!secondaryId) {
+            const activeTab = currentTabs.find(tab => tab.id === activeId);
+            const shellId = activeTab?.type ?? availableShells[0]?.id;
+            const backendId = activeTab?.backendId ?? resolveDefaultBackendId(availableBackends);
+            if (!shellId) {
+                return;
+            }
+            secondaryId = createTerminal(shellId, backendId);
+        }
+
+        setSplitView({
+            primaryId: activeId,
+            secondaryId,
+            orientation: 'horizontal',
+        });
+        setSplitFocusedPane('primary');
+        updateSplitAnalytics('splitCreatedCount');
+        setTerminalContextMenu(null);
+    }, [activeTabIdRef, availableBackends, availableShells, createTerminal, resolveDefaultBackendId, setSplitFocusedPane, setSplitView, setTerminalContextMenu, tabsRef, updateSplitAnalytics]);
+
+    const handleSplitUp = useCallback(() => {
+        const currentTabs = tabsRef.current;
+        if (currentTabs.length === 0) {
+            return;
+        }
+
+        const activeId = activeTabIdRef.current ?? currentTabs[0]?.id;
+        if (!activeId) {
+            return;
+        }
+
+        let secondaryId = resolveSecondarySplitTabId(currentTabs, activeId);
+        if (!secondaryId) {
+            const activeTab = currentTabs.find(tab => tab.id === activeId);
+            const shellId = activeTab?.type ?? availableShells[0]?.id;
+            const backendId = activeTab?.backendId ?? resolveDefaultBackendId(availableBackends);
+            if (!shellId) {
+                return;
+            }
+            secondaryId = createTerminal(shellId, backendId);
+        }
+
+        setSplitView({
+            primaryId: secondaryId,
+            secondaryId: activeId,
+            orientation: 'horizontal',
+        });
+        setSplitFocusedPane('secondary');
+        updateSplitAnalytics('splitCreatedCount');
+        setTerminalContextMenu(null);
+    }, [activeTabIdRef, availableBackends, availableShells, createTerminal, resolveDefaultBackendId, setSplitFocusedPane, setSplitView, setTerminalContextMenu, tabsRef, updateSplitAnalytics]);
+
     const handleDetachTerminal = useCallback(async () => {
         const currentTabs = tabsRef.current;
         const currentActiveTabId = activeTabIdRef.current;
@@ -279,6 +343,8 @@ export function useTerminalSplitActions({
         renameSplitPreset,
         deleteSplitPreset,
         handleSplitTerminal,
+        handleSplitDown,
+        handleSplitUp,
         handleDetachTerminal,
         closeSplitView,
         toggleSplitOrientation,

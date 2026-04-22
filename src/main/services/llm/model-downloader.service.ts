@@ -13,11 +13,11 @@ import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
+import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
 import { HuggingFaceService } from '@main/services/llm/huggingface.service';
 import { LlamaService } from '@main/services/llm/llama.service';
 import { OllamaService } from '@main/services/llm/ollama.service';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { app } from 'electron';
 
 export type DownloadProvider = 'ollama' | 'huggingface';
 
@@ -171,11 +171,11 @@ export class ModelDownloaderService extends BaseService {
     private historyPersistInFlight = false;
 
     private getPersistencePath(): string {
-        return path.join(app.getPath('userData'), 'model-download-queue.json');
+        return getDataFilePath('downloads', 'model-download-queue.json');
     }
 
     private getHistoryPersistencePath(): string {
-        return path.join(app.getPath('userData'), 'model-download-history.json');
+        return getDataFilePath('downloads', 'model-download-history.json');
     }
 
     constructor(private readonly deps: ModelDownloaderDeps) {

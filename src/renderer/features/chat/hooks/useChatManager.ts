@@ -29,6 +29,14 @@ import { generateId } from '@/lib/utils';
 import { AppSettings, Chat, Message } from '@/types';
 import { CatchError } from '@/types/common';
 import { appLogger } from '@/utils/renderer-logger';
+import { 
+    useChatStore, 
+    setChats, 
+    setCurrentChatId, 
+    updateChatInStore, 
+    getChatSnapshot 
+} from '@/store/chat.store';
+
 /** Maximum messages to keep in memory per chat to prevent memory leaks */
 const MAX_MESSAGES_IN_MEMORY = 100;
 
@@ -81,12 +89,7 @@ function trimChats(chats: Chat[]): Chat[] {
 }
 
 function isWorkspaceAgentChat(chat: Chat): boolean {
-    // Only treat as workspace-agent chat when explicitly marked as that chat type.
-    // Presence of workspaceAgentSession metadata alone is not enough because
-    // permission policy metadata can exist on normal chats.
-    return (
-        chat.metadata?.chatType === WORKSPACE_AGENT_CHAT_TYPE
-    );
+    return chat.metadata?.chatType === WORKSPACE_AGENT_CHAT_TYPE;
 }
 
 function readChatPermissionPolicy(chat: Chat): WorkspaceAgentPermissionPolicy | null {
@@ -95,7 +98,6 @@ function readChatPermissionPolicy(chat: Chat): WorkspaceAgentPermissionPolicy | 
         return null;
     }
 
-    // SAFETY: metadata structure for permissions is deep
     const candidate = (metadataEntry as Record<string, unknown>)?.permissionPolicy as Record<string, unknown> | undefined;
     if (!candidate || typeof candidate !== 'object') {
         return null;
@@ -215,7 +217,7 @@ function buildAttachmentPromptContext(
         .join('\n');
 }
 
-function useChatInitialization(loadFolders: () => Promise<void>, setChats: React.Dispatch<React.SetStateAction<Chat[]>>): void {
+function useChatInitialization(loadFolders: () => Promise<void>): void {
     useEffect(() => {
         const load = async () => {
             try {
@@ -238,13 +240,15 @@ function useChatInitialization(loadFolders: () => Promise<void>, setChats: React
         void load();
 
         const removeStatusListener = window.electron.session.conversation.onGenerationStatus((data: SessionConversationGenerationStatus) => {
-            setChats(prev => prev.map(c => c.id === data.chatId ? { ...c, isGenerating: data.isGenerating } : c));
+            if (data.chatId) {
+                updateChatInStore(data.chatId, { isGenerating: data.isGenerating });
+            }
         });
         return () => { removeStatusListener(); };
-    }, [loadFolders, setChats]);
+    }, [loadFolders]);
 }
 
-function useLazyMessageLoader(currentChatId: string | null, chats: Chat[], setChats: React.Dispatch<React.SetStateAction<Chat[]>>): void {
+function useLazyMessageLoader(currentChatId: string | null, chats: Chat[]): void {
     const loadedChatIdsRef = useRef(new Set<string>());
 
     useEffect(() => {
@@ -257,19 +261,18 @@ function useLazyMessageLoader(currentChatId: string | null, chats: Chat[], setCh
                 loadedChatIdsRef.current.add(currentChatId);
                 const messages = await window.electron.db.getMessages(currentChatId);
                 const trimmedMessages = trimMessages(messages as Message[]);
-                setChats(prev => prev.map(c => {
-                    if (c.id !== currentChatId) {
-                        return c;
-                    }
-                    const combined = [...c.messages, ...trimmedMessages];
-                    return { ...c, messages: deduplicateMessages(combined) };
-                }));
+                const currentChatsSnapshot = getChatSnapshot().chats;
+                const updatedChats = currentChatsSnapshot.map(c => {
+                    if (c.id !== currentChatId) return c;
+                    return { ...c, messages: deduplicateMessages([...c.messages, ...trimmedMessages]) };
+                });
+                setChats(updatedChats);
             } catch (e) {
                 appLogger.error('ChatManager', `Failed to load messages for ${currentChatId}`, e as Error);
             }
         };
         void fetchMessages();
-    }, [currentChatId, chats, setChats]);
+    }, [currentChatId, chats]);
 }
 
 export function useChatManager(options: UseChatManagerOptions) {
@@ -288,14 +291,14 @@ export function useChatManager(options: UseChatManagerOptions) {
         models,
     } = options;
 
-    const [chats, setChats] = useState<Chat[]>([]);
-    const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+    const chats = useChatStore(s => s.chats);
+    const currentChatId = useChatStore(s => s.currentChatId);
+    
     const [searchTerm, setSearchTerm] = useState('');
     const [input, setInput] = useState('');
     const [contextTokens, setContextTokens] = useState(0);
-    const [contextWindow, setContextWindow] = useState(128000); // Default common limit
+    const [contextWindow, setContextWindow] = useState(128000);
     const isSendingRef = useRef(false);
-
 
     const [systemMode, setSystemMode] = useState<'thinking' | 'agent' | 'fast'>('agent');
     const [imageRequestCount, setImageRequestCount] = useState(1);
@@ -309,10 +312,7 @@ export function useChatManager(options: UseChatManagerOptions) {
     const prevChatIdRef = useRef<string | null>(null);
 
     useEffect(() => {
-        if (!appSettings) {
-            return;
-        }
-        
+        if (!appSettings) return;
         const newPolicy = {
             commandPolicy: appSettings.general.agentCommandPolicy ?? 'ask-every-time',
             pathPolicy: appSettings.general.agentPathPolicy ?? 'workspace-root-only',
@@ -320,16 +320,12 @@ export function useChatManager(options: UseChatManagerOptions) {
             disallowedCommands: appSettings.general.agentDisallowedCommands ?? [],
             allowedPaths: appSettings.general.agentAllowedPaths ?? []
         };
-        
         const rafId = requestAnimationFrame(() => {
             setPermissionPolicy(prev => {
-                if (JSON.stringify(prev) === JSON.stringify(newPolicy)) {
-                    return prev;
-                }
+                if (JSON.stringify(prev) === JSON.stringify(newPolicy)) return prev;
                 return newPolicy;
             });
         });
-
         return () => cancelAnimationFrame(rafId);
     }, [appSettings]);
 
@@ -344,31 +340,48 @@ export function useChatManager(options: UseChatManagerOptions) {
         confirmAntigravityCreditUsage,
         cancelAntigravityCreditUsage,
     } = useChatGenerator({
-        chats, setChats, appSettings, selectedModel, selectedProvider, selectedModels: options.selectedModels,
-        language, selectedPersona, activeWorkspacePath, workspaceId, quotas: options.quotas, linkedAccounts: options.linkedAccounts,
-        t, handleSpeak, autoReadEnabled, formatChatError, systemMode
+        chats, 
+        appSettings, 
+        selectedModel, 
+        selectedProvider, 
+        selectedModels: options.selectedModels,
+        language, 
+        selectedPersona, 
+        activeWorkspacePath, 
+        workspaceId, 
+        quotas: options.quotas, 
+        linkedAccounts: options.linkedAccounts,
+        t, 
+        handleSpeak, 
+        autoReadEnabled, 
+        formatChatError, 
+        systemMode
     });
+
     const { folders, loadFolders, createFolder, updateFolder, deleteFolder: baseDeleteFolder } = useFolderManager();
     const { isListening, startListening, stopListening } = useSpeechRecognition(language, (text) => { setInput(prev => (prev.trim() ? `${prev} ${text} ` : text)); });
-    const { createNewChat, deleteChat, clearMessages, deleteFolder, moveChatToFolder, addMessage, updateChat, togglePin, toggleFavorite, bulkDeleteChats } = useChatCRUD({ currentChatId, setCurrentChatId, setChats, setInput, baseDeleteFolder });
+    
+    const { 
+        createNewChat, deleteChat, clearMessages, deleteFolder, moveChatToFolder, 
+        addMessage, updateChat, togglePin, toggleFavorite, bulkDeleteChats 
+    } = useChatCRUD({ 
+        currentChatId, 
+        setCurrentChatId, 
+        setChats, 
+        setInput, 
+        baseDeleteFolder 
+    });
+
     const { attachments, setAttachments, processFile, removeAttachment } = useAttachments();
 
     useEffect(() => {
-        if (!currentChatId) {
-            return;
-        }
+        if (!currentChatId) return;
         const chat = chats.find(c => c.id === currentChatId);
-        if (!chat) {
-            return;
-        }
+        if (!chat) return;
 
         const existingPolicy = readChatPermissionPolicy(chat);
         if (JSON.stringify(existingPolicy) !== JSON.stringify(permissionPolicy)) {
-            const existingMetadataEntry =
-                chat.metadata?.[WORKSPACE_AGENT_METADATA_KEY] &&
-                !Array.isArray(chat.metadata[WORKSPACE_AGENT_METADATA_KEY]) &&
-                typeof chat.metadata[WORKSPACE_AGENT_METADATA_KEY] === 'object'
-                    // SAFETY: metadata structure for workspace agent is dynamic
+            const existingMetadataEntry = chat.metadata?.[WORKSPACE_AGENT_METADATA_KEY] && !Array.isArray(chat.metadata[WORKSPACE_AGENT_METADATA_KEY]) && typeof chat.metadata[WORKSPACE_AGENT_METADATA_KEY] === 'object'
                     ? chat.metadata[WORKSPACE_AGENT_METADATA_KEY] as Record<string, unknown>
                     : {};
 
@@ -382,13 +395,11 @@ export function useChatManager(options: UseChatManagerOptions) {
                 }
             });
         }
-    }, [permissionPolicy, currentChatId, chats, updateChat]);
+    }, [permissionPolicy, currentChatId, updateChat]); // Removed chats from deps to reduce triggers, updateChat is stable
 
     useEffect(() => {
         if (!currentChatId || prevChatIdRef.current === currentChatId) {
-            if (!currentChatId) {
-                prevChatIdRef.current = null;
-            }
+            if (!currentChatId) prevChatIdRef.current = null;
             return;
         }
         prevChatIdRef.current = currentChatId;
@@ -398,9 +409,7 @@ export function useChatManager(options: UseChatManagerOptions) {
         if (policy) {
             const rafId = requestAnimationFrame(() => {
                 setPermissionPolicy(prev => {
-                    if (JSON.stringify(prev) === JSON.stringify(policy)) {
-                        return prev;
-                    }
+                    if (JSON.stringify(prev) === JSON.stringify(policy)) return prev;
                     return policy;
                 });
             });
@@ -422,21 +431,22 @@ export function useChatManager(options: UseChatManagerOptions) {
         return undefined;
     }, [currentChatId, chats, appSettings]);
 
-    useChatInitialization(loadFolders, setChats);
-    useLazyMessageLoader(currentChatId, chats, setChats);
+    useChatInitialization(loadFolders);
+    useLazyMessageLoader(currentChatId, chats);
 
     useEffect(() => {
         if (prevChatIdRef.current !== null && prevChatIdRef.current !== currentChatId) {
-            setChats(prev => prev.map(c =>
+            const snapshot = getChatSnapshot().chats;
+            const updated = snapshot.map(c =>
                 c.id === prevChatIdRef.current && c.messages.length > MAX_MESSAGES_IN_MEMORY
                     ? { ...c, messages: trimMessages(c.messages) }
                     : c
-            ));
+            );
+            setChats(updated);
         }
         prevChatIdRef.current = currentChatId;
-    }, [currentChatId, setChats]);
+    }, [currentChatId]);
 
-    // Update context token usage and window limit
     useEffect(() => {
         const chat = chats.find(c => c.id === currentChatId);
         if (!chat) {
@@ -444,19 +454,14 @@ export function useChatManager(options: UseChatManagerOptions) {
             return;
         }
 
-        // Calculate total tokens from all messages in the chat
         const total = chat.messages.reduce((acc, msg) => {
-            if (msg.usage?.totalTokens) {
-                return acc + msg.usage.totalTokens;
-            }
-            // Fallback estimation if usage is missing
+            if (msg.usage?.totalTokens) return acc + msg.usage.totalTokens;
             const contentLen = typeof msg.content === 'string' ? msg.content.length : 0;
             return acc + Math.ceil(contentLen / 4);
         }, 0);
         setContextTokens(total);
 
-        const isOllamaProvider = selectedProvider.toLowerCase() === 'ollama'
-            || selectedModel.toLowerCase().startsWith('ollama/');
+        const isOllamaProvider = selectedProvider.toLowerCase() === 'ollama' || selectedModel.toLowerCase().startsWith('ollama/');
         if (isOllamaProvider) {
             const configured = getConfiguredOllamaContextWindow(appSettings, selectedModel);
             if (configured !== null) {
@@ -465,26 +470,24 @@ export function useChatManager(options: UseChatManagerOptions) {
             }
         }
 
-        // Resolve context window from the provided models list
         const activeModelInfo = models.find(m => m.id === selectedModel);
         if (activeModelInfo?.contextWindow !== undefined) {
             setContextWindow(Number(activeModelInfo.contextWindow));
             return;
         }
-
-        // Standard fallback if model info is not available or has no context window
         setContextWindow(128000);
     }, [appSettings, currentChatId, chats, models, selectedModel, selectedProvider]);
 
-    const currentChat = chats.find(c => c.id === currentChatId);
+    const currentChat = useMemo(() => chats.find(c => c.id === currentChatId), [chats, currentChatId]);
     const currentSessionState = useSessionState(currentChatId);
     const currentStreamState = currentChatId ? streamingStates[currentChatId] : undefined;
     const streamingReasoning = useMemo(() => currentStreamState?.reasoning ?? '', [currentStreamState]);
     const streamingSpeed = useMemo(() => currentStreamState?.speed ?? null, [currentStreamState]);
     const chatError = useMemo(() => {
-        if (!currentChatId) { return lastChatError; }
+        if (!currentChatId) return lastChatError;
         return currentStreamState?.error ?? lastChatError;
     }, [currentStreamState, lastChatError, currentChatId]);
+    
     const isLoading = useMemo(() => {
         const sessionStatus = currentSessionState?.status;
         const sessionLoading = sessionStatus === 'preparing' || sessionStatus === 'streaming';
@@ -492,39 +495,23 @@ export function useChatManager(options: UseChatManagerOptions) {
             ? Boolean(currentChat?.isGenerating) || Boolean(currentStreamState) || sessionLoading
             : false;
     }, [currentChatId, currentChat?.isGenerating, currentSessionState?.status, currentStreamState]);
+
     const messages = useMemo(() => currentChat?.messages ?? [], [currentChat]);
     const deferredSearchTerm = useDeferredValue(searchTerm);
     const normalizedSearchTerm = useMemo(() => deferredSearchTerm.trim().toLowerCase(), [deferredSearchTerm]);
+    
     const messageSearchIndex = useMemo(() => {
         const index = new Map<string, string>();
         for (const message of messages) {
-            index.set(
-                message.id,
-                (typeof message.content === 'string' ? message.content : '').toLowerCase()
-            );
+            index.set(message.id, (typeof message.content === 'string' ? message.content : '').toLowerCase());
         }
         return index;
     }, [messages]);
+
     const displayMessages = useMemo(
-        () =>
-            normalizedSearchTerm === ''
-                ? messages
-                : messages.filter(message =>
-                    (messageSearchIndex.get(message.id) ?? '').includes(normalizedSearchTerm)
-                ),
+        () => normalizedSearchTerm === '' ? messages : messages.filter(message => (messageSearchIndex.get(message.id) ?? '').includes(normalizedSearchTerm)),
         [messages, messageSearchIndex, normalizedSearchTerm]
     );
-
-    useEffect(() => {
-        if (!currentChatId) {
-            return;
-        }
-        const lastMessage = displayMessages.length > 0 ? displayMessages[displayMessages.length - 1] : undefined;
-        appLogger.info(
-            'ChatManager',
-            `derived-state chatId=${currentChatId.slice(0, 8)}, messages=${messages.length}, displayMessages=${displayMessages.length}, isLoading=${String(isLoading)}, streamState=${currentStreamState ? 'present' : 'none'}, streamToolCalls=${currentStreamState?.toolCalls?.length ?? 0}, streamReasoningLen=${currentStreamState?.reasoning?.length ?? 0}, lastRole=${lastMessage?.role ?? 'none'}, lastToolCalls=${lastMessage?.toolCalls?.length ?? 0}, lastToolResults=${Array.isArray(lastMessage?.toolResults) ? lastMessage.toolResults.length : 0}`
-        );
-    }, [currentChatId, currentStreamState, displayMessages, isLoading, messages.length]);
 
     const handleSend = useCallback(async (customInput?: string) => {
         const content = customInput ?? input;
@@ -532,8 +519,8 @@ export function useChatManager(options: UseChatManagerOptions) {
         const hasInputText = content.trim() !== '';
         const hasReadyAttachments = readyAttachments.length > 0;
         
-        if (isSendingRef.current) { return; }
-        if ((!hasInputText && !hasReadyAttachments) || !selectedModel || isLoading) { return; }
+        if (isSendingRef.current) return;
+        if ((!hasInputText && !hasReadyAttachments) || !selectedModel || isLoading) return;
 
         isSendingRef.current = true;
         try {
@@ -553,67 +540,57 @@ export function useChatManager(options: UseChatManagerOptions) {
                     isGenerating: true
                 };
 
-                setChats(prev => [{
+                const newChat: Chat = {
                     ...newChatDb,
                     messages: [],
                     createdAt: new Date(createdAtMs),
                     updatedAt: new Date(createdAtMs),
                     isGenerating: true
-                }, ...prev]);
+                };
+
+                setChats([newChat, ...getChatSnapshot().chats]);
                 setCurrentChatId(newChatId);
                 chatId = newChatId;
 
                 const createResult = await window.electron.db.createChat(newChatDb);
                 if (!createResult.success) {
-                    appLogger.error('ChatManager', '[useChatManager] Failed to create chat');
-                    setChats(prev => prev.filter(chat => chat.id !== newChatId));
+                    setChats(getChatSnapshot().chats.filter(chat => chat.id !== newChatId));
                     setCurrentChatId(null);
                     return;
                 }
             } else {
-                setChats(prev => prev.map(c => c.id === chatId ? { ...c, isGenerating: true } : c));
+                updateChatInStore(chatId, { isGenerating: true });
+                void window.electron.db.updateChat?.(chatId, { isGenerating: true }).catch((error) => {
+                    appLogger.warn('ChatManager', `Failed to persist generation start for ${chatId}`, error as Error);
+                });
             }
 
             const timestamp = Date.now();
             const imageInputs = readyAttachments.flatMap(att => {
-                if (att.type === 'image' && typeof att.content === 'string' && att.content.startsWith('data:image/')) {
-                    return [att.content];
-                }
-                if (att.type === 'video' && typeof att.preview === 'string' && att.preview.startsWith('data:image/')) {
-                    return [att.preview];
-                }
+                if (att.type === 'image' && typeof att.content === 'string' && att.content.startsWith('data:image/')) return [att.content];
+                if (att.type === 'video' && typeof att.preview === 'string' && att.preview.startsWith('data:image/')) return [att.preview];
                 return [];
             });
-            const attachmentContext = buildAttachmentPromptContext(
-                readyAttachments,
-                t('chat.attachmentPrompt.label')
-            );
-            const mergedContent = hasInputText
-                ? `${content}${attachmentContext}`
-                : `${attachmentContext}\n[${t('chat.attachmentPrompt.analyzeMedia')}]`.trim();
+            const attachmentContext = buildAttachmentPromptContext(readyAttachments, t('chat.attachmentPrompt.label'));
+            const mergedContent = hasInputText ? `${content}${attachmentContext}` : `${attachmentContext}\n[${t('chat.attachmentPrompt.analyzeMedia')}]`.trim();
+            
             const userMessage: Message = {
                 id: generateId(),
                 role: 'user',
                 content: mergedContent,
                 timestamp: new Date(timestamp),
                 images: imageInputs.length > 0 ? imageInputs : undefined,
-                metadata: isImageOnlyModel(selectedModel)
-                    ? { imageRequestCount }
-                    : undefined
+                metadata: isImageOnlyModel(selectedModel) ? { imageRequestCount } : undefined
             };
-            if (!chatId) { throw new Error('CHAT_ID_CREATION_FAILED'); }
 
-            setChats(prev =>
-                prev.map((c: Chat) =>
-                    c.id === chatId
-                        ? {
-                            ...c,
-                            messages: deduplicateMessages([...c.messages, userMessage]),
-                            title: c.messages.length === 0 ? mergedContent.slice(0, 50) : c.title
-                        }
-                        : c
-                )
-            );
+            const targetChat = getChatSnapshot().chats.find(c => c.id === chatId);
+            if (targetChat) {
+                updateChatInStore(chatId, {
+                    messages: deduplicateMessages([...targetChat.messages, userMessage]),
+                    title: targetChat.messages.length === 0 ? mergedContent.slice(0, 50) : targetChat.title
+                });
+            }
+
             void window.electron.db.addMessage({
                 ...userMessage,
                 chatId,
@@ -621,39 +598,27 @@ export function useChatManager(options: UseChatManagerOptions) {
                 provider: selectedProvider,
                 model: selectedModel
             }).catch((error) => {
-                appLogger.error('ChatManager', '[useChatManager] Failed to persist user message', error as Error);
+                appLogger.error('ChatManager', 'Failed to persist user message', error as Error);
             });
             setAttachments([]);
             void generateResponse(chatId, userMessage);
         } finally {
             isSendingRef.current = false;
         }
-    }, [input, attachments, selectedModel, isLoading, currentChatId, selectedProvider, generateResponse, imageRequestCount, setChats, setAttachments, t]);
+    }, [input, attachments, selectedModel, isLoading, currentChatId, selectedProvider, generateResponse, imageRequestCount, t, setAttachments]);
 
     const regenerateMessage = useCallback(
         async (assistantMessageId: string) => {
-            if (!currentChatId || isLoading) {
-                return;
-            }
+            if (!currentChatId || isLoading) return;
             const chat = chats.find(c => c.id === currentChatId);
-            if (!chat) {
-                return;
-            }
+            if (!chat) return;
 
-            const assistantIndex = chat.messages.findIndex(
-                m => m.id === assistantMessageId && m.role === 'assistant'
-            );
-            if (assistantIndex <= 0) {
-                return;
-            }
+            const assistantIndex = chat.messages.findIndex(m => m.id === assistantMessageId && m.role === 'assistant');
+            if (assistantIndex <= 0) return;
 
-            const previousUserMessage = [...chat.messages.slice(0, assistantIndex)]
-                .reverse()
-                .find(m => m.role === 'user');
+            const previousUserMessage = [...chat.messages.slice(0, assistantIndex)].reverse().find(m => m.role === 'user');
             const prompt = previousUserMessage ? toTextContent(previousUserMessage.content) : '';
-            if (!prompt) {
-                return;
-            }
+            if (!prompt) return;
 
             await handleSend(prompt);
         },

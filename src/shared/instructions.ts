@@ -68,27 +68,29 @@ export interface InstructionContext {
 const DEFAULT_DIRECTIVE: LocalePromptDirective = {
     rules: `\n## LANGUAGE RULES (DEFAULT)\n- Primarily communicate with the user in their preferred language.\n- Match tone and formality naturally.\n`,
     reminder: "Match the user's language.",
-    reinforcement: "Respond in the user's message language and follow its conventions."
+    reinforcement: "Respond in the user's message language and follow its conventions.",
 };
 
-function normalizeLanguageTag(language?: string): string | undefined {
-    if (!language) { return undefined; }
-    const normalized = language.trim().toLowerCase();
-    const base = normalized.split(/[-_]/)[0];
-    return base; // Return generic base tag without hardcoded validation
-}
+const EXECUTION_STYLE_DIRECTIVE = `
+## EXECUTION STYLE
+- Prioritize practical execution over lengthy theorizing.
+- When the user asks for implementation, produce concrete changes and verification.
+- Keep responses concise but complete: outcome, key changes, validation, and residual risk.
+`;
 
-function createLocaleAwareDirective(localeMetadata?: LocalePromptMetadata): LocalePromptDirective | undefined {
-    const localeLabel = localeMetadata?.nativeName || localeMetadata?.displayName || localeMetadata?.locale;
-    if (!localeLabel) { return undefined; }
-
-    return {
-        rules: `\n## LANGUAGE RULES (LOCALE-AWARE)\n- Preferred locale: ${localeLabel}\n- Match spelling, tone, and conventions for ${localeLabel}.\n`,
-        reminder: `Respond in the user's selected locale (${localeLabel}).`,
-        reinforcement: `Respond in the user's selected locale (${localeLabel}) and follow its conventions.`,
-    };
-}
-
+const KNOWN_LOCALE_DIRECTIVES: Record<string, LocalePromptDirective> = {
+    tr: {
+        rules: `\n## DIL KURALLARI (TURKCE)\n- Turkce yanit ver.\n- Kullanici baska bir dil istemedikce Turkce kal.\n`,
+        reminder: 'Turkce yanit ver.',
+        reinforcement: 'Turkce yanit ver ve dogal Turkce kullanimina uy.',
+    },
+    de: {
+        rules: `\n## LANGUAGE RULES (GERMAN)\n- Respond in German.\n- Use natural German phrasing unless the user asks otherwise.\n`,
+        reminder: 'Respond in German.',
+        reinforcement: 'Respond in German and follow natural German conventions.',
+    },
+};
+ 
 // Ensure the template symbols are correctly parsed as ES6 templates.
 const BASE_INSTRUCTIONS = `${CORE_IDENTITY}${RESPONSE_CONTRACT}${TOOL_AND_EVIDENCE_POLICY}`;
 
@@ -97,6 +99,7 @@ export function buildSystemPrompt(context: InstructionContext): string {
     const localeDirective = resolveLocalePromptDirective(language, localeMetadata);
 
     let prompt = BASE_INSTRUCTIONS;
+    prompt += EXECUTION_STYLE_DIRECTIVE;
     prompt += localeDirective.rules;
 
     if (provider && PROVIDER_INSTRUCTIONS[provider.toLowerCase()]) {
@@ -160,7 +163,6 @@ export function toLocalePromptMetadata(localeSource?: LocaleMetadataSource | nul
 }
 
 function resolveLocalePromptDirective(language: string, localeMetadata?: LocalePromptMetadata): LocalePromptDirective {
-    // 1. Fully translated directive injected from Marketplace Locale Pack
     if (localeMetadata?.rules && localeMetadata?.reminder && localeMetadata?.reinforcement) {
         return {
             rules: localeMetadata.rules,
@@ -169,21 +171,36 @@ function resolveLocalePromptDirective(language: string, localeMetadata?: LocaleP
         };
     }
 
-    // 2. English Fallback for the en/en-US base
     const normalizedLanguage = normalizeLanguageTag(language) || normalizeLanguageTag(localeMetadata?.locale);
     if (normalizedLanguage === 'en') {
         return {
             rules: `\n## LANGUAGE RULES (ENGLISH)\n- Respond in English.\n`,
-            reminder: "Respond in English.",
-            reinforcement: "Respond in English and follow natural English conventions.",
+            reminder: 'Respond in English.',
+            reinforcement: 'Respond in English and follow natural English conventions.',
         };
     }
+    if (normalizedLanguage && KNOWN_LOCALE_DIRECTIVES[normalizedLanguage]) {
+        return KNOWN_LOCALE_DIRECTIVES[normalizedLanguage];
+    }
 
-    // 3. Dynamic locale-aware fallback based on Native/Display name
     const localeAwareDirective = createLocaleAwareDirective(localeMetadata);
-    if (localeAwareDirective) { return localeAwareDirective; }
+    return localeAwareDirective ?? DEFAULT_DIRECTIVE;
+}
 
-    return DEFAULT_DIRECTIVE;
+function normalizeLanguageTag(language?: string): string | undefined {
+    if (!language) { return undefined; }
+    return language.trim().toLowerCase().split(/[-_]/)[0];
+}
+
+function createLocaleAwareDirective(localeMetadata?: LocalePromptMetadata): LocalePromptDirective | undefined {
+    const localeLabel = localeMetadata?.nativeName || localeMetadata?.displayName || localeMetadata?.locale;
+    if (!localeLabel) { return undefined; }
+
+    return {
+        rules: `\n## LANGUAGE RULES (LOCALE-AWARE)\n- Preferred locale: ${localeLabel}\n- Match spelling, tone, and conventions for ${localeLabel}.\n`,
+        reminder: `Respond in the user's selected locale (${localeLabel}).`,
+        reinforcement: `Respond in the user's selected locale (${localeLabel}) and follow its conventions.`,
+    };
 }
 
 function buildPersonalitySection(personality: PersonalityConfig): string {

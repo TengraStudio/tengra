@@ -9,7 +9,8 @@
  */
 
 import {
-    DOCKED_TERMINAL_BOTTOM_OFFSET_PX,
+    COLLAPSED_EXPLORER_LEFT_INSET_PX,
+    EXPANDED_EXPLORER_LEFT_INSET_PX,
     MIN_RESIZABLE_TERMINAL_HEIGHT,
 } from '@renderer/features/workspace/hooks/useTerminalLayout';
 import { Resizable } from 're-resizable';
@@ -29,6 +30,7 @@ interface WorkspaceTerminalLayerProps {
     sidebarCollapsed: boolean;
     terminalHeight: number; 
     dockedTerminalRightInsetPx: number;
+    dockedTerminalBottomOffsetPx: number;
     lastExpandedTerminalHeightRef: React.MutableRefObject<number>;
     setShowTerminal: (show: boolean) => void;
     setIsMaximizedTerminal: React.Dispatch<React.SetStateAction<boolean>>;
@@ -36,6 +38,9 @@ interface WorkspaceTerminalLayerProps {
     setTerminalHeight: (height: number) => void;
     workspaceId: string;
     workspacePath: string;
+    activeFilePath?: string;
+    activeFileContent?: string;
+    activeFileType?: 'code' | 'image';
     tabs: TerminalTab[];
     activeTabId: string | null;
     setTabs: (tabs: TerminalTab[] | ((prev: TerminalTab[]) => TerminalTab[])) => void;
@@ -48,8 +53,10 @@ export const WorkspaceTerminalLayer: React.FC<WorkspaceTerminalLayerProps> = ({
     showTerminal, 
     isMaximizedTerminal,
     isResizingTerminal,
+    sidebarCollapsed,
     terminalHeight,
     dockedTerminalRightInsetPx,
+    dockedTerminalBottomOffsetPx,
     lastExpandedTerminalHeightRef,
     setShowTerminal,
     setIsMaximizedTerminal,
@@ -57,26 +64,35 @@ export const WorkspaceTerminalLayer: React.FC<WorkspaceTerminalLayerProps> = ({
     setTerminalHeight,
     workspaceId,
     workspacePath,
+    activeFilePath,
+    activeFileContent,
+    activeFileType,
     tabs,
     activeTabId,
     setTabs,
     setActiveTabId,
     onOpenFile,
-}) => (
-    <AnimatePresence>
-        {showTerminal && (
-            <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.15 }}
-                exit={{ opacity: 0, y: 8 }}
+}) => {
+    const leftInsetPx = sidebarCollapsed
+        ? COLLAPSED_EXPLORER_LEFT_INSET_PX
+        : EXPANDED_EXPLORER_LEFT_INSET_PX;
+
+    return (
+        <AnimatePresence>
+            {showTerminal && (
+                <motion.div
+                initial={{ opacity: 0, y: 16, scaleY: 0.985 }}
+                animate={{ opacity: 1, y: 0, scaleY: 1 }}
+                transition={{ type: 'spring', stiffness: 340, damping: 30, mass: 0.85 }}
+                exit={{ opacity: 0, y: 10, scaleY: 0.99, transition: { duration: 0.14 } }}
                 className={cn(
-                    'absolute z-30 left-sidebar'
+                    'absolute z-30'
                 )}
                 style={
                     {
+                        left: `${leftInsetPx}px`,
                         right: `${dockedTerminalRightInsetPx}px`,
-                        bottom: `${DOCKED_TERMINAL_BOTTOM_OFFSET_PX}px`,
+                        bottom: `${dockedTerminalBottomOffsetPx}px`,
                     }
                 }
             >
@@ -150,6 +166,9 @@ export const WorkspaceTerminalLayer: React.FC<WorkspaceTerminalLayerProps> = ({
                             onMaximizeChange={setIsMaximizedTerminal}
                             workspaceId={workspaceId}
                             workspacePath={workspacePath}
+                            activeFilePath={activeFilePath}
+                            activeFileContent={activeFileContent}
+                            activeFileType={activeFileType}
                             tabs={tabs}
                             activeTabId={activeTabId}
                             setTabs={setTabs}
@@ -158,7 +177,8 @@ export const WorkspaceTerminalLayer: React.FC<WorkspaceTerminalLayerProps> = ({
                         />
                     </div>
                 </Resizable>
-            </motion.div>
-        )}
-    </AnimatePresence>
-);
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+};

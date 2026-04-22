@@ -8,15 +8,8 @@
  * (at your option) any later version.
  */
 
-import { ChevronDown, Loader2, SquareTerminal } from 'lucide-react';
+import { ChevronDown, Loader2 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { UI_PRIMITIVES } from '@/constants/ui-primitives';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { ToolResult } from '@/types';
@@ -84,16 +77,6 @@ function extractCommandExecutionResult(result?: ToolResult): CommandExecutionRes
     };
 }
 
-function getStatusVariant(statusType: StatusType): 'destructive' | 'warning' | 'success' {
-    if (statusType === 'error') {
-        return 'destructive';
-    }
-    if (statusType === 'running') {
-        return 'warning';
-    }
-    return 'success';
-}
-
 function TerminalTextOutput({
     stdout,
     stderr,
@@ -110,21 +93,23 @@ function TerminalTextOutput({
     t: (key: string) => string;
 }) {
     return (
-        <div className="space-y-3 font-mono typo-caption leading-5">
-            {stdout && <pre className="whitespace-pre-wrap text-emerald-200">{stdout}</pre>}
-            {stderr && (
-                <pre className="whitespace-pre-wrap rounded-md border border-amber-400/30 bg-amber-400/10 p-2 text-amber-200">
-                    {t('tools.stderrLabel')} {stderr}
-                </pre>
-            )}
+        <div className="space-y-2 font-mono typo-caption leading-5">
             {error && (
-                <pre className="whitespace-pre-wrap rounded-md border border-red-400/35 bg-red-400/10 p-2 text-red-200">
-                    {t('tools.errorLabel')} {error}
+                <pre className="whitespace-pre-wrap rounded-md border border-destructive/25 bg-destructive/5 p-2 text-destructive">
+                    {error}
                 </pre>
             )}
-            {!hasOutput && !isExecuting && (
-                <div className="text-muted-foreground">{t('tools.noOutput')}</div>
+            {stderr && (
+                <pre className="whitespace-pre-wrap rounded-md border border-border/40 bg-muted/10 p-2 text-foreground/80">
+                    {stderr}
+                </pre>
             )}
+            {stdout && (
+                <pre className="whitespace-pre-wrap rounded-md border border-border/40 bg-muted/10 p-2 text-foreground/80">
+                    {stdout}
+                </pre>
+            )}
+            {!hasOutput && !isExecuting && <div className="text-muted-foreground">{t('tools.noOutput')}</div>}
         </div>
     );
 }
@@ -138,7 +123,7 @@ export const TerminalView = React.memo(({
     onToggleExpand,
 }: TerminalViewProps) => {
     const { t } = useTranslation();
-    const [showMarkdown, setShowMarkdown] = useState(false);
+    const [showFullOutput, setShowFullOutput] = useState(false);
 
     useEffect(() => {
         return () => {
@@ -154,129 +139,126 @@ export const TerminalView = React.memo(({
         };
     }, [isExecuting, toolCallId]);
 
-    const { stdout, stderr, error, exitCode } = extractCommandExecutionResult(result);
-    const outputText = [stdout, stderr, error].filter(Boolean).join('\n');
-    const preview = useMemo(
-        () => (outputText ? outputText.split('\n').slice(0, 6).join('\n') : ''),
-        [outputText]
+    const { stdout, stderr, error, exitCode } = useMemo(() => extractCommandExecutionResult(result), [result]);
+    const hasOutput = Boolean(
+        (stdout && stdout.trim().length > 0)
+        || (stderr && stderr.trim().length > 0)
+        || (error && error.trim().length > 0)
     );
-    const hasOutput = Boolean(outputText);
-    const hasError = Boolean(error ?? stderr);
+    const hasError = Boolean((error && error.trim().length > 0) || (stderr && stderr.trim().length > 0));
     const statusType = getStatusType(isExecuting, hasError);
-    const statusLabel = isExecuting
-        ? t('tools.running')
-        : hasError
-            ? t('tools.error')
-            : t('tools.completed');
+
+    const summaryText = useMemo(() => {
+        const cmd = command.trim().length > 0 ? command.trim() : t('tools.commandUnknown');
+        if (statusType === 'running') {
+            return t('tools.runningCommand', { command: cmd });
+        }
+        if (statusType === 'error') {
+            return t('tools.failedCommand', { command: cmd });
+        }
+        return t('tools.ranCommand', { command: cmd });
+    }, [command, statusType, t]);
+
+    const previewText = useMemo(() => {
+        const parts = [error, stderr, stdout].filter((v): v is string => typeof v === 'string' && v.trim().length > 0);
+        if (parts.length === 0) {
+            return isExecuting ? t('tools.executingCommand') : t('tools.noOutput');
+        }
+        const firstLine = parts[0].trim().split(/\r?\n/)[0];
+        return firstLine.length > 160 ? `${firstLine.slice(0, 160)}...` : firstLine;
+    }, [error, stderr, stdout, isExecuting, t]);
+
+    const statusDotClass =
+        statusType === 'running'
+            ? 'bg-primary/70'
+            : statusType === 'error'
+                ? 'bg-destructive/70'
+                : 'bg-muted-foreground/60';
 
     return (
-        <Card className={cn('my-2 overflow-hidden border-border/40 bg-card/70 backdrop-blur-sm', hasError && 'border-destructive/35')}>
+        <div className="my-1 overflow-hidden">
             <button
                 type="button"
                 onClick={onToggleExpand}
-                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/25"
+                className={cn(
+                    'flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition-colors',
+                    expanded ? 'bg-muted/20' : 'hover:bg-muted/15'
+                )}
+                aria-label={expanded ? t('chat.collapse') : t('chat.expand')}
             >
                 <div className="flex min-w-0 items-center gap-2">
-                    <SquareTerminal className="h-4 w-4 text-muted-foreground" />
-                    <span className="typo-caption font-semibold text-muted-foreground">{t('tools.command')}</span>
-                    <span className="truncate font-mono typo-caption text-foreground/90">{command}</span>
+                    <span className={cn('h-2 w-2 rounded-full', statusDotClass)} />
+                    <div className="min-w-0">
+                        <div className={cn('truncate text-sm font-medium', statusType === 'running' && 'text-primary')}>
+                            {summaryText}
+                        </div>
+                        {!expanded && (
+                            <div className="truncate text-xs text-muted-foreground/70">
+                                {previewText}
+                            </div>
+                        )}
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Badge variant={getStatusVariant(statusType)} className="text-xxs">
-                        {statusLabel}
-                    </Badge>
-                    <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', expanded && 'rotate-180')} />
-                </div>
+                <ChevronDown className={cn('h-4 w-4 text-muted-foreground/60 transition-transform', expanded && 'rotate-180')} />
             </button>
 
-            {!expanded && (
-                <div className="px-4 pb-4">
-                    <pre className="max-h-24 overflow-hidden whitespace-pre-wrap font-mono typo-caption text-muted-foreground">
-                        {preview || (isExecuting ? t('tools.executingCommand') : t('tools.noOutput'))}
-                    </pre>
+            {expanded && (
+                <div className="px-3 pb-2 pt-2">
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0 truncate font-mono text-xs text-muted-foreground/80">
+                            {command || t('tools.commandUnknown')}
+                            {typeof exitCode === 'number' && <span className="ml-2">{`(exit ${exitCode})`}</span>}
+                        </div>
+                        {hasOutput && (
+                            <button
+                                type="button"
+                                className="text-xs text-muted-foreground/70 hover:text-foreground"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowFullOutput(prev => !prev);
+                                }}
+                            >
+                                {showFullOutput ? t('tools.showLess') : t('tools.showMore')}
+                            </button>
+                        )}
+                    </div>
+
+                    {isExecuting && (
+                        <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            <span>{t('tools.executingCommand')}</span>
+                            <button
+                                type="button"
+                                className="ml-auto text-xs text-destructive hover:underline"
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    void (async () => {
+                                        const success = await window.electron.killTool(toolCallId);
+                                        if (success) {
+                                            appLogger.warn('TerminalView', 'Process killed');
+                                        }
+                                    })();
+                                }}
+                                title={t('tools.forceStop')}
+                            >
+                                {t('tools.stop')}
+                            </button>
+                        </div>
+                    )}
+
+                    <div className="mt-2">
+                        <TerminalTextOutput
+                            stdout={showFullOutput ? stdout : undefined}
+                            stderr={stderr}
+                            error={error}
+                            hasOutput={hasOutput}
+                            isExecuting={isExecuting}
+                            t={t}
+                        />
+                    </div>
                 </div>
             )}
-
-            {expanded && (
-                <CardContent className="space-y-3 px-4 pb-4 pt-0 text-left">
-                    <div className={UI_PRIMITIVES.COMMAND_OUTPUT_CONTAINER}>
-                        <div className={UI_PRIMITIVES.COMMAND_OUTPUT_HEADER}>
-                            <div className="flex items-center gap-1.5 opacity-60">
-                                <span className="h-2.5 w-2.5 rounded-full bg-red-400/85" />
-                                <span className="h-2.5 w-2.5 rounded-full bg-amber-300/85" />
-                                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/85" />
-                            </div>
-                            <div className="flex items-center gap-2">
-                                {hasOutput && (
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="h-7 border-white/15 bg-white/5 px-2 text-xxs text-slate-200 hover:bg-white/10"
-                                        onClick={event => {
-                                            event.stopPropagation();
-                                            setShowMarkdown(prev => !prev);
-                                        }}
-                                        title={t('toolDisplay.markdownView')}
-                                    >
-                                        {showMarkdown ? t('toolDisplay.text') : t('toolDisplay.markdown')}
-                                    </Button>
-                                )}
-                                {isExecuting && (
-                                    <Button
-                                        size="sm"
-                                        variant="destructive"
-                                        className="h-7 px-2 text-xxs"
-                                        onClick={event => {
-                                            event.stopPropagation();
-                                            void (async () => {
-                                                const success = await window.electron.killTool(toolCallId);
-                                                if (success) {
-                                                    appLogger.warn('TerminalView', 'Process killed');
-                                                }
-                                            })();
-                                        }}
-                                        title={t('tools.forceStop')}
-                                    >
-                                        {t('tools.stop')}
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
-                        <div className="max-h-80 overflow-y-auto p-3">
-                            <div className="mb-3 flex flex-wrap items-center gap-2 font-mono typo-caption text-emerald-300">
-                                <span>&gt;</span>
-                                <span className="break-all">{command}</span>
-                                {typeof exitCode === 'number' && (
-                                    <span className="text-xxs text-slate-300/80">({`exit ${exitCode}`})</span>
-                                )}
-                            </div>
-                            {isExecuting && (
-                                <div className="mb-3 flex items-center gap-2 typo-caption text-slate-300">
-                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                    <span>{t('tools.executingCommand')}</span>
-                                </div>
-                            )}
-                            {showMarkdown ? (
-                                <div className="prose prose-invert max-w-none text-sm text-slate-200">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                        {outputText || t('tools.noOutputReturned')}
-                                    </ReactMarkdown>
-                                </div>
-                            ) : (
-                                <TerminalTextOutput
-                                    stdout={stdout}
-                                    stderr={stderr}
-                                    error={error}
-                                    hasOutput={hasOutput}
-                                    isExecuting={isExecuting}
-                                    t={t}
-                                />
-                            )}
-                        </div>
-                    </div>
-                </CardContent>
-            )}
-        </Card>
+        </div>
     );
 });
 

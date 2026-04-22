@@ -22,7 +22,8 @@ export interface LinkedAccountInfo {
 }
 
 export type TokenData = {
-    accessToken: string;
+    key?: string;
+    accessToken?: string;
     refreshToken?: string;
     expiresIn?: number;
     tokenType?: string;

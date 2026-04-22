@@ -110,7 +110,7 @@ describe('MessageList', () => {
                     type: 'function',
                     function: {
                         name: 'list_directory',
-                        arguments: '{"path":"C:/Users/agnes/Desktop"}',
+                        arguments: '{"path":"C:/Users/mockuser/Desktop"}',
                     },
                 }],
             }),
@@ -142,7 +142,7 @@ describe('MessageList', () => {
                 type: 'function',
                 function: {
                     name: 'resolve_path',
-                    arguments: '{"path":"C:/Users/agnes/Desktop"}',
+                    arguments: '{"path":"C:/Users/mockuser/Desktop"}',
                 },
             },
             {
@@ -150,7 +150,7 @@ describe('MessageList', () => {
                 type: 'function',
                 function: {
                     name: 'resolve_path',
-                    arguments: '{"path":"C:/Users/agnes/Desktop"}',
+                    arguments: '{"path":"C:/Users/mockuser/Desktop"}',
                 },
             },
         ];
@@ -187,13 +187,13 @@ describe('MessageList', () => {
                     type: 'function',
                     function: {
                         name: 'resolve_path',
-                        arguments: '{"path":"C:/Users/agnes/Desktop"}',
+                        arguments: '{"path":"C:/Users/mockuser/Desktop"}',
                     },
                 }],
                 toolResults: [{
                     toolCallId: 'tool-1',
                     name: 'resolve_path',
-                    result: { path: 'C:/Users/agnes/Desktop' },
+                    result: { path: 'C:/Users/mockuser/Desktop' },
                     success: true,
                 }],
             }),

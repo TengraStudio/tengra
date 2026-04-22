@@ -9,12 +9,11 @@
  */
 
 import * as fsp from 'fs/promises';
-import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
+import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
 import { EventBusService } from '@main/services/system/event-bus.service';
-import { app } from 'electron';
 
 /** Maximum number of queued prompts to prevent unbounded growth. */
 const MAX_QUEUE_SIZE = 50;
@@ -43,7 +42,7 @@ export class OfflineQueueService extends BaseService {
 
     constructor(private eventBus: EventBusService) {
         super('OfflineQueueService');
-        this.filePath = path.join(app.getPath('userData'), 'offline-queue.json');
+        this.filePath = getDataFilePath('system', 'offline-queue.json');
     }
 
     /** Register external processor invoked for each queued prompt on reconnect. */

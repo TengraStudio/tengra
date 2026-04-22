@@ -481,13 +481,13 @@ function parseTrackingCounts(result: { success: boolean; stdout?: string }, trac
  * @param gitService - Git service instance for executing git commands
  */
 function registerHistoryHandlers(gitService: GitService, validateSender: SenderValidator) {
-    ipcMain.handle('git:getRecentCommits', createValidatedIpcHandler('git:getRecentCommits', async (event, cwd: string, count?: number) => {
+    ipcMain.handle('git:getRecentCommits', createValidatedIpcHandler('git:getRecentCommits', async (event, cwd: string, count?: number, skip?: number) => {
         validateSender(event);
-        const result = await gitService.getLog(cwd, count || 10);
+        const result = await gitService.getLog(cwd, count || 10, skip || 0);
         return { success: true, commits: result };
     }, {
         defaultValue: { success: false, commits: [] },
-        argsSchema: z.tuple([CwdSchema, CountSchema(MAX_COMMIT_COUNT)])
+        argsSchema: z.tuple([CwdSchema, CountSchema(MAX_COMMIT_COUNT), z.number().int().min(0).optional().default(0)])
     }));
 
     ipcMain.handle('git:getCommitStats', createValidatedIpcHandler('git:getCommitStats', async (event, cwd: string, days?: number) => {
@@ -567,11 +567,14 @@ function registerDiffHandlers(gitService: GitService, validateSender: SenderVali
         validateSender(event);
         // Get staged files
         const stagedResult = await gitService.executeRaw(cwd, 'diff --cached --name-status');
-        // Get unstaged files
+        // Get unstaged tracked files
         const unstagedResult = await gitService.executeRaw(cwd, 'diff --name-status');
+        // Get untracked files
+        const untrackedResult = await gitService.executeRaw(cwd, 'ls-files --others --exclude-standard');
 
         const parseStatus = (
-            output: string
+            output: string,
+            staged: boolean
         ): Array<{ status: string; path: string; staged: boolean }> => {
             if (!output) {
                 return [];
@@ -581,13 +584,18 @@ function registerDiffHandlers(gitService: GitService, validateSender: SenderVali
                 .filter(line => line.trim())
                 .map(line => {
                     const parts = line.trim().split('\t');
-                    const p0 = parts[0];
-                    const p1 = parts[1];
-                    if (p0 && p1) {
+                    if (parts.length >= 2) {
                         return {
-                            status: p0,
-                            path: p1,
-                            staged: false,
+                            status: parts[0] as string,
+                            path: parts[1] as string,
+                            staged,
+                        };
+                    } else if (parts.length === 1) {
+                        // Untracked files just have the path
+                        return {
+                            status: '??',
+                            path: parts[0] as string,
+                            staged,
                         };
                     }
                     return null;
@@ -595,17 +603,17 @@ function registerDiffHandlers(gitService: GitService, validateSender: SenderVali
                 .filter(Boolean) as Array<{ status: string; path: string; staged: boolean }>;
         };
 
-        const stagedFiles = parseStatus(stagedResult.stdout ?? '').map(f => ({
-            ...f,
-            staged: true,
-        }));
-        const unstagedFiles = parseStatus(unstagedResult.stdout ?? '');
+        const stagedFiles = parseStatus(stagedResult.stdout ?? '', true);
+        const unstagedFiles = parseStatus(unstagedResult.stdout ?? '', false);
+        const untrackedFiles = parseStatus(untrackedResult.stdout ?? '', false);
+
+        const allFiles = [...stagedFiles, ...unstagedFiles, ...untrackedFiles];
 
         return {
             success: true,
             stagedFiles,
-            unstagedFiles,
-            allFiles: [...stagedFiles, ...unstagedFiles],
+            unstagedFiles: [...unstagedFiles, ...untrackedFiles],
+            allFiles,
         };
     }, {
         defaultValue: { success: false, stagedFiles: [], unstagedFiles: [], allFiles: [] },
@@ -728,6 +736,15 @@ function registerActionHandlers(gitService: GitService, validateSender: SenderVa
         };
     }, {
         defaultValue: { success: false, error: 'Failed to pull', stdout: undefined, stderr: undefined },
+        argsSchema: z.tuple([CwdSchema])
+    }));
+
+    ipcMain.handle('git:getStagedDiff', createValidatedIpcHandler('git:getStagedDiff', async (event, cwd: string) => {
+        validateSender(event);
+        const diff = await gitService.getStagedDiff(cwd);
+        return { success: true, diff };
+    }, {
+        defaultValue: { success: false, diff: '' },
         argsSchema: z.tuple([CwdSchema])
     }));
 }

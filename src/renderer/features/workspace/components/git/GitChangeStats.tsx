@@ -8,8 +8,23 @@
  * (at your option) any later version.
  */
 
-import { Minus, Plus } from 'lucide-react';
-
+import React from 'react';
+import { 
+    Plus, 
+    Minus, 
+    FileText, 
+    CheckSquare, 
+    FilePlus, 
+    FileMinus, 
+    Activity,
+    ChevronDown,
+    ChevronRight,
+    Loader2
+} from 'lucide-react';
+import { Button } from '@renderer/components/ui/button';
+import { Badge } from '@renderer/components/ui/badge';
+import { cn } from '@renderer/lib/utils';
+import { DiffViewer } from '@renderer/components/ui/DiffViewer';
 import { DiffStats, GitData, GitFile } from './types';
 
 interface ChangeStatsProps {
@@ -18,86 +33,184 @@ interface ChangeStatsProps {
     handleStageFile: (path: string) => Promise<void>;
     handleUnstageFile: (path: string) => Promise<void>;
     getStatusIcon: (status: string) => React.ReactNode;
+    handleGitFileSelect?: (file: GitFile | null) => void;
+    selectedFile?: GitFile | null;
+    fileDiff?: { original: string; modified: string } | null;
+    loadingDiff?: boolean;
     t: (key: string) => string;
 }
 
-export const GitChangeStats: React.FC<ChangeStatsProps> = ({ diffStats, gitData, handleStageFile, handleUnstageFile, getStatusIcon, t }) => (
-    <div className="bg-card/80 backdrop-blur-md rounded-2xl border border-border/50 p-6 flex flex-col gap-6">
-        <h3 className="text-sm font-bold text-foreground">{t('workspaceDashboard.changesStats')}</h3>
+const FileRow = ({ 
+    file, 
+    type, 
+    onAction,
+    onSelect,
+    isSelected,
+    fileDiff,
+    loadingDiff
+}: { 
+    file: GitFile; 
+    type: 'staged' | 'unstaged';
+    onAction: (path: string) => void | Promise<void>;
+    onSelect?: (file: GitFile | null) => void;
+    isSelected: boolean;
+    fileDiff?: { original: string; modified: string } | null;
+    loadingDiff?: boolean;
+}) => {
+    const isStaged = type === 'staged';
+    
+    const getStatusInfo = (status: string) => {
+        const s = status.toUpperCase();
+        if (s.includes('A') || s.includes('??')) {
+            return { icon: FilePlus, color: 'text-emerald-500' };
+        }
+        if (s.includes('D')) {
+            return { icon: FileMinus, color: 'text-rose-500' };
+        }
+        if (s.includes('M')) {
+            return { icon: Activity, color: 'text-amber-500' };
+        }
+        return { icon: FileText, color: 'text-muted-foreground/60' };
+    };
 
-        <div className="grid grid-cols-3 gap-4">
-            <div className="bg-muted/30 rounded-xl p-4">
-                <div className="typo-caption text-muted-foreground mb-1">{t('workspaceDashboard.filesChanged')}</div>
-                <div className="text-2xl font-bold text-foreground">{diffStats.total.files}</div>
+    const info = getStatusInfo(file.status);
+
+    return (
+        <div className="flex flex-col border-b border-border/10 last:border-b-0">
+            <div 
+                onClick={() => onSelect?.(isSelected ? null : file)}
+                className={cn(
+                    "group flex items-center gap-3 py-2 px-3 cursor-pointer transition-colors",
+                    isSelected ? "bg-muted/40" : "hover:bg-muted/30"
+                )}
+            >
+                {isSelected ? <ChevronDown className="w-3.5 h-3.5 text-primary" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-muted-foreground/60" />}
+                
+                <div className={cn("p-1.5 rounded bg-background/50 border border-border/5", info.color)}>
+                    <info.icon className="w-3 h-3" />
+                </div>
+                
+                <div className="flex-1 min-w-0 flex items-center gap-3">
+                    <span className={cn(
+                        "text-[13px] font-medium",
+                        isSelected ? "text-primary" : "text-foreground/80"
+                    )}>
+                        {file.path.split('/').pop()}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground/40 truncate font-mono">{file.path}</span>
+                </div>
+
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            void onAction(file.path);
+                        }}
+                        className="h-6 w-6 p-0 hover:bg-muted/50"
+                    >
+                        {isStaged ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                    </Button>
+                </div>
             </div>
-            <div className="bg-muted/30 rounded-xl p-4">
-                <div className="typo-caption text-muted-foreground mb-1">{t('workspaceDashboard.linesAdded')}</div>
-                <div className="text-2xl font-bold text-success">+{diffStats.total.added}</div>
-            </div>
-            <div className="bg-muted/30 rounded-xl p-4">
-                <div className="typo-caption text-muted-foreground mb-1">{t('workspaceDashboard.linesDeleted')}</div>
-                <div className="text-2xl font-bold text-destructive">-{diffStats.total.deleted}</div>
-            </div>
+
+            {/* Inline Diff Viewer */}
+            {isSelected && (
+                <div className="px-6 pb-6 pt-2 h-[450px] animate-in fade-in slide-in-from-top-1 duration-200">
+                    {loadingDiff ? (
+                        <div className="h-full flex flex-col items-center justify-center bg-muted/5 rounded-lg border border-dashed border-border/20">
+                            <Loader2 className="w-5 h-5 animate-spin text-primary/40 mb-2" />
+                            <span className="text-[10px] font-bold uppercase text-muted-foreground/40 tracking-widest">Diff Generation...</span>
+                        </div>
+                    ) : fileDiff ? (
+                        <DiffViewer 
+                            original={fileDiff.original}
+                            modified={fileDiff.modified}
+                            language="plaintext"
+                            className="h-full shadow-lg border-border/20"
+                        />
+                    ) : (
+                        <div className="h-full flex items-center justify-center bg-muted/5 rounded-lg text-xs text-muted-foreground/40">
+                             Computing delta...
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
+    );
+};
 
-        {gitData.changedFiles.length > 0 && (
-            <div className="flex flex-col gap-4">
-                <h4 className="typo-caption font-bold text-muted-foreground">{t('workspaceDashboard.changedFiles')}</h4>
-
-                {gitData.stagedFiles.length > 0 && (
-                    <div className="space-y-2">
-                        <div className="typo-caption font-semibold text-success px-2">{t('workspaceDashboard.stagedFiles')}</div>
-                        <div className="space-y-1">
-                            {gitData.stagedFiles.map((file: GitFile, i: number) => (
-                                <div
-                                    key={`staged-${file.path}-${i}`}
-                                    className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors typo-caption"
-                                >
-                                    {getStatusIcon(file.status)}
-                                    <span className="flex-1 truncate text-foreground">{file.path}</span>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            void handleUnstageFile(file.path);
-                                        }}
-                                        className="p-1 rounded hover:bg-muted/50 text-muted-foreground hover:text-warning"
-                                        title={t('workspaceDashboard.unstage')}
-                                    >
-                                        <Minus className="w-3 h-3" />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
+export const GitChangeStats: React.FC<ChangeStatsProps> = ({ 
+    gitData, 
+    handleStageFile, 
+    handleUnstageFile, 
+    handleGitFileSelect,
+    selectedFile,
+    fileDiff,
+    loadingDiff
+}) => {
+    return (
+        <div className="space-y-6">
+            {/* Staged Files */}
+            {gitData.stagedFiles.length > 0 && (
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between px-1">
+                        <span className="text-[11px] font-bold text-muted-foreground/40 uppercase tracking-widest">Staged Changes</span>
+                        <Badge variant="outline" className="h-4 px-1.5 border-emerald-500/20 bg-emerald-500/10 text-emerald-500 text-[9px] font-bold">
+                            {gitData.stagedFiles.length}
+                        </Badge>
                     </div>
-                )}
-
-                {gitData.unstagedFiles.length > 0 && (
-                    <div className="space-y-2">
-                        <div className="typo-caption font-semibold text-warning px-2">{t('workspaceDashboard.unstagedFiles')}</div>
-                        <div className="space-y-1">
-                            {gitData.unstagedFiles.map((file: GitFile, i: number) => (
-                                <div
-                                    key={`unstaged-${file.path}-${i}`}
-                                    className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors typo-caption"
-                                >
-                                    {getStatusIcon(file.status)}
-                                    <span className="flex-1 truncate text-foreground">{file.path}</span>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            void handleStageFile(file.path);
-                                        }}
-                                        className="p-1 rounded hover:bg-muted/50 text-muted-foreground hover:text-success"
-                                        title={t('workspaceDashboard.stage')}
-                                    >
-                                        <Plus className="w-3 h-3" />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
+                    <div className="border border-border/40 rounded-xl overflow-hidden bg-card/60">
+                        {gitData.stagedFiles.map((file, i) => (
+                            <FileRow 
+                                key={`staged-${file.path}-${i}`} 
+                                file={{ ...file, staged: true }} 
+                                type="staged" 
+                                onAction={handleUnstageFile} 
+                                onSelect={handleGitFileSelect}
+                                isSelected={selectedFile?.path === file.path && selectedFile?.staged}
+                                fileDiff={fileDiff}
+                                loadingDiff={loadingDiff}
+                            />
+                        ))}
                     </div>
-                )}
-            </div>
-        )}
-    </div>
-);
+                </div>
+            )}
+
+            {/* Unstaged Files */}
+            {gitData.unstagedFiles.length > 0 && (
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between px-1">
+                        <span className="text-[11px] font-bold text-muted-foreground/40 uppercase tracking-widest">Untracked Changes</span>
+                        <Badge variant="outline" className="h-4 px-1.5 border-amber-500/20 bg-amber-500/10 text-amber-500 text-[9px] font-bold">
+                            {gitData.unstagedFiles.length}
+                        </Badge>
+                    </div>
+                    <div className="border border-border/40 rounded-xl overflow-hidden bg-card/60">
+                        {gitData.unstagedFiles.map((file, i) => (
+                            <FileRow 
+                                key={`unstaged-${file.path}-${i}`} 
+                                file={{ ...file, staged: false }} 
+                                type="unstaged" 
+                                onAction={handleStageFile} 
+                                onSelect={handleGitFileSelect}
+                                isSelected={selectedFile?.path === file.path && !selectedFile?.staged}
+                                fileDiff={fileDiff}
+                                loadingDiff={loadingDiff}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {gitData.changedFiles.length === 0 && (
+                <div className="py-20 flex flex-col items-center justify-center text-center opacity-40">
+                    <CheckSquare className="w-10 h-10 mb-4 text-emerald-500/40" />
+                    <p className="text-sm font-semibold tracking-tight text-foreground/80">Everything is committed</p>
+                    <p className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground mt-1">Workspace Clean</p>
+                </div>
+            )}
+        </div>
+    );
+};

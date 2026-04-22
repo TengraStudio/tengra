@@ -29,6 +29,7 @@ import type {
     WorkspaceDefinitionLocation,
     WorkspaceDependencyGraph,
     WorkspaceIssue,
+    WorkspaceStats,
 } from '@/shared/types';
 
 export interface ElectronApiWorkspaceSystemDomain {
@@ -176,8 +177,7 @@ export interface ElectronApiWorkspaceSystemDomain {
         analyzeDirectory: (dirPath: string) => Promise<{
             hasPackageJson: boolean;
             pkg: Record<string, IpcValue>;
-            readme: string | null;
-            stats: { fileCount: number; totalSize: number };
+            stats: WorkspaceStats;
         }>;
         watch: (rootPath: string) => Promise<boolean>;
         unwatch: (rootPath: string) => Promise<boolean>;
@@ -226,6 +226,7 @@ export interface ElectronApiWorkspaceSystemDomain {
             rootPath: string,
             pattern: string
         ) => Promise<{ success: boolean; results: string[]; error?: string }>;
+        revertFileChange: (diffId: string) => Promise<{ success: boolean; error?: string }>;
     };
 
     // Proxy
@@ -257,7 +258,8 @@ export interface ElectronApiWorkspaceSystemDomain {
         }>;
         getRecentCommits: (
             cwd: string,
-            count?: number
+            count?: number,
+            skip?: number
         ) => Promise<{
             success: boolean;
             commits?: Array<{ hash: string; message: string; author: string; date: string }>;
@@ -266,7 +268,8 @@ export interface ElectronApiWorkspaceSystemDomain {
         getFileHistory: (
             cwd: string,
             filePath: string,
-            count?: number
+            count?: number,
+            skip?: number
         ) => Promise<{
             success: boolean;
             commits?: Array<{
@@ -339,6 +342,9 @@ export interface ElectronApiWorkspaceSystemDomain {
         getCommitDiff: (
             cwd: string,
             hash: string
+        ) => Promise<{ diff: string; success: boolean; error?: string }>;
+        getStagedDiff: (
+            cwd: string
         ) => Promise<{ diff: string; success: boolean; error?: string }>;
     };
 

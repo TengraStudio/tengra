@@ -117,7 +117,14 @@ export interface AntigravityAccount {
 }
 
 export interface AntigravityUpstreamQuotaResponse {
-    models: Record<string, import('@main/services/proxy/quota.service').QuotaModel>;
+    models: Record<string, {
+        displayName?: string;
+        quotaInfo?: {
+            remainingFraction?: number;
+            remainingQuota?: number;
+            totalQuota?: number;
+        };
+    }>;
 }
 
 export interface GitHubReleaseAsset {
@@ -134,7 +141,7 @@ export interface LocalImageServiceDeps {
     eventBusService?: import('@main/services/system/event-bus.service').EventBusService;
     authService?: import('@main/services/security/auth.service').AuthService;
     llmService?: import('@main/services/llm/llm.service').LLMService;
-    quotaService?: import('@main/services/proxy/quota.service').QuotaService;
+    proxyService?: import('@main/services/proxy/proxy.service').ProxyService;
     advancedMemoryService?: import('@main/services/llm/advanced-memory.service').AdvancedMemoryService;
     telemetryService?: import('@main/services/analysis/telemetry.service').TelemetryService;
 }

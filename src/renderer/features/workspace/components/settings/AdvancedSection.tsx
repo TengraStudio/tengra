@@ -8,78 +8,140 @@
  * (at your option) any later version.
  */
 
-import { CheckedState } from '@radix-ui/react-checkbox';
-import { Checkbox } from '@renderer/components/ui/checkbox';
+import { Label } from '@renderer/components/ui/label';
+import { Switch } from '@renderer/components/ui/switch';
+import { Input } from '@renderer/components/ui/input';
+import { Textarea } from '@renderer/components/ui/textarea';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@renderer/components/ui/card';
+import { Database, EyeOff, FileSearch, Zap } from 'lucide-react';
 import React from 'react';
 
 import { SettingsSectionProps } from './types';
 
-export const AdvancedSection: React.FC<SettingsSectionProps> = ({ formData, setFormData, t }) => (
+export const AdvancedSection: React.FC<SettingsSectionProps> = ({
+    formData,
+    setFormData,
+    t,
+}) => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div>
-            <h3 className="text-lg font-semibold text-foreground mb-1">{t('workspaces.advanced')}</h3>
-            <p className="text-sm text-muted-foreground">{t('workspaces.advancedDesc')}</p>
+        <div className="flex flex-col gap-1.5">
+            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                <Database className="w-6 h-6 text-primary" />
+                {t('workspaces.advancedEngine')}
+            </h2>
+            <p className="text-muted-foreground">
+                {t('workspaces.advancedEngineDesc')}
+            </p>
         </div>
 
-        <div className="space-y-4">
-            <div className="p-4 bg-muted/20 border border-border/50 rounded-xl space-y-3">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <div className="text-sm font-medium text-foreground">
-                            {t('workspaces.fileWatching')}
-                        </div>
-                        <div className="typo-caption text-muted-foreground">
-                            {t('workspaces.fileWatchingDesc')}
-                        </div>
-                    </div>
-                    <Checkbox
-                        checked={formData.fileWatchEnabled}
-                        onCheckedChange={(checked: CheckedState) =>
-                            setFormData(prev => ({ ...prev, fileWatchEnabled: checked === true }))
-                        }
-                    />
+        <Card className="border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden border-2 shadow-xl shadow-primary/5">
+            <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
+                <div className="flex items-center gap-2">
+                    <FileSearch className="w-4 h-4 text-primary" />
+                    <CardTitle className="text-base font-semibold">{t('workspaces.indexingControl')}</CardTitle>
                 </div>
-            </div>
-
-            <div className="p-4 bg-muted/20 border border-border/50 rounded-xl space-y-3">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <div className="text-sm font-medium text-foreground">
-                            {t('workspaces.indexing')}
-                        </div>
-                        <div className="typo-caption text-muted-foreground">
-                            {t('workspaces.indexingDesc')}
-                        </div>
+                <CardDescription>{t('workspaces.indexingControlDesc')}</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+                <div className="flex items-center justify-between p-4 bg-background/40 rounded-xl border border-border/20">
+                    <div className="space-y-1">
+                        <Label className="text-sm font-semibold">{t('workspaces.semanticIndexing')}</Label>
+                        <p className="text-xs text-muted-foreground">
+                            {t('workspaces.semanticIndexingDesc')}
+                        </p>
                     </div>
-                    <Checkbox
+                    <Switch
                         checked={formData.indexingEnabled}
-                        onCheckedChange={(checked: CheckedState) =>
-                            setFormData(prev => ({ ...prev, indexingEnabled: checked === true }))
+                        onCheckedChange={checked =>
+                            setFormData(prev => ({ ...prev, indexingEnabled: checked }))
                         }
                     />
                 </div>
-            </div>
 
-            <div className="p-4 bg-muted/20 border border-border/50 rounded-xl space-y-3">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <div className="text-sm font-medium text-foreground">
-                            {t('workspaces.autoSave')}
-                        </div>
-                        <div className="typo-caption text-muted-foreground">
-                            {t('workspaces.autoSaveDesc')}
-                        </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label className="text-sm font-medium">{t('workspaces.maxFileSize')}</Label>
+                        <Input
+                            type="number"
+                            value={formData.indexingMaxFileSize}
+                            className="bg-background/50 font-mono"
+                            onChange={e =>
+                                setFormData(prev => ({ ...prev, indexingMaxFileSize: parseInt(e.target.value) || 0 }))
+                            }
+                        />
                     </div>
-                    <Checkbox
-                        checked={formData.autoSave}
-                        onCheckedChange={(checked: CheckedState) =>
-                            setFormData(prev => ({ ...prev, autoSave: checked === true }))
+                    <div className="space-y-2">
+                        <Label className="text-sm font-medium">{t('workspaces.maxConcurrency')}</Label>
+                        <Input
+                            type="number"
+                            min={1}
+                            max={16}
+                            value={formData.indexingMaxConcurrency}
+                            className="bg-background/50 font-mono"
+                            onChange={e =>
+                                setFormData(prev => ({ ...prev, indexingMaxConcurrency: parseInt(e.target.value) || 4 }))
+                            }
+                        />
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+
+        <Card className="border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden border-2 shadow-xl shadow-primary/5">
+            <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
+                <div className="flex items-center gap-2">
+                    <EyeOff className="w-4 h-4 text-primary" />
+                    <CardTitle className="text-base font-semibold">{t('workspaces.exclusionPatterns')}</CardTitle>
+                </div>
+                <CardDescription>{t('workspaces.exclusionPatternsDesc')}</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+                <Textarea
+                    placeholder={t('workspaces.exclusionPatternsPlaceholder')}
+                    value={formData.indexingExclude}
+                    className="min-h-24 bg-background/50 font-mono text-xs"
+                    onChange={e =>
+                        setFormData(prev => ({ ...prev, indexingExclude: e.target.value }))
+                    }
+                />
+            </CardContent>
+        </Card>
+
+        <Card className="border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden border-2 shadow-xl shadow-primary/5">
+            <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
+                <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-primary" />
+                    <CardTitle className="text-base font-semibold">{t('workspaces.dynamicFeatures')}</CardTitle>
+                </div>
+                <CardDescription>{t('workspaces.dynamicFeaturesDesc')}</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+                <div className="flex items-center justify-between p-4 bg-background/40 rounded-xl border border-border/20">
+                    <div className="space-y-1">
+                        <Label className="text-sm font-semibold">{t('workspaces.fileWatcher')}</Label>
+                        <p className="text-xs text-muted-foreground">{t('workspaces.fileWatcherDesc')}</p>
+                    </div>
+                    <Switch
+                        checked={formData.fileWatchEnabled}
+                        onCheckedChange={checked =>
+                            setFormData(prev => ({ ...prev, fileWatchEnabled: checked }))
                         }
                     />
                 </div>
-            </div>
-        </div>
+
+                <div className="flex items-center justify-between p-4 bg-background/40 rounded-xl border border-border/20">
+                    <div className="space-y-1">
+                        <Label className="text-sm font-semibold">{t('workspaces.autoSaveLabel')}</Label>
+                        <p className="text-xs text-muted-foreground">{t('workspaces.autoSaveDesc')}</p>
+                    </div>
+                    <Switch
+                        checked={formData.autoSave}
+                        onCheckedChange={checked =>
+                            setFormData(prev => ({ ...prev, autoSave: checked }))
+                        }
+                    />
+                </div>
+            </CardContent>
+        </Card>
     </div>
 );
-
-

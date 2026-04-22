@@ -72,6 +72,7 @@ import {
     WorkspaceDefinitionLocation,
     WorkspaceDependencyGraph,
     WorkspaceIssue,
+    WorkspaceStats,
 } from './index';
 import { RuntimeBootstrapExecutionResult } from './runtime-manifest';
 
@@ -117,6 +118,7 @@ export interface LinkedAccountInfo {
 }
 
 export interface TokenData {
+    key?: string;
     accessToken?: string;
     refreshToken?: string;
     sessionToken?: string;
@@ -975,8 +977,7 @@ export interface ElectronAPI {
         analyzeDirectory: (dirPath: string) => Promise<{
             hasPackageJson: boolean;
             pkg: Record<string, IpcValue>;
-            readme: string | null;
-            stats: { fileCount: number; totalSize: number };
+            stats: WorkspaceStats;
         }>;
         applyLogo: (workspacePath: string, tempLogoPath: string) => Promise<string>;
         getCompletion: (text: string) => Promise<string>;

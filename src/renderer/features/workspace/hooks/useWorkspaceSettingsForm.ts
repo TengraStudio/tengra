@@ -43,11 +43,13 @@ function getDevState(server?: Workspace['devServer']) {
         devAutoStart: server?.autoStart ?? false,
     };
 }
-
-function getAdvancedState(options?: Workspace['advancedOptions']) {
+function getAdvancedState(options?: Workspace['advancedOptions']) {
     return {
         fileWatchEnabled: options?.fileWatchEnabled ?? true,
         indexingEnabled: options?.indexingEnabled ?? true,
+        indexingMaxFileSize: options?.indexingMaxFileSize ?? 1024 * 1024 * 10,
+        indexingExclude: options?.indexingExclude?.join(', ') ?? '',
+        indexingMaxConcurrency: options?.maxConcurrency ?? 4,
         autoSave: options?.autoSave ?? false,
     };
 }
@@ -73,6 +75,23 @@ function getEditorState(editor?: Workspace['editor']) {
     };
 }
 
+function getIntelligenceState(intelligence?: Workspace['intelligence']) {
+    return {
+        intelligenceModelId: intelligence?.defaultModelId ?? '',
+        intelligenceDiscussModelId: intelligence?.discussModelId ?? '',
+        intelligenceSystemPrompt: intelligence?.systemPrompt ?? '',
+        intelligenceTemperature: intelligence?.temperature ?? 0.7,
+    };
+}
+
+function getGitState(git?: Workspace['git']) {
+    return {
+        gitCommitPrefix: git?.commitPrefix ?? '',
+        gitBranchPrefix: git?.branchPrefix ?? '',
+        gitAutoFetch: git?.autoFetch ?? false,
+    };
+}
+
 function getInitialState(workspace: Workspace): WorkspaceSettingsFormData {
     return {
         title: workspace.title,
@@ -81,6 +100,8 @@ function getInitialState(workspace: Workspace): WorkspaceSettingsFormData {
         councilEnabled: workspace.councilConfig.enabled,
         councilMembers: workspace.councilConfig.members,
         consensusThreshold: workspace.councilConfig.consensusThreshold,
+        ...getIntelligenceState(workspace.intelligence),
+        ...getGitState(workspace.git),
         ...getBuildState(workspace.buildConfig),
         ...getDevState(workspace.devServer),
         ...getAdvancedState(workspace.advancedOptions),
@@ -167,9 +188,22 @@ function checkIsDirty(formData: WorkspaceSettingsFormData, workspace: Workspace)
         JSON.stringify(formData.councilMembers) !== JSON.stringify(workspace.councilConfig.members) ||
         formData.consensusThreshold !== workspace.councilConfig.consensusThreshold;
 
+    const intelligenceDirty = 
+        formData.intelligenceModelId !== (workspace.intelligence?.defaultModelId ?? '') ||
+        formData.intelligenceDiscussModelId !== (workspace.intelligence?.discussModelId ?? '') ||
+        formData.intelligenceSystemPrompt !== (workspace.intelligence?.systemPrompt ?? '') ||
+        formData.intelligenceTemperature !== (workspace.intelligence?.temperature ?? 0.7);
+
+    const gitDirty =
+        formData.gitCommitPrefix !== (workspace.git?.commitPrefix ?? '') ||
+        formData.gitBranchPrefix !== (workspace.git?.branchPrefix ?? '') ||
+        formData.gitAutoFetch !== (workspace.git?.autoFetch ?? false);
+
     return (
         generalDirty ||
         councilDirty ||
+        intelligenceDirty ||
+        gitDirty ||
         checkBuildDirty(formData, workspace.buildConfig) ||
         checkDevDirty(formData, workspace.devServer) ||
         checkAdvancedDirty(formData, workspace.advancedOptions) ||
@@ -187,7 +221,7 @@ export const useWorkspaceSettingsForm = (
 
     useEffect(() => {
         setFormData(getInitialState(workspace));
-    }, [workspace]);
+    }, [workspace.id]);
 
     const isDirty = useMemo(() => checkIsDirty(formData, workspace), [formData, workspace]);
 
@@ -229,6 +263,22 @@ export const useWorkspaceSettingsForm = (
             fileWatchIgnore: workspace.advancedOptions?.fileWatchIgnore,
             indexingInterval: workspace.advancedOptions?.indexingInterval,
             layoutProfile: workspace.advancedOptions?.layoutProfile,
+            indexingMaxFileSize: formData.indexingMaxFileSize,
+            indexingExclude: formData.indexingExclude.split(',').map(s => s.trim()).filter(Boolean),
+            maxConcurrency: formData.indexingMaxConcurrency,
+        };
+
+        const intelligence = {
+            defaultModelId: formData.intelligenceModelId || undefined,
+            discussModelId: formData.intelligenceDiscussModelId || undefined,
+            systemPrompt: formData.intelligenceSystemPrompt || undefined,
+            temperature: formData.intelligenceTemperature,
+        };
+
+        const git = {
+            commitPrefix: formData.gitCommitPrefix || undefined,
+            branchPrefix: formData.gitBranchPrefix || undefined,
+            autoFetch: formData.gitAutoFetch,
         };
 
         const editor = {
@@ -260,6 +310,8 @@ export const useWorkspaceSettingsForm = (
             buildConfig,
             devServer,
             advancedOptions,
+            intelligence,
+            git,
             editor,
         };
 

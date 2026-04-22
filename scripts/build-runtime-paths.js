@@ -12,8 +12,9 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const APP_FOLDER_NAME = 'Tengra';
 const RUNTIME_FOLDER_NAME = 'runtime';
+const RUNTIME_MANAGED_FOLDER = 'managed';
+const RUNTIME_CACHE_FOLDER = 'cache';
 
 function getAppDataRoot() {
     if (process.platform === 'win32') {
@@ -35,7 +36,11 @@ function ensureDirectory(targetPath) {
 }
 
 function getManagedRuntimeRoot() {
-    return ensureDirectory(path.join(getAppDataRoot(), APP_FOLDER_NAME, RUNTIME_FOLDER_NAME));
+    return ensureDirectory(path.join(getAppDataRoot(), 'Tengra', RUNTIME_FOLDER_NAME, RUNTIME_MANAGED_FOLDER));
+}
+
+function getManagedRuntimeCacheRoot() {
+    return ensureDirectory(path.join(getAppDataRoot(), 'Tengra', RUNTIME_FOLDER_NAME, RUNTIME_CACHE_FOLDER));
 }
 
 function getManagedRuntimeBinDir() {
@@ -47,7 +52,7 @@ function getManagedRuntimeModelsDir() {
 }
 
 function getManagedRuntimeTempDir() {
-    return ensureDirectory(path.join(getManagedRuntimeRoot(), 'temp'));
+    return ensureDirectory(path.join(getManagedRuntimeCacheRoot(), 'temp'));
 }
 
 function getExecutableName(baseName) {

@@ -29,7 +29,6 @@ import { useMountManagement } from './useMountManagement';
 
 interface UseWorkspaceManagerProps {
     workspace: Workspace;
-    notify: (type: 'success' | 'error' | 'info', message: string) => void;
     logActivity: (title: string, detail?: string) => void;
     t: (key: string, options?: Record<string, string | number>) => string;
 }
@@ -40,6 +39,7 @@ interface FileOpenEntry {
     name: string;
     isDirectory: boolean;
     initialLine?: number;
+    readOnly?: boolean;
 }
 
 interface SaveActiveTabOptions {
@@ -101,8 +101,6 @@ function useMountState(workspace: Workspace): [WorkspaceMount[], (mounts: Worksp
 
 // Helper hook for SSH operations
 function useSSHOperations(
-    notify: (type: 'success' | 'error' | 'info', message: string) => void,
-    t: (key: string, options?: Record<string, string | number>) => string
 ) {
     const MAX_CONNECT_RETRIES = 3;
     const INITIAL_BACKOFF_MS = 400;
@@ -116,16 +114,14 @@ function useSSHOperations(
     const validateSSHMount = useCallback(
         (mount: WorkspaceMount): boolean => {
             if (!mount.ssh) {
-                notify('error', t('errors.unexpected'));
                 return false;
             }
             if (!mount.ssh.host || !mount.ssh.username) {
-                notify('error', t('errors.unexpected'));
                 return false;
             }
             return true;
         },
-        [notify, t]
+        []
     );
 
     const ensureMountReady = useCallback(
@@ -142,7 +138,6 @@ function useSSHOperations(
                 return false;
             }
             let backoffMs = INITIAL_BACKOFF_MS;
-            let lastError = t('errors.unexpected');
             for (let attempt = 1; attempt <= MAX_CONNECT_RETRIES; attempt++) {
                 const result = await window.electron.ssh.connect({
                     id: mount.id,
@@ -156,29 +151,18 @@ function useSSHOperations(
                     passphrase: sshConfig.passphrase,
                 });
                 if (result.success) {
-                    if (attempt > 1) {
-                        notify('info', t('workspace.notifications.sshConnectedAfterAttempts', { count: attempt }));
-                    }
+                    appLogger.debug(`SSH connection established for mount: `, mount.id);
                     return true;
                 }
 
-                const diagnosticHint = result.diagnostics?.hint;
-                lastError = diagnosticHint
-                    ? `${result.error ?? t('errors.unexpected')} ${diagnosticHint}`
-                    : result.error ?? t('errors.unexpected');
                 if (attempt < MAX_CONNECT_RETRIES) {
-                    notify('info', t('workspace.notifications.sshConnectRetry', {
-                        attempt,
-                        max: MAX_CONNECT_RETRIES - 1
-                    }));
                     await waitFor(backoffMs);
                     backoffMs *= 2;
                 }
             }
-            notify('error', lastError);
             return false;
         },
-        [notify, t, validateSSHMount, waitFor]
+        [validateSSHMount, waitFor]
     );
 
     return { ensureMountReady };
@@ -198,9 +182,7 @@ function extractContentFromResult(result: ServiceResponse<string>): string {
 // Handle image file reading
 async function readImageFile(
     mount: WorkspaceMount,
-    filePath: string,
-    notify: (type: 'success' | 'error' | 'info', message: string) => void,
-    t: (key: string, options?: Record<string, string | number>) => string
+    filePath: string
 ): Promise<{
     content: string;
     type: 'code' | 'image';
@@ -213,7 +195,6 @@ async function readImageFile(
         }
         return { content: '', type: 'code', result };
     }
-    notify('info', t('workspace.notifications.sshImagePreviewNotSupported'));
     return { content: '', type: 'code', result: undefined };
 }
 
@@ -248,16 +229,14 @@ async function readCodeFile(
 // Helper for reading file content based on mount type
 async function readFileContent(
     mount: WorkspaceMount,
-    filePath: string,
-    notify: (type: 'success' | 'error' | 'info', message: string) => void,
-    t: (key: string, options?: Record<string, string | number>) => string
+    filePath: string
 ): Promise<{
     content: string;
     type: 'code' | 'image';
     result: ServiceResponse<string> | undefined;
 }> {
     if (isImageFile(filePath)) {
-        return readImageFile(mount, filePath, notify, t);
+        return readImageFile(mount, filePath);
     }
     return readCodeFile(mount, filePath);
 }
@@ -314,21 +293,19 @@ interface WorkspaceEntryOperationResult {
 // Helper hook for file operations
 function useFileOperations(
     mounts: WorkspaceMount[],
-    notify: (type: 'success' | 'error' | 'info', message: string) => void,
     logActivity: (title: string, detail?: string) => void,
     t: (key: string, options?: Record<string, string | number>) => string
 ) {
     const [refreshSignal, setRefreshSignal] = useState(0);
     const requestExplorerRefresh = useCallback((mountType: WorkspaceMount['type']) => {
-        if (mountType === 'local') {
-            return;
-        }
+        void mountType;
         setRefreshSignal(signal => signal + 1);
     }, []);
     const requestExplorerRefreshForEntries = useCallback((entryMountTypes: WorkspaceMount['type'][]) => {
-        if (entryMountTypes.some(mountType => mountType === 'ssh')) {
-            setRefreshSignal(signal => signal + 1);
+        if (entryMountTypes.length === 0) {
+            return;
         }
+        setRefreshSignal(signal => signal + 1);
     }, []);
     const resolveMountForEntry = useCallback(
         (entry: WorkspaceEntry): WorkspaceMount | undefined =>
@@ -445,12 +422,11 @@ function useFileOperations(
             if (result.success) {
                 requestExplorerRefresh(targetMount.type);
                 logActivity('Created file', path);
-                notify('success', t('workspace.notifications.fileCreated'));
             } else {
-                notify('error', result.error ?? t('workspace.errors.fileOps.create'));
+                appLogger.error('Failed to create file', result.error || 'Unknown error');
             }
         },
-        [mounts, logActivity, notify, requestExplorerRefresh, t]
+        [mounts, logActivity, requestExplorerRefresh]
     );
 
     const createFolder = useCallback(
@@ -466,12 +442,11 @@ function useFileOperations(
             if (result.success) {
                 requestExplorerRefresh(targetMount.type);
                 logActivity('Created folder', path);
-                notify('success', t('workspace.notifications.folderCreated'));
             } else {
-                notify('error', result.error ?? t('workspace.errors.fileOps.create'));
+                appLogger.error('Failed to create folder', result.error || 'Unknown error');
             }
         },
-        [mounts, logActivity, notify, requestExplorerRefresh, t]
+        [mounts, logActivity, requestExplorerRefresh]
     );
 
     const renameEntry = useCallback(
@@ -480,13 +455,12 @@ function useFileOperations(
             if (result.success) {
                 requestExplorerRefresh(result.mountType ?? 'local');
                 logActivity('Renamed entry', `${entry.name} -> ${newName}`);
-                notify('success', t('workspace.notifications.entryRenamed'));
             } else {
-                notify('error', result.error ?? t('workspace.errors.fileOps.rename'));
+                appLogger.error('Failed to rename entry', result.error || 'Unknown error');
             }
             return result;
         },
-        [logActivity, notify, requestExplorerRefresh, runRenameEntry, t]
+        [logActivity, requestExplorerRefresh, runRenameEntry]
     );
 
     const deleteEntry = useCallback(
@@ -495,13 +469,12 @@ function useFileOperations(
             if (result.success) {
                 requestExplorerRefresh(result.mountType ?? 'local');
                 logActivity('Deleted entry', entry.path);
-                notify('success', t('workspace.notifications.entryDeleted'));
             } else {
-                notify('error', result.error ?? t('workspace.errors.fileOps.delete'));
+                appLogger.error('Failed to delete entry', result.error || 'Unknown error');
             }
             return result;
         },
-        [logActivity, notify, requestExplorerRefresh, runDeleteEntry, t]
+        [logActivity, requestExplorerRefresh, runDeleteEntry]
     );
 
     const moveEntry = useCallback(
@@ -514,13 +487,12 @@ function useFileOperations(
             if (result.success) {
                 requestExplorerRefresh(result.mountType ?? 'local');
                 logActivity('Moved entry', `${entry.path} -> ${newPath}`);
-                notify('success', t('workspace.notifications.entryMoved'));
             } else {
-                notify('error', result.error ?? t('workspace.errors.fileOps.move'));
+                appLogger.error('Failed to move entry', result.error || 'Unknown error');
             }
             return result;
         },
-        [logActivity, notify, requestExplorerRefresh, runTransferEntry, t]
+        [logActivity, requestExplorerRefresh, runTransferEntry]
     );
     const copyEntry = useCallback(
         async (entry: WorkspaceEntry, targetDirPath: string) => {
@@ -532,13 +504,12 @@ function useFileOperations(
             if (result.success) {
                 requestExplorerRefresh(result.mountType ?? 'local');
                 logActivity('Copied entry', `${entry.path} -> ${nextPath}`);
-                notify('success', t('common.copy'));
             } else {
-                notify('error', result.error ?? t('workspace.errors.fileOps.copy'));
+                appLogger.error('Failed to copy entry', result.error || 'Unknown error');
             }
             return result;
         },
-        [logActivity, notify, requestExplorerRefresh, runTransferEntry, t]
+        [logActivity, requestExplorerRefresh, runTransferEntry]
     );
     const bulkRenameEntries = useCallback(
         async (entries: WorkspaceEntry[], baseName: string) => {
@@ -548,7 +519,6 @@ function useFileOperations(
             for (const item of renamePlan) {
                 const result = await runRenameEntry(item.entry, item.newName);
                 if (!result.success) {
-                    notify('error', result.error ?? t('workspace.errors.fileOps.rename'));
                     continue;
                 }
                 successCount += 1;
@@ -559,14 +529,10 @@ function useFileOperations(
             requestExplorerRefreshForEntries(refreshedMountTypes);
             if (successCount > 0) {
                 logActivity('Bulk renamed entries', `${successCount}`);
-                notify(
-                    'success',
-                    `${t('common.itemsSelected', { count: successCount })} ${t('workspace.notifications.entryRenamed')}`
-                );
             }
             return successCount === entries.length;
         },
-        [logActivity, notify, requestExplorerRefreshForEntries, runRenameEntry, t]
+        [logActivity, requestExplorerRefreshForEntries, runRenameEntry]
     );
     const bulkDeleteEntries = useCallback(
         async (entries: WorkspaceEntry[]) => {
@@ -575,7 +541,6 @@ function useFileOperations(
             for (const entry of entries) {
                 const result = await runDeleteEntry(entry);
                 if (!result.success) {
-                    notify('error', result.error ?? t('workspace.errors.fileOps.delete'));
                     continue;
                 }
                 successCount += 1;
@@ -586,19 +551,15 @@ function useFileOperations(
             requestExplorerRefreshForEntries(refreshedMountTypes);
             if (successCount > 0) {
                 logActivity('Bulk deleted entries', `${successCount}`);
-                notify(
-                    'success',
-                    `${t('common.itemsSelected', { count: successCount })} ${t('workspace.notifications.entryDeleted')}`
-                );
+
             }
             return successCount === entries.length;
         },
-        [logActivity, notify, requestExplorerRefreshForEntries, runDeleteEntry, t]
+        [logActivity, requestExplorerRefreshForEntries, runDeleteEntry]
     );
     const bulkMoveEntries = useCallback(
         async (entries: WorkspaceEntry[], targetDirectoryPath: string) => {
             if (!canUseSharedTargetDirectory(entries)) {
-                notify('error', t('workspace.errors.explorer.validationError'));
                 return false;
             }
             const transferPlan = buildWorkspaceBulkTransferPlan(entries, targetDirectoryPath);
@@ -607,7 +568,6 @@ function useFileOperations(
             for (const item of transferPlan) {
                 const result = await runTransferEntry(item.entry, item.targetPath, 'move');
                 if (!result.success) {
-                    notify('error', result.error ?? t('workspace.errors.fileOps.move'));
                     continue;
                 }
                 successCount += 1;
@@ -618,19 +578,14 @@ function useFileOperations(
             requestExplorerRefreshForEntries(refreshedMountTypes);
             if (successCount > 0) {
                 logActivity('Bulk moved entries', `${successCount}`);
-                notify(
-                    'success',
-                    `${t('common.itemsSelected', { count: successCount })} ${t('workspace.notifications.entryMoved')}`
-                );
             }
             return successCount === entries.length;
         },
-        [logActivity, notify, requestExplorerRefreshForEntries, runTransferEntry, t]
+        [logActivity, requestExplorerRefreshForEntries, runTransferEntry]
     );
     const bulkCopyEntries = useCallback(
         async (entries: WorkspaceEntry[], targetDirectoryPath: string) => {
             if (!canUseSharedTargetDirectory(entries)) {
-                notify('error', t('workspace.errors.explorer.validationError'));
                 return false;
             }
             const transferPlan = buildWorkspaceBulkTransferPlan(entries, targetDirectoryPath);
@@ -639,7 +594,6 @@ function useFileOperations(
             for (const item of transferPlan) {
                 const result = await runTransferEntry(item.entry, item.targetPath, 'copy');
                 if (!result.success) {
-                    notify('error', result.error ?? t('workspace.errors.fileOps.copy'));
                     continue;
                 }
                 successCount += 1;
@@ -650,14 +604,10 @@ function useFileOperations(
             requestExplorerRefreshForEntries(refreshedMountTypes);
             if (successCount > 0) {
                 logActivity('Bulk copied entries', `${successCount}`);
-                notify(
-                    'success',
-                    `${t('common.itemsSelected', { count: successCount })} ${t('common.copy')}`
-                );
             }
             return successCount === entries.length;
         },
-        [logActivity, notify, requestExplorerRefreshForEntries, runTransferEntry, t]
+        [logActivity, requestExplorerRefreshForEntries, runTransferEntry]
     );
 
     return {
@@ -781,7 +731,7 @@ function useTabManagement(workspaceId: string) {
             );
             const preferredTabStillOpen = Boolean(
                 preferredActiveTabId &&
-                    normalizedTabs.some(tab => tab.id === preferredActiveTabId)
+                normalizedTabs.some(tab => tab.id === preferredActiveTabId)
             );
 
             const nextActiveTabId = preferredTabStillOpen
@@ -904,9 +854,9 @@ function useTabManagement(workspaceId: string) {
  * - Tab management (open/close/save)
  * - Agent Council configuration
  */
-export function useWorkspaceManager({ workspace, notify, logActivity, t }: UseWorkspaceManagerProps) {
+export function useWorkspaceManager({ workspace, logActivity, t }: UseWorkspaceManagerProps) {
     const [mounts, setMounts] = useMountState(workspace);
-    const { ensureMountReady } = useSSHOperations(notify, t);
+    const { ensureMountReady } = useSSHOperations();
     const {
         createFile,
         createFolder,
@@ -920,7 +870,7 @@ export function useWorkspaceManager({ workspace, notify, logActivity, t }: UseWo
         bulkCopyEntries,
         refreshSignal,
         setRefreshSignal,
-    } = useFileOperations(mounts, notify, logActivity, t);
+    } = useFileOperations(mounts, logActivity, t);
     const {
         openTabs,
         activeTabId,
@@ -948,7 +898,6 @@ export function useWorkspaceManager({ workspace, notify, logActivity, t }: UseWo
         workspaceId: workspace.id,
         mounts,
         setMounts,
-        notify,
         t,
     });
 
@@ -986,10 +935,9 @@ export function useWorkspaceManager({ workspace, notify, logActivity, t }: UseWo
                 return;
             }
 
-            const { content, type, result } = await readFileContent(mount, entry.path, notify, t);
+            const { content, type, result } = await readFileContent(mount, entry.path);
 
             if (!result?.success) {
-                notify('error', result?.error ?? t('workspace.errors.fileOps.read'));
                 return;
             }
 
@@ -1004,6 +952,7 @@ export function useWorkspaceManager({ workspace, notify, logActivity, t }: UseWo
                 isDirty: false,
                 isPinned: false,
                 initialLine: entry.initialLine,
+                readOnly: entry.readOnly,
             };
             setOpenTabs(prev => {
                 const existingTab = prev.find(
@@ -1030,8 +979,6 @@ export function useWorkspaceManager({ workspace, notify, logActivity, t }: UseWo
             mounts,
             openTabs,
             ensureMountReady,
-            notify,
-            t,
             setOpenTabs,
             setActiveEditorTabId,
             setDashboardTab,
@@ -1062,7 +1009,6 @@ export function useWorkspaceManager({ workspace, notify, logActivity, t }: UseWo
                 );
 
         if (!result.success) {
-            notify('error', result.error ?? t('workspace.notifications.saveFailed'));
             return;
         }
         setOpenTabs(prev =>
@@ -1070,9 +1016,9 @@ export function useWorkspaceManager({ workspace, notify, logActivity, t }: UseWo
         );
         logActivity('Saved file', activeTabData.path);
         if (!options?.silent) {
-            notify('success', t('workspace.notifications.fileSaved'));
+            appLogger.info('useWorkspaceManager', 'File saved successfully', activeTabData.path);
         }
-    }, [activeTabId, openTabs, mounts, ensureMountReady, notify, logActivity, setOpenTabs, t]);
+    }, [activeTabId, openTabs, mounts, ensureMountReady, logActivity, setOpenTabs]);
 
     const copyTabAbsolutePath = useCallback(
         async (tabId: string) => {
@@ -1082,13 +1028,11 @@ export function useWorkspaceManager({ workspace, notify, logActivity, t }: UseWo
             }
             const result = await window.electron.clipboard.writeText(tab.path);
             if (result.success) {
-                notify('success', t('workspace.pathCopied'));
                 logActivity('Copied tab path', tab.path);
                 return;
             }
-            notify('error', t('workspace.pathCopyFailed'));
         },
-        [logActivity, notify, openTabs, t]
+        [logActivity, openTabs]
     );
 
     const copyTabRelativePath = useCallback(
@@ -1103,13 +1047,11 @@ export function useWorkspaceManager({ workspace, notify, logActivity, t }: UseWo
                 : tab.name;
             const result = await window.electron.clipboard.writeText(relativePath);
             if (result.success) {
-                notify('success', t('workspace.relativePathCopied'));
                 logActivity('Copied tab relative path', relativePath);
                 return;
             }
-            notify('error', t('workspace.pathCopyFailed'));
         },
-        [logActivity, mounts, notify, openTabs, t]
+        [logActivity, mounts, openTabs]
     );
 
     const revealTabInExplorer = useCallback(
@@ -1122,15 +1064,13 @@ export function useWorkspaceManager({ workspace, notify, logActivity, t }: UseWo
             const encodedPath = encodeURIComponent(directoryPath);
             try {
                 window.electron.openExternal(`safe-file://${encodedPath}`);
-                notify('success', t('workspace.revealedInExplorer'));
                 logActivity('Revealed file in explorer', tab.path);
                 return;
             } catch (error) {
                 appLogger.error('useWorkspaceManager', 'Reveal in explorer failed', error as Error);
             }
-            notify('error', t('workspace.revealInExplorerFailed'));
         },
-        [logActivity, notify, openTabs, t]
+        [logActivity, openTabs]
     );
 
     return {

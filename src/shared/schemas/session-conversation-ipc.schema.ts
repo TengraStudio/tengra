@@ -28,6 +28,16 @@ export const sessionConversationMessageContentPartSchema = z.union([
     sessionConversationImagePartSchema,
 ]);
 
+export const sessionConversationToolCallSchema = z.object({
+    id: z.string(),
+    index: z.number().int().nonnegative().optional(),
+    type: z.literal('function'),
+    function: z.object({
+        name: z.string(),
+        arguments: z.string(),
+    }).passthrough(),
+}).passthrough();
+
 /**
  * Schema for a single message in a conversation.
  */
@@ -45,8 +55,10 @@ export const sessionConversationMessageSchema = z.object({
      */
     timestamp: z.union([z.string(), z.date(), z.number()]).optional().transform(value => value ? new Date(value) : new Date()),
     name: z.string().optional(),
-    tool_calls: z.array(z.record(z.string(), z.unknown())).optional(),
+    tool_calls: z.array(sessionConversationToolCallSchema).optional(),
+    toolCalls: z.array(sessionConversationToolCallSchema).optional(),
     tool_call_id: z.string().optional(),
+    toolCallId: z.string().optional(),
 });
 
 export const sessionConversationToolDefinitionSchema = z.object({
@@ -55,16 +67,6 @@ export const sessionConversationToolDefinitionSchema = z.object({
         name: z.string(),
         description: z.string().optional(),
         parameters: z.record(z.string(), z.unknown()).optional(),
-    }),
-});
-
-export const sessionConversationToolCallSchema = z.object({
-    id: z.string(),
-    index: z.number().int().nonnegative().optional(),
-    type: z.literal('function'),
-    function: z.object({
-        name: z.string(),
-        arguments: z.string(),
     }),
 });
 

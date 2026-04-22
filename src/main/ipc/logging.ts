@@ -9,7 +9,6 @@
  */
 
 import { appLogger, LogLevel } from '@main/logging/logger';
-import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { JsonValue } from '@shared/types/common';
 import { BrowserWindow, ipcMain } from 'electron';
 
@@ -94,33 +93,9 @@ export function registerLoggingIpc() {
 
     ipcMain.on('log:write', handleLogWrite);
 
-    ipcMain.handle('log:stream:start', createSafeIpcHandler('log:stream:start',
-        async () => {
-            streamingEnabled = true;
-            return { success: true };
-        }, { success: false }
-    ));
 
-    ipcMain.handle('log:stream:stop', createSafeIpcHandler('log:stream:stop',
-        async () => {
-            streamingEnabled = false;
-            flushPendingLogEntries();
-            return { success: true };
-        }, { success: false }
-    ));
 
-    ipcMain.handle('log:buffer:get', createSafeIpcHandler('log:buffer:get',
-        async () => {
-            return logBuffer.slice(-500);
-        }, []
-    ));
 
-    ipcMain.handle('log:buffer:clear', createSafeIpcHandler('log:buffer:clear',
-        async () => {
-            logBuffer.length = 0;
-            return { success: true };
-        }, { success: false }
-    ));
 }
 
 /**

@@ -54,4 +54,33 @@ describe('sessionConversationMessageSchema', () => {
         // Approximately now
         expect(Math.abs(result.timestamp.getTime() - Date.now())).toBeLessThan(1000);
     });
+
+    it('should preserve renderer assistant tool calls for tool-loop continuation', () => {
+        const result = sessionConversationMessageSchema.parse({
+            role: 'assistant',
+            content: '',
+            toolCalls: [{
+                id: 'call-1',
+                index: 0,
+                type: 'function',
+                function: {
+                    name: 'mcp__terminal__run_command',
+                    arguments: '{"command":"pwd"}',
+                },
+            }],
+        });
+
+        expect(result.toolCalls?.[0]?.id).toBe('call-1');
+        expect(result.toolCalls?.[0]?.function.name).toBe('mcp__terminal__run_command');
+    });
+
+    it('should preserve renderer tool result ids for tool-loop continuation', () => {
+        const result = sessionConversationMessageSchema.parse({
+            role: 'tool',
+            content: '{"stdout":"ok"}',
+            toolCallId: 'call-1',
+        });
+
+        expect(result.toolCallId).toBe('call-1');
+    });
 });

@@ -9,6 +9,7 @@
  */
 
 import { Button } from '@renderer/components/ui/button';
+import { ConfirmationModal } from '@renderer/components/ui/ConfirmationModal';
 import { cn } from '@renderer/lib/utils';
 import { HardDrive, History, RefreshCw } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
@@ -51,6 +52,10 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
     const [modelSearch, setModelSearch] = useState('');
     const [showHiddenModels, setShowHiddenModels] = useState(false);
     const [downloadHistory, setDownloadHistory] = useState<DownloadHistoryItem[]>([]);
+    
+    // Custom modal states
+    const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+    const [modelToDelete, setModelToDelete] = useState<{ id: string; provider: string } | null>(null);
 
     const fetchHistory = React.useCallback(async () => {
         try {
@@ -173,9 +178,17 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
         handleSave(updated);
     };
 
-    const handleDeleteModel = async (modelId: string, provider: string) => {
-        // eslint-disable-next-line no-alert
-        if (!window.confirm(t('modelsPage.confirmDelete'))) { return; }
+    const handleDeleteModel = (modelId: string, provider: string) => {
+        setModelToDelete({ id: modelId, provider });
+        setIsConfirmDeleteOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!modelToDelete) return;
+        const { id: modelId, provider } = modelToDelete;
+        setIsConfirmDeleteOpen(false);
+        setModelToDelete(null);
+
         try {
             let res;
             if (provider === 'ollama') {
@@ -273,7 +286,7 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
                         defaultProvider={defaultProvider}
                         setDefault={setDefault}
                         updateHidden={updateHidden}
-                        onDelete={(id, prov) => { void handleDeleteModel(id, prov); }}
+                        onDelete={(id, prov) => { handleDeleteModel(id, prov); }}
                         t={t}
                     />
                 ) : (
@@ -293,6 +306,15 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
                     t={t}
                 />
             </div>
+
+            <ConfirmationModal
+                isOpen={isConfirmDeleteOpen}
+                onClose={() => setIsConfirmDeleteOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title={t('modelsPage.confirmDeleteTitle') || 'Delete Model'}
+                message={t('modelsPage.confirmDelete')}
+                variant="danger"
+            />
         </div>
     );
 };

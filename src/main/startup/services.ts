@@ -52,6 +52,7 @@ import type { MemoryService } from '@main/services/llm/memory.service';
 import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service';
 import { ModelDownloaderService } from '@main/services/llm/model-downloader.service';
 import { ModelFallbackService, modelFallbackService } from '@main/services/llm/model-fallback.service';
+import { ModelSelectionService } from '@main/services/llm/model-selection.service';
 import {
     ModelRegistryDependencies,
     ModelRegistryService,
@@ -68,7 +69,6 @@ import { ResponseCacheService } from '@main/services/llm/response-cache.service'
 import type { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
-import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { AuthAPIService } from '@main/services/security/auth-api.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
@@ -78,6 +78,7 @@ import { CouncilCapabilityService } from '@main/services/session/capabilities/co
 import { ChatSessionRegistryService } from '@main/services/session/chat-session-registry.service';
 import { SessionDirectoryService } from '@main/services/session/session-directory.service';
 import { SessionModuleRegistryService } from '@main/services/session/session-module-registry.service';
+import { CacheService } from '@main/services/system/cache.service';
 import { CommandService } from '@main/services/system/command.service';
 import { ConfigService } from '@main/services/system/config.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
@@ -162,6 +163,7 @@ export interface Services {
     commandService: CommandService;
     databaseClientService: DatabaseClientService;
     databaseService: DatabaseService;
+    fileChangeTracker: FileChangeTracker;
     sshService: LazyServiceDependency<SSHService>;
     proxyService: ProxyService;
     copilotService: CopilotService;
@@ -171,6 +173,7 @@ export interface Services {
     gitService: GitService;
     securityService: SecurityService;
     utilityProcessService: UtilityProcessService;
+    cacheService: CacheService;
 
     embeddingService: EmbeddingService;
     dockerService: LazyServiceDependency<DockerService>;
@@ -287,6 +290,7 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
     ]);
     container.register('commandService', () => new CommandService());
     container.register('systemService', () => new SystemService());
+
     container.register('networkService', () => new NetworkService());
     container.register('eventBusService', () => new EventBusService());
     container.register('runtimeManifestService', () => new RuntimeManifestService());
@@ -337,11 +341,7 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
     container.register('configService', ss => new ConfigService(ss as SettingsService), [
         'settingsService',
     ]);
-    container.register(
-        'jobSchedulerService',
-        (dbs, ebs) => new JobSchedulerService(dbs as DatabaseService, ebs as EventBusService),
-        ['databaseService', 'eventBusService']
-    );
+
     container.register(
         'fileSystemService',
         fct => new FileSystemService(Array.from(allowedFileRoots), fct as FileChangeTracker),
@@ -461,6 +461,18 @@ function registerDataServices() {
         (ds, dbs) => new ImagePersistenceService(ds as DataService, dbs as DatabaseService),
         ['dataService', 'databaseService']
     );
+
+    container.register(
+        'cacheService',
+        (dbs, ebs) => new CacheService(dbs as DatabaseService, ebs as EventBusService),
+        ['databaseService', 'eventBusService']
+    );
+
+    container.register(
+        'jobSchedulerService',
+        (dbs, ebs) => new JobSchedulerService(dbs as DatabaseService, ebs as EventBusService),
+        ['databaseService', 'eventBusService']
+    );
 }
 
 function registerSecurityServices() {
@@ -492,7 +504,7 @@ function registerSecurityServices() {
     );
     container.register(
         'tokenService',
-        (base, js) => {
+        (base, js, ss) => {
             const d = base as {
                 dbs: DatabaseService;
                 as: AuthService;
@@ -500,9 +512,16 @@ function registerSecurityServices() {
             };
             return new TokenService(d.dbs, d.as, d.ebs, {
                 jobScheduler: js as JobSchedulerService,
+                getTokenRefreshIntervals: () => {
+                    const settings = (ss as SettingsService).getSettings();
+                    return {
+                        tokenRefreshInterval: settings.ai?.tokenRefreshInterval,
+                        copilotRefreshInterval: settings.ai?.copilotRefreshInterval,
+                    };
+                },
             });
         },
-        ['tokenDepsBase', 'jobSchedulerService']
+        ['tokenDepsBase', 'jobSchedulerService', 'settingsService']
     ); 
 }
 
@@ -615,18 +634,18 @@ function registerLLMServices() {
     container.register(
         'localImageService',
         (...args: RuntimeValue[]) => {
-            const [ss, ebs, as, ls, qs, ams, ts] = args;
+            const [ss, ebs, as, ls, ps, ams, ts] = args;
             return new LocalImageService({
                 settingsService: ss as SettingsService,
                 eventBusService: ebs as EventBusService,
                 authService: as as AuthService,
                 llmService: ls as LLMService,
-                quotaService: qs as QuotaService,
+                proxyService: ps as ProxyService,
                 advancedMemoryService: ams as AdvancedMemoryService,
                 telemetryService: ts as TelemetryService,
             });
         },
-        ['settingsService', 'eventBusService', 'authService', 'llmService', 'quotaService', 'advancedMemoryService', 'telemetryService']
+        ['settingsService', 'eventBusService', 'authService', 'llmService', 'proxyService', 'advancedMemoryService', 'telemetryService']
     );
 
     // Model Registry Bundle
@@ -657,22 +676,30 @@ function registerLLMServices() {
         ['modelRegistryDeps', 'authService', 'tokenService']
     );
     container.register(
-        'backgroundModelResolver',
-        (as, ss) => new BackgroundModelResolver({
+        'modelSelectionService',
+        (as) => new ModelSelectionService({
             authService: as as AuthService,
-            settingsService: ss as SettingsService,
             getModels: async () => container.resolve<ModelRegistryService>('modelRegistryService').getAllModels(),
         }),
-        ['authService', 'settingsService']
+        ['authService']
+    );
+    container.register(
+        'backgroundModelResolver',
+        (as) => new BackgroundModelResolver({
+            authService: as as AuthService,
+            getModels: async () => container.resolve<ModelRegistryService>('modelRegistryService').getAllModels(),
+        }),
+        ['authService']
     );
     container.register(
         'councilCapabilityService',
-        (llm, quota) =>
+        (llm, proxy, mss) =>
             new CouncilCapabilityService({
                 llm: llm as LLMService,
-                quota: quota as QuotaService,
+                proxy: proxy as ProxyService,
+                modelSelectionService: mss as ModelSelectionService,
             }),
-        ['llmService', 'quotaService']
+        ['llmService', 'proxyService', 'modelSelectionService']
     );
 }
 
@@ -680,7 +707,10 @@ function registerLazyServices() {
     lazyServiceRegistry.register('workspaceService', async () => {
         const { WorkspaceService } = await import('@main/services/workspace/workspace.service');
         const lspService = container.resolve<LspService>('lspService');
-        return new WorkspaceService(lspService);
+        const ups = container.resolve<UtilityProcessService>('utilityProcessService');
+        const cs = container.resolve<CacheService>('cacheService');
+        const proxyService = container.resolve<ProxyService>('proxyService');
+        return new WorkspaceService(lspService, ups, cs, proxyService);
     });
 
     lazyServiceRegistry.register('advancedMemoryService', async () => {
@@ -731,7 +761,7 @@ function registerLazyServices() {
         const imagePersistenceService =
             container.resolve<ImagePersistenceService>('imagePersistenceService');
         const authService = container.resolve<AuthService>('authService');
-        const quotaService = container.resolve<QuotaService>('quotaService');
+        const proxyService = container.resolve<ProxyService>('proxyService');
         const advancedMemoryService = container.resolve<AdvancedMemoryService>('advancedMemoryService');
         const modelRegistryService = container.resolve<ModelRegistryService>('modelRegistryService');
         const { LogoService } = await import('@main/services/external/logo.service');
@@ -741,7 +771,7 @@ function registerLazyServices() {
             localImageService,
             imagePersistenceService,
             authService,
-            quotaService,
+            proxyService,
             advancedMemoryService,
             modelRegistryService
         });
@@ -864,16 +894,6 @@ function registerWorkspaceServices() {
         ['settingsService', 'authService', 'databaseService']
     );
     container.register(
-        'quotaService',
-        (ss, as) =>
-            new QuotaService(
-                ss as SettingsService,
-                as as AuthService
-            ),
-        ['settingsService', 'authService']
-    );
-
-    container.register(
         'proxyCore',
         (ss, ds, sec, as, ebs) => ({
             ss: ss as SettingsService,
@@ -886,7 +906,7 @@ function registerWorkspaceServices() {
     );
     container.register(
         'proxyService',
-        (core, ppm, qs, dbs) => {
+        (core, ppm, dbs) => {
             const c = core as {
                 ss: SettingsService;
                 ds: DataService;
@@ -901,17 +921,16 @@ function registerWorkspaceServices() {
                 authService: c.as,
                 eventBus: c.ebs,
                 processManager: ppm as ProxyProcessManager,
-                quotaService: qs as QuotaService,
                 databaseService: dbs as DatabaseService,
             });
         },
-        ['proxyCore', 'proxyProcessManager', 'quotaService', 'databaseService']
+        ['proxyCore', 'proxyProcessManager', 'databaseService']
     );
 }
 
 function registerAnalysisServices() {
     container.register('auditLogService', (dbs, utilityProcessService) => new AuditLogService(dbs as DatabaseService, utilityProcessService as UtilityProcessService), ['databaseService', 'utilityProcessService']);
-    container.register('ruleService', () => new RuleService());
+    container.register('ruleService', dbs => new RuleService(dbs as DatabaseService), ['databaseService']);
     container.register('featureFlagService', ds => new FeatureFlagService(ds as DataService), ['dataService']);
     container.register('exportService', () => new ExportService());
 }
@@ -986,6 +1005,7 @@ function buildServicesMap(
         commandService: container.resolve<CommandService>('commandService'),
         databaseClientService: container.resolve<DatabaseClientService>('databaseClientService'),
         databaseService: container.resolve<DatabaseService>('databaseService'),
+        fileChangeTracker: container.resolve<FileChangeTracker>('fileChangeTracker'),
         sshService: createLazyServiceDependency<SSHService>('sshService'),
         proxyService: container.resolve<ProxyService>('proxyService'),
         copilotService: container.resolve<CopilotService>('copilotService'),
@@ -995,6 +1015,7 @@ function buildServicesMap(
         gitService: container.resolve<GitService>('gitService'),
         securityService: container.resolve<SecurityService>('securityService'),
         utilityProcessService: container.resolve<UtilityProcessService>('utilityProcessService'),
+        cacheService: container.resolve<CacheService>('cacheService'),
 
         embeddingService: container.resolve<EmbeddingService>('embeddingService'),
         dockerService: createLazyServiceDependency<DockerService>('dockerService'),

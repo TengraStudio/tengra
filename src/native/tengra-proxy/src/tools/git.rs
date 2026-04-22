@@ -153,8 +153,13 @@ async fn log(args: Value) -> ToolDispatchResponse {
 
     match Repository::open(path) {
         Ok(repo) => {
-            let mut revwalk = repo.revwalk().unwrap();
-            revwalk.push_head().unwrap();
+            let mut revwalk = match repo.revwalk() {
+                Ok(walk) => walk,
+                Err(e) => return error_response(&format!("Failed to create revwalk: {}", e)),
+            };
+            if let Err(e) = revwalk.push_head() {
+                return error_response(&format!("Failed to read repository HEAD: {}", e));
+            }
 
             let mut commits = Vec::new();
             for oid in revwalk.take(count) {
@@ -189,15 +194,20 @@ async fn add(args: Value) -> ToolDispatchResponse {
 
     match Repository::open(path) {
         Ok(repo) => {
-            let mut index = repo.index().unwrap();
+            let mut index = match repo.index() {
+                Ok(index) => index,
+                Err(e) => return error_response(&format!("Failed to open git index: {}", e)),
+            };
             if files == "." {
-                index
-                    .add_all(["*"].iter(), git2::IndexAddOption::DEFAULT, None)
-                    .unwrap();
-            } else {
-                index.add_path(Path::new(files)).unwrap();
+                if let Err(e) = index.add_all(["*"].iter(), git2::IndexAddOption::DEFAULT, None) {
+                    return error_response(&format!("Failed to add files: {}", e));
+                }
+            } else if let Err(e) = index.add_path(Path::new(files)) {
+                return error_response(&format!("Failed to add file '{}': {}", files, e));
             }
-            index.write().unwrap();
+            if let Err(e) = index.write() {
+                return error_response(&format!("Failed to write git index: {}", e));
+            }
 
             ToolDispatchResponse {
                 success: true,
@@ -221,12 +231,27 @@ async fn commit(args: Value) -> ToolDispatchResponse {
 
     match Repository::open(path) {
         Ok(repo) => {
-            let mut index = repo.index().unwrap();
-            let oid = index.write_tree().unwrap();
-            let tree = repo.find_tree(oid).unwrap();
-            let sig = repo.signature().unwrap();
+            let mut index = match repo.index() {
+                Ok(index) => index,
+                Err(e) => return error_response(&format!("Failed to open git index: {}", e)),
+            };
+            let oid = match index.write_tree() {
+                Ok(oid) => oid,
+                Err(e) => return error_response(&format!("Failed to write git tree: {}", e)),
+            };
+            let tree = match repo.find_tree(oid) {
+                Ok(tree) => tree,
+                Err(e) => return error_response(&format!("Failed to read git tree: {}", e)),
+            };
+            let sig = match repo.signature() {
+                Ok(sig) => sig,
+                Err(e) => return error_response(&format!("Failed to create git signature: {}", e)),
+            };
             let parent_commit = match repo.head() {
-                Ok(head) => Some(head.peel_to_commit().unwrap()),
+                Ok(head) => match head.peel_to_commit() {
+                    Ok(commit) => Some(commit),
+                    Err(e) => return error_response(&format!("Failed to read HEAD commit: {}", e)),
+                },
                 Err(_) => None,
             };
 
@@ -236,8 +261,9 @@ async fn commit(args: Value) -> ToolDispatchResponse {
                 vec![]
             };
 
-            repo.commit(Some("HEAD"), &sig, &sig, message, &tree, &parents)
-                .unwrap();
+            if let Err(e) = repo.commit(Some("HEAD"), &sig, &sig, message, &tree, &parents) {
+                return error_response(&format!("Failed to create commit: {}", e));
+            }
 
             ToolDispatchResponse {
                 success: true,
@@ -261,9 +287,16 @@ async fn checkout(args: Value) -> ToolDispatchResponse {
 
     match Repository::open(path) {
         Ok(repo) => {
-            let obj = repo.revparse_single(branch).unwrap();
-            repo.checkout_tree(&obj, None).unwrap();
-            repo.set_head(&format!("refs/heads/{}", branch)).unwrap();
+            let obj = match repo.revparse_single(branch) {
+                Ok(obj) => obj,
+                Err(e) => return error_response(&format!("Failed to resolve branch '{}': {}", branch, e)),
+            };
+            if let Err(e) = repo.checkout_tree(&obj, None) {
+                return error_response(&format!("Failed to checkout tree for '{}': {}", branch, e));
+            }
+            if let Err(e) = repo.set_head(&format!("refs/heads/{}", branch)) {
+                return error_response(&format!("Failed to set HEAD to '{}': {}", branch, e));
+            }
 
             ToolDispatchResponse {
                 success: true,
@@ -283,12 +316,22 @@ async fn branches(args: Value) -> ToolDispatchResponse {
 
     match Repository::open(path) {
         Ok(repo) => {
-            let branches: Vec<_> = repo
-                .branches(None)
-                .unwrap()
-                .filter_map(|b| b.ok())
-                .map(|(b, _)| b.name().unwrap().unwrap_or("").to_string())
-                .collect();
+            let branches_iter = match repo.branches(None) {
+                Ok(branches) => branches,
+                Err(e) => return error_response(&format!("Failed to list branches: {}", e)),
+            };
+            let mut branches = Vec::new();
+            for branch in branches_iter {
+                let (branch, _) = match branch {
+                    Ok(branch) => branch,
+                    Err(e) => return error_response(&format!("Failed to read branch: {}", e)),
+                };
+                let name = match branch.name() {
+                    Ok(name) => name.unwrap_or("").to_string(),
+                    Err(e) => return error_response(&format!("Failed to read branch name: {}", e)),
+                };
+                branches.push(name);
+            }
 
             ToolDispatchResponse {
                 success: true,

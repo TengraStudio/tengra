@@ -15,6 +15,7 @@ import { WorkspaceExplorer } from '@renderer/features/workspace/workspace-explor
 import { WorkspaceExplorerGitHistory } from '@renderer/features/workspace/workspace-explorer/WorkspaceExplorerGitHistory';
 import React from 'react';
 
+import { WORKSPACE_EXPLORER_WIDTH_PX } from '@/features/workspace/hooks/useTerminalLayout';
 import { useWorkspaceManager } from '@/features/workspace/hooks/useWorkspaceManager';
 import { useWorkspaceState } from '@/features/workspace/hooks/useWorkspaceState';
 import { Language, useTranslation } from '@/i18n';
@@ -121,7 +122,6 @@ export const WorkspaceExplorerPanel = React.memo(({
             );
             if (!historyResult.success || !historyResult.commits || historyResult.commits.length === 0) {
                 setGitHistoryState(null);
-                ps.notify('info', historyResult.error ?? t('agent.history'));
                 return false;
             }
             setGitHistoryState({
@@ -137,26 +137,24 @@ export const WorkspaceExplorerPanel = React.memo(({
             : await window.electron.git.unstageFile(mount.rootPath, action.entry.path);
 
         if (!result.success) {
-            ps.notify('error', result.error ?? t('errors.unexpected'));
             return false;
         }
 
         wm.setRefreshSignal(previousValue => previousValue + 1);
-        ps.notify(
-            'success',
-            action.type === 'stage'
-                ? t('workspaceDashboard.stage')
-                : t('workspaceDashboard.unstage')
-        );
         return true;
-    }, [ps, t, wm]);
+    }, [wm]);
 
     return (
         <div
             className={cn(
                 'flex flex-col border-r border-border/40 bg-background/80 backdrop-blur-xl shrink-0 transition-all duration-300 ease-smooth z-20',
-                ps.sidebarCollapsed ? 'w-0 overflow-hidden opacity-0' : 'w-72 opacity-100'
+                ps.sidebarCollapsed ? 'overflow-hidden opacity-0' : 'opacity-100'
             )}
+            style={{
+                width: ps.sidebarCollapsed ? 0 : WORKSPACE_EXPLORER_WIDTH_PX,
+                minWidth: ps.sidebarCollapsed ? 0 : WORKSPACE_EXPLORER_WIDTH_PX,
+                maxWidth: ps.sidebarCollapsed ? 0 : WORKSPACE_EXPLORER_WIDTH_PX,
+            }}
         >
             <div className="flex-1 overflow-hidden">
                 <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
@@ -210,12 +208,11 @@ export const WorkspaceExplorerPanel = React.memo(({
                                 clearWorkspaceInlineAction(workspaceId);
                                 ps.setEntryModal({ type: action.type, entry: action.entry });
                             }}
-                            variant="panel"
+                            variant="embedded"
                             language={language}
                             activeFilePath={activeFilePath}
                             onSubmitInlineAction={async inlineAction => {
                                 if (!inlineAction.draftName.trim()) {
-                                    ps.notify('error', t('workspace.errors.explorer.validationError'));
                                     return false;
                                 }
 
@@ -227,14 +224,28 @@ export const WorkspaceExplorerPanel = React.memo(({
 
                                 const parentPath = inlineAction.entry.path;
                                 const separator = parentPath.includes('\\') ? '\\' : '/';
-                                const nextPath = `${parentPath}${separator}${inlineAction.draftName.trim()}`;
+                                const nextPath = parentPath
+                                    ? `${parentPath}${separator}${inlineAction.draftName.trim()}`
+                                    : inlineAction.draftName.trim();
+                                const targetMount = wm.mounts.find(
+                                    mount => mount.id === inlineAction.entry.mountId
+                                );
 
                                 if (inlineAction.type === 'createFile') {
-                                    await wm.createFile(nextPath);
+                                    clearWorkspaceInlineAction(workspaceId);
+                                    void (async () => {
+                                        await wm.createFile(nextPath, targetMount);
+                                        await wm.openFile({
+                                            mountId: inlineAction.entry.mountId,
+                                            path: nextPath,
+                                            name: inlineAction.draftName.trim(),
+                                            isDirectory: false,
+                                        });
+                                    })();
                                 } else {
-                                    await wm.createFolder(nextPath);
+                                    clearWorkspaceInlineAction(workspaceId);
+                                    void wm.createFolder(nextPath, targetMount);
                                 }
-                                clearWorkspaceInlineAction(workspaceId);
                                 return true;
                             }}
                             onCancelInlineAction={() => {
@@ -243,7 +254,6 @@ export const WorkspaceExplorerPanel = React.memo(({
                             onSubmitBulkAction={async (type, entries, draftValue) => {
                                 const trimmedDraftValue = draftValue.trim();
                                 if (!trimmedDraftValue) {
-                                    ps.notify('error', t('workspace.errors.explorer.validationError'));
                                     return false;
                                 }
 

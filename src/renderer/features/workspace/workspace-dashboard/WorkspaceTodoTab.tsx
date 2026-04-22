@@ -8,9 +8,39 @@
  * (at your option) any later version.
  */
 
-
+import {
+    DndContext,
+    DragEndEvent,
+    DragOverlay,
+    DragStartEvent,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
+import { Badge } from '@renderer/components/ui/badge';
+import { Button } from '@renderer/components/ui/button';
+import { Card } from '@renderer/components/ui/card';
+import { Checkbox } from '@renderer/components/ui/checkbox';
+import {
+    ConfirmationModal
+} from '@renderer/components/ui/ConfirmationModal';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@renderer/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@renderer/components/ui/dropdown-menu';
 import { Input } from '@renderer/components/ui/input';
 import { Label } from '@renderer/components/ui/label';
+import { ScrollArea } from '@renderer/components/ui/scroll-area';
 import {
     Select,
     SelectContent,
@@ -20,1030 +50,748 @@ import {
 } from '@renderer/components/ui/select';
 import { Textarea } from '@renderer/components/ui/textarea';
 import { cn } from '@renderer/lib/utils';
-import { appLogger } from '@renderer/utils/renderer-logger';
+import { JsonValue } from '@shared/types/common';
+import { format } from 'date-fns';
 import {
-    addEdge,
-    Background,
-    Connection,
-    Edge,
-    Handle,
-    MiniMap,
-    Node,
-    NodeProps,
-    Panel,
-    Position,
-    ReactFlow,
-    ReactFlowProvider,
-    useEdgesState,
-    useNodesState,
-    useReactFlow,
-} from '@xyflow/react';
-import {
+    AlertCircle,
+    Calendar as CalendarIcon,
     CheckCircle2,
+    CheckSquare,
     Circle,
-    Clock3,
-    FileJson,
-    FileText,
-    Filter,
+    Clock,
+    Edit3,
+    Flag,
+    Hash,
+    Lightbulb,
+    ListTodo,
+    MoreHorizontal,
     Plus,
-    Redo2,
-    RefreshCw,
-    Shuffle,
-    Undo2,
-    Upload,
+    Search,
+    Trash2,
+    Zap,
 } from 'lucide-react';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
 import { useTranslation } from '@/i18n';
-import { JsonObject, JsonValue, Workspace } from '@/types';
+import { Workspace } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
+// Types
+type TaskStatus = 'idea' | 'in_progress' | 'approved' | 'upcoming' | 'bug';
+type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
-
-/* Batch-02: Extracted Long Classes */
-const C_WORKSPACETODOTAB_1 = "h-8 px-3 rounded-md bg-primary text-primary-foreground typo-caption inline-flex items-center gap-1 transition-colors hover:bg-primary/90";
-const C_WORKSPACETODOTAB_2 = "h-8 px-2 rounded-md border border-border typo-caption inline-flex items-center cursor-pointer transition-colors hover:bg-muted";
-const C_WORKSPACETODOTAB_3 = "h-8 px-3 rounded-md border border-destructive/40 text-destructive typo-caption transition-colors hover:bg-destructive/10";
-interface WorkspaceTodoTabProps {
-    workspace: Workspace
-    onUpdate?: (updates: Partial<Workspace>) => Promise<void>
-    t: (key: string) => string
-}
-
-type TodoStatus = 'pending' | 'in_progress' | 'completed';
-
-interface TodoCanvasNodeData extends JsonObject {
-    title: string;
-    status: TodoStatus;
-    category: string;
-    assignee: string;
-    parentId: string;
-    links: string;
-}
-
-interface TodoCanvasPayload extends JsonObject {
-    version: number;
-    nodes: JsonValue;
-    edges: JsonValue;
-}
-
-interface TodoCanvasSnapshot {
-    nodes: Node<TodoCanvasNodeData>[];
-    edges: Edge[];
-}
-
-const TODO_CANVAS_METADATA_KEY = 'todoCanvasV1';
-const NODE_TYPE = 'todoNode';
-
-const STATUS_CLASSES: Record<TodoStatus, string> = {
-    pending: 'bg-muted/50 text-muted-foreground',
-    in_progress: 'bg-warning/20 text-warning',
-    completed: 'bg-success/20 text-success'
-};
-
-const DEFAULT_NODE_DATA: TodoCanvasNodeData = {
-    title: '',
-    status: 'pending',
-    category: '',
-    assignee: '',
-    parentId: '',
-    links: ''
-};
-
-const TEMPLATE_PRESETS: Array<{
+interface SubTask {
     id: string;
-    titleKey: string;
-    items: Array<{ titleKey: string; categoryKey: string }>;
-}> = [
-    {
-        id: 'sprint',
-        titleKey: 'workspaceDashboard.todoCanvas.templateSprintPlanning',
-        items: [
-            { titleKey: 'workspaceDashboard.todoCanvas.templateBacklogRefinement', categoryKey: 'workspaceDashboard.todoCanvas.categoryPlanning' },
-            { titleKey: 'workspaceDashboard.todoCanvas.templateImplementation', categoryKey: 'workspaceDashboard.todoCanvas.categoryDevelopment' },
-            { titleKey: 'workspaceDashboard.todoCanvas.templateQaVerification', categoryKey: 'workspaceDashboard.todoCanvas.categoryQa' },
-            { titleKey: 'workspaceDashboard.todoCanvas.templateRelease', categoryKey: 'workspaceDashboard.todoCanvas.categoryRelease' }
-        ]
-    },
-    {
-        id: 'bugfix',
-        titleKey: 'workspaceDashboard.todoCanvas.templateBugTriage',
-        items: [
-            { titleKey: 'workspaceDashboard.todoCanvas.templateReproduceIssue', categoryKey: 'workspaceDashboard.todoCanvas.categoryBug' },
-            { titleKey: 'workspaceDashboard.todoCanvas.templateRootCauseAnalysis', categoryKey: 'workspaceDashboard.todoCanvas.categoryBug' },
-            { titleKey: 'workspaceDashboard.todoCanvas.templateFixAndTests', categoryKey: 'workspaceDashboard.todoCanvas.categoryDevelopment' },
-            { titleKey: 'workspaceDashboard.todoCanvas.templateRegressionCheck', categoryKey: 'workspaceDashboard.todoCanvas.categoryQa' }
-        ]
-    }
+    title: string;
+    completed: boolean;
+}
+
+interface Task {
+    id: string;
+    title: string;
+    description: string;
+    status: TaskStatus;
+    priority: TaskPriority;
+    estimation?: string;
+    deadline?: string;
+    subtasks: SubTask[];
+    createdAt: number;
+}
+
+interface WorkspaceTodoTabProps {
+    workspace: Workspace;
+    onUpdate?: (updates: Partial<Workspace>) => Promise<void>;
+    t?: (key: string) => string;
+}
+
+const CATEGORIES: { id: TaskStatus; label: string; icon: React.ElementType; color: string }[] = [
+    { id: 'idea', label: 'Ideas / Tasks', icon: Lightbulb, color: 'text-amber-500' },
+    { id: 'in_progress', label: 'In Progress', icon: Clock, color: 'text-blue-500' },
+    { id: 'approved', label: 'Approved', icon: CheckCircle2, color: 'text-emerald-500' },
+    { id: 'upcoming', label: 'Upcoming', icon: Circle, color: 'text-slate-500' },
+    { id: 'bug', label: 'Errors & Bugs', icon: AlertCircle, color: 'text-rose-500' },
 ];
 
-const statusIcon = (status: TodoStatus) => {
-    if (status === 'completed') { return <CheckCircle2 className="w-3 h-3" />; }
-    if (status === 'in_progress') { return <Clock3 className="w-3 h-3" />; }
-    return <Circle className="w-3 h-3" />;
+const PRIORITY_CONFIG: Record<TaskPriority, { icon: React.ElementType; color: string; label: string }> = {
+    low: { icon: Flag, color: 'text-slate-400', label: 'Low' },
+    medium: { icon: Flag, color: 'text-blue-400', label: 'Medium' },
+    high: { icon: Flag, color: 'text-amber-400', label: 'High' },
+    urgent: { icon: AlertCircle, color: 'text-rose-500', label: 'Urgent' },
 };
 
-const TodoNode = ({ data, selected }: NodeProps<Node<TodoCanvasNodeData>>) => {
-    const { t } = useTranslation();
-    const title = typeof data.title === 'string' ? data.title : '';
-    const status = data.status === 'in_progress' || data.status === 'completed' ? data.status : 'pending';
-    const category = typeof data.category === 'string' ? data.category : '';
-    const assignee = typeof data.assignee === 'string' ? data.assignee : '';
-
-    return (
-        <div className={cn(
-            'min-w-60 max-w-80 rounded-xl border bg-card text-card-foreground shadow-sm',
-            selected ? 'border-primary' : 'border-border'
-        )}>
-            <Handle type="target" position={Position.Left} className="!bg-primary/80 !border-0 !w-2 !h-2" />
-            <div className="p-3 space-y-2">
-                <div className="typo-caption font-medium line-clamp-2">{title || '—'}</div>
-                <div className="flex items-center gap-2 flex-wrap">
-                    <span className={cn(
-                        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-10',
-                        STATUS_CLASSES[status]
-                    )}>
-                        {statusIcon(status)}
-                        {status === 'completed'
-                            ? t('workspaceDashboard.todoCanvas.completed')
-                            : status === 'in_progress'
-                                ? t('workspaceDashboard.todoCanvas.inProgress')
-                                : t('workspaceDashboard.pending')}
-                    </span>
-                    {category ? (
-                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-10 bg-primary/15 text-primary">
-                            {category}
-                        </span>
-                    ) : null}
-                    {assignee ? (
-                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-10 bg-accent/20 text-accent-foreground">
-                            {assignee}
-                        </span>
-                    ) : null}
-                </div>
-            </div>
-            <Handle type="source" position={Position.Right} className="!bg-primary/80 !border-0 !w-2 !h-2" />
-        </div>
-    );
-};
-
-const nodeTypes = { [NODE_TYPE]: TodoNode };
-
-function isTodoStatus(value: JsonValue | undefined): value is TodoStatus {
-    return value === 'pending' || value === 'in_progress' || value === 'completed';
-}
-
-function createSnapshot(nodes: Node<TodoCanvasNodeData>[], edges: Edge[]): TodoCanvasSnapshot {
-    return {
-        nodes: nodes.map(node => ({ ...node, data: { ...node.data } })),
-        edges: edges.map(edge => ({ ...edge }))
-    };
-}
-
-function normalizeNodeData(value: JsonObject | undefined, defaultCategory: string): TodoCanvasNodeData {
-    const source = value ?? {};
-    return {
-        title: typeof source.title === 'string' ? source.title : '',
-        status: isTodoStatus(source.status) ? source.status : 'pending',
-        category: typeof source.category === 'string' && source.category.trim().length > 0
-            ? source.category
-            : defaultCategory,
-        assignee: typeof source.assignee === 'string' ? source.assignee : '',
-        parentId: typeof source.parentId === 'string' ? source.parentId : '',
-        links: typeof source.links === 'string' ? source.links : ''
-    };
-}
-
-function parseTodoCanvas(metadata: JsonObject | undefined, defaultCategory: string): TodoCanvasSnapshot {
-    const raw = metadata?.[TODO_CANVAS_METADATA_KEY];
-    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-        return { nodes: [], edges: [] };
-    }
-    const payload = raw as TodoCanvasPayload;
-    const parsedNodes = Array.isArray(payload.nodes) ? payload.nodes : [];
-    const parsedEdges = Array.isArray(payload.edges) ? payload.edges : [];
-
-    const nodes: Node<TodoCanvasNodeData>[] = [];
-    for (const rawNode of parsedNodes) {
-        if (!rawNode || typeof rawNode !== 'object' || Array.isArray(rawNode)) { continue; }
-        const candidate = rawNode as JsonObject;
-        const id = typeof candidate.id === 'string' ? candidate.id : '';
-        const position = candidate.position;
-        const data = candidate.data;
-        if (!id || !position || typeof position !== 'object' || Array.isArray(position) || !data || typeof data !== 'object' || Array.isArray(data)) {
-            continue;
-        }
-        const nodePosition = position as JsonObject;
-        const x = typeof nodePosition.x === 'number' ? nodePosition.x : 0;
-        const y = typeof nodePosition.y === 'number' ? nodePosition.y : 0;
-        nodes.push({
-            id,
-            type: NODE_TYPE,
-            position: { x, y },
-            data: normalizeNodeData(data as JsonObject, defaultCategory)
-        });
-    }
-
-    const edges: Edge[] = [];
-    for (const rawEdge of parsedEdges) {
-        if (!rawEdge || typeof rawEdge !== 'object' || Array.isArray(rawEdge)) { continue; }
-        const candidate = rawEdge as JsonObject;
-        const id = typeof candidate.id === 'string' ? candidate.id : '';
-        const source = typeof candidate.source === 'string' ? candidate.source : '';
-        const target = typeof candidate.target === 'string' ? candidate.target : '';
-        if (!id || !source || !target) { continue; }
-        edges.push({ id, source, target, animated: false });
-    }
-
-    return { nodes, edges };
-}
-
-function wouldCreateCycle(existingEdges: Edge[], source: string, target: string): boolean {
-    if (source === target) { return true; }
-    const graph = new Map<string, string[]>();
-    for (const edge of existingEdges) {
-        const list = graph.get(edge.source) ?? [];
-        list.push(edge.target);
-        graph.set(edge.source, list);
-    }
-    const newList = graph.get(source) ?? [];
-    newList.push(target);
-    graph.set(source, newList);
-
-    const queue: string[] = [target];
-    const seen = new Set<string>();
-    while (queue.length > 0) {
-        const current = queue.shift();
-        if (!current || seen.has(current)) { continue; }
-        if (current === source) { return true; }
-        seen.add(current);
-        const children = graph.get(current) ?? [];
-        for (const child of children) {
-            queue.push(child);
-        }
-    }
-    return false;
-}
-
-function layoutNodesByCategory(nodes: Node<TodoCanvasNodeData>[], defaultCategory: string): Node<TodoCanvasNodeData>[] {
-    const categories = [...new Set(nodes.map(node => node.data.category || defaultCategory))];
-    const laneWidth = 380;
-    const lanePadding = 32;
-    const rowHeight = 160;
-
-    return nodes.map((node, index) => {
-        const category = node.data.category || defaultCategory;
-        const laneIndex = Math.max(0, categories.indexOf(category));
-        const nodeOrderInLane = nodes
-            .filter(candidate => (candidate.data.category || defaultCategory) === category)
-            .findIndex(candidate => candidate.id === node.id);
-        const safeRow = nodeOrderInLane >= 0 ? nodeOrderInLane : index;
-        return {
-            ...node,
-            position: {
-                x: lanePadding + laneIndex * laneWidth,
-                y: lanePadding + safeRow * rowHeight
-            }
-        };
+// Draggable Task Card Component
+const TaskCard = ({ 
+    task, 
+    isOverlay = false, 
+    onEdit, 
+    onDelete,
+    onToggleSubtask,
+    onAddSubtask
+}: { 
+    task: Task; 
+    isOverlay?: boolean;
+    onEdit: (task: Task) => void;
+    onDelete: (id: string) => void;
+    onToggleSubtask: (taskId: string, subtaskId: string) => void;
+    onAddSubtask: (taskId: string) => void;
+}) => {
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+        id: task.id,
     });
-}
 
-function buildMarkdown(
-    nodes: Node<TodoCanvasNodeData>[],
-    edges: Edge[],
-    labels: { exportTitle: string; untitled: string; dependenciesHeading: string }
-): string {
-    const lines: string[] = [`# ${labels.exportTitle}`, ''];
-    for (const node of nodes) {
-        const mark = node.data.status === 'completed' ? 'x' : ' ';
-        const assigneeText = node.data.assignee ? ` @${node.data.assignee}` : '';
-        const categoryText = node.data.category ? ` [${node.data.category}]` : '';
-        lines.push(`- [${mark}] ${node.data.title || labels.untitled}${categoryText}${assigneeText}`);
-    }
-    if (edges.length > 0) {
-        lines.push('', `## ${labels.dependenciesHeading}`);
-        for (const edge of edges) {
-            lines.push(`- ${edge.source} -> ${edge.target}`);
-        }
-    }
-    return lines.join('\n');
-}
+    const style = transform ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+        zIndex: isOverlay ? 100 : undefined
+    } : undefined;
 
-const FlowToolbar: React.FC<{
-    onFit: () => void;
-    onAutoLayout: () => void;
-    onUndo: () => void;
-    onRedo: () => void;
-    canUndo: boolean;
-    canRedo: boolean;
-    fitLabel: string;
-    layoutLabel: string;
-}> = ({ onFit, onAutoLayout, onUndo, onRedo, canUndo, canRedo, fitLabel, layoutLabel }) => {
+    const completedSubtasks = task.subtasks.filter(s => s.completed).length;
+    const progressPerc = task.subtasks.length > 0 
+        ? Math.round((completedSubtasks / task.subtasks.length) * 100) 
+        : 0;
+
+    const priority = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.medium;
+
     return (
-        <Panel position="top-right" className="m-2 flex items-center gap-2 rounded-lg border border-border bg-background/90 p-1">
-            <button onClick={onFit} className="h-7 px-2 typo-caption rounded bg-muted hover:bg-muted/80">{fitLabel}</button>
-            <button onClick={onAutoLayout} className="h-7 px-2 typo-caption rounded bg-muted hover:bg-muted/80 inline-flex items-center gap-1"><Shuffle className="w-3 h-3" />{layoutLabel}</button>
-            <button onClick={onUndo} disabled={!canUndo} className="h-7 w-7 rounded bg-muted hover:bg-muted/80 disabled:opacity-40"><Undo2 className="w-3.5 h-3.5 mx-auto" /></button>
-            <button onClick={onRedo} disabled={!canRedo} className="h-7 w-7 rounded bg-muted hover:bg-muted/80 disabled:opacity-40"><Redo2 className="w-3.5 h-3.5 mx-auto" /></button>
-        </Panel>
+        <Card
+            ref={setNodeRef}
+            style={style}
+            {...listeners}
+            {...attributes}
+            className={cn(
+                "p-4 mb-3 border-border/40 bg-card/60 backdrop-blur-sm cursor-grab active:cursor-grabbing transition-all",
+                isDragging && !isOverlay && "opacity-30",
+                isOverlay && "shadow-xl ring-1 ring-primary/20 cursor-grabbing rotate-1 scale-[1.02]",
+                "hover:border-primary/30 group border"
+            )}
+        >
+            <div className="flex flex-col gap-3">
+                <div className="flex items-start justify-between gap-2">
+                    <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                            <priority.icon className={cn("w-3 h-3 shrink-0", priority.color)} />
+                            <span className={cn("text-[10px] font-medium uppercase tracking-tight", priority.color)}>
+                                {priority.label}
+                            </span>
+                            {task.estimation && (
+                                <Badge variant="outline" className="h-4 px-1.5 text-[9px] border-border/10 bg-muted/20 text-muted-foreground/60 rounded-sm font-medium">
+                                    <Zap className="w-2.5 h-2.5 mr-1 text-primary/40" />
+                                    {task.estimation}
+                                </Badge>
+                            )}
+                        </div>
+                        <h4 className="text-sm font-medium text-foreground leading-tight tracking-tight pr-4 break-words">
+                            {task.title}
+                        </h4>
+                    </div>
+                    <div onPointerDown={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-full hover:bg-muted">
+                                    <MoreHorizontal className="h-4 w-4 text-muted-foreground/60" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40 border-border/40 backdrop-blur-xl">
+                                <DropdownMenuItem onClick={() => onEdit(task)} className="text-xs py-2">
+                                    <Edit3 className="mr-2 h-3.5 w-3.5" /> Edit Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => onAddSubtask(task.id)} className="text-xs py-2">
+                                    <ListTodo className="mr-2 h-3.5 w-3.5" /> Add Subtask
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => onDelete(task.id)} className="text-xs py-2 text-destructive focus:text-destructive">
+                                    <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Task
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                </div>
+
+                {task.description && (
+                    <p className="text-xs text-muted-foreground/60 line-clamp-2 leading-relaxed">
+                        {task.description}
+                    </p>
+                )}
+
+                {task.subtasks.length > 0 && (
+                    <div className="space-y-2 py-1">
+                        <div className="flex items-center justify-between text-[10px] text-muted-foreground/40 font-medium">
+                            <span className="flex items-center gap-1.5">
+                                <CheckSquare className="w-3 h-3" />
+                                {completedSubtasks}/{task.subtasks.length}
+                            </span>
+                            <span>{progressPerc}%</span>
+                        </div>
+                        <div className="h-1 w-full bg-muted/20 rounded-full overflow-hidden">
+                            <div 
+                                className="h-full bg-primary/30 transition-all duration-700 ease-in-out" 
+                                style={{ width: `${progressPerc}%` }}
+                            />
+                        </div>
+                        
+                        <div className="flex flex-col gap-1.5 pt-1" onPointerDown={(e) => e.stopPropagation()}>
+                            {task.subtasks.map(sub => (
+                                <div key={sub.id} className="flex items-center gap-2 group/sub">
+                                    <Checkbox 
+                                        checked={sub.completed} 
+                                        onCheckedChange={() => onToggleSubtask(task.id, sub.id)}
+                                        className="h-3.5 w-3.5 rounded border-border/40 data-[state=checked]:bg-primary/40 data-[state=checked]:border-none"
+                                    />
+                                    <span className={cn(
+                                        "text-xs transition-colors cursor-default",
+                                        sub.completed ? "text-muted-foreground/20 line-through" : "text-muted-foreground/70"
+                                    )}>
+                                        {sub.title}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <div className="flex items-center justify-between pt-2 border-t border-border/10">
+                    {task.deadline ? (
+                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40 font-medium">
+                            <CalendarIcon className="w-3 h-3 text-muted-foreground/20" />
+                            {format(new Date(task.deadline), 'MMM d, yyyy')}
+                        </div>
+                    ) : <div />}
+                    
+                    <div className="flex items-center gap-1 text-[9px] text-muted-foreground/20 font-medium opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest pl-2">
+                        <Hash className="w-2.5 h-2.5" />
+                        {task.id.slice(0, 4)}
+                    </div>
+                </div>
+            </div>
+        </Card>
     );
 };
 
-interface TodoCanvasStatsBarProps {
-    stats: {
-        total: number;
-        completed: number;
-        inProgress: number;
-        pending: number;
-        blocked: number;
-    };
-    query: string;
-    setQuery: (val: string) => void;
-    statusFilter: 'all' | TodoStatus;
-    setStatusFilter: (val: 'all' | TodoStatus) => void;
-    categoryFilter: string;
-    setCategoryFilter: (val: string) => void;
-    categories: string[];
-    onAddNode: () => void;
-    onExportJson: () => void;
-    onExportMarkdown: () => void;
-    onImportJson: (event: React.ChangeEvent<HTMLInputElement>) => void;
-    saving: boolean;
-    t: (key: string) => string;
-}
+// Droppable Column Component
+const TaskColumn = ({ 
+    category, 
+    tasks,
+    onEdit,
+    onDelete,
+    onToggleSubtask,
+    onAddSubtask
+}: { 
+    category: typeof CATEGORIES[0]; 
+    tasks: Task[];
+    onEdit: (task: Task) => void;
+    onDelete: (id: string) => void;
+    onToggleSubtask: (taskId: string, subtaskId: string) => void;
+    onAddSubtask: (taskId: string) => void;
+}) => {
+    const { setNodeRef, isOver } = useDroppable({
+        id: category.id,
+    });
 
-const TodoCanvasStatsBar: React.FC<TodoCanvasStatsBarProps> = ({
-    stats,
-    query,
-    setQuery,
-    statusFilter,
-    setStatusFilter,
-    categoryFilter,
-    setCategoryFilter,
-    categories,
-    onAddNode,
-    onExportJson,
-    onExportMarkdown,
-    onImportJson,
-    saving,
-    t,
-}) => (
-    <div className="px-3 py-2 border-b border-border flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 typo-caption text-muted-foreground flex-wrap">
-            <span>{t('workspaceDashboard.todoList')}:</span>
-            <span>{stats.total}</span>
-            <span className="text-success">{stats.completed}</span>
-            <span className="text-warning">{stats.inProgress}</span>
-            <span>{stats.pending}</span>
-            <span className="text-destructive">
-                {t('workspaceDashboard.todoCanvas.blockedLabel')}: {stats.blocked}
-            </span>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative">
-                <Filter className="w-3.5 h-3.5 absolute left-2 top-2.5 text-muted-foreground z-10" />
-                <Input
-                    value={query}
-                    onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-                        setQuery(event.target.value)
-                    }
-                    placeholder={t('placeholder.search')}
-                    className="h-8 w-32 pl-7 pr-2 typo-caption"
-                />
+    return (
+        <div className="flex flex-col w-80 shrink-0">
+            <div className="flex items-center gap-2.5 mb-5 px-1.5">
+                <category.icon className={cn("w-4 h-4", category.color)} />
+                <h3 className="text-sm font-semibold text-foreground/80 tracking-tight pt-0.5">
+                    {category.label}
+                </h3>
+                <Badge variant="secondary" className="ml-auto bg-muted/40 text-muted-foreground/50 border-none font-medium text-[10px] px-2 h-5 rounded-md">
+                    {tasks.length}
+                </Badge>
             </div>
-            <Select
-                value={statusFilter}
-                onValueChange={(val: 'all' | TodoStatus) => setStatusFilter(val)}
-            >
-                <SelectTrigger className="h-8 w-120 typo-caption">
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">
-                        {t('workspaceDashboard.todoCanvas.statusAll')}
-                    </SelectItem>
-                    <SelectItem value="pending">{t('workspaceDashboard.pending')}</SelectItem>
-                    <SelectItem value="in_progress">
-                        {t('workspaceDashboard.todoCanvas.inProgress')}
-                    </SelectItem>
-                    <SelectItem value="completed">
-                        {t('workspaceDashboard.todoCanvas.completed')}
-                    </SelectItem>
-                </SelectContent>
-            </Select>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="h-8 w-140 typo-caption">
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">
-                        {t('workspaceDashboard.todoCanvas.allCategories')}
-                    </SelectItem>
-                    {categories.map(category => (
-                        <SelectItem key={category} value={category}>
-                            {category}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-            <button
-                onClick={onAddNode}
-                className={C_WORKSPACETODOTAB_1}
-            >
-                <Plus className="w-3.5 h-3.5" />
-                {t('workspaceDashboard.createTodo')}
-            </button>
-            <button
-                onClick={onExportJson}
-                className="h-8 px-2 rounded-md border border-border typo-caption transition-colors hover:bg-muted"
-            >
-                <FileJson className="w-3.5 h-3.5" />
-            </button>
-            <button
-                onClick={onExportMarkdown}
-                className="h-8 px-2 rounded-md border border-border typo-caption transition-colors hover:bg-muted"
-            >
-                <FileText className="w-3.5 h-3.5" />
-            </button>
-            <label className={C_WORKSPACETODOTAB_2}>
-                <Upload className="w-3.5 h-3.5" />
-                <input
-                    type="file"
-                    accept="application/json"
-                    className="hidden"
-                    onChange={onImportJson}
-                />
-            </label>
-            {saving ? (
-                <RefreshCw className="w-4 h-4 animate-spin text-muted-foreground" />
-            ) : null}
-        </div>
-    </div>
-);
 
-interface TodoCanvasSidebarProps {
-    selectedNode: Node<TodoCanvasNodeData> | null;
-    nodes: Node<TodoCanvasNodeData>[];
-    historyTick: number;
-    updateSelectedNodeData: (updates: Partial<TodoCanvasNodeData>) => void;
-    onAddSubTask: () => void;
-    onDeleteSelectedNode: () => void;
-    onApplyAutoLayout: () => void;
-    onApplyTemplate: (templateId: string) => void;
-    t: (key: string) => string;
-}
-
-const TodoCanvasSidebar: React.FC<TodoCanvasSidebarProps> = ({
-    selectedNode,
-    nodes,
-    historyTick,
-    updateSelectedNodeData,
-    onAddSubTask,
-    onDeleteSelectedNode,
-    onApplyAutoLayout,
-    onApplyTemplate,
-    t,
-}) => (
-    <div className="w-80 border-l border-border p-3 space-y-3 bg-card/40 overflow-y-auto">
-        <div className="text-11 text-muted-foreground">
-            {t('workspaceDashboard.todoCanvas.history')}: {historyTick}
-        </div>
-        <div className="space-y-2">
-            <div className="typo-caption font-medium">{t('workspaceDashboard.todoCanvas.templates')}</div>
-            <div className="flex flex-wrap gap-2">
-                {TEMPLATE_PRESETS.map(template => (
-                    <button
-                        key={template.id}
-                        onClick={() => onApplyTemplate(template.id)}
-                        className="h-7 px-2 rounded-md border border-border typo-caption"
-                    >
-                        {t(template.titleKey)}
-                    </button>
+            <div 
+                ref={setNodeRef}
+                className={cn(
+                    "flex-1 p-2.5 rounded-2xl transition-all min-h-[400px]",
+                    isOver ? "bg-primary/5 ring-1 ring-inset ring-primary/10 shadow-lg" : "bg-muted/5 border border-dashed border-border/10"
+                )}
+            >
+                {tasks.map(task => (
+                    <TaskCard 
+                        key={task.id} 
+                        task={task} 
+                        onEdit={onEdit} 
+                        onDelete={onDelete}
+                        onToggleSubtask={onToggleSubtask}
+                        onAddSubtask={onAddSubtask}
+                    />
                 ))}
+                
+                {tasks.length === 0 && !isOver && (
+                    <div className="h-full flex flex-col items-center justify-center py-24 grayscale opacity-20 transition-opacity hover:opacity-30">
+                        <category.icon className="w-12 h-12 mb-4" />
+                        <span className="text-[11px] font-medium tracking-[0.2em] uppercase">Empty</span>
+                    </div>
+                )}
             </div>
         </div>
-        {!selectedNode ? (
-            <div className="typo-caption text-muted-foreground">
-                {t('workspaceDashboard.todoCanvas.selectNode')}
-            </div>
-        ) : (
-            <>
-                <div className="space-y-1">
-                    <Label className="typo-caption text-muted-foreground">
-                        {t('workspaceDashboard.todoCanvas.task')}
-                    </Label>
-                    <Input
-                        value={selectedNode.data.title}
-                        onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-                            updateSelectedNodeData({ title: event.target.value })
-                        }
-                        className="h-9"
-                    />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                        <Label className="typo-caption text-muted-foreground">
-                            {t('workspaceDashboard.status')}
-                        </Label>
-                        <Select
-                            value={selectedNode.data.status}
-                            onValueChange={(val: TodoStatus) =>
-                                updateSelectedNodeData({ status: val })
-                            }
-                        >
-                            <SelectTrigger className="h-9">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="pending">{t('workspaceDashboard.pending')}</SelectItem>
-                                <SelectItem value="in_progress">
-                                    {t('workspaceDashboard.todoCanvas.inProgress')}
-                                </SelectItem>
-                                <SelectItem value="completed">
-                                    {t('workspaceDashboard.todoCanvas.completed')}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-1">
-                        <Label className="typo-caption text-muted-foreground">
-                            {t('workspaceDashboard.todoCanvas.category')}
-                        </Label>
-                        <Input
-                            value={selectedNode.data.category}
-                            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-                                updateSelectedNodeData({ category: event.target.value })
-                            }
-                            className="h-9"
-                        />
-                    </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                        <Label className="typo-caption text-muted-foreground">
-                            {t('workspaceDashboard.todoCanvas.assignee')}
-                        </Label>
-                        <Input
-                            value={selectedNode.data.assignee}
-                            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-                                updateSelectedNodeData({ assignee: event.target.value })
-                            }
-                            className="h-9"
-                        />
-                    </div>
-                    <div className="space-y-1">
-                        <Label className="typo-caption text-muted-foreground">
-                            {t('workspaceDashboard.todoCanvas.parent')}
-                        </Label>
-                        <Select
-                            value={selectedNode.data.parentId}
-                            onValueChange={(val: string) => updateSelectedNodeData({ parentId: val })}
-                        >
-                            <SelectTrigger className="h-9">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="">{t('workspaceDashboard.todoCanvas.none')}</SelectItem>
-                                {nodes
-                                    .filter(node => node.id !== selectedNode.id)
-                                    .map(node => (
-                                        <SelectItem key={node.id} value={node.id}>
-                                            {node.data.title || node.id}
-                                        </SelectItem>
-                                    ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-                <div className="space-y-1">
-                    <Label className="typo-caption text-muted-foreground">
-                        {t('workspaceDashboard.todoCanvas.links')}
-                    </Label>
-                    <Textarea
-                        value={selectedNode.data.links}
-                        onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) =>
-                            updateSelectedNodeData({ links: event.target.value })
-                        }
-                        className="min-h-24 py-1 typo-caption"
-                    />
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    <button
-                        onClick={onAddSubTask}
-                        className="h-8 px-3 rounded-md border border-border typo-caption transition-colors hover:bg-muted"
-                    >
-                        {t('workspaceDashboard.todoCanvas.subTask')}
-                    </button>
-                    <button
-                        onClick={onDeleteSelectedNode}
-                        className={C_WORKSPACETODOTAB_3}
-                    >
-                        {t('common.delete')}
-                    </button>
-                    <button
-                        onClick={onApplyAutoLayout}
-                        className="h-8 px-3 rounded-md border border-border typo-caption transition-colors hover:bg-muted"
-                    >
-                        {t('workspaceDashboard.todoCanvas.swimlaneLayout')}
-                    </button>
-                </div>
-            </>
-        )}
-    </div>
-);
-
-const WorkspaceTodoTabCanvas: React.FC<WorkspaceTodoTabProps> = ({ workspace, onUpdate, t }) => {
-    const defaultCategory = t('workspaceDashboard.todoCanvas.categoryGeneral');
-    const initialState = useMemo(
-        () => parseTodoCanvas(workspace.metadata, defaultCategory),
-        [defaultCategory, workspace.metadata]
     );
-    const [nodes, setNodes, onNodesChange] = useNodesState<Node<TodoCanvasNodeData>>(initialState.nodes);
-    const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialState.edges);
-    const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-    const [saving, setSaving] = useState(false);
-    const [query, setQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState<'all' | TodoStatus>('all');
-    const [categoryFilter, setCategoryFilter] = useState('all');
-    const [canvasError, setCanvasError] = useState<string | null>(null);
-    const { fitView } = useReactFlow();
+};
 
-    const skipNextSaveRef = useRef(true);
-    const latestSnapshotRef = useRef<string>('');
-    const previousSnapshotRef = useRef<string>('');
-    const suppressHistoryRef = useRef(false);
-    const undoStackRef = useRef<TodoCanvasSnapshot[]>([]);
-    const redoStackRef = useRef<TodoCanvasSnapshot[]>([]);
-    const [historyTick, setHistoryTick] = useState(0);
-    const [canUndo, setCanUndo] = useState(false);
-    const [canRedo, setCanRedo] = useState(false);
+export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, onUpdate }) => {
+    const { t } = useTranslation();
+    // Initialize tasks from workspace prop directly to avoid sync effect warning
+    const [tasks, setTasks] = useState<Task[]>(() => {
+        const loadedTasks = (workspace?.metadata?.todos as unknown) as Task[];
+        return Array.isArray(loadedTasks) ? loadedTasks : [];
+    });
+    
+    const [searchQuery, setSearchQuery] = useState('');
+    const [activeId, setActiveId] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingTask, setEditingTask] = useState<Task | null>(null);
+    const [loading] = useState(false);
+    
+    // Custom modal states
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+    const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+    const [isSubtaskPromptOpen, setIsSubtaskPromptOpen] = useState(false);
+    const [subtaskTaskTarget, setSubtaskTaskTarget] = useState<string | null>(null);
+    const [subtaskTitle, setSubtaskTitle] = useState('');
 
-    const syncHistoryFlags = useCallback(() => {
-        setCanUndo(undoStackRef.current.length > 0);
-        setCanRedo(redoStackRef.current.length > 0);
-    }, []);
-    const applySnapshot = useCallback((snapshot: TodoCanvasSnapshot) => {
-        suppressHistoryRef.current = true;
-        setNodes(snapshot.nodes);
-        setEdges(snapshot.edges);
-        window.setTimeout(() => {
-            suppressHistoryRef.current = false;
-        }, 0);
-    }, [setEdges, setNodes]);
+    const prevWorkspaceIdRef = useRef<string | null>(workspace?.id || null);
 
-    const pushHistory = useCallback((snapshot: TodoCanvasSnapshot) => {
-        undoStackRef.current.push(snapshot);
-        if (undoStackRef.current.length > 100) {
-            undoStackRef.current.shift();
-        }
-        redoStackRef.current = [];
-        setHistoryTick(value => value + 1);
-        syncHistoryFlags();
-    }, [syncHistoryFlags]);
+    // Sync tasks when workspace changes (proper render-phase sync)
+    if (workspace?.id !== prevWorkspaceIdRef.current) {
+        prevWorkspaceIdRef.current = workspace?.id || null;
+        const loadedTasks = (workspace?.metadata?.todos as unknown) as Task[];
+        setTasks(Array.isArray(loadedTasks) ? loadedTasks : []);
+    }
 
-    useEffect(() => {
-        const nextState = parseTodoCanvas(workspace.metadata, defaultCategory);
-        suppressHistoryRef.current = true;
-        skipNextSaveRef.current = true;
-        undoStackRef.current = [];
-        redoStackRef.current = [];
-        syncHistoryFlags();
-        setNodes(nextState.nodes);
-        setEdges(nextState.edges);
-        const snapshot = JSON.stringify({ nodes: nextState.nodes, edges: nextState.edges });
-        previousSnapshotRef.current = snapshot;
-        latestSnapshotRef.current = snapshot;
-        window.setTimeout(() => {
-            suppressHistoryRef.current = false;
-        }, 0);
-    }, [defaultCategory, workspace.id, workspace.metadata, setEdges, setNodes, syncHistoryFlags]);
+    // Form state
+    const [formData, setFormData] = useState({
+        title: '',
+        description: '',
+        deadline: '',
+        priority: 'medium' as TaskPriority,
+        estimation: ''
+    });
 
-    useEffect(() => {
-        const snapshot = JSON.stringify({ nodes, edges });
-        if (!suppressHistoryRef.current && previousSnapshotRef.current && snapshot !== previousSnapshotRef.current) {
-            const previous = JSON.parse(previousSnapshotRef.current) as TodoCanvasSnapshot;
-            pushHistory(createSnapshot(previous.nodes, previous.edges));
-        }
-        previousSnapshotRef.current = snapshot;
-    }, [edges, nodes, pushHistory]);
-
-    const categories = useMemo(
-        () => [...new Set(nodes.map(node => node.data.category).filter(value => value.trim().length > 0))],
-        [nodes]
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        })
     );
 
-    const filteredNodeIds = useMemo(() => {
-        const needle = query.trim().toLowerCase();
-        const accepted = new Set<string>();
-        for (const node of nodes) {
-            const matchesQuery = needle.length === 0 || node.data.title.toLowerCase().includes(needle) || node.data.category.toLowerCase().includes(needle) || node.data.assignee.toLowerCase().includes(needle);
-            const matchesStatus = statusFilter === 'all' || node.data.status === statusFilter;
-            const matchesCategory = categoryFilter === 'all' || node.data.category === categoryFilter;
-            if (matchesQuery && matchesStatus && matchesCategory) {
-                accepted.add(node.id);
-            }
-        }
-        return accepted;
-    }, [categoryFilter, nodes, query, statusFilter]);
-
-    const viewNodes = useMemo(() => nodes.filter(node => filteredNodeIds.has(node.id)), [filteredNodeIds, nodes]);
-    const viewEdges = useMemo(
-        () => edges.filter(edge => filteredNodeIds.has(edge.source) && filteredNodeIds.has(edge.target)),
-        [edges, filteredNodeIds]
-    );
-
-    const onConnect = useCallback((params: Connection) => {
-        if (!params.source || !params.target) { return; }
-        if (wouldCreateCycle(edges, params.source, params.target)) {
-            setCanvasError(t('workspace.errors.explorer.validationError'));
+    // Database Persistence: Save tasks to workspace metadata
+    const saveTasksToDb = useCallback(async (newTasks: Task[]) => {
+        if (!onUpdate) {
             return;
         }
-        setCanvasError(null);
-        setEdges(current => addEdge({ ...params, id: `todo-edge-${Date.now()}`, animated: false }, current));
-    }, [edges, setEdges, t]);
-
-    const addTodoNode = useCallback(() => {
-        const nextNode: Node<TodoCanvasNodeData> = {
-            id: `todo-node-${Date.now()}`,
-            type: NODE_TYPE,
-            position: { x: 120 + (nodes.length % 4) * 80, y: 120 + (nodes.length % 6) * 70 },
-            data: {
-                ...DEFAULT_NODE_DATA,
-                title: t('workspaceDashboard.createTodo'),
-                category: defaultCategory,
-            }
-        };
-        setNodes(current => [...current, nextNode]);
-        setSelectedNodeId(nextNode.id);
-    }, [defaultCategory, nodes.length, setNodes, t]);
-
-    const selectedNode = useMemo(
-        () => nodes.find(node => node.id === selectedNodeId) ?? null,
-        [nodes, selectedNodeId]
-    );
-
-    const updateSelectedNodeData = useCallback((updates: Partial<TodoCanvasNodeData>) => {
-        if (!selectedNodeId) { return; }
-        setNodes(current => current.map(node => {
-            if (node.id !== selectedNodeId) { return node; }
-            return {
-                ...node,
-                data: {
-                    ...node.data,
-                    ...updates
+        try {
+            await onUpdate({
+                metadata: {
+                    ...(workspace?.metadata || {}),
+                    todos: (newTasks as unknown) as JsonValue
                 }
+            });
+        } catch (err) {
+            appLogger.error('WorkspaceTodoTab', 'Failed to save tasks to database', err as Error);
+        }
+    }, [onUpdate, workspace]);
+
+    const updateTasksAndSave = useCallback((updater: (prev: Task[]) => Task[]) => {
+        setTasks(prev => {
+            const next = updater(prev);
+            void saveTasksToDb(next);
+            return next;
+        });
+    }, [saveTasksToDb]);
+
+    const handleDragStart = (event: DragStartEvent) => {
+        setActiveId(event.active.id as string);
+    };
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        setActiveId(null);
+
+        if (!over) {
+            return;
+        }
+
+        const taskId = active.id as string;
+        const newStatus = over.id as TaskStatus;
+
+        if (CATEGORIES.some(cat => cat.id === newStatus)) {
+            updateTasksAndSave(prev => prev.map(task => 
+                task.id === taskId ? { ...task, status: newStatus } : task
+            ));
+        }
+    };
+
+    const handleOpenCreateModal = () => {
+        setEditingTask(null);
+        setFormData({ title: '', description: '', deadline: '', priority: 'medium', estimation: '' });
+        setIsModalOpen(true);
+    };
+
+    const handleOpenEditModal = (task: Task) => {
+        setEditingTask(task);
+        setFormData({
+            title: task.title,
+            description: task.description,
+            deadline: task.deadline || '',
+            priority: task.priority || 'medium',
+            estimation: task.estimation || ''
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleSaveTask = () => {
+        if (!formData.title.trim()) {
+            return;
+        }
+
+        if (editingTask) {
+            updateTasksAndSave(prev => prev.map(t => 
+                t.id === editingTask.id 
+                    ? { 
+                        ...t, 
+                        title: formData.title, 
+                        description: formData.description, 
+                        deadline: formData.deadline || undefined,
+                        priority: formData.priority,
+                        estimation: formData.estimation || undefined
+                      } 
+                    : t
+            ));
+        } else {
+            const newTask: Task = {
+                id: uuidv4(),
+                title: formData.title,
+                description: formData.description,
+                status: 'idea',
+                deadline: formData.deadline || undefined,
+                priority: formData.priority,
+                estimation: formData.estimation || undefined,
+                subtasks: [],
+                createdAt: Date.now(),
+            };
+            updateTasksAndSave(prev => [...prev, newTask]);
+        }
+
+        setIsModalOpen(false);
+    };
+
+    const handleDeleteTask = (id: string) => {
+        setTaskToDelete(id);
+        setIsDeleteConfirmOpen(true);
+    };
+
+    const confirmDeleteTask = () => {
+        if (taskToDelete) {
+            updateTasksAndSave(prev => prev.filter(t => t.id !== taskToDelete));
+        }
+        setIsDeleteConfirmOpen(false);
+        setTaskToDelete(null);
+    };
+
+    const handleToggleSubtask = (taskId: string, subtaskId: string) => {
+        updateTasksAndSave(prev => prev.map(task => {
+            if (task.id !== taskId) {
+                return task;
+            }
+            return {
+                ...task,
+                subtasks: task.subtasks.map(sub => 
+                    sub.id === subtaskId ? { ...sub, completed: !sub.completed } : sub
+                )
             };
         }));
-    }, [selectedNodeId, setNodes]);
+    };
 
-    const deleteSelectedNode = useCallback(() => {
-        if (!selectedNodeId) { return; }
-        setNodes(current => current.filter(node => node.id !== selectedNodeId));
-        setEdges(current => current.filter(edge => edge.source !== selectedNodeId && edge.target !== selectedNodeId));
-        setSelectedNodeId(null);
-    }, [selectedNodeId, setEdges, setNodes]);
+    const handleAddSubtaskPrompt = (taskId: string) => {
+        setSubtaskTaskTarget(taskId);
+        setSubtaskTitle('');
+        setIsSubtaskPromptOpen(true);
+    };
 
-    const applyAutoLayout = useCallback(() => {
-        setNodes(current => layoutNodesByCategory(current, defaultCategory));
-        window.setTimeout(() => {
-            void fitView({ duration: 400 });
-        }, 16);
-    }, [defaultCategory, fitView, setNodes]);
-
-    const addSubTask = useCallback(() => {
-        if (!selectedNode) { return; }
-        const subNode: Node<TodoCanvasNodeData> = {
-            id: `todo-node-${Date.now()}`,
-            type: NODE_TYPE,
-            position: { x: selectedNode.position.x + 320, y: selectedNode.position.y + 120 },
-            data: {
-                ...DEFAULT_NODE_DATA,
-                title: `${selectedNode.data.title} / ${t('workspaceDashboard.todoCanvas.subTask')}`,
-                category: selectedNode.data.category,
-                parentId: selectedNode.id
-            }
-        };
-        setNodes(current => [...current, subNode]);
-        setEdges(current => [...current, { id: `todo-edge-${selectedNode.id}-${subNode.id}`, source: selectedNode.id, target: subNode.id }]);
-        setSelectedNodeId(subNode.id);
-    }, [selectedNode, setEdges, setNodes, t]);
-
-    const applyTemplate = useCallback((templateId: string) => {
-        const template = TEMPLATE_PRESETS.find(item => item.id === templateId);
-        if (!template) { return; }
-        const seed = Date.now();
-        const templateNodes: Node<TodoCanvasNodeData>[] = template.items.map((item, index) => ({
-            id: `todo-node-${seed}-${index}`,
-            type: NODE_TYPE,
-            position: { x: 120 + index * 260, y: 120 + (index % 2) * 100 },
-            data: {
-                ...DEFAULT_NODE_DATA,
-                title: t(item.titleKey),
-                category: t(item.categoryKey)
-            }
-        }));
-        const templateEdges: Edge[] = [];
-        for (let index = 0; index < templateNodes.length - 1; index++) {
-            templateEdges.push({
-                id: `todo-edge-${templateNodes[index].id}-${templateNodes[index + 1].id}`,
-                source: templateNodes[index].id,
-                target: templateNodes[index + 1].id
-            });
-        }
-        setNodes(current => [...current, ...templateNodes]);
-        setEdges(current => [...current, ...templateEdges]);
-    }, [setEdges, setNodes, t]);
-    const stats = useMemo(() => {
-        let completed = 0;
-        let inProgress = 0;
-        let blocked = 0;
-        for (const node of nodes) {
-            if (node.data.status === 'completed') {
-                completed++;
-            } else if (node.data.status === 'in_progress') {
-                inProgress++;
-            }
-            const dependencySources = edges.filter(edge => edge.target === node.id).map(edge => edge.source);
-            const isBlocked = dependencySources.some(sourceId => {
-                const sourceNode = nodes.find(candidate => candidate.id === sourceId);
-                return sourceNode ? sourceNode.data.status !== 'completed' : false;
-            });
-            if (isBlocked && node.data.status !== 'completed') {
-                blocked++;
-            }
-        }
-        const total = nodes.length;
-        return { total, completed, inProgress, pending: total - completed - inProgress, blocked };
-    }, [edges, nodes]);
-
-    useEffect(() => {
-        if (!onUpdate) { return; }
-        const payload: TodoCanvasPayload = {
-            version: 2,
-            nodes: nodes.map(node => ({ id: node.id, position: node.position, data: node.data })),
-            edges: edges.map(edge => ({ id: edge.id, source: edge.source, target: edge.target }))
-        };
-        const snapshot = JSON.stringify(payload);
-        if (skipNextSaveRef.current) {
-            skipNextSaveRef.current = false;
-            latestSnapshotRef.current = snapshot;
-            return;
-        }
-        if (snapshot === latestSnapshotRef.current) { return; }
-        latestSnapshotRef.current = snapshot;
-
-        const handle = window.setTimeout(() => {
-            setSaving(true);
-            const nextMetadata: JsonObject = { ...(workspace.metadata ?? {}), [TODO_CANVAS_METADATA_KEY]: payload };
-            void onUpdate({ metadata: nextMetadata })
-                .catch(error => {
-                    appLogger.error('WorkspaceTodoTab', 'Failed to persist todo canvas', { error });
-                })
-                .finally(() => setSaving(false));
-        }, 220);
-
-        return () => window.clearTimeout(handle);
-    }, [edges, nodes, onUpdate, workspace.metadata]);
-
-    const exportJson = useCallback(() => {
-        const payload = { version: 2, nodes, edges, exportedAt: new Date().toISOString() };
-        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `todo-canvas-${workspace.id}.json`;
-        link.click();
-        URL.revokeObjectURL(link.href);
-    }, [edges, nodes, workspace.id]);
-
-    const exportMarkdown = useCallback(() => {
-        const markdown = buildMarkdown(nodes, edges, {
-            exportTitle: t('workspace.errors.todoCanvas.exportTitle'),
-            untitled: t('workspace.errors.todoCanvas.untitled'),
-            dependenciesHeading: t('workspace.errors.todoCanvas.dependenciesHeading')
-        });
-        const blob = new Blob([markdown], { type: 'text/markdown' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `todo-canvas-${workspace.id}.md`;
-        link.click();
-        URL.revokeObjectURL(link.href);
-    }, [edges, nodes, t, workspace.id]);
-
-    const importJson = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) { return; }
-        const reader = new FileReader();
-        reader.onload = () => {
-            try {
-                const raw = JSON.parse(typeof reader.result === 'string' ? reader.result : '{}') as JsonObject;
-                const importedNodes = Array.isArray(raw.nodes) ? raw.nodes : [];
-                const importedEdges = Array.isArray(raw.edges) ? raw.edges : [];
-                const metadata: JsonObject = {
-                    [TODO_CANVAS_METADATA_KEY]: { version: 2, nodes: importedNodes, edges: importedEdges }
+    const confirmAddSubtask = () => {
+        if (subtaskTaskTarget && subtaskTitle.trim()) {
+            updateTasksAndSave(prev => prev.map(task => {
+                if (task.id !== subtaskTaskTarget) {
+                    return task;
+                }
+                return {
+                    ...task,
+                    subtasks: [...task.subtasks, { id: uuidv4(), title: subtaskTitle.trim(), completed: false }]
                 };
-                const parsed = parseTodoCanvas(metadata, '');
-                applySnapshot(parsed);
-                setCanvasError(null);
-            } catch (error) {
-                setCanvasError(t('workspaceDashboard.todoCanvas.invalidJsonImportFile'));
-                appLogger.error('WorkspaceTodoTab', 'Failed to import todo canvas JSON', { error });
+            }));
+        }
+        setIsSubtaskPromptOpen(false);
+        setSubtaskTaskTarget(null);
+        setSubtaskTitle('');
+    };
 
+    const filteredTasks = useMemo(() => {
+        const query = searchQuery.toLowerCase().trim();
+        if (!query) {
+            return tasks;
+        }
+        return tasks.filter(t => 
+            t.title.toLowerCase().includes(query) || 
+            t.description.toLowerCase().includes(query)
+        );
+    }, [tasks, searchQuery]);
 
-            }
-        };
-        reader.readAsText(file);
-        event.target.value = '';
-    }, [applySnapshot, t]);
+    const activeTask = useMemo(() => 
+        tasks.find(t => t.id === activeId), 
+    [tasks, activeId]);
 
-    const undo = useCallback(() => {
-        const previous = undoStackRef.current.pop();
-        if (!previous) { return; }
-        redoStackRef.current.push(createSnapshot(nodes, edges));
-        applySnapshot(previous);
-        setHistoryTick(value => value + 1);
-        syncHistoryFlags();
-    }, [applySnapshot, edges, nodes, syncHistoryFlags]);
+    const stats = useMemo(() => {
+        const total = tasks.length;
+        const completedCount = tasks.filter(t => t.status === 'approved').length;
+        const bugsCount = tasks.filter(t => t.status === 'bug').length;
+        return { total, completed: completedCount, bugs: bugsCount };
+    }, [tasks]);
 
-    const redo = useCallback(() => {
-        const next = redoStackRef.current.pop();
-        if (!next) { return; }
-        undoStackRef.current.push(createSnapshot(nodes, edges));
-        applySnapshot(next);
-        setHistoryTick(value => value + 1);
-        syncHistoryFlags();
-    }, [applySnapshot, edges, nodes, syncHistoryFlags]);
-    return (
-        <div className="h-full overflow-hidden flex flex-col">
-            <TodoCanvasStatsBar
-                stats={stats}
-                query={query}
-                setQuery={setQuery}
-                statusFilter={statusFilter}
-                setStatusFilter={setStatusFilter}
-                categoryFilter={categoryFilter}
-                setCategoryFilter={setCategoryFilter}
-                categories={categories}
-                onAddNode={addTodoNode}
-                onExportJson={exportJson}
-                onExportMarkdown={exportMarkdown}
-                onImportJson={importJson}
-                saving={saving}
-                t={t}
-            />
-            {canvasError ? (
-                <div className="px-3 py-1.5 typo-caption text-destructive border-b border-destructive/30 bg-destructive/5">
-                    {canvasError}
-                </div>
-            ) : null}
-            <div className="flex-1 min-h-0 flex">
-                <div className="flex-1 min-w-0">
-                    <ReactFlow
-                        nodes={viewNodes}
-                        edges={viewEdges}
-                        onNodesChange={onNodesChange}
-                        onEdgesChange={onEdgesChange}
-                        onConnect={onConnect}
-                        onNodeClick={(_event, node) => setSelectedNodeId(node.id)}
-                        nodeTypes={nodeTypes}
-                        fitView
-                        className="bg-background"
-                    >
-                        <FlowToolbar
-                            onFit={() => {
-                                void fitView({ duration: 300 });
-                            }}
-                            onAutoLayout={applyAutoLayout}
-                            onUndo={undo}
-                            onRedo={redo}
-                            canUndo={canUndo}
-                            canRedo={canRedo}
-                            fitLabel={t('common.fit')}
-                            layoutLabel={t('common.layout')}
-                        />
-                        <Background gap={24} size={1} color="hsl(var(--border) / 0.35)" />
-                        <MiniMap pannable zoomable />
-                    </ReactFlow>
-                </div>
-                <TodoCanvasSidebar
-                    selectedNode={selectedNode}
-                    nodes={nodes}
-                    historyTick={historyTick}
-                    updateSelectedNodeData={updateSelectedNodeData}
-                    onAddSubTask={addSubTask}
-                    onDeleteSelectedNode={deleteSelectedNode}
-                    onApplyAutoLayout={applyAutoLayout}
-                    onApplyTemplate={applyTemplate}
-                    t={t}
-                />
+    if (loading) {
+        return (
+            <div className="flex h-full items-center justify-center p-12 text-muted-foreground/30">
+                <Clock className="w-5 h-5 animate-spin mr-3" />
+                <span className="text-xs font-semibold tracking-wider uppercase tracking-widest">Board Sync...</span>
             </div>
+        );
+    }
+
+    return (
+        <div className="flex h-full flex-col overflow-hidden bg-background/30 select-none">
+            {/* Toolbar */}
+            <div className="flex items-center justify-between px-8 py-5 border-b border-border/40 bg-background/5 backdrop-blur-md">
+                <div className="flex items-center gap-8">
+                    <div className="flex items-center gap-4">
+                        <div className="p-2 rounded-xl bg-primary/5 border border-primary/10 shadow-sm">
+                            <CheckSquare className="w-5 h-5 text-primary/60" />
+                        </div>
+                        <div className="flex flex-col">
+                            <h2 className="text-sm font-semibold tracking-tight text-foreground/80">Project Workspace</h2>
+                            <div className="flex items-center gap-3 mt-0.5">
+                                <span className="text-[10px] text-muted-foreground/40 font-medium uppercase tracking-widest">{stats.total} Tasks</span>
+                                <div className="w-1 h-1 rounded-full bg-border/40" />
+                                <span className="text-[10px] text-emerald-500/50 font-medium uppercase tracking-widest">{stats.completed} Done</span>
+                                {stats.bugs > 0 && (
+                                    <>
+                                        <div className="w-1 h-1 rounded-full bg-border/40" />
+                                        <span className="text-[10px] text-rose-500/50 font-medium uppercase tracking-widest">{stats.bugs} Bugs</span>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="h-6 w-px bg-border/20 mx-1" />
+                    <div className="relative group">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/20 group-focus-within:text-primary/40 transition-colors" />
+                        <Input 
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            placeholder={t('workspaceTodo.filterBoardPlaceholder')} 
+                            className="h-9 w-64 pl-9 pr-4 rounded-xl border-border/10 bg-background/20 text-xs focus-visible:ring-1 focus-visible:ring-primary/20 shadow-sm"
+                        />
+                    </div>
+                </div>
+                
+                <Button 
+                    onClick={handleOpenCreateModal}
+                    className="h-9 px-6 rounded-xl bg-primary/80 text-primary-foreground text-xs font-semibold hover:bg-primary shadow-lg shadow-primary/10 transition-all active:scale-95"
+                >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Task
+                </Button>
+            </div>
+
+            {/* Board Container */}
+            <DndContext 
+                sensors={sensors} 
+                onDragStart={handleDragStart} 
+                onDragEnd={handleDragEnd}
+            >
+                <ScrollArea className="flex-1 w-full border-none">
+                    <div className="flex h-full p-10 gap-10 min-w-max">
+                        {CATEGORIES.map((category) => (
+                            <TaskColumn 
+                                key={category.id} 
+                                category={category} 
+                                tasks={filteredTasks.filter(t => t.status === category.id)}
+                                onEdit={handleOpenEditModal}
+                                onDelete={handleDeleteTask}
+                                onToggleSubtask={handleToggleSubtask}
+                                onAddSubtask={handleAddSubtaskPrompt}
+                            />
+                        ))}
+                    </div>
+                </ScrollArea>
+
+                <DragOverlay>
+                    {activeTask ? (
+                        <TaskCard 
+                            task={activeTask} 
+                            isOverlay 
+                            onEdit={() => {}} 
+                            onDelete={() => {}} 
+                            onToggleSubtask={() => {}}
+                            onAddSubtask={() => {}}
+                        />
+                    ) : null}
+                </DragOverlay>
+            </DndContext>
+
+            {/* Simple Modal with Priority Dropdown */}
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                <DialogContent className="sm:max-w-md border-border/40 backdrop-blur-xl bg-background/80 shadow-2xl p-0 overflow-hidden">
+                    <div className="p-7">
+                        <DialogHeader className="mb-6">
+                            <DialogTitle className="text-lg font-semibold text-foreground/80">
+                                {editingTask ? 'Edit Task' : 'Create New Task'}
+                            </DialogTitle>
+                            <DialogDescription className="text-xs text-muted-foreground/50">
+                                Enter the basic details to finalize your task.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="space-y-5">
+                            <div className="grid gap-2">
+                                <Label htmlFor="title" className="text-xs font-medium text-muted-foreground/70">Task Title</Label>
+                                <Input
+                                    id="title"
+                                    placeholder={t('workspaceTodo.taskOverviewPlaceholder')}
+                                    value={formData.title}
+                                    onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                                    className="h-10 border-border/20 bg-background/40 focus-visible:ring-1 focus-visible:ring-primary/20 text-sm"
+                                />
+                            </div>
+                            
+                            <div className="grid gap-2">
+                                <Label htmlFor="desc" className="text-xs font-medium text-muted-foreground/70">Description</Label>
+                                <Textarea
+                                    id="desc"
+                                    placeholder={t('workspaceTodo.taskContextPlaceholder')}
+                                    value={formData.description}
+                                    onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                                    className="min-h-32 border-border/20 bg-background/40 focus-visible:ring-1 focus-visible:ring-primary/20 resize-none text-[13px] leading-relaxed"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label className="text-xs font-medium text-muted-foreground/70">Priority</Label>
+                                    <Select 
+                                        value={formData.priority} 
+                                        onValueChange={(val: TaskPriority) => setFormData(prev => ({ ...prev, priority: val }))}
+                                    >
+                                        <SelectTrigger className="h-10 border-border/20 bg-background/40 focus:ring-primary/20 text-xs">
+                                            <SelectValue placeholder={t('workspaceTodo.selectPriority')} />
+                                        </SelectTrigger>
+                                        <SelectContent className="border-border/40 backdrop-blur-xl bg-background/95">
+                                            <SelectItem value="low" className="text-xs">Low</SelectItem>
+                                            <SelectItem value="medium" className="text-xs">Medium</SelectItem>
+                                            <SelectItem value="high" className="text-xs">High</SelectItem>
+                                            <SelectItem value="urgent" className="text-xs text-rose-500 font-medium">Urgent</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label className="text-xs font-medium text-muted-foreground/70">Estimate</Label>
+                                    <Input
+                                        placeholder="e.g. 2h, 5"
+                                        value={formData.estimation}
+                                        onChange={e => setFormData(prev => ({ ...prev, estimation: e.target.value }))}
+                                        className="h-10 border-border/20 bg-background/40 focus-visible:ring-1 focus-visible:ring-primary/20 text-xs"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="deadline" className="text-xs font-medium text-muted-foreground/70">Deadline</Label>
+                                <Input
+                                    id="deadline"
+                                    type="date"
+                                    value={formData.deadline}
+                                    onChange={e => setFormData(prev => ({ ...prev, deadline: e.target.value }))}
+                                    className="h-10 border-border/20 bg-background/40 focus-visible:ring-1 focus-visible:ring-primary/20 text-xs"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="px-7 py-4 border-t border-border/10 bg-muted/5 flex justify-end gap-3">
+                        <Button 
+                            variant="ghost" 
+                            onClick={() => setIsModalOpen(false)}
+                            className="text-xs text-muted-foreground/50 hover:bg-transparent"
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            onClick={handleSaveTask}
+                            disabled={!formData.title.trim()}
+                            className="h-10 px-8 bg-primary/80 text-primary-foreground text-xs font-semibold hover:bg-primary shadow-lg shadow-primary/10 transition-all rounded-lg"
+                        >
+                            {editingTask ? 'Apply Changes' : 'Create Task'}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <ConfirmationModal
+                isOpen={isDeleteConfirmOpen}
+                onClose={() => setIsDeleteConfirmOpen(false)}
+                onConfirm={confirmDeleteTask}
+                title="Delete Task"
+                message="Are you sure you want to delete this task? This action cannot be undone."
+                variant="danger"
+            />
+
+            <Dialog open={isSubtaskPromptOpen} onOpenChange={setIsSubtaskPromptOpen}>
+                <DialogContent className="sm:max-w-[400px] border-border/40 backdrop-blur-xl bg-background/80 shadow-2xl p-0 overflow-hidden">
+                    <div className="p-7">
+                        <DialogHeader className="mb-4">
+                            <DialogTitle className="text-lg font-semibold text-foreground/80">
+                                Add Subtask
+                            </DialogTitle>
+                            <DialogDescription className="text-xs text-muted-foreground/50">
+                                Enter a title for the new subtask.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="subtaskTitle" className="text-xs font-medium text-muted-foreground/70">Subtask Title</Label>
+                                <Input
+                                    id="subtaskTitle"
+                                    autoFocus
+                                    value={subtaskTitle}
+                                    onChange={e => setSubtaskTitle(e.target.value)}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter') {
+                                            confirmAddSubtask();
+                                        }
+                                    }}
+                                    className="h-10 border-border/20 bg-background/40 focus-visible:ring-1 focus-visible:ring-primary/20 text-sm"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <div className="px-7 py-4 border-t border-border/10 bg-muted/5 flex justify-end gap-3">
+                        <Button 
+                            variant="ghost" 
+                            onClick={() => setIsSubtaskPromptOpen(false)}
+                            className="text-xs text-muted-foreground/50 hover:bg-transparent"
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            onClick={confirmAddSubtask}
+                            disabled={!subtaskTitle.trim()}
+                            className="h-10 px-8 bg-primary/80 text-primary-foreground text-xs font-semibold hover:bg-primary shadow-lg shadow-primary/10 transition-all rounded-lg"
+                        >
+                            Add
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
-
 };
 
-export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, onUpdate, t }) => {
-    return (
-        <ReactFlowProvider>
-            <WorkspaceTodoTabCanvas workspace={workspace} onUpdate={onUpdate} t={t} />
-        </ReactFlowProvider>
-    );
-};
+export default WorkspaceTodoTab;

@@ -13,6 +13,7 @@ import { resolve } from 'path';
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { AuditLogService } from '@main/services/analysis/audit-log.service';
+import { FileChangeTracker } from '@main/services/data/file-change-tracker.service';
 import { FileSystemService } from '@main/services/data/filesystem.service';
 import { createValidatedIpcHandler as baseCreateValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { BrowserWindow, dialog, ipcMain, IpcMainInvokeEvent } from 'electron';
@@ -33,6 +34,7 @@ const PathSchema = z.string().min(1).max(MAX_PATH_LENGTH).trim();
 const ContentSchema = z.string().max(MAX_CONTENT_SIZE);
 const PatternSchema = z.string().min(1).max(MAX_PATTERN_LENGTH).trim();
 const JobIdSchema = z.string().min(1).max(MAX_JOB_ID_LENGTH).regex(/^[\w-]+$/).trim();
+const DiffIdSchema = z.string().min(1).max(128).trim();
 
 const WriteContextSchema = z.object({
     aiSystem: z.enum(['chat', 'workspace', 'council']).optional(),
@@ -85,7 +87,8 @@ export function registerFilesIpc(
     getMainWindow: () => BrowserWindow | null,
     fileSystemService: FileSystemService,
     allowedRoots: Set<string>,
-    auditLogService?: AuditLogService
+    auditLogService?: AuditLogService,
+    fileChangeTracker?: FileChangeTracker
 ): void {
     appLogger.debug('FilesIPC', 'Registering files IPC handlers');
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'file operation');
@@ -162,7 +165,7 @@ export function registerFilesIpc(
         }
         trackFileEvent(channel, eventName, { code });
     };
-    const getFilesHealthSummary = () => {
+    const _getFilesHealthSummary = () => {
         const errorRate = fileTelemetry.totalCalls === 0 ? 0 : fileTelemetry.totalFailures / fileTelemetry.totalCalls;
         const status = errorRate > 0.05 || fileTelemetry.budgetExceededCount > 0 ? 'degraded' : 'healthy';
         return {
@@ -202,6 +205,7 @@ export function registerFilesIpc(
             targetPath,
         });
     };
+    void _getFilesHealthSummary;
     const runWithFileAudit = async <T extends RuntimeValue>(
         action: string,
         targetPath: string | undefined,
@@ -479,6 +483,17 @@ export function registerFilesIpc(
         argsSchema: z.tuple([PathSchema, PathSchema])
     }));
 
+    ipcMain.handle('files:revertFileChange', createValidatedIpcHandler('files:revertFileChange', async (event, diffId: string) => {
+        validateSender(event);
+        if (!fileChangeTracker) {
+            return { success: false, error: 'File change tracker is not available' };
+        }
+        return await fileChangeTracker.revertFileChange(diffId);
+    }, {
+        defaultValue: { success: false, error: 'Failed to revert file change' },
+        argsSchema: z.tuple([DiffIdSchema])
+    }));
+
     ipcMain.handle('files:searchFiles', createValidatedIpcHandler<SearchFilesResponse, [string, string]>('files:searchFiles', async (_event, dirPath: string, pattern: string) => {
         const result = await runWithFileAudit('files.searchFiles', dirPath, async () => {
             return await fileSystemService.searchFiles(dirPath, pattern);
@@ -500,34 +515,6 @@ export function registerFilesIpc(
         argsSchema: z.tuple([PathSchema, PatternSchema])
     }));
 
-    ipcMain.handle('files:health', createValidatedIpcHandler(
-        'files:health',
-        async () => {
-            return {
-                success: true,
-                data: getFilesHealthSummary()
-            };
-        },
-        {
-            defaultValue: {
-                success: false,
-                data: {
-                    status: 'degraded',
-                    uiState: 'failure',
-                    budgets: {
-                        existsMs: FILE_PERFORMANCE_BUDGET_MS.EXISTS,
-                        writeMs: FILE_PERFORMANCE_BUDGET_MS.WRITE,
-                        searchMs: FILE_PERFORMANCE_BUDGET_MS.SEARCH
-                    },
-                    metrics: {
-                        ...fileTelemetry,
-                        errorRate: 1
-                    }
-                }
-            },
-            argsSchema: z.tuple([])
-        }
-    ));
 
     ipcMain.handle('files:searchFilesStream', createValidatedIpcHandler('files:searchFilesStream', async (event, dirPath: string, pattern: string, jobId: string) => {
         return await runWithFileAudit('files.searchFilesStream', dirPath, async () => {
@@ -540,8 +527,4 @@ export function registerFilesIpc(
         argsSchema: z.tuple([PathSchema, PatternSchema, JobIdSchema])
     }));
 
-    ipcMain.handle('app:getUserDataPath', createValidatedIpcHandler('app:getUserDataPath', async () => {
-        const { app } = await import('electron');
-        return { success: true, path: resolve(app.getPath('userData')) };
-    }, { defaultValue: { success: false, path: '' } }));
 }

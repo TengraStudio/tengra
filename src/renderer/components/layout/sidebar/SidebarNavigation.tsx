@@ -8,10 +8,14 @@
  * (at your option) any later version.
  */
 
-import { Briefcase, DownloadCloud, MessageSquare, Pause, Play, RefreshCcw, Rocket, ShoppingBag, X } from 'lucide-react';
+import { Briefcase, DownloadCloud, History as LucideHistory, Inbox as LucideInbox, MessageSquare, Pause, Play, RefreshCcw, Rocket, ShoppingBag, X } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { UI_PRIMITIVES } from '@/constants/ui-primitives';
+import { AnimatedProgressBar } from '@/components/ui/AnimatedProgressBar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { AppView } from '@/hooks/useAppState';
 import { cn } from '@/lib/utils';
 import { type DownloadHistoryItem, type DownloadStatus, downloadStore, type DownloadTaskState, useDownloadStore } from '@/store/download.store';
@@ -339,129 +343,213 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                     onKeyDown={(event) => handleRovingNav(event, index)}
                 />
             ))}
-            <div className="group/downloads relative">
-                <SidebarItem
-                    icon={DownloadCloud}
-                    label={t('sidebar.downloads')}
-                    active={false}
-                    onClick={() => undefined}
-                    isCollapsed={isCollapsed}
-                    badge={activeDownloadCount > 0 ? activeDownloadCount : undefined}
-                />
-                <div className="absolute left-full top-0 h-full w-2" aria-hidden="true" />
-                <div className="pointer-events-none invisible absolute left-full-plus-2 top-0 z-30 max-h-96 w-88 translate-y-1 overflow-y-auto rounded-xl border border-border/50 bg-card p-3 opacity-0 shadow-2xl transition-all duration-150 group-hover/downloads:pointer-events-auto group-hover/downloads:visible group-hover/downloads:translate-y-0 group-hover/downloads:opacity-100">
-                    {activeDownloadCount > 0 && (
-                        <div className="mb-3 space-y-2">
-                            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/70">{t('sidebar.activeDownloads')}</div>
-                            <div className="space-y-3">
-                                {Object.values(activeDownloads).map((task) => {
-                                    const progressPercent = getProgressPercent(task.received, task.total);
-
-                                    return (
-                                        <div key={task.downloadId} className="rounded-lg border border-border/30 bg-muted/10 p-2.5">
-                                            <div className="flex items-center justify-between gap-2 mb-1.5">
-                                                <div className="flex flex-col min-w-0">
-                                                    <span className="typo-body font-semibold text-foreground truncate">{task.modelRef}</span>
-                                                    <span className="typo-body text-muted-foreground/60 uppercase tracking-tight">{task.provider}</span>
-                                                </div>
-                                                <div className="flex flex-col items-end shrink-0">
-                                                    <span className="typo-body font-medium text-primary">
-                                                        {task.status === 'downloading' ? `${progressPercent}%` : getStatusLabel(task.status)}
-                                                    </span>
-                                                    {task.eta !== undefined && task.status === 'downloading' && (
-                                                        <span className="typo-body text-muted-foreground/50">{formatDuration(task.eta)} {t('common.remaining')}</span>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            <div className="h-1 w-full bg-muted/30 rounded-full overflow-hidden">
-                                                <div
-                                                    className={cn(
-                                                        "h-full bg-primary transition-all duration-300",
-                                                        task.status === 'paused' && "bg-muted-foreground/40"
-                                                    )}
-                                                    style={{ width: `${progressPercent}%` }}
-                                                />
-                                            </div>
-                                            {task.received !== undefined && task.total !== undefined && (
-                                                <div className="flex items-center justify-between mt-1 typo-body text-muted-foreground/40 font-medium">
-                                                    <span>{formatBytes(task.received)} / {formatBytes(task.total)}</span>
-                                                    {task.speed !== undefined && <span>{formatBytes(task.speed)}/s</span>}
-                                                </div>
-                                            )}
-
-                                            <div className="flex items-center gap-2 mt-2 group/task-actions overflow-hidden">
-                                                {task.status === 'paused' ? (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleResume(task.downloadId)}
-                                                        className={cn(UI_PRIMITIVES.ITEM_OVERLAY, "p-1 px-2 rounded bg-primary/20 text-primary hover:bg-primary/30")}
-                                                        title={t('common.resume')}
-                                                    >
-                                                        <Play className="w-2.5 h-2.5 fill-current" />
-                                                        <span className="typo-body">{t('common.resume')}</span>
-                                                    </button>
-                                                ) : (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handlePause(task.downloadId)}
-                                                        className={cn(UI_PRIMITIVES.ITEM_OVERLAY, "p-1 px-2 rounded bg-muted/30 text-muted-foreground hover:bg-muted/50")}
-                                                        title={t('common.pause')}
-                                                    >
-                                                        <Pause className="w-2.5 h-2.5 fill-current" />
-                                                        <span className="typo-body">{t('common.pause')}</span>
-                                                    </button>
-                                                )}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleCancel(task.downloadId)}
-                                                    className={cn(UI_PRIMITIVES.ITEM_OVERLAY, "p-1 px-2 rounded bg-destructive/10 text-destructive hover:bg-destructive/20 ml-auto")}
-                                                    title={t('common.cancel')}
-                                                >
-                                                    <X className="w-2.5 h-2.5" />
-                                                    <span className="typo-body">{t('common.cancel')}</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+            <Popover>
+                <PopoverTrigger asChild>
+                    <SidebarItem
+                        icon={DownloadCloud}
+                        label={t('sidebar.downloads')}
+                        active={false}
+                        isCollapsed={isCollapsed}
+                        badge={activeDownloadCount > 0 ? activeDownloadCount : undefined}
+                        className="w-full"
+                    />
+                </PopoverTrigger>
+                <PopoverContent
+                    side="right"
+                    align="start"
+                    sideOffset={12}
+                    className="w-96 p-0 overflow-hidden border-border/50 bg-popover/95 backdrop-blur-xl shadow-2xl"
+                >
+                    <div className="flex flex-col h-[480px]">
+                        <div className="p-4 border-b border-border/40 bg-muted/20">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <h3 className="text-sm font-semibold tracking-tight">{t('sidebar.downloads')}</h3>
+                                    <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-bold">
+                                        {activeDownloadCount} {t('sidebar.activeDownloads')}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <Badge variant="outline" className="h-5 px-1.5 text-[10px] bg-background/50">
+                                        {downloadHistory.length} {t('agent.history')}
+                                    </Badge>
+                                </div>
                             </div>
                         </div>
-                    )}
-                    <div className="mb-3 space-y-2">
-                        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/70">{t('sidebar.downloadsToday')}</div>
-                        {todayHistory.length === 0 && activeDownloadCount === 0 && (
-                            <div className="text-xs text-muted-foreground/60">{t('sidebar.downloadHistoryEmpty')}</div>
-                        )}
-                        {todayHistory.map((item) => (
-                            <div key={item.id} className="flex items-center justify-between gap-2 rounded-md border border-border/20 bg-muted/5 px-2 py-1.5">
-                                <div className="min-w-0">
-                                    <span className="block truncate text-xs font-medium">{item.modelRef}</span>
-                                    <span className="block text-xxs text-muted-foreground/70">{getStatusLabel(item.status)}</span>
-                                </div>
-                                {item.status === 'error' && (
-                                    <button
-                                        type="button"
-                                        className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
-                                        onClick={() => handleRetry(item.id)}
-                                    >
-                                        <RefreshCcw className="w-3 h-3" />
-                                    </button>
+
+                        <ScrollArea className="flex-1">
+                            <div className="p-3 space-y-6">
+                                {/* Active Downloads Section */}
+                                {activeDownloadCount > 0 && (
+                                    <section className="space-y-3">
+                                        <div className="flex items-center gap-2 px-1">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                                                {t('sidebar.activeDownloads')}
+                                            </span>
+                                        </div>
+                                        <div className="space-y-3">
+                                            {Object.values(activeDownloads).map((task) => {
+                                                const progressPercent = getProgressPercent(task.received, task.total);
+                                                const isPaused = task.status === 'paused';
+
+                                                return (
+                                                    <div key={task.downloadId} className="group relative rounded-xl border border-border/40 bg-muted/10 p-3 transition-all hover:bg-muted/20 hover:border-border/60">
+                                                        <div className="flex items-start justify-between gap-3 mb-2.5">
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="text-xs font-bold truncate text-foreground/90 mb-0.5">
+                                                                    {task.modelRef}
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <Badge variant="secondary" className="h-4 px-1 text-[9px] uppercase font-bold tracking-tight bg-primary/10 text-primary border-none">
+                                                                        {task.provider}
+                                                                    </Badge>
+                                                                    <span className="text-[10px] font-medium text-muted-foreground/50">
+                                                                        {getStatusLabel(task.status)}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right shrink-0">
+                                                                <div className="text-xs font-black text-primary">
+                                                                    {task.status === 'downloading' ? `${progressPercent}%` : ''}
+                                                                </div>
+                                                                {task.eta !== undefined && task.status === 'downloading' && (
+                                                                    <div className="text-[9px] font-medium text-muted-foreground/40">
+                                                                        {formatDuration(task.eta)}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        <AnimatedProgressBar
+                                                            value={progressPercent}
+                                                            size="sm"
+                                                            variant={isPaused ? 'default' : 'gradient'}
+                                                            className="mb-2"
+                                                        />
+
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            {task.received !== undefined && task.total !== undefined && (
+                                                                <div className="text-[10px] font-bold text-muted-foreground/40 tabular-nums">
+                                                                    {formatBytes(task.received)} / {formatBytes(task.total)}
+                                                                    {task.speed !== undefined && <span className="ml-2 font-medium opacity-60">· {formatBytes(task.speed)}/s</span>}
+                                                                </div>
+                                                            )}
+                                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-6 w-6 rounded-md hover:bg-background/80"
+                                                                    onClick={() => isPaused ? handleResume(task.downloadId) : handlePause(task.downloadId)}
+                                                                >
+                                                                    {isPaused ? <Play className="h-2.5 w-2.5 fill-current" /> : <Pause className="h-2.5 w-2.5 fill-current" />}
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-6 w-6 rounded-md hover:bg-destructive/10 hover:text-destructive"
+                                                                    onClick={() => handleCancel(task.downloadId)}
+                                                                >
+                                                                    <X className="h-2.5 w-2.5" />
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </section>
+                                )}
+
+                                {/* Today History Section */}
+                                <section className="space-y-3">
+                                    <div className="flex items-center gap-2 px-1">
+                                        <LucideHistory className="w-3 h-3 text-muted-foreground/60" />
+                                        <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                                            {t('sidebar.downloadsToday')}
+                                        </span>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        {todayHistory.length === 0 && activeDownloadCount === 0 && (
+                                            <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                                            <LucideInbox className="w-6 h-6 text-muted-foreground/20 mb-2" />
+                                            <p className="text-xs font-medium text-muted-foreground/40 italic">
+                                                {t('sidebar.downloadHistoryEmpty')}
+                                            </p>
+                                        </div>
+                                        )}
+                                        {todayHistory.map((item) => (
+                                            <div key={item.id} className="group flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-muted/10 transition-colors border border-transparent hover:border-border/30">
+                                                <div className="min-w-0">
+                                                    <div className="text-[11px] font-semibold truncate text-foreground/80">
+                                                        {item.modelRef}
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <div className={cn(
+                                                            "w-1 h-1 rounded-full",
+                                                            item.status === 'completed' && "bg-success",
+                                                            item.status === 'error' && "bg-destructive",
+                                                            item.status === 'cancelled' && "bg-muted-foreground/40"
+                                                        )} />
+                                                        <span className="text-[9px] font-bold text-muted-foreground/50 uppercase tracking-tighter">
+                                                            {getStatusLabel(item.status)}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                {item.status === 'error' && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        onClick={() => handleRetry(item.id)}
+                                                    >
+                                                        <RefreshCcw className="w-3 h-3" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                {/* Older History Preview Section */}
+                                {allHistoryPreview.length > todayHistory.length && (
+                                    <section className="space-y-3 pt-2">
+                                        <div className="flex items-center gap-2 px-1">
+                                            <LucideHistory className="w-3 h-3 text-muted-foreground/30" />
+                                            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/40">
+                                                {t('sidebar.downloadsHistory')}
+                                            </span>
+                                        </div>
+                                        <div className="space-y-1 px-1">
+                                            {allHistoryPreview.filter(h => !todayHistory.some(t => t.id === h.id)).slice(0, 5).map((item) => (
+                                                <div key={`history-${item.id}`} className="flex items-center justify-between gap-4 py-1">
+                                                    <span className="truncate text-[10px] font-medium text-muted-foreground/60">
+                                                        {item.modelRef}
+                                                    </span>
+                                                    <span className="shrink-0 text-[9px] font-bold text-muted-foreground/30 uppercase tracking-tight">
+                                                        {getStatusLabel(item.status)}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </section>
                                 )}
                             </div>
-                        ))}
+                        </ScrollArea>
+                        
+                        <div className="p-3 border-t border-border/40 bg-muted/10">
+                            <Button
+                                variant="outline"
+                                className="w-full h-8 text-xs font-bold border-border/40 hover:bg-background"
+                                onClick={() => onChangeView('marketplace')} // Redirect to marketplace or something relevant
+                            >
+                                <ShoppingBag className="w-3 h-3 mr-2" />
+                                {t('nav.marketplace')}
+                            </Button>
+                        </div>
                     </div>
-                    <div className="space-y-2">
-                        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/70">{t('sidebar.downloadsHistory')}</div>
-                        {allHistoryPreview.slice(0, 4).map((item) => (
-                            <div key={`history-${item.id}`} className="flex items-center justify-between gap-2 text-xs text-muted-foreground/80">
-                                <span className="truncate">{item.modelRef}</span>
-                                <span className="shrink-0">{getStatusLabel(item.status)}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
+                </PopoverContent>
+            </Popover>
         </nav>
     );
 };

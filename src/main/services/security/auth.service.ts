@@ -29,6 +29,7 @@ import { v4 as uuidv4 } from 'uuid';
  * Token data received from OAuth flows or browser session extraction.
  */
 export interface TokenData {
+    key?: string
     accessToken?: string
     refreshToken?: string
     sessionToken?: string
@@ -166,6 +167,29 @@ const SENSITIVE_METADATA_KEYS = new Set([
     'password',
     'passphrase',
 ]);
+const OAUTH_PROVIDER_HINTS = new Set([
+    'antigravity',
+    'codex',
+    'copilot',
+    'github',
+    'claude',
+]);
+const API_KEY_PROVIDER_HINTS = new Set([
+    'openai',
+    'anthropic',
+    'gemini',
+    'mistral',
+    'groq',
+    'together',
+    'perplexity',
+    'cohere',
+    'xai',
+    'deepseek',
+    'openrouter',
+    'nvidia',
+    'huggingface',
+]);
+type CredentialKind = 'oauth' | 'api_key';
 
 /**
  * AuthService - Simplified multi-account authentication service.
@@ -377,17 +401,34 @@ export class AuthService extends BaseService {
     async linkAccount(provider: string, tokenData: TokenData): Promise<LinkedAccountInfo> {
         const detected = this.detectProvider(provider, tokenData);
         const normalized = this.normalizeProvider(detected);
+        const credentialKind = this.resolveCredentialKind(provider, normalized, tokenData);
+        const normalizedTokenData = this.normalizeTokenDataForCredentialKind(
+            provider,
+            tokenData,
+            credentialKind
+        );
         const now = Date.now();
-        const email = tokenData.email ?? (tokenData.metadata?.email as string | undefined);
+        const email = normalizedTokenData.email ?? (normalizedTokenData.metadata?.email as string | undefined);
 
-        const existing = await this.findExistingAccount(normalized, email);
-        const account = this.createNewAccountObject({ provider: normalized, tokenData, existing, now, email });
+        const existing = credentialKind === 'api_key'
+            ? await this.findExistingApiKeyAccount(normalized, normalizedTokenData.accessToken)
+            : await this.findExistingAccount(normalized, email);
+        const account = this.applyCredentialKindToAccount(
+            this.createNewAccountObject({
+                provider: normalized,
+                tokenData: normalizedTokenData,
+                existing,
+                now,
+                email
+            }),
+            credentialKind
+        );
 
         await this.ensureActivation(normalized, account, !!existing);
 
         await this.databaseService.saveLinkedAccount(account);
         this.upsertLinkedAccountCache(account);
-        this.emitLinkEvents(normalized, account, tokenData);
+        this.emitLinkEvents(normalized, account, normalizedTokenData);
 
         return this.toPublicAccount(account);
     }
@@ -398,8 +439,14 @@ export class AuthService extends BaseService {
      */
     async linkAccountWithId(provider: string, accountId: string, tokenData: TokenData): Promise<LinkedAccountInfo> {
         const normalized = this.normalizeProvider(provider);
+        const credentialKind = this.resolveCredentialKind(provider, normalized, tokenData);
+        const normalizedTokenData = this.normalizeTokenDataForCredentialKind(
+            provider,
+            tokenData,
+            credentialKind
+        );
         const now = Date.now();
-        const email = tokenData.email ?? (tokenData.metadata?.email as string | undefined);
+        const email = normalizedTokenData.email ?? (normalizedTokenData.metadata?.email as string | undefined);
 
         if (!accountId) {
             return this.linkAccount(provider, tokenData);
@@ -412,7 +459,11 @@ export class AuthService extends BaseService {
             appLogger.warn('AuthService', `Provider mismatch for account ${accountId}: ${existing.provider} vs ${normalized}. Using canonical ${resolvedProvider}.`);
         }
 
-        if (!existing && this.shouldCoalesceSparseOAuthUpdate(resolvedProvider, tokenData)) {
+        if (
+            credentialKind === 'oauth'
+            && !existing
+            && this.shouldCoalesceSparseOAuthUpdate(resolvedProvider, normalizedTokenData)
+        ) {
             const providerAccounts = await this.getLinkedAccountsCached(resolvedProvider);
             const preferred = this.selectPreferredRichOAuthAccount(resolvedProvider, providerAccounts);
             if (preferred) {
@@ -424,21 +475,161 @@ export class AuthService extends BaseService {
             }
         }
 
-        const account = this.createNewAccountObject({
-            provider: resolvedProvider,
-            tokenData,
-            existing: existing ?? undefined,
-            now,
-            email,
-            preferredId: accountId
-        });
+        const account = this.applyCredentialKindToAccount(
+            this.createNewAccountObject({
+                provider: resolvedProvider,
+                tokenData: normalizedTokenData,
+                existing: existing ?? undefined,
+                now,
+                email,
+                preferredId: accountId
+            }),
+            credentialKind
+        );
 
         await this.ensureActivation(resolvedProvider, account, !!existing);
         await this.databaseService.saveLinkedAccount(account);
         this.upsertLinkedAccountCache(account);
-        this.emitLinkEvents(resolvedProvider, account, tokenData);
+        this.emitLinkEvents(resolvedProvider, account, normalizedTokenData);
 
         return this.toPublicAccount(account);
+    }
+
+    private resolveCredentialKind(
+        providerHint: string | undefined,
+        normalizedProvider: string,
+        tokenData: TokenData
+    ): CredentialKind {
+        const metadata = tokenData.metadata;
+        const authType = this.getMetadataString(metadata, 'auth_type', 'authType');
+        const metadataType = this.getMetadataString(metadata, 'type');
+        if (authType === 'api_key' || metadataType === 'api_key') {
+            return 'api_key';
+        }
+        if (authType === 'oauth' || metadataType === 'oauth') {
+            return 'oauth';
+        }
+
+        const normalizedHint = this.normalizeProviderHint(providerHint);
+        if (API_KEY_PROVIDER_HINTS.has(normalizedHint)) {
+            return 'api_key';
+        }
+        if (OAUTH_PROVIDER_HINTS.has(normalizedHint)) {
+            return 'oauth';
+        }
+
+        if (tokenData.refreshToken || tokenData.sessionToken || tokenData.expiresAt) {
+            return 'oauth';
+        }
+
+        if (this.supportsRichOAuthProfile(normalizedProvider)) {
+            return 'oauth';
+        }
+
+        if (this.looksLikeApiKeyToken(tokenData.accessToken)) {
+            return 'api_key';
+        }
+
+        return 'oauth';
+    }
+
+    private normalizeTokenDataForCredentialKind(
+        providerHint: string | undefined,
+        tokenData: TokenData,
+        credentialKind: CredentialKind
+    ): TokenData {
+        const normalizedAccessToken = tokenData.accessToken?.trim() || tokenData.key?.trim();
+        const metadata = this.sanitizeAccountMetadata(tokenData.metadata) ?? {};
+        const providerHintValue = this.normalizeProviderHint(providerHint);
+        const mergedMetadata: JsonObject = {
+            ...metadata,
+            auth_type: credentialKind,
+            ...(providerHintValue ? { provider_hint: providerHintValue } : {})
+        };
+        if (credentialKind === 'api_key') {
+            return {
+                key: normalizedAccessToken,
+                accessToken: normalizedAccessToken,
+                metadata: {
+                    ...mergedMetadata,
+                    type: 'api_key',
+                }
+            };
+        }
+
+        return {
+            ...tokenData,
+            key: tokenData.key?.trim(),
+            accessToken: normalizedAccessToken,
+            refreshToken: tokenData.refreshToken?.trim(),
+            sessionToken: tokenData.sessionToken?.trim(),
+            metadata: {
+                ...mergedMetadata,
+                type: typeof mergedMetadata.type === 'string' ? mergedMetadata.type : 'oauth',
+            }
+        };
+    }
+
+    private applyCredentialKindToAccount(
+        account: LinkedAccount,
+        credentialKind: CredentialKind
+    ): LinkedAccount {
+        if (credentialKind !== 'api_key') {
+            return account;
+        }
+
+        return {
+            ...account,
+            refreshToken: undefined,
+            sessionToken: undefined,
+            expiresAt: undefined,
+            scope: undefined,
+        };
+    }
+
+    private normalizeProviderHint(providerHint: string | undefined): string {
+        return String(providerHint ?? '')
+            .trim()
+            .toLowerCase()
+            .replace(/(_token|_key|_auth)$/g, '');
+    }
+
+    private getMetadataString(
+        metadata: JsonObject | undefined,
+        ...keys: string[]
+    ): string | undefined {
+        if (!metadata || typeof metadata !== 'object') {
+            return undefined;
+        }
+
+        for (const key of keys) {
+            const value = metadata[key];
+            if (typeof value === 'string' && value.trim().length > 0) {
+                return value.trim().toLowerCase();
+            }
+        }
+
+        return undefined;
+    }
+
+    private async findExistingApiKeyAccount(
+        provider: string,
+        accessToken: string | undefined
+    ): Promise<LinkedAccount | undefined> {
+        const normalizedToken = accessToken?.trim();
+        if (!normalizedToken) {
+            return undefined;
+        }
+
+        const accounts = await this.getLinkedAccountsCached(provider);
+        for (const account of accounts) {
+            const decryptedToken = this.decrypt(account.accessToken)?.trim();
+            if (decryptedToken && decryptedToken === normalizedToken) {
+                return account;
+            }
+        }
+
+        return undefined;
     }
 
     private async findExistingAccount(provider: string, email?: string): Promise<LinkedAccount | undefined> {
@@ -889,6 +1080,10 @@ export class AuthService extends BaseService {
     }
 
     private isMirroredOAuthShadowAccount(account: LinkedAccount): boolean {
+        if (this.isApiKeyAccount(account)) {
+            return false;
+        }
+
         if (!account.accessToken) {
             return false;
         }
@@ -905,6 +1100,27 @@ export class AuthService extends BaseService {
         }
 
         return !this.hasMeaningfulOAuthMetadata(account.metadata);
+    }
+
+    private isApiKeyAccount(
+        account: Pick<LinkedAccount, 'accessToken' | 'refreshToken' | 'sessionToken' | 'metadata'>
+    ): boolean {
+        const authType = this.getMetadataString(account.metadata, 'auth_type', 'authType');
+        const metadataType = this.getMetadataString(account.metadata, 'type');
+        if (authType === 'oauth' || metadataType === 'oauth') {
+            return false;
+        }
+
+        if (authType === 'api_key' || metadataType === 'api_key') {
+            return true;
+        }
+
+        const hasOauthTokens = Boolean(account.refreshToken) || Boolean(account.sessionToken);
+        if (hasOauthTokens) {
+            return false;
+        }
+
+        return this.looksLikeApiKeyToken(account.accessToken);
     }
 
     private hasMeaningfulOAuthMetadata(metadata?: JsonObject): boolean {
@@ -962,7 +1178,9 @@ export class AuthService extends BaseService {
             return undefined;
         }
 
-        const richAccounts = accounts.filter(account => !this.isMirroredOAuthShadowAccount(account));
+        const richAccounts = accounts.filter(
+            account => !this.isMirroredOAuthShadowAccount(account) && !this.isApiKeyAccount(account)
+        );
         if (richAccounts.length === 0) {
             return undefined;
         }
@@ -984,7 +1202,7 @@ export class AuthService extends BaseService {
 
         const scope = (tokenData?.scope ?? '').toLowerCase();
         const email = (tokenData?.email ?? '').toLowerCase();
-        const accessToken = tokenData?.accessToken ?? '';
+        const accessToken = tokenData?.accessToken ?? tokenData?.key ?? '';
 
         if (scope.includes('repo') || scope.includes('read:user') || email.endsWith('@github.com')) {
             return 'github';
@@ -999,6 +1217,26 @@ export class AuthService extends BaseService {
             return 'codex';
         }
         return 'unknown';
+    }
+
+    private looksLikeApiKeyToken(token?: string): boolean {
+        if (!token) {
+            return false;
+        }
+
+        const normalized = token.trim().toLowerCase();
+        if (!normalized) {
+            return false;
+        }
+
+        return normalized.startsWith('sk-')
+            || normalized.startsWith('sk_')
+            || normalized.startsWith('gsk_')
+            || normalized.startsWith('hf_')
+            || normalized.startsWith('nvapi-')
+            || normalized.startsWith('aiza')
+            || normalized.startsWith('pplx-')
+            || normalized.startsWith('xai-');
     }
 
     async getProviderHealth(provider?: string): Promise<ProviderHealthCheck[]> {
@@ -1119,11 +1357,14 @@ export class AuthService extends BaseService {
     }
 
     private normalizeProxyTokenData(tokenData: JsonObject): TokenData {
+        const key = typeof tokenData.key === 'string'
+            ? tokenData.key
+            : undefined;
         const accessToken = typeof tokenData.accessToken === 'string'
             ? tokenData.accessToken
             : typeof tokenData.access_token === 'string'
                 ? tokenData.access_token
-                : undefined;
+                : key;
         const refreshToken = typeof tokenData.refreshToken === 'string'
             ? tokenData.refreshToken
             : typeof tokenData.refresh_token === 'string'
@@ -1156,6 +1397,7 @@ export class AuthService extends BaseService {
             : tokenData;
 
         return {
+            key,
             accessToken,
             refreshToken,
             sessionToken,
@@ -1650,6 +1892,15 @@ export class AuthService extends BaseService {
     }
 
     private isExpired(account: LinkedAccount): boolean {
+        const normalizedProvider = this.normalizeProvider(account.provider ?? '');
+        // Copilot session/access tokens may remain renewable even when reported expiresAt is stale.
+        // Do not mark as expired while we still have renewable credentials.
+        if (
+            normalizedProvider === 'copilot'
+            && (Boolean(account.sessionToken) || Boolean(account.refreshToken) || Boolean(account.accessToken))
+        ) {
+            return false;
+        }
         if (!account.expiresAt) { return false; }
         // Add 5 minute buffer to consider it expired a bit early (safety margin)
         return Date.now() > (account.expiresAt - 300000);
@@ -1681,8 +1932,8 @@ export class AuthService extends BaseService {
             'google_token': 'antigravity',
             'gemini': 'antigravity',
             'gemini_key': 'antigravity',
-            'anthropic': 'claude',
-            'anthropic_key': 'claude',
+            'anthropic': 'anthropic',
+            'anthropic_key': 'anthropic',
             'claude': 'claude',
             'openai': 'codex',
             'openai_key': 'codex',

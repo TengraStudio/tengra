@@ -181,9 +181,9 @@ export class ModelRegistryService extends BaseService {
     private static readonly SNAPSHOT_MAX_AGE_MS = 5 * 60 * 1000;
     private static readonly NVIDIA_RECOVERY_ATTEMPTS = 2;
     private static readonly NVIDIA_RECOVERY_DELAY_MS = 1500;
-    private static readonly COPILOT_RECOVERY_ATTEMPTS = 2;
-    private static readonly COPILOT_RECOVERY_DELAY_MS = 1500;
-    private static readonly INITIAL_CACHE_WARMUP_DELAY_MS = 15000;
+    private static readonly COPILOT_RECOVERY_ATTEMPTS = 4;
+    private static readonly COPILOT_RECOVERY_DELAY_MS = 3000;
+    private static readonly INITIAL_CACHE_WARMUP_DELAY_MS = 500;
     private cachedModels: ModelProviderInfo[] = [];
     private lastUpdate: number = 0;
     private cacheRefreshPromise: Promise<void> | null = null;
@@ -272,7 +272,7 @@ export class ModelRegistryService extends BaseService {
         this.trackTelemetry('model-registry.cache.update.started');
         appLogger.debug('ModelRegistry', 'Updating remote model cache...');
         const remoteModels = await this.fetchRemoteModelsWithRecovery();
-        this.cachedModels = this.mergeConnectedProviderModels(remoteModels, this.cachedModels);
+        this.cachedModels = await this.mergeConnectedProviderModels(remoteModels, this.cachedModels);
         this.lastUpdate = Date.now();
         this.telemetry.lastSuccessfulUpdateAt = this.lastUpdate;
 
@@ -300,11 +300,11 @@ export class ModelRegistryService extends BaseService {
         });
     }
 
-    private mergeConnectedProviderModels(
+    private async mergeConnectedProviderModels(
         nextModels: ModelProviderInfo[],
         previousModels: ModelProviderInfo[]
-    ): ModelProviderInfo[] {
-        if (!this.shouldPreserveConnectedCopilotModels(nextModels, previousModels)) {
+    ): Promise<ModelProviderInfo[]> {
+        if (!await this.shouldPreserveConnectedCopilotModels(nextModels, previousModels)) {
             return nextModels;
         }
 
@@ -330,17 +330,23 @@ export class ModelRegistryService extends BaseService {
         return merged;
     }
 
-    private shouldPreserveConnectedCopilotModels(
+    private async shouldPreserveConnectedCopilotModels(
         nextModels: ModelProviderInfo[],
         previousModels: ModelProviderInfo[]
-    ): boolean {
-        const settings = this.deps.settingsService.getSettings();
-        if (settings.copilot?.connected !== true) {
-            return false;
-        }
+    ): Promise<boolean> {
+        // If we have any Copilot models in nextModels, we don't need to preserve previous ones
         if (nextModels.some(model => this.isCopilotProvider(model.providerCategory ?? model.provider))) {
             return false;
         }
+
+        const accounts = await this.deps.authService.getAccountsByProvider('copilot');
+        const hasLinkedAccount = accounts.length > 0;
+
+        if (!hasLinkedAccount) {
+            return false;
+        }
+
+        // If we have previous Copilot models, preserve them
         return previousModels.some(model => this.isCopilotProvider(model.providerCategory ?? model.provider));
     }
 
@@ -351,7 +357,11 @@ export class ModelRegistryService extends BaseService {
 
     private async fetchRemoteModelsWithRecovery(): Promise<ModelProviderInfo[]> {
         let models = await this.fetchRemoteModels();
-        if (!this.requiresProviderRecovery(models)) {
+        // Cold start path: never block UI on multi-attempt provider recovery.
+        if (this.cachedModels.length === 0 && this.lastUpdate === 0) {
+            return models;
+        }
+        if (!await this.requiresProviderRecovery(models)) {
             return models;
         }
 
@@ -360,7 +370,7 @@ export class ModelRegistryService extends BaseService {
         for (let attempt = 0; attempt < attempts; attempt += 1) {
             await this.delay(delayMs);
             models = await this.fetchRemoteModels();
-            if (!this.requiresProviderRecovery(models)) {
+            if (!await this.requiresProviderRecovery(models)) {
                 return models;
             }
         }
@@ -382,13 +392,13 @@ export class ModelRegistryService extends BaseService {
         );
     }
 
-    private requiresProviderRecovery(models: ModelProviderInfo[]): boolean {
-        return this.requiresNvidiaRecovery(models) || this.requiresCopilotRecovery(models);
+    private async requiresProviderRecovery(models: ModelProviderInfo[]): Promise<boolean> {
+        return await this.requiresNvidiaRecovery(models) || await this.requiresCopilotRecovery(models);
     }
 
-    private requiresNvidiaRecovery(models: ModelProviderInfo[]): boolean {
-        const settings = this.deps.settingsService.getSettings();
-        if (!settings.nvidia?.apiKey?.trim()) {
+    private async requiresNvidiaRecovery(models: ModelProviderInfo[]): Promise<boolean> {
+        const hasNvidiaToken = await this.resolveTokenFromAliases(['nvidia']);
+        if (!hasNvidiaToken) {
             return false;
         }
 
@@ -396,9 +406,11 @@ export class ModelRegistryService extends BaseService {
         return nvidiaModels.length <= 1;
     }
 
-    private requiresCopilotRecovery(models: ModelProviderInfo[]): boolean {
-        const settings = this.deps.settingsService.getSettings();
-        if (settings.copilot?.connected !== true) {
+    private async requiresCopilotRecovery(models: ModelProviderInfo[]): Promise<boolean> {
+        const accounts = await this.deps.authService.getAccountsByProvider('copilot');
+        const hasLinkedAccount = accounts.length > 0;
+
+        if (!hasLinkedAccount) {
             return false;
         }
 
@@ -497,31 +509,6 @@ export class ModelRegistryService extends BaseService {
         const tokenFromAccounts = await this.resolveTokenFromAliases(this.getTokenProviderAliases(provider));
         if (tokenFromAccounts) {
             return tokenFromAccounts;
-        }
-
-        const settings = this.deps.settingsService.getSettings();
-        const readKey = (value: JsonValue | undefined): string | undefined => {
-            if (!value || typeof value !== 'object' || Array.isArray(value)) {
-                return undefined;
-            }
-            const raw = value['apiKey'];
-            if (typeof raw !== 'string') {
-                return undefined;
-            }
-            const trimmed = raw.trim();
-            return trimmed.length > 0 ? trimmed : undefined;
-        };
-        if (provider === 'nvidia') {
-            return readKey(settings.nvidia);
-        }
-        if (provider === 'openai' || provider === 'codex') {
-            return readKey(settings.openai);
-        }
-        if (provider === 'claude') {
-            return readKey(settings.anthropic);
-        }
-        if (provider === 'antigravity') {
-            return readKey(settings.antigravity);
         }
         return undefined;
     }
@@ -729,6 +716,14 @@ export class ModelRegistryService extends BaseService {
         const withProviderMetadata = this.ensureProviderMetadata(model);
         const withCapabilities = this.ensureModelCapabilities(withProviderMetadata);
         const resolvedContextWindow = resolveContextWindowForModel(withCapabilities);
+        
+
+
+
+
+
+
+
         if (!resolvedContextWindow) {
             return withCapabilities;
         }
@@ -791,14 +786,33 @@ export class ModelRegistryService extends BaseService {
                 clearTimeout(this.initialWarmupTimeout);
                 this.initialWarmupTimeout = null;
             }
-            await this.updateCache();
-            return this.cachedModels;
+            const cacheUpdate = this.updateCache();
+            const settled = await Promise.race([
+                cacheUpdate.then(() => true),
+                this.delay(1200).then(() => false),
+            ]);
+            if (!settled && this.cachedModels.length === 0) {
+                return this.getFastFallbackModels();
+            }
+            return this.cachedModels.length > 0 ? this.cachedModels : this.getFastFallbackModels();
         }
 
         if (this.isSnapshotStale()) {
             void this.updateCache();
         }
         return this.cachedModels;
+    }
+
+    private getFastFallbackModels(): ModelProviderInfo[] {
+        const fallback: ModelProviderInfo[] = [
+            { id: 'gpt-5.4', name: 'GPT 5.4', provider: 'codex', sourceProvider: 'codex' },
+            { id: 'gpt-5.4-mini', name: 'GPT 5.4 Mini', provider: 'codex', sourceProvider: 'codex' },
+            { id: 'claude-sonnet-4.6', name: 'Claude Sonnet 4.6', provider: 'claude', sourceProvider: 'claude' },
+            { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai', sourceProvider: 'openai' },
+            { id: 'gemini-3.1-flash', name: 'Gemini 3.1 Flash', provider: 'antigravity', sourceProvider: 'antigravity' },
+            { id: 'copilot-chat', name: 'Copilot Chat', provider: 'copilot', sourceProvider: 'copilot' },
+        ];
+        return fallback.map(model => this.enrichModelMetadata(model));
     }
 
     /**

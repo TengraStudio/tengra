@@ -98,7 +98,7 @@ function useSpeechDevices(t: (key: string) => string) {
     const inputDevices = useMemo<DeviceOption[]>(
         () =>
             devices
-                .filter(d => d.kind === 'audioinput')
+                .filter(d => d.kind === 'audioinput' && d.deviceId)
                 .map(d => ({
                     value: d.deviceId,
                     label: d.label || `${t('speech.microphone')} ${d.deviceId.slice(0, 5)}`,
@@ -109,7 +109,7 @@ function useSpeechDevices(t: (key: string) => string) {
     const outputDevices = useMemo<DeviceOption[]>(
         () =>
             devices
-                .filter(d => d.kind === 'audiooutput')
+                .filter(d => d.kind === 'audiooutput' && d.deviceId)
                 .map(d => ({
                     value: d.deviceId,
                     label: d.label || `${t('speech.speaker')} ${d.deviceId.slice(0, 5)}`,

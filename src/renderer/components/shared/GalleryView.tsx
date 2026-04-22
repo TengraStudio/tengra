@@ -444,19 +444,19 @@ export function GalleryView({ language }: GalleryViewProps) {
                                         <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">{t('gallery.technicalParams')}</h4>
                                         <div className="flex flex-wrap gap-2">
                                             {previewImage?.metadata?.model && (
-                                                <MetadataBadge icon={Sparkles} label="Model" value={previewImage.metadata.model} />
+                                                <MetadataBadge icon={Sparkles} label={t('gallery.metadata.model')} value={previewImage.metadata.model} />
                                             )}
                                             {previewImage?.metadata?.width && previewImage.metadata.height && (
-                                                <MetadataBadge icon={ImageIcon} label="Resolution" value={`${previewImage.metadata.width}×${previewImage.metadata.height}`} />
+                                                <MetadataBadge icon={ImageIcon} label={t('gallery.metadata.resolution')} value={`${previewImage.metadata.width}×${previewImage.metadata.height}`} />
                                             )}
                                             {previewImage?.metadata?.steps && (
-                                                <MetadataBadge icon={RefreshCw} label="Steps" value={previewImage.metadata.steps} />
+                                                <MetadataBadge icon={RefreshCw} label={t('gallery.metadata.steps')} value={previewImage.metadata.steps} />
                                             )}
                                             {previewImage?.metadata?.cfg_scale && (
-                                                <MetadataBadge icon={Info} label="CFG Scale" value={previewImage.metadata.cfg_scale} />
+                                                <MetadataBadge icon={Info} label={t('gallery.metadata.cfgScale')} value={previewImage.metadata.cfg_scale} />
                                             )}
                                             {previewImage?.metadata?.seed && (
-                                                <MetadataBadge icon={Info} label="Seed" value={previewImage.metadata.seed} />
+                                                <MetadataBadge icon={Info} label={t('gallery.metadata.seed')} value={previewImage.metadata.seed} />
                                             )}
                                         </div>
                                     </div>

@@ -173,7 +173,7 @@ export function startWorkspaceInlineRename(
 ): void {
     updateState(workspaceId, prevState => ({
         ...prevState,
-        focusedRowKey: `${entry.mountId}:${entry.path}`,
+        focusedRowKey: `inline:${entry.mountId}:${entry.path}`,
         bulkAction: null,
         inlineAction: {
             type: 'rename',
@@ -190,7 +190,7 @@ export function startWorkspaceInlineCreate(
 ): void {
     updateState(workspaceId, prevState => ({
         ...prevState,
-        focusedRowKey: `${entry.mountId}:${entry.path}`,
+        focusedRowKey: `inline:${entry.mountId}:${entry.path}`,
         bulkAction: null,
         inlineAction: {
             type,

@@ -61,8 +61,9 @@ const MermaidDiagram = ({ code, t }: { code: string; t: TranslationFn }) => {
             try {
                 setLoading(true);
                 const mermaid = await loadMermaid();
-                const { svg } = await mermaid.render(id, code);
-                setSvg(DOMPurify.sanitize(svg));
+                const renderResult = await mermaid.render(id, code) as any;
+                const renderedSvg = typeof renderResult === 'string' ? renderResult : renderResult.svg;
+                setSvg(DOMPurify.sanitize(renderedSvg));
                 setError(null);
             } catch (err) {
                 const message = err instanceof Error ? err.message : String(err);

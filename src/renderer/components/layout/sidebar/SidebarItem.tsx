@@ -57,79 +57,89 @@ export interface SidebarItemProps
 /**
  * Individual item component for the sidebar navigation.
  */
-export const SidebarItem: React.FC<SidebarItemProps> = ({
-    icon: Icon,
-    label,
-    active = false,
-    onClick,
-    badge,
-    isCollapsed,
-    className,
-    labelClassName,
-    actions,
-    children,
-    variant = 'default',
-    iconClassName,
-    ...props
-}) => (
-    <div className="group/item relative px-2 py-0.5">
-        {active && (
-            <motion.div
-                className="absolute left-0 top-1/2 z-10 h-5 w-1 -translate-y-1/2 rounded-r bg-primary"
-                layout
-                initial={{ opacity: 0, x: -4 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -4 }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            />
-        )}
-        <Tooltip content={label} side="right" disabled={!isCollapsed}>
-            <button
-                {...props}
-                onClick={onClick}
-                aria-label={props['aria-label'] ?? label}
-                className={cn(sidebarItemVariants({ active, variant, isCollapsed, className }))}
-            >
-                <div className="relative flex items-center justify-center shrink-0">
-                    <Icon
-                        className={cn(
-                            'w-4 h-4 transition-all duration-200',
-                            active ? 'opacity-100 scale-110' : 'opacity-70 group-hover/item:opacity-100',
-                            iconClassName
-                        )}
-                    />
-                </div>
-
-                {!isCollapsed && (
-                    <>
-                        <span className={cn('flex-1 truncate text-left text-sm', labelClassName)}>{label}</span>
-                        {badge !== undefined && (
-                            <span
+export const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
+    (
+        {
+            icon: Icon,
+            label,
+            active = false,
+            onClick,
+            badge,
+            isCollapsed,
+            className,
+            labelClassName,
+            actions,
+            children,
+            variant = 'default',
+            iconClassName,
+            ...props
+        },
+        ref
+    ) => (
+        <div className="group/item relative px-2 py-0.5">
+            {active && (
+                <motion.div
+                    className="absolute left-0 top-1/2 z-10 h-5 w-1 -translate-y-1/2 rounded-r bg-primary"
+                    layout
+                    initial={{ opacity: 0, x: -4 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -4 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                />
+            )}
+            <Tooltip content={label} side="right" disabled={!isCollapsed}>
+                <button
+                    {...props}
+                    ref={ref}
+                    onClick={onClick}
+                    aria-label={props['aria-label'] ?? label}
+                    className={cn(sidebarItemVariants({ active, variant, isCollapsed, className }))}
+                >
+                    <div className="relative flex items-center justify-center shrink-0">
+                        {Icon && (
+                            <Icon
                                 className={cn(
-                                    'text-xxs px-1.5 py-0.5 rounded-full font-bold',
+                                    'w-4 h-4 transition-all duration-200',
                                     active
-                                        ? 'bg-primary/20 text-primary'
-                                        : 'bg-muted/50 text-muted-foreground'
+                                        ? 'opacity-100 scale-110'
+                                        : 'opacity-70 group-hover/item:opacity-100',
+                                    iconClassName
                                 )}
-                            >
-                                {badge}
-                            </span>
+                            />
                         )}
-                    </>
-                )}
-            </button>
-        </Tooltip>
+                    </div>
 
-        {/* Hover Actions */}
-        {!isCollapsed && actions && (
-            <div className={UI_PRIMITIVES.ACTION_BUTTON_GHOST}>
-                {actions}
-            </div>
-        )}
+                    {!isCollapsed && (
+                        <>
+                            <span className={cn('flex-1 truncate text-left text-sm', labelClassName)}>
+                                {label}
+                            </span>
+                            {badge !== undefined && (
+                                <span
+                                    className={cn(
+                                        'text-xxs px-1.5 py-0.5 rounded-full font-bold',
+                                        active
+                                            ? 'bg-primary/20 text-primary'
+                                            : 'bg-muted/50 text-muted-foreground'
+                                    )}
+                                >
+                                    {badge}
+                                </span>
+                            )}
+                        </>
+                    )}
+                </button>
+            </Tooltip>
 
-        {/* Inline children (like edit input) */}
-        {children}
-    </div>
+            {/* Hover Actions */}
+            {!isCollapsed && actions && (
+                <div className={UI_PRIMITIVES.ACTION_BUTTON_GHOST}>{actions}</div>
+            )}
+
+            {/* Inline children (like edit input) */}
+            {children}
+        </div>
+    )
 );
 
 SidebarItem.displayName = 'SidebarItem';

@@ -185,7 +185,8 @@ const QuotaDisplay: React.FC<QuotaDisplayProps> = memo(({ provider, quotas, acco
     if (provider === 'codex' || provider === 'openai') {
         const quota = quotas.codex.find(q => q.accountId === accountId) ?? quotas.codex[0];
         if (!quota?.usage?.dailyLimit) { return null; }
-        const percent = 100 - Math.round((quota.usage.dailyUsedPercent ?? 0));
+        if (typeof quota.usage.dailyUsedPercent !== 'number') { return null; }
+        const percent = Math.max(0, Math.min(100, 100 - Math.round(quota.usage.dailyUsedPercent)));
         return (
             <div className="flex items-center gap-2">
                 <div className="h-1.5 w-16 bg-muted/50 rounded-full overflow-hidden">

@@ -27,7 +27,6 @@ import {
     Power,
     RefreshCw,
     Server,
-
     ShieldCheck,
     Terminal,
     Trash,
@@ -37,6 +36,12 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const C_MCPSERVERSTAB_1 = "flex flex-col items-center justify-center rounded-xl border border-dashed border-border/50 py-12 text-muted-foreground/50 sm:flex-row";
+type McpActionPolicy = 'allow' | 'deny' | 'ask';
+
+interface MCPAction {
+    name: string;
+    description?: string;
+}
 
 interface MCPServer {
     id?: string;
@@ -55,6 +60,8 @@ interface MCPServer {
     source?: 'core' | 'native' | 'user' | 'remote' | 'external';
     permissionProfile?: McpPermissionProfile;
     permissions?: McpPermission[];
+    actions?: MCPAction[];
+    actionPermissions?: Record<string, McpActionPolicy>;
     updateAvailable?: boolean;
     isEnabled?: boolean;
     isAlive?: boolean;
@@ -63,12 +70,12 @@ interface MCPServer {
 interface ServerItemProps {
     server: MCPServer;
     t: (key: string, options?: Record<string, string | number>) => string;
-    onToggle: (serverId: string, enabled: boolean, isInternal: boolean) => void;
-    onDelete: (serverId: string, isInternal: boolean) => void;
+    onToggle: (serverId: string, enabled: boolean, isInternal: boolean) => Promise<void>;
+    onDelete: (serverId: string, isInternal: boolean) => Promise<void>;
     onEdit: (server: MCPServer) => void;
     isEditing: boolean;
     onCancelEdit: () => void;
-    onSaveEdit: (draftPermissions: McpPermission[]) => Promise<void>;
+    onSaveEdit: (draftPermissions: McpPermission[], draftActionPermissions: Record<string, McpActionPolicy>) => Promise<void>;
 }
 
 const ALL_PERMISSIONS: { id: McpPermission; icon: typeof FileText; label: string; color: string }[] = [
@@ -78,6 +85,23 @@ const ALL_PERMISSIONS: { id: McpPermission; icon: typeof FileText; label: string
     { id: 'network', icon: Globe, label: 'Network Access', color: 'text-sky-400' },
     { id: 'execute', icon: Terminal, label: 'Execute / System', color: 'text-amber-400' },
 ];
+
+const ACTION_POLICIES: { id: McpActionPolicy; label: string; className: string }[] = [
+    { id: 'allow', label: 'Allow', className: 'border-success/40 bg-success/10 text-success hover:bg-success/20' },
+    { id: 'ask', label: 'Ask', className: 'border-amber-400/40 bg-amber-400/10 text-amber-500 hover:bg-amber-400/20' },
+    { id: 'deny', label: 'Deny', className: 'border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20' },
+];
+
+function getActionPermission(
+    permissions: Record<string, McpActionPolicy> | undefined,
+    serverName: string,
+    actionName: string
+): McpActionPolicy {
+    return permissions?.[`${serverName}:${actionName}`]
+        ?? permissions?.[`${serverName}.${actionName}`]
+        ?? permissions?.[`mcp__${serverName}__${actionName}`]
+        ?? 'allow';
+}
 
 function ServerItem({
     server,
@@ -112,6 +136,14 @@ function ServerItem({
 
     // Component re-mounts on 'key' change (id or isEditing), so these reset naturally.
     const [draftPermissions, setDraftPermissions] = useState<McpPermission[]>(initialPermissions);
+    const initialActionPermissions = useMemo(() => {
+        const next: Record<string, McpActionPolicy> = {};
+        for (const action of server.actions ?? []) {
+            next[action.name] = getActionPermission(server.actionPermissions, server.name, action.name);
+        }
+        return next;
+    }, [server.actionPermissions, server.actions, server.name]);
+    const [draftActionPermissions, setDraftActionPermissions] = useState<Record<string, McpActionPolicy>>(initialActionPermissions);
 
     const isEnabled = server.enabled ?? server.isEnabled ?? false;
     const isActuallyActive = isEnabled && (server.isAlive ?? (server.status === 'active' || server.status === 'running'));
@@ -120,6 +152,13 @@ function ServerItem({
         setDraftPermissions(prev =>
             prev.includes(perm) ? prev.filter(p => p !== perm) : [...prev, perm]
         );
+    };
+
+    const setActionPolicy = (actionName: string, policy: McpActionPolicy) => {
+        setDraftActionPermissions(prev => ({
+            ...prev,
+            [actionName]: policy
+        }));
     };
 
     return (
@@ -180,7 +219,7 @@ function ServerItem({
                         size="sm"
                         onClick={(e) => {
                             e.stopPropagation();
-                            onToggle(server.id ?? server.name, isEnabled, isInternal);
+                            void onToggle(server.id ?? server.name, isEnabled, isInternal);
                         }}
                         className={cn(
                             'flex items-center gap-2 rounded-full h-8 px-3 transition-all',
@@ -212,7 +251,7 @@ function ServerItem({
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => onDelete(server.id ?? server.name, isInternal)}
+                                onClick={() => { void onDelete(server.id ?? server.name, isInternal); }}
                                 className="rounded-lg h-8 w-8 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                                 title={t('common.delete')}
                             >
@@ -233,44 +272,88 @@ function ServerItem({
                                 {t('settings.mcp.permissions.title').toUpperCase()}
                             </Label>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {ALL_PERMISSIONS.map((perm) => (
-                                    <div
-                                        key={perm.id}
-                                        role="button"
-                                        tabIndex={0}
-                                        onClick={() => togglePermission(perm.id)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                togglePermission(perm.id);
-                                            }
-                                        }}
-                                        className={cn(
-                                            "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all active:scale-[0.98]",
-                                            draftPermissions.includes(perm.id)
-                                                ? "bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/20 shadow-glow-primary-soft"
-                                                : "bg-background/20 border-border/40 text-muted-foreground opacity-70 hover:opacity-100 hover:border-border/60"
-                                        )}
-                                    >
-                                        <div className={cn(
-                                            "rounded-md p-1.5",
-                                            draftPermissions.includes(perm.id) ? "bg-primary/20" : "bg-muted/40"
-                                        )}>
-                                            <perm.icon className={cn("h-4 w-4", draftPermissions.includes(perm.id) ? perm.color : "")} />
+                            {isInternal ? (
+                                <div className="grid gap-2">
+                                    {(server.actions ?? []).map(action => (
+                                        <div
+                                            key={action.name}
+                                            className="flex flex-col gap-3 rounded-lg border border-border/40 bg-background/20 p-3 sm:flex-row sm:items-center sm:justify-between"
+                                        >
+                                            <div className="min-w-0">
+                                                <div className="truncate text-xs font-bold text-foreground">{action.name}</div>
+                                                {action.description && (
+                                                    <div className="mt-0.5 line-clamp-1 text-[10px] font-medium text-muted-foreground/60">
+                                                        {action.description}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex shrink-0 gap-1.5">
+                                                {ACTION_POLICIES.map(policy => (
+                                                    <Button
+                                                        key={policy.id}
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setActionPolicy(action.name, policy.id)}
+                                                        className={cn(
+                                                            "h-7 rounded-md px-2 text-[10px] font-black uppercase tracking-wide",
+                                                            draftActionPermissions[action.name] === policy.id
+                                                                ? policy.className
+                                                                : "border-border/40 bg-muted/20 text-muted-foreground hover:bg-muted"
+                                                        )}
+                                                    >
+                                                        {policy.label}
+                                                    </Button>
+                                                ))}
+                                            </div>
                                         </div>
-                                        <div className="flex-1 flex flex-col items-start text-left">
-                                            <span className="text-xs font-bold tracking-tight">{t(`settings.mcp.permissions.${perm.id}`)}</span>
-                                            <span className="text-[10px] opacity-60 line-clamp-1">{t(`settings.mcp.permissions.${perm.id}_desc`)}</span>
+                                    ))}
+                                    {(server.actions ?? []).length === 0 && (
+                                        <div className="rounded-lg border border-dashed border-border/40 p-4 text-xs font-medium text-muted-foreground/60">
+                                            No actions registered.
                                         </div>
-                                        <div className={cn(
-                                            "h-4 w-4 rounded-full border flex items-center justify-center transition-colors",
-                                            draftPermissions.includes(perm.id) ? "bg-primary border-primary" : "border-muted-foreground/30"
-                                        )}>
-                                            {draftPermissions.includes(perm.id) && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {ALL_PERMISSIONS.map((perm) => (
+                                        <div
+                                            key={perm.id}
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={() => togglePermission(perm.id)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    togglePermission(perm.id);
+                                                }
+                                            }}
+                                            className={cn(
+                                                "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all active:scale-[0.98]",
+                                                draftPermissions.includes(perm.id)
+                                                    ? "bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/20 shadow-glow-primary-soft"
+                                                    : "bg-background/20 border-border/40 text-muted-foreground opacity-70 hover:opacity-100 hover:border-border/60"
+                                            )}
+                                        >
+                                            <div className={cn(
+                                                "rounded-md p-1.5",
+                                                draftPermissions.includes(perm.id) ? "bg-primary/20" : "bg-muted/40"
+                                            )}>
+                                                <perm.icon className={cn("h-4 w-4", draftPermissions.includes(perm.id) ? perm.color : "")} />
+                                            </div>
+                                            <div className="flex-1 flex flex-col items-start text-left">
+                                                <span className="text-xs font-bold tracking-tight">{t(`settings.mcp.permissions.${perm.id}`)}</span>
+                                                <span className="text-[10px] opacity-60 line-clamp-1">{t(`settings.mcp.permissions.${perm.id}_desc`)}</span>
+                                            </div>
+                                            <div className={cn(
+                                                "h-4 w-4 rounded-full border flex items-center justify-center transition-colors",
+                                                draftPermissions.includes(perm.id) ? "bg-primary border-primary" : "border-muted-foreground/30"
+                                            )}>
+                                                {draftPermissions.includes(perm.id) && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex justify-end gap-2 pt-2 border-t border-border/10">
@@ -285,7 +368,7 @@ function ServerItem({
                             </Button>
                             <Button
                                 size="sm"
-                                onClick={() => { void onSaveEdit(draftPermissions); }}
+                                onClick={() => { void onSaveEdit(draftPermissions, draftActionPermissions); }}
                                 className="h-9 bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow-primary-soft px-5 font-bold"
                             >
                                 <RefreshCw className="mr-2 h-4 w-4" />
@@ -308,6 +391,7 @@ export function MCPServersTab(): JSX.Element {
     const loadServers = useCallback(async (): Promise<void> => {
         try {
             setLoading(true);
+            const settings = await window.electron.getSettings();
             const nextServers = await window.electron.mcp.list();
 
             if (Array.isArray(nextServers)) {
@@ -324,7 +408,8 @@ export function MCPServersTab(): JSX.Element {
                             enabled: isNative ? true : !!(candidate.isEnabled ?? candidate.enabled),
                             isAlive: !!(candidate.isAlive ?? (candidate.status === 'active')),
                             args: candidate.args || [],
-                            permissions: candidate.permissions
+                            permissions: candidate.permissions,
+                            actionPermissions: settings.mcpActionPermissions ?? {}
                         };
                     })
                 );
@@ -401,8 +486,29 @@ export function MCPServersTab(): JSX.Element {
         [loadServers, t]
     );
 
-    const handleSaveEdit = useCallback(async (serverId: string, permissions: McpPermission[]): Promise<void> => {
+    const handleSaveEdit = useCallback(async (
+        serverId: string,
+        permissions: McpPermission[],
+        actionPermissions: Record<string, McpActionPolicy>
+    ): Promise<void> => {
         try {
+            const targetServer = servers.find(server => server.id === serverId || server.name === serverId);
+            const isInternal = targetServer?.source === 'core' || targetServer?.source === 'native' || targetServer?.category === 'Internal';
+
+            if (isInternal && targetServer) {
+                await Promise.all((targetServer.actions ?? []).map(action =>
+                    window.electron.mcp.setActionPermission(
+                        targetServer.name,
+                        action.name,
+                        actionPermissions[action.name] ?? 'allow'
+                    )
+                ));
+                setEditingServerId(null);
+                await loadServers();
+                pushNotification({ type: 'success', message: t('common.saved') });
+                return;
+            }
+
             const settings = await window.electron.getSettings();
             const nextServers = (settings.mcpUserServers ?? []).map((server: MCPServer) =>
                 server.id === serverId || server.name === serverId
@@ -419,7 +525,7 @@ export function MCPServersTab(): JSX.Element {
         } catch (error) {
             appLogger.error('MCPServersTab', 'Failed to update MCP server', error as Error);
         }
-    }, [loadServers, t]);
+    }, [loadServers, servers, t]);
 
     return (
         <div className="flex flex-col space-y-4 p-6 pb-20">
@@ -456,7 +562,7 @@ export function MCPServersTab(): JSX.Element {
                             onEdit={(s) => { setEditingServerId(s.id ?? s.name); }}
                             isEditing={editingServerId === (server.id ?? server.name)}
                             onCancelEdit={() => { setEditingServerId(null); }}
-                            onSaveEdit={(perms) => handleSaveEdit(server.id ?? server.name, perms)}
+                            onSaveEdit={(perms, actionPerms) => handleSaveEdit(server.id ?? server.name, perms, actionPerms)}
                         />
                     ))}
 

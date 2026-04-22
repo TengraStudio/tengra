@@ -195,7 +195,7 @@ function useTerminalSession(
         const term = new XTerm({
             cursorBlink: true,
             fontSize: 13,
-            fontFamily: 'var(--font-sans)',
+            fontFamily: "'Cascadia Mono', Consolas, 'Courier New', monospace",
             theme: initialTheme,
             allowProposedApi: true,
             scrollback: 10000,
@@ -554,11 +554,16 @@ export const TerminalInstance = memo(({
         }
         const frameId = window.requestAnimationFrame(() => {
             safeFit();
+            try {
+                xtermRef.current?.focus();
+            } catch {
+                // Ignore focus failures when terminal is not yet ready.
+            }
         });
         return () => {
             window.cancelAnimationFrame(frameId);
         };
-    }, [isVisible, safeFit]);
+    }, [isVisible, safeFit, xtermRef]);
 
     useEffect(() => {
         if (!containerRef.current) {

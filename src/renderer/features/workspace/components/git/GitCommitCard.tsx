@@ -8,13 +8,9 @@
  * (at your option) any later version.
  */
 
-import { cn } from '@/lib/utils';
-
+import React from 'react';
+import { cn } from '@renderer/lib/utils';
 import { GitCommitInfo } from './types';
-
-/* Batch-02: Extracted Long Classes */
-const C_GITCOMMITCARD_1 = "w-10 h-10 rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0";
-
 
 interface CommitCardProps {
     commit: GitCommitInfo;
@@ -22,33 +18,34 @@ interface CommitCardProps {
     onSelect: (commit: GitCommitInfo) => void;
 }
 
-export const GitCommitCard: React.FC<CommitCardProps> = ({ commit, isSelected, onSelect }) => (
-    <button
-        onClick={() => { onSelect(commit); }}
-        className={cn(
-            "flex flex-col gap-3 p-5 rounded-2xl transition-all text-left group",
-            isSelected
-                ? "bg-primary/20 border-2 border-primary shadow-lg shadow-primary/10"
-                : "bg-muted/30 border border-border/50 hover:bg-muted/50 hover:border-primary/30"
-        )}
-    >
-        <div className="flex items-center justify-between w-full">
-            <div className={C_GITCOMMITCARD_1}>
-                {commit.author[0].toUpperCase()}
+export const GitCommitCard: React.FC<CommitCardProps> = ({ commit, isSelected, onSelect }) => {
+    const date = new Date(commit.date);
+    
+    return (
+        <div
+            onClick={() => onSelect(commit)}
+            className={cn(
+                "flex flex-col gap-1.5 p-3 cursor-pointer transition-all border-l-2 border-transparent select-none",
+                isSelected 
+                    ? "bg-primary/5 border-primary" 
+                    : "hover:bg-muted/50"
+            )}
+        >
+            <div className="flex items-center justify-between gap-2">
+                <span className={cn(
+                    "text-xs font-semibold truncate",
+                    isSelected ? "text-primary" : "text-foreground/90"
+                )}>
+                    {commit.message}
+                </span>
+                <span className="text-[10px] font-mono text-muted-foreground/50 shrink-0">
+                    {commit.hash.substring(0, 7)}
+                </span>
             </div>
-            <div className="text-xxs font-mono text-muted-foreground bg-muted/50 px-2 py-0.5 rounded group-hover:text-primary transition-colors">
-                {commit.hash.substring(0, 7)}
+            <div className="flex items-center justify-between text-[10px] text-muted-foreground/40 font-medium">
+                <span className="truncate max-w-[120px]">{commit.author}</span>
+                <span>{date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
             </div>
         </div>
-        <div className="flex-1 min-w-0">
-            <div className="text-sm text-foreground font-bold line-clamp-2 leading-tight mb-1">
-                {commit.message}
-            </div>
-            <div className="typo-caption text-muted-foreground">
-                <span className="font-semibold text-primary/70">{commit.author}</span>
-                <span className="mx-1.5">/</span>
-                {new Date(commit.date).toLocaleDateString()}
-            </div>
-        </div>
-    </button>
-);
+    );
+};

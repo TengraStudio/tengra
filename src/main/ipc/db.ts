@@ -19,10 +19,9 @@ import { serializeToIpc, validatedAs, validatedToJsonObject } from '@main/utils/
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withOperationGuard } from '@main/utils/operation-wrapper.util';
 import { DB_CHANNELS } from '@shared/constants/ipc-channels';
-import { DetailedStatsSchema, StatsPeriodSchema, TokenStatsSchema } from '@shared/schemas/statistics.schema';
+import { DetailedStatsSchema, StatsPeriodSchema } from '@shared/schemas/statistics.schema';
 import { Chat, Folder, Message, Prompt } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
-import { DbTokenStats } from '@shared/types/db-api';
 import { Workspace } from '@shared/types/workspace';
 import { BrowserWindow, ipcMain, IpcMainEvent, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
@@ -89,17 +88,6 @@ const SearchChatsOptionsSchema = z.object({
     limit: z.number().int().optional(),
 }).optional();
 
-const TokenUsageRecordSchema = z.object({
-    messageId: z.string().optional(),
-    chatId: z.string().min(1),
-    workspaceId: z.string().optional(),
-    provider: z.string().min(1),
-    model: z.string().min(1),
-    tokensSent: z.number().int().nonnegative(),
-    tokensReceived: z.number().int().nonnegative(),
-    costEstimate: z.number().optional(),
-});
-
 const WorkspaceSchema = z.object({
     id: z.string().optional(),
     title: z.string().min(1),
@@ -157,13 +145,6 @@ function registerBatchHandlers(databaseService: DatabaseService, validateSender:
         return serializeToIpc(await databaseService.chats.getAllChats());
     }, { defaultValue: [] }));
 
-    registerBatchableHandler('db:getChatById', createValidatedIpcHandler('db:getChatById', async (event, id: string) => {
-        validateSender(event);
-        return serializeToIpc(await databaseService.chats.getChat(id));
-    }, {
-        defaultValue: null,
-        argsSchema: z.tuple([IdSchema])
-    }));
 
     registerBatchableHandler('db:getMessages', createValidatedIpcHandler('db:getMessages', async (event, chatId: string) => {
         validateSender(event);
@@ -220,23 +201,7 @@ function registerChatHandlers(databaseService: DatabaseService, validateSender: 
         argsSchema: z.tuple([ChatSchema])
     }));
 
-    ipcMain.handle('db:pinChat', createValidatedIpcHandler('db:pinChat', async (event, id: string, isPinned: boolean) => {
-        validateSender(event);
-        await databaseService.chats.updateChat(id, { isPinned });
-        return { success: true };
-    }, {
-        defaultValue: { success: false },
-        argsSchema: z.tuple([IdSchema, z.boolean()])
-    }));
 
-    ipcMain.handle('db:favoriteChat', createValidatedIpcHandler('db:favoriteChat', async (event, id: string, isFavorite: boolean) => {
-        validateSender(event);
-        await databaseService.chats.updateChat(id, { isFavorite });
-        return { success: true };
-    }, {
-        defaultValue: { success: false },
-        argsSchema: z.tuple([IdSchema, z.boolean()])
-    }));
 
     ipcMain.handle('db:archiveChat', createValidatedIpcHandler('db:archiveChat', async (event, id: string, isArchived: boolean) => {
         validateSender(event);
@@ -247,14 +212,6 @@ function registerChatHandlers(databaseService: DatabaseService, validateSender: 
         argsSchema: z.tuple([IdSchema, z.boolean()])
     }));
 
-    ipcMain.handle('db:updateChatTitle', createValidatedIpcHandler('db:updateChatTitle', async (event, id: string, title: string) => {
-        validateSender(event);
-        await databaseService.chats.updateChat(id, { title });
-        return { success: true };
-    }, {
-        defaultValue: { success: false },
-        argsSchema: z.tuple([IdSchema, z.string().min(1)])
-    }));
 
     ipcMain.handle('db:deleteMessages', createValidatedIpcHandler('db:deleteMessages', async (event, chatId: string) => {
         validateSender(event);
@@ -272,11 +229,6 @@ function registerChatHandlers(databaseService: DatabaseService, validateSender: 
         argsSchema: z.tuple([SearchChatsOptionsSchema])
     }));
 
-    ipcMain.handle('db:clearHistory', createValidatedIpcHandler('db:clearHistory', async (event) => {
-        validateSender(event);
-        await withOperationGuard('db', () => databaseService.chats.deleteAllChats());
-        return { success: true };
-    }, { defaultValue: { success: false } }));
 
     ipcMain.handle('db:deleteAllChats', createValidatedIpcHandler('db:deleteAllChats', async (event) => {
         validateSender(event);
@@ -415,18 +367,6 @@ function registerWorkspaceHandlers(
         responseSchema: z.array(WorkspaceSchema)
     }));
 
-    ipcMain.handle('db:getWorkspaceById', createValidatedIpcHandler('db:getWorkspaceById', async (event, id: string) => {
-        validateSender(event);
-        const workspace = await databaseService.getWorkspace(id);
-        if (workspace) {
-            addWorkspaceAllowedRoots(workspace);
-        }
-        return workspace;
-    }, {
-        defaultValue: null,
-        argsSchema: z.tuple([IdSchema]),
-        responseSchema: WorkspaceSchema.nullable()
-    }));
 
     ipcMain.handle('db:updateWorkspace', createValidatedIpcHandler('db:updateWorkspace', async (event, id: string, updates: Partial<Workspace>) => {
         validateSender(event);
@@ -517,60 +457,20 @@ function registerFolderHandlers(databaseService: DatabaseService, validateSender
         argsSchema: z.tuple([IdSchema])
     }));
 
-    ipcMain.handle('db:moveChatToFolder', createValidatedIpcHandler('db:moveChatToFolder', async (event, chatId: string, folderId: string | null) => {
-        validateSender(event);
-        await databaseService.chats.updateChat(chatId, validatedAs<Partial<DbChat>>({ folderId: folderId ?? undefined }));
-        return { success: true };
-    }, {
-        defaultValue: { success: false },
-        argsSchema: z.tuple([IdSchema, z.string().nullable()])
-    }));
 }
 
 /**
  * Registers IPC handlers for token usage and analytics tracking.
  */
-function registerUsageHandlers(databaseService: DatabaseService, validateSender: (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => void) {
-    ipcMain.handle('db:recordUsage', createValidatedIpcHandler('db:recordUsage', async (event, usage: z.infer<typeof TokenUsageRecordSchema>) => {
-        validateSender(event);
-        await withOperationGuard('db', () => databaseService.system.addTokenUsage(usage));
-        return { success: true };
-    }, {
-        defaultValue: { success: false },
-        argsSchema: z.tuple([TokenUsageRecordSchema])
-    }));
+function registerUsageHandlers(_databaseService: DatabaseService, _validateSender: (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => void) {
 
-    ipcMain.handle('db:getUsageStats', createValidatedIpcHandler('db:getUsageStats', async (event, period: 'daily' | 'weekly' | 'monthly') => {
-        validateSender(event);
-        return await databaseService.system.getTokenUsageStats(period);
-    }, {
-        defaultValue: { totalSent: 0, totalReceived: 0, totalCost: 0, timeline: [], byProvider: {}, byModel: {} } as DbTokenStats,
-        argsSchema: z.tuple([z.enum(['daily', 'weekly', 'monthly'])])
-    }));
 }
 
 /**
  * Registers IPC handlers for vector search and message embeddings.
  */
-function registerVectorHandlers(databaseService: DatabaseService, embeddingService: EmbeddingService, validateSender: (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => void) {
-    ipcMain.handle('db:searchSimilarMessages', createValidatedIpcHandler('db:searchSimilarMessages', async (event, query: string, _limit?: number) => {
-        validateSender(event);
-        await embeddingService.generateEmbedding(query);
-        // Fallback to empty if not implemented in repo yet
-        return [];
-    }, {
-        defaultValue: [],
-        argsSchema: z.tuple([z.string().min(1), z.number().int().optional()])
-    }));
+function registerVectorHandlers(_databaseService: DatabaseService, _embeddingService: EmbeddingService, _validateSender: (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => void) {
 
-    ipcMain.handle('db:updateMessageVector', createValidatedIpcHandler('db:updateMessageVector', async (event, messageId: string, vector: number[]) => {
-        validateSender(event);
-        await databaseService.chats.updateMessage(messageId, { vector });
-        return { success: true };
-    }, {
-        defaultValue: { success: false },
-        argsSchema: z.tuple([IdSchema, z.array(z.number())])
-    }));
 }
 
 /**
@@ -623,20 +523,4 @@ function registerStatsHandlers(databaseService: DatabaseService, validateSender:
 
 
 
-    ipcMain.handle('db:getProviderStats', createValidatedIpcHandler('db:getProviderStats', async (event) => {
-        validateSender(event);
-        // Return default empty stats object instead of array to match DbTokenStats interface
-        return {
-            totalSent: 0,
-            totalReceived: 0,
-            totalCost: 0,
-            timeline: [],
-            byProvider: {},
-            byModel: {}
-        };
-    }, {
-        defaultValue: { totalSent: 0, totalReceived: 0, totalCost: 0, timeline: [], byProvider: {}, byModel: {} } as DbTokenStats,
-        argsSchema: z.tuple([]),
-        responseSchema: TokenStatsSchema
-    }));
 }

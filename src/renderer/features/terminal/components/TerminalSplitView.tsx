@@ -14,6 +14,7 @@ import { type MouseEventHandler, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { TerminalTab } from '@/types';
 
+import { TERMINAL_WORKSPACE_ISSUES_TAB_ID } from '../constants/terminal-panel-constants';
 import type { ResolvedTerminalAppearance, TerminalAppearancePreferences } from '../types/terminal-appearance';
 
 import { TerminalEmptyState } from './TerminalEmptyState';
@@ -83,10 +84,24 @@ export function TerminalSplitView({
     createDefaultTerminal,
     renderTabContent,
 }: TerminalSplitViewProps) {
+    const sessionTabs = tabs.filter(tab => tab.id !== TERMINAL_WORKSPACE_ISSUES_TAB_ID);
+    const splitTabIds = new Set(
+        splitView ? [splitView.primaryId, splitView.secondaryId] : []
+    );
+    const orderedSessionTabs = splitView
+        ? [
+            ...sessionTabs.filter(tab => splitTabIds.has(tab.id)),
+            ...sessionTabs.filter(tab => !splitTabIds.has(tab.id)),
+        ]
+        : sessionTabs;
+    const showSessionSidebar = !isGalleryView && sessionTabs.length > 1;
+
     return (
         <div className="flex-1 overflow-hidden relative" onContextMenu={onContextMenu}>
-            {!isGalleryView &&
-                tabs.map(tab => {
+            <div className="flex h-full min-w-0">
+                <div className="relative flex-1 min-w-0">
+                    {!isGalleryView &&
+                        tabs.map(tab => {
                     const customContent = renderTabContent?.(tab) ?? null;
                     const isVisible = splitView
                         ? tab.id === splitView.primaryId || tab.id === splitView.secondaryId
@@ -123,76 +138,137 @@ export function TerminalSplitView({
                             onTerminalInstanceChange={setTerminalInstance}
                         />
                     );
-                })}
-            {isGalleryView && tabs.length > 0 && (
-                <div className="absolute inset-0 p-2 overflow-auto">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 auto-rows-260">
-                        {tabs.map(tab => (
-                            <div
-                                key={tab.id}
-                                className={cn(
-                                    'relative rounded-lg border overflow-hidden bg-background/70',
-                                    activeTabId === tab.id
-                                        ? 'border-primary/60 shadow-primary-outline'
-                                        : 'border-border/70'
-                                )}
-                                onMouseDown={() => {
-                                    handleTabSelect(tab.id);
-                                }}
-                                onDoubleClick={() => {
-                                    handleTabSelect(tab.id);
-                                    setIsGalleryView(false);
-                                }}
-                            >
-                                <div className={C_TERMINALSPLITVIEW_1}>
-                                    <div className="text-11 truncate text-foreground/90">
-                                        {tab.name}
+                        })}
+                    {isGalleryView && tabs.length > 0 && (
+                        <div className="absolute inset-0 p-2 overflow-auto">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 auto-rows-260">
+                                {tabs.map(tab => (
+                                    <div
+                                        key={tab.id}
+                                        className={cn(
+                                            'relative rounded-lg border overflow-hidden bg-background/70',
+                                            activeTabId === tab.id
+                                                ? 'border-primary/60 shadow-primary-outline'
+                                                : 'border-border/70'
+                                        )}
+                                        onMouseDown={() => {
+                                            handleTabSelect(tab.id);
+                                        }}
+                                        onDoubleClick={() => {
+                                            handleTabSelect(tab.id);
+                                            setIsGalleryView(false);
+                                        }}
+                                    >
+                                        <div className={C_TERMINALSPLITVIEW_1}>
+                                            <div className="text-11 truncate text-foreground/90">
+                                                {tab.name}
+                                            </div>
+                                            {resolveTerminalTabMetadata(tab).closable !== false && (
+                                                <button
+                                                    onClick={event => {
+                                                        event.stopPropagation();
+                                                        closeTab(tab.id);
+                                                    }}
+                                                    className="p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="absolute inset-x-0 bottom-0 top-7">
+                                            {renderTabContent?.(tab) ?? (
+                                                <TerminalInstance
+                                                    tab={tab}
+                                                    isVisible={true}
+                                                    className="absolute inset-0"
+                                                    onActivate={() => {
+                                                        handlePaneActivate(tab.id);
+                                                    }}
+                                                    onClose={() => {
+                                                        closeTab(tab.id);
+                                                    }}
+                                                    workspacePath={workspacePath}
+                                                    appearance={terminalAppearance}
+                                                    resolvedAppearance={resolvedTerminalAppearance}
+                                                    onTerminalInstanceChange={setTerminalInstance}
+                                                />
+                                            )}
+                                        </div>
                                     </div>
-                                    {resolveTerminalTabMetadata(tab).closable !== false && (
-                                        <button
-                                            onClick={event => {
-                                                event.stopPropagation();
-                                                closeTab(tab.id);
-                                            }}
-                                            className="p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                                        >
-                                            <X className="w-3 h-3" />
-                                        </button>
-                                    )}
-                                </div>
-                                <div className="absolute inset-x-0 bottom-0 top-7">
-                                    {renderTabContent?.(tab) ?? (
-                                        <TerminalInstance
-                                            tab={tab}
-                                            isVisible={true}
-                                            className="absolute inset-0"
-                                            onActivate={() => {
-                                                handlePaneActivate(tab.id);
-                                            }}
-                                            onClose={() => {
-                                                closeTab(tab.id);
-                                            }}
-                                            workspacePath={workspacePath}
-                                            appearance={terminalAppearance}
-                                            resolvedAppearance={resolvedTerminalAppearance}
-                                            onTerminalInstanceChange={setTerminalInstance}
-                                        />
-                                    )}
-                                </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
+                        </div>
+                    )}
+                    {tabs.length === 0 && (
+                        <TerminalEmptyState
+                            title={emptyTitle}
+                            actionLabel={emptyActionLabel}
+                            onCreate={() => {
+                                void createDefaultTerminal();
+                            }}
+                        />
+                    )}
                 </div>
-            )}
-            {tabs.length === 0 && (
-                <TerminalEmptyState
-                    title={emptyTitle}
-                    actionLabel={emptyActionLabel}
-                    onCreate={() => {
-                        void createDefaultTerminal();
-                    }}
-                />
-            )}
+                {showSessionSidebar && (
+                    <aside className="w-44 shrink-0 border-l border-border/60 bg-background/95 p-1.5 overflow-y-auto">
+                        <div className="space-y-1">
+                            {orderedSessionTabs.map(tab => {
+                                const isActive = activeTabId === tab.id;
+                                const closable = resolveTerminalTabMetadata(tab).closable !== false;
+                                const splitRole = splitView
+                                    ? (tab.id === splitView.primaryId
+                                        ? 'primary'
+                                        : tab.id === splitView.secondaryId
+                                            ? 'secondary'
+                                            : null)
+                                    : null;
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        type="button"
+                                        onClick={() => {
+                                            handleTabSelect(tab.id);
+                                        }}
+                                        className={cn(
+                                            'w-full h-8 px-2 rounded-md flex items-center justify-between gap-2 text-xs transition-colors',
+                                            isActive
+                                                ? 'bg-accent/70 text-foreground'
+                                                : 'text-muted-foreground hover:bg-accent/40 hover:text-foreground'
+                                        )}
+                                    >
+                                        <span className="truncate text-left flex items-center gap-1.5">
+                                            {splitRole && (
+                                                <span
+                                                    className={cn(
+                                                        'inline-flex h-4 min-w-4 items-center justify-center rounded border text-xxxs px-1',
+                                                        splitRole === 'primary'
+                                                            ? 'border-primary/70 text-primary'
+                                                            : 'border-warning/70 text-warning'
+                                                    )}
+                                                >
+                                                    {splitRole === 'primary' ? 'A' : 'B'}
+                                                </span>
+                                            )}
+                                            <span className="truncate">{tab.name}</span>
+                                        </span>
+                                        {closable && (
+                                            <span
+                                                onClick={event => {
+                                                    event.stopPropagation();
+                                                    closeTab(tab.id);
+                                                }}
+                                                className="inline-flex h-4 w-4 items-center justify-center rounded hover:bg-destructive/20 hover:text-destructive"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </aside>
+                )}
+            </div>
         </div>
     );
 }

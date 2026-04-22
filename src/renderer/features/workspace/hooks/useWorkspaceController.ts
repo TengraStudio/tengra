@@ -8,7 +8,8 @@
  * (at your option) any later version.
  */
 
-import { useEffect, useState } from 'react';
+import { appLogger } from '@/utils/renderer-logger';
+import { useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
 import { Workspace } from '@/types';
@@ -28,47 +29,12 @@ export function useWorkspaceDetailsController({
 }: UseWorkspaceDetailsControllerProps) {
     const { t } = useTranslation(language);
     const ps = useWorkspaceState(workspace.id);
-    const { notify, logActivity } = ps;
+    const {  logActivity } = ps;
 
-    const wm = useWorkspaceManager({ workspace, notify, logActivity, t });
-
-    useEffect(() => {
-        const handleProgress = (_event: RendererDataValue, ...args: RendererDataValue[]) => {
-            const progress = args[0] as
-                | { workspaceId: string; status: string; current: number; total: number }
-                | undefined;
-            if (progress?.workspaceId === workspace.id) {
-                if (progress.status === 'Complete') {
-                    ps.notify(
-                        'success',
-                        t('workspaceDashboard.indexingComplete')
-                    );
-                } else if (progress.status === 'Failed') {
-                    ps.notify('error', t('workspaceDashboard.indexingFailed'));
-                } else {
-                    // Only notify at start and end
-                    if (progress.current === 1) {
-                        ps.notify(
-                            'info',
-                            t('workspaceDashboard.indexingStarted')
-                        );
-                    }
-                }
-            }
-        };
-
-        const listener = handleProgress as Parameters<typeof window.electron.ipcRenderer.on>[1];
-
-        window.electron.ipcRenderer.on('code:indexing-progress', listener);
-
-        return () => {
-            window.electron.ipcRenderer.off('code:indexing-progress', listener);
-        };
-    }, [workspace.id, ps, t]);
+    const wm = useWorkspaceManager({ workspace, logActivity, t });
 
     const { handleUpdateWorkspace } = useWorkspaceActions({
-        workspace,
-        notify,
+        workspace, 
         t,
     });
 
@@ -82,7 +48,6 @@ export function useWorkspaceDetailsController({
         const name = ps.entryName.trim();
 
         if (type !== 'delete' && !name) {
-            notify('error', t('workspace.errors.explorer.validationError'));
             return;
         }
 
@@ -116,7 +81,7 @@ export function useWorkspaceDetailsController({
             ps.setEntryModal(null);
             ps.setEntryName('');
         } catch (error) {
-            notify('error', `${t('common.error')}: ${error}`);
+            appLogger.error('useWorkspaceController', 'Failed to submit entry modal', error as Error);
         } finally {
             setEntryBusy(false);
         }

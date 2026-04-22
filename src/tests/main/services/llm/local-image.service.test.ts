@@ -12,7 +12,6 @@
 import { TelemetryService } from '@main/services/analysis/telemetry.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { type ImageGenerationOptions, type ImageGenerationRecord, LocalImageService, type LocalImageServiceDeps } from '@main/services/llm/local-image.service';
-import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
@@ -71,7 +70,6 @@ describe('LocalImageService Integration', () => {
             eventBusService: mockEventBusService,
             authService: { getAllAccountsFull: vi.fn().mockResolvedValue([]) } as never as AuthService,
             llmService: {} as never as LLMService,
-            quotaService: {} as never as QuotaService,
         };
 
         service = new LocalImageService(deps);

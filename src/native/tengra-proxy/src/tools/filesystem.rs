@@ -37,7 +37,10 @@ async fn extract_strings(args: Value) -> ToolDispatchResponse {
 
     match fs::read(path).await {
         Ok(bytes) => {
-            let re = regex::bytes::Regex::new(&format!(r"[[:print:]]{{{},}}", min_length)).unwrap();
+            let re = match regex::bytes::Regex::new(&format!(r"[[:print:]]{{{},}}", min_length)) {
+                Ok(re) => re,
+                Err(e) => return error_response(&format!("Failed to build extraction regex: {}", e)),
+            };
             let strings: Vec<String> = re
                 .find_iter(&bytes)
                 .map(|m| String::from_utf8_lossy(m.as_bytes()).into_owned())
@@ -74,22 +77,34 @@ async fn unzip_file(args: Value) -> ToolDispatchResponse {
     };
 
     for i in 0..archive.len() {
-        let mut file = archive.by_index(i).unwrap();
+        let mut file = match archive.by_index(i) {
+            Ok(file) => file,
+            Err(e) => return error_response(&format!("Failed to read zip entry {}: {}", i, e)),
+        };
         let outpath = match file.enclosed_name() {
             Some(path) => Path::new(dest_path).join(path),
             None => continue,
         };
 
         if (*file.name()).ends_with('/') {
-            std::fs::create_dir_all(&outpath).unwrap();
+            if let Err(e) = std::fs::create_dir_all(&outpath) {
+                return error_response(&format!("Failed to create directory from zip: {}", e));
+            }
         } else {
             if let Some(p) = outpath.parent() {
                 if !p.exists() {
-                    std::fs::create_dir_all(&p).unwrap();
+                    if let Err(e) = std::fs::create_dir_all(p) {
+                        return error_response(&format!("Failed to create zip parent directory: {}", e));
+                    }
                 }
             }
-            let mut outfile = std::fs::File::create(&outpath).unwrap();
-            std::io::copy(&mut file, &mut outfile).unwrap();
+            let mut outfile = match std::fs::File::create(&outpath) {
+                Ok(outfile) => outfile,
+                Err(e) => return error_response(&format!("Failed to create extracted file: {}", e)),
+            };
+            if let Err(e) = std::io::copy(&mut file, &mut outfile) {
+                return error_response(&format!("Failed to write extracted file: {}", e));
+            }
         }
     }
 

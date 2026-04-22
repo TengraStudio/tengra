@@ -22,7 +22,11 @@ import { Square } from 'lucide-react';
 import React from 'react';
 
 import { useQuickSwitch } from '@/features/workspace/hooks/useQuickSwitch';
-import { useTerminalLayout } from '@/features/workspace/hooks/useTerminalLayout';
+import {
+    COLLAPSED_EXPLORER_LEFT_INSET_PX,
+    EXPANDED_EXPLORER_LEFT_INSET_PX,
+    useTerminalLayout
+} from '@/features/workspace/hooks/useTerminalLayout';
 import { useWorkspaceBranchState } from '@/features/workspace/hooks/useWorkspaceBranchState';
 import { useWorkspaceShortcuts } from '@/features/workspace/hooks/useWorkspaceShortcuts';
 import { useWorkspaceTaskRunner } from '@/features/workspace/hooks/useWorkspaceTaskRunner';
@@ -72,6 +76,8 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
     const { onRender } = useWorkspaceProfiler();
     const [branchStateEnabled, setBranchStateEnabled] = React.useState(false);
     const [preflightResult, setPreflightResult] = React.useState<WorkspaceStartupPreflightResult | null>(null);
+    const [commandStripHeightPx, setCommandStripHeightPx] = React.useState(32);
+    const commandStripRef = React.useRef<HTMLDivElement | null>(null);
     const workspacePath = workspace.path;
 
     React.useEffect(() => {
@@ -106,8 +112,7 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
     const { ps, wm, handleUpdateWorkspace, submitEntryModal, entryBusy, t } =
         useWorkspaceDetailsController({ workspace, language });
     const taskRunner = useWorkspaceTaskRunner({
-        workspace,
-        notify: ps.notify,
+        workspace 
     });
 
     const tl = useTerminalLayout({
@@ -131,8 +136,7 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
         handleBranchSelect,
     } = useWorkspaceBranchState({
         workspacePath,
-        enabled: branchStateEnabled,
-        notify: ps.notify,
+        enabled: branchStateEnabled, 
         t,
     });
 
@@ -148,10 +152,9 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                 updatedAt: Date.now(),
             });
         } catch (error) {
-            appLogger.error('WorkspaceDetails', 'Logo upload failed', error as Error);
-            ps.notify('error', t('workspaceDashboard.updateFailed'));
+            appLogger.error('WorkspaceDetails', 'Logo upload failed', error as Error); 
         }
-    }, [handleUpdateWorkspace, ps, t, workspace.path]);
+    }, [handleUpdateWorkspace, workspace.path]);
 
     useWorkspaceShortcuts({
         wm,
@@ -167,18 +170,39 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
     });
 
     const openWorkspaceFile = React.useCallback(
-        (path: string, line?: number) => {
-            const name = path.split(/[\\/]/).pop() ?? 'file';
+        (path: string, line?: number, readOnly?: boolean) => {
             const mountId = wm.mounts[0]?.id;
             if (!mountId) {
                 return;
             }
+            const mountRoot = wm.mounts[0]?.rootPath ?? '';
+
+            const isAbsolutePath = (p: string) => (
+                /^[a-zA-Z]:[\\/]/.test(p) // Windows drive
+                || p.startsWith('\\\\') // UNC
+                || p.startsWith('/') // POSIX
+            );
+
+            const normalizedPath = (() => {
+                const raw = (path ?? '').trim();
+                if (!raw) {
+                    return raw;
+                }
+                if (isAbsolutePath(raw) || !mountRoot) {
+                    return raw;
+                }
+                const sep = mountRoot.includes('\\') ? '\\' : '/';
+                return `${mountRoot.replace(/[\\/]+$/g, '')}${sep}${raw.replace(/^[\\/]+/g, '')}`;
+            })();
+
+            const name = normalizedPath.split(/[\\/]/).pop() ?? 'file';
             const entry = {
                 mountId,
-                path,
+                path: normalizedPath,
                 name,
                 isDirectory: false,
                 initialLine: line,
+                readOnly: Boolean(readOnly),
             };
             void wm.openFile(entry);
             ps.setSelectedEntries([entry]);
@@ -225,6 +249,28 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
         };
     }, [workspace]);
 
+    React.useEffect(() => {
+        const element = commandStripRef.current;
+        if (!element) {
+            return;
+        }
+
+        const measure = () => {
+            const measuredHeight = Math.ceil(element.getBoundingClientRect().height);
+            setCommandStripHeightPx(Math.max(0, measuredHeight));
+        };
+
+        measure();
+        const observer = new ResizeObserver(() => {
+            measure();
+        });
+        observer.observe(element);
+
+        return () => {
+            observer.disconnect();
+        };
+    }, []);
+
     const commandStripStatus: 'ready' | 'busy' | 'error' = React.useMemo(() => {
         if (preflightResult?.issues.some(issue => issue.blocking || issue.severity === 'error')) {
             return 'error';
@@ -234,15 +280,19 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
         }
         return 'ready';
     }, [preflightResult, taskRunner.runningTaskCount]);
-
+    const commandStripLeftInsetPx = React.useMemo(
+        () => (ps.sidebarCollapsed ? COLLAPSED_EXPLORER_LEFT_INSET_PX : EXPANDED_EXPLORER_LEFT_INSET_PX),
+        [ps.sidebarCollapsed]
+    );
     React.useEffect(() => {
         const handler = (e: Event) => {
             const customEvent = e as CustomEvent<WorkspaceNavigationAction>;
             const action = customEvent.detail;
             if (action.type === 'open_file') {
-                openWorkspaceFile(action.path, action.line);
+                openWorkspaceFile(action.path, action.line, action.readOnly);
             } else if (action.type === 'open_diff') {
                 wm.setDashboardTab('git');
+                window.dispatchEvent(new CustomEvent('tengra:workspace-git-open-diff', { detail: { path: action.path } }));
             }
         };
 
@@ -317,6 +367,11 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                         onDeleteWorkspace={onDeleteWorkspace}
                         selectedEntry={ps.selectedEntries[0]}
                         onOpenFile={openWorkspaceFile}
+                        editorBottomInsetPx={
+                            ps.showTerminal
+                                ? Math.max(0, ps.terminalHeight + commandStripHeightPx - 1)
+                                : 0
+                        }
                     />
                 </React.Profiler>
 
@@ -341,6 +396,7 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                     sidebarCollapsed={ps.sidebarCollapsed}
                     terminalHeight={ps.terminalHeight} 
                     dockedTerminalRightInsetPx={tl.dockedTerminalRightInsetPx}
+                    dockedTerminalBottomOffsetPx={Math.max(0, commandStripHeightPx - 1)}
                     lastExpandedTerminalHeightRef={tl.lastExpandedTerminalHeightRef}
                     setShowTerminal={ps.setShowTerminal}
                     setIsMaximizedTerminal={tl.setIsMaximizedTerminal}
@@ -348,6 +404,9 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                     setTerminalHeight={ps.setTerminalHeight}
                     workspaceId={workspace.id}
                     workspacePath={workspacePath}
+                    activeFilePath={wm.activeTab?.path}
+                    activeFileContent={wm.activeTab?.content}
+                    activeFileType={wm.activeTab?.type}
                     tabs={tabs}
                     activeTabId={activeTabId}
                     setTabs={setTabs}
@@ -405,34 +464,49 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                     </div>
                 </div>
             )}
-            <CommandStrip
-                language={language}
-                branchName={currentBranchName}
-                branches={availableBranches}
-                isBranchLoading={isBranchLoading}
-                isBranchSwitching={isBranchSwitching}
-                notificationCount={ps.notifications.length}
-                status={commandStripStatus}
-                activeFilePath={wm.activeTab?.path}
-                activeFileContent={wm.activeTab?.content}
-                activeFileType={wm.activeTab?.type}
-                runningTaskCount={taskRunner.runningTaskCount}
-                onRunWorkspace={() => {
-                    void taskRunner.runDefaultTask();
-                }}
-                onBranchSelect={handleBranchSelect}
-                onCommandClick={() => {
-                    qs.setShowQuickSwitch(true);
-                    qs.setQuickSwitchQuery('');
-                    qs.setQuickSwitchIndex(0);
-                }}
-                onQuickSwitchClick={() => {
-                    qs.setShowQuickSwitch(true);
-                    qs.setQuickSwitchQuery('');
-                    qs.setQuickSwitchIndex(0);
-                }}
-                onMouseDown={tl.handleCommandStripResizeStart}
-            />
+            <div ref={commandStripRef} className="relative">
+                <div
+                    role="presentation"
+                    aria-hidden="true"
+                    className="absolute bottom-full z-20 h-3 cursor-ns-resize"
+                    style={{
+                        left: `${commandStripLeftInsetPx}px`,
+                        right: 0,
+                    }}
+                    onMouseDown={tl.handleCommandStripResizeStart}
+                />
+                <CommandStrip
+                    className="transition-[margin] duration-200"
+                    language={language}
+                    branchName={currentBranchName}
+                    branches={availableBranches}
+                    isBranchLoading={isBranchLoading}
+                    isBranchSwitching={isBranchSwitching}
+                    notificationCount={ps.notifications.length}
+                    status={commandStripStatus}
+                    activeFilePath={wm.activeTab?.path}
+                    activeFileContent={wm.activeTab?.content}
+                    activeFileType={wm.activeTab?.type}
+                    runningTaskCount={taskRunner.runningTaskCount}
+                    onRunWorkspace={() => {
+                        void taskRunner.runDefaultTask();
+                    }}
+                    onBranchSelect={handleBranchSelect}
+                    onCommandClick={() => {
+                        qs.setShowQuickSwitch(true);
+                        qs.setQuickSwitchQuery('');
+                        qs.setQuickSwitchIndex(0);
+                    }}
+                    onQuickSwitchClick={() => {
+                        qs.setShowQuickSwitch(true);
+                        qs.setQuickSwitchQuery('');
+                        qs.setQuickSwitchIndex(0);
+                    }}
+                    style={{
+                        marginLeft: `${commandStripLeftInsetPx}px`,
+                    }}
+                />
+            </div>
 
             <ShortcutHelpOverlay visible={qs.showShortcutHelp} t={t} />
 

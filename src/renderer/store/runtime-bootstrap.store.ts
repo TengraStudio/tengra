@@ -130,7 +130,7 @@ export function useRuntimeBootstrapStore<T>(
 
 export function hasBlockingRuntimeIssue(status: RuntimeBootstrapExecutionResult | null): boolean {
     if (!status) {
-        return true;
+        return false;
     }
 
     if (status.summary.blockingFailures > 0) {

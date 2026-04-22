@@ -1,4 +1,4 @@
-# Project Context: Tengra (Orbit)
+# Project Context: Tengra
 
 ## Overview
 Tengra is a high-performance desktop AI assistant built with Electron, React, and TypeScript. It features a multi-process architecture with a service-oriented backend and a strictly typed IPC bridge.
@@ -16,7 +16,8 @@ Tengra is a high-performance desktop AI assistant built with Electron, React, an
 - `@docs`: `docs/` (Documentation)
 - `@codex`: `.codex/` (AI-optimized context)
 
-## Recent Shifts
-- Termination warnings have been added to all rule files to ensure absolute compliance.
-- `LINT_ISSUES.md` introduced for systematic technical debt reduction.
+## Current Notes
+- Use `npm run lint` for the authoritative lint state.
+- Use `docs/RELEASE_CHECKLIST.md` for release preparation.
+- Keep retired services and removed scripts out of current setup documentation.
 

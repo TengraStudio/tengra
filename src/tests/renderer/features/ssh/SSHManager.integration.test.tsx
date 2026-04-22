@@ -67,11 +67,11 @@ describe('SSHManager integration', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'New Connection' }));
 
-        fireEvent.change(screen.getByPlaceholderText('192.168.1.1'), {
-            target: { value: '10.0.0.5' },
+        fireEvent.change(screen.getByPlaceholderText('127.0.0.1'), {
+            target: { value: '127.0.0.1' },
         });
         fireEvent.change(screen.getByPlaceholderText('root'), {
-            target: { value: 'agnes' },
+            target: { value: 'mockuser' },
         });
 
         fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
@@ -86,9 +86,9 @@ describe('SSHManager integration', () => {
             {
                 id: 'profile-1',
                 name: 'Production',
-                host: '10.0.0.5',
+                host: '127.0.0.1',
                 port: 22,
-                username: 'agnes',
+                username: 'mockuser',
             },
         ]);
 

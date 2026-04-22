@@ -12,8 +12,12 @@ import { AiEvidenceRecord, AiIntentClassification } from '@shared/types/ai-runti
 import { composeDeterministicAnswer, doesEvidenceSatisfyIntent, isLowSignalProgressContent } from '@shared/utils/ai-runtime.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
-import { Chat, Message } from '@/types';
+import { Message } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
+import { 
+    getChatSnapshot, 
+    updateChatInStore 
+} from '@/store/chat.store';
 
 import {
     buildAssistantPresentationMetadata,
@@ -29,8 +33,7 @@ import {
     persistToolExecutionMetadata,
     upsertMessageInChat,
 } from './message-persistence.util';
-import { StreamStreamingState } from './process-stream';
-import { hasAlternatingToolLoop } from './tool-loop.util';
+import { buildModelConversation, hasAlternatingToolLoop } from './tool-loop.util';
 
 export interface FinalizeTurnParams {
     assistantId: string;
@@ -39,10 +42,13 @@ export interface FinalizeTurnParams {
     messages: Message[];
     provider: string;
     model: string;
-    setChats: React.Dispatch<React.SetStateAction<Chat[]>>;
     intentClassification: AiIntentClassification;
     language?: string;
     reasonings?: string[];
+    content?: string;
+    reasoning?: string;
+    images?: string[];
+    sources?: string[];
 }
 
 export interface StreamResultLike {
@@ -84,8 +90,6 @@ export interface LoopSafetyParams {
     workspaceId: string | undefined;
     intentClassification: AiIntentClassification;
     currentAssistantId: string;
-    setStreamingStates: React.Dispatch<React.SetStateAction<Record<string, StreamStreamingState>>>;
-    setChats: React.Dispatch<React.SetStateAction<Chat[]>>;
     accumulatedToolCallMap: Map<string, NonNullable<Message['toolCalls']>[number]>;
     accumulatedToolMessages: Message[];
     evidenceRecords: AiEvidenceRecord[];
@@ -209,7 +213,6 @@ export async function finalizeToolTurn(params: FinalizeTurnParams): Promise<void
     await persistToolExecutionMetadata({
         chatId: params.chatId,
         assistantId: params.assistantId,
-        setChats: params.setChats,
         toolCalls: Array.from(params.callMap.values()),
         toolMessages: params.messages,
         selectedProvider: params.provider,
@@ -217,6 +220,10 @@ export async function finalizeToolTurn(params: FinalizeTurnParams): Promise<void
         intentClassification: params.intentClassification,
         language: params.language,
         reasonings: params.reasonings,
+        content: params.content,
+        reasoning: params.reasoning,
+        images: params.images,
+        sources: params.sources,
     });
 }
 
@@ -238,26 +245,30 @@ export async function handleMalformedToolCalls(params: MalformedToolCallParams):
         reasonings: params.result.reasonings || (params.result.finalReasoning ? [params.result.finalReasoning] : undefined),
     };
 
-    params.setChats((prev: Chat[]) => prev.map(chat => (
-        chat.id === params.chatId
-            ? {
-                ...chat,
-                isGenerating: false,
-                messages: upsertMessageInChat(chat.messages, params.assistantId, existing => ({
-                    id: params.assistantId,
-                    role: 'assistant',
-                    timestamp: existing?.timestamp ?? new Date(),
-                    provider: params.provider,
-                    model: params.model,
-                    ...existing,
-                    ...updates,
-                })),
-            }
-            : chat
-    )));
+    updateChatInStore(params.chatId, {
+        isGenerating: false,
+        messages: upsertMessageInChat(
+            getChatSnapshot().chats.find(c => c.id === params.chatId)?.messages || [], 
+            params.assistantId, 
+            existing => ({
+                id: params.assistantId,
+                role: 'assistant',
+                timestamp: existing?.timestamp ?? new Date(),
+                provider: params.provider,
+                model: params.model,
+                ...existing,
+                ...updates,
+            })
+        ),
+    });
 
     await persistAssistantMessage(params.assistantId, params.chatId, updates);
-    await finalizeToolTurn(params);
+    await finalizeToolTurn({
+        ...params,
+        content: assistantContent,
+        reasoning: params.result.finalReasoning,
+        reasonings: updates.reasonings,
+    });
 }
 
 export async function finalizeWithImages(params: ImageFinalizeParams): Promise<void> {
@@ -280,23 +291,22 @@ export async function finalizeWithImages(params: ImageFinalizeParams): Promise<v
         reasonings: params.result.reasonings || (params.result.finalReasoning ? [params.result.finalReasoning] : undefined),
     };
 
-    params.setChats((prev: Chat[]) => prev.map(chat => (
-        chat.id === params.chatId
-            ? {
-                ...chat,
-                isGenerating: false,
-                messages: upsertMessageInChat(chat.messages, params.assistantId, existing => ({
-                    id: params.assistantId,
-                    role: 'assistant',
-                    timestamp: existing?.timestamp ?? new Date(),
-                    provider: params.provider,
-                    model: params.model,
-                    ...existing,
-                    ...updates,
-                })),
-            }
-            : chat
-    )));
+    updateChatInStore(params.chatId, {
+        isGenerating: false,
+        messages: upsertMessageInChat(
+            getChatSnapshot().chats.find(c => c.id === params.chatId)?.messages || [], 
+            params.assistantId, 
+            existing => ({
+                id: params.assistantId,
+                role: 'assistant',
+                timestamp: existing?.timestamp ?? new Date(),
+                provider: params.provider,
+                model: params.model,
+                ...existing,
+                ...updates,
+            })
+        ),
+    });
 
     await persistAssistantMessage(params.assistantId, params.chatId, updates);
 }
@@ -394,7 +404,10 @@ export function evaluateLoopSafety(
         return { action: 'break', nextMessages: params.currentMessages };
     }
 
-    return { action: 'proceed', nextMessages: params.currentMessages };
+    const nextMessages = params.toolResults.length > 0
+        ? buildModelConversation(params.currentMessages, params.assistantMsg, params.toolResults)
+        : params.currentMessages;
+    return { action: 'proceed', nextMessages };
 }
 
 export async function finalizeLoopForcefully(
@@ -469,23 +482,22 @@ export async function finalizeLoopForcefully(
         metadata,
     };
 
-    params.setChats((prev: Chat[]) => prev.map(chat => (
-        chat.id === params.chatId
-            ? {
-                ...chat,
-                isGenerating: false,
-                messages: upsertMessageInChat(chat.messages, params.currentAssistantId, existing => ({
-                    id: params.currentAssistantId,
-                    role: 'assistant',
-                    timestamp: existing?.timestamp ?? new Date(),
-                    provider: params.selectedProvider,
-                    model: params.activeModel,
-                    ...existing,
-                    ...updates,
-                })),
-            }
-            : chat
-    )));
+    updateChatInStore(params.chatId, {
+        isGenerating: false,
+        messages: upsertMessageInChat(
+            getChatSnapshot().chats.find(c => c.id === params.chatId)?.messages || [], 
+            params.currentAssistantId, 
+            existing => ({
+                id: params.currentAssistantId,
+                role: 'assistant',
+                timestamp: existing?.timestamp ?? new Date(),
+                provider: params.selectedProvider,
+                model: params.activeModel,
+                ...existing,
+                ...updates,
+            })
+        ),
+    });
 
     await persistAssistantMessage(params.currentAssistantId, params.chatId, updates);
     await finalizeToolTurn({
@@ -495,9 +507,10 @@ export async function finalizeLoopForcefully(
         messages: params.accumulatedToolMessages,
         provider: params.selectedProvider,
         model: params.activeModel,
-        setChats: params.setChats,
         intentClassification: params.intentClassification,
         language: params.language,
         reasonings: assistantReasonings,
+        content: resolvedFallbackContent,
+        reasoning: params.assistantMsg.reasoning,
     });
 }

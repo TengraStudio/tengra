@@ -32,10 +32,8 @@ import {
 } from 'lucide-react';
 import React from 'react';
 
-/* Batch-02: Extracted Long Classes */
-const C_WORKSPACEHEADER_1 = "h-12 px-6 bg-foreground text-background hover:bg-foreground/90 font-medium flex items-center gap-2 shadow-lg shadow-black/5";
-const C_WORKSPACEHEADER_2 = "absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-foreground transition-colors z-10";
-
+const C_WORKSPACEHEADER_1 = "h-11 px-6 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold flex items-center gap-2 rounded-xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]";
+const C_WORKSPACEHEADER_2 = "absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors z-10";
 
 interface WorkspacesHeaderProps {
     title: string;
@@ -81,34 +79,35 @@ export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
     t,
 }) => {
     return (
-        <>
-            <div className="flex items-end justify-between border-b border-border/40 pb-6">
-                <div>
-                    <h1 className="text-3xl font-light text-foreground flex items-center gap-4">
+        <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="flex items-end justify-between border-b border-border/10 pb-8">
+                <div className="space-y-2">
+                    <h1 className="text-4xl font-bold tracking-tight text-foreground drop-shadow-sm">
                         {title}
                     </h1>
-                    <p className="text-muted-foreground mt-2 font-light">{subtitle}</p>
+                    <p className="text-muted-foreground/60 text-lg font-medium max-w-2xl">{subtitle}</p>
                 </div>
 
                 {selectedCount > 0 && (
-                    <div className="flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <span className="text-sm text-muted-foreground mr-2 font-light">
+                    <div className="flex items-center gap-3 p-1.5 rounded-2xl bg-muted/30 border border-border/20 shadow-xl animate-in fade-in slide-in-from-right-4 duration-300">
+                        <span className="text-xs font-bold text-muted-foreground px-3">
                             {t('common.itemsSelected', { count: selectedCount })}
                         </span>
+                        <div className="w-px h-6 bg-border/20" />
                         <Button
-                            variant="secondary"
+                            variant="ghost"
                             size="sm"
                             onClick={onBulkArchive}
-                            className="flex items-center gap-2"
+                            className="flex items-center gap-2 hover:bg-success/10 hover:text-success rounded-xl font-bold"
                         >
                             <Archive className="w-4 h-4" />
                             {t('workspaces.bulkArchive')}
                         </Button>
                         <Button
-                            variant="destructive"
+                            variant="ghost"
                             size="sm"
                             onClick={onBulkDelete}
-                            className="flex items-center gap-2"
+                            className="flex items-center gap-2 hover:bg-destructive/10 hover:text-destructive rounded-xl font-bold"
                         >
                             <Trash2 className="w-4 h-4" />
                             {t('workspaces.bulkDelete')}
@@ -122,27 +121,11 @@ export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
                     onClick={onNewWorkspace}
                     className={C_WORKSPACEHEADER_1}
                 >
-                    <Plus className="w-5 h-5" />
+                    <Plus className="w-5 h-5 stroke-[2.5px]" />
                     {newWorkspaceLabel}
                 </Button>
 
-                {totalCount > 0 && (
-                    <div className="flex items-center gap-2 ml-2">
-                        <Checkbox
-                            id="select-all"
-                            checked={selectedCount === totalCount && totalCount > 0}
-                            onCheckedChange={() => onToggleSelectAll()}
-                        />
-                        <Label
-                            htmlFor="select-all"
-                            className="text-sm font-light text-muted-foreground select-none cursor-pointer"
-                        >
-                            {t('common.selectAll')}
-                        </Label>
-                    </div>
-                )}
-
-                <div className="flex-1 relative group max-w-md">
+                <div className="flex-1 relative group">
                     <Search className={C_WORKSPACEHEADER_2} />
                     <Input
                         type="text"
@@ -151,48 +134,71 @@ export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                             setSearchQuery(e.target.value)
                         }
-                        className="h-12 pl-11 shadow-none bg-muted/30 border-transparent focus-visible:ring-1 focus-visible:ring-foreground/20"
+                        className="h-11 pl-11 shadow-sm bg-muted/10 border-border/40 rounded-xl focus-visible:ring-1 focus-visible:ring-primary/40 focus:bg-background/80 transition-all"
                     />
                 </div>
 
-                <div className="flex items-center gap-1 p-1 rounded-lg border border-border/40 bg-muted/20">
+                <div className="flex items-center gap-1.5 p-1.5 rounded-xl border border-border/40 bg-muted/20">
+                    {totalCount > 0 && (
+                        <div className="flex items-center gap-2 px-3 mr-1 hover:bg-muted/30 transition-colors rounded-lg py-1 cursor-pointer">
+                            <Checkbox
+                                id="select-all"
+                                checked={selectedCount === totalCount && totalCount > 0}
+                                onCheckedChange={() => onToggleSelectAll()}
+                                className="w-4 h-4 rounded shadow-none"
+                            />
+                            <Label
+                                htmlFor="select-all"
+                                className="text-xs font-bold text-muted-foreground/80 select-none cursor-pointer uppercase tracking-tighter"
+                            >
+                                {t('common.selectAll')}
+                            </Label>
+                        </div>
+                    )}
+                    
+                    <div className="w-px h-6 bg-border/20 mx-1" />
+
                     <Select value={listPreset} onValueChange={onListPresetChange}>
-                        <SelectTrigger className="h-9 w-140 px-2 typo-caption bg-background/70 border-border/40 text-muted-foreground focus:ring-0">
+                        <SelectTrigger className="h-8 w-[140px] px-2 text-xs font-bold bg-background/50 border-none text-muted-foreground focus:ring-0 rounded-lg">
                             <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="recent">
+                        <SelectContent className="rounded-xl border-border/40 shadow-2xl">
+                            <SelectItem value="recent" className="text-xs font-medium focus:bg-primary/10">
                                 {t('workspace.listPresetRecent')}
                             </SelectItem>
-                            <SelectItem value="oldest">
+                            <SelectItem value="oldest" className="text-xs font-medium focus:bg-primary/10">
                                 {t('workspace.listPresetOldest')}
                             </SelectItem>
-                            <SelectItem value="name-az">
+                            <SelectItem value="name-az" className="text-xs font-medium focus:bg-primary/10">
                                 {t('workspace.listPresetNameAz')}
                             </SelectItem>
-                            <SelectItem value="name-za">
+                            <SelectItem value="name-za" className="text-xs font-medium focus:bg-primary/10">
                                 {t('workspace.listPresetNameZa')}
                             </SelectItem>
                         </SelectContent>
                     </Select>
+
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={onExportList}
-                        className="p-2 h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-background rounded-lg transition-all"
                         title={t('aria.exportList')}
                     >
                         <Download className="w-4 h-4" />
                     </Button>
+
+                    <div className="w-px h-4 bg-border/20 mx-0.5" />
+
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => onViewModeChange('grid')}
                         className={cn(
-                            'p-2 h-9 w-9 transition-colors',
+                            'h-8 w-8 transition-all rounded-lg',
                             viewMode === 'grid'
-                                ? 'bg-background text-foreground shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground'
+                                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-background'
                         )}
                         title={t('aria.gridView')}
                     >
@@ -203,10 +209,10 @@ export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
                         size="icon"
                         onClick={() => onViewModeChange('list')}
                         className={cn(
-                            'p-2 h-9 w-9 transition-colors',
+                            'h-8 w-8 transition-all rounded-lg',
                             viewMode === 'list'
-                                ? 'bg-background text-foreground shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground'
+                                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-background'
                         )}
                         title={t('aria.listView')}
                     >
@@ -214,11 +220,10 @@ export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
                     </Button>
                 </div>
             </div>
-        </>
+        </div>
     );
 };
 
-// Workspace alias for the new naming convention
 export const WorkspaceHeader: React.FC<{
     title: string;
     subtitle: string;
@@ -242,5 +247,3 @@ export const WorkspaceHeader: React.FC<{
 }> = ({ onNewWorkspace, ...props }) => (
     <WorkspacesHeader {...props} onNewWorkspace={onNewWorkspace} />
 );
-
-

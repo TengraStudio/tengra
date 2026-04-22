@@ -12,9 +12,10 @@ import React, { isValidElement, lazy, memo, Suspense, useMemo } from 'react';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
+import { useThrottle } from '@/hooks/useThrottle';
 
 import { cn } from '@/lib/utils';
-import { Attachment } from '@/types';
+import { Attachment, ChatError, ToolCall } from '@/types';
 
 import { AttachmentList } from '../input/AttachmentList';
 import { MonacoBlock } from '../MonacoBlock';
@@ -43,6 +44,51 @@ const flattenNodeText = (node: React.ReactNode): string => {
     return '';
 };
 
+function normalizeMarkdownSpacing(input: string): string {
+    // Goal: keep markdown readable without huge vertical gaps.
+    // Keep fenced code blocks intact; only normalize regular text.
+    const src = (input ?? '').replace(/\r\n/g, '\n');
+    const lines = src.split('\n');
+
+    let inFence = false;
+    const out: string[] = [];
+    let buf: string[] = [];
+
+    const flushBuf = () => {
+        if (buf.length === 0) {
+            return;
+        }
+        let text = buf.join('\n');
+        // Collapse excessive blank lines.
+        text = text.replace(/\n{3,}/g, '\n\n');
+        // Tighten lists: remove extra blank lines between consecutive list items.
+        text = text.replace(
+            /(^|\n)(\s*(?:[-*+]|\d+\.)\s+[^\n]+)\n\s*\n(?=\s*(?:[-*+]|\d+\.)\s+)/gm,
+            '$1$2\n'
+        );
+        out.push(text);
+        buf = [];
+    };
+
+    for (const line of lines) {
+        const trimmed = line.trimStart();
+        if (trimmed.startsWith('```')) {
+            flushBuf();
+            out.push(line);
+            inFence = !inFence;
+            continue;
+        }
+        if (inFence) {
+            out.push(line);
+        } else {
+            buf.push(line);
+        }
+    }
+    flushBuf();
+
+    return out.join('\n');
+}
+
 export interface MarkdownContentProps {
     content: string;
     onSpeak?: (text: string) => void;
@@ -50,6 +96,8 @@ export interface MarkdownContentProps {
     isSpeaking?: boolean;
     onCodeConvert?: (imageUrl: string) => void;
     t: TranslationFn;
+    error?: ChatError | null;
+    toolCalls?: ToolCall[];
 }
 
 /**
@@ -70,96 +118,99 @@ export const MarkdownContent = memo(
         isSpeaking,
         onCodeConvert,
         t,
-    }: MarkdownContentProps) => (
-        <div className="markdown-body">
-            <Suspense fallback={<div className="text-sm text-muted-foreground">{t('common.loading')}</div>}>
-                <LazyReactMarkdown
-                    remarkPlugins={[remarkGfm, remarkMath]}
-                    rehypePlugins={[rehypeKatex]}
-                    components={{
-                        pre: ({ children }) => <>{children}</>,
-                        code: props => {
-                            const className = typeof props.className === 'string' ? props.className : undefined;
-                            const codeText = flattenNodeText(props.children);
-                            const shouldUseMonaco = (
-                                (typeof className === 'string' && className.includes('language-'))
-                                || codeText.includes('\n')
-                            );
-                            if (shouldUseMonaco && codeText.trim().length > 0) {
+    }: MarkdownContentProps) => {
+        const normalized = useMemo(() => normalizeMarkdownSpacing(content), [content]);
+        return (
+            <div className="markdown-body">
+                <Suspense fallback={<div className="text-sm text-muted-foreground">{t('common.loading')}</div>}>
+                    <LazyReactMarkdown
+                        remarkPlugins={[remarkGfm, remarkMath]}
+                        rehypePlugins={[rehypeKatex]}
+                        components={{
+                            pre: ({ children }) => <>{children}</>,
+                            code: props => {
+                                const className = typeof props.className === 'string' ? props.className : undefined;
+                                const codeText = flattenNodeText(props.children);
+                                const shouldUseMonaco = (
+                                    (typeof className === 'string' && className.includes('language-'))
+                                    || codeText.includes('\n')
+                                );
+                                if (shouldUseMonaco && codeText.trim().length > 0) {
+                                    return (
+                                        <MonacoBlock
+                                            className={className}
+                                            code={codeText}
+                                            isSpeaking={isSpeaking}
+                                            onStop={onStop}
+                                            onSpeak={onSpeak}
+                                            t={t}
+                                        />
+                                    );
+                                }
                                 return (
-                                    <MonacoBlock
-                                        className={className}
-                                        code={codeText}
-                                        isSpeaking={isSpeaking}
-                                        onStop={onStop}
-                                        onSpeak={onSpeak}
-                                        t={t}
-                                    />
+                                    <code className={className}>
+                                        {props.children}
+                                    </code>
                                 );
-                            }
-                            return (
-                                <code className={className}>
-                                    {props.children}
-                                </code>
-                            );
-                        },
-                        img: props => <MarkdownImage {...props} onCodeConvert={onCodeConvert} t={t} />,
-                        a: ({ href, children }) => (
-                            <a
-                                href={href}
-                                className="text-primary hover:underline underline-offset-4 font-medium"
-                                onClick={e => {
-                                    e.preventDefault();
-                                    if (href) {
-                                        window.electron.openExternal(href);
-                                    }
-                                }}
-                            >
-                                {children}
-                            </a>
-                        ),
-                        li: ({ children }) => {
-                            const isCheckbox =
-                                Array.isArray(children) &&
-                                children.some(
-                                    c =>
-                                        isValidElement(c) &&
-                                        (c as React.ReactElement<{ type?: string }>).props.type ===
-                                        'checkbox'
-                                );
-                            return (
-                                <li
-                                    className={cn(isCheckbox ? 'list-none -ms-4' : 'list-disc', 'my-1')}
+                            },
+                            img: props => <MarkdownImage {...props} onCodeConvert={onCodeConvert} t={t} />,
+                            a: ({ href, children }) => (
+                                <a
+                                    href={href}
+                                    className="text-primary hover:underline underline-offset-4 font-medium"
+                                    onClick={e => {
+                                        e.preventDefault();
+                                        if (href) {
+                                            window.electron.openExternal(href);
+                                        }
+                                    }}
                                 >
                                     {children}
-                                </li>
-                            );
-                        },
-                        input: ({ type, checked, ...props }) => {
-                            if (type === 'checkbox') {
+                                </a>
+                            ),
+                            li: ({ children }) => {
+                                const isCheckbox =
+                                    Array.isArray(children) &&
+                                    children.some(
+                                        c =>
+                                            isValidElement(c) &&
+                                            (c as React.ReactElement<{ type?: string }>).props.type ===
+                                            'checkbox'
+                                    );
                                 return (
-                                    <input
-                                        type="checkbox"
-                                        checked={checked}
-                                        readOnly
-                                        className="mr-2 accent-primary scale-110 align-middle"
-                                        {...props}
-                                    />
+                                    <li
+                                        className={cn(isCheckbox ? 'list-none -ms-4' : 'list-disc')}
+                                    >
+                                        {children}
+                                    </li>
                                 );
-                            }
-                            return <input {...props} />;
-                        },
-                        ul: ({ children }) => <ul className="ps-4 my-2 space-y-1">{children}</ul>,
-                        ol: ({ children }) => (
-                            <ol className="list-decimal ps-4 my-2 space-y-1">{children}</ol>
-                        ),
-                    }}
-                >
-                    {content}
-                </LazyReactMarkdown>
-            </Suspense>
-        </div>
-    )
+                            },
+                            input: ({ type, checked, ...props }) => {
+                                if (type === 'checkbox') {
+                                    return (
+                                        <input
+                                            type="checkbox"
+                                            checked={checked}
+                                            readOnly
+                                            className="mr-2 accent-primary scale-110 align-middle"
+                                            {...props}
+                                        />
+                                    );
+                                }
+                                return <input {...props} />;
+                            },
+                            ul: ({ children }) => <ul className="ps-4">{children}</ul>,
+                            ol: ({ children }) => (
+                                <ol className="list-decimal ps-4">{children}</ol>
+                            ),
+                        }}
+                    >
+                        {normalized}
+                    </LazyReactMarkdown>
+                </Suspense>
+            </div>
+        );
+    }
 );
 
 MarkdownContent.displayName = 'MarkdownContent';
@@ -203,10 +254,12 @@ export const MessageBubbleContent = memo(
         t,
         isUser,
     }: MessageBubbleContentProps) => {
+        const throttledContent = useThrottle(displayContent, isStreaming ? 100 : 0);
+        
         const markdownNode = useMemo(
             () => (
                 <MarkdownContent
-                    content={displayContent}
+                    content={throttledContent}
                     onSpeak={onSpeak}
                     onStop={onStop}
                     isSpeaking={isSpeaking}
@@ -214,7 +267,7 @@ export const MessageBubbleContent = memo(
                     t={t}
                 />
             ),
-            [displayContent, onSpeak, onStop, isSpeaking, onCodeConvert, t]
+            [throttledContent, onSpeak, onStop, isSpeaking, onCodeConvert, t]
         );
         const shouldUseStreamingPlainTextPreview = useMemo(() => {
             if (showRawMarkdown || isUser || !isStreaming) {

@@ -9,12 +9,11 @@
  */
 
 import * as fs from 'fs';
-import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
+import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
 import { CustomTheme, DEFAULT_THEME_PRESETS, ThemePreset } from '@shared/types/theme';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { app } from 'electron';
 
 interface ThemeStoreData {
     currentTheme: string;
@@ -36,7 +35,7 @@ class ThemeStore {
     };
 
     private constructor() {
-        this.storePath = path.join(app.getPath('userData'), 'theme-store.json');
+        this.storePath = getDataFilePath('themes', 'theme-store.json');
         // Initialize with defaults, call init() for async loading
         void this.init();
     }

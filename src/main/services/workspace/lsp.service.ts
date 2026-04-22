@@ -358,7 +358,9 @@ export class LspService extends BaseService {
                 status: this.instances.has(instanceKey)
                     ? 'running'
                     : this.hasRunnableCandidate(definition) ? 'available' : 'unavailable',
-                bundled: Boolean(definition.candidates[0]?.localBinary),
+                bundled: definition.candidates.some(
+                    candidate => Boolean(candidate.localBinary) && this.resolveCommand(candidate) !== null
+                ),
                 fileCount: files.filter(file => this.matchesDefinition(definition, file)).length,
             };
         });

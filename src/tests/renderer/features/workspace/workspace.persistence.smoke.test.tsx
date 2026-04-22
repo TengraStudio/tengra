@@ -71,8 +71,7 @@ const mountElectronMock = () => {
 
 const WorkspaceHarness: React.FC<{ workspace: Workspace }> = ({ workspace }) => {
     const manager = useWorkspaceManager({
-        workspace,
-        notify: vi.fn(),
+        workspace, 
         logActivity: vi.fn(),
         t: (key: string) => key,
     });

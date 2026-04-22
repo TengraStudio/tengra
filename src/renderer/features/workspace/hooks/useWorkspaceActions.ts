@@ -13,16 +13,13 @@ import { Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 export interface WorkspaceActionsProps {
-    workspace: Workspace;
-    notify: (type: 'success' | 'error' | 'info', message: string) => void;
+    workspace: Workspace; 
     t: (key: string) => string;
     onUpdateWorkspace?: (updates: Partial<Workspace>) => Promise<void>;
 }
 
 export function useWorkspaceActions({
-    workspace,
-    notify,
-    t,
+    workspace, 
     onUpdateWorkspace,
 }: WorkspaceActionsProps) {
     const { selectedWorkspace, setSelectedWorkspace, loadWorkspaces } = useWorkspaceSelection();
@@ -48,7 +45,6 @@ export function useWorkspaceActions({
             await loadWorkspaces();
         } catch (error) {
             appLogger.error('WorkspaceActions', 'Update failed', error as Error);
-            notify('error', t('workspaceDashboard.updateFailed'));
         }
     };
 

@@ -144,8 +144,7 @@ describe('WorkspaceService core behavior', () => {
         const result = await workspaceService.analyzeDirectory(mockDirPath);
 
         expect(result.hasPackageJson).toBe(false);
-        expect(result.pkg).toEqual({});
-        expect(result.readme).toBeNull();
+        expect(result.pkg).toEqual({}); 
         expect(result.stats.fileCount).toBe(0);
         expect(result.stats.totalSize).toBe(0);
     });

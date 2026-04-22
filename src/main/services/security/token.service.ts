@@ -13,6 +13,7 @@ import { DatabaseService, LinkedAccount } from '@main/services/data/database.ser
 import { AuthService } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
+import { SERVICE_INTERVALS } from '@shared/constants';
 
 export class TokenService extends BaseService {
     private static readonly PERFORMANCE_BUDGET = { fastMs: 30, executeMs: 260 };
@@ -33,6 +34,9 @@ export class TokenService extends BaseService {
 
     private intervals: NodeJS.Timeout[] = [];
     private unsubscribers: Array<() => void> = [];
+    private syncInFlight = new Map<string, Promise<void>>();
+    private recentSyncByProvider = new Map<string, number>();
+    private static readonly MIN_EVENT_SYNC_GAP_MS = 1500;
 
     constructor(
         private databaseService: DatabaseService,
@@ -40,6 +44,10 @@ export class TokenService extends BaseService {
         private eventBus: EventBusService,
         private options: {
             jobScheduler: JobSchedulerService;
+            getTokenRefreshIntervals?: () => {
+                tokenRefreshInterval?: number;
+                copilotRefreshInterval?: number;
+            };
         }
     ) {
         super('TokenService');
@@ -48,24 +56,43 @@ export class TokenService extends BaseService {
     async initialize(): Promise<void> {
         this.logInfo('TokenService initializing...');
 
-        await this.registerExistingAccountsForMonitoring();
+        await this.bootstrapProviderSync();
         this.subscribeToAccountEvents();
 
         if (this.options.jobScheduler) {
             this.options.jobScheduler.registerRecurringJob(
                 'token-refresh-sync',
                 async () => {
-                    await this.syncTokensFromProxy();
+                    await this.requestSyncFromProxy(undefined, 'scheduler:all');
                 },
-                () => 30000,
+                () => this.getGeneralSyncInterval(),
+                {
+                    persistState: false,
+                    runOnStart: false,
+                }
+            );
+            this.options.jobScheduler.registerRecurringJob(
+                'token-refresh-sync:copilot',
+                async () => {
+                    await this.requestSyncFromProxy('copilot', 'scheduler:copilot');
+                },
+                () => this.getCopilotSyncInterval(),
                 {
                     persistState: false,
                     runOnStart: false,
                 }
             );
         } else {
-            const syncInterval = setInterval(() => void this.syncTokensFromProxy(), 30000);
+            const syncInterval = setInterval(
+                () => void this.requestSyncFromProxy(undefined, 'interval:all'),
+                this.getGeneralSyncInterval()
+            );
+            const copilotSyncInterval = setInterval(
+                () => void this.requestSyncFromProxy('copilot', 'interval:copilot'),
+                this.getCopilotSyncInterval()
+            );
             this.intervals.push(syncInterval);
+            this.intervals.push(copilotSyncInterval);
         }
     }
 
@@ -82,11 +109,11 @@ export class TokenService extends BaseService {
     }
 
     async ensureFreshToken(provider: string, force: boolean = false): Promise<void> {
-        const normalizedProvider = provider.trim();
+        const normalizedProvider = this.normalizeProvider(provider);
         if (normalizedProvider.length === 0) {
             throw new Error('provider is required');
         }
-        await this.syncTokensFromProxy(normalizedProvider);
+        await this.requestSyncFromProxy(normalizedProvider, force ? 'ensure:force' : 'ensure');
         if (force) {
             this.logDebug(`Forced token sync requested for ${normalizedProvider} from tengra-proxy state`);
         }
@@ -170,34 +197,68 @@ export class TokenService extends BaseService {
 
     private subscribeToAccountEvents(): void {
         this.unsubscribers.push(
-            this.eventBus.on('account:linked', payload => void this.monitorAccountById(payload.accountId)),
-            this.eventBus.on('account:updated', payload => void this.monitorAccountById(payload.accountId)),
-            this.eventBus.on('account:unlinked', payload => void this.unregisterAccount(payload.accountId))
+            this.eventBus.on('account:linked', payload => void this.requestSyncFromProxy(payload.provider, 'event:linked')),
+            this.eventBus.on('account:updated', payload => void this.requestSyncFromProxy(payload.provider, 'event:updated')),
+            this.eventBus.on('account:unlinked', payload => void this.unregisterAccount(payload.accountId, payload.provider))
         );
     }
 
-    private async registerExistingAccountsForMonitoring(): Promise<void> {
+    private async bootstrapProviderSync(): Promise<void> {
         const accounts = await this.authService.getAllAccountsFull();
-        for (const account of accounts) {
-            await this.monitorAccount(account);
+        const providers = Array.from(new Set(accounts.map(account => this.normalizeProvider(account.provider))));
+        for (const provider of providers) {
+            await this.requestSyncFromProxy(provider, 'bootstrap');
         }
     }
 
-    private async monitorAccountById(accountId: string): Promise<void> {
-        const accounts = await this.authService.getAllAccountsFull();
-        const account = accounts.find(item => item.id === accountId);
-        if (!account) {
+    private async unregisterAccount(_accountId: string, provider?: string): Promise<void> {
+        await this.requestSyncFromProxy(provider, 'event:unlinked');
+        await this.authService.reloadLinkedAccountsCache();
+    }
+
+    private async requestSyncFromProxy(provider?: string, reason?: string): Promise<void> {
+        const normalizedProvider = provider ? this.normalizeProvider(provider) : undefined;
+        const key = normalizedProvider ?? '*';
+        const now = Date.now();
+        const isEventTriggered = reason?.startsWith('event:') ?? false;
+        const lastSyncedAt = this.recentSyncByProvider.get(key) ?? 0;
+        if (isEventTriggered && (now - lastSyncedAt) < TokenService.MIN_EVENT_SYNC_GAP_MS) {
             return;
         }
-        await this.monitorAccount(account);
+
+        const existing = this.syncInFlight.get(key);
+        if (existing) {
+            return existing;
+        }
+
+        const task = this.syncTokensFromProxy(normalizedProvider)
+            .finally(() => {
+                this.recentSyncByProvider.set(key, Date.now());
+                this.syncInFlight.delete(key);
+            });
+        this.syncInFlight.set(key, task);
+        return task;
     }
 
-    private async monitorAccount(account: LinkedAccount): Promise<void> {
-        await this.syncTokensFromProxy(account.provider);
+    private getGeneralSyncInterval(): number {
+        const configured = this.options.getTokenRefreshIntervals?.().tokenRefreshInterval;
+        return this.normalizeInterval(configured, SERVICE_INTERVALS.TOKEN_REFRESH);
     }
 
-    private async unregisterAccount(_accountId: string): Promise<void> {
-        await this.authService.reloadLinkedAccountsCache();
+    private getCopilotSyncInterval(): number {
+        const configured = this.options.getTokenRefreshIntervals?.().copilotRefreshInterval;
+        return this.normalizeInterval(configured, SERVICE_INTERVALS.COPILOT_REFRESH);
+    }
+
+    private normalizeInterval(value: number | undefined, fallback: number): number {
+        if (!Number.isFinite(value) || typeof value !== 'number') {
+            return fallback;
+        }
+        return Math.max(10000, Math.floor(value));
+    }
+
+    private normalizeProvider(provider: string): string {
+        return provider.trim().toLowerCase();
     }
 
     private shouldSyncMonitoredToken(

@@ -8,14 +8,17 @@
  * (at your option) any later version.
  */
 
+import { Label } from '@radix-ui/react-label';
 import type {
     WorkspaceAgentCommandPolicy,
     WorkspaceAgentPathPolicy,
 } from '@shared/types/workspace-agent-session';
-import { Brain } from 'lucide-react';
+import { Brain, Search, Star, Zap } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+// import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
     Select,
     SelectContent,
@@ -26,23 +29,23 @@ import {
 import { WorkspaceAgentPermissionEditor } from '@/features/workspace/workspace-agent/WorkspaceAgentPermissionEditor';
 import { cn } from '@/lib/utils';
 
-import { ModelCategory, ModelListItem } from '../types';
+import LogoAntigravity from '../../../assets/antigravity.svg?url';
+import LogoChatgpt from '../../../assets/chatgpt.svg?url';
+import LogoClaude from '../../../assets/claude.svg?url';
+import LogoCopilot from '../../../assets/copilot.svg?url';
+import LogoGemini from '../../../assets/gemini.png';
+import LogoHuggingFace from '../../../assets/huggingface.svg?url';
+import LogoNvidia from '../../../assets/nvidia.svg?url';
+import LogoOllama from '../../../assets/ollama.svg?url';
+import LogoOpenCode from '../../../assets/opencode.svg?url';
+import { ModelCategory } from '../types';
 
 import {
-    ModelSelectorCategoryList,
-    ModelSelectorHeader,
-    ModelSelectorModeTabs,
-    ModelSelectorSearch,
     SelectorChatMode,
 } from './model-selector/ModelSelectorSections';
+import { ModelSelectorItem } from './ModelSelectorItem';
 
-
-/* Batch-02: Extracted Long Classes */
-const C_MODELSELECTORMODAL_1 = "rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground";
-const C_MODELSELECTORMODAL_2 = "w-full rounded-xl border border-border/50 bg-muted/30 p-2.5 text-sm text-foreground/90 transition-colors focus:ring-1 focus:ring-primary/50";
-const C_MODELSELECTORMODAL_3 = "w-full rounded-xl border border-border/50 bg-muted/30 p-2.5 text-sm text-foreground/90 transition-colors focus:ring-1 focus:ring-primary/50";
-
-/** Minimum padding from viewport edges in pixels */
+/* Minimum padding from viewport edges in pixels */
 const VIEWPORT_PADDING = 16;
 
 export type ChatMode = 'instant' | 'thinking' | 'agent';
@@ -55,7 +58,7 @@ export type ThinkingLevel =
     | 'xhigh'
     | 'max'
     | string;
-type ModelFilter = 'local' | 'cloud' | 'free' | 'reasoning' | 'deprecated';
+
 const COMMAND_POLICY_OPTIONS: ReadonlyArray<WorkspaceAgentCommandPolicy> = [
     'blocked',
     'ask-every-time',
@@ -77,9 +80,127 @@ function isPathPolicy(value: string): value is WorkspaceAgentPathPolicy {
     return PATH_POLICY_OPTIONS.includes(value as WorkspaceAgentPathPolicy);
 }
 
+const ModelSelectorQuotaBanner: React.FC<{
+    activeCategory: ModelCategory;
+    activeCopilotQuota?: import('@shared/types/quota').CopilotQuota | null;
+    activeClaudeQuota?: import('@shared/types/quota').ClaudeQuota | null;
+    activeCodexUsage?: { usage: import('@shared/types/quota').CodexUsage } | null;
+    t: (key: string) => string;
+}> = ({ activeCategory, activeCopilotQuota, activeClaudeQuota, activeCodexUsage, t }) => {
+    const isCopilot = activeCategory.id === 'copilot';
+    const isCodex = activeCategory.id === 'codex';
+    const isClaude = activeCategory.id === 'claude';
+
+    if (!['antigravity', 'copilot', 'codex', 'claude'].includes(activeCategory.id)) { return null; }
+
+    const items: Array<{ label: string; percent: number; sublabel?: string; value?: string }> = [];
+
+    if (isCopilot && activeCopilotQuota) {
+        const limit = activeCopilotQuota.seat_breakdown?.total_seats ?? activeCopilotQuota.limit ?? 0;
+        const remaining = activeCopilotQuota.seat_breakdown
+            ? (limit - activeCopilotQuota.seat_breakdown.active_seats)
+            : activeCopilotQuota.remaining;
+        const percent = limit > 0 ? Math.round((remaining / limit) * 100) : 0;
+
+        const isSeatBased = !!activeCopilotQuota.seat_breakdown;
+        const labelText = isSeatBased ? t('statistics.seatsStatus') : ''; // Remove label if not seat based
+
+        items.push({
+            label: labelText,
+            percent,
+            value: `${remaining} / ${limit}`
+        });
+    }
+
+    if (isCodex && activeCodexUsage?.usage) {
+        const usage = activeCodexUsage.usage;
+        if (typeof usage.dailyUsedPercent === 'number') {
+            items.push({
+                label: t('statistics.dailyStatus'),
+                percent: Math.max(0, Math.min(100, 100 - usage.dailyUsedPercent)),
+                sublabel: '24h window'
+            });
+        }
+        if (typeof usage.weeklyUsedPercent === 'number') {
+            items.push({
+                label: t('statistics.weeklyStatus'),
+                percent: Math.max(0, Math.min(100, 100 - usage.weeklyUsedPercent)),
+                sublabel: '7d window'
+            });
+        }
+    }
+
+    if (isClaude && activeClaudeQuota?.fiveHour) {
+        items.push({
+            label: t('statistics.usageStatus'),
+            percent: 100 - activeClaudeQuota.fiveHour.utilization,
+            sublabel: '5h window'
+        });
+    }
+
+    if (items.length === 0) { return null; }
+
+    return (
+        <div className="mx-2 mb-4 mt-1 px-4 py-2.5 rounded-xl border border-primary/10 bg-primary/[0.02] backdrop-blur-sm shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)]">
+            <div className="flex items-center gap-3 mb-2">
+                <Brain className="w-3 h-3 text-primary/50" />
+                <span className="text-[9px] font-black text-primary/40 uppercase tracking-widest">{t('statistics.quotaStatus')}</span>
+            </div>
+            <div className="space-y-3">
+                {items.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-4 group">
+                        {(item.label || item.value) && (
+                            <div className="flex flex-col min-w-[80px]">
+                                {item.label && (
+                                    <span className="text-[9px] font-bold text-muted-foreground/50 uppercase tracking-tight italic leading-none mb-0.5">
+                                        {item.label}
+                                    </span>
+                                )}
+                                {item.value && (
+                                    <span className="text-[10px] font-black text-foreground/80 tabular-nums leading-none">
+                                        {item.value}
+                                    </span>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="flex-1 flex items-center gap-3">
+                            <div className="relative flex-1 h-1.5 rounded-full bg-muted/20 overflow-hidden border border-border/5 shadow-inner">
+                                <div
+                                    className={cn(
+                                        "h-full transition-all duration-1000 ease-out relative z-10",
+                                        item.percent <= 10 ? 'bg-destructive' : item.percent <= 30 ? 'bg-warning' : 'bg-primary'
+                                    )}
+                                    style={{ width: `${item.percent}%` }}
+                                />
+                                <div
+                                    className={cn(
+                                        "absolute inset-0 opacity-20 blur-[2px]",
+                                        item.percent <= 10 ? 'bg-destructive' : item.percent <= 30 ? 'bg-warning' : 'bg-primary'
+                                    )}
+                                    style={{ width: `${item.percent}%` }}
+                                />
+                            </div>
+
+                            <div className={cn(
+                                "flex items-baseline gap-1.5 min-w-[36px] justify-end",
+                                item.percent <= 10 ? 'text-destructive' : item.percent <= 30 ? 'text-warning' : 'text-primary'
+                            )}>
+                                <span className="text-[11px] font-black tabular-nums italic">
+                                    {item.percent}%
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 interface ModelSelectorModalProps {
     isOpen: boolean;
-    initialTab?: 'models' | 'reasoning' | 'permissions';
+    initialTab?: 'models' | 'permissions';
     onClose: () => void;
     categories: ModelCategory[];
     selectedModels: Array<{ provider: string; model: string }>;
@@ -93,170 +214,27 @@ interface ModelSelectorModalProps {
     t: (key: string) => string;
     chatMode?: SelectorChatMode;
     onChatModeChange?: (mode: SelectorChatMode) => void;
-    thinkingLevel?: string;
+    thinkingLevel?: ThinkingLevel;
     onThinkingLevelChange?: (modelId: string, level: string) => void;
-    onConfirmSelection?: () => void;
+
     copilotQuota?: { accounts: Array<import('@shared/types/quota').CopilotQuota & { accountId?: string; email?: string; isActive?: boolean }> } | null;
     activeCopilotAccountId?: string | null;
     activeCopilotAccountEmail?: string | null;
+    activeCopilotQuota?: (import('@shared/types/quota').CopilotQuota & { accountId?: string; email?: string; isActive?: boolean }) | null;
     activeClaudeQuota?: import('@shared/types/quota').ClaudeQuota | null;
     activeCodexUsage?: ({ usage: import('@shared/types/quota').CodexUsage; accountId?: string; email?: string } & { isActive?: boolean }) | null;
     activeAntigravityQuota?: import('@shared/types/quota').QuotaResponse | null;
     permissionPolicy?: import('@shared/types/workspace-agent-session').WorkspaceAgentPermissionPolicy;
     onUpdatePermissionPolicy?: (policy: import('@shared/types/workspace-agent-session').WorkspaceAgentPermissionPolicy) => void;
+    triggerRef?: React.RefObject<HTMLElement>;
 }
 
-const THINKING_LEVEL_LABEL_KEYS: Record<ThinkingLevel, string> = {
-    none: 'modelSelector.reasoningLevels.none',
-    minimal: 'modelSelector.reasoningLevels.minimal',
-    low: 'modelSelector.reasoningLevels.low',
-    medium: 'modelSelector.reasoningLevels.medium',
-    high: 'modelSelector.reasoningLevels.high',
-    xhigh: 'modelSelector.reasoningLevels.max',
-};
 
-const MODEL_FILTER_OPTIONS: ReadonlyArray<readonly [ModelFilter, string]> = [
-    ['local', 'modelSelector.local'],
-    ['cloud', 'modelSelector.cloud'],
-    ['free', 'modelSelector.free'],
-    ['reasoning', 'modelSelector.reasoning'],
-    ['deprecated', 'modelSelector.deprecated']
-];
 
-interface ModelSelectorReasoningPanelProps {
-    canConfirm: boolean;
-    categories: ModelCategory[];
-    currentModelInfo: ModelListItem | null;
-    currentModelThinkingLevels: string[] | null;
-    handleCancelPending: () => void;
-    handleConfirmSelection: () => void;
-    handlePendingThinkingLevelChange: (level: string) => void;
-    onThinkingLevelChange?: (modelId: string, level: string) => void;
-    pendingModel: { provider: string; id: string } | null;
-    pendingModelThinkingLevels: string[] | null;
-    pendingThinkingLevel: string | null;
-    selectedModel: string;
-    t: (key: string) => string;
-    thinkingLevel: string;
-}
 
-const ModelSelectorReasoningPanel: React.FC<ModelSelectorReasoningPanelProps> = ({
-    canConfirm,
-    categories,
-    currentModelInfo,
-    currentModelThinkingLevels,
-    handleCancelPending,
-    handleConfirmSelection,
-    handlePendingThinkingLevelChange,
-    onThinkingLevelChange,
-    pendingModel,
-    pendingModelThinkingLevels,
-    pendingThinkingLevel,
-    selectedModel,
-    t,
-    thinkingLevel,
-}) => {
-    if (pendingModel && pendingModelThinkingLevels && pendingModelThinkingLevels.length > 0) {
-        return (
-            <div className="p-4">
-                <div className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
-                    <div className="mb-1 flex items-center gap-2">
-                        <Brain className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-medium text-foreground">
-                            {t('modelSelector.selectReasoningLevel')}
-                        </span>
-                    </div>
-                    <p className="typo-caption text-muted-foreground">
-                        {t('modelSelector.reasoningRequired')}
-                    </p>
-                </div>
-                <div className="mb-3 typo-caption font-medium text-muted-foreground">
-                    {categories
-                        .flatMap(category => (Array.isArray(category.models) ? category.models : []))
-                        .find(model => model.id === pendingModel.id)?.label ?? pendingModel.id}
-                </div>
-                <div className="mb-4 flex flex-wrap gap-2">
-                    {pendingModelThinkingLevels.map(level => {
-                        const isActive = pendingThinkingLevel === level;
-                        return (
-                            <button
-                                key={level}
-                                onClick={() => handlePendingThinkingLevelChange(level)}
-                                className={cn(
-                                    'rounded-lg border px-4 py-2 text-sm font-medium transition-all',
-                                    isActive
-                                        ? 'border-primary bg-primary text-primary-foreground shadow-none'
-                                        : 'border-border/50 text-muted-foreground hover:border-border hover:bg-muted/50 hover:text-foreground'
-                                )}
-                            >
-                                {t(THINKING_LEVEL_LABEL_KEYS[level as ThinkingLevel] ?? '') || level}
-                            </button>
-                        );
-                    })}
-                </div>
-                <div className="flex items-center gap-2 border-t border-border/50 pt-3">
-                    <button
-                        onClick={handleCancelPending}
-                        className={C_MODELSELECTORMODAL_1}
-                    >
-                        {t('common.cancel')}
-                    </button>
-                    <button
-                        onClick={handleConfirmSelection}
-                        disabled={!canConfirm}
-                        className={cn(
-                            'flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all',
-                            canConfirm
-                                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                                : 'cursor-not-allowed bg-muted text-muted-foreground'
-                        )}
-                    >
-                        {canConfirm
-                            ? t('modelSelector.confirmModel')
-                            : t('modelSelector.selectLevelFirst')}
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    if (!currentModelThinkingLevels || currentModelThinkingLevels.length === 0) {
-        return null;
-    }
-
-    return (
-        <div className="p-6">
-            <div className="mb-3 typo-body font-bold text-muted-foreground/60 uppercase tracking-wider flex items-center gap-2">
-                <Brain className="w-3.5 h-3.5" />
-                {t('modelSelector.reasoning')} {'•'} {currentModelInfo?.label ?? selectedModel}
-            </div>
-            <div className="flex flex-wrap gap-2.5">
-                {currentModelThinkingLevels.map(level => {
-                    const isActive = thinkingLevel === level;
-                    return (
-                        <button
-                            key={level}
-                            onClick={() =>
-                                onThinkingLevelChange?.(currentModelInfo?.id ?? selectedModel, level)
-                            }
-                            className={cn(
-                                'rounded-xl border px-4 py-2 typo-caption font-bold transition-all duration-200',
-                                isActive
-                                    ? 'bg-primary/10 text-primary border-primary/40 shadow-sm scale-105'
-                                    : 'border-border/40 text-muted-foreground/70 hover:bg-muted/50 hover:text-foreground'
-                            )}
-                        >
-                            {t(THINKING_LEVEL_LABEL_KEYS[level as ThinkingLevel] ?? '') || level}
-                        </button>
-                    );
-                })}
-            </div>
-        </div>
-    );
-};
 
 interface ModelSelectorPermissionsPanelProps {
-    onUpdatePermissionPolicy: (policy: import('@shared/types/workspace-agent-session').WorkspaceAgentPermissionPolicy) => void;
+    onUpdatePermissionPolicy?: (policy: import('@shared/types/workspace-agent-session').WorkspaceAgentPermissionPolicy) => void;
     permissionPolicy: import('@shared/types/workspace-agent-session').WorkspaceAgentPermissionPolicy;
     t: (key: string) => string;
     updatePermissionPolicy: (
@@ -281,7 +259,7 @@ const ModelSelectorPermissionsPanel: React.FC<ModelSelectorPermissionsPanelProps
                     value={permissionPolicy.commandPolicy}
                     onValueChange={value => updatePermissionPolicy('commandPolicy', value)}
                 >
-                    <SelectTrigger className={C_MODELSELECTORMODAL_2}>
+                    <SelectTrigger className="w-full rounded-xl border border-border/50 bg-muted/30 p-2.5 text-sm text-foreground/90 transition-colors focus:ring-1 focus:ring-primary/50">
                         <SelectValue placeholder={t('workspaceAgent.permissions.policy.blocked')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -301,7 +279,7 @@ const ModelSelectorPermissionsPanel: React.FC<ModelSelectorPermissionsPanelProps
                     value={permissionPolicy.pathPolicy}
                     onValueChange={value => updatePermissionPolicy('pathPolicy', value)}
                 >
-                    <SelectTrigger className={C_MODELSELECTORMODAL_3}>
+                    <SelectTrigger className="w-full rounded-xl border border-border/50 bg-muted/30 p-2.5 text-sm text-foreground/90 transition-colors focus:ring-1 focus:ring-primary/50">
                         <SelectValue placeholder={t('workspaceAgent.permissions.policy.workspace-root-only')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -314,26 +292,17 @@ const ModelSelectorPermissionsPanel: React.FC<ModelSelectorPermissionsPanelProps
             </div>
         </div>
 
-        <WorkspaceAgentPermissionEditor
-            permissionPolicy={permissionPolicy}
-            onUpdatePermissions={onUpdatePermissionPolicy}
-            t={t}
-        />
+        {onUpdatePermissionPolicy && (
+            <WorkspaceAgentPermissionEditor
+                permissionPolicy={permissionPolicy}
+                onUpdatePermissions={onUpdatePermissionPolicy}
+                t={t}
+            />
+        )}
     </div>
 );
 
-function resolvePreferredThinkingLevel(levels: string[], currentLevel?: string): string | null {
-    if (levels.length === 0) {
-        return null;
-    }
-    if (currentLevel && levels.includes(currentLevel)) {
-        return currentLevel;
-    }
-    if (levels.includes('low')) {
-        return 'low';
-    }
-    return levels[0] ?? null;
-}
+
 
 export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     isOpen,
@@ -345,502 +314,426 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     selectedProvider,
     onSelect,
     toggleFavorite,
-    recentModels = [],
     t,
     chatMode = 'instant',
     onChatModeChange,
     thinkingLevel = 'low',
     onThinkingLevelChange,
-    onConfirmSelection,
-    copilotQuota,
-    activeCopilotAccountId,
-    activeCopilotAccountEmail,
+
+    activeCopilotQuota,
     activeClaudeQuota,
     activeCodexUsage,
     activeAntigravityQuota,
     permissionPolicy,
     onUpdatePermissionPolicy: _onUpdatePermissionPolicy,
+    triggerRef
 }) => {
     const modalRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
+
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeFilters, setActiveFilters] = useState<ModelFilter[]>([]);
-    const [internalChatMode, setInternalChatMode] = useState<SelectorChatMode>(chatMode);
-    const [activeTab, setActiveTab] = useState<'models' | 'reasoning' | 'permissions'>(initialTab || 'models');
-    const [pendingModel, setPendingModel] = useState<{ provider: string; id: string } | null>(null);
+    const [activeProviderId, setActiveProviderId] = useState<string>('favorites');
+    const [activeTab, setActiveTab] = useState<'models' | 'permissions'>(initialTab === 'permissions' ? 'permissions' : 'models');
+    const [modalPosition, setModalPosition] = useState<React.CSSProperties>({ visibility: 'hidden' });
+    const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
-    useEffect(() => {
-        if (isOpen && initialTab) {
-            setActiveTab(initialTab);
+    // Synchronize state when modal opens using the render-phase adjustment pattern
+    if (isOpen !== prevIsOpen) {
+        setPrevIsOpen(isOpen);
+        if (isOpen) {
+            if (initialTab && activeTab !== initialTab) {
+                setActiveTab(initialTab);
+            }
+            const currentCat = categories.find(c => c.models.some(m => m.id === selectedModel)) ?? categories[0];
+            if (currentCat && activeProviderId !== currentCat.id) {
+                setActiveProviderId(currentCat.id);
+            }
         }
-    }, [isOpen, initialTab]);
-    const [modalStyle, setModalStyle] = useState<React.CSSProperties>({});
+    }
 
-    // Calculate modal position to ensure it stays within viewport
+
+
+
+
     useEffect(() => {
-        if (!isOpen || !modalRef.current) {
+        if (!isOpen || !triggerRef?.current || !modalRef.current) {
             return;
         }
 
         const updatePosition = () => {
+            const trigger = triggerRef.current;
             const modal = modalRef.current;
-            if (!modal) {
+            if (!trigger || !modal) {
                 return;
             }
 
+            const triggerRect = trigger.getBoundingClientRect();
+            const modalRect = modal.getBoundingClientRect();
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
-            const modalRect = modal.getBoundingClientRect();
 
-            const style: React.CSSProperties = {};
+            let top = triggerRect.bottom + 8;
+            let left = triggerRect.left;
 
-            // Check if modal is too wide for viewport
-            if (modalRect.width > viewportWidth - 2 * VIEWPORT_PADDING) {
-                style.width = `${viewportWidth - 2 * VIEWPORT_PADDING}px`;
-                style.maxWidth = `${viewportWidth - 2 * VIEWPORT_PADDING}px`;
+            if (top + modalRect.height > viewportHeight - VIEWPORT_PADDING) {
+                top = triggerRect.top - modalRect.height - 8;
             }
 
-            // Check if modal is too tall for viewport
-            if (modalRect.height > viewportHeight - 2 * VIEWPORT_PADDING) {
-                style.maxHeight = `${viewportHeight - 2 * VIEWPORT_PADDING}px`;
+            if (left + modalRect.width > viewportWidth - VIEWPORT_PADDING) {
+                left = viewportWidth - modalRect.width - VIEWPORT_PADDING;
             }
 
-            setModalStyle(style);
+            if (left < VIEWPORT_PADDING) {
+                left = VIEWPORT_PADDING;
+            }
+
+            setModalPosition({
+                top: `${top}px`,
+                left: `${left}px`,
+                visibility: 'visible'
+            });
         };
 
-        // Run after modal has rendered
-        const timer = setTimeout(updatePosition, 0);
+        updatePosition();
         window.addEventListener('resize', updatePosition);
+        window.addEventListener('scroll', updatePosition, true);
 
         return () => {
-            clearTimeout(timer);
             window.removeEventListener('resize', updatePosition);
+            window.removeEventListener('scroll', updatePosition, true);
         };
-    }, [isOpen]);
-    const [pendingThinkingLevel, setPendingThinkingLevel] = useState<string | null>(null);
+    }, [isOpen, triggerRef, activeTab, activeProviderId]);
 
-    useEffect(() => {
-        setInternalChatMode(chatMode);
-    }, [chatMode]);
 
-    // Check if pending model requires reasoning level selection
-    const pendingModelThinkingLevels = useMemo(() => {
-        if (!pendingModel) {
-            return null;
-        }
-        for (const cat of categories) {
-            if (!Array.isArray(cat.models)) { continue; }
-            const found = cat.models.find(
-                m => m.id === pendingModel.id && m.provider === pendingModel.provider
-            );
-            if (found?.thinkingLevels && Array.isArray(found.thinkingLevels) && found.thinkingLevels.length > 0) {
-                return found.thinkingLevels;
-            }
-        }
-        return null;
-    }, [categories, pendingModel]);
-
-    const requiresReasoningSelection =
-        pendingModel !== null &&
-        pendingModelThinkingLevels !== null &&
-        pendingModelThinkingLevels.length > 0;
-    const canConfirm = !requiresReasoningSelection || pendingThinkingLevel !== null;
 
     const handleClose = useCallback(() => {
-        if (searchQuery) {
-            setSearchQuery('');
-        }
+        setSearchQuery('');
         setActiveTab('models');
-        setPendingModel(null);
-        setPendingThinkingLevel(null);
         onClose();
-    }, [onClose, searchQuery]);
+    }, [onClose]);
 
-    const handleCancelPending = useCallback(() => {
-        setPendingModel(null);
-        setPendingThinkingLevel(null);
-        setActiveTab('models');
-    }, []);
+    const handleKeyDown = useCallback((e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+            handleClose();
+        }
+    }, [handleClose]);
 
-    // ESC key handler
     useEffect(() => {
         if (!isOpen) {
             return;
         }
-        const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                if (requiresReasoningSelection && !canConfirm) {
-                    handleCancelPending();
-                    return;
-                }
-                handleClose();
-            }
-        };
-        document.addEventListener('keydown', handleEscape);
-        return () => document.removeEventListener('keydown', handleEscape);
-    }, [handleClose, handleCancelPending, isOpen, requiresReasoningSelection, canConfirm]);
-
-    // Body scroll lock
-    useEffect(() => {
-        document.body.style.overflow = isOpen ? 'hidden' : '';
+        document?.addEventListener('keydown', handleKeyDown);
         return () => {
-            document.body.style.overflow = '';
+            document?.removeEventListener('keydown', handleKeyDown);
         };
-    }, [isOpen]);
+    }, [isOpen, handleKeyDown]);
 
-    // Auto focus search input
-    useEffect(() => {
-        if (isOpen && searchInputRef.current) {
-            setTimeout(() => searchInputRef.current?.focus(), 100);
-        }
-    }, [isOpen]);
-
-    // Get favorite models from categories
-    const favoriteModels = useMemo(() => {
-        const favCat = categories.find(c => c.id === 'favorites');
-        return favCat?.models ?? [];
-    }, [categories]);
-
-    // Get recent models from all categories
-    const recentModelItems = useMemo(() => {
-        if (recentModels.length === 0) {
-            return [];
-        }
-        const items: ModelListItem[] = [];
-        for (const recentId of recentModels.slice(0, 5)) {
-            for (const cat of categories) {
-                const found = cat.models.find(m => m.id === recentId);
-                if (found && !items.some(i => i.id === found.id)) {
-                    items.push(found);
-                    break;
-                }
-            }
-        }
-        return items;
-    }, [categories, recentModels]);
-
-    // Get current model's thinking levels
-    const currentModelThinkingLevels = useMemo(() => {
-        for (const cat of categories) {
-            if (!Array.isArray(cat.models)) { continue; }
-            const found = cat.models.find(m =>
-                m.id === selectedModel && (selectedProvider === '' || m.provider === selectedProvider)
-            );
-            if (found?.thinkingLevels) {
-                return found.thinkingLevels;
-            }
-        }
-        return null;
-    }, [categories, selectedModel, selectedProvider]);
-
-    const currentModelInfo = useMemo(() => {
-        for (const cat of categories) {
-            if (!Array.isArray(cat.models)) { continue; }
-            const found = cat.models.find(m =>
-                m.id === selectedModel && (selectedProvider === '' || m.provider === selectedProvider)
-            );
-            if (found) {
-                return found;
-            }
-        }
-        return null;
-    }, [categories, selectedModel, selectedProvider]);
-
-    useEffect(() => {
-        let timer: NodeJS.Timeout | undefined;
-        if (
-            activeTab === 'reasoning' &&
-            (!pendingModelThinkingLevels || pendingModelThinkingLevels.length === 0) &&
-            (!currentModelThinkingLevels || currentModelThinkingLevels.length === 0)
-        ) {
-            // Use setTimeout to avoid synchronous setState in effect body
-            timer = setTimeout(() => setActiveTab('models'), 0);
-        }
-        return () => {
-            if (timer) {
-                clearTimeout(timer);
-            }
-        };
-    }, [activeTab, currentModelThinkingLevels, pendingModelThinkingLevels]);
-
-    const getThinkingLevels = useCallback(
-        (provider: string, id: string) => {
-            for (const cat of categories) {
-                const found = cat.models.find(m => m.id === id && m.provider === provider);
-                if (found?.thinkingLevels && found.thinkingLevels.length > 0) {
-                    return found.thinkingLevels;
-                }
-            }
-            return [];
-        },
-        [categories]
-    );
-
-    // Filter categories based on search
     const filteredCategories = useMemo(() => {
         const query = searchQuery.toLowerCase().trim();
-        const applyFilters = (model: ModelListItem) => {
-            if (activeFilters.includes('local') && !model.isLocal) { return false; }
-            if (activeFilters.includes('cloud') && model.isLocal) { return false; }
-            if (activeFilters.includes('free') && !model.isFree) { return false; }
-            if (activeFilters.includes('reasoning') && !model.supportsReasoning) { return false; }
-            if (!activeFilters.includes('deprecated') && (model.lifecycle === 'deprecated' || model.lifecycle === 'retired')) { return false; }
-            return true;
-        };
-        return categories
-            .filter(c => c.id !== 'favorites')
-            .map(cat => ({
-                ...cat,
-                models: Array.isArray(cat.models)
-                    ? cat.models.filter(m =>
-                        (query === '' || m.label.toLowerCase().includes(query) || m.id.toLowerCase().includes(query)) &&
-                        applyFilters(m)
-                    )
-                    : [],
-            }))
-            .filter(cat => cat.models.length > 0);
-    }, [categories, searchQuery, activeFilters]);
+        return categories.map(cat => ({
+            ...cat,
+            models: cat.models.filter(m => {
+                if (m.lifecycle === 'deprecated' || m.lifecycle === 'retired') {
+                    return false;
+                }
+                return query === '' || m.label.toLowerCase().includes(query) || m.id.toLowerCase().includes(query);
+            })
+        })).filter(cat => cat.models.length > 0);
+    }, [categories, searchQuery]);
 
-    const handleSelect = useCallback(
-        (provider: string, id: string, isMulti: boolean) => {
-            if (isMulti) {
-                onSelect(provider, id, isMulti, true);
-                return;
-            }
+    const activeCategory = useMemo(() => {
+        const found = filteredCategories.find(c => c.id === activeProviderId);
+        if (found) {
+            return found;
+        }
+        // If not found in filtered, try to find in raw categories to keep the tab stable
+        return categories.find(c => c.id === activeProviderId) ?? filteredCategories[0];
+    }, [filteredCategories, activeProviderId, categories]);
 
-            const thinkingLevels = getThinkingLevels(provider, id);
-            if (thinkingLevels.length > 0) {
-                setPendingModel({ provider, id });
-                setPendingThinkingLevel(resolvePreferredThinkingLevel(thinkingLevels));
-                setActiveTab('reasoning');
-                return;
-            }
-
-            onSelect(provider, id, isMulti, false);
-            handleClose();
-        },
-        [getThinkingLevels, handleClose, onSelect]
-    );
-
-    const handlePendingThinkingLevelChange = useCallback(
-        (level: string) => {
-            setPendingThinkingLevel(level);
-            if (pendingModel) {
-                onThinkingLevelChange?.(pendingModel.id, level);
-            }
-        },
-        [onThinkingLevelChange, pendingModel]
-    );
-
-    const handleConfirmSelection = useCallback(() => {
-        if (!pendingModel || !canConfirm) {
+    const handleSelect = useCallback((provider: string, id: string, isMulti: boolean, explicitThinkingLevel?: string) => {
+        if (isMulti) {
+            onSelect(provider, id, isMulti, true);
             return;
         }
-        if (pendingThinkingLevel) {
-            onThinkingLevelChange?.(pendingModel.id, pendingThinkingLevel);
-        }
-        onSelect(pendingModel.provider, pendingModel.id, false, false);
-        onConfirmSelection?.();
-        handleClose();
-    }, [pendingModel, canConfirm, pendingThinkingLevel, onThinkingLevelChange, onSelect, onConfirmSelection, handleClose]);
 
-    const handleBackdropClick = useCallback(
-        (e: React.MouseEvent) => {
-            if (e.target === e.currentTarget) {
-                if (requiresReasoningSelection && !canConfirm) {
-                    return;
-                }
+        if (explicitThinkingLevel) {
+            onThinkingLevelChange?.(id, explicitThinkingLevel);
+            
+            const isAlreadySelected = selectedModels.some(m => m.model === id && m.provider === provider);
+            if (!isAlreadySelected) {
+                onSelect(provider, id, isMulti, false);
                 handleClose();
             }
-        },
-        [handleClose, requiresReasoningSelection, canConfirm]
-    );
+            return;
+        }
 
-    const updatePermissionPolicy = useCallback(
-        (
-            key: 'commandPolicy' | 'pathPolicy',
-            value: string
-        ) => {
-            if (!permissionPolicy || !_onUpdatePermissionPolicy) {
-                return;
-            }
+        onSelect(provider, id, isMulti, false);
+        handleClose();
+    }, [handleClose, onSelect, onThinkingLevelChange, selectedModels]);
 
-            if (key === 'commandPolicy') {
-                if (!isCommandPolicy(value)) {
-                    return;
-                }
-                _onUpdatePermissionPolicy({ ...permissionPolicy, commandPolicy: value });
-                return;
-            }
 
-            if (!isPathPolicy(value)) {
-                return;
-            }
-            _onUpdatePermissionPolicy({ ...permissionPolicy, pathPolicy: value });
-        },
-        [_onUpdatePermissionPolicy, permissionPolicy]
-    );
 
     if (!isOpen) {
         return null;
     }
 
     return createPortal(
-        <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="model-selector-title"
-            onClick={handleBackdropClick}
-        >
-            {/* Backdrop */}
+        <>
+            {/* Backdrop for closing */}
             <div
-                className="absolute inset-0 bg-background/85 backdrop-blur-sm animate-in fade-in-0 duration-200"
-                aria-hidden="true"
+                className="fixed inset-0 z-[95] bg-transparent"
+                onMouseDown={(e) => {
+                    // Only close if we're not clicking on the trigger that handles its own toggle
+                    if (triggerRef?.current?.contains(e.target as Node)) {
+                        return;
+                    }
+                    handleClose();
+                }}
             />
-
-            {/* Modal */}
             <div
                 ref={modalRef}
-                style={modalStyle}
+                style={modalPosition}
                 className={cn(
-                    'relative w-full max-w-3xl max-h-85vh flex flex-col',
-                    'bg-popover/95 backdrop-blur-xl rounded-3xl shadow-modal-heavy',
-                    'border border-border/40',
-                    'animate-in fade-in-0 zoom-in-95 duration-300 ease-out'
+                    'fixed z-[100] w-[450px] h-[580px] flex flex-col',
+                    'bg-popover/98 backdrop-blur-2xl rounded-2xl shadow-modal-heavy border border-border/40',
+                    'animate-in fade-in-0 zoom-in-95 duration-200 ease-out origin-top'
                 )}
-                onClick={e => e.stopPropagation()}
             >
-                <ModelSelectorHeader
-                    title={t('modelSelector.selectModel')}
-                    closeLabel={t('common.close')}
-                    onClose={handleClose}
-                />
-
-                <ModelSelectorModeTabs
-                    modeLabel={t('modelSelector.mode')}
-                    chatMode={internalChatMode}
-                    onChatModeChange={(mode) => {
-                        setInternalChatMode(mode);
-                        onChatModeChange?.(mode);
-                    }}
-                    activeTab={activeTab}
-                    onTabChange={setActiveTab}
-                    t={t}
-                    showReasoningTab={
-                        !!pendingModelThinkingLevels?.length ||
-                        (!!currentModelThinkingLevels && currentModelThinkingLevels.length > 0)
-                    }
-                    showPermissionsTab={!!permissionPolicy}
-                />
-
-                {activeTab === 'models' && (
-                    <>
-                        <ModelSelectorSearch
-                            searchQuery={searchQuery}
-                            onSearchQueryChange={setSearchQuery}
-                            searchInputRef={searchInputRef}
-                            placeholder={t('modelSelector.searchModels')}
-                        />
-                        <div className="px-5 pb-3 flex flex-wrap gap-2 border-b border-border/40 bg-muted/5">
-                            {MODEL_FILTER_OPTIONS.map(([key, labelKey]) => {
-                                const active = activeFilters.includes(key);
-                                return (
-                                    <button
-                                        key={key}
-                                        onClick={() => {
-                                            setActiveFilters(prev =>
-                                                prev.includes(key)
-                                                    ? prev.filter(f => f !== key)
-                                                    : [...prev, key]
-                                            );
-                                        }}
-                                        className={cn(
-                                            'px-3.5 py-1.5 rounded-full typo-body font-bold uppercase tracking-wider border transition-all duration-200',
-                                            active
-                                                ? 'bg-primary/20 text-primary border-primary/30 shadow-sm scale-105'
-                                                : 'bg-background/40 text-muted-foreground/60 border-border/40 hover:text-foreground hover:bg-background/60 shadow-sm'
-                                        )}
-                                    >
-                                        {t(labelKey)}
-                                    </button>
-                                );
-                            })}
+                <div className="flex flex-col h-full overflow-hidden bg-background border rounded-2xl">
+                    {/* Search Bar - Shadcn Input Style */}
+                    <div className="p-3 border-b border-border/40">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
+                            <Input
+                                ref={searchInputRef}
+                                placeholder={t('modelSelector.searchPlaceholder')}
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                className="bg-muted/30 pl-9 border-none h-9 text-xs focus-visible:ring-1 focus-visible:ring-primary/30"
+                            />
                         </div>
-                    </>
+                    </div>
+
+                    {/* Provider Tabs - Real Logos, Horizontal only, Theme Supportive */}
+                    <div className="px-2 border-b border-border/40 flex items-center gap-2 overflow-x-auto overflow-y-hidden no-scrollbar bg-muted/10 h-[60px] shrink-0 whitespace-nowrap">
+                        {filteredCategories.map(cat => {
+                            const isActive = activeProviderId === cat.id;
+
+                            const logoMap: Record<string, string> = {
+                                openai: LogoChatgpt,
+                                anthropic: LogoClaude,
+                                claude: LogoClaude,
+                                google: LogoGemini,
+                                gemini: LogoGemini,
+                                antigravity: LogoAntigravity,
+                                copilot: LogoCopilot,
+                                ollama: LogoOllama,
+                                codex: LogoChatgpt,
+                                opencode: LogoOpenCode,
+                                huggingface: LogoHuggingFace,
+                                nvidia: LogoNvidia,
+                            };
+
+                            const logoAsset = logoMap[cat.id.toLowerCase()];
+                            const Icon = cat.id === 'favorites' ? Star : (cat.icon || Zap);
+
+                            return (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => setActiveProviderId(cat.id)}
+                                    className={cn(
+                                        'inline-flex flex-col items-center justify-center min-w-[48px] h-[48px] p-2 rounded-xl transition-all duration-300',
+                                        isActive
+                                            ? 'bg-primary/10 text-foreground shadow-sm ring-1 ring-primary/50'
+                                            : 'text-muted-foreground/40 hover:bg-muted/10 hover:text-muted-foreground/60'
+                                    )}
+                                    title={cat.name}
+                                >
+                                    <div className={cn(
+                                        'flex items-center justify-center transition-all duration-300',
+                                        isActive ? 'scale-110' : 'scale-95'
+                                    )}>
+                                        {logoAsset ? (
+                                            (() => {
+                                                const providerId = cat.id.toLowerCase();
+                                                const isBrandColored = ['gemini', 'huggingface', 'nvidia', 'antigravity'].includes(providerId);
+
+                                                return (
+                                                    <img
+                                                        src={logoAsset}
+                                                        alt={cat.name}
+                                                        className={cn(
+                                                            'w-6 h-6 object-contain transition-all duration-300',
+                                                            !isBrandColored && 'theme-logo-invert'
+                                                        )}
+                                                    />
+                                                );
+                                            })()
+                                        ) : (
+                                            <Icon className={cn(
+                                                'w-5 h-5 transition-all duration-300',
+                                                isActive
+                                                    ? (cat.id === 'favorites' ? 'text-amber-400 fill-amber-400' : (cat.color || 'text-primary'))
+                                                    : 'text-muted-foreground/30'
+                                            )} />
+                                        )}
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
+                        {/* Shared Provider Quotas Header */}
+                        {activeCategory && (
+                            <ModelSelectorQuotaBanner
+                                activeCategory={activeCategory}
+                                activeCopilotQuota={activeCopilotQuota}
+                                activeClaudeQuota={activeClaudeQuota}
+                                activeCodexUsage={activeCodexUsage}
+                                t={t}
+                            />
+                        )}
+
+                        {activeCategory?.models?.map?.(model => (
+                            <ModelSelectorItem
+                                key={`${activeCategory.id}-${model.provider}-${model.id}`}
+                                model={model}
+                                isSelected={selectedModels.some(m => m.provider === model.provider && m.model === model.id)}
+                                isPrimary={selectedModel === model.id && selectedProvider === model.provider}
+                                onSelect={(p, mid, isM, level) => handleSelect(p, mid, isM, level as string)}
+                                toggleFavorite={toggleFavorite}
+                                t={t}
+                                activeAntigravityQuota={activeAntigravityQuota}
+                                thinkingLevel={thinkingLevel}
+                                onThinkingLevelChange={onThinkingLevelChange}
+                            />
+                        ))}
+                        {!activeCategory?.models?.length && (
+                            <div className="py-12 px-6 text-center space-y-2">
+                                <div className="text-muted-foreground/30 text-xs font-semibold uppercase tracking-widest">
+                                    {searchQuery ? 'No models match your search' : `No models available for ${activeCategory?.name || 'this provider'}`}
+                                </div>
+                                {!searchQuery && (
+                                    <p className="text-[10px] text-muted-foreground/40 leading-relaxed max-w-[200px] mx-auto">
+                                        This might be because the account is not linked or the models are still loading.
+                                    </p>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                    {/* Advanced Logic & Safety Configuration Footer */}
+                    <div className="px-4 py-4 border-t border-border/20 bg-background/95 backdrop-blur-xl shrink-0">
+                        <div className="flex items-center justify-center gap-6">
+                            {/* Mode Selection */}
+                            <div className="space-y-1.5 flex flex-col items-center">
+                                <Label className="text-[10px] font-semibold uppercase tracking-[0.05em] text-muted-foreground/50 px-0.5">
+                                    {t('workspaceAgent.permissions.mode')}
+                                </Label>
+                                <Select
+                                    value={chatMode}
+                                    onValueChange={(value) => onChatModeChange?.(value as SelectorChatMode)}
+                                >
+                                    <SelectTrigger className="w-[110px] h-9 rounded-xl border-border/10 bg-muted/20 hover:bg-muted/30 hover:border-primary/20 transition-all shadow-sm ring-offset-background focus:ring-1 focus:ring-primary/20">
+                                        <SelectValue className="text-xs" placeholder="Mode" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-border/10 shadow-2xl backdrop-blur-xl z-[150]">
+                                        {(['instant', 'thinking', 'agent'] as SelectorChatMode[]).map(mode => (
+                                            <SelectItem
+                                                key={mode}
+                                                value={mode}
+                                                className="text-xs font-medium py-2.5 focus:bg-primary/5 focus:text-primary transition-colors cursor-pointer"
+                                            >
+                                                {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {permissionPolicy && (
+                                <>
+                                    {/* Shell Protection */}
+                                    <div className="space-y-1.5">
+                                        <Label className="text-[10px] font-semibold uppercase tracking-[0.05em] text-muted-foreground/50 px-0.5 flex items-center justify-center gap-1.5">
+                                            <Zap className="w-3 h-3 opacity-40 shrink-0" />
+                                            <span className="truncate">{t('workspaceAgent.permissions.shell')}</span>
+                                        </Label>
+                                        <Select
+                                            value={permissionPolicy.commandPolicy}
+                                            onValueChange={value => {
+                                                if (isCommandPolicy(value) && _onUpdatePermissionPolicy) {
+                                                    _onUpdatePermissionPolicy({ ...permissionPolicy, commandPolicy: value });
+                                                }
+                                            }}
+                                        >
+                                            <SelectTrigger className="w-[110px] h-9 rounded-xl border-border/10 bg-muted/20 hover:bg-muted/30 hover:border-primary/20 transition-all shadow-sm ring-offset-background focus:ring-1 focus:ring-primary/20">
+                                                <SelectValue className="text-xs" placeholder="Shell" />
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-2xl border-border/10 shadow-2xl backdrop-blur-xl z-[150]">
+                                                <SelectItem value="blocked" className="text-xs font-medium py-2.5">{t('workspaceAgent.permissions.policy.blocked')}</SelectItem>
+                                                <SelectItem value="ask-every-time" className="text-xs font-medium py-2.5">{t('workspaceAgent.permissions.policy.ask-every-time')}</SelectItem>
+                                                <SelectItem value="allowlist" className="text-xs font-medium py-2.5">{t('workspaceAgent.permissions.policy.allowlist')}</SelectItem>
+                                                <SelectItem value="full-access" className="text-xs font-medium py-2.5">{t('workspaceAgent.permissions.policy.full-access')}</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Filesystem Protection */}
+                                    <div className="space-y-1.5 flex flex-col items-center">
+                                        <Label className="text-[10px] font-semibold uppercase tracking-[0.05em] text-muted-foreground/50 px-0.5 flex items-center justify-center gap-1.5">
+                                            <Brain className="w-3 h-3 opacity-40 shrink-0" />
+                                            <span className="truncate">{t('workspaceAgent.permissions.filesystem')}</span>
+                                        </Label>
+                                        <Select
+                                            value={permissionPolicy.pathPolicy}
+                                            onValueChange={value => {
+                                                if (isPathPolicy(value) && _onUpdatePermissionPolicy) {
+                                                    _onUpdatePermissionPolicy({ ...permissionPolicy, pathPolicy: value });
+                                                }
+                                            }}
+                                        >
+                                            <SelectTrigger className="w-[110px] h-9 rounded-xl border-border/10 bg-muted/20 hover:bg-muted/30 hover:border-primary/20 transition-all shadow-sm ring-offset-background focus:ring-1 focus:ring-primary/20">
+                                                <SelectValue className="text-xs" placeholder="Files" />
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-2xl border-border/10 shadow-2xl backdrop-blur-xl z-[150]">
+                                                <SelectItem value="workspace-root-only" className="text-xs font-medium py-2.5">{t('workspaceAgent.permissions.policy.workspace-root-only')}</SelectItem>
+                                                <SelectItem value="allowlist" className="text-xs font-medium py-2.5">{t('workspaceAgent.permissions.policy.allowlist')}</SelectItem>
+                                                <SelectItem value="restricted-off-dangerous" className="text-xs font-medium py-2.5">{t('workspaceAgent.permissions.policy.restricted-off-dangerous')}</SelectItem>
+                                                <SelectItem value="full-access" className="text-xs font-medium py-2.5">{t('workspaceAgent.permissions.policy.full-access')}</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+
+                {activeTab === 'permissions' && permissionPolicy && _onUpdatePermissionPolicy && (
+                    <div className="absolute inset-0 bg-popover rounded-2xl z-20 flex flex-col p-4 animate-in slide-in-from-right-4 duration-300">
+                        <button onClick={() => setActiveTab('models')} className="mb-4 text-xs font-bold text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+                            ← Back to models
+                        </button>
+                        <div className="overflow-y-auto flex-1">
+                            <ModelSelectorPermissionsPanel
+                                onUpdatePermissionPolicy={_onUpdatePermissionPolicy}
+                                permissionPolicy={permissionPolicy}
+                                t={t}
+                                updatePermissionPolicy={(key, value) => {
+                                    if (key === 'commandPolicy' && isCommandPolicy(value)) {
+                                        _onUpdatePermissionPolicy({ ...permissionPolicy, commandPolicy: value });
+                                    } else if (key === 'pathPolicy' && isPathPolicy(value)) {
+                                        _onUpdatePermissionPolicy({ ...permissionPolicy, pathPolicy: value });
+                                    }
+                                }}
+                            />
+                        </div>
+                    </div>
                 )}
-
-                {/* Content - Scrollable */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
-                    {/* Pending Model Reasoning Selection */}
-                    {activeTab === 'reasoning' && (
-                        <ModelSelectorReasoningPanel
-                            canConfirm={canConfirm}
-                            categories={categories}
-                            currentModelInfo={currentModelInfo}
-                            currentModelThinkingLevels={currentModelThinkingLevels}
-                            handleCancelPending={handleCancelPending}
-                            handleConfirmSelection={handleConfirmSelection}
-                            handlePendingThinkingLevelChange={
-                                handlePendingThinkingLevelChange
-                            }
-                            onThinkingLevelChange={onThinkingLevelChange}
-                            pendingModel={pendingModel}
-                            pendingModelThinkingLevels={pendingModelThinkingLevels}
-                            pendingThinkingLevel={pendingThinkingLevel}
-                            selectedModel={selectedModel}
-                            t={t}
-                            thinkingLevel={thinkingLevel}
-                        />
-                    )}
-
-                    {activeTab === 'permissions' && permissionPolicy && _onUpdatePermissionPolicy && (
-                        <ModelSelectorPermissionsPanel
-                            onUpdatePermissionPolicy={_onUpdatePermissionPolicy}
-                            permissionPolicy={permissionPolicy}
-                            t={t}
-                            updatePermissionPolicy={updatePermissionPolicy}
-                        />
-                    )}
-
-                    {activeTab === 'models' ? (
-                        <ModelSelectorCategoryList
-                            filteredCategories={filteredCategories}
-                            favoriteModels={favoriteModels}
-                            recentModelItems={recentModelItems}
-                            searchQuery={searchQuery}
-                            selectedModels={selectedModels}
-                            selectedModel={selectedModel}
-                            selectedProvider={selectedProvider}
-                            chatMode={internalChatMode}
-                            onSelect={handleSelect}
-                            toggleFavorite={toggleFavorite}
-                            copilotQuota={copilotQuota}
-                            activeCopilotAccountId={activeCopilotAccountId}
-                            activeCopilotAccountEmail={activeCopilotAccountEmail}
-                            activeClaudeQuota={activeClaudeQuota}
-                            activeCodexUsage={activeCodexUsage}
-                            activeAntigravityQuota={activeAntigravityQuota}
-                            t={t}
-                        />
-                    ) : null}
-                </div>
-
-                {/* Footer */}
-                <div className="px-4 py-3 border-t border-border/50 bg-muted/20 typo-caption text-muted-foreground flex items-center justify-between">
-                    {requiresReasoningSelection && !canConfirm ? (
-                        <span className="text-warning">
-                            {t('modelSelector.mustSelectReasoning')}
-                        </span>
-                    ) : (
-                        <span>{t('modelSelector.shiftClickMulti')}</span>
-                    )}
-                    <span className="text-muted-foreground/50">
-                        {t('common.escKey')} {requiresReasoningSelection ? t('common.cancel') : t('common.toClose')}
-                    </span>
-                </div>
             </div>
-        </div>,
+        </>,
         document.body
     );
 };

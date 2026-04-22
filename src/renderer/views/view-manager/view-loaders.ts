@@ -62,7 +62,7 @@ const viewPreloaders: Partial<Record<AppView, () => Promise<void>>> = {
     },
 };
 
-const DEFAULT_PRELOAD_VIEWS: readonly AppView[] = ['chat', 'workspace', 'settings'];
+const DEFAULT_PRELOAD_VIEWS: readonly AppView[] = ['chat'];
 
 export const DockerDashboardView = lazy(loadDockerDashboardView);
 export const ModelsPageView = lazy(loadModelsPageView);

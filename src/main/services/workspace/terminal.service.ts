@@ -14,6 +14,7 @@ import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
+import { getDataFilePath, getDataSubPath } from '@main/services/system/app-layout-paths.util';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { AlacrittyBackend } from '@main/services/terminal/backends/alacritty.backend';
@@ -29,7 +30,6 @@ import { WarpBackend } from '@main/services/terminal/backends/warp.backend';
 import { WindowsTerminalBackend } from '@main/services/terminal/backends/windows-terminal.backend';
 import { BatchedEventEmitter } from '@shared/utils/batched-event-emitter.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { app } from 'electron';
 
 const MAX_COMMAND_HISTORY_SIZE = 2000;
 const MAX_COMMAND_LENGTH = 2000;
@@ -233,15 +233,14 @@ export class TerminalService extends BaseService {
 
         // Setup persistence path
         try {
-            const userDataPath = app.getPath('userData');
-            this.persistencePath = path.join(userDataPath, 'terminal-sessions.json');
-            this.historyPath = path.join(userDataPath, 'terminal-command-history.json');
-            this.markersPath = path.join(userDataPath, 'terminal-scrollback-markers.json');
-            this.templatesPath = path.join(userDataPath, 'terminal-session-templates.json');
-            this.searchStatePath = path.join(userDataPath, 'terminal-search-state.json');
+            this.persistencePath = getDataFilePath('terminal', 'sessions.json');
+            this.historyPath = getDataFilePath('terminal', 'command-history.json');
+            this.markersPath = getDataFilePath('terminal', 'scrollback-markers.json');
+            this.templatesPath = getDataFilePath('terminal', 'session-templates.json');
+            this.searchStatePath = getDataFilePath('terminal', 'search-state.json');
 
             // Create logs directory
-            const logsPath = path.join(userDataPath, 'terminal-logs');
+            const logsPath = getDataSubPath('terminal', 'logs');
             if (!fs.existsSync(logsPath)) {
                 fs.mkdirSync(logsPath, { recursive: true });
             }
@@ -1615,8 +1614,7 @@ export class TerminalService extends BaseService {
     }
 
     private getLogPath(sessionId: string): string {
-        const userDataPath = app.getPath('userData');
-        return path.join(userDataPath, 'terminal-logs', `${sessionId}.log`);
+        return getDataFilePath('terminal', 'logs', `${sessionId}.log`);
     }
 
     private async readLogTail(sessionId: string, bytes = 100 * 1024): Promise<string> {

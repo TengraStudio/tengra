@@ -14,9 +14,8 @@
  */
 
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
-import { DatabaseService } from '@main/services/data/database.service';
-import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
+import type { DatabaseService } from '@main/services/data/database.service';
+import type { BrowserWindow } from 'electron';
 
 /** Detailed database statistics for the size dashboard. */
 export interface DatabaseSizeStats {
@@ -35,27 +34,8 @@ export interface DatabaseSizeStats {
  */
 export function registerDbStatsIpc(
     getMainWindow: () => BrowserWindow | null,
-    databaseService: DatabaseService
+    _databaseService: DatabaseService
 ): void {
-    const validateSender = createMainWindowSenderValidator(getMainWindow, 'db stats');
-
-    ipcMain.handle('db:size-stats', createIpcHandler(
-        'db:size-stats',
-        async (event: IpcMainInvokeEvent): Promise<DatabaseSizeStats> => {
-            validateSender(event);
-            const stats = await databaseService.getStats();
-            const workspaces = await databaseService.workspaces.getWorkspaces();
-            const folders = await databaseService.system.getFolders();
-            const prompts = await databaseService.system.getPrompts();
-
-            return {
-                dbSize: stats.dbSize,
-                chatCount: stats.chatCount,
-                messageCount: stats.messageCount,
-                workspaceCount: workspaces.length,
-                folderCount: folders.length,
-                promptCount: prompts.length,
-            };
-        }
-    ));
+    const _validateSender = createMainWindowSenderValidator(getMainWindow, 'db stats');
+    void _validateSender;
 }

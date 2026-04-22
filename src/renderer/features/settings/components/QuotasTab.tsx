@@ -15,6 +15,7 @@ import React, { useEffect, useState } from 'react';
 import { appLogger } from '@/utils/renderer-logger';
 
 import type { SettingsSharedProps } from '../types';
+import type { LinkedAccountInfo } from '@/electron';
 
 import { AntigravityCard } from './statistics/AntigravityCard';
 import { ClaudeCard } from './statistics/ClaudeCard';
@@ -41,8 +42,8 @@ export const QuotasTab: React.FC<QuotasTabProps> = ({
         const loadStatus = async () => {
             try {
                 // Check all accounts for decryption errors
-                const accounts = await (window.electron as any).getAllAccounts();
-                const anyError = (accounts as any[]).some((acc: any) => acc.decryptionError);
+                const accounts = await window.electron.getLinkedAccounts();
+                const anyError = accounts.some((acc: LinkedAccountInfo & { decryptionError?: boolean }) => acc.decryptionError);
                 setHasDecryptionError(anyError);
 
                 const account = await window.electron.getActiveLinkedAccount('antigravity')

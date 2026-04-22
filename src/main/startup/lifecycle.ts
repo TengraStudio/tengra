@@ -20,6 +20,7 @@ let isQuitting = false;
 export function registerLifecycleHandlers(settingsService: SettingsService) {
     app.on('activate', () => {
         if (isQuitting) { return; }
+        appLogger.debug('Lifecycle', 'App activate event');
         const mainWindow = getMainWindow();
         if (BrowserWindow.getAllWindows().length === 0) {
             setMainWindow(createWindow(settingsService));
@@ -31,6 +32,7 @@ export function registerLifecycleHandlers(settingsService: SettingsService) {
     app.on('window-all-closed', () => {
         if (isQuitting) { return; }
         const settings = settingsService.getSettings();
+        appLogger.info('Lifecycle', `window-all-closed; workAtBackground=${String(settings.window?.workAtBackground === true)}`);
         if (settings.window?.workAtBackground) {
             const mainWindow = getMainWindow();
             if (mainWindow && !mainWindow.isDestroyed()) {
@@ -40,11 +42,13 @@ export function registerLifecycleHandlers(settingsService: SettingsService) {
         }
 
         if (process.platform !== 'darwin') {
+            appLogger.info('Lifecycle', 'Quitting app (window-all-closed)');
             app.quit();
         }
     });
 
     app.on('before-quit', (event) => {
+        appLogger.info('Lifecycle', 'before-quit event received');
         void handleBeforeQuit(event);
     });
 

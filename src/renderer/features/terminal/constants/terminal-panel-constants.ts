@@ -157,8 +157,8 @@ export const TERMINAL_THEME_PRESETS: TerminalAppearancePreset[] = [
 export const TERMINAL_FONT_PRESETS: TerminalFontPreset[] = [
     {
         id: 'system',
-        name: 'Segoe UI',
-        fontFamily: "var(--font-sans)",
+        name: 'Monospace',
+        fontFamily: "'Cascadia Mono', Consolas, 'Courier New', monospace",
     },
 ];
 
@@ -175,7 +175,7 @@ export const TERMINAL_CURSOR_STYLES: { id: TerminalCursorStyle; name: string }[]
 export const DEFAULT_TERMINAL_APPEARANCE: TerminalAppearancePreferences = {
     themePresetId: 'system',
     fontPresetId: 'system',
-    ligatures: true,
+    ligatures: false,
     surfaceOpacity: 0.92,
     surfaceBlur: 14,
     cursorStyle: 'block',

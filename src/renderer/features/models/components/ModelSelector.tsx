@@ -75,7 +75,7 @@ export const ModelSelector = memo(({
 }: ModelSelectorProps) => {
     const { t } = useTranslation(language);
     const [isOpen, setIsOpen] = useState(false);
-    const [initialTab, setInitialTab] = useState<'models' | 'reasoning' | 'permissions'>('models');
+    const [initialTab, setInitialTab] = useState<'models' | 'permissions'>('models');
     const [activeCopilotAccountId, setActiveCopilotAccountId] = useState<string | null>(null);
     const [activeCopilotAccountEmail, setActiveCopilotAccountEmail] = useState<string | null>(null);
     const [resolvedCopilotQuota, setResolvedCopilotQuota] = useState(copilotQuota);
@@ -129,7 +129,7 @@ export const ModelSelector = memo(({
 
     useEffect(() => {
         const handleOpenEvent = (e: Event) => {
-            const customEvent = e as CustomEvent<{ tab?: 'models' | 'reasoning' | 'permissions' }>;
+            const customEvent = e as CustomEvent<{ tab?: 'models' | 'permissions' }>;
             if (customEvent.detail?.tab) {
                 setInitialTab(customEvent.detail.tab);
             }
@@ -156,10 +156,6 @@ export const ModelSelector = memo(({
     }, [quotas]);
 
     useEffect(() => {
-        if (!isOpen) {
-            return;
-        }
-
         void (async () => {
             const [
                 copilotQuotaResult,
@@ -317,9 +313,24 @@ export const ModelSelector = memo(({
     // Get recent models from settings
     const recentModels = settings?.general?.recentModels ?? [];
 
+    const triggerRef = useRef<HTMLButtonElement>(null);
+
+    const providedCategories = useMemo(() => {
+        return categories.filter(cat => {
+            if (cat.id === 'favorites') return true;
+            if (['ollama', 'local', 'lm_studio', 'custom'].includes(cat.id)) return true;
+            if (cat.id === 'copilot') return !!activeCopilotAccountId;
+            if (cat.id === 'claude') return !!activeClaudeAccountId;
+            if (cat.id === 'codex') return !!activeCodexAccountId;
+            if (cat.id === 'antigravity') return !!activeAntigravityAccountId || (resolvedAntigravityQuota?.accounts && resolvedAntigravityQuota.accounts.length > 0);
+            return cat.models.length > 0;
+        });
+    }, [categories, activeCopilotAccountId, activeClaudeAccountId, activeCodexAccountId, activeAntigravityAccountId, resolvedAntigravityQuota]);
+
     return (
         <div className="relative">
             <ModelSelectorTrigger
+                ref={triggerRef}
                 isOpen={isOpen}
                 setIsOpen={setIsOpen}
                 currentCategory={currentCat}
@@ -335,9 +346,10 @@ export const ModelSelector = memo(({
 
             <ModelSelectorModal
                 isOpen={isOpen}
+                triggerRef={triggerRef}
                 onClose={handleClose}
                 initialTab={initialTab}
-                categories={categories}
+                categories={providedCategories}
                 selectedModels={selectedModels}
                 selectedModel={selectedModel}
                 selectedProvider={selectedProvider}
@@ -352,6 +364,7 @@ export const ModelSelector = memo(({
                 thinkingLevel={effectiveThinkingLevel}
                 onThinkingLevelChange={onThinkingLevelChange}
                 copilotQuota={resolvedCopilotQuota}
+                activeCopilotQuota={activeCopilotQuota}
                 activeCopilotAccountId={activeCopilotAccountId}
                 activeCopilotAccountEmail={activeCopilotAccountEmail}
                 activeClaudeQuota={activeClaudeQuota}

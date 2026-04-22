@@ -8,14 +8,22 @@
  * (at your option) any later version.
  */
 
-import type { Monaco as MonacoReactType } from '@monaco-editor/react';
+
+import { loader } from '@monaco-editor/react';
+import * as monacoCore from 'monaco-editor/esm/vs/editor/editor.api';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
 import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 
-type MonacoModule = typeof import('monaco-editor/esm/vs/editor/editor.api');
+import { appLogger } from './renderer-logger';
+
+import 'monaco-editor/esm/vs/editor/editor.all.js';
+import 'monaco-editor/esm/vs/language/typescript/monaco.contribution';
+import 'monaco-editor/esm/vs/basic-languages/monaco.contribution';
+
+type MonacoModule = typeof monacoCore;
 type MonacoWorkerFactory = new () => Worker;
 interface MonacoTypeScriptDefaults {
     setEagerModelSync(value: boolean): void;
@@ -72,6 +80,11 @@ function configureMonacoLanguageDefaults(monaco: MonacoModule): void {
     }
 
     const typeScriptApi = monaco.languages.typescript as never as MonacoTypeScriptApi;
+    if (!typeScriptApi?.JsxEmit) {
+        console.warn('[MonacoLoader] TypeScript API or JsxEmit not available, skipping compiler options configuration');
+        return;
+    }
+
     const compilerOptions: Record<string, boolean | number> = {
         allowJs: true,
         allowNonTsExtensions: true,
@@ -106,8 +119,7 @@ function configureMonacoLanguageDefaults(monaco: MonacoModule): void {
 }
 
 /**
- * Configure Monaco loader to use local bundled Monaco instead of CDN.
- * Prevents CSP violations (blocked jsdelivr loader.js).
+ * Configure Monaco loader to use local bundled Monaco.
  */
 export async function ensureMonacoInitialized(): Promise<MonacoModule> {
     if (monacoInitPromise) {
@@ -115,17 +127,22 @@ export async function ensureMonacoInitialized(): Promise<MonacoModule> {
     }
 
     monacoInitPromise = (async () => {
-        const [{ loader }, monaco] = await Promise.all([
-            import('@monaco-editor/react'),
-            import('monaco-editor/esm/vs/editor/editor.api')
-        ]);
+        try {
+            ensureMonacoEnvironment();
 
-        ensureMonacoEnvironment();
-        configureMonacoLanguageDefaults(monaco);
-        const monacoForLoader: MonacoReactType = monaco;
-        loader.config({ monaco: monacoForLoader });
-        await loader.init();
-        return monaco;
+            // Config loader to use our statically imported monaco instance
+            loader.config({
+                monaco: monacoCore
+            });
+
+            const monaco = await loader.init();
+            configureMonacoLanguageDefaults(monaco);
+
+            return monaco;
+        } catch (error) {
+            appLogger.error('MonacoLoader', 'Initialization failed', error as Error);
+            throw error;
+        }
     })();
 
     return monacoInitPromise;

@@ -9,6 +9,7 @@
  */
 
 import crypto from 'crypto';
+import http, { ClientRequest } from 'http';
 
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
@@ -16,12 +17,12 @@ import { DataService } from '@main/services/data/data.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { ProxyEmbedStatus, ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { validateInterval, validateOAuthTimeoutMs, validatePort, validateToken } from '@main/services/proxy/proxy-validation.util';
-import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { SecurityService } from '@main/services/security/security.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
-import { JsonObject, JsonValue } from '@shared/types/common';
+import { getMainWindow } from '@main/startup/window';
+import { JsonObject, JsonValue, RuntimeValue } from '@shared/types/common';
 import { ClaudeQuota, CodexUsage, CopilotQuota, ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota';
 import {
   ProxyMarketplaceSkillInstallInput,
@@ -111,6 +112,10 @@ export const PROXY_PERFORMANCE_BUDGETS = {
   GET_MODELS_MS: 15000
 } as const;
 const PROXY_REQUEST_TIMEOUT_MS = 15_000;
+const QUOTA_STREAM_RECONNECT_DELAY_MS = 3000;
+const QUOTA_STREAM_CHANNEL = 'proxy:quota:updated';
+const QUOTA_SNAPSHOT_TIMEOUT_MS = 1200;
+const QUOTA_REFRESH_MIN_GAP_MS = 1500;
 
 export interface DeviceCodeResponse {
   device_code: string;
@@ -152,6 +157,13 @@ interface ProxyRequestExecutionOptions {
   body?: RuntimeValue;
 }
 
+interface QuotaCollectors {
+  quotaAccounts: Array<QuotaResponse & { accountId?: string; email?: string }>;
+  copilotAccounts: Array<CopilotQuota & { accountId?: string; email?: string }>;
+  codexAccounts: Array<{ usage: CodexUsage | { error: string }; accountId?: string; email?: string }>;
+  claudeAccounts: ClaudeQuota[];
+}
+
 interface BrowserAuthUrlResponse {
   url: string;
   state: string;
@@ -187,13 +199,43 @@ interface ProxyMarketplaceSkill {
   enabled_by_default: boolean;
 }
 
+interface ProxyQuotaStreamAccount {
+  provider?: string;
+  account_id?: string;
+  email?: string;
+  is_active?: boolean;
+  success?: boolean;
+  quota?: JsonValue;
+  error?: string;
+}
+
+interface ProxyQuotaStreamSnapshot {
+  timestamp_ms?: number;
+  accounts?: ProxyQuotaStreamAccount[];
+  error?: string;
+}
+
+interface ProxyQuotaBroadcastPayload {
+  timestampMs: number;
+  quotaData: { accounts: Array<QuotaResponse & { accountId?: string; email?: string }> } | null;
+  copilotQuota: { accounts: Array<CopilotQuota & { accountId?: string; email?: string }> };
+  codexUsage: { accounts: Array<{ usage: CodexUsage | { error: string }; accountId?: string; email?: string }> };
+  claudeQuota: { accounts: Array<ClaudeQuota> };
+  error?: string;
+}
+
+interface ProxyToolDispatchResponse {
+  success: boolean;
+  result?: JsonValue;
+  error?: string;
+}
+
 
 export interface ProxyServiceOptions {
   settingsService: SettingsService;
   dataService: DataService;
   securityService: SecurityService;
   processManager: ProxyProcessManager;
-  quotaService: QuotaService;
   authService: AuthService;
   eventBus: EventBusService;
   databaseService: DatabaseService;
@@ -202,6 +244,14 @@ export interface ProxyServiceOptions {
 export class ProxyService extends BaseService {
   private currentPort: number = 8317;
   private operationLock: Promise<void> = Promise.resolve();
+  private quotaStreamRequest: ClientRequest | null = null;
+  private quotaStreamReconnectTimer: NodeJS.Timeout | null = null;
+  private quotaStreamBuffer = '';
+  private quotaStreamEnabled = false;
+  private latestQuotaBroadcast: ProxyQuotaBroadcastPayload | null = null;
+  private latestQuotaFingerprint = '';
+  private quotaRefreshInFlight: Promise<void> | null = null;
+  private quotaRefreshLastAttemptAt = 0;
 
   constructor(private options: ProxyServiceOptions) {
     super('ProxyService');
@@ -224,7 +274,6 @@ export class ProxyService extends BaseService {
   get dataService(): DataService { return this.options.dataService; }
   get securityService(): SecurityService { return this.options.securityService; }
   get processManager(): ProxyProcessManager { return this.options.processManager; }
-  get quotaService(): QuotaService { return this.options.quotaService; }
   get authService(): AuthService { return this.options.authService; }
   get eventBus(): EventBusService { return this.options.eventBus; }
   get databaseService(): DatabaseService { return this.options.databaseService; }
@@ -249,10 +298,458 @@ export class ProxyService extends BaseService {
 
   override async cleanup(): Promise<void> {
     try {
+      this.stopQuotaStream();
       this.logInfo('Proxy service cleanup completed; background proxy remains available');
     } catch (e) {
       this.logError('Failed to clean proxy service during cleanup:', e as Error);
     }
+  }
+
+  private startQuotaStream(): void {
+    if (this.quotaStreamEnabled) {
+      return;
+    }
+    this.quotaStreamEnabled = true;
+    this.connectQuotaStream();
+  }
+
+  private connectQuotaStream(): void {
+    if (!this.quotaStreamEnabled || this.quotaStreamRequest) {
+      return;
+    }
+
+    const proxyStatus = this.processManager.getStatus();
+    if (!proxyStatus.running) {
+      this.scheduleQuotaStreamReconnect();
+      return;
+    }
+
+    const port = proxyStatus.port ?? this.currentPort;
+    this.currentPort = port;
+
+    void this.getRuntimeProxyApiKey()
+      .then((apiKey) => {
+        void this.refreshQuotaSnapshotOnce(apiKey);
+        const request = http.request(
+          {
+            host: '127.0.0.1',
+            method: 'GET',
+            path: '/v0/management/quota/stream',
+            port,
+            headers: {
+              Accept: 'text/event-stream',
+              Authorization: `Bearer ${apiKey}`,
+              Connection: 'keep-alive',
+              'Cache-Control': 'no-cache',
+            },
+            timeout: PROXY_REQUEST_TIMEOUT_MS,
+          },
+          (response) => {
+            if (response.statusCode !== 200) {
+              this.logWarn(`Quota stream rejected with HTTP ${response.statusCode ?? 0}`);
+              this.clearQuotaStreamRequest();
+              response.resume();
+              this.scheduleQuotaStreamReconnect();
+              return;
+            }
+
+            response.setEncoding('utf8');
+            response.on('data', (chunk: string) => {
+              this.quotaStreamBuffer += chunk;
+              this.flushQuotaSseBuffer();
+            });
+            response.on('end', () => {
+              this.clearQuotaStreamRequest();
+              this.scheduleQuotaStreamReconnect();
+            });
+            response.on('error', (error) => {
+              this.logWarn(`Quota stream response error: ${error.message}`);
+              this.clearQuotaStreamRequest();
+              this.scheduleQuotaStreamReconnect();
+            });
+          }
+        );
+
+        request.on('timeout', () => {
+          this.logWarn('Quota stream request timed out; reconnecting');
+          request.destroy();
+        });
+        request.on('error', (error) => {
+          this.logWarn(`Quota stream request failed: ${error.message}`);
+          this.clearQuotaStreamRequest();
+          this.scheduleQuotaStreamReconnect();
+        });
+
+        this.quotaStreamRequest = request;
+        request.end();
+      })
+      .catch((error) => {
+        this.logWarn(`Unable to start quota stream: ${getErrorMessage(error)}`);
+        this.scheduleQuotaStreamReconnect();
+      });
+  }
+
+  private async refreshQuotaSnapshotOnce(apiKey: string, timeoutMs: number = PROXY_REQUEST_TIMEOUT_MS): Promise<void> {
+    try {
+      const response = await this.makeRequestWithTimeout<ProxyQuotaStreamSnapshot>('/v0/management/quota/snapshot', {
+        timeoutMs,
+        apiKey,
+        method: 'GET'
+      });
+      const maybeSnapshot = response as ProxyQuotaStreamSnapshot;
+      const payload = this.normalizeQuotaSnapshot(maybeSnapshot);
+      this.latestQuotaBroadcast = payload;
+      const fingerprint = this.buildQuotaFingerprint(payload);
+      // Avoid UI flicker by not re-broadcasting identical snapshots.
+      if (fingerprint && fingerprint === this.latestQuotaFingerprint) {
+        return;
+      }
+      this.latestQuotaFingerprint = fingerprint;
+      const mainWindow = getMainWindow();
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send(QUOTA_STREAM_CHANNEL, payload);
+      }
+      this.eventBus.emitCustom(QUOTA_STREAM_CHANNEL, payload as unknown as RuntimeValue);
+    } catch (error) {
+      this.logWarn(`Initial quota snapshot fetch failed: ${getErrorMessage(error)}`);
+    }
+  }
+
+  private async triggerQuotaSnapshotRefresh(waitForCompletion: boolean): Promise<void> {
+    const now = Date.now();
+    if (this.quotaRefreshInFlight) {
+      if (waitForCompletion) {
+        await this.quotaRefreshInFlight;
+      }
+      return;
+    }
+    if (!waitForCompletion && now - this.quotaRefreshLastAttemptAt < QUOTA_REFRESH_MIN_GAP_MS) {
+      return;
+    }
+    this.quotaRefreshLastAttemptAt = now;
+    const refreshTask = (async () => {
+      if (!await this.ensureEmbeddedProxyReady()) {
+        return;
+      }
+      const apiKey = await this.getRuntimeProxyApiKey();
+      await this.refreshQuotaSnapshotOnce(apiKey, QUOTA_SNAPSHOT_TIMEOUT_MS);
+    })().finally(() => {
+      this.quotaRefreshInFlight = null;
+    });
+    this.quotaRefreshInFlight = refreshTask;
+    if (waitForCompletion) {
+      await refreshTask;
+    }
+  }
+
+  private flushQuotaSseBuffer(): void {
+    let delimiterIndex = this.quotaStreamBuffer.indexOf('\n\n');
+    while (delimiterIndex !== -1) {
+      const block = this.quotaStreamBuffer.slice(0, delimiterIndex).trim();
+      this.quotaStreamBuffer = this.quotaStreamBuffer.slice(delimiterIndex + 2);
+      if (block.length > 0) {
+        this.handleQuotaSseBlock(block);
+      }
+      delimiterIndex = this.quotaStreamBuffer.indexOf('\n\n');
+    }
+  }
+
+  private handleQuotaSseBlock(block: string): void {
+    const lines = block.split('\n');
+    let eventName = 'message';
+    let dataText = '';
+    for (const line of lines) {
+      if (line.startsWith('event:')) {
+        eventName = line.slice(6).trim();
+        continue;
+      }
+      if (line.startsWith('data:')) {
+        dataText += line.slice(5).trim();
+      }
+    }
+
+    if (eventName !== 'snapshot' || dataText.length === 0) {
+      return;
+    }
+
+    const parsed = safeJsonParse<ProxyQuotaStreamSnapshot>(dataText, {} as ProxyQuotaStreamSnapshot);
+    const payload = this.normalizeQuotaSnapshot(parsed);
+    this.latestQuotaBroadcast = payload;
+    const fingerprint = this.buildQuotaFingerprint(payload);
+    if (fingerprint && fingerprint === this.latestQuotaFingerprint) {
+      return;
+    }
+    this.latestQuotaFingerprint = fingerprint;
+
+    const mainWindow = getMainWindow();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send(QUOTA_STREAM_CHANNEL, payload);
+    }
+    this.eventBus.emitCustom(QUOTA_STREAM_CHANNEL, payload as unknown as RuntimeValue);
+  }
+
+  private buildQuotaFingerprint(payload: ProxyQuotaBroadcastPayload): string {
+    // Fingerprint excludes timestampMs to prevent identical snapshots from re-rendering the UI.
+    try {
+      return JSON.stringify({
+        quotaData: payload.quotaData,
+        copilotQuota: payload.copilotQuota,
+        codexUsage: payload.codexUsage,
+        claudeQuota: payload.claudeQuota,
+        error: payload.error ?? null,
+      }) ?? '';
+    } catch {
+      return '';
+    }
+  }
+
+  private normalizeQuotaSnapshot(snapshot: ProxyQuotaStreamSnapshot): ProxyQuotaBroadcastPayload {
+    const accounts = Array.isArray(snapshot.accounts) ? snapshot.accounts : [];
+
+    const collectors: QuotaCollectors = {
+      quotaAccounts: [],
+      copilotAccounts: [],
+      codexAccounts: [],
+      claudeAccounts: [],
+    };
+
+    for (const account of accounts) {
+      this.processAccountQuota(account, collectors);
+    }
+
+    return {
+      timestampMs: typeof snapshot.timestamp_ms === 'number' ? snapshot.timestamp_ms : Date.now(),
+      quotaData: collectors.quotaAccounts.length > 0 ? { accounts: collectors.quotaAccounts } : null,
+      copilotQuota: { accounts: collectors.copilotAccounts },
+      codexUsage: { accounts: collectors.codexAccounts },
+      claudeQuota: { accounts: collectors.claudeAccounts },
+      error: typeof snapshot.error === 'string' ? snapshot.error : undefined,
+    };
+  }
+
+  private processAccountQuota(account: ProxyQuotaStreamAccount, collectors: QuotaCollectors): void {
+    const provider = (account.provider ?? '').toLowerCase();
+    const quotaObject = this.asObject(account.quota);
+
+    if (provider === 'antigravity' || provider === 'google') {
+      this.processAntigravityQuota(account, quotaObject, collectors.quotaAccounts);
+    } else if (provider === 'copilot' || provider === 'github') {
+      this.processCopilotQuota(account, quotaObject, collectors.copilotAccounts);
+    } else if (provider === 'codex' || provider === 'openai') {
+      this.processCodexQuota(account, quotaObject, collectors.codexAccounts);
+    } else if (provider === 'claude' || provider === 'anthropic') {
+      this.processClaudeQuota(account, quotaObject, collectors.claudeAccounts);
+    }
+  }
+
+  private processAntigravityQuota(
+    account: ProxyQuotaStreamAccount,
+    quotaObject: Record<string, RuntimeValue> | null,
+    target: Array<QuotaResponse & { accountId?: string; email?: string }>
+  ): void {
+    if (account.success !== true) {
+      return;
+    }
+
+    const provider = (account.provider ?? '').toLowerCase();
+    const modelsRaw = (Array.isArray(quotaObject?.models) ? quotaObject.models : []) as RuntimeValue[];
+    const models: ModelQuotaItem[] = modelsRaw.map((item) => {
+      const modelObj = this.asObject(item);
+      const remainingFraction = this.asNumber(modelObj?.remaining_fraction) ?? 0;
+      const remainingQuota = this.asNumber(modelObj?.remaining_quota);
+      const totalQuota = this.asNumber(modelObj?.total_quota);
+      const resetTime = this.asString(modelObj?.reset_time);
+      const modelId = this.asString(modelObj?.id) ?? 'unknown-model';
+      const modelName = this.asString(modelObj?.name) ?? modelId;
+
+      return {
+        id: modelId,
+        name: modelName,
+        object: 'model',
+        owned_by: provider,
+        provider,
+        percentage: Math.round(Math.max(0, Math.min(1, remainingFraction)) * 100),
+        reset: resetTime ?? '-',
+        permission: [],
+        quotaInfo: {
+          remainingFraction,
+          remainingQuota: remainingQuota ?? 0,
+          totalQuota: totalQuota ?? 0,
+          resetTime: resetTime ?? undefined,
+        },
+      };
+    });
+
+    const firstReset = models.find((model) => typeof model.quotaInfo?.resetTime === 'string')?.quotaInfo?.resetTime ?? '-';
+    target.push({
+      status: 'Success',
+      next_reset: firstReset ?? '-',
+      models,
+      success: true,
+      authExpired: false,
+      accountId: account.account_id,
+      email: account.email,
+      isActive: account.is_active,
+    });
+  }
+
+  private processCopilotQuota(
+    account: ProxyQuotaStreamAccount,
+    quotaObject: Record<string, RuntimeValue> | null,
+    target: Array<CopilotQuota & { accountId?: string; email?: string }>
+  ): void {
+    if (account.success !== true) {
+      return;
+    }
+
+    const quotaInfo = this.asObject(quotaObject?.quota);
+    const remaining = this.asNumber(quotaInfo?.remaining) ?? 0;
+    const total = this.asNumber(quotaInfo?.total) ?? 0;
+    const reset = this.asString(quotaInfo?.reset_at);
+
+    target.push({
+      remaining,
+      limit: total,
+      reset: reset ?? undefined,
+      accountId: account.account_id,
+      email: account.email,
+    });
+  }
+
+  private processCodexQuota(
+    account: ProxyQuotaStreamAccount,
+    quotaObject: Record<string, RuntimeValue> | null,
+    target: Array<{ usage: CodexUsage | { error: string }; accountId?: string; email?: string }>
+  ): void {
+    const accountId = account.account_id;
+    const email = account.email;
+
+    if (account.success !== true) {
+      target.push({
+        usage: { error: account.error ?? 'Quota stream fetch failed' },
+        accountId,
+        email,
+      });
+      return;
+    }
+
+    const quotaInfo = this.asObject(quotaObject?.quota);
+    const remaining = this.asNumber(quotaInfo?.remaining);
+    const total = this.asNumber(quotaInfo?.total);
+    const resetAt = this.asString(quotaInfo?.reset_at);
+    const fiveHourUsedPercent = this.asNumber(quotaInfo?.five_hour_used_percent);
+    const weeklyUsedPercent = this.asNumber(quotaInfo?.weekly_used_percent);
+    const fiveHourResetAt = this.asString(quotaInfo?.five_hour_reset_at);
+    const weeklyResetAt = this.asString(quotaInfo?.weekly_reset_at);
+    const hasPercentWindows = fiveHourUsedPercent !== null || weeklyUsedPercent !== null;
+
+    if ((remaining === null || total === null || total <= 0) && !hasPercentWindows) {
+      target.push({
+        usage: { error: 'Quota payload missing required Codex fields' },
+        accountId,
+        email,
+      });
+      return;
+    }
+
+    const remainingPercent = (remaining !== null && total !== null && total > 0)
+      ? Math.max(0, Math.min(100, (remaining / total) * 100))
+      : Math.max(0, Math.min(100, 100 - (weeklyUsedPercent ?? fiveHourUsedPercent ?? 100)));
+    const usedPercent = Math.max(0, Math.min(100, 100 - remainingPercent));
+
+    target.push({
+      usage: {
+        remainingRequests: remaining ?? undefined,
+        totalRequests: total ?? undefined,
+        dailyUsedPercent: fiveHourUsedPercent ?? usedPercent,
+        weeklyUsedPercent: weeklyUsedPercent ?? usedPercent,
+        dailyResetAt: fiveHourResetAt ?? resetAt ?? undefined,
+        weeklyResetAt: weeklyResetAt ?? resetAt ?? undefined,
+        resetAt: resetAt ?? undefined,
+      },
+      accountId,
+      email,
+    });
+  }
+
+  private processClaudeQuota(
+    account: ProxyQuotaStreamAccount,
+    quotaObject: Record<string, RuntimeValue> | null,
+    target: ClaudeQuota[]
+  ): void {
+    const accountId = account.account_id;
+    const email = account.email;
+
+    if (account.success !== true) {
+      target.push({
+        success: false,
+        error: account.error ?? 'Quota stream fetch failed',
+        accountId,
+        email,
+        isActive: account.is_active,
+      });
+      return;
+    }
+
+    const quotaInfo = this.asObject(quotaObject?.quota);
+    const remaining = this.asNumber(quotaInfo?.remaining) ?? 0;
+    const total = this.asNumber(quotaInfo?.total) ?? 0;
+    const utilization = total > 0 ? Math.max(0, Math.min(100, ((total - remaining) / total) * 100)) : 0;
+    const resetAt = this.asString(quotaInfo?.reset_at) ?? '';
+
+    target.push({
+      success: true,
+      fiveHour: resetAt ? { utilization, resetsAt: resetAt } : undefined,
+      accountId,
+      email,
+      isActive: account.is_active,
+    });
+  }
+
+  private asObject(value: RuntimeValue): Record<string, RuntimeValue> | null {
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, RuntimeValue>)
+      : null;
+  }
+
+  private asString(value: RuntimeValue): string | null {
+    return typeof value === 'string' ? value : null;
+  }
+
+  private asNumber(value: RuntimeValue): number | null {
+    return typeof value === 'number' && Number.isFinite(value) ? value : null;
+  }
+
+  private scheduleQuotaStreamReconnect(): void {
+    if (!this.quotaStreamEnabled || this.quotaStreamReconnectTimer) {
+      return;
+    }
+    this.quotaStreamReconnectTimer = setTimeout(() => {
+      this.quotaStreamReconnectTimer = null;
+      this.connectQuotaStream();
+    }, QUOTA_STREAM_RECONNECT_DELAY_MS);
+  }
+
+  private clearQuotaStreamRequest(): void {
+    this.quotaStreamBuffer = '';
+    this.quotaStreamRequest = null;
+  }
+
+  private stopQuotaStream(): void {
+    this.quotaStreamEnabled = false;
+    if (this.quotaStreamReconnectTimer) {
+      clearTimeout(this.quotaStreamReconnectTimer);
+      this.quotaStreamReconnectTimer = null;
+    }
+    if (this.quotaStreamRequest) {
+      try {
+        this.quotaStreamRequest.destroy();
+      } catch {
+        // Ignore stream shutdown failures.
+      }
+      this.quotaStreamRequest = null;
+    }
+    this.quotaStreamBuffer = '';
   }
 
   /**
@@ -682,6 +1179,7 @@ export class ProxyService extends BaseService {
     if (elapsed > PROXY_PERFORMANCE_BUDGETS.START_MS) {
       this.logWarn(`startEmbeddedProxy exceeded budget: ${elapsed.toFixed(1)}ms > ${PROXY_PERFORMANCE_BUDGETS.START_MS}ms`);
     }
+    this.startQuotaStream();
     this.eventBus.emitCustom(ProxyTelemetryEvent.PROXY_STARTED, { port: this.currentPort, elapsedMs: elapsed });
     return status;
   }
@@ -692,6 +1190,7 @@ export class ProxyService extends BaseService {
       if (status.port) {
         this.currentPort = status.port;
       }
+      this.startQuotaStream();
       return true;
     }
 
@@ -729,6 +1228,7 @@ export class ProxyService extends BaseService {
     if (elapsed > PROXY_PERFORMANCE_BUDGETS.STOP_MS) {
       this.logWarn(`stopEmbeddedProxy exceeded budget: ${elapsed.toFixed(1)}ms > ${PROXY_PERFORMANCE_BUDGETS.STOP_MS}ms`);
     }
+    this.stopQuotaStream();
     this.eventBus.emitCustom(ProxyTelemetryEvent.PROXY_STOPPED, { elapsedMs: elapsed });
   }
 
@@ -767,34 +1267,87 @@ export class ProxyService extends BaseService {
 
   /** Fetches quota information for all linked accounts. @returns Quota data or null */
   async getQuota(): Promise<{ accounts: Array<QuotaResponse & { accountId?: string; email?: string }> } | null> {
-    const quota = await this.quotaService.getQuota(this.currentPort, await this.getRuntimeProxyApiKey());
-    if (!quota) { return null; }
-    return quota;
+    if (this.latestQuotaBroadcast?.quotaData) {
+      void this.triggerQuotaSnapshotRefresh(false);
+      return this.latestQuotaBroadcast.quotaData;
+    }
+    await this.triggerQuotaSnapshotRefresh(true);
+    return this.latestQuotaBroadcast?.quotaData ?? null;
   }
 
   /** Fetches Codex usage data for linked accounts. */
   async getCodexUsage(): Promise<{ accounts: Array<{ usage: CodexUsage | { error: string }; accountId?: string; email?: string }> }> {
-    return this.quotaService.getCodexUsage();
+    if (this.latestQuotaBroadcast?.codexUsage.accounts.length) {
+      void this.triggerQuotaSnapshotRefresh(false);
+      return this.latestQuotaBroadcast.codexUsage;
+    }
+    await this.triggerQuotaSnapshotRefresh(true);
+    return this.latestQuotaBroadcast?.codexUsage ?? { accounts: [] };
   }
 
   /** Fetches available Antigravity models. */
   async getAntigravityAvailableModels(): Promise<ModelQuotaItem[]> {
-    return this.quotaService.getAntigravityAvailableModels();
+    const quota = await this.getQuota();
+    if (!quota?.accounts?.length) {
+      return [];
+    }
+    const merged = new Map<string, ModelQuotaItem>();
+    for (const account of quota.accounts) {
+      for (const model of account.models ?? []) {
+        const key = model.id.toLowerCase();
+        const existing = merged.get(key);
+        if (!existing || (existing.percentage ?? 0) < (model.percentage ?? 0)) {
+          merged.set(key, model);
+        }
+      }
+    }
+    return [...merged.values()];
   }
 
   /** Fetches legacy quota information. */
   async getLegacyQuota(): Promise<{ success: boolean; authExpired?: boolean; data?: JsonObject } & Partial<QuotaResponse>> {
-    return this.quotaService.getLegacyQuota();
+    const codex = await this.getCodexUsage();
+    const first = codex.accounts[0];
+    if (!first || 'error' in first.usage) {
+      return { success: false };
+    }
+    return { success: true, usage: first.usage };
+  }
+
+  async saveClaudeSession(sessionKey: string, accountId?: string): Promise<{ success: boolean; error?: string }> {
+    if (!sessionKey || sessionKey.trim().length === 0) {
+      return { success: false, error: 'Session key must be a non-empty string' };
+    }
+    try {
+      if (accountId && accountId.trim().length > 0) {
+        await this.authService.updateToken(accountId, { sessionToken: sessionKey });
+      } else {
+        await this.authService.linkAccount('claude', { sessionToken: sessionKey });
+      }
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
   }
 
   /** Fetches Copilot quota for linked accounts. */
   async getCopilotQuota(): Promise<{ accounts: Array<CopilotQuota & { accountId?: string; email?: string }> }> {
-    return this.quotaService.getCopilotQuota();
+    if (this.latestQuotaBroadcast?.copilotQuota.accounts.length) {
+      void this.triggerQuotaSnapshotRefresh(false);
+      return this.latestQuotaBroadcast.copilotQuota;
+    }
+    await this.triggerQuotaSnapshotRefresh(true);
+    return this.latestQuotaBroadcast?.copilotQuota ?? { accounts: [] };
   }
 
   /** Fetches Claude quota for linked accounts. */
   async getClaudeQuota(): Promise<{ accounts: Array<ClaudeQuota> }> {
-    return this.quotaService.getClaudeQuota();
+    if (this.latestQuotaBroadcast?.claudeQuota.accounts.length) {
+      void this.triggerQuotaSnapshotRefresh(false);
+      return this.latestQuotaBroadcast.claudeQuota;
+    }
+    await this.triggerQuotaSnapshotRefresh(true);
+    return this.latestQuotaBroadcast?.claudeQuota ?? { accounts: [] };
   }
 
   /** Fetches and merges model data from all providers. @returns Aggregated model response */
@@ -803,14 +1356,15 @@ export class ProxyService extends BaseService {
     await this.ensureEmbeddedProxyReady();
     const apiKey = await this.getRuntimeProxyApiKey();
     const proxyData = await this.getProxyModels(apiKey);
-
-    const [codexData, copilotDataRaw, claudeDataRaw] = await Promise.all([
-      this.quotaService.fetchCodexUsage(),
-      this.getCopilotQuota(),
-      this.getClaudeQuota()
-    ]);
+    void this.triggerQuotaSnapshotRefresh(false);
+    const codexDataRaw = this.latestQuotaBroadcast?.codexUsage ?? { accounts: [] };
+    const copilotDataRaw = this.latestQuotaBroadcast?.copilotQuota ?? { accounts: [] };
+    const claudeDataRaw = this.latestQuotaBroadcast?.claudeQuota ?? { accounts: [] };
 
     // Use the first account's quota for normalization (legacy behavior)
+    const codexData = codexDataRaw.accounts[0] && !('error' in codexDataRaw.accounts[0].usage)
+      ? codexDataRaw.accounts[0].usage
+      : null;
     const copilotData = copilotDataRaw.accounts[0] ? { success: true, ...copilotDataRaw.accounts[0] } : null;
     const claudeData = claudeDataRaw.accounts[0] ?? null;
 
@@ -820,7 +1374,7 @@ export class ProxyService extends BaseService {
     let antigravityError: string | undefined;
 
     try {
-      extra = await this.quotaService.getAntigravityAvailableModels();
+      extra = await this.getAntigravityAvailableModels();
     } catch (error) {
       if (getErrorMessage(error) === 'AUTH_EXPIRED') {
         antigravityError = 'Session expired. Please log in again.';
@@ -950,7 +1504,7 @@ export class ProxyService extends BaseService {
   }
 
   private normalizeQuota(
-    codexData: JsonObject | null,
+    codexData: CodexUsage | null,
     copilotData: { success: boolean; limit?: number; remaining?: number; percentage?: number | null } | null,
     claudeData: { success: boolean; fiveHour?: { utilization: number; resetsAt: string }; sevenDay?: { utilization: number; resetsAt: string } } | null
   ) {
@@ -961,15 +1515,12 @@ export class ProxyService extends BaseService {
     return { codexQuotaFn, copilotQuotaFn, claudeQuotaFn };
   }
 
-  private normalizeCodexQuota(codexData: JsonObject | null): QuotaInfo | undefined {
+  private normalizeCodexQuota(codexData: CodexUsage | null): QuotaInfo | undefined {
     if (!codexData) { return undefined; }
-    const usage = this.quotaService.extractCodexUsageFromWham(codexData);
-    if (!usage) { return undefined; }
-
-    const usageObj = usage as Record<string, RuntimeValue>;
+    const usageObj = codexData as unknown as Record<string, RuntimeValue>;
     const remaining = (usageObj.remainingRequests as number) || (usageObj.remainingTokens as number) || 0;
     const limit = (usageObj.dailyLimit as number) || (usageObj.weeklyLimit as number) || (usageObj.totalRequests as number) || 0;
-    const fraction = this.determineCodexFraction(usage, remaining, limit);
+    const fraction = this.determineCodexFraction(codexData, remaining, limit);
 
     return this.assembleQuotaFn(remaining, limit, fraction, usageObj as JsonObject);
   }
@@ -1137,6 +1688,27 @@ export class ProxyService extends BaseService {
     });
   }
 
+  async dispatchTool(
+    service: string,
+    action: string,
+    argumentsPayload: JsonObject
+  ): Promise<ProxyToolDispatchResponse> {
+    const response = await this.makeRequest<ProxyToolDispatchResponse>(
+      '/v0/tools/dispatch',
+      undefined,
+      'POST',
+      {
+        service,
+        action,
+        arguments: argumentsPayload
+      }
+    );
+    if (typeof response === 'object' && response !== null && 'success' in response) {
+      return response as ProxyToolDispatchResponse;
+    }
+    return { success: false, error: 'Invalid proxy tool response' };
+  }
+
   private makeRequestWithTimeout<T = JsonObject>(
     path: string,
     options: ProxyRequestExecutionOptions
@@ -1173,7 +1745,7 @@ export class ProxyService extends BaseService {
             { path, method }
           ));
         }, timeoutMs);
-        const token = requestApiKey ?? this.settingsService.getSettings().proxy?.apiKey ?? this.settingsService.getSettings().proxy?.key;
+        const token = requestApiKey ?? await this.getRuntimeProxyApiKey();
         if (token) {
           request.setHeader('Authorization', `Bearer ${token}`);
         }
@@ -1256,13 +1828,26 @@ export class ProxyService extends BaseService {
   }
 
   private async ensureProxyKey(): Promise<string> {
-    const settings = this.settingsService.getSettings();
-    let key = settings.proxy?.key.trim() ?? '';
-    if (!key || key.length > 72) {
-      key = crypto.randomBytes(32).toString('base64');
-      const currentProxy = settings.proxy ?? { enabled: false, url: 'http://localhost:8317/v1' };
-      await this.settingsService.saveSettings({ proxy: { ...currentProxy, key } });
+    const activeToken = await this.authService.getActiveToken('proxy_key');
+    if (activeToken && activeToken.trim().length > 0) {
+      return activeToken.trim();
     }
+
+    const existingAccountToken = (await this.authService.getAccountsByProviderFull('proxy_key'))
+      .map(account => account.accessToken ?? account.sessionToken ?? account.refreshToken)
+      .find(token => typeof token === 'string' && token.trim().length > 0);
+    if (existingAccountToken) {
+      return existingAccountToken.trim();
+    }
+
+    const legacyKey = this.settingsService.getSettings().proxy?.key?.trim() ?? '';
+    if (legacyKey && legacyKey.length <= 72) {
+      await this.authService.linkAccount('proxy_key', { accessToken: legacyKey });
+      return legacyKey;
+    }
+
+    const key = crypto.randomBytes(32).toString('base64');
+    await this.authService.linkAccount('proxy_key', { accessToken: key });
     return key;
   }
 
@@ -1271,9 +1856,9 @@ export class ProxyService extends BaseService {
 
     public async getRuntimeProxyApiKey(): Promise<string> {
 
-    const runtimeKey = this.settingsService.getSettings().proxy?.apiKey?.trim() ?? '';
-    if (runtimeKey) {
-      return runtimeKey;
+    const runtimeKey = await this.authService.getActiveToken('proxy_key');
+    if (runtimeKey && runtimeKey.trim().length > 0) {
+      return runtimeKey.trim();
     }
     return await this.getProxyKey();
   }

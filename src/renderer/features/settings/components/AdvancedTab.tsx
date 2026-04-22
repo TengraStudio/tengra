@@ -9,6 +9,7 @@
  */
 
 import { Button } from '@renderer/components/ui/button';
+import { ConfirmationModal } from '@renderer/components/ui/ConfirmationModal';
 import { Input } from '@renderer/components/ui/input';
 import {
     Select,
@@ -21,6 +22,8 @@ import { Textarea } from '@renderer/components/ui/textarea';
 import { cn } from '@renderer/lib/utils';
 import { SERVICE_INTERVALS } from '@shared/constants';
 import { AppSettings } from '@shared/types/settings';
+import { useAppState } from '@renderer/hooks/useAppState';
+import { appLogger } from '@/utils/renderer-logger';
 import {
     Activity,
     Brain,
@@ -272,12 +275,12 @@ const ModelConfigSection: React.FC<ModelConfigSectionProps> = ({
                 </div>
             </div>
             <div className="space-y-4">
-                <div className="flex items-center gap-3 px-1">
-                    <Sliders className="w-4 h-4 text-success" />
-                    <span className="typo-body font-bold text-foreground">
-                        Inference Strategy
-                    </span>
-                </div>
+                        <div className="flex items-center gap-3 px-1">
+                            <Sliders className="w-4 h-4 text-success" />
+                            <span className="typo-body font-bold text-foreground">
+                                {t('advanced.inferenceStrategy')}
+                            </span>
+                        </div>
                 <div className="grid grid-cols-1 gap-3">
                     {modelPresets.map(p => (
                         <PresetButton
@@ -294,7 +297,7 @@ const ModelConfigSection: React.FC<ModelConfigSectionProps> = ({
                         <div className="flex items-center gap-3 px-1">
                             <Activity className="w-4 h-4 text-primary" />
                             <span className="typo-body font-bold text-foreground">
-                                Context Window (Override)
+                                {t('advanced.contextWindowOverride')}
                             </span>
                         </div>
                         <div className="flex items-center gap-4">
@@ -304,11 +307,11 @@ const ModelConfigSection: React.FC<ModelConfigSectionProps> = ({
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                     updateModelSetting({ numCtx: e.target.value ? parseInt(e.target.value) : undefined })
                                 }
-                                placeholder="Auto"
+                                placeholder={t('common.auto')}
                                 className="h-10 rounded-xl bg-muted/20 border-border/40 typo-body font-medium focus-visible:ring-primary/20"
                             />
                             <div className="typo-body font-bold text-muted-foreground/40 leading-tight">
-                                Overrides global Ollama context for this model. Leave empty for Auto.
+                                {t('advanced.contextWindowOverrideDescription')}
                             </div>
                         </div>
                     </div>
@@ -421,20 +424,26 @@ const ServiceIntervalsSection: React.FC<ServiceIntervalsSectionProps> = ({
 
 const SecuritySection: React.FC<{ t: (k: string) => string }> = ({ t }) => {
     const [isResetting, setIsResetting] = useState(false);
-    
-    const handleReset = async () => {
-        if (!window.confirm(t('advanced.resetMasterKeyConfirm'))) return;
-        
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const { addToast } = useAppState();
+
+    const handleReset = () => {
+        setIsConfirmOpen(true);
+    };
+
+    const handleConfirmReset = async () => {
+        setIsConfirmOpen(false);
         setIsResetting(true);
         try {
-            const result = await (window.electron as any).security.resetMasterKey();
+            const result = await window.electron.invoke<{ success: boolean; error?: string }>('security:reset-master-key');
             if (result.success) {
-                alert(t('advanced.resetMasterKeySuccess'));
+                addToast({ type: 'success', message: t('advanced.resetMasterKeySuccess') });
             } else {
-                alert(t('advanced.resetMasterKeyError') + ': ' + result.error);
+                addToast({ type: 'error', message: t('advanced.resetMasterKeyError') + ': ' + result.error });
             }
         } catch (error) {
-            console.error('Failed to reset master key:', error);
+            appLogger.error('AdvancedTab', 'Failed to reset master key', error as Error);
+            addToast({ type: 'error', message: 'Failed to reset master key' });
         } finally {
             setIsResetting(false);
         }
@@ -473,6 +482,15 @@ const SecuritySection: React.FC<{ t: (k: string) => string }> = ({ t }) => {
                     </p>
                 </div>
             </div>
+
+            <ConfirmationModal
+                isOpen={isConfirmOpen}
+                onClose={() => setIsConfirmOpen(false)}
+                onConfirm={handleConfirmReset}
+                title={t('advanced.securityTitle')}
+                message={t('advanced.resetMasterKeyConfirm')}
+                variant="danger"
+            />
         </div>
     );
 };

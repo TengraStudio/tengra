@@ -117,13 +117,13 @@ const StatsPanelContent = ({
         <Card className="p-6 bg-muted/20 border-border/40">
           <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
             <Gauge className="w-4 h-4 text-primary" />
-            Memory Lookup Runtime
+            {t('memory.stats.runtime.title')}
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <MetricCard label="Cache hit rate" value={`${hitRate.toFixed(1)}%`} />
-            <MetricCard label="Avg lookup (ms)" value={memoryContext.averageLookupDurationMs} />
-            <MetricCard label="Timeouts / failures" value={`${memoryContext.lookupTimeoutCount} / ${memoryContext.lookupFailureCount}`} />
-            <MetricCard label="Cache / inflight" value={`${memoryContext.cacheSize} / ${memoryContext.inflightSize}`} />
+            <MetricCard label={t('memory.stats.runtime.cacheHitRate')} value={`${hitRate.toFixed(1)}%`} />
+            <MetricCard label={t('memory.stats.runtime.avgLookupMs')} value={memoryContext.averageLookupDurationMs} />
+            <MetricCard label={t('memory.stats.runtime.timeoutsFailures')} value={`${memoryContext.lookupTimeoutCount} / ${memoryContext.lookupFailureCount}`} />
+            <MetricCard label={t('memory.stats.runtime.cacheInflight')} value={`${memoryContext.cacheSize} / ${memoryContext.inflightSize}`} />
           </div>
         </Card>
       )}

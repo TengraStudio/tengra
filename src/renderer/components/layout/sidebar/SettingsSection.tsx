@@ -98,8 +98,6 @@ export const SettingsSectionComponent: React.FC<SettingsSectionProps> = ({
                 return t('settings.tabs.statistics');
             case 'advanced':
                 return t('settings.tabs.advanced');
-            case 'developer':
-                return t('settings.tabs.developer');
             case 'about':
                 return t('settings.tabs.about');
             case 'images':
@@ -162,7 +160,6 @@ export const SettingsSectionComponent: React.FC<SettingsSectionProps> = ({
                                     'system',
                                     'speech',
                                     'advanced',
-                                    'developer',
                                     'statistics',
                                     'images',
                                     'extensions',
@@ -220,8 +217,6 @@ const getIconForId = (id: SettingsCategory) => {
             return Activity;
         case 'about':
             return Info;
-        case 'developer':
-            return Terminal;
         case 'advanced':
             return Cpu;
         case 'accounts':

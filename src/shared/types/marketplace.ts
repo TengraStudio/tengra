@@ -18,7 +18,7 @@ export interface MarketplaceItem {
     version: string;
     downloadUrl: string;
     previewUrl?: string;
-    itemType: 'theme' | 'mcp' | 'persona' | 'model' | 'prompt' | 'language' | 'skill' | 'extension';
+    itemType: 'theme' | 'mcp' | 'persona' | 'model' | 'prompt' | 'language' | 'skill' | 'extension' | 'icon-pack';
     installed?: boolean;
     installedVersion?: string;
     updateAvailable?: boolean;
@@ -174,6 +174,10 @@ export interface MarketplaceSkill extends MarketplaceItem {
     enabled_by_default?: boolean;
 }
 
+export interface MarketplaceIconPack extends MarketplaceItem {
+    iconVariables?: Record<string, string>;
+}
+
 export interface MarketplaceRegistry {
     version: string;
     lastUpdated: string;
@@ -185,10 +189,11 @@ export interface MarketplaceRegistry {
     languages?: MarketplaceLanguage[];
     skills?: MarketplaceSkill[];
     extensions?: MarketplaceExtension[];
+    iconPacks?: MarketplaceIconPack[];
 }
 
 export interface InstallRequest {
-    type: 'theme' | 'mcp' | 'persona' | 'model' | 'prompt' | 'language' | 'skill' | 'extension';
+    type: 'theme' | 'mcp' | 'persona' | 'model' | 'prompt' | 'language' | 'skill' | 'extension' | 'icon-pack';
     id: string;
     downloadUrl?: string;
     provider?: MarketplaceModel['provider'];

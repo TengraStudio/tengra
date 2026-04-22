@@ -15,7 +15,6 @@ import { appLogger } from '@/utils/renderer-logger';
 interface UseWorkspaceBranchStateOptions {
     workspacePath?: string;
     enabled?: boolean;
-    notify: (type: 'success' | 'error' | 'info', message: string) => void;
     t: (path: string, options?: Record<string, string | number>) => string;
 }
 
@@ -43,9 +42,7 @@ async function loadWorkspaceBranchSnapshot(workspacePath: string): Promise<Works
 
 export function useWorkspaceBranchState({
     workspacePath,
-    enabled = true,
-    notify,
-    t,
+    enabled = true, 
 }: UseWorkspaceBranchStateOptions): {
     currentBranchName: string;
     availableBranches: string[];
@@ -108,24 +105,18 @@ export function useWorkspaceBranchState({
             try {
                 const result = await window.electron.git.checkout(workspacePath, branch);
                 if (!result.success) {
-                    notify('error', result.error ?? t('workspace.branchSwitchFailed'));
                     return;
                 }
 
                 setCurrentBranchName(branch);
-                notify('success', t('workspace.branchSwitched', { branch }));
                 await refreshBranchState();
             } catch (error) {
                 appLogger.error('useWorkspaceBranchState', 'Failed to switch workspace branch', error as Error);
-
-
-
-                notify('error', t('workspace.branchSwitchFailed'));
             } finally {
                 setIsBranchSwitching(false);
             }
         },
-        [currentBranchName, enabled, notify, workspacePath, refreshBranchState, t]
+        [currentBranchName, enabled, workspacePath, refreshBranchState]
     );
 
     return {

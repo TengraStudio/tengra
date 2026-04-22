@@ -70,18 +70,9 @@ interface TurnStreamState {
 }
 
 function mergeReasoningSegments(segments: string[]): string[] {
-    const merged: string[] = [];
-    for (const segment of segments) {
-        const normalized = segment.trim();
-        if (normalized.length === 0) {
-            continue;
-        }
-        if (merged.includes(normalized)) {
-            continue;
-        }
-        merged.push(normalized);
-    }
-    return merged;
+    return segments
+        .map(segment => (typeof segment === 'string' ? segment : ''))
+        .filter(segment => segment.trim().length > 0);
 }
 
 function appendReasoningChunk(
@@ -315,9 +306,14 @@ export async function consumeConversationStream(
 
                 if (chunk.type === 'tool_calls' && Array.isArray(chunk.tool_calls)) {
                     turnState.reasoningSegmentOpen = false;
+                    const thoughtIndex = Math.max(0, completedReasonings.length + turnState.reasonings.length - 1);
+                    const incomingToolCalls = chunk.tool_calls.map(toolCall => ({
+                        ...toolCall,
+                        thoughtIndex,
+                    }));
                     turnState.toolCalls = mergeChatToolCalls(
                         turnState.toolCalls,
-                        chunk.tool_calls,
+                        incomingToolCalls,
                         {
                             fallbackIdPrefix: `${assistantId}-turn-${streamTurn}`,
                             allowIndexMatch: true,

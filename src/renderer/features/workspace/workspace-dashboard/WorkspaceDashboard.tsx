@@ -24,12 +24,6 @@ const TerminalComponent = React.lazy(() =>
     }))
 );
 
-const WorkspaceEnvironmentTab = React.lazy(() =>
-    import('@renderer/features/workspace/components').then(m => ({
-        default: m.WorkspaceEnvironmentTab,
-    }))
-);
-
 const WorkspaceFilesTab = React.lazy(() =>
     import('@renderer/features/workspace/components').then(m => ({
         default: m.WorkspaceFilesTab,
@@ -42,11 +36,6 @@ const WorkspaceGitTab = React.lazy(() =>
     }))
 );
 
-const WorkspaceLogsTab = React.lazy(() =>
-    import('@renderer/features/workspace/components').then(m => ({
-        default: m.WorkspaceLogsTab,
-    }))
-);
 
 const WorkspaceSearchTab = React.lazy(() =>
     import('@renderer/features/workspace/components').then(m => ({
@@ -189,36 +178,33 @@ export const WorkspaceDashboard = ({
                 t={t}
             />
         ),
-        settings: () => renderLazyPanel(
-            <div className="h-full">
-                <WorkspaceSettingsPanel
-                    workspace={workspace}
-                    onUpdate={async updates => {
-                        await onUpdate?.(updates);
-                    }}
-                    language={language}
-                    onDelete={onDelete}
-                    onAddMount={() => {
-                        onAddMount?.();
-                    }}
-                    onRemoveMount={id => {
-                        const nextMounts = workspace.mounts.filter(m => m.id !== id);
-                        void onUpdate?.({ mounts: nextMounts });
-                    }}
-                />
-            </div>
-        ),
+        settings: () => {
+            const handleUpdate = async (updates: Partial<Workspace>) => {
+                await onUpdate?.(updates);
+            };
+            const handleAddMount = () => {
+                onAddMount?.();
+            };
+            const handleRemoveMount = (id: string) => {
+                const nextMounts = workspace.mounts.filter(m => m.id !== id);
+                void onUpdate?.({ mounts: nextMounts });
+            };
+
+            return renderLazyPanel(
+                <div className="h-full">
+                    <WorkspaceSettingsPanel
+                        workspace={workspace}
+                        onUpdate={handleUpdate}
+                        language={language}
+                        onDelete={onDelete}
+                        onAddMount={handleAddMount}
+                        onRemoveMount={handleRemoveMount}
+                    />
+                </div>
+            );
+        },
         git: () => renderLazyPanel(
             <WorkspaceGitTab workspace={workspace} t={t} activeTab={state.activeTab} />
-        ),
-        env: () => renderLazyPanel(
-            <WorkspaceEnvironmentTab workspacePath={state.workspaceRoot} language={language} />
-        ),
-        environment: () => renderLazyPanel(
-            <WorkspaceEnvironmentTab workspacePath={state.workspaceRoot} language={language} />
-        ),
-        logs: () => renderLazyPanel(
-            <WorkspaceLogsTab workspacePath={state.workspaceRoot} language={language} />
         ),
         files: () => renderLazyPanel(
             <WorkspaceFilesTab

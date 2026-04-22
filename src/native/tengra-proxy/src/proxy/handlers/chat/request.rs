@@ -266,12 +266,11 @@ fn translate_antigravity(payload: &ChatCompletionRequest) -> Value {
 }
 
 fn translate_copilot(payload: &ChatCompletionRequest) -> Value {
+    let raw_model = payload.model.replace("copilot-", "").replace("github-", "");
+
     let mut body = translate_openai_compatible(payload);
     if let Some(map) = body.as_object_mut() {
-        map.insert(
-            "model".to_string(),
-            Value::String(payload.model.replace("copilot-", "").replace("github-", "")),
-        );
+        map.insert("model".to_string(), Value::String(raw_model));
         if payload.stream {
             map.insert(
                 "stream_options".to_string(),
@@ -281,6 +280,7 @@ fn translate_copilot(payload: &ChatCompletionRequest) -> Value {
     }
     body
 }
+
 
 fn remove_provider_hint(body: &mut Value) {
     if let Some(map) = body.as_object_mut() {

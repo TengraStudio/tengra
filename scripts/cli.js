@@ -31,7 +31,7 @@ const SCRIPT_MAP = {
         cleanup: 'node scripts/tasks/gh-workflow-cleanup.js',
     },
     secrets: {
-        scan: 'secretlint --secretlintignore .secretlintignore "**/*"',
+        scan: 'node scripts/tasks/secret-scan.js',
     },
     verify: {
         all: '', // Special handling in runVerify

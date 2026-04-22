@@ -110,7 +110,7 @@ async fn fetch_provider_models(
             Vec::new()
         }
         "nvidia" => {
-            if let Ok(models) = fetch_nvidia_models(client).await {
+            if let Ok(models) = fetch_nvidia_models(client, rows).await {
                 if !models.is_empty() {
                     return map_provider_models(models);
                 }
@@ -966,12 +966,19 @@ fn antigravity_thinking_levels(id: &str) -> Option<Vec<String>> {
     }
 }
 
-async fn fetch_nvidia_models(client: &Client) -> Result<Vec<ProviderModel>, String> {
-    let models = fetch_nvidia_live_models(client).await?;
-    if models.is_empty() {
-        return Err("No NVIDIA models discovered".to_string());
+async fn fetch_nvidia_models(client: &Client, rows: &[Value]) -> Result<Vec<ProviderModel>, String> {
+    for row in prioritized_rows(rows) {
+        let Some(api_key) = token_value_from_row(row, "access_token") else {
+            continue;
+        };
+
+        if let Ok(models) = fetch_nvidia_live_models(client, &api_key).await {
+            if !models.is_empty() {
+                return Ok(models);
+            }
+        }
     }
-    Ok(models)
+    Err("No NVIDIA models discovered".to_string())
 }
 
 #[derive(Deserialize)]
@@ -984,9 +991,10 @@ struct NvidiaResponse {
     data: Vec<NvidiaModelData>,
 }
 
-async fn fetch_nvidia_live_models(client: &Client) -> Result<Vec<ProviderModel>, String> {
+async fn fetch_nvidia_live_models(client: &Client, api_key: &str) -> Result<Vec<ProviderModel>, String> {
     let response = client
         .get(NVIDIA_LIVE_MODELS_URL)
+        .header("Authorization", format!("Bearer {}", api_key))
         .header("Accept", "application/json")
         .header("User-Agent", "tengra-proxy/1.0")
         .send()

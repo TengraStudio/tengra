@@ -9,10 +9,13 @@
  */
 
 import { useWorkspaceSettingsForm } from '@renderer/features/workspace/hooks/useWorkspaceSettingsForm';
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import { WorkspaceEnvironmentTab } from './WorkspaceEnvironmentTab';
 
 import { Language, useTranslation } from '@/i18n';
 import { Workspace } from '@/types';
+import { useModelManager } from '@/features/models/hooks/useModelManager';
+import { useSettings } from '@renderer/context/SettingsContext';
 
 import {
     AdvancedSection,
@@ -21,6 +24,8 @@ import {
     DevServerSection,
     EditorSection,
     GeneralSection,
+    GitSection,
+    IntelligenceSection,
     SettingsHeader,
     SettingsSidebar,
     WorkspaceSection
@@ -36,6 +41,7 @@ interface WorkspaceSettingsPanelProps {
     onDelete?: () => void
 }
 
+
 /**
  * Workspace settings surface with section-based navigation.
  */
@@ -43,6 +49,21 @@ const WorkspaceSettingsPanelBase: React.FC<WorkspaceSettingsPanelProps> = ({
     workspace, onUpdate, language, onAddMount, onRemoveMount, onDelete
 }) => {
     const { t } = useTranslation(language);
+    const { settings, updateSettings } = useSettings();
+    const onSettingsUpdate = useCallback((s: any) => void updateSettings(s), [updateSettings]);
+    const { models: allModels } = useModelManager(settings, onSettingsUpdate);
+
+    // Deduplicate models by ID to prevent duplicate keys in multiple sections
+    const models = React.useMemo(() => {
+        const uniqueModels = new Map();
+        for (const model of allModels) {
+            const id = model.id;
+            if (id && !uniqueModels.has(id)) {
+                uniqueModels.set(id, model);
+            }
+        }
+        return Array.from(uniqueModels.values());
+    }, [allModels]);
     const [activeSection, setActiveSection] = useState<WorkspaceSettingsSection>('general');
 
     const {
@@ -77,17 +98,31 @@ const WorkspaceSettingsPanelBase: React.FC<WorkspaceSettingsPanelProps> = ({
                 <main className="flex-1 overflow-y-auto custom-scrollbar p-8" aria-label={t('aria.workspaceSettingsContent')}>
                     <div className="max-w-3xl mx-auto space-y-10">
                         {activeSection === 'general' && (
-                            <GeneralSection formData={formData} setFormData={setFormData} t={t} />
+                            <GeneralSection formData={formData} setFormData={setFormData} t={t} models={models} />
+                        )}
+
+                        {activeSection === 'intelligence' && (
+                            <IntelligenceSection formData={formData} setFormData={setFormData} t={t} models={models} />
                         )}
 
                         {activeSection === 'council' && (
                             <CouncilSection
                                 formData={formData}
                                 setFormData={setFormData}
-                                availableAgents={[]}
+                                availableAgents={models.map(m => ({
+                                    id: m.id || 'unknown',
+                                    name: m.name || m.id || 'Unknown',
+                                    provider: m.provider || 'unknown',
+                                    systemPrompt: ''
+                                }))}
                                 toggleMember={toggleMember}
                                 t={t}
+                                models={models}
                             />
+                        )}
+
+                        {activeSection === 'git' && (
+                            <GitSection formData={formData} setFormData={setFormData} t={t} models={models} />
                         )}
 
                         {activeSection === 'workspace' && (
@@ -101,19 +136,38 @@ const WorkspaceSettingsPanelBase: React.FC<WorkspaceSettingsPanelProps> = ({
                         )}
 
                         {activeSection === 'build' && (
-                            <BuildSection formData={formData} setFormData={setFormData} t={t} />
+                            <BuildSection formData={formData} setFormData={setFormData} t={t} models={models} />
                         )}
 
                         {activeSection === 'dev' && (
-                            <DevServerSection formData={formData} setFormData={setFormData} t={t} />
+                            <DevServerSection formData={formData} setFormData={setFormData} t={t} models={models} />
                         )}
 
                         {activeSection === 'editor' && (
-                            <EditorSection formData={formData} setFormData={setFormData} t={t} />
+                            <EditorSection formData={formData} setFormData={setFormData} t={t} models={models} />
                         )}
 
                         {activeSection === 'advanced' && (
-                            <AdvancedSection formData={formData} setFormData={setFormData} t={t} />
+                            <AdvancedSection formData={formData} setFormData={setFormData} t={t} models={models} />
+                        )}
+
+                        {activeSection === 'environment' && (
+                            <div className="space-y-6">
+                                <div className="flex flex-col gap-1">
+                                    <h2 className="text-xl font-semibold text-foreground tracking-tight">
+                                        {t('workspaceDashboard.tabs.environment')}
+                                    </h2>
+                                    <p className="text-sm text-muted-foreground">
+                                        {t('workspace.envDescription')}
+                                    </p>
+                                </div>
+                                <div className="h-[600px] border border-border/40 rounded-xl overflow-hidden bg-background/30 backdrop-blur-sm">
+                                    <WorkspaceEnvironmentTab
+                                        workspacePath={workspace.path}
+                                        language={language}
+                                    />
+                                </div>
+                            </div>
                         )}
                     </div>
                 </main>

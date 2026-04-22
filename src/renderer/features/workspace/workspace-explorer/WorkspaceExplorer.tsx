@@ -29,7 +29,7 @@ import { WorkspaceContextMenu } from '@renderer/features/workspace/workspace-exp
 import { WorkspaceExplorerBulkActions } from '@renderer/features/workspace/workspace-explorer/WorkspaceExplorerBulkActions';
 import { WorkspaceExplorerInlineRow } from '@renderer/features/workspace/workspace-explorer/WorkspaceExplorerInlineRow';
 import { WorkspaceExplorerRowView } from '@renderer/features/workspace/workspace-explorer/WorkspaceExplorerRow';
-import { Folder, Plus, Search } from 'lucide-react';
+import { FilePlus, Folder, FolderPlus, Minimize2, RefreshCw, Search } from 'lucide-react';
 import React from 'react';
 import { List, RowComponentProps } from 'react-window';
 
@@ -50,7 +50,7 @@ import {
 import { WorkspaceEntry, WorkspaceMount } from '@/types';
 
 /* Batch-02: Extracted Long Classes */
-const C_WORKSPACEEXPLORER_1 = "h-8 w-full rounded-md border border-border/50 bg-background/70 pl-8 pr-2 typo-caption text-foreground outline-none transition-colors focus:border-primary/40";
+const C_WORKSPACEEXPLORER_1 = "h-7 w-full rounded border border-border/40 bg-zinc-900/50 pl-7 pr-2 text-[11px] text-foreground outline-none transition-all focus:border-primary/50 placeholder:text-muted-foreground/40";
 
 
 interface WorkspaceExplorerProps {
@@ -80,7 +80,7 @@ interface WorkspaceExplorerProps {
     workspacePath?: string;
 }
 
-const EXPLORER_ROW_HEIGHT = 28;
+const EXPLORER_ROW_HEIGHT = 22;
 const EXPLORER_VIRTUALIZATION_THRESHOLD = 80;
 const EXPLORER_MULTI_MOUNT_MAX_HEIGHT = 500;
 
@@ -107,6 +107,7 @@ interface InlineDraftRow {
     key: string;
     depth: number;
     draftName: string;
+    actionType: WorkspaceInlineAction['type'];
 }
 
 type ExplorerDisplayRow = WorkspaceExplorerRow | InlineDraftRow;
@@ -186,7 +187,16 @@ function buildInlineRow(
             row.key === `${inlineAction.entry.mountId}:${inlineAction.entry.path}`
     );
     if (!targetRow) {
-        return null;
+        if (inlineAction.type === 'rename') {
+            return null;
+        }
+        return {
+            type: 'inline',
+            key: `inline:${inlineAction.entry.mountId}:${inlineAction.entry.path}`,
+            depth: 0,
+            draftName: inlineAction.draftName,
+            actionType: inlineAction.type,
+        };
     }
 
     return {
@@ -194,6 +204,7 @@ function buildInlineRow(
         key: `inline:${targetRow.key}`,
         depth: inlineAction.type === 'rename' ? targetRow.depth : targetRow.depth + 1,
         draftName: inlineAction.draftName,
+        actionType: inlineAction.type,
     };
 }
 
@@ -209,13 +220,34 @@ function insertInlineRow(
     const targetKey = `${inlineAction.entry.mountId}:${inlineAction.entry.path}`;
     const targetIndex = rows.findIndex(row => row.type === 'entry' && row.key === targetKey);
     if (targetIndex < 0) {
-        return rows;
+        if (inlineAction.type === 'rename') {
+            return rows;
+        }
+        const mountRowIndex = rows.findIndex(
+            row => row.type === 'mount' && row.mount.id === inlineAction.entry.mountId
+        );
+        const insertionIndex = mountRowIndex >= 0 ? mountRowIndex + 1 : 0;
+        const nextRows: ExplorerDisplayRow[] = [...rows];
+        nextRows.splice(insertionIndex, 0, inlineRow);
+        return nextRows;
     }
 
     const nextRows: ExplorerDisplayRow[] = [...rows];
     const insertionIndex = inlineAction.type === 'rename' ? targetIndex : targetIndex + 1;
     nextRows.splice(insertionIndex, 0, inlineRow);
     return nextRows;
+}
+
+function getEntryParentDirectoryPath(entryPath: string): string {
+    const normalizedPath = entryPath.replace(/[/\\]+$/, '');
+    const lastSeparatorIndex = Math.max(
+        normalizedPath.lastIndexOf('/'),
+        normalizedPath.lastIndexOf('\\')
+    );
+    if (lastSeparatorIndex <= 0) {
+        return normalizedPath;
+    }
+    return normalizedPath.slice(0, lastSeparatorIndex);
 }
 
 function applyExplorerDiagnostics(
@@ -275,52 +307,53 @@ function StaticExplorerRows(args: {
     return (
         <>
             {args.displayRows.map(row => {
-        if (row.type === 'inline') {
-            return (
-                <WorkspaceExplorerInlineRow
-                    key={row.key}
-                    rowKey={row.key}
-                    depth={row.depth}
-                    draftName={row.draftName}
-                    placeholder={args.t('workspace.placeholders.name')}
-                    isFocused={args.focusedRowKey === row.key}
-                    setRowRef={args.setRowRef}
-                    onDraftNameChange={value =>
-                        setWorkspaceInlineDraftName(args.workspaceId, value)
-                    }
-                    onSubmit={args.handleInlineSubmit}
-                    onCancel={args.handleInlineCancel}
-                />
-            );
-        }
+                if (row.type === 'inline') {
+                    return (
+                        <WorkspaceExplorerInlineRow
+                            key={row.key}
+                            rowKey={row.key}
+                            depth={row.depth}
+                            draftName={row.draftName}
+                            actionType={row.actionType}
+                            placeholder={args.t('workspace.placeholders.name')}
+                            isFocused={args.focusedRowKey === row.key}
+                            setRowRef={args.setRowRef}
+                            onDraftNameChange={value =>
+                                setWorkspaceInlineDraftName(args.workspaceId, value)
+                            }
+                            onSubmit={args.handleInlineSubmit}
+                            onCancel={args.handleInlineCancel}
+                        />
+                    );
+                }
 
-        const isSelected =
-            row.type === 'entry'
-                ? Boolean(
-                    args.selectedEntries?.some(
-                        entry =>
-                            entry.mountId === row.entry.mountId &&
-                            entry.path === row.entry.path
-                    )
-                )
-                : false;
+                const isSelected =
+                    row.type === 'entry'
+                        ? Boolean(
+                            args.selectedEntries?.some(
+                                entry =>
+                                    entry.mountId === row.entry.mountId &&
+                                    entry.path === row.entry.path
+                            )
+                        )
+                        : false;
 
-        return (
-            <WorkspaceExplorerRowView
-                key={row.key}
-                row={row}
-                isSelected={isSelected}
-                isFocused={args.focusedRowKey === row.key}
-                onOpenFile={args.onOpenFile}
-                onSelectEntry={args.handleEntrySelect}
-                onToggleMount={args.toggleMount}
-                onToggleNode={args.toggleNode}
-                onRemoveMount={args.onRemoveMount}
-                onMountContextMenu={args.handleMountContextMenu}
-                onEntryContextMenu={args.handleContextMenu}
-                setRowRef={args.setRowRef}
-            />
-        );
+                return (
+                    <WorkspaceExplorerRowView
+                        key={row.key}
+                        row={row}
+                        isSelected={isSelected}
+                        isFocused={args.focusedRowKey === row.key}
+                        onOpenFile={args.onOpenFile}
+                        onSelectEntry={args.handleEntrySelect}
+                        onToggleMount={args.toggleMount}
+                        onToggleNode={args.toggleNode}
+                        onRemoveMount={args.onRemoveMount}
+                        onMountContextMenu={args.handleMountContextMenu}
+                        onEntryContextMenu={args.handleContextMenu}
+                        setRowRef={args.setRowRef}
+                    />
+                );
             })}
         </>
     );
@@ -357,6 +390,7 @@ function VirtualizedExplorerRow({
                     rowKey={row.key}
                     depth={row.depth}
                     draftName={row.draftName}
+                    actionType={row.actionType}
                     placeholder={inlinePlaceholder}
                     isFocused={focusedRowKey === row.key}
                     setRowRef={setRowRef}
@@ -516,7 +550,6 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
     mounts,
     refreshSignal,
     onOpenFile,
-    onAddMount,
     onRemoveMount,
     selectedEntries,
     lastSelectedEntry,
@@ -544,6 +577,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
         toggleMount,
         toggleNode,
         revealPath,
+        collapseAll,
         handleContextMenu,
         handleMountContextMenu,
         handleContextAction,
@@ -740,6 +774,53 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
         [findEntryRow, updateSelection]
     );
 
+    const triggerHeaderCreateAction = React.useCallback(
+        (type: 'createFile' | 'createFolder') => {
+            if (mounts.length === 0) {
+                return;
+            }
+
+            const selectedEntry = selectedEntries?.[selectedEntries.length - 1];
+            if (selectedEntry?.isDirectory) {
+                const selectedRow = entryRows.find(
+                    row => row.key === `${selectedEntry.mountId}:${selectedEntry.path}`
+                );
+                if (selectedRow && !selectedRow.expanded) {
+                    toggleNode(selectedRow);
+                }
+            }
+            const selectedMount = selectedEntry
+                ? mounts.find(mount => mount.id === selectedEntry.mountId)
+                : null;
+            const mount = selectedMount ?? mounts[0];
+            if (!mount) {
+                return;
+            }
+
+            const targetDirectoryPath = (() => {
+                if (!selectedEntry) {
+                    return mount.rootPath;
+                }
+                if (selectedEntry.isDirectory) {
+                    return selectedEntry.path;
+                }
+                const parentDirectoryPath = getEntryParentDirectoryPath(selectedEntry.path);
+                return parentDirectoryPath || mount.rootPath;
+            })();
+
+            onContextAction?.({
+                type,
+                entry: {
+                    mountId: mount.id,
+                    path: targetDirectoryPath,
+                    name: '',
+                    isDirectory: true,
+                },
+            });
+        },
+        [entryRows, mounts, onContextAction, selectedEntries, toggleNode]
+    );
+
     React.useEffect(() => {
         if (!activeFilePath) {
             return;
@@ -777,6 +858,16 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
     ]);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
+        const target = e.target as HTMLElement | null;
+        if (
+            target &&
+            (target.tagName === 'INPUT'
+                || target.tagName === 'TEXTAREA'
+                || target.isContentEditable)
+        ) {
+            return;
+        }
+
         if (entryRows.length === 0) {
             return;
         }
@@ -932,26 +1023,57 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
         >
             <div
                 className={cn(
-                    'p-4 pb-2 flex items-center justify-between',
+                    'p-2 pb-1.5 flex items-center justify-between',
                     variant === 'panel'
-                        ? 'border-b border-border/50 bg-transparent'
-                        : 'border-b border-border/50 bg-transparent'
+                        ? 'bg-transparent'
+                        : 'bg-transparent'
                 )}
             >
-                <span className="typo-caption font-bold text-muted-foreground/50">
-                    {t('workspace.files')}
-                </span>
-                <button
-                    onClick={onAddMount}
-                    className="p-1.5 hover:bg-muted/30 rounded-md transition-colors group"
-                    title={t('workspace.addConnection')}
-                >
-                    <Plus className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                </button>
+                <div className="flex items-center gap-2 overflow-hidden">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/50 truncate pl-1">
+                        {t('workspace.files')}
+                    </span>
+                </div>
+                <div className="flex items-center gap-0.5 shrink-0">
+                    <button
+                        onClick={() => {
+                            triggerHeaderCreateAction('createFile');
+                        }}
+                        className="p-1 hover:bg-muted/40 rounded transition-colors"
+                        title={t('workspace.explorer.newFile')}
+                    >
+                        <FilePlus className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-foreground" />
+                    </button>
+                    <button
+                        onClick={() => {
+                            triggerHeaderCreateAction('createFolder');
+                        }}
+                        className="p-1 hover:bg-muted/40 rounded transition-colors"
+                        title={t('workspace.explorer.newFolder')}
+                    >
+                        <FolderPlus className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-foreground" />
+                    </button>
+                    <button
+                        onClick={() => {
+                            // TODO: Implement refresh if needed, usually handled by file watchers
+                        }}
+                        className="p-1 hover:bg-muted/40 rounded transition-colors"
+                        title={t('common.refresh')}
+                    >
+                        <RefreshCw className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-foreground" />
+                    </button>
+                    <button
+                        onClick={collapseAll}
+                        className="p-1 hover:bg-muted/40 rounded transition-colors"
+                        title={t('workspace.explorer.collapseAll')}
+                    >
+                        <Minimize2 className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-foreground" />
+                    </button>
+                </div>
             </div>
-            <div className="px-4 pb-2">
+            <div className="px-2 pb-2">
                 <label className="relative flex items-center">
-                    <Search className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-muted-foreground/60" />
+                    <Search className="pointer-events-none absolute left-2 h-3 w-3 text-muted-foreground/30" />
                     <input
                         type="text"
                         value={filterQuery}
@@ -981,7 +1103,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
 
             <div
                 className={cn(
-                    'flex-1 py-1 space-y-0.5 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent px-2',
+                    'flex-1 space-y-0 scrollbar-thin scrollbar-thumb-muted-foreground/10 scrollbar-track-transparent',
                     shouldVirtualize ? 'overflow-hidden' : 'overflow-y-auto'
                 )}
             >

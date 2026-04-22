@@ -1,68 +1,72 @@
-# Tengra
+# Tengra Documentation
 
-Tengra is a professional, high-performance desktop AI assistant designed for enterprise-grade development workflows. It integrates advanced LLM providers, including Ollama, Antigravity, and GitHub Copilot, into a unified and secure orchestration environment.
+This directory is the project documentation hub. Start here when setting up the repository, reviewing architecture, preparing a release, or contributing changes.
 
-## Critical Notice
-This project is an unofficial client and is not affiliated with, endorsed by, or connected to GitHub, Microsoft, Google, Anthropic, or any of their subsidiaries. All trademarks and brand names are the property of their respective owners. Tengra provides interoperability layers for research and educational purposes. Users are responsible for ensuring their usage of third-party APIs complies with the respective providers' Terms of Service.
+Tengra is an unofficial client. It is not affiliated with GitHub, Microsoft, Google, Anthropic, OpenAI, NVIDIA, or their subsidiaries. Users and contributors are responsible for complying with each provider's terms.
 
-## Core Capabilities
+## Recommended Reading Order
 
-- **Multi-Provider Integration**: Native support for Ollama (local), Antigravity (cloud), and GitHub Copilot.
-- **Agent Orchestration**: Advanced multi-agent collaboration system utilizing Planner, Executor, and Critic roles for complex reasoning tasks.
-- **Integrated Development Environment**: Seamless interaction with local and remote workspaces, featuring file system management and terminal integration.
-- **Remote Workspaces**: Direct SSH integration for managing projects and executing operations on remote infrastructure.
-- **Privacy and Security**: Local-first architecture with encrypted sensitive data storage and zero-telemetry by default for core AI interactions.
-
-## Technical Architecture
-
-Tengra is built on a robust, multi-process architecture based on Electron 40 and React 18. Performance-critical operations are delegated to native services written in Rust and Go, ensuring low latency and high reliability.
-
-- **Main Process**: Node.js-based orchestration layer for service management and system integration.
-- **Renderer Process**: High-density React application utilizing specialized stores for state management and an IPC-bridge for secure communication.
-- **Native Microservices**: Rust-based services for database operations (PGlite/SQLite) and Go-based proxy for optimized network routing.
-- **Local Inference**: Native integration with Ollama and Llama.cpp for high-performance local LLM execution.
+1. [Root README](../README.md): quick start and project summary.
+2. [Contributing](./CONTRIBUTING.md): local setup, validation commands, and contribution rules.
+3. [Project Structure](./PROJECT_STRUCTURE.md): where code lives and how modules are organized.
+4. [Architecture](./ARCHITECTURE.md): process model, IPC, data, and native service boundaries.
+5. [Managed Runtime](./MANAGED_RUNTIME.md): native binary lifecycle and first-run runtime checks.
+6. [Security](./SECURITY.md): IPC hardening, credential storage, and reporting process.
+7. [Release Checklist](./RELEASE_CHECKLIST.md): pre-release checks for public/open-source releases.
 
 ## Documentation Index
 
-| Document | Description |
-|----------|-------------|
-| [AI_RULES.md](./AI_RULES.md) | Mandatory coding standards and agent behavioral guidelines. |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | Comprehensive system design, process model, and database schemas. |
-| [API.md](./API.md) | IPC contract definitions and internal communication protocols. |
-| [CONTRIBUTING.md](./CONTRIBUTING.md) | Development setup instructions and contribution standards. |
-| [SECURITY.md](./SECURITY.md) | Security policy, encryption protocols, and vulnerability reporting. |
-| [GUIDE.md](./GUIDE.md) | Technical usage guide and connectivity troubleshooting. |
-| [TODO.md](./TODO.md) | Project roadmap and prioritized backlog. |
+| Document | Use For | Status |
+| --- | --- | --- |
+| [CONTRIBUTING.md](./CONTRIBUTING.md) | Local setup, workflow, verification, pull requests | Current |
+| [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md) | Repository map and module ownership | Current |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | System architecture and process boundaries | Current |
+| [MANAGED_RUNTIME.md](./MANAGED_RUNTIME.md) | Managed native runtime, repair flow, binary ownership | Current |
+| [API.md](./API.md) | IPC and local REST API overview | Current |
+| [SECURITY.md](./SECURITY.md) | Security model and vulnerability reporting | Current |
+| [GUIDE.md](./GUIDE.md) | User-facing guide and troubleshooting | Current |
+| [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md) | Launch/release readiness checks | Current |
+| [PERFORMANCE_CONTRACT.md](./PERFORMANCE_CONTRACT.md) | Startup and performance expectations | Reference |
+| [SESSION_ENGINE.md](./SESSION_ENGINE.md) | Chat/session engine details | Reference |
+| [STARTUP_ACTIVATION_MATRIX.md](./STARTUP_ACTIVATION_MATRIX.md) | Startup activation policy | Reference |
+| [I18N_GUIDE.md](./I18N_GUIDE.md) | Localization workflow | Reference |
+| [advanced-hardening.md](./advanced-hardening.md) | Extra hardening notes | Reference |
+| [enforcement.md](./enforcement.md) | Enforcement policy notes | Reference |
+| [prohibited-actions.md](./prohibited-actions.md) | Actions contributors/agents must avoid | Policy |
+| [CRITICAL_NOTICE.md](./CRITICAL_NOTICE.md) | Provider affiliation notice | Policy |
+| [TODO.md](./TODO.md) | Backlog and historical project notes | Working document |
 
-## Installation and Setup
+## Agent and Governance Docs
 
-### Prerequisites
-- Node.js v20.x or higher
-- Go v1.21+ (for native proxy infrastructure)
-- Rust (latest stable) for core native services
+The following files are primarily for AI-agent sessions and internal operating rules. They can be useful context, but they are not the fastest onboarding path for human contributors:
 
-### Initial Setup
+- [AGENTS.md](./AGENTS.md)
+- [AI_RULES.md](./AI_RULES.md)
+- [MASTER_COMMANDMENTS.md](./MASTER_COMMANDMENTS.md)
+- [context.md](./context.md)
+- [code-style-guide.md](./code-style-guide.md)
+
+When a governance document conflicts with executable project checks, the checks in `package.json`, CI workflows, and the current source tree are authoritative.
+
+## Common Commands
+
 ```bash
-git clone https://github.com/TengraStudio/tengra.git
-cd tengra
 npm install
-npm run setup-build-env
-```
-
-### Execution
-```bash
-# Start development environment
 npm run dev
-
-# Compile production build
+npm run type-check
+npm test
+npm run lint
+npm run secrets:scan
+npm run audit:deps:gate
 npm run build
-
-# Generate platform-specific installers
-npm run build:exe    # Windows (x64)
-npm run build:mac    # macOS (Universal)
-npm run build:linux  # Linux (AppImage/deb)
 ```
 
-## Governance and Licensing
+`npm run build` performs the Monaco asset copy, native Rust build/copy step, TypeScript check, and Vite builds. Local builds skip strict lint and bundle budget unless the relevant environment variables are set.
 
-Tengra is an open-source project licensed under the GNU General Public License v3.0 (GPLv3). Contributions are subject to the project's standards of type safety and performance as outlined in the documentation.
+## Documentation Maintenance
+
+- Keep root-level onboarding short; put technical detail in `docs/`.
+- Update this index when adding or removing docs.
+- Prefer concrete commands and paths over broad prose.
+- Do not document old service names such as `cliproxy-embed`; the active native proxy is `tengra-proxy`.
+- Do not add scratch notes under `docs/`. Use `scratch/` or an issue/PR draft for temporary work.

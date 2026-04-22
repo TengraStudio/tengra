@@ -11,7 +11,6 @@
 import { TerminalComponent } from '@renderer/features/workspace/components/ide/Terminal';
 import { WorkspaceEnvironmentTab } from '@renderer/features/workspace/components/WorkspaceEnvironmentTab';
 import { WorkspaceGitTab } from '@renderer/features/workspace/components/WorkspaceGitTab';
-import { WorkspaceLogsTab } from '@renderer/features/workspace/components/WorkspaceLogsTab';
 import { WorkspaceSettingsPanel } from '@renderer/features/workspace/components/WorkspaceSettingsPanel';
 import { WorkspaceTodoTab } from '@renderer/features/workspace/components/WorkspaceTodoTab';
 import { FileSearchResult } from '@shared/types/common';
@@ -142,11 +141,6 @@ export const WorkspaceDashboardTabsContent: React.FC<WorkspaceDashboardTabsProps
         env: (
             <div className="h-full overflow-hidden animate-in fade-in duration-500">
                 <WorkspaceEnvironmentTab workspacePath={workspaceRoot} language={language} />
-            </div>
-        ),
-        logs: (
-            <div className="h-full overflow-hidden animate-in fade-in duration-500">
-                <WorkspaceLogsTab workspacePath={workspaceRoot} language={language} />
             </div>
         ),
         settings: (

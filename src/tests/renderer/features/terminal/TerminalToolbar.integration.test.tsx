@@ -16,10 +16,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { TerminalToolbar } from '@/features/terminal/components/TerminalToolbar';
 import type { TerminalTab } from '@/types';
 
-vi.mock('@/features/terminal/components/TerminalAppearanceModals', () => ({
-    TerminalAppearanceModals: () => <div data-testid="terminal-appearance-modals" />,
-}));
-
 vi.mock('@/features/terminal/components/TerminalSplitControls', () => ({
     TerminalSplitControls: () => <div data-testid="terminal-split-controls" />,
 }));
@@ -100,6 +96,8 @@ function createBaseProps(): ComponentProps<typeof TerminalToolbar> {
         toggleSynchronizedInput: vi.fn(),
         toggleSplitOrientation: vi.fn(),
         closeSplitView: vi.fn(),
+        handleSplitDown: vi.fn(),
+        handleSplitUp: vi.fn(),
         isGalleryView: false,
         toggleGalleryView: vi.fn(),
         toggleSemanticPanel: vi.fn(),
@@ -111,55 +109,6 @@ function createBaseProps(): ComponentProps<typeof TerminalToolbar> {
         isMaximized: false,
         setIsMaximized: vi.fn(),
         onToggle: vi.fn(),
-        appearanceProps: {
-            inputRef: { current: null },
-            onImport: vi.fn(),
-            isAppearanceMenuOpen: false,
-            setIsAppearanceMenuOpen: vi.fn(),
-            title: 'Appearance',
-            t: (key: string) => key,
-            terminalAppearance: {
-                themePresetId: 'default',
-                fontPresetId: 'mono',
-                ligatures: false,
-                surfaceOpacity: 1,
-                surfaceBlur: 0,
-                cursorStyle: 'block',
-                cursorBlink: false,
-                fontSize: 14,
-                lineHeight: 1.4,
-                customTheme: null,
-            },
-            resolvedTerminalAppearance: {
-                theme: {
-                    background: '#111111',
-                    foreground: '#eeeeee',
-                    green: '#00ff00',
-                    red: '#ff0000',
-                    yellow: '#ffff00',
-                },
-                fontFamily: 'monospace',
-                cursorStyle: 'block',
-                cursorBlink: false,
-                fontSize: 14,
-                lineHeight: 1.4,
-            },
-            themePresets: [{ id: 'default', name: 'Default', category: 'default', theme: {} }],
-            fontPresets: [{ id: 'mono', name: 'Monospace' }],
-            cursorStyles: [{ id: 'block', name: 'Block' }],
-            themeCategoryLabel: () => 'default',
-            applyAppearancePatch: vi.fn(),
-            exportAppearancePreferences: vi.fn(),
-            openAppearanceImportDialog: vi.fn(),
-            shortcutInputRef: { current: null },
-            onShortcutImport: vi.fn(),
-            shortcutPreset: 'default',
-            applyShortcutPreset: vi.fn(),
-            exportShortcutPreferences: vi.fn(),
-            openShortcutImportDialog: vi.fn(),
-            shareShortcutPreferences: vi.fn().mockResolvedValue(undefined),
-            importShortcutShareCode: vi.fn(),
-        },
     };
 }
 

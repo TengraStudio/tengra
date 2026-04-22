@@ -119,6 +119,14 @@ pub async fn start_proxy_server(port: u16) -> anyhow::Result<()> {
             get(crate::proxy::handlers::management::handle_get_quota),
         )
         .route(
+            "/v0/management/quota/snapshot",
+            get(crate::proxy::handlers::management::handle_get_quota_snapshot),
+        )
+        .route(
+            "/v0/management/quota/stream",
+            get(crate::proxy::handlers::management::handle_stream_quota),
+        )
+        .route(
             "/v0/management/anthropic-auth-url",
             get(crate::proxy::handlers::management::handle_claude_auth_url),
         )

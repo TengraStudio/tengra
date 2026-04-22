@@ -55,8 +55,8 @@ export const Skeleton: React.FC<SkeletonProps> = React.memo(({
     return (
         <div
             className={cn(
-                'bg-muted',
-                animate && 'relative overflow-hidden after:absolute after:inset-0 after:bg-skeleton-shimmer after:animate-skeleton-shimmer',
+                'skeleton',
+                !animate && 'animate-none',
                 variantClasses[variant],
                 className
             )}
@@ -110,7 +110,7 @@ export const SkeletonCard: React.FC<{
     showDescription = true 
 }) => {
     return (
-        <div className={cn('p-4 flex flex-col gap-4 border border-border rounded-xl', className)}>
+        <div className={cn('glass-card p-4 flex flex-col gap-4', className)}>
             {showImage && (
                 <Skeleton className="w-full h-120 rounded-lg" variant="rounded" width="100%" height={120} />
             )}

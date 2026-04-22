@@ -233,20 +233,49 @@ export class VoiceService extends BaseService {
 
     /** Setup IPC handlers for voice operations */
     private setupIpcHandlers(): void {
-        ipcMain.handle('voice:get-settings', this.handleGetSettings.bind(this));
-        ipcMain.handle('voice:update-settings', this.handleUpdateSettings.bind(this));
-        ipcMain.handle('voice:get-commands', this.handleGetCommands.bind(this));
-        ipcMain.handle('voice:add-command', this.handleAddCommand.bind(this));
-        ipcMain.handle('voice:remove-command', this.handleRemoveCommand.bind(this));
-        ipcMain.handle('voice:update-command', this.handleUpdateCommand.bind(this));
-        ipcMain.handle('voice:process-transcript', this.handleProcessTranscript.bind(this));
-        ipcMain.handle('voice:execute-command', this.handleExecuteCommand.bind(this));
-        ipcMain.handle('voice:get-voices', this.handleGetVoices.bind(this));
-        ipcMain.handle('voice:synthesize', this.handleSynthesize.bind(this));
-        ipcMain.handle('voice:stop-speaking', this.handleStopSpeaking.bind(this));
-        ipcMain.handle('voice:set-listening', this.handleSetListening.bind(this));
-        ipcMain.handle('voice:send-event', this.handleSendEvent.bind(this));
-        ipcMain.handle('voice:health', this.handleHealth.bind(this));
+        ipcMain.handle('voice:get-settings', async () => await this.handleGetSettings());
+        ipcMain.handle(
+            'voice:update-settings',
+            async (event, settings: Partial<VoiceSettings>) =>
+                await this.handleUpdateSettings(event, settings)
+        );
+        ipcMain.handle('voice:get-commands', async () => await this.handleGetCommands());
+        ipcMain.handle(
+            'voice:add-command',
+            async (event, command: VoiceCommand) => await this.handleAddCommand(event, command)
+        );
+        ipcMain.handle(
+            'voice:remove-command',
+            async (event, commandId: string) => await this.handleRemoveCommand(event, commandId)
+        );
+        ipcMain.handle(
+            'voice:update-command',
+            async (event, command: VoiceCommand) => await this.handleUpdateCommand(event, command)
+        );
+        ipcMain.handle(
+            'voice:process-transcript',
+            async (event, transcript: string) => await this.handleProcessTranscript(event, transcript)
+        );
+        ipcMain.handle(
+            'voice:execute-command',
+            async (event, command: VoiceCommand) => await this.handleExecuteCommand(event, command)
+        );
+        ipcMain.handle('voice:get-voices', async () => await this.handleGetVoices());
+        ipcMain.handle(
+            'voice:synthesize',
+            async (event, options: VoiceSynthesisOptions) => await this.handleSynthesize(event, options)
+        );
+        ipcMain.handle('voice:stop-speaking', async () => await this.handleStopSpeaking());
+        ipcMain.handle(
+            'voice:set-listening',
+            async (event, listening: boolean) => await this.handleSetListening(event, listening)
+        );
+        ipcMain.handle(
+            'voice:send-event',
+            async (event, eventType: VoiceEventType, data: RuntimeValue) =>
+                await this.handleSendEvent(event, eventType, data)
+        );
+        ipcMain.handle('voice:health', async () => await this.handleHealth());
     }
 
     /** Remove IPC handlers */

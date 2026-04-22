@@ -8,11 +8,11 @@
  * (at your option) any later version.
  */
 
-import * as path from 'path';
 
 import { CircuitBreaker } from '@main/core/circuit-breaker';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
+import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
 import { HttpService } from '@main/services/external/http.service';
 import {
     LocalModelFileFormat,
@@ -21,7 +21,6 @@ import {
     resolveRuntimeProviderForLocalModel,
 } from '@main/services/llm/local-runtime.types';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { app } from 'electron';
 
 interface HFApiModel {
     modelId: string;
@@ -1553,7 +1552,7 @@ export class HuggingFaceService extends BaseService {
     }
 
     private getWatchlistPath(): string {
-        return path.join(app.getPath('userData'), 'hf-watchlist.json');
+        return getDataFilePath('huggingface', 'watchlist.json');
     }
 
     private async loadWatchlist(): Promise<void> {
@@ -1574,7 +1573,7 @@ export class HuggingFaceService extends BaseService {
     }
 
     private getModelVersionsPath(): string {
-        return path.join(app.getPath('userData'), 'hf-model-versions.json');
+        return getDataFilePath('huggingface', 'model-versions.json');
     }
 
     private async loadModelVersions(): Promise<void> {
@@ -1598,7 +1597,7 @@ export class HuggingFaceService extends BaseService {
     }
 
     private getFineTuneJobsPath(): string {
-        return path.join(app.getPath('userData'), 'hf-finetune-jobs.json');
+        return getDataFilePath('huggingface', 'finetune-jobs.json');
     }
 
     private async loadFineTuneJobs(): Promise<void> {

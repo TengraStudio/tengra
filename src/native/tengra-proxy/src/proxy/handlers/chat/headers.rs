@@ -64,12 +64,12 @@ pub fn apply_headers(
             let final_token = extract_session_token(auth_token, active_key_row);
             builder = builder
                 .header("Authorization", format!("Bearer {}", final_token))
-                .header("User-Agent", "GithubCopilot/1.250.0")
-                .header("Copilot-Integration-Id", "vscode-chat")
-                .header("Editor-Version", "vscode/1.107")
-                .header("Editor-Plugin-Version", "copilot/1.250.0")
+                .header("User-Agent", "gh-copilot/1.0.0")
+                .header("Copilot-Integration-Id", "gh-copilot")
+                .header("Editor-Version", "gh/2.61.0")
+                .header("Editor-Plugin-Version", "gh-copilot/1.0.0")
                 .header("Openai-Intent", "conversation-panel")
-                .header("X-GitHub-Api-Version", "2023-07-07")
+                .header("X-GitHub-Api-Version", "2026-03-10")
                 .header("X-Request-Id", uuid::Uuid::new_v4().to_string())
                 .header("Openai-Organization", "github-copilot")
                 .header(

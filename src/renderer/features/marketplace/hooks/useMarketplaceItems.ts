@@ -67,6 +67,7 @@ export function useMarketplaceItems({ mode, registry, localPlugins, query, insta
             case 'personas': items = registry.personas || []; break;
             case 'prompts': items = registry.prompts || []; break;
             case 'languages': items = registry.languages || []; break;
+            case 'iconPacks': items = registry.iconPacks || []; break;
             case 'models': {
                 const models = registry.models || [];
                 if (modelTab === 'ollama') {

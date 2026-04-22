@@ -106,8 +106,17 @@ const DEFERRED_SERVICE_NAMES: string[] = [
     // Agent services
     'agentService',
     // Workspace & external
-    'backupService',
-    'extensionService',
+    'marketplaceService',
+    'mcpPluginService',
+    'socialMediaService',
+    'cronSchedulerService',
+    'notificationDispatcherService',
+    'imagePersistenceService',
+    'chatEventService',
+    'ruleService',
+    'authAPIService',
+    'keyRotationService',
+    'tokenService',
 ];
 
 export function startCriticalHealthChecks(deps: { databaseService: RuntimeValue; networkService: RuntimeValue }): void {

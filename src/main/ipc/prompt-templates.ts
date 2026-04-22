@@ -30,24 +30,10 @@ export function registerPromptTemplatesIpc(getMainWindow: () => BrowserWindow | 
     /**
      * Get templates by category
      */
-    ipcMain.handle('prompt-templates:getByCategory', createSafeIpcHandler('prompt-templates:getByCategory', async (event: IpcMainInvokeEvent, category: string) => {
-        validateSender(event);
-        if (typeof category !== 'string') {
-            throw new Error('Category must be a string');
-        }
-        return promptTemplatesService.getByCategory(category);
-    }, []));
 
     /**
      * Get templates by tag
      */
-    ipcMain.handle('prompt-templates:getByTag', createSafeIpcHandler('prompt-templates:getByTag', async (event: IpcMainInvokeEvent, tag: string) => {
-        validateSender(event);
-        if (typeof tag !== 'string') {
-            throw new Error('Tag must be a string');
-        }
-        return promptTemplatesService.getByTag(tag);
-    }, []));
 
     /**
      * Search templates
@@ -107,20 +93,6 @@ export function registerPromptTemplatesIpc(getMainWindow: () => BrowserWindow | 
     /**
      * Render a template with variables
      */
-    ipcMain.handle('prompt-templates:render', createSafeIpcHandler('prompt-templates:render', async (event: IpcMainInvokeEvent, templateId: string, variables: Record<string, string>) => {
-        validateSender(event);
-        if (typeof templateId !== 'string') {
-            throw new Error('Template ID must be a string');
-        }
-        if (typeof variables !== 'object') {
-            throw new Error('Variables must be an object');
-        }
-        const result = promptTemplatesService.renderTemplate(templateId, variables);
-        if (!result) {
-            throw new Error(`Template not found: ${templateId}`);
-        }
-        return result;
-    }, ''));
 
     /**
      * Get all categories
@@ -133,8 +105,4 @@ export function registerPromptTemplatesIpc(getMainWindow: () => BrowserWindow | 
     /**
      * Get all tags
      */
-    ipcMain.handle('prompt-templates:getTags', createSafeIpcHandler('prompt-templates:getTags', async (event) => {
-        validateSender(event);
-        return promptTemplatesService.getTags();
-    }, []));
 }

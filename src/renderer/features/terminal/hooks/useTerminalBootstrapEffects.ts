@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { type MutableRefObject, useEffect } from 'react';
+import { type MutableRefObject, useEffect, useRef } from 'react';
 
 import type { TerminalTab } from '@/types';
 
@@ -56,6 +56,8 @@ export function useTerminalBootstrapEffects({
     resolveDefaultBackendId,
     createTerminal,
 }: UseTerminalBootstrapEffectsParams): void {
+    const hasLoadedMenuConnectionsRef = useRef(false);
+
     useEffect(() => {
         if (!isOpen) {
             return;
@@ -110,17 +112,26 @@ export function useTerminalBootstrapEffects({
     ]);
 
     useEffect(() => {
-        if (isOpen && isNewTerminalMenuOpen) {
-            if (
-                (availableShells.length === 0 || availableBackends.length === 0) &&
-                !isLoadingShells &&
-                !isLoadingBackends
-            ) {
-                void fetchDiscoverySnapshot();
-            }
-            if (!isLoadingRemoteConnections) {
-                void fetchRemoteConnections();
-            }
+        if (!isOpen || !isNewTerminalMenuOpen) {
+            hasLoadedMenuConnectionsRef.current = false;
+            return;
+        }
+
+        if (hasLoadedMenuConnectionsRef.current) {
+            return;
+        }
+
+        hasLoadedMenuConnectionsRef.current = true;
+
+        if (
+            (availableShells.length === 0 || availableBackends.length === 0) &&
+            !isLoadingShells &&
+            !isLoadingBackends
+        ) {
+            void fetchDiscoverySnapshot();
+        }
+        if (!isLoadingRemoteConnections) {
+            void fetchRemoteConnections();
         }
     }, [
         isOpen,
@@ -133,4 +144,5 @@ export function useTerminalBootstrapEffects({
         fetchDiscoverySnapshot,
         fetchRemoteConnections,
     ]);
+
 }

@@ -283,10 +283,9 @@ describe('useChatGenerator - Streaming', () => {
 
     it('streams the first turn with the latest user message and clears generating state', async () => {
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'ollama',
                 language: 'en',
@@ -342,10 +341,9 @@ describe('useChatGenerator - Image Generation', () => {
         });
 
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'ollama',
                 language: 'tr',
@@ -391,10 +389,9 @@ describe('useChatGenerator - Image Generation', () => {
         mockExecuteTools.mockResolvedValue(undefined);
 
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'ollama',
                 language: 'tr',
@@ -457,10 +454,9 @@ describe('useChatGenerator - Tool Logic', () => {
         });
 
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'copilot',
                 language: 'tr',
@@ -530,10 +526,9 @@ describe('useChatGenerator - Tool Logic', () => {
         });
 
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'copilot',
                 language: 'tr',
@@ -589,10 +584,9 @@ describe('useChatGenerator - Tool Logic', () => {
         });
 
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'copilot',
                 language: 'tr',
@@ -651,10 +645,9 @@ describe('useChatGenerator - Tool Logic', () => {
         });
 
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'copilot',
                 language: 'tr',
@@ -709,10 +702,9 @@ describe('useChatGenerator - Validation', () => {
         mockChatStream.mockImplementationOnce(() => createInvalidToolTurnStream());
 
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'copilot',
                 language: 'tr',
@@ -758,10 +750,9 @@ describe('useChatGenerator - Validation', () => {
         mockChatStream.mockImplementationOnce(() => createInvalidToolWithTextTurnStream());
 
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'copilot',
                 language: 'tr',
@@ -810,10 +801,9 @@ describe('useChatGenerator - Validation', () => {
         mockExecuteTools.mockRejectedValue(new Error('Tool backend unavailable'));
 
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'copilot',
                 language: 'tr',
@@ -871,19 +861,18 @@ describe('useChatGenerator - Efficiency & Rebinds', () => {
             result: {
                 success: true,
                 resultKind: 'path_resolution',
-                path: 'C:/Users/agnes/Desktop/todo-app',
+                path: 'C:/Users/mockuser/Desktop/todo-app',
                 pathExists: false,
                 parentExists: true,
                 complete: true,
-                displaySummary: 'Resolved path: C:/Users/agnes/Desktop/todo-app',
+                displaySummary: 'Resolved path: C:/Users/mockuser/Desktop/todo-app',
             },
         });
 
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'codex',
                 language: 'tr',
@@ -938,10 +927,9 @@ describe('useChatGenerator - Efficiency & Rebinds', () => {
         });
 
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'codex',
                 language: 'tr',
@@ -1034,10 +1022,9 @@ describe('useChatGenerator - Efficiency & Rebinds', () => {
         });
 
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'codex',
                 language: 'tr',
@@ -1088,10 +1075,9 @@ describe('useChatGenerator - Efficiency & Rebinds', () => {
         });
 
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'ollama',
                 language: 'tr',
@@ -1158,10 +1144,9 @@ describe('useChatGenerator - Efficiency & Rebinds', () => {
         });
 
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'codex',
                 language: 'en',
@@ -1204,10 +1189,9 @@ describe('useChatGenerator - Efficiency & Rebinds', () => {
         mockExecuteTools.mockImplementationOnce(() => pendingToolExecution);
 
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'ollama',
                 language: 'tr',
@@ -1275,10 +1259,9 @@ describe('useChatGenerator - Permission & Plan Tools', () => {
         ]);
 
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'antigravity',
                 language: 'tr',
@@ -1316,3 +1299,4 @@ describe('useChatGenerator - Permission & Plan Tools', () => {
         );
     });
 });
+

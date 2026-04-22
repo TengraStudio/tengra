@@ -1,82 +1,92 @@
-# Contributing to Tengra & Development Guide
+# Contributing to Tengra
 
-Thank you for your interest in contributing to Tengra! This guide provides the necessary information to set up, develop, and test the platform.
+This guide covers the development workflow for contributors. For architecture context, read [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md) and [ARCHITECTURE.md](./ARCHITECTURE.md) after the setup section.
 
-To maintain high code quality and safety, we follow strict guidelines.
+## Prerequisites
 
-## 1. 👑 The Master Commandments
+- Node.js 20 or newer.
+- npm matching the installed Node.js version.
+- Rust stable toolchain with Cargo.
+- Platform build tools:
+  - Windows: Visual Studio Build Tools with C++ workload.
+  - macOS: Xcode Command Line Tools.
+  - Linux: GCC/Clang plus common native build dependencies.
+- Optional external tools for runtime features: Ollama, Git, Docker, SSH client, and supported terminal emulators.
 
-> **CRITICAL**: Failure to adhere to these rules will result in immediate session termination. NO EXCEPTIONS.
+Go is not required for the current native runtime. The active native services are Rust crates under `src/native`.
 
-1.  **NO `console.log`**: Use `appLogger` for all logging. Every log must have a service context.
-2.  **STRICT TYPES**: `any` and `unknown` are strictly forbidden. Use explicit interfaces.
-3.  **NO SUPPRESSION**: `@ts-ignore` and `eslint-disable` are NOT allowed. Fix the root cause.
-4.  **NASA POWER OF TEN**:
-    - No recursion.
-    - Fixed loop bounds.
-    - Short functions (max 150 lines, 60 lines preferred).
-    - Check all return values.
-5.  **BOY SCOUT RULE**: Mandatory. Leave the code cleaner. Every session MUST fix at least one existing lint warning or type issue.
+## Setup
 
----
+```bash
+git clone https://github.com/TengraStudio/tengra.git
+cd tengra
+npm install
+npm run dev
+```
 
-## 2. Environment Setup
+Useful one-time environment check:
 
-### Prerequisites
-- **Node.js**: v18.0.0 or higher.
-- **Go**: v1.21+ for `cliproxy-embed`.
-- **Rust and Cargo**: for native token and model services.
-- **Build Tools**: Visual Studio Build Tools (Windows) or GCC/Clang (Linux/macOS).
+```bash
+npm run setup-build-env
+```
 
-### Initial Configuration
-1. Clone the repository and navigate to the root directory.
-2. Run `npm install` to install dependencies.
-3. Run `npm run build` for an initial full compilation.
-4. Run `npm run dev` to start the application with HMR.
+## Development Workflow
 
----
+1. Keep changes scoped to the feature or fix.
+2. Prefer existing services, schemas, stores, and IPC helpers over adding parallel patterns.
+3. Add or update tests when changing behavior.
+4. Do not commit generated build output from `dist/`, `release/`, `node_modules/`, or managed runtime binaries.
+5. Keep provider credentials, personal tokens, local paths, and machine-specific artifacts out of documentation and tests unless they are intentional public test/static configuration.
 
-## 3. Development Workflow
+## Verification
 
-1.  **Read Docs**: Check `AI_RULES.md` and `TODO.md` before starting.
-2.  **Implementation**: Follow the established service patterns (`BaseService`).
-3.  **Verification**:
-    ```bash
-    npm run build
-    npm run lint
-    npm run type-check
-    npm run test
-    ```
-4.  **Commit**: Use conventional commit messages.
+Run the narrowest relevant check while iterating, then run the broader checks before release or PR review.
 
----
+```bash
+npm run type-check
+npm test
+npm run lint
+npm run secrets:scan
+npm run audit:deps:gate
+npm run build
+```
 
-## 4. UI/UX Standards
+Notes:
 
-- Use the premium design system (vibrant colors, glassmorphism).
-- Mandatory `useMemo` and `useCallback` for computations in React.
-- Always implement `dispose()` for resource cleanup.
-- Virtualize lists exceeding 50 items.
+- `npm run lint` may print existing warnings, but should exit successfully.
+- `npm run build` skips strict lint and bundle budget in normal local mode. CI and release workflows can enforce stricter gates.
+- `npm run secrets:scan` scans tracked text files and intentionally avoids generated/binary output.
 
----
+## Native Services
 
-## 5. Localization (i18n)
+Native services are built from `src/native`:
 
-- Never hardcode user-facing strings.
-- Use `t('key')` for translations.
-- Update matching section files in `src/renderer/i18n/en/` and `src/renderer/i18n/tr/`.
-- Keep language folders synchronized across all sections.
+- `tengra-db-service`
+- `tengra-memory-service`
+- `tengra-proxy`
 
----
+`scripts/compile-native.js` builds the Rust workspace and copies binaries into the managed runtime bin directory. It skips the Rust rebuild when native sources are unchanged and existing release outputs are current.
 
-## 6. Build and Release Process
+## Code Standards
 
-1. **TypeScript Compilation**: `tsc` validates types.
-2. **Linting**: ESLint checks for rule violations.
-3. **Frontend Build**: Vite bundles React code and assets.
-4. **Native Compilation**: `scripts/build-native.js` triggers Go and Cargo builds.
-5. **Packaging**: Electron Builder packages the app into an executable installer.
+- Use TypeScript types deliberately. Avoid `any`; use concrete types or shared schema-derived types.
+- Do not suppress TypeScript or ESLint errors to pass checks. Fix the cause.
+- Use project logging utilities instead of raw `console.log` in application code.
+- Keep renderer code free of direct Node.js access; go through preload/IPC contracts.
+- Validate IPC payloads with existing schema patterns.
+- Keep UI copy localizable and avoid hardcoded user-facing strings where the surrounding feature uses `t()`.
+- Keep large lists virtualized and clean up subscriptions, processes, timers, and event listeners.
 
----
+## Pull Request Checklist
 
-For more detailed coding standards, see [AI_RULES.md](./AI_RULES.md).
+- The change has a clear description and scope.
+- Relevant tests were added or updated.
+- `npm run type-check` passes.
+- Relevant test suite passes.
+- `npm run lint` passes.
+- Security-sensitive changes mention risk and mitigation.
+- Documentation is updated when behavior, setup, architecture, or public commands change.
+
+## Release Work
+
+For release preparation, use [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md). For runtime packaging details, use [MANAGED_RUNTIME.md](./MANAGED_RUNTIME.md).

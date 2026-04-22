@@ -43,6 +43,7 @@ export interface ModelListItem {
     };
     percentage?: number;
     reset?: string;
+    creditMultiplier?: number;
 }
 
 export interface ModelCategory {

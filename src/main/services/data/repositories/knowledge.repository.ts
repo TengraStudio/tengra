@@ -335,11 +335,19 @@ export class KnowledgeRepository extends BaseRepository {
         return this.adapter.prepare('SELECT * FROM file_diffs WHERE id = ?').get<JsonObject>(id);
     }
 
-    async storeFileDiff(diff: { id: string; workspaceId: string; filePath: string; diffContent: string; createdAt: number; sessionId?: string; systemId?: string }): Promise<void> {
+    async storeFileDiff(diff: { id: string; workspaceId: string; filePath: string; diffJson: string; createdAt: number; sessionId?: string; systemId?: string }): Promise<void> {
         await this.adapter.prepare(`
-            INSERT INTO file_diffs(id, workspace_path, file_path, diff, created_at)
-            VALUES(?, ?, ?, ?, ?)
-        `).run(diff.id, diff.workspaceId, diff.filePath, JSON.stringify(diff), Date.now());
+            INSERT INTO file_diffs(id, workspace_path, file_path, diff, created_at, session_id, system_id)
+            VALUES(?, ?, ?, ?, ?, ?, ?)
+        `).run(
+            diff.id,
+            diff.workspaceId,
+            diff.filePath,
+            diff.diffJson,
+            diff.createdAt,
+            diff.sessionId ?? null,
+            diff.systemId ?? null
+        );
     }
 
     async getFileDiffHistory(filePath: string): Promise<JsonObject[]> {

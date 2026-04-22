@@ -428,6 +428,7 @@ class NetworkError extends AppError {
 }
 ```
 
+```typescript
 // Incorrect patterns
 
 // Silent catch (swallowing errors)
@@ -633,11 +634,11 @@ interface UserData {
 
 // Use type for unions/primitives
 type Status = 'pending' | 'complete' | 'failed';
+```
 
 ### 10.6 Linting Priority
 
-**CRITICAL**: Agents MUST check [LINT_ISSUES.md](./LINT_ISSUES.md) before starting work. Fixing the categorized issues in that file is currently the top priority for codebase maintenance.
-```
+**CRITICAL**: Agents MUST run `npm run lint` for the current lint state before wide cleanup work. Do not rely on a separate lint debt document unless it exists and is linked from [README.md](./README.md).
 
 ### 10.2 Async/Await Rules
 
@@ -710,7 +711,7 @@ import { localHelper } from './helper'
 ```
 type(scope): description
 
-feat(token-service): add configurable refresh intervals
+feat(memory-service): add configurable refresh intervals
 fix(job-scheduler): persist job state across restarts
 docs(ai-rules): add comprehensive guidelines
 refactor(services): reorganize by domain
@@ -1023,36 +1024,20 @@ After:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 13.4 Structured Changelog Updates
+### 13.4 Release Notes and Change Tracking
 
-Every code change MUST be recorded in the structured changelog system.
+Do not use the removed structured changelog system. Track implementation state in the current project documents and summarize user-facing changes in PR or release notes.
 
-**Canonical source (single source of truth):**
-- `docs/changelog/data/changelog.entries.json` (English - ALWAYS update this first)
-
-**Locale overrides (TRANSLATIONS ONLY ON WEEKENDS):**
-- `docs/changelog/i18n/tr.overrides.json`
-- `docs/changelog/i18n/ar.overrides.json`
-- `docs/changelog/i18n/zh.overrides.json`
-- `docs/changelog/i18n/ja.overrides.json`
+**Current source of truth:**
+- `docs/TODO.md` for active and historical implementation notes.
+- Pull request descriptions and release notes for user-facing change summaries.
+- `docs/RELEASE_CHECKLIST.md` for release readiness.
 
 **Changelog Rules:**
-1. **English First**: ALWAYS write changelog entries in the English file first (`changelog.entries.json`).
-2. **Translations on Weekends Only**: Locale/translation files can ONLY be updated on weekends (Saturday-Sunday).
-3. **No Translation Overload**: Do not write translations for every minor change during weekdays.
-
-**Generate + validate (mandatory):**
-```bash
-npm run changelog:sync
-```
-
-**Do not manually edit generated files:**
-- `docs/changelog/generated/CHANGELOG.en.md`
-- `docs/changelog/generated/CHANGELOG.tr.md`
-- `src/renderer/data/changelog.index.json`
-
-**Legacy note:**
-- `docs/CHANGELOG.md` is archive-only and must not be used for new updates.
+1. Do not reference the removed structured changelog tree under `docs/changelog`.
+2. Do not run `npm run changelog:sync`; that script is not part of the current project.
+3. Keep release notes concise, user-facing, and grounded in actual merged changes.
+4. Do not delete historical completed entries from `docs/TODO.md`.
 
 ### 13.5 Complete Workflow Example
 
@@ -1067,13 +1052,13 @@ npm run changelog:sync
 │ 5. Run: npm run lint                                         │
 │ 6. Run: npm run type-check                                   │
 │ 7. If errors → fix and repeat steps 4-6                      │
-│ 8. Update docs/TODO.md (mark [x], DON'T delete)              │
-│ 9. Update English changelog (changelog.entries.json)         │
-│10. Run `npm run changelog:sync`                              │
+│ 8. Update docs/TODO.md when the task maps to an existing item │
+│ 9. Update docs when commands, setup, or architecture changed  │
+│10. For releases, follow docs/RELEASE_CHECKLIST.md            │
 │11. COMMIT IMMEDIATELY (don't wait for more changes)          │
 │12. Push to repository                                        │
 │                                                              │
-│ NOTE: Translations only on weekends (Saturday-Sunday)        │
+│ NOTE: Do not invent missing release/changelog scripts.       │
 └──────────────────────────────────────────────────────────────┘
 ```
 

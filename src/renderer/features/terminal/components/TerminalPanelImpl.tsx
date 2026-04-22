@@ -86,6 +86,8 @@ export function TerminalPanelContentImpl(props: TerminalPanelProps) {
                 toggleSynchronizedInput={core.splitActions.toggleSynchronizedInput}
                 toggleSplitOrientation={core.splitActions.toggleSplitOrientation}
                 closeSplitView={core.splitActions.closeSplitView}
+                handleSplitDown={core.splitActions.handleSplitDown}
+                handleSplitUp={core.splitActions.handleSplitUp}
                 isGalleryView={core.isGalleryView}
                 toggleGalleryView={core.panelToggles.toggleGalleryView}
                 toggleSemanticPanel={core.panelToggles.toggleSemanticPanel}
@@ -97,14 +99,6 @@ export function TerminalPanelContentImpl(props: TerminalPanelProps) {
                 isMaximized={core.isMaximized}
                 setIsMaximized={core.setIsMaximized}
                 onToggle={core.onToggle}
-                isAppearanceMenuOpen={core.isAppearanceMenuOpen}
-                setIsAppearanceMenuOpen={core.setIsAppearanceMenuOpen}
-                terminalAppearance={core.terminalAppearance}
-                resolvedTerminalAppearance={core.preferences.resolvedTerminalAppearance}
-                applyAppearancePatch={core.preferences.applyAppearancePatch}
-                exportAppearancePreferences={core.preferences.exportAppearancePreferences}
-                importAppearancePreferences={core.preferences.importAppearancePreferences}
-                appearanceImportInputRef={core.appearanceImportInputRef}
                 shortcutPreset={core.shortcuts.shortcutPreset}
                 applyShortcutPreset={core.preferences.applyShortcutPreset}
                 exportShortcutPreferences={core.preferences.exportShortcutPreferences}
@@ -136,6 +130,9 @@ export function TerminalPanelContentImpl(props: TerminalPanelProps) {
                         <TerminalWorkspaceIssuesTab
                             workspaceId={core.workspaceId}
                             workspacePath={core.workspacePath}
+                            activeFilePath={core.activeFilePath}
+                            activeFileContent={core.activeFileContent}
+                            activeFileType={core.activeFileType}
                             onOpenFile={core.onOpenFile}
                         />
                     ) : null

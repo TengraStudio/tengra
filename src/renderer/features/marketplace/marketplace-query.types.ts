@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-export type MarketplaceTab = 'mcp' | 'extensions' | 'skills' | 'themes' | 'personas' | 'models' | 'prompts' | 'languages';
+export type MarketplaceTab = 'mcp' | 'extensions' | 'skills' | 'themes' | 'personas' | 'models' | 'prompts' | 'languages' | 'iconPacks';
 export type ModelTab = 'ollama' | 'huggingface' | 'community';
 export type MarketplaceFilterValue = 'all' | 'installed' | 'not_installed';
 export type MarketplaceModelFitValue = 'all' | 'recommended' | 'workable' | 'limited' | 'blocked';
@@ -61,5 +61,6 @@ export function createDefaultMarketplaceQueries(): Record<MarketplaceTab, Market
         models: { ...DEFAULT_QUERY_STATE, sort: 'performance_desc', modelTab: 'ollama' },
         prompts: { ...DEFAULT_QUERY_STATE },
         languages: { ...DEFAULT_QUERY_STATE },
+        iconPacks: { ...DEFAULT_QUERY_STATE },
     };
 }

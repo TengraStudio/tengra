@@ -68,6 +68,9 @@ export function buildStoredToolResults(
             ? parsedResult as Record<string, JsonValue>
             : null;
         const error = typeof parsedRecord?.error === 'string' ? parsedRecord.error : undefined;
+        const thoughtIndex = typeof (toolCall as unknown as Record<string, unknown>)['thoughtIndex'] === 'number'
+            ? (toolCall as unknown as Record<string, unknown>)['thoughtIndex'] as number
+            : undefined;
         storedResults.push({
             toolCallId: toolCall.id,
             name: toolCall.function.name,
@@ -75,6 +78,7 @@ export function buildStoredToolResults(
             success: parsedRecord?.success !== false && !error,
             error,
             isImage: toolCall.function.name === 'generate_image',
+            ...(typeof thoughtIndex === 'number' ? { thoughtIndex } : {}),
         });
     }
     return storedResults;

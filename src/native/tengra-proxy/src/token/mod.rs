@@ -61,7 +61,7 @@ async fn refresh_due_tokens_once(client: &reqwest::Client) -> Result<(), String>
     }
 
     if !tokens_to_refresh.is_empty() {
-        eprintln!("[DEBUG] Tokens to refresh: {}", tokens_to_refresh.len());
+        println!("[DEBUG] Tokens to refresh: {}", tokens_to_refresh.len());
     }
 
     for (account_id, provider, token) in tokens_to_refresh {
@@ -95,7 +95,7 @@ async fn refresh_token_with_retries(
     provider: &str,
     token: AuthToken,
 ) -> Result<Option<AuthToken>, String> {
-    eprintln!("[DEBUG] Refreshing token for {} ({})", account_id, provider);
+    println!("[DEBUG] Refreshing token for {} ({})", account_id, provider);
     let (client_id, client_secret_opt) = load_provider_client_config(provider).await;
 
     for attempt in 1..=REFRESH_MAX_RETRIES {
@@ -128,7 +128,7 @@ async fn persist_refresh_response(
     db::update_token_data(account_id, provider, json_val)
         .await
         .map_err(|error| format!("Refresh DB save failed: {}", error))?;
-    eprintln!(
+    println!(
         "[DEBUG] Refresh successful for {} ({})",
         account_id, provider
     );

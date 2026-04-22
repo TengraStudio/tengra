@@ -81,11 +81,20 @@ beforeEach(() => {
 });
 
 describe('TokenService - Lifecycle', () => {
-    it('should register only proxy sync job with JobScheduler if available', async () => {
+    it('should register proxy sync jobs with JobScheduler if available', async () => {
         await tokenService.initialize();
-        expect(mockJobScheduler.registerRecurringJob).toHaveBeenCalledTimes(1);
+        expect(mockJobScheduler.registerRecurringJob).toHaveBeenCalledTimes(2);
         expect(mockJobScheduler.registerRecurringJob).toHaveBeenCalledWith(
             'token-refresh-sync',
+            expect.any(Function),
+            expect.any(Function),
+            expect.objectContaining({
+                persistState: false,
+                runOnStart: false,
+            })
+        );
+        expect(mockJobScheduler.registerRecurringJob).toHaveBeenCalledWith(
+            'token-refresh-sync:copilot',
             expect.any(Function),
             expect.any(Function),
             expect.objectContaining({
@@ -106,7 +115,7 @@ describe('TokenService - Lifecycle', () => {
         );
         const setIntervalSpy = vi.spyOn(global, 'setInterval');
         await legacyService.initialize();
-        expect(setIntervalSpy).toHaveBeenCalledTimes(1);
+        expect(setIntervalSpy).toHaveBeenCalledTimes(2);
         void legacyService.cleanup();
     });
 });

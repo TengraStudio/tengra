@@ -18,7 +18,6 @@ import {
     ProxyTelemetryEvent
 } from '@main/services/proxy/proxy.service';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
-import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { SecurityService } from '@main/services/security/security.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
@@ -75,7 +74,6 @@ describe('ProxyService', () => {
     let mockDataService: DataService;
     let mockSecurityService: SecurityService;
     let mockProcessManager: ProxyProcessManager;
-    let mockQuotaService: QuotaService;
     let mockEventBus: EventBusService;
     let mockDatabaseService: DatabaseService;
 
@@ -100,15 +98,6 @@ describe('ProxyService', () => {
             generateConfig: vi.fn().mockResolvedValue(undefined),
         } as never as ProxyProcessManager;
 
-        mockQuotaService = {
-            getQuota: vi.fn(),
-            getAntigravityAvailableModels: vi.fn().mockResolvedValue([]),
-            getCopilotQuota: vi.fn().mockResolvedValue({ accounts: [] }),
-            getClaudeQuota: vi.fn().mockResolvedValue({ accounts: [] }),
-            fetchCodexUsage: vi.fn().mockResolvedValue({}),
-            extractCodexUsageFromWham: vi.fn().mockReturnValue({}),
-        } as never as QuotaService;
-
         mockEventBus = {
             on: vi.fn(),
             off: vi.fn(),
@@ -129,7 +118,6 @@ describe('ProxyService', () => {
             dataService: mockDataService,
             securityService: mockSecurityService,
             processManager: mockProcessManager,
-            quotaService: mockQuotaService,
             authService: mockAuthService,
             eventBus: mockEventBus,
             databaseService: mockDatabaseService
@@ -255,9 +243,24 @@ describe('ProxyService', () => {
             };
 
             vi.mocked(net.request).mockReturnValue(mockReq as never);
-            vi.mocked(mockQuotaService.getAntigravityAvailableModels).mockResolvedValue([
-                { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'antigravity' }
-            ] as never);
+            (proxyService as never as {
+                latestQuotaBroadcast: RuntimeValue;
+            }).latestQuotaBroadcast = {
+                quotaData: {
+                    accounts: [{
+                        accountId: 'antigravity-1',
+                        email: 'test@antigravity.dev',
+                        status: 'active',
+                        next_reset: '',
+                        models: [
+                            { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', percentage: 90 }
+                        ]
+                    }]
+                },
+                copilotQuota: { accounts: [] },
+                claudeQuota: { accounts: [] },
+                codexUsage: { accounts: [] }
+            };
 
             mockReq.on.mockImplementation((event: string, cb: ResponseCallback) => {
                 if (event === 'response') {
@@ -656,7 +659,6 @@ describe('ProxyService input validation', () => {
             dataService: { getPath: vi.fn().mockReturnValue('/mock') } as never as DataService,
             securityService: {} as never as SecurityService,
             processManager: mockProcessManager,
-            quotaService: {} as never as QuotaService,
             authService: mockAuthService,
             eventBus: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), emitCustom: vi.fn() } as never as EventBusService,
             databaseService: {} as never as DatabaseService,

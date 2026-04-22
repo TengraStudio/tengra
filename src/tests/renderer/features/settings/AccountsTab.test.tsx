@@ -119,8 +119,8 @@ function createAccount(overrides?: Partial<LinkedAccountInfo>): LinkedAccountInf
     return {
         id: 'account-1',
         provider: 'antigravity',
-        email: 'agnes@example.com',
-        displayName: 'Agnes',
+        email: 'mockuser@example.com',
+        displayName: 'agnes',
         isActive: true,
         createdAt: Date.now(),
         ...overrides,
@@ -133,7 +133,7 @@ function createQuota(overrides?: Partial<QuotaResponse>): QuotaResponse {
         next_reset: '2026-04-11T00:00:00.000Z',
         models: [],
         accountId: 'account-1',
-        email: 'agnes@example.com',
+        email: 'mockuser@example.com',
         antigravityAiCredits: {
             creditAmount: 12,
             useAICredits: true,

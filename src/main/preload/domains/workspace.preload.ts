@@ -13,7 +13,7 @@ import type {
     InlineSuggestionResponse,
     InlineSuggestionTelemetry,
 } from '@shared/schemas/inline-suggestions.schema';
-import { IpcValue, WorkspaceAnalysis, WorkspaceDefinitionLocation, WorkspaceIssue } from '@shared/types';
+import { IpcValue, WorkspaceAnalysis, WorkspaceDefinitionLocation, WorkspaceIssue, WorkspaceStats } from '@shared/types';
 import { IpcRenderer, IpcRendererEvent } from 'electron';
 
 export interface WorkspaceBridge {
@@ -37,8 +37,7 @@ export interface WorkspaceBridge {
     analyzeDirectory: (dirPath: string) => Promise<{
         hasPackageJson: boolean;
         pkg: Record<string, IpcValue>;
-        readme: string | null;
-        stats: { fileCount: number; totalSize: number };
+        stats: WorkspaceStats;
     }>;
     applyLogo: (workspacePath: string, tempLogoPath: string) => Promise<string>;
     getCompletion: (text: string) => Promise<string>;

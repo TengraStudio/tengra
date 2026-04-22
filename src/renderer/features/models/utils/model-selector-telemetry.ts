@@ -13,7 +13,7 @@
  * @description Provides metrics collection, health dashboards, and observability
  */
 
-import { appLogger } from "@main/logging/logger";
+import { appLogger } from "@/utils/renderer-logger";
 
 /**
  * Telemetry event names for model selector

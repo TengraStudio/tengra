@@ -169,7 +169,89 @@ export class ThemeService extends BaseService {
     }
 
     private async installBuiltInThemes(): Promise<void> {
+        const darkColors = {
+            background: '0 0% 0%',
+            foreground: '0 0% 100%',
+            card: '0 0% 4%',
+            cardForeground: '0 0% 100%',
+            popover: '0 0% 4%',
+            popoverForeground: '0 0% 100%',
+            primary: '199 89% 48%',
+            primaryForeground: '0 0% 100%',
+            secondary: '0 0% 10%',
+            secondaryForeground: '0 0% 100%',
+            accent: '199 70% 15%',
+            accentForeground: '199 89% 70%',
+            destructive: '0 72% 51%',
+            destructiveForeground: '0 0% 100%',
+            muted: '0 0% 8%',
+            mutedForeground: '0 0% 60%',
+            border: '0 0% 15%',
+            input: '0 0% 15%',
+            ring: '199 89% 48%'
+        };
+        const lightColors = {
+            background: '0 0% 100%',
+            foreground: '0 0% 0%',
+            card: '0 0% 98%',
+            cardForeground: '0 0% 10%',
+            popover: '0 0% 100%',
+            popoverForeground: '0 0% 0%',
+            primary: '221 83% 53%',
+            primaryForeground: '0 0% 100%',
+            secondary: '0 0% 95%',
+            secondaryForeground: '0 0% 10%',
+            accent: '221 70% 95%',
+            accentForeground: '221 83% 40%',
+            destructive: '0 84% 60%',
+            destructiveForeground: '0 0% 100%',
+            muted: '0 0% 92%',
+            mutedForeground: '0 0% 40%',
+            border: '0 0% 85%',
+            input: '0 0% 85%',
+            ring: '221 83% 53%'
+        };
         const builtInThemes = [
+            {
+                id: 'graphite',
+                name: 'tengra-graphite',
+                displayName: 'Graphite',
+                version: '1.0.0',
+                type: 'dark' as const,
+                description: 'Default dark Tengra theme',
+                author: 'Tengra Team',
+                colors: darkColors
+            },
+            {
+                id: 'obsidian',
+                name: 'tengra-obsidian',
+                displayName: 'Obsidian',
+                version: '1.0.0',
+                type: 'dark' as const,
+                description: 'Dark theme with violet accents',
+                author: 'Tengra Team',
+                colors: { ...darkColors, primary: '262 83% 58%', ring: '262 83% 58%' }
+            },
+            {
+                id: 'midnight',
+                name: 'tengra-midnight',
+                displayName: 'Midnight',
+                version: '1.0.0',
+                type: 'dark' as const,
+                description: 'Dark theme with blue accents',
+                author: 'Tengra Team',
+                colors: { ...darkColors, primary: '217 91% 60%', ring: '217 91% 60%' }
+            },
+            {
+                id: 'snow',
+                name: 'tengra-snow',
+                displayName: 'Snow',
+                version: '1.0.0',
+                type: 'light' as const,
+                description: 'Clean light Tengra theme',
+                author: 'Tengra Team',
+                colors: lightColors
+            },
             {
                 id: 'black',
                 name: 'tengra-black',
@@ -178,27 +260,7 @@ export class ThemeService extends BaseService {
                 type: 'dark' as const,
                 description: 'Pure black theme with electric cyan accents',
                 author: 'Tengra Team',
-                colors: {
-                    background: '0 0% 0%',
-                    foreground: '0 0% 100%',
-                    card: '0 0% 4%',
-                    cardForeground: '0 0% 100%',
-                    popover: '0 0% 4%',
-                    popoverForeground: '0 0% 100%',
-                    primary: '199 89% 48%',
-                    primaryForeground: '0 0% 100%',
-                    secondary: '0 0% 10%',
-                    secondaryForeground: '0 0% 100%',
-                    accent: '199 70% 15%',
-                    accentForeground: '199 89% 70%',
-                    destructive: '0 72% 51%',
-                    destructiveForeground: '0 0% 100%',
-                    muted: '0 0% 8%',
-                    mutedForeground: '0 0% 60%',
-                    border: '0 0% 15%',
-                    input: '0 0% 15%',
-                    ring: '199 89% 48%'
-                }
+                colors: darkColors
             },
             {
                 id: 'white',
@@ -208,27 +270,7 @@ export class ThemeService extends BaseService {
                 type: 'light' as const,
                 description: 'Clean white theme with vibrant purple accents',
                 author: 'Tengra Team',
-                colors: {
-                    background: '0 0% 100%',
-                    foreground: '0 0% 0%',
-                    card: '0 0% 98%',
-                    cardForeground: '0 0% 10%',
-                    popover: '0 0% 100%',
-                    popoverForeground: '0 0% 0%',
-                    primary: '262 83% 58%',
-                    primaryForeground: '0 0% 100%',
-                    secondary: '0 0% 95%',
-                    secondaryForeground: '0 0% 10%',
-                    accent: '262 70% 95%',
-                    accentForeground: '262 83% 40%',
-                    destructive: '0 84% 60%',
-                    destructiveForeground: '0 0% 100%',
-                    muted: '0 0% 92%',
-                    mutedForeground: '0 0% 40%',
-                    border: '0 0% 85%',
-                    input: '0 0% 85%',
-                    ring: '262 83% 58%'
-                }
+                colors: { ...lightColors, primary: '262 83% 58%', ring: '262 83% 58%' }
             }
         ];
 

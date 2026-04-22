@@ -160,6 +160,11 @@ const marketplaceSkillSchema = marketplaceItemBaseSchema.extend({
     enabled_by_default: z.boolean().optional(),
 });
 
+const marketplaceIconPackSchema = marketplaceItemBaseSchema.extend({
+    itemType: z.literal('icon-pack'),
+    iconVariables: z.record(z.string(), z.string()).optional(),
+});
+
 export const marketplaceRegistrySchema = z.object({
     version: z.string().min(1).max(32),
     lastUpdated: z.string().datetime(),
@@ -171,10 +176,11 @@ export const marketplaceRegistrySchema = z.object({
     languages: z.array(marketplaceLanguageSchema).optional(),
     skills: z.array(marketplaceSkillSchema).optional(),
     extensions: z.array(marketplaceExtensionSchema).optional(),
+    iconPacks: z.array(marketplaceIconPackSchema).optional(),
 }) satisfies z.ZodType<MarketplaceRegistry>;
 
 export const marketplaceInstallRequestSchema = z.object({
-    type: z.enum(['theme', 'mcp', 'persona', 'model', 'prompt', 'language', 'skill', 'extension']),
+    type: z.enum(['theme', 'mcp', 'persona', 'model', 'prompt', 'language', 'skill', 'extension', 'icon-pack']),
     id: z.string().min(1).max(128),
     downloadUrl: z.string().url(),
     provider: z.enum(['ollama', 'huggingface', 'custom']).optional(),

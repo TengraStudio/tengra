@@ -300,7 +300,7 @@ export const webElectronMock: ElectronAPI = {
         improveLogoPrompt: async (_prompt: string) => '',
         uploadLogo: async (_path: string) => null,
         analyzeDirectory: async (_dirPath: string) => ({
-            hasPackageJson: false, pkg: {}, readme: null, stats: { fileCount: 0, totalSize: 0 },
+            hasPackageJson: false, pkg: {}, stats: { fileCount: 0, totalSize: 0 },
         }),
         watch: async (_rootPath: string) => true,
         unwatch: async (_rootPath: string) => true,
@@ -330,6 +330,7 @@ export const webElectronMock: ElectronAPI = {
         readImage: async (_path: string) => ({ success: true }),
         writeFile: async (_path: string, _content: string) => { },
         exists: async (_path: string) => true,
+        revertFileChange: async (_diffId: string) => ({ success: false, error: 'Not supported in web bridge' }),
         copyPath: async (_sourcePath: string, _destinationPath: string) => ({
             success: true,
         }),
@@ -591,6 +592,7 @@ export const webElectronMock: ElectronAPI = {
             prompts: [],
             languages: [],
             skills: [],
+            iconPacks: [],
         } satisfies MarketplaceRegistry),
         getRuntimeProfile: async () => ({
             system: {
@@ -624,6 +626,7 @@ export const webElectronMock: ElectronAPI = {
             queuedDownloads: 0,
             downloadIds: [],
         }),
+        uninstall: async (_itemId: string, _itemType: string) => ({ success: true }),
     },
 
     llama: {

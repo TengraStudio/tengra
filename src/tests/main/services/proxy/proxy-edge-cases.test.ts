@@ -18,7 +18,6 @@ import {
     ProxyTelemetryEvent
 } from '@main/services/proxy/proxy.service';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
-import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { SecurityService } from '@main/services/security/security.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
@@ -76,27 +75,17 @@ function createProxyService() {
         getAuthToken: vi.fn(),
     } as never as AuthService;
 
-    const mockQuotaService = {
-        getQuota: vi.fn().mockResolvedValue(null),
-        getAntigravityAvailableModels: vi.fn().mockResolvedValue([]),
-        getCopilotQuota: vi.fn().mockResolvedValue({ accounts: [] }),
-        getClaudeQuota: vi.fn().mockResolvedValue({ accounts: [] }),
-        fetchCodexUsage: vi.fn().mockResolvedValue({}),
-        extractCodexUsageFromWham: vi.fn().mockReturnValue(null),
-    } as never as QuotaService;
-
     const proxyService = new ProxyService({
         settingsService: mockSettingsService,
         dataService: { getPath: vi.fn().mockReturnValue('/mock') } as never as DataService,
         securityService: {} as never as SecurityService,
         processManager: mockProcessManager,
-        quotaService: mockQuotaService,
         authService: mockAuthService,
         eventBus: mockEventBus,
         databaseService: {} as never as DatabaseService,
     });
 
-    return { proxyService, mockProcessManager, mockEventBus, mockQuotaService };
+    return { proxyService, mockProcessManager, mockEventBus };
 }
 
 describe('ProxyService edge cases', () => {
@@ -182,17 +171,22 @@ describe('ProxyService edge cases', () => {
     });
 
     describe('getQuota delegation', () => {
-        it('should return null when quotaService returns null', async () => {
+        it('should return null when no quota broadcast is available', async () => {
             const { proxyService } = createProxyService();
             const result = await proxyService.getQuota();
             expect(result).toBeNull();
         });
 
-        it('should return quota when available', async () => {
-            const { proxyService, mockQuotaService } = createProxyService();
-            vi.mocked(mockQuotaService.getQuota).mockResolvedValue({
-                accounts: [{ email: 'test@test.com', status: 'active', next_reset: '', models: [] }]
-            });
+        it('should return quota when cached broadcast exists', async () => {
+            const { proxyService } = createProxyService();
+            (proxyService as never as { latestQuotaBroadcast: RuntimeValue }).latestQuotaBroadcast = {
+                quotaData: {
+                    accounts: [{ email: 'test@test.com', status: 'active', next_reset: '', models: [] }]
+                },
+                copilotQuota: { accounts: [] },
+                claudeQuota: { accounts: [] },
+                codexUsage: { accounts: [] }
+            } as never;
             const result = await proxyService.getQuota();
             expect(result).not.toBeNull();
             expect(result!.accounts).toHaveLength(1);

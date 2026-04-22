@@ -10,6 +10,8 @@ use crate::tools::ToolDispatchResponse;
  */
 use serde_json::{json, Value};
 use sysinfo::{ProcessRefreshKind, RefreshKind, System};
+use tokio::process::Command;
+use tokio::time::{timeout, Duration};
 
 pub async fn handle_action(action: &str, arguments: Value) -> ToolDispatchResponse {
     match action {
@@ -18,6 +20,7 @@ pub async fn handle_action(action: &str, arguments: Value) -> ToolDispatchRespon
         "process_list" => process_list(arguments).await,
         "kill_process" => kill_process(arguments).await,
         "disk_space" => disk_space().await,
+        "exec" => exec(arguments).await,
         "usage" => get_info().await, // Already implemented basically
         _ => ToolDispatchResponse {
             success: false,
@@ -164,5 +167,78 @@ async fn disk_space() -> ToolDispatchResponse {
         success: true,
         result: Some(json!(info)),
         error: None,
+    }
+}
+
+async fn exec(arguments: Value) -> ToolDispatchResponse {
+    let command = match arguments.get("command").and_then(|v| v.as_str()) {
+        Some(c) if !c.trim().is_empty() => c.to_string(),
+        _ => {
+            return ToolDispatchResponse {
+                success: false,
+                result: None,
+                error: Some("Missing 'command' argument".to_string()),
+            }
+        }
+    };
+    let args: Vec<String> = arguments
+        .get("args")
+        .and_then(|v| v.as_array())
+        .map(|items| items.iter().filter_map(|v| v.as_str().map(ToString::to_string)).collect())
+        .unwrap_or_default();
+    let cwd = arguments.get("cwd").and_then(|v| v.as_str()).map(ToString::to_string);
+    let timeout_ms = arguments.get("timeoutMs").and_then(|v| v.as_u64()).unwrap_or(12_000);
+
+    let mut cmd = Command::new(&command);
+    cmd.args(args);
+    if let Some(dir) = cwd {
+        cmd.current_dir(dir);
+    }
+    cmd.stdout(std::process::Stdio::piped());
+    cmd.stderr(std::process::Stdio::piped());
+
+    let timed = timeout(Duration::from_millis(timeout_ms), cmd.output()).await;
+    match timed {
+        Ok(Ok(output)) => {
+            let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+            let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+            let command_not_found = output.status.code().is_none() && stderr.to_lowercase().contains("not found");
+            ToolDispatchResponse {
+                success: true,
+                result: Some(json!({
+                    "exitCode": output.status.code(),
+                    "stdout": stdout,
+                    "stderr": stderr,
+                    "timedOut": false,
+                    "commandNotFound": command_not_found,
+                })),
+                error: None,
+            }
+        }
+        Ok(Err(error)) => {
+            let message = error.to_string();
+            ToolDispatchResponse {
+                success: true,
+                result: Some(json!({
+                    "exitCode": null,
+                    "stdout": "",
+                    "stderr": message,
+                    "timedOut": false,
+                    "commandNotFound": message.to_lowercase().contains("not found"),
+                })),
+                error: None,
+            }
+        }
+        Err(_) => ToolDispatchResponse {
+            success: true,
+            result: Some(json!({
+                "exitCode": null,
+                "stdout": "",
+                "stderr": format!("Command timed out after {}ms", timeout_ms),
+                "timedOut": true,
+                "commandNotFound": false,
+            })),
+            error: None,
+        },
     }
 }

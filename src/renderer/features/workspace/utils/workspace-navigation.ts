@@ -14,7 +14,7 @@
  */
 
 export type WorkspaceNavigationAction =
-    | { type: 'open_file'; path: string; line?: number }
+    | { type: 'open_file'; path: string; line?: number; readOnly?: boolean }
     | { type: 'open_diff'; path: string };
 
 /**

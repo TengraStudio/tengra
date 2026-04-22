@@ -12,13 +12,7 @@ import React from 'react';
 
 import { TerminalTab } from '@/types';
 
-import {
-    TERMINAL_CURSOR_STYLES,
-    TERMINAL_FONT_PRESETS,
-    TERMINAL_THEME_PRESETS,
-} from '../constants/terminal-panel-constants';
 import type { RemoteDockerContainer, RemoteSshProfile, ShellInfo,TerminalBackendInfo } from '../hooks/useTerminalBackendsAndRemote';
-import type { ResolvedTerminalAppearance,TerminalAppearancePreferences } from '../types/terminal-appearance';
 import type { TerminalShortcutPresetId } from '../utils/shortcut-config';
 import type { SplitAnalytics, SplitPreset } from '../utils/split-config';
 import { DEFAULT_SPLIT_ANALYTICS } from '../utils/split-config';
@@ -69,6 +63,8 @@ export interface TerminalPanelToolbarConnectorProps {
     toggleSynchronizedInput: () => void;
     toggleSplitOrientation: () => void;
     closeSplitView: () => void;
+    handleSplitDown: () => void;
+    handleSplitUp: () => void;
     isGalleryView: boolean;
     toggleGalleryView: () => void;
     hasActiveSession: boolean;
@@ -80,15 +76,6 @@ export interface TerminalPanelToolbarConnectorProps {
     isMaximized: boolean;
     setIsMaximized: (maximized: boolean) => void;
     onToggle: () => void;
-    // Appearance props
-    isAppearanceMenuOpen: boolean;
-    setIsAppearanceMenuOpen: (open: boolean) => void;
-    terminalAppearance: TerminalAppearancePreferences;
-    resolvedTerminalAppearance: ResolvedTerminalAppearance;
-    applyAppearancePatch: (patch: Partial<TerminalAppearancePreferences>) => void;
-    exportAppearancePreferences: () => void;
-    importAppearancePreferences: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
-    appearanceImportInputRef: React.MutableRefObject<HTMLInputElement | null>;
     // Shortcut props
     shortcutPreset: TerminalShortcutPresetId;
     applyShortcutPreset: (presetId: TerminalShortcutPresetId) => void;
@@ -100,9 +87,6 @@ export interface TerminalPanelToolbarConnectorProps {
 }
 
 export const TerminalPanelToolbarConnector: React.FC<TerminalPanelToolbarConnectorProps> = (props) => {
-    const themeCategoryLabel = (preset: { category: string }) =>
-        preset.category === 'community' ? props.t('terminal.communityTheme') : props.t('terminal.defaultTheme');
-
     return (
         <TerminalToolbar
             tabs={props.displayTabs}
@@ -149,6 +133,8 @@ export const TerminalPanelToolbarConnector: React.FC<TerminalPanelToolbarConnect
             toggleSynchronizedInput={props.toggleSynchronizedInput}
             toggleSplitOrientation={props.toggleSplitOrientation}
             closeSplitView={props.closeSplitView}
+            handleSplitDown={props.handleSplitDown}
+            handleSplitUp={props.handleSplitUp}
             isGalleryView={props.isGalleryView}
             toggleGalleryView={props.toggleGalleryView}
             toggleSemanticPanel={props.toggleSemanticPanel}
@@ -160,39 +146,6 @@ export const TerminalPanelToolbarConnector: React.FC<TerminalPanelToolbarConnect
             isMaximized={props.isMaximized}
             setIsMaximized={props.setIsMaximized}
             onToggle={props.onToggle}
-            appearanceProps={{
-                inputRef: props.appearanceImportInputRef,
-                onImport: (event: React.ChangeEvent<HTMLInputElement>) => {
-                    void props.importAppearancePreferences(event);
-                },
-                isAppearanceMenuOpen: props.isAppearanceMenuOpen,
-                setIsAppearanceMenuOpen: props.setIsAppearanceMenuOpen,
-                title: props.t('terminal.appearance'),
-                t: props.t,
-                terminalAppearance: props.terminalAppearance,
-                resolvedTerminalAppearance: props.resolvedTerminalAppearance,
-                themePresets: TERMINAL_THEME_PRESETS,
-                fontPresets: TERMINAL_FONT_PRESETS,
-                cursorStyles: TERMINAL_CURSOR_STYLES,
-                themeCategoryLabel,
-                applyAppearancePatch: props.applyAppearancePatch,
-                exportAppearancePreferences: props.exportAppearancePreferences,
-                openAppearanceImportDialog: () => {
-                    props.appearanceImportInputRef.current?.click();
-                },
-                shortcutInputRef: props.shortcutImportInputRef,
-                onShortcutImport: (event: React.ChangeEvent<HTMLInputElement>) => {
-                    void props.importShortcutPreferences(event);
-                },
-                shortcutPreset: props.shortcutPreset,
-                applyShortcutPreset: props.applyShortcutPreset,
-                exportShortcutPreferences: props.exportShortcutPreferences,
-                openShortcutImportDialog: () => {
-                    props.shortcutImportInputRef.current?.click();
-                },
-                shareShortcutPreferences: props.shareShortcutPreferences,
-                importShortcutShareCode: props.importShortcutShareCode,
-            }}
         />
     );
 };

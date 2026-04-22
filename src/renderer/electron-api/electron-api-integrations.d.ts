@@ -23,6 +23,7 @@ import type { LocalePack } from '@shared/types/locale';
 import type {
     InstallRequest,
     InstallResult,
+    MarketplaceItem,
     MarketplaceRegistry,
     MarketplaceRuntimeProfile,
     MarketplaceSkill,
@@ -658,6 +659,7 @@ export interface ElectronApiIntegrationsDomain {
         checkLiveUpdates: () => Promise<number>;
         install: (request: InstallRequest) => Promise<InstallResult>;
         fetchReadme: (extensionId: string, repository?: string) => Promise<string | null>;
+        uninstall: (itemId: string, itemType: MarketplaceItem['itemType']) => Promise<{ success: boolean; error?: string; messageKey?: string }>;
     };
     locale: {
         getAll: () => Promise<LocalePack[]>;

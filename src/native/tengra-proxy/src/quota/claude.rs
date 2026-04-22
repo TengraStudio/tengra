@@ -51,6 +51,10 @@ pub async fn fetch_claude_quota(token: &str, org_id: Option<&str>) -> Result<Quo
                 .get("resets_at")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string()),
+            five_hour_used_percent: None,
+            five_hour_reset_at: None,
+            weekly_used_percent: None,
+            weekly_reset_at: None,
         })
     } else {
         None

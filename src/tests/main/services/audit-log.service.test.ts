@@ -123,14 +123,14 @@ describe('AuditLogService', () => {
                 success: false,
                 error: 'Invalid credentials',
                 userId: 'user123',
-                ipAddress: '192.168.1.1',
+                ipAddress: '127.0.0.1',
                 details: { attemptNumber: 3 }
             });
 
             const logEntry = vi.mocked(mockDbService.addAuditLog).mock.calls[0]![0];
             expect(logEntry.error).toBe('Invalid credentials');
             expect(logEntry.userId).toBe('user123');
-            expect(logEntry.ipAddress).toBe('192.168.1.1');
+            expect(logEntry.ipAddress).toBe('127.0.0.1');
             // details is optional in interface, but we know it should be present here
             expect(logEntry.details?.attemptNumber).toBe(3);
         });

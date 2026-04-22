@@ -152,7 +152,7 @@ export const OPERATION_TIMEOUTS = {
     /** Delay between retry attempts for recoverable operations */
     RETRY_DELAY: 1000,
     /** Fast port availability check timeout */
-    PORT_CHECK_FAST: 200,
+    PORT_CHECK_FAST: 1000,
     /** Timeout for connectivity / reachability checks */
     CONNECTIVITY_CHECK: 2000,
 } as const;

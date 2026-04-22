@@ -13,7 +13,6 @@ export * from '@renderer/features/workspace/workspace-dashboard/WorkspaceDashboa
 export * from '@renderer/features/workspace/workspace-dashboard/WorkspaceEnvironmentTab';
 export * from '@renderer/features/workspace/workspace-dashboard/WorkspaceFilesTab';
 export * from '@renderer/features/workspace/workspace-dashboard/WorkspaceGitTab';
-export * from '@renderer/features/workspace/workspace-dashboard/WorkspaceLogsTab';
 export * from '@renderer/features/workspace/workspace-dashboard/WorkspaceOverviewTab';
 export * from '@renderer/features/workspace/workspace-dashboard/WorkspaceSearchTab';
 export * from '@renderer/features/workspace/workspace-dashboard/WorkspaceSettingsPanel';

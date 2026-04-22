@@ -61,7 +61,7 @@ export function WorkspaceOverviewHeader({
     t
 }: WorkspaceOverviewHeaderProps) {
     const baseLogoUrl = toSafeFileUrl(workspace.logo);
-    const workspaceLogoUrl = baseLogoUrl ? `${baseLogoUrl}?t=${workspace.updatedAt}` : null;
+    const workspaceLogoUrl = baseLogoUrl && baseLogoUrl.startsWith('data:') ? baseLogoUrl : (baseLogoUrl ? `${baseLogoUrl}?t=${workspace.updatedAt}` : null);
 
     return (
         <div className="flex flex-col md:flex-row gap-8 items-start bg-card/40 p-6 rounded-3xl border border-border backdrop-blur-sm">

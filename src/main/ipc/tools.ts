@@ -470,6 +470,8 @@ export function registerToolsIpc(
 
         // AGT-LOOP-03: Pre-process arguments to normalize paths against workspace root
         if (payload.workspaceAgentSessionId) {
+            // Attach session id for downstream tracking (diffs/undo). This is not shown to users.
+            (payload.args as Record<string, unknown>)['__chatSessionId'] = payload.workspaceAgentSessionId;
             const permissionContext = await getWorkspaceAgentPermissionContext(
                 payload.workspaceAgentSessionId,
                 databaseService

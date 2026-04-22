@@ -12,12 +12,12 @@ import { registerModelRegistryIpc } from '@main/ipc/model-registry';
 import { IpcMainInvokeEvent } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const ipcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
+const ipcMainHandlers = new Map<string, (...args: any[]) => Promise<any>>();
 
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: TestValue[]) => TestValue | Promise<TestValue>) => {
-            ipcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
+        handle: vi.fn((channel: string, handler: (...args: any[]) => any | Promise<any>) => {
+            ipcMainHandlers.set(channel, async (...args: any[]) => Promise.resolve(handler(...args)));
         }),
         setMaxListeners: vi.fn()
     }
@@ -54,6 +54,22 @@ describe('Model Registry IPC Integration', () => {
         getInstalledModels: vi.fn().mockResolvedValue(mockInstalledModels)
     };
 
+    const mockEventBus = {
+        on: vi.fn(),
+        emit: vi.fn(),
+        off: vi.fn(),
+        once: vi.fn(),
+        removeAllListeners: vi.fn()
+    };
+
+    const mockMainWindow = {
+        webContents: {
+            send: vi.fn()
+        }
+    };
+
+    const getMainWindow = vi.fn().mockReturnValue(mockMainWindow);
+
     beforeEach(() => {
         ipcMainHandlers.clear();
         vi.clearAllMocks();
@@ -61,7 +77,11 @@ describe('Model Registry IPC Integration', () => {
 
     describe('model registry handlers', () => {
         beforeEach(() => {
-            registerModelRegistryIpc(mockModelRegistryService as never);
+            registerModelRegistryIpc(
+                mockModelRegistryService as any,
+                mockEventBus as any,
+                getMainWindow as any
+            );
         });
 
         it('registers all model registry IPC handlers', () => {
@@ -105,7 +125,7 @@ describe('Model Registry IPC Integration', () => {
 
             expect(Array.isArray(result)).toBe(true);
             expect(result).toHaveLength(1);
-            expect((result as Record<string, TestValue>[])[0].isInstalled).toBe(true);
+            expect((result as any[])[0].isInstalled).toBe(true);
             expect(mockModelRegistryService.getInstalledModels).toHaveBeenCalledTimes(1);
         });
 
@@ -141,4 +161,3 @@ describe('Model Registry IPC Integration', () => {
     });
 
 });
-

@@ -20,8 +20,14 @@ import { appLogger } from '@/utils/renderer-logger';
 
 import {
     buildAssistantPresentationMetadata,
-    deduplicateMessages,
 } from './ai-runtime-chat.util';
+import { 
+    addMessageToStore, 
+    setStreamingState, 
+    updateChatInStore, 
+    updateMessageInStore, 
+    useChatStore 
+} from '@/store/chat.store';
 import {
     getActiveAntigravityAccount,
     shouldConfirmAntigravityCreditUsage,
@@ -50,7 +56,6 @@ interface SelectedModelInfo {
 
 interface UseChatGeneratorProps {
     chats: Chat[];
-    setChats: React.Dispatch<React.SetStateAction<Chat[]>>;
     appSettings?: AppSettings | undefined;
     selectedModel: string;
     selectedProvider: string;
@@ -97,7 +102,6 @@ export const useChatGenerator = (
 } => {
     const {
         chats,
-        setChats,
         appSettings,
         selectedModel,
         selectedProvider,
@@ -115,7 +119,7 @@ export const useChatGenerator = (
         linkedAccounts,
     } = props;
 
-    const [streamingStates, setStreamingStates] = useState<Record<string, StreamStreamingState>>({});
+    const streamingStates = useChatStore(s => s.streamingStates);
     const [lastChatError, setLastChatError] = useState<ChatError | null>(null);
     const [antigravityCreditConfirmation, setAntigravityCreditConfirmation] = useState<AntigravityCreditConfirmationState>({
         isOpen: false,
@@ -227,20 +231,15 @@ export const useChatGenerator = (
                 : undefined,
         };
 
-        setChats(prev =>
-            prev.map(c => (c.id === chatId ? { ...c, messages: deduplicateMessages([...c.messages, placeholder]) } : c))
-        );
+        addMessageToStore(chatId, placeholder);
         void window.electron.db.addMessage({ ...placeholder, chatId, timestamp: Date.now() }).catch((error) => {
             logRendererError('[generateResponse] Failed to persist assistant placeholder', error as Error);
         });
-    }, [language, setChats]);
+    }, [language]);
 
     const generateResponse = async (chatId: string, userMessage: Message, retryModel?: string): Promise<void> => {
         setLastChatError(null);
-        setStreamingStates(prev => ({
-            ...prev,
-            [chatId]: { content: '', reasoning: '', speed: null, error: null },
-        }));
+        setStreamingState(chatId, { content: '', reasoning: '', speed: null, error: null });
         const assistantId = generateId();
         const activeModel = retryModel ?? selectedModel;
 
@@ -259,7 +258,7 @@ export const useChatGenerator = (
             for (const modelInfo of modelsToUse) {
                 const approved = await requestAntigravityCreditConfirmation(modelInfo.model, modelInfo.provider);
                 if (!approved) {
-                    setChats(prev => prev.map(c => c.id === chatId ? { ...c, isGenerating: false } : c));
+                    updateChatInStore(chatId, { isGenerating: false });
                     return;
                 }
             }
@@ -280,7 +279,6 @@ export const useChatGenerator = (
                     requestedCount: extractImageRequestCount(userMessage),
                     activeModel,
                     selectedProvider,
-                    setChats,
                     t,
                     intentClassification,
                     language,
@@ -288,8 +286,8 @@ export const useChatGenerator = (
             } else if (isMultiModel) {
                 const allTools: ToolDefinition[] = (await window.electron.getToolDefinitions()) ?? [];
                 await generateMultiModelResponse({
-                    chatId, assistantId, userMessage, models: modelsToUse, allTools, chats, setChats,
-                    appSettings, language, selectedPersona, activeWorkspacePath, workspaceId, setStreamingStates,
+                    chatId, assistantId, userMessage, models: modelsToUse, allTools, chats,
+                    appSettings, language, selectedPersona, activeWorkspacePath, workspaceId,
                     autoReadEnabled, handleSpeak, t, formatChatError, systemMode, intentClassification,
                     getReasoningEffort, createModelToolList, prepareMessages
                 });
@@ -312,7 +310,7 @@ export const useChatGenerator = (
                 await executeToolTurnLoop({
                     initialMessages: allMessages,
                     chatId, assistantId, activeModel, selectedProvider, tools, fullOptions, workspaceId,
-                    autoReadEnabled, handleSpeak, t, language, setStreamingStates, setChats, activeWorkspacePath, systemMode,
+                    autoReadEnabled, handleSpeak, t, language, activeWorkspacePath, systemMode,
                     intentClassification,
                     confirmAntigravityCreditUsage: requestAntigravityCreditConfirmation,
                 });
@@ -325,20 +323,16 @@ export const useChatGenerator = (
             const finalErrorText = partialContent.trim().length > 0
                 ? `${partialContent}\n\n[Generation interrupted: ${errText}]`
                 : `${t('chat.error')}: ${errText}`;
-            setChats(prev =>
-                prev.map(c => c.id === chatId ? {
-                    ...c,
-                    messages: c.messages.map(m => m.id === assistantId ? { ...m, content: finalErrorText } : m),
-                    isGenerating: false
-                } : c)
-            );
+            updateMessageInStore(chatId, assistantId, { content: finalErrorText });
+            updateChatInStore(chatId, { isGenerating: false });
             void window.electron.db.updateMessage(assistantId, { content: finalErrorText });
         } finally {
-            setStreamingStates(prev => {
-                const s = { ...prev };
-                delete s[chatId];
-                return s;
+            updateChatInStore(chatId, { isGenerating: false });
+            const chatUpdate = window.electron.db.updateChat?.(chatId, { isGenerating: false });
+            void chatUpdate?.catch((error) => {
+                appLogger.warn('useChatGenerator', `Failed to persist generation completion for chatId=${chatId}`, error as Error);
             });
+            setStreamingState(chatId, null);
         }
     };
 
@@ -348,7 +342,10 @@ export const useChatGenerator = (
                 appLogger.warn('useChatGenerator', `stopGeneration abort requested chatId=${activeChatId}`);
                 window.electron.session.conversation.abort(activeChatId);
             }
-            setStreamingStates({});
+            // Clear all streaming states
+            for (const activeChatId of Object.keys(streamingStates)) {
+                setStreamingState(activeChatId, null);
+            }
         } catch (e) {
             logRendererError('Failed to stop generation', e as Error);
         }

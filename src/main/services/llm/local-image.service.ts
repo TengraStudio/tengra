@@ -91,7 +91,7 @@ export class LocalImageService extends BaseService {
             settingsService: deps.settingsService,
             authService: deps.authService,
             llmService: deps.llmService,
-            quotaService: deps.quotaService,
+            proxyService: deps.proxyService,
             advancedMemoryService: deps.advancedMemoryService,
         });
         this.sdcpp = new SdCppManager({

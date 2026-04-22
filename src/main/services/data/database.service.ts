@@ -263,6 +263,7 @@ export class DatabaseService extends BaseService {
     };
     private readonly queryTimeoutMs = 30_000;
     private readonly migrationDirName = 'migrations';
+    private readonly internalMigrationSqlMarker = '/* tengra-internal-migration */';
     private replicationConfig: ReplicationConfig = { enabled: false, lagThresholdMs: 5_000 };
     private shardingConfig: ShardingConfig = { enabled: false, shardCount: 1 };
     private compressionStats = { compressedBytes: 0, rawBytes: 0, operations: 0 };
@@ -301,6 +302,24 @@ export class DatabaseService extends BaseService {
         if (typeof value !== 'string' || value.trim().length === 0) {
             throw new ValidationError(`[${DatabaseServiceErrorCode.INVALID_QUERY}] SQL statement must be a non-empty string`);
         }
+    }
+
+    private markInternalMigrationSql(sql: string): string {
+        if (sql.trimStart().startsWith(this.internalMigrationSqlMarker)) {
+            return sql;
+        }
+        return `${this.internalMigrationSqlMarker} ${sql}`;
+    }
+
+    private requiresInternalSqlMode(sql: string): boolean {
+        const normalized = this.normalizeSql(sql).toUpperCase();
+        if (normalized.length === 0 || normalized.startsWith(this.internalMigrationSqlMarker.toUpperCase())) {
+            return false;
+        }
+        if (normalized.includes(';')) {
+            return true;
+        }
+        return /^(PRAGMA|CREATE|ALTER|DROP|VACUUM|REINDEX|ANALYZE)\b/.test(normalized);
     }
 
     /** Validates that a value is an array. */
@@ -402,7 +421,10 @@ export class DatabaseService extends BaseService {
             },
             exec: async (sql) => {
                 await this.trackQuery(sql, undefined, async () => {
-                    await this.dbClient.executeQuery({ sql });
+                    const executableSql = this.requiresInternalSqlMode(sql)
+                        ? this.markInternalMigrationSql(sql)
+                        : sql;
+                    await this.dbClient.executeQuery({ sql: executableSql });
                 });
             },
             transaction: async <T>(fn: (tx: DatabaseAdapter) => Promise<T>) => {
@@ -624,7 +646,7 @@ export class DatabaseService extends BaseService {
     }
 
     private async ensureMigrationInfrastructure(): Promise<void> {
-        await this.exec(`
+        await this.exec(this.markInternalMigrationSql(`
             CREATE TABLE IF NOT EXISTS migration_history (
                 version INTEGER PRIMARY KEY,
                 name TEXT NOT NULL,
@@ -632,7 +654,7 @@ export class DatabaseService extends BaseService {
                 applied_at BIGINT NOT NULL,
                 rolled_back_at BIGINT
             )
-        `);
+        `));
     }
 
     private getKnownMigrations(): DatabaseMigration[] {
@@ -788,7 +810,7 @@ export class DatabaseService extends BaseService {
             try {
                 await this.createMigrationBackup(migration.version);
                 for (const statement of migration.up) {
-                    await this.exec(statement);
+                    await this.exec(this.markInternalMigrationSql(statement));
                 }
                 await this.exec(
                     `INSERT INTO migration_history (version, name, checksum, applied_at, rolled_back_at) VALUES (${migration.version}, '${migration.name}', '${migration.checksum}', ${Date.now()}, NULL)
@@ -847,7 +869,7 @@ export class DatabaseService extends BaseService {
 
         await this.createMigrationBackup(migration.version);
         for (const statement of migration.down) {
-            await this.exec(statement);
+            await this.exec(this.markInternalMigrationSql(statement));
         }
         await this.query('UPDATE migration_history SET rolled_back_at = ? WHERE version = ?', [Date.now(), migration.version]);
         return {
@@ -1626,7 +1648,7 @@ export class DatabaseService extends BaseService {
             id: diff.id,
             workspaceId: matchedWorkspace?.path ?? '', // Use path for workspace_path column
             filePath: diff.filePath,
-            diffContent: diff.diffContent,
+            diffJson: JSON.stringify(diff),
             createdAt: diff.timestamp,
             sessionId: diff.chatSessionId,
             systemId: diff.aiSystem

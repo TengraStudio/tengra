@@ -10,10 +10,10 @@
 
 import { cn } from '@renderer/lib/utils';
 import { AlertTriangle, CheckCircle2, FileCode, Terminal } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
-import { CodeAnnotation, WorkspaceIssue } from '@/types';
+import { CodeAnnotation, WorkspaceDiagnosticsStatus, WorkspaceIssue } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 /* Batch-02: Extracted Long Classes */
@@ -23,10 +23,54 @@ const C_TERMINALWORKSPACEISSUESTAB_1 = "px-1.5 py-0.5 bg-muted/30 rounded text-x
 interface TerminalWorkspaceIssuesTabProps {
     workspacePath?: string;
     workspaceId?: string;
+    activeFilePath?: string;
+    activeFileContent?: string;
+    activeFileType?: 'code' | 'image';
     onOpenFile?: (path: string, line?: number) => void;
 }
 
 const WORKSPACE_ISSUES_REFRESH_INTERVAL_MS = 60_000;
+const WORKSPACE_ISSUES_REQUEST_TIMEOUT_MS = 15_000;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+    return new Promise((resolve, reject) => {
+        const timeoutId = window.setTimeout(() => {
+            reject(new Error('WORKSPACE_ISSUES_REQUEST_TIMEOUT'));
+        }, timeoutMs);
+        void promise.then(
+            value => {
+                window.clearTimeout(timeoutId);
+                resolve(value);
+            },
+            error => {
+                window.clearTimeout(timeoutId);
+                reject(error);
+            }
+        );
+    });
+}
+
+function dedupeWorkspaceIssues(issues: WorkspaceIssue[]): WorkspaceIssue[] {
+    const seen = new Set<string>();
+    const merged: WorkspaceIssue[] = [];
+    for (const issue of issues) {
+        const key = [
+            issue.file,
+            issue.line,
+            issue.column ?? 0,
+            issue.severity,
+            issue.source ?? '',
+            issue.code ?? '',
+            issue.message,
+        ].join('|');
+        if (seen.has(key)) {
+            continue;
+        }
+        seen.add(key);
+        merged.push(issue);
+    }
+    return merged;
+}
 
 function resolveIssuePath(workspacePath: string, file: string): string {
     if (/^[A-Za-z]:[\\/]/.test(file) || file.startsWith('\\\\')) {
@@ -39,6 +83,9 @@ function resolveIssuePath(workspacePath: string, file: string): string {
 export function TerminalWorkspaceIssuesTab({
     workspacePath,
     workspaceId,
+    activeFilePath,
+    activeFileContent,
+    activeFileType,
     onOpenFile,
 }: TerminalWorkspaceIssuesTabProps) {
     const { t } = useTranslation();
@@ -46,34 +93,86 @@ export function TerminalWorkspaceIssuesTab({
         issues: WorkspaceIssue[];
         annotations: CodeAnnotation[];
         lspDiagnostics: WorkspaceIssue[];
-    }>({ issues: [], annotations: [], lspDiagnostics: [] });
+        diagnosticsStatus?: WorkspaceDiagnosticsStatus;
+    }>({ issues: [], annotations: [], lspDiagnostics: [], diagnosticsStatus: undefined });
     const [isLoading, setIsLoading] = useState(false);
+    const requestIdRef = useRef(0);
 
     const loadIssues = useCallback(async () => {
         if (!workspacePath) {
-            setAnalysis({ issues: [], annotations: [], lspDiagnostics: [] });
+            setAnalysis({ issues: [], annotations: [], lspDiagnostics: [], diagnosticsStatus: undefined });
             return;
         }
 
+        const requestId = ++requestIdRef.current;
         setIsLoading(true);
         try {
-            const results = await window.electron.workspace.analyze(workspacePath, workspaceId ?? workspacePath);
+            const activeFileEligible = Boolean(
+                activeFileType === 'code'
+                && typeof activeFilePath === 'string'
+                && activeFilePath.length > 0
+                && typeof activeFileContent === 'string'
+            );
+
+            const [workspaceResults, activeFileDiagnostics] = await Promise.allSettled([
+                withTimeout(
+                    window.electron.workspace.analyze(workspacePath, workspaceId ?? workspacePath),
+                    WORKSPACE_ISSUES_REQUEST_TIMEOUT_MS
+                ),
+                activeFileEligible
+                    ? withTimeout(
+                        window.electron.workspace.getFileDiagnostics(
+                            workspacePath,
+                            activeFilePath as string,
+                            activeFileContent as string
+                        ),
+                        WORKSPACE_ISSUES_REQUEST_TIMEOUT_MS
+                    )
+                    : Promise.resolve([] as WorkspaceIssue[]),
+            ]);
+
+            if (requestId !== requestIdRef.current) {
+                return;
+            }
+
+            const workspaceAnalysis = workspaceResults.status === 'fulfilled'
+                ? workspaceResults.value
+                : null;
+            const activeDiagnostics = activeFileDiagnostics.status === 'fulfilled'
+                ? activeFileDiagnostics.value
+                : [];
+
+            if (!workspaceAnalysis && activeDiagnostics.length === 0) {
+                throw new Error('WORKSPACE_ISSUES_ANALYSIS_UNAVAILABLE');
+            }
+
+            const workspaceDiagnostics = workspaceAnalysis?.lspDiagnostics ?? [];
+            const mergedDiagnostics = dedupeWorkspaceIssues([
+                ...workspaceDiagnostics,
+                ...activeDiagnostics,
+            ]);
+
             setAnalysis({
-                issues: results.issues ?? [],
-                annotations: results.annotations ?? [],
-                lspDiagnostics: results.lspDiagnostics ?? []
+                issues: workspaceAnalysis?.issues ?? [],
+                annotations: workspaceAnalysis?.annotations ?? [],
+                lspDiagnostics: mergedDiagnostics,
+                diagnosticsStatus: workspaceAnalysis?.diagnosticsStatus,
             });
         } catch (error) {
+            if (requestId !== requestIdRef.current) {
+                return;
+            }
             appLogger.error(
                 'TerminalWorkspaceIssuesTab',
                 `Failed to analyze workspace issues for ${workspacePath}`,
                 error as Error
             );
-            setAnalysis({ issues: [], annotations: [], lspDiagnostics: [] });
         } finally {
-            setIsLoading(false);
+            if (requestId === requestIdRef.current) {
+                setIsLoading(false);
+            }
         }
-    }, [workspaceId, workspacePath]);
+    }, [workspaceId, workspacePath, activeFilePath, activeFileContent, activeFileType]);
 
     useEffect(() => {
         void loadIssues();
@@ -88,6 +187,10 @@ export function TerminalWorkspaceIssuesTab({
     }, [loadIssues, workspacePath]);
 
     const totalCount = analysis.issues.length + analysis.annotations.length + analysis.lspDiagnostics.length;
+    const hasPartialDiagnostics = analysis.diagnosticsStatus?.partial === true;
+    const failedSources = (analysis.diagnosticsStatus?.sources ?? [])
+        .filter(source => source.status === 'failed')
+        .map(source => source.source);
 
     const renderIssue = (issue: WorkspaceIssue | CodeAnnotation, key: string) => {
         const severity = 'severity' in issue ? issue.severity : 'warning';
@@ -145,9 +248,23 @@ export function TerminalWorkspaceIssuesTab({
                     <div className="h-full flex flex-col items-center justify-center gap-3 p-8">
                         <CheckCircle2 className="w-8 h-8 text-success" />
                         <div className="text-sm font-bold">{t('terminal.workspaceIssuesNoIssues')}</div>
+                        {hasPartialDiagnostics && (
+                            <div className="text-xxs text-warning/90">
+                                {t('terminal.workspaceIssuesPartialResults', {
+                                    sources: failedSources.join(', ') || t('terminal.workspaceIssuesUnknownSource'),
+                                })}
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="space-y-4">
+                        {hasPartialDiagnostics && (
+                            <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xxs text-warning/90">
+                                {t('terminal.workspaceIssuesPartialResults', {
+                                    sources: failedSources.join(', ') || t('terminal.workspaceIssuesUnknownSource'),
+                                })}
+                            </div>
+                        )}
                         {analysis.lspDiagnostics.length > 0 && (
                             <section className="space-y-2">
                                 <div className="text-xxxs font-bold text-primary/80 flex items-center gap-2">

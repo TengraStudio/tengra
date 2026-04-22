@@ -18,7 +18,7 @@ import { LLMService } from '@main/services/llm/llm.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
 import { MemoryContextService } from '@main/services/llm/memory-context.service';
 import { ModelProviderInfo, ModelRegistryService } from '@main/services/llm/model-registry.service';
-import { QuotaService } from '@main/services/proxy/quota.service';
+import { ProxyService } from '@main/services/proxy/proxy.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { WorkspaceService } from '@main/services/workspace/workspace.service';
 import { JsonObject } from '@shared/types/common';
@@ -43,7 +43,7 @@ interface LogoServiceDependencies {
     localImageService: LocalImageService;
     imagePersistenceService: ImagePersistenceService;
     authService: AuthService;
-    quotaService: QuotaService;
+    proxyService: ProxyService;
     modelRegistryService: ModelRegistryService;
     advancedMemoryService?: AdvancedMemoryService;
 }
@@ -58,7 +58,7 @@ export class LogoService {
     private readonly localImageService: LocalImageService;
     private readonly imagePersistenceService: ImagePersistenceService;
     private readonly authService: AuthService;
-    private readonly quotaService: QuotaService;
+    private readonly proxyService: ProxyService;
     private readonly modelRegistryService: ModelRegistryService;
     private readonly memoryContext: MemoryContextService;
 
@@ -68,7 +68,7 @@ export class LogoService {
         this.localImageService = deps.localImageService;
         this.imagePersistenceService = deps.imagePersistenceService;
         this.authService = deps.authService;
-        this.quotaService = deps.quotaService;
+        this.proxyService = deps.proxyService;
         this.modelRegistryService = deps.modelRegistryService;
         this.memoryContext = new MemoryContextService(deps.advancedMemoryService);
     }
@@ -372,7 +372,7 @@ ${context}`;
             return [];
         }
 
-        const quotaResponse = await this.quotaService.getQuota(0, '');
+        const quotaResponse = await this.proxyService.getQuota();
         if (!quotaResponse?.accounts?.length) {
             return [];
         }
@@ -488,7 +488,7 @@ ${context}`;
     }
 
     private async getRankedCopilotAccounts(): Promise<Array<{ accountId: string; remaining: number }>> {
-        const quota = await this.quotaService.getCopilotQuota();
+        const quota = await this.proxyService.getCopilotQuota();
         if (!quota.accounts.length) {
             return [];
         }
@@ -512,7 +512,7 @@ ${context}`;
     }
 
     private async getRankedClaudeAccounts(): Promise<Array<{ accountId: string; remaining: number }>> {
-        const quota = await this.quotaService.getClaudeQuota();
+        const quota = await this.proxyService.getClaudeQuota();
         if (!quota.accounts.length) {
             return [];
         }
@@ -899,54 +899,39 @@ ${context}`;
     }
 
     private async saveGeneratedImage(
-        workspacePath: string,
+        _workspacePath: string,
         sourcePathOrUrl: string,
         prompt: string,
         model: string
     ): Promise<string> {
-        const targetDir = join(workspacePath, '.tengra', 'temp');
-        const timestamp = Date.now();
-        const randomSuffix = Math.floor(Math.random() * 1000);
-        const targetPath = join(targetDir, `logo-${timestamp}-${randomSuffix}.png`);
-
-        await fs.mkdir(targetDir, { recursive: true });
-
-        // If source is a URL (remote), fetch it. If it's a path (local), copy it.
-        // ImagePersistenceService.saveImage handles data URIs and URLs.
-        // But here we want to save to the WORKSPACE temp folder first for the UI to display?
-        // Or does the UI use the gallery path?
-        // The original code copied to workspace/.tengra/temp AND saved to gallery.
-        // Let's keep that behavior.
-
-        const resolvedLocalSource = this.resolveLocalImagePath(sourcePathOrUrl);
-
+        // Read the image and return it as a Base64 data URI
+        let buffer: Buffer;
         if (sourcePathOrUrl.startsWith('http')) {
-            // download
             const response = await fetch(sourcePathOrUrl);
             const arrayBuffer = await response.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
-            await fs.writeFile(targetPath, buffer);
+            buffer = Buffer.from(arrayBuffer);
         } else if (sourcePathOrUrl.startsWith('data:')) {
-            const match = sourcePathOrUrl.match(/^data:[^;]+;base64,(.+)$/);
-            if (!match?.[1]) {
+            const match = sourcePathOrUrl.match(/^data:([^;]+);base64,(.+)$/);
+            if (!match?.[2]) {
                 throw new Error('Invalid data URI image payload');
             }
-            const buffer = Buffer.from(match[1], 'base64');
-            await fs.writeFile(targetPath, buffer);
+            return sourcePathOrUrl; // Already Base64
         } else {
-            // copy local file
-            await fs.copyFile(resolvedLocalSource, targetPath);
+            const resolvedPath = this.resolveLocalImagePath(sourcePathOrUrl);
+            buffer = await fs.readFile(resolvedPath);
         }
 
-        // Save to gallery with metadata
-        await this.imagePersistenceService.saveImage(sourcePathOrUrl, {
+        const dataUri = `data:image/png;base64,${buffer.toString('base64')}`;
+
+        // Save to gallery for management, but we return the dataUri for the workspace logo
+        await this.imagePersistenceService.saveImage(dataUri, {
             prompt: prompt,
             model: model,
             width: 1024,
             height: 1024,
         });
 
-        return targetPath;
+        return dataUri;
     }
 
     private resolveLocalImagePath(pathOrUri: string): string {
@@ -964,34 +949,21 @@ ${context}`;
         return normalized;
     }
 
-    async applyLogo(workspacePath: string, tempLogoPath: string): Promise<string> {
+    async applyLogo(_workspacePath: string, tempLogoDataUri: string): Promise<string> {
+        // If it's already a data URI, we just return it to be saved in the DB
+        if (tempLogoDataUri.startsWith('data:')) {
+            return tempLogoDataUri;
+        }
+
+        // If it's a path, convert it to Base64
         try {
-            const tengraDir = join(workspacePath, '.tengra');
-            await fs.mkdir(tengraDir, { recursive: true });
-
-            const sourcePath = this.resolveLocalImagePath(tempLogoPath);
-            const sourceExtension = extname(sourcePath).toLowerCase();
-            const targetExtension = sourceExtension.length > 0 ? sourceExtension : '.png';
-            const targetPath = join(tengraDir, `logo${targetExtension}`);
-            if (sourcePath !== targetPath) {
-                await fs.copyFile(sourcePath, targetPath);
-            }
-
-            // Also try to save as icon.png in public if it exists (common for web apps)
-            const publicDir = join(workspacePath, 'public');
-            try {
-                const publicStats = await fs.stat(publicDir);
-                if (publicStats.isDirectory()) {
-                    await fs.copyFile(targetPath, join(publicDir, 'icon.png'));
-                    await fs.copyFile(targetPath, join(publicDir, 'favicon.png'));
-                }
-            } catch {
-                // Ignore if public dir doesn't exist
-            }
-
-            return targetPath;
+            const sourcePath = this.resolveLocalImagePath(tempLogoDataUri);
+            const buffer = await fs.readFile(sourcePath);
+            const extension = extname(sourcePath).toLowerCase().replace('.', '') || 'png';
+            const mimeType = `image/${extension === 'svg' ? 'svg+xml' : extension}`;
+            return `data:${mimeType};base64,${buffer.toString('base64')}`;
         } catch (error) {
-            appLogger.error('logo.service', '[LogoService] Apply logo failed', error as Error);
+            appLogger.error('logo.service', '[LogoService] Convert logo to Base64 failed', error as Error);
             throw error;
         }
     }

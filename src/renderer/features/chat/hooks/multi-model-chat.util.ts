@@ -15,7 +15,6 @@ import { AppSettings, Chat, Message, ToolDefinition } from '@/types';
 import { CatchError } from '@/types/common';
 
 import { buildAssistantPresentationMetadata } from './ai-runtime-chat.util';
-import { StreamStreamingState } from './process-stream';
 
 interface SelectedModelInfo {
     provider: string;
@@ -41,6 +40,12 @@ interface ChatStreamChunk {
     reasoning?: string;
 }
 
+import { 
+    getChatSnapshot, 
+    updateChatInStore, 
+    updateStreamingState
+} from '@/store/chat.store';
+
 interface GenerateMultiModelResponseParams {
     chatId: string;
     assistantId: string;
@@ -48,13 +53,11 @@ interface GenerateMultiModelResponseParams {
     models: SelectedModelInfo[];
     allTools: ToolDefinition[];
     chats: Chat[];
-    setChats: React.Dispatch<React.SetStateAction<Chat[]>>;
     appSettings: AppSettings | undefined;
     language: string;
     selectedPersona: { id: string; name: string; description: string; prompt: string } | null | undefined;
     activeWorkspacePath: string | undefined;
     workspaceId: string | undefined;
-    setStreamingStates: React.Dispatch<React.SetStateAction<Record<string, StreamStreamingState>>>;
     autoReadEnabled: boolean;
     handleSpeak: (id: string, content: string) => void;
     t: (key: string) => string;
@@ -85,8 +88,6 @@ interface HandleModelStreamIterationParams {
     modelInfo: SelectedModelInfo;
     intentClassification: AiIntentClassification;
     language: string;
-    setStreamingStates: React.Dispatch<React.SetStateAction<Record<string, StreamStreamingState>>>;
-    setChats: React.Dispatch<React.SetStateAction<Chat[]>>;
     streamStartTime: number;
 }
 
@@ -94,7 +95,6 @@ interface FinalizeMultiModelResponseParams {
     results: ModelStreamResult[];
     chatId: string;
     assistantId: string;
-    setChats: React.Dispatch<React.SetStateAction<Chat[]>>;
     streamStartTime: number;
     autoReadEnabled: boolean;
     handleSpeak: (id: string, content: string) => void;
@@ -111,13 +111,11 @@ export async function generateMultiModelResponse(params: GenerateMultiModelRespo
         models,
         allTools,
         chats,
-        setChats,
         appSettings,
         language,
         selectedPersona,
         activeWorkspacePath,
         workspaceId,
-        setStreamingStates,
         autoReadEnabled,
         handleSpeak,
         t,
@@ -175,8 +173,6 @@ export async function generateMultiModelResponse(params: GenerateMultiModelRespo
                 modelInfo,
                 intentClassification,
                 language,
-                setStreamingStates,
-                setChats,
                 streamStartTime,
             });
         } catch (error) {
@@ -194,7 +190,6 @@ export async function generateMultiModelResponse(params: GenerateMultiModelRespo
         results,
         chatId,
         assistantId,
-        setChats,
         streamStartTime,
         autoReadEnabled,
         handleSpeak,
@@ -213,8 +208,6 @@ async function handleModelStreamIteration(params: HandleModelStreamIterationPara
         modelInfo,
         intentClassification,
         language,
-        setStreamingStates,
-        setChats,
         streamStartTime,
     } = params;
     let variantContent = '';
@@ -234,65 +227,60 @@ async function handleModelStreamIteration(params: HandleModelStreamIterationPara
         const isMain = index === 0;
         if (now - lastStreamingStateUpdate >= 80 || !chunk.content) {
             lastStreamingStateUpdate = now;
-            setStreamingStates(prev => {
-                const state = prev[chatId] ?? { content: '', reasoning: '', speed: null, variants: {} };
-                const variants = { ...state.variants };
-                variants[index] = { content: variantContent, reasoning: variantReasoning };
-                return {
-                    ...prev,
-                    [chatId]: {
-                        ...state,
-                        content: isMain ? variantContent : state.content,
-                        reasoning: isMain ? variantReasoning : state.reasoning,
-                        variants,
-                    },
-                };
+            
+            const state = getChatSnapshot().streamingStates[chatId] ?? { content: '', reasoning: '', speed: null, variants: {} };
+            const variants = { ...state.variants };
+            variants[index] = { content: variantContent, reasoning: variantReasoning };
+            
+            updateStreamingState(chatId, {
+                content: isMain ? variantContent : state.content,
+                reasoning: isMain ? variantReasoning : state.reasoning,
+                variants,
             });
         }
 
         if (now - lastUpdate > 200 || !chunk.content) {
             lastUpdate = now;
-            setChats(prev => prev.map(chat => {
-                if (chat.id !== chatId) {
-                    return chat;
+            
+            // Re-fetch chat from store snapshot
+            const chat = getChatSnapshot().chats.find(c => c.id === chatId);
+            if (!chat) continue;
+
+            const updatedMessages = chat.messages.map(message => {
+                if (message.id !== assistantId) {
+                    return message;
                 }
+                const currentVariants = [...(message.variants ?? [])];
+                if (!currentVariants[index]) {
+                    currentVariants[index] = {
+                        id: `${assistantId}-v${index}`,
+                        content: '',
+                        model: modelInfo.model,
+                        provider: modelInfo.provider,
+                        timestamp: new Date(),
+                        label: modelInfo.model,
+                        isSelected: isMain,
+                    };
+                }
+                currentVariants[index] = { ...currentVariants[index], content: variantContent };
                 return {
-                    ...chat,
-                    messages: chat.messages.map(message => {
-                        if (message.id !== assistantId) {
-                            return message;
-                        }
-                        const currentVariants = [...(message.variants ?? [])];
-                        if (!currentVariants[index]) {
-                            currentVariants[index] = {
-                                id: `${assistantId}-v${index}`,
-                                content: '',
-                                model: modelInfo.model,
-                                provider: modelInfo.provider,
-                                timestamp: new Date(),
-                                label: modelInfo.model,
-                                isSelected: isMain,
-                            };
-                        }
-                        currentVariants[index] = { ...currentVariants[index], content: variantContent };
-                        return {
-                            ...message,
-                            content: isMain ? variantContent : message.content,
-                            reasoning: isMain ? variantReasoning : message.reasoning,
-                            metadata: isMain
-                                ? buildAssistantPresentationMetadata({
-                                    intent: intentClassification,
-                                    content: variantContent,
-                                    reasoning: variantReasoning,
-                                    isStreaming: true,
-                                    language,
-                                })
-                                : message.metadata,
-                            variants: currentVariants,
-                        };
-                    }),
+                    ...message,
+                    content: isMain ? variantContent : message.content,
+                    reasoning: isMain ? variantReasoning : message.reasoning,
+                    metadata: isMain
+                        ? buildAssistantPresentationMetadata({
+                            intent: intentClassification,
+                            content: variantContent,
+                            reasoning: variantReasoning,
+                            isStreaming: true,
+                            language,
+                        })
+                        : message.metadata,
+                    variants: currentVariants,
                 };
-            }));
+            });
+
+            updateChatInStore(chatId, { messages: updatedMessages });
         }
     }
 
@@ -310,7 +298,6 @@ async function finalizeMultiModelResponse(params: FinalizeMultiModelResponsePara
         results,
         chatId,
         assistantId,
-        setChats,
         streamStartTime,
         autoReadEnabled,
         handleSpeak,
@@ -339,16 +326,14 @@ async function finalizeMultiModelResponse(params: FinalizeMultiModelResponsePara
         language,
     });
 
-    setChats(prev => prev.map(chat => {
-        if (chat.id !== chatId) {
-            return chat;
-        }
+    // Re-fetch chat from store snapshot
+    const chat = getChatSnapshot().chats.find(c => c.id === chatId);
+    if (chat) {
         let title = chat.title;
         if (chat.messages.length <= 2 && finalContent) {
             title = finalContent.split('\n')[0].replace(/[#*`]/g, '').trim().slice(0, 50) || t('sidebar.newChat');
         }
-        return {
-            ...chat,
+        updateChatInStore(chatId, {
             title,
             isGenerating: false,
             messages: chat.messages.map(message => message.id === assistantId
@@ -361,8 +346,8 @@ async function finalizeMultiModelResponse(params: FinalizeMultiModelResponsePara
                     variants: finalVariants.length > 1 ? finalVariants : undefined,
                 }
                 : message),
-        };
-    }));
+        });
+    }
 
     await window.electron.db.updateMessage(assistantId, {
         content: finalContent,

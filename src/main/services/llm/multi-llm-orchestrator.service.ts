@@ -16,7 +16,6 @@
 import { EventEmitter } from 'events';
 
 import { appLogger } from '@main/logging/logger';
-import { BrowserWindow } from 'electron';
 
 export interface ProviderConfig {
     maxConcurrent: number
@@ -301,14 +300,9 @@ export class MultiLLMOrchestrator extends EventEmitter {
      * Broadcast status updates to renderer
      */
     private broadcastStatus(chatId: string, isGenerating: boolean, provider: string) {
-        const windows = BrowserWindow.getAllWindows();
-        windows.forEach(win => {
-            win.webContents.send('chat:generation-status', {
-                chatId,
-                isGenerating,
-                provider
-            });
-        });
+        void chatId;
+        void isGenerating;
+        void provider;
     }
 
     /**

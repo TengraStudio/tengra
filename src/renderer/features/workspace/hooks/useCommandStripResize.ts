@@ -11,6 +11,7 @@
 import { useCallback, useRef } from 'react';
 
 const MIN_TERMINAL_HEIGHT = 150;
+const DRAG_OPEN_ACTIVATION_PX = 10;
 
 interface UseCommandStripResizeParams {
     showTerminal: boolean;
@@ -65,16 +66,34 @@ export function useCommandStripResize({
             stripResizeCleanupRef.current?.();
             stripResizeCleanupRef.current = null;
 
-            const nextHeight = calculateTerminalHeight(e.clientY);
-            setTerminalHeight(nextHeight);
-            lastExpandedTerminalHeightRef.current = Math.max(nextHeight, MIN_TERMINAL_HEIGHT);
-            setIsMaximizedTerminal(false); 
-            setIsResizingTerminal(true);
-            if (!showTerminal) {
-                setShowTerminal(true);
-            }
+            const startY = e.clientY;
+            let isActivated = false;
+
+            const activateResize = (clientY: number) => {
+                if (isActivated) {
+                    return;
+                }
+                isActivated = true;
+                const nextHeight = calculateTerminalHeight(clientY);
+                setTerminalHeight(nextHeight);
+                lastExpandedTerminalHeightRef.current = Math.max(nextHeight, MIN_TERMINAL_HEIGHT);
+                setIsMaximizedTerminal(false);
+                setIsResizingTerminal(true);
+                if (!showTerminal) {
+                    setShowTerminal(true);
+                }
+                document.body.style.cursor = 'ns-resize';
+                document.body.style.userSelect = 'none';
+            };
 
             const hMove = (event: MouseEvent) => {
+                if (!isActivated) {
+                    const upwardDelta = startY - event.clientY;
+                    if (upwardDelta < DRAG_OPEN_ACTIVATION_PX) {
+                        return;
+                    }
+                    activateResize(event.clientY);
+                }
                 const nextHeight = calculateTerminalHeight(event.clientY);
                 setTerminalHeight(nextHeight);
                 if (nextHeight >= MIN_TERMINAL_HEIGHT) {
@@ -85,8 +104,6 @@ export function useCommandStripResize({
                 stopCommandStripResize();
             };
 
-            document.body.style.cursor = 'ns-resize';
-            document.body.style.userSelect = 'none';
             window.addEventListener('mousemove', hMove);
             window.addEventListener('mouseup', hUp, { once: true });
 

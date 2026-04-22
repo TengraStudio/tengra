@@ -21,6 +21,7 @@ const C_COMMANDSTRIP_1 = "w-full px-3 py-2 text-left typo-caption font-medium ho
 
 interface CommandStripProps {
     className?: string;
+    style?: React.CSSProperties;
     language: Language;
     branchName?: string;
     branches?: string[];
@@ -36,7 +37,6 @@ interface CommandStripProps {
     onBranchSelect?: (branch: string) => void | Promise<void>;
     onCommandClick?: () => void;
     onQuickSwitchClick?: () => void;
-    onMouseDown?: (e: React.MouseEvent) => void;
 }
 
 const LANGUAGE_BY_EXTENSION: Record<string, string> = {
@@ -104,6 +104,7 @@ function detectEncoding(content?: string): string {
 
 export const CommandStrip: React.FC<CommandStripProps> = ({
     className,
+    style,
     language,
     branchName = 'main',
     branches = [],
@@ -114,7 +115,6 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
     activeFileContent,
     activeFileType = 'code',
     onBranchSelect,
-    onMouseDown,
 }) => {
     const { t } = useTranslation(language);
     const [isBranchPopoverOpen, setIsBranchPopoverOpen] = React.useState(false);
@@ -136,10 +136,10 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
     return (
         <div
             className={cn(
-                'h-8 flex items-center justify-between px-3 bg-background/80 backdrop-blur-md border-t border-border/30 select-none text-xxs font-medium text-muted-foreground cursor-ns-resize',
+                'h-8 flex items-center justify-between px-3 bg-background/80 backdrop-blur-md select-none text-xxs font-medium text-muted-foreground',
                 className
             )}
-            onMouseDown={onMouseDown}
+            style={style}
         >
             {/* Left: Context */}
             <div className="flex items-center gap-4">

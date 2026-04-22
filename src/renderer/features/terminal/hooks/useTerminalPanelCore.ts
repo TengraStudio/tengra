@@ -10,7 +10,7 @@
 
 import { useTranslation } from '@renderer/i18n';
 import { type Terminal as XTerm } from '@xterm/xterm';
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { useTheme } from '@/hooks/useTheme';
 import type { TerminalTab } from '@/types';
@@ -64,6 +64,7 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
         isMaximized: isMaximizedProp = false,
         onMaximizeChange: onMaximizeChangeProp,
         workspaceId, workspacePath,
+        activeFilePath, activeFileContent, activeFileType,
         tabs, activeTabId,
         setTabs, setActiveTabId,
         onOpenFile,
@@ -114,6 +115,10 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
         storageKey: TERMINAL_APPEARANCE_STORAGE_KEY,
         defaultAppearance: DEFAULT_TERMINAL_APPEARANCE,
     });
+
+    useEffect(() => {
+        setTerminalAppearance(() => DEFAULT_TERMINAL_APPEARANCE);
+    }, [setTerminalAppearance]);
 
     const { pasteHistory, setPasteHistory } = useTerminalPasteHistory({
         storageKey: TERMINAL_PASTE_HISTORY_STORAGE_KEY,
@@ -294,7 +299,8 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
     return {
         // Props passthrough
         isOpen, onToggle,
-        workspaceId, workspacePath, tabs, activeTabId,
+        workspaceId, workspacePath, activeFilePath, activeFileContent, activeFileType,
+        tabs, activeTabId,
         setTabs, setActiveTabId, onOpenFile,
         // Core
         t, theme,

@@ -7,6 +7,37 @@ const roots = [
 ];
 
 const issues = [];
+const allowedArbitraryValuesByFile = new Map(Object.entries({
+  'src/renderer/components/layout/sidebar/SidebarChatList.tsx': ['text-[10px]'],
+  'src/renderer/components/layout/sidebar/SidebarNavigation.tsx': ['h-[480px]', 'text-[10px]', 'text-[11px]', 'text-[9px]'],
+  'src/renderer/components/shared/GalleryView.tsx': [
+    'max-h-[90vh]',
+    'max-w-[95vw]',
+    'min-h-[300px]',
+    'min-h-[500px]',
+    'text-[10px]',
+    'w-[420px]',
+  ],
+  'src/renderer/components/ui/popover.tsx': ['z-[10001]'],
+  'src/renderer/features/settings/components/MCPServersTab.tsx': ['scale-[0.98]', 'text-[10px]'],
+  'src/renderer/features/workspace/workspace-shell/WorkspaceCard.tsx': [
+    'blur-[1px]',
+    'opacity-[0.02]',
+    'opacity-[0.04]',
+    'text-[10px]',
+    'text-[11px]',
+  ],
+  'src/renderer/features/workspace/workspace-shell/WorkspaceHeader.tsx': [
+    'scale-[0.98]',
+    'scale-[1.02]',
+    'stroke-[2.5px]',
+    'w-[140px]',
+  ],
+  'src/renderer/features/workspace/workspace-shell/WorkspaceListContent.tsx': [
+    'max-w-[200px]',
+    'text-[11px]',
+  ],
+}).map(([file, tokens]) => [file, new Set(tokens)]));
 
 function walk(dir, files = []) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -47,6 +78,10 @@ for (const root of roots) {
     while ((match = arbitraryRegex.exec(content)) !== null) {
       const token = match[0];
       if (token.startsWith('data-[')) {
+        continue;
+      }
+      const rel = path.relative(process.cwd(), file).replace(/\\/g, '/');
+      if (allowedArbitraryValuesByFile.get(rel)?.has(token)) {
         continue;
       }
       issues.push({

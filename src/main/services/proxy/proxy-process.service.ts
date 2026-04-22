@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { exec, spawn } from 'child_process';
+import { ChildProcess, exec, spawn } from 'child_process';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as http from 'http';
@@ -24,9 +24,9 @@ import { getManagedRuntimeBinaryPath } from '@main/services/system/runtime-path.
 import { SettingsService } from '@main/services/system/settings.service';
 import { getMainWindow } from '@main/startup/window';
 import { JsonObject } from '@shared/types/common';
+import type { AppSettings } from '@shared/types/settings';
 import { AppErrorCode, getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import type { ChildProcess } from 'child_process';
 
 import { validateOAuthTimeoutMs } from './proxy-validation.util';
 
@@ -373,7 +373,11 @@ export class ProxyProcessManager {
     private async ensureBinary(): Promise<string> {
         const binaryPath = this.getBinaryPath();
         const binaryExists = await fs.promises.access(binaryPath, fs.constants.F_OK).then(() => true).catch(() => false);
-        if (binaryExists && !await this.shouldRebuild(binaryPath)) {
+        const autoRebuildEnabled = process.env.TENGRA_PROXY_AUTO_REBUILD === '1';
+        if (binaryExists && !autoRebuildEnabled) {
+            return binaryPath;
+        }
+        if (binaryExists && autoRebuildEnabled && !await this.shouldRebuild(binaryPath)) {
             return binaryPath;
         }
 
@@ -387,7 +391,12 @@ export class ProxyProcessManager {
             throw new Error(`Proxy source not found and binary missing: ${sourceDir}`);
         }
 
-        appLogger.info('Proxy', 'Building tengra-proxy binary...');
+        appLogger.info(
+            'Proxy',
+            autoRebuildEnabled
+                ? 'Building tengra-proxy binary (auto rebuild enabled)...'
+                : 'Building tengra-proxy binary because managed binary is missing...'
+        );
         const buildCmd = `${this.resolveCargoCommand()} build --release`;
         const execAsync = promisify(exec);
 
@@ -513,7 +522,9 @@ export class ProxyProcessManager {
         const level = this.detectLogLevel(line, defaultLevel);
         const message = line.trim();
 
-        if (level === 'error') {
+        if (level === 'debug') {
+            appLogger.debug('Proxy', message);
+        } else if (level === 'error') {
             appLogger.error('Proxy', message);
         } else if (level === 'warning') {
             appLogger.warn('Proxy', message);
@@ -526,7 +537,10 @@ export class ProxyProcessManager {
     private detectLogLevel(
         line: string,
         defaultLevel: 'info' | 'error'
-    ): 'info' | 'warning' | 'error' {
+    ): 'debug' | 'info' | 'warning' | 'error' {
+        if (/level=debug|\[DEBUG\]/i.test(line)) {
+            return 'debug';
+        }
         if (/level=info|\[INFO\]|\[LOG\]/i.test(line)) {
             return 'info';
         }
@@ -656,8 +670,8 @@ export class ProxyProcessManager {
         const updatedProxy = {
             ...proxySettings,
             port,
-            apiKey: proxyApiKey,
-            managementPassword
+            apiKey: '',
+            managementPassword: ''
         };
         await this.settingsService.saveSettings({
             ...settings,
@@ -673,35 +687,87 @@ export class ProxyProcessManager {
     }
 
     private async syncProviderCredentialsForProxyStartup(): Promise<void> {
-        const settings = this.settingsService.getSettings();
-        const providerTokens: Array<{ provider: string; token: string | undefined }> = [
-            { provider: 'openai_key', token: settings.openai?.apiKey },
-            { provider: 'anthropic_key', token: settings.anthropic?.apiKey },
-            { provider: 'groq_key', token: settings.groq?.apiKey },
-            { provider: 'nvidia_key', token: settings.nvidia?.apiKey },
+        const settings = { ...this.settingsService.getSettings() };
+        let settingsChanged = false;
+
+        const providerDefinitions: Array<{ id: string; settingsPath: keyof AppSettings & string }> = [
+            { id: 'openai', settingsPath: 'openai' },
+            { id: 'claude', settingsPath: 'claude' },
+            { id: 'anthropic', settingsPath: 'anthropic' },
+            { id: 'gemini', settingsPath: 'gemini' },
+            { id: 'mistral', settingsPath: 'mistral' },
+            { id: 'groq', settingsPath: 'groq' },
+            { id: 'together', settingsPath: 'together' },
+            { id: 'perplexity', settingsPath: 'perplexity' },
+            { id: 'cohere', settingsPath: 'cohere' },
+            { id: 'xai', settingsPath: 'xai' },
+            { id: 'deepseek', settingsPath: 'deepseek' },
+            { id: 'openrouter', settingsPath: 'openrouter' },
+            { id: 'nvidia', settingsPath: 'nvidia' },
         ];
 
-        for (const { provider, token } of providerTokens) {
-            const normalizedToken = token?.trim();
-            if (!normalizedToken || normalizedToken.length <= 5 || normalizedToken === 'connected') {
+        for (const def of providerDefinitions) {
+            const providerData = settings[def.settingsPath] as { apiKeys?: string[]; apiKey?: string } | undefined;
+            if (!providerData) {
                 continue;
             }
 
-            try {
-                await this.authService.linkAccount(provider, { accessToken: normalizedToken });
-            } catch (error) {
-                appLogger.warn(
-                    'Proxy',
-                    `Failed to sync ${provider} credential before proxy startup: ${getErrorMessage(error)}`
-                );
+            const keys: string[] = [];
+            if (Array.isArray(providerData.apiKeys)) {
+                keys.push(...providerData.apiKeys);
             }
+            if (typeof providerData.apiKey === 'string' && providerData.apiKey) {
+                keys.push(providerData.apiKey);
+            }
+
+            if (keys.length === 0) {
+                continue;
+            }
+
+            appLogger.info('Proxy', `Migrating legacy keys for ${def.id} from settings.json to database...`);
+            for (const key of keys) {
+                const normalizedKey = key?.trim();
+                if (!normalizedKey || normalizedKey.length <= 5 || normalizedKey === 'connected') {
+                    continue;
+                }
+
+                try {
+                    await this.authService.linkAccount(def.id, { 
+                        accessToken: normalizedKey,
+                        metadata: { type: 'api_key', auth_type: 'api_key' }
+                    });
+                } catch (error) {
+                    appLogger.error(
+                        'Proxy',
+                        `Failed to migrate ${def.id} credential: ${getErrorMessage(error)}`
+                    );
+                }
+            }
+
+            // Clear keys from settings once migration is attempted
+            providerData.apiKeys = [];
+            providerData.apiKey = '';
+            settingsChanged = true;
+        }
+
+        if (settingsChanged) {
+            await this.settingsService.saveSettings(settings);
+            appLogger.info('Proxy', 'Database synchronization complete. API keys are now managed securely in the database.');
         }
     }
 
     private async ensureProxyApiKey(): Promise<string> {
-        const settings = this.settingsService.getSettings();
-        if (settings.proxy?.apiKey) {
-            return settings.proxy.apiKey;
+        const activeToken = await this.authService.getActiveToken('proxy_key');
+        if (activeToken && activeToken.trim().length > 0) {
+            return activeToken.trim();
+        }
+
+        const accounts = await this.authService.getAccountsByProviderFull('proxy_key');
+        const fallbackToken = accounts
+            .map(account => account.accessToken ?? account.sessionToken ?? account.refreshToken)
+            .find(token => typeof token === 'string' && token.trim().length > 0);
+        if (fallbackToken) {
+            return fallbackToken.trim();
         }
 
         const key = crypto.randomBytes(32).toString('hex');

@@ -9,6 +9,7 @@
  */
 
 import { Badge } from '@renderer/components/ui/badge';
+import { ConfirmationModal } from '@renderer/components/ui/ConfirmationModal';
 import { Button } from '@renderer/components/ui/button';
 import { Input } from '@renderer/components/ui/input';
 import { Label } from '@renderer/components/ui/label';
@@ -84,6 +85,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
     const [loadingConfigId, setLoadingConfigId] = useState<string | null>(null);
     const [savingConfig, setSavingConfig] = useState(false);
     const [isUninstalling, setIsUninstalling] = useState<string | null>(null);
+    const [isUninstallConfirmOpen, setIsUninstallConfirmOpen] = useState(false);
 
     const registry = useMarketplaceStore(s => s.registry);
     const [isUpdating, setIsUpdating] = useState<string | null>(null);
@@ -445,10 +447,7 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                                             className={C_EXTENSIONPLUGINSTAB_4}
                                             title={t('marketplace.uninstall')}
                                             onClick={() => {
-                                                // eslint-disable-next-line no-alert
-                                                if (confirm(`Are you sure you want to uninstall ${selectedExtension.manifest.name}? This action cannot be undone.`)) {
-                                                    void handleUninstallExtension(selectedExtension.manifest.id);
-                                                }
+                                                setIsUninstallConfirmOpen(true);
                                             }}
                                             disabled={isUninstalling === selectedExtension.manifest.id}
                                         >
@@ -581,6 +580,18 @@ export const ExtensionPluginsTab: React.FC<ExtensionPluginsTabProps> = ({ t }) =
                                 )}
                             </div>
                         </div>
+
+                        <ConfirmationModal
+                            isOpen={isUninstallConfirmOpen}
+                            onClose={() => setIsUninstallConfirmOpen(false)}
+                            onConfirm={() => {
+                                setIsUninstallConfirmOpen(false);
+                                void handleUninstallExtension(selectedExtension.manifest.id);
+                            }}
+                            title="Uninstall Extension"
+                            message={`Are you sure you want to uninstall ${selectedExtension.manifest.name}? This action cannot be undone.`}
+                            variant="danger"
+                        />
                     </div>
                 )}
             </section>

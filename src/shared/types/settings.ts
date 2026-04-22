@@ -78,6 +78,7 @@ export interface AppSettings {
     general: {
         language: string;
         theme: string;
+        workspaceIconPack?: string;
         resolution: string;
         fontSize: number;
         fontFamily?: string;

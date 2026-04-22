@@ -56,6 +56,7 @@ export interface MonacoEditorComponentProps {
     onMount: (editorInstance: MonacoEditorInstance, monacoInstance: Monaco) => void;
     loading: React.ReactNode;
     options: editor.IStandaloneEditorConstructionOptions;
+    monaco: Monaco;
 }
 
 export interface InlineSuggestionConfig {
@@ -175,9 +176,16 @@ function buildInlineSuggestionConfigFromSettings(
 }
 
 const loadMonaco = async (): Promise<{ Editor: React.ElementType; monaco: Monaco }> => {
+    const importReactPromise = import('@monaco-editor/react').then(m => {
+        return m;
+    });
+    const initMonacoPromise = ensureMonacoInitialized().then(m => {
+        return m;
+    });
+
     const [{ default: Editor }, monaco] = await Promise.all([
-        import('@monaco-editor/react'),
-        ensureMonacoInitialized(),
+        importReactPromise,
+        initMonacoPromise,
     ]);
     return { Editor, monaco };
 };
@@ -205,62 +213,87 @@ function toHexColorFromComputedColor(colorValue: string): string | null {
     return `#${rgbChannelToHex(red)}${rgbChannelToHex(green)}${rgbChannelToHex(blue)}`;
 }
 
-function readCssVariableAsHex(name: string, fallbackVariableName?: string): string {
-    const styles = getComputedStyle(document.documentElement);
-    const primaryToken = styles.getPropertyValue(name).trim();
-    const fallbackToken = fallbackVariableName ? styles.getPropertyValue(fallbackVariableName).trim() : '';
-    const cssToken = primaryToken || fallbackToken;
+class MonacoColorResolver {
+    private static cache = new Map<string, string>();
+    private static lastComputedStyle: CSSStyleDeclaration | null = null;
+    private static probe: HTMLSpanElement | null = null;
 
-    if (!cssToken) {
-        const bodyColor = getComputedStyle(document.body).color;
-        const rootColor = getComputedStyle(document.documentElement).color;
-        const fallback =
-            toHexColorFromComputedColor(bodyColor) ??
-            toHexColorFromComputedColor(rootColor) ??
-            toHexColorFromComputedColor(getComputedStyle(document.body).backgroundColor);
-        if (!fallback) {
+    static clearCache() {
+        this.cache.clear();
+        this.lastComputedStyle = null;
+    }
+
+    static resolve(name: string, fallbackName?: string): string {
+        const cacheKey = `${name}:${fallbackName}`;
+        if (this.cache.has(cacheKey)) {
+            return this.cache.get(cacheKey)!;
+        }
+
+        if (!this.lastComputedStyle) {
+            this.lastComputedStyle = getComputedStyle(document.documentElement);
+        }
+
+        const primaryToken = this.lastComputedStyle.getPropertyValue(name).trim();
+        const fallbackToken = fallbackName ? this.lastComputedStyle.getPropertyValue(fallbackName).trim() : '';
+        const cssToken = primaryToken || fallbackToken;
+
+        if (!cssToken) {
+            const bodyStyle = getComputedStyle(document.body);
+            const fallback =
+                toHexColorFromComputedColor(bodyStyle.color) ??
+                toHexColorFromComputedColor(this.lastComputedStyle.color) ??
+                toHexColorFromComputedColor(bodyStyle.backgroundColor);
+            
+            if (!fallback) {
+                throw new Error(`Unable to resolve Monaco color token: ${name}`);
+            }
+            this.cache.set(cacheKey, fallback);
+            return fallback;
+        }
+
+        if (!this.probe) {
+            this.probe = document.createElement('span');
+            this.probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;';
+            document.body.appendChild(this.probe);
+        }
+
+        this.probe.style.color = cssToken.includes('%') ? `hsl(${cssToken})` : cssToken;
+        const resolvedColor = getComputedStyle(this.probe).color;
+        const resolved =
+            toHexColorFromComputedColor(resolvedColor) ??
+            toHexColorFromComputedColor(getComputedStyle(document.body).color);
+
+        if (!resolved) {
             throw new Error(`Unable to resolve Monaco color token: ${name}`);
         }
-        return fallback;
-    }
 
-    const probe = document.createElement('span');
-    probe.style.color = `hsl(${cssToken})`;
-    probe.style.position = 'fixed';
-    probe.style.visibility = 'hidden';
-    probe.style.pointerEvents = 'none';
-    document.body.appendChild(probe);
-    const resolvedColor = getComputedStyle(probe).color;
-    document.body.removeChild(probe);
-    const resolved =
-        toHexColorFromComputedColor(resolvedColor) ??
-        toHexColorFromComputedColor(getComputedStyle(document.body).color);
-    if (!resolved) {
-        throw new Error(`Unable to resolve Monaco color token: ${name}`);
+        this.cache.set(cacheKey, resolved);
+        return resolved;
     }
-    return resolved;
 }
 
 function applyMonacoTheme(monaco: Monaco, isLight: boolean): string {
-    const background = readCssVariableAsHex('--editor-background', '--background');
-    const foreground = readCssVariableAsHex('--editor-foreground', '--foreground');
-    const gutterBackground = readCssVariableAsHex('--editor-gutter-background', '--background');
-    const widgetBackground = readCssVariableAsHex('--editor-widget-background', '--card');
-    const widgetBorder = readCssVariableAsHex('--editor-widget-border', '--border');
-    const lineNumber = readCssVariableAsHex('--editor-line-number', '--muted-foreground');
-    const lineNumberActive = readCssVariableAsHex('--editor-line-number-active', '--foreground');
-    const cursor = readCssVariableAsHex('--editor-cursor', '--primary');
-    const selection = readCssVariableAsHex('--editor-selection', '--primary');
-    const selectionInactive = readCssVariableAsHex('--editor-selection-inactive', '--accent');
-    const lineHighlight = readCssVariableAsHex('--editor-line-highlight', '--card');
-    const indentGuide = readCssVariableAsHex('--editor-indent-guide', '--border');
-    const indentGuideActive = readCssVariableAsHex('--editor-indent-guide-active', '--ring');
-    const tokenComment = readCssVariableAsHex('--editor-token-comment', '--code-comment');
-    const tokenKeyword = readCssVariableAsHex('--editor-token-keyword', '--code-keyword');
-    const tokenString = readCssVariableAsHex('--editor-token-string', '--code-string');
-    const tokenNumber = readCssVariableAsHex('--editor-token-number', '--code-number');
-    const tokenType = readCssVariableAsHex('--editor-token-type', '--code-function');
-    const tokenInvalid = readCssVariableAsHex('--editor-token-invalid', '--destructive');
+    MonacoColorResolver.clearCache();
+    
+    const background = MonacoColorResolver.resolve('--editor-background', '--background');
+    const foreground = MonacoColorResolver.resolve('--editor-foreground', '--foreground');
+    const gutterBackground = MonacoColorResolver.resolve('--editor-gutter-background', '--background');
+    const widgetBackground = MonacoColorResolver.resolve('--editor-widget-background', '--card');
+    const widgetBorder = MonacoColorResolver.resolve('--editor-widget-border', '--border');
+    const lineNumber = MonacoColorResolver.resolve('--editor-line-number', '--muted-foreground');
+    const lineNumberActive = MonacoColorResolver.resolve('--editor-line-number-active', '--foreground');
+    const cursor = MonacoColorResolver.resolve('--editor-cursor', '--primary');
+    const selection = MonacoColorResolver.resolve('--editor-selection', '--primary');
+    const selectionInactive = MonacoColorResolver.resolve('--editor-selection-inactive', '--accent');
+    const lineHighlight = MonacoColorResolver.resolve('--editor-line-highlight', '--card');
+    const indentGuide = MonacoColorResolver.resolve('--editor-indent-guide', '--border');
+    const indentGuideActive = MonacoColorResolver.resolve('--editor-indent-guide-active', '--ring');
+    const tokenComment = MonacoColorResolver.resolve('--editor-token-comment', '--code-comment');
+    const tokenKeyword = MonacoColorResolver.resolve('--editor-token-keyword', '--code-keyword');
+    const tokenString = MonacoColorResolver.resolve('--editor-token-string', '--code-string');
+    const tokenNumber = MonacoColorResolver.resolve('--editor-token-number', '--code-number');
+    const tokenType = MonacoColorResolver.resolve('--editor-token-type', '--code-function');
+    const tokenInvalid = MonacoColorResolver.resolve('--editor-token-invalid', '--destructive');
 
     const themeName = isLight ? 'tengra-light' : 'tengra-dark';
     monaco.editor.defineTheme(themeName, {
@@ -288,11 +321,16 @@ function applyMonacoTheme(monaco: Monaco, isLight: boolean): string {
             'editorWidget.background': widgetBackground,
             'editorWidget.border': widgetBorder,
             'editorGutter.background': gutterBackground,
+            'editorWhitespace.foreground': `${indentGuide}66`,
+            'editorBracketHighlight.foreground1': tokenType,
+            'editorBracketHighlight.foreground2': tokenString,
+            'editorBracketHighlight.foreground3': tokenKeyword,
         },
     });
     monaco.editor.setTheme(themeName);
     return themeName;
 }
+
 
 function buildWorkspaceEditorOverrides(
     settings?: Workspace['editor']
@@ -388,6 +426,7 @@ export interface CodeEditorProps {
     workspacePath?: string;
     filePath?: string;
     workspaceEditorSettings?: Workspace['editor'];
+    contentBottomPaddingPx?: number;
     onNavigateToLocation?: (target: CodeEditorNavigationTarget) => void;
     onShowWorkspaceResults?: (payload: CodeEditorWorkspaceResultsPayload) => void;
 }
@@ -886,6 +925,7 @@ const EditorContainer: React.FC<{
     onMount: (e: MonacoEditorInstance, m: Monaco) => void;
     loading: React.ReactNode;
     options: editor.IStandaloneEditorConstructionOptions;
+    monaco: Monaco;
     className?: string;
 }> = ({
     Editor,
@@ -897,6 +937,7 @@ const EditorContainer: React.FC<{
     onMount,
     loading,
     options,
+    monaco,
     className,
 }) => (
         <div className={cn('relative w-full h-full overflow-hidden', className)}>
@@ -911,6 +952,7 @@ const EditorContainer: React.FC<{
                 onMount={onMount}
                 loading={loading}
                 options={options}
+                monaco={monaco}
             />
         </div>
     );
@@ -940,6 +982,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     workspacePath,
     filePath,
     workspaceEditorSettings,
+    contentBottomPaddingPx = 12,
     onNavigateToLocation,
     onShowWorkspaceResults,
 }) => {
@@ -1045,15 +1088,15 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                     renderCharacters: false,
                 },
                 fontSize: fontSize ?? effectiveEditorSettings.fontSize ?? 14,
-                fontFamily: "var(--font-sans)",
-                fontLigatures: true,
+                fontFamily: "var(--font-mono)",
+                fontLigatures: false,
                 scrollBeyondLastLine: false,
                 readOnly,
                 automaticLayout: true,
-                padding: { top: 12, bottom: 12 },
+                padding: { top: 12, bottom: Math.max(12, Math.floor(contentBottomPaddingPx)) },
                 smoothScrolling: true,
-                cursorBlinking: 'smooth',
-                cursorSmoothCaretAnimation: 'on',
+                cursorBlinking: 'blink',
+                cursorSmoothCaretAnimation: 'off',
                 formatOnPaste: true,
                 formatOnType: true,
                 tabSize: 4,
@@ -1062,6 +1105,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 folding: true,
                 lineDecorationsWidth: 10,
                 overviewRulerLanes: 3,
+                renderLineHighlight: 'line',
                 fixedOverflowWidgets: true,
                 codeLens: codeLensEnabled,
                 inlayHints: { enabled: inlayHintsEnabled ? 'on' : 'off' },
@@ -1081,6 +1125,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             resolvedInlineSuggestionConfig.enabled,
             settings?.editor,
             workspaceEditorSettings,
+            contentBottomPaddingPx,
             ]
     );
 
@@ -1108,7 +1153,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             }
             options={editorOptions}
             className={className}
+            monaco={monacoComponents.monaco}
         />
     );
 };
-

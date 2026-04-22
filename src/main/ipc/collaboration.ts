@@ -14,8 +14,7 @@
 
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service';
-import { multiLLMOrchestrator } from '@main/services/llm/multi-llm-orchestrator.service';
-import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { Message } from '@shared/types/chat';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
@@ -59,58 +58,12 @@ export function registerCollaborationIpc(getMainWindow: () => BrowserWindow | nu
     /**
      * Get provider statistics
      */
-    ipcMain.handle('collaboration:getProviderStats', createSafeIpcHandler('collaboration:getProviderStats', async (
-        event: IpcMainInvokeEvent,
-        provider?: string
-    ) => {
-        validateSender(event);
-        if (provider) {
-            return multiLLMOrchestrator.getProviderStats(provider) ?? null;
-        }
-        return Object.fromEntries(multiLLMOrchestrator.getAllStats());
-    }, {}, { wrapResponse: true }));
 
     /**
      * Get active task count for a provider
      */
-    ipcMain.handle('collaboration:getActiveTaskCount', createSafeIpcHandler('collaboration:getActiveTaskCount', async (
-        event: IpcMainInvokeEvent,
-        provider: string
-    ) => {
-        validateSender(event);
-        if (typeof provider !== 'string') {
-            throw new Error('Provider must be a string');
-        }
-        return multiLLMOrchestrator.getActiveTaskCount(provider);
-    }, 0, { wrapResponse: true }));
 
     /**
      * Configure provider settings
      */
-    ipcMain.handle('collaboration:setProviderConfig', createIpcHandler('collaboration:setProviderConfig', async (
-        event: IpcMainInvokeEvent,
-        provider: string,
-        config: {
-            maxConcurrent: number
-            priority: number
-            rateLimitPerMinute: number
-        }
-    ) => {
-        validateSender(event);
-        if (typeof provider !== 'string') {
-            throw new Error('Provider must be a string');
-        }
-        if (typeof config.maxConcurrent !== 'number' || config.maxConcurrent < 1) {
-            throw new Error('maxConcurrent must be a positive number');
-        }
-        if (typeof config.priority !== 'number') {
-            throw new Error('priority must be a number');
-        }
-        if (typeof config.rateLimitPerMinute !== 'number' || config.rateLimitPerMinute < 1) {
-            throw new Error('rateLimitPerMinute must be a positive number');
-        }
-
-        multiLLMOrchestrator.setProviderConfig(provider, config);
-        return { success: true };
-    }, { wrapResponse: true }));
 }

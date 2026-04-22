@@ -40,7 +40,7 @@ vi.mock('net', () => {
 });
 
 vi.mock('os', () => ({
-    networkInterfaces: vi.fn().mockReturnValue({ eth0: [{ address: '192.168.1.1' }] })
+    networkInterfaces: vi.fn().mockReturnValue({ eth0: [{ address: '127.0.0.1' }] })
 }));
 
 vi.mock('ws', () => ({
@@ -198,7 +198,7 @@ describe('NetworkService', () => {
             });
             mockSpawnChild.stderr.on.mockImplementation(() => {});
 
-            const result = await service.ping('192.168.1.1');
+            const result = await service.ping('127.0.0.1');
             expect(result.success).toBe(true);
         });
     });

@@ -124,14 +124,9 @@ const PROVIDER_SETTINGS_UPDATERS: Record<ProviderType, (settings: AppSettings) =
     copilot: settings => ({ ...settings, copilot: { connected: false } }),
     codex: settings => ({
         ...settings,
-        openai: settings.openai?.apiKey === 'connected' ? { ...settings.openai, apiKey: '' } : settings.openai,
         codex: { connected: false }
     }),
-    claude: settings => ({
-        ...settings,
-        claude: settings.claude?.apiKey === 'connected' ? { ...settings.claude, apiKey: '' } : settings.claude,
-        anthropic: settings.anthropic?.apiKey === 'connected' ? { ...settings.anthropic, apiKey: '' } : settings.anthropic
-    }),
+    claude: settings => ({ ...settings }),
     antigravity: settings => ({
         ...settings,
         antigravity: { ...(settings.antigravity ?? { connected: false }), connected: false }

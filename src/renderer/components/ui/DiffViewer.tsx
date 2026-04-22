@@ -10,7 +10,7 @@
 
 import { DiffEditor } from '@monaco-editor/react';
 import { Loader2 } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/i18n';
@@ -37,6 +37,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
     const { isLight } = useTheme();
     const { t } = useTranslation();
     const [isMonacoReady, setIsMonacoReady] = useState(false);
+    const editorRef = useRef<any>(null);
 
     useEffect(() => {
         let active = true;
@@ -55,6 +56,10 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
         };
     }, []);
 
+    const handleEditorDidMount = (editor: any) => {
+        editorRef.current = editor;
+    };
+
     return (
         <div className={cn('relative w-full h-full rounded-lg border border-border/50 overflow-hidden bg-background shadow-sm', className)}>
             {isMonacoReady ? (
@@ -64,6 +69,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
                     original={original}
                     modified={modified}
                     theme={isLight ? 'light' : 'vs-dark'}
+                    onMount={handleEditorDidMount}
                     loading={
                         <div className="flex items-center justify-center h-full w-full bg-background/50 text-muted-foreground gap-2">
                             <Loader2 className="w-5 h-5 animate-spin text-primary" />
@@ -77,7 +83,8 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
                         scrollBeyondLastLine: false,
                         fontFamily: "var(--font-sans)",
                         fontSize: 13,
-                        originalEditable: false, // Specifically make original read-only
+                        originalEditable: false,
+                        automaticLayout: true, // Help with resize issues
                     }}
                 />
             ) : (

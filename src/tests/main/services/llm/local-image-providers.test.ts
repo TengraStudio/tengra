@@ -11,7 +11,7 @@
 import { LinkedAccount } from '@main/services/data/database.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalImageProviders } from '@main/services/llm/local-image-providers';
-import { QuotaService } from '@main/services/proxy/quota.service';
+import { ProxyService } from '@main/services/proxy/proxy.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { AppSettings } from '@shared/types/settings';
@@ -42,7 +42,7 @@ const SETTINGS_FIXTURE: AppSettings = {
 const ACCOUNT_FIXTURE: LinkedAccount = {
     id: 'account-1',
     provider: 'antigravity',
-    email: 'agnes@example.com',
+    email: 'mockuser@example.com',
     accessToken: 'token',
     isActive: true,
     createdAt: Date.now(),
@@ -67,13 +67,13 @@ function createAuthService(
     } as never as AuthService;
 }
 
-function createQuotaService(
-    fetchAntigravityUpstreamForToken: (account: LinkedAccount) => Promise<TestValue>
-): QuotaService {
-    // SAFETY: The test only exercises fetchAntigravityUpstreamForToken().
+function createProxyService(
+    getQuota: () => Promise<TestValue>
+): ProxyService {
+    // SAFETY: The test only exercises getQuota().
     return {
-        fetchAntigravityUpstreamForToken,
-    } as never as QuotaService;
+        getQuota,
+    } as never as ProxyService;
 }
 
 function createLlmService(
@@ -88,7 +88,7 @@ function createLlmService(
 describe('LocalImageProviders', () => {
     const getAllAccountsFull = vi.fn<() => Promise<LinkedAccount[]>>();
     const setActiveAccount = vi.fn<(provider: string, accountId: string) => Promise<void>>();
-    const fetchAntigravityUpstreamForToken = vi.fn();
+    const getQuota = vi.fn();
     const chat = vi.fn();
 
     beforeEach(() => {
@@ -98,15 +98,15 @@ describe('LocalImageProviders', () => {
     it('accepts Antigravity image model aliases when quota is available', async () => {
         getAllAccountsFull.mockResolvedValue([ACCOUNT_FIXTURE]);
         setActiveAccount.mockResolvedValue();
-        fetchAntigravityUpstreamForToken.mockResolvedValue({
-            models: {
-                'gemini-3.1-flash-image': {
-                    displayName: 'Gemini 3.1 Flash Image',
-                    quotaInfo: {
-                        remainingFraction: 0.42,
-                    },
-                },
-            },
+        getQuota.mockResolvedValue({
+            accounts: [{
+                accountId: ACCOUNT_FIXTURE.id,
+                models: [{
+                    id: 'gemini-3.1-flash-image',
+                    name: 'Gemini 3.1 Flash Image',
+                    quotaInfo: { remainingFraction: 0.42 },
+                }],
+            }],
         });
         chat.mockResolvedValue({
             images: ['safe-file://generated-image.png'],
@@ -115,7 +115,7 @@ describe('LocalImageProviders', () => {
         const providers = new LocalImageProviders({
             settingsService: createSettingsService(),
             authService: createAuthService(getAllAccountsFull, setActiveAccount),
-            quotaService: createQuotaService(fetchAntigravityUpstreamForToken),
+            proxyService: createProxyService(getQuota),
             llmService: createLlmService(chat),
         });
 
@@ -134,15 +134,15 @@ describe('LocalImageProviders', () => {
     it('surfaces Google account verification errors instead of silently falling back', async () => {
         getAllAccountsFull.mockResolvedValue([ACCOUNT_FIXTURE]);
         setActiveAccount.mockResolvedValue();
-        fetchAntigravityUpstreamForToken.mockResolvedValue({
-            models: {
-                'gemini-3.1-flash-image': {
-                    displayName: 'Gemini 3.1 Flash Image',
-                    quotaInfo: {
-                        remainingFraction: 1,
-                    },
-                },
-            },
+        getQuota.mockResolvedValue({
+            accounts: [{
+                accountId: ACCOUNT_FIXTURE.id,
+                models: [{
+                    id: 'gemini-3.1-flash-image',
+                    name: 'Gemini 3.1 Flash Image',
+                    quotaInfo: { remainingFraction: 1 },
+                }],
+            }],
         });
         chat.mockRejectedValue(new Error(JSON.stringify({
             error: {
@@ -164,7 +164,7 @@ describe('LocalImageProviders', () => {
         const providers = new LocalImageProviders({
             settingsService: createSettingsService(),
             authService: createAuthService(getAllAccountsFull, setActiveAccount),
-            quotaService: createQuotaService(fetchAntigravityUpstreamForToken),
+            proxyService: createProxyService(getQuota),
             llmService: createLlmService(chat),
         });
 

@@ -63,7 +63,7 @@ export const WorkspaceDashboardHeader: React.FC<WorkspaceDashboardHeaderProps> =
     const { t } = useTranslation();
     const baseLogoUrl = toSafeFileUrl(workspace.logo);
     // Use a unique cache-buster URL that changes every time updatedAt changes
-    const workspaceLogoUrl = baseLogoUrl ? `${baseLogoUrl}?v=${workspace.updatedAt}` : null;
+    const workspaceLogoUrl = baseLogoUrl && baseLogoUrl.startsWith('data:') ? baseLogoUrl : (baseLogoUrl ? `${baseLogoUrl}?v=${workspace.updatedAt}` : null);
 
     return (
         <div className="flex flex-col md:flex-row gap-8 items-start bg-card/40 p-6 rounded-3xl border border-border backdrop-blur-sm">

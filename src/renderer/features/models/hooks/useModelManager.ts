@@ -28,6 +28,30 @@ const LOCALE_MODEL_HINTS: Record<string, string[]> = {
 const MODEL_REFRESH_RETRY_DELAY_MS = 3500;
 const MIN_HEALTHY_NVIDIA_MODEL_COUNT = 2;
 
+function normalizeLinkedProvider(provider: string): string {
+    const normalized = provider.trim().toLowerCase();
+    if (normalized === 'openai') {
+        return 'codex';
+    }
+    if (normalized === 'anthropic') {
+        return 'claude';
+    }
+    if (normalized === 'github' || normalized === 'copilot_token') {
+        return 'copilot';
+    }
+    if (normalized === 'google' || normalized === 'gemini') {
+        return 'antigravity';
+    }
+    return normalized;
+}
+
+function areStringArraysEqual(left: string[], right: string[]): boolean {
+    if (left.length !== right.length) {
+        return false;
+    }
+    return left.every((item, index) => right[index] === item);
+}
+
 function hasRemoteModels(models: ModelInfo[]): boolean {
     return models.some(model => {
         const provider = getSelectableProviderId(model);
@@ -35,28 +59,31 @@ function hasRemoteModels(models: ModelInfo[]): boolean {
     });
 }
 
-function getExpectedRemoteProviders(settings: AppSettings | null): string[] {
+function getExpectedRemoteProviders(
+    settings: AppSettings | null,
+    linkedProviders: ReadonlySet<string>
+): string[] {
     if (!settings) {
         return [];
     }
 
     const providers = new Set<string>();
-    if (settings.nvidia?.apiKey) {
+    if (linkedProviders.has('nvidia')) {
         providers.add('nvidia');
     }
-    if (settings.openai?.apiKey || settings.codex?.connected === true) {
+    if (linkedProviders.has('codex') || settings.codex?.connected === true) {
         providers.add('codex');
     }
-    if (settings.anthropic?.apiKey || settings.claude?.apiKey) {
+    if (linkedProviders.has('claude')) {
         providers.add('claude');
     }
-    if (settings.antigravity?.connected === true) {
+    if (linkedProviders.has('antigravity') || settings.antigravity?.connected === true) {
         providers.add('antigravity');
     }
-    if (settings.copilot?.connected === true) {
+    if (linkedProviders.has('copilot') || settings.copilot?.connected === true) {
         providers.add('copilot');
     }
-    if (settings.groq?.apiKey) {
+    if (linkedProviders.has('groq')) {
         providers.add('custom');
     }
 
@@ -77,8 +104,11 @@ function hasExpectedRemoteCoverage(models: ModelInfo[], expectedProviders: strin
     return expectedProviders.every(provider => availableProviders.has(provider));
 }
 
-function hasHealthyNvidiaCoverage(models: ModelInfo[], settings: AppSettings | null): boolean {
-    if (!settings?.nvidia?.apiKey) {
+function hasHealthyNvidiaCoverage(
+    models: ModelInfo[],
+    linkedProviders: ReadonlySet<string>
+): boolean {
+    if (!linkedProviders.has('nvidia')) {
         return true;
     }
 
@@ -89,9 +119,10 @@ function hasHealthyNvidiaCoverage(models: ModelInfo[], settings: AppSettings | n
 function mergePreservedProviderModels(
     previousModels: ModelInfo[],
     fetchedModels: ModelInfo[],
-    settings: AppSettings | null
+    settings: AppSettings | null,
+    linkedProviders: ReadonlySet<string>
 ): ModelInfo[] {
-    if (settings?.copilot?.connected !== true) {
+    if (settings?.copilot?.connected !== true && !linkedProviders.has('copilot')) {
         return fetchedModels;
     }
 
@@ -163,12 +194,41 @@ export function useModelManager(
     
     // Stable refs to prevent render loops while maintaining correct logic
     const appSettingsRef = useRef(appSettings);
+    const linkedProvidersRef = useRef<string[]>([]);
     const lastSyncedRef = useRef<{ defaultModel?: string; lastProvider?: string }>({});
     const hasScheduledRemoteRetryRef = useRef(false);
+    const [linkedProviders, setLinkedProviders] = useState<string[]>([]);
+    const linkedProviderSet = useMemo(() => new Set(linkedProviders), [linkedProviders]);
+    const linkedProviderSignature = useMemo(() => linkedProviders.join('|'), [linkedProviders]);
 
     useEffect(() => {
         appSettingsRef.current = appSettings;
     }, [appSettings]);
+
+    useEffect(() => {
+        linkedProvidersRef.current = linkedProviders;
+    }, [linkedProviders]);
+
+    const refreshLinkedProviders = useCallback(async () => {
+        try {
+            const accounts = await window.electron.getLinkedAccounts();
+            const normalizedProviders = Array.from(
+                new Set(
+                    accounts
+                        .map(account => normalizeLinkedProvider(account.provider))
+                        .filter(provider => provider.length > 0)
+                )
+            ).sort();
+            setLinkedProviders(previousProviders => (
+                areStringArraysEqual(previousProviders, normalizedProviders)
+                    ? previousProviders
+                    : normalizedProviders
+            ));
+        } catch (error) {
+            appLogger.error('ModelManager', 'Failed to load linked providers', error as Error);
+            setLinkedProviders([]);
+        }
+    }, []);
 
     const selection = useModelSelection(appSettings, setAppSettings);
     const {
@@ -186,7 +246,12 @@ export function useModelManager(
             const fetched = await fetchModels(bypassCache);
             setModels(previousModels => {
                 const currentSettings = appSettingsRef.current;
-                const nextModels = mergePreservedProviderModels(previousModels, fetched, currentSettings);
+                const nextModels = mergePreservedProviderModels(
+                    previousModels,
+                    fetched,
+                    currentSettings,
+                    new Set(linkedProvidersRef.current)
+                );
                 setProxyModels(nextModels.filter(m => m.provider !== 'ollama' && m.provider !== 'local-ai' && m.provider !== 'huggingface'));
                 setGroupedModels(groupModels(nextModels));
                 return nextModels;
@@ -199,6 +264,18 @@ export function useModelManager(
     }, []);
 
     useEffect(() => {
+        void refreshLinkedProviders();
+
+        const removeListener = window.electron.ipcRenderer.on('auth:account-changed', () => {
+            void refreshLinkedProviders();
+        });
+
+        return () => {
+            removeListener();
+        };
+    }, [refreshLinkedProviders]);
+
+    useEffect(() => {
         const unsubscribe = window.electron.on('model-downloader:progress', (_event, raw) => {
             const progress = raw as { status?: string };
             if (progress.status === 'completed') {
@@ -209,7 +286,14 @@ export function useModelManager(
     }, [refreshModels]);
 
     useEffect(() => {
+        const unsubscribe = window.electron.on('model:updated', () => {
+            appLogger.info('ModelManager', 'Received model:updated event from backend, refreshing...');
+            void refreshModels(true);
+        });
+
         void refreshModels();
+
+        return () => unsubscribe();
     }, [refreshModels]);
 
     useEffect(() => {
@@ -217,10 +301,10 @@ export function useModelManager(
             return;
         }
 
-        const expectedRemoteProviders = getExpectedRemoteProviders(appSettings);
+        const expectedRemoteProviders = getExpectedRemoteProviders(appSettings, linkedProviderSet);
         if (
             hasExpectedRemoteCoverage(models, expectedRemoteProviders) &&
-            hasHealthyNvidiaCoverage(models, appSettings)
+            hasHealthyNvidiaCoverage(models, linkedProviderSet)
         ) {
             return;
         }
@@ -239,26 +323,23 @@ export function useModelManager(
             window.clearTimeout(retryTimer);
             hasScheduledRemoteRetryRef.current = false;
         };
-    }, [appSettings, isLoading, models, refreshModels]);
+    }, [appSettings, isLoading, models, refreshModels, linkedProviderSet]);
 
     useEffect(() => {
-        const hasNvidia = !!appSettings?.nvidia?.apiKey;
-        const hasOpenAI = !!appSettings?.openai?.apiKey;
-        const hasAnthropic = !!appSettings?.anthropic?.apiKey;
-        const hasGroq = !!appSettings?.groq?.apiKey;
-        const hasAntigravity = appSettings?.antigravity?.connected === true;
-        const hasCodex = appSettings?.codex?.connected === true;
-        const hasCopilot = appSettings?.copilot?.connected === true;
+        const hasNvidia = linkedProviderSet.has('nvidia');
+        const hasOpenAI = linkedProviderSet.has('codex');
+        const hasAnthropic = linkedProviderSet.has('claude');
+        const hasGroq = linkedProviderSet.has('groq');
+        const hasAntigravity = linkedProviderSet.has('antigravity') || appSettings?.antigravity?.connected === true;
+        const hasCodex = linkedProviderSet.has('codex') || appSettings?.codex?.connected === true;
+        const hasCopilot = linkedProviderSet.has('copilot') || appSettings?.copilot?.connected === true;
 
         if (hasNvidia || hasOpenAI || hasAnthropic || hasGroq || hasAntigravity || hasCodex || hasCopilot) {
             void refreshModels(true);
         }
     }, [
         refreshModels,
-        appSettings?.nvidia?.apiKey,
-        appSettings?.openai?.apiKey,
-        appSettings?.anthropic?.apiKey,
-        appSettings?.groq?.apiKey,
+        linkedProviderSignature,
         appSettings?.antigravity?.connected,
         appSettings?.codex?.connected,
         appSettings?.copilot?.connected

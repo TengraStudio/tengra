@@ -654,7 +654,19 @@ fn get_upstream_url(
         "codex" => "https://chatgpt.com/backend-api/codex/responses".to_string(),
 
         // GitHub Copilot
-        "copilot" => "https://api.githubcopilot.com/chat/completions".to_string(),
+        "copilot" => {
+            let model_owned = extract_model_from_row(active_key_row).unwrap_or_default();
+            let model = model_owned.as_str();
+            let plan = get_copilot_plan(active_key_row);
+            let subdomain = match plan.as_str() {
+                "individual" => "api.individual.githubcopilot.com",
+                "business" => "api.business.githubcopilot.com",
+                "enterprise" => "api.enterprise.githubcopilot.com",
+                _ => "api.githubcopilot.com",
+            };
+
+            format!("https://{}/v1/chat/completions", subdomain)
+        }
 
         // NVIDIA NIM
         "nvidia" => "https://integrate.api.nvidia.com/v1/chat/completions".to_string(),
@@ -664,7 +676,8 @@ fn get_upstream_url(
 
         // Google Gemini API (API key)
         "gemini" => {
-            let model = extract_model_from_row(active_key_row).unwrap_or("gemini-2.0-flash");
+            let model_owned = extract_model_from_row(active_key_row).unwrap_or_else(|| "gemini-2.0-flash".to_string());
+            let model = model_owned.as_str();
             if stream {
                 format!(
                     "https://generativelanguage.googleapis.com/v1beta/models/{}:streamGenerateContent?alt=sse",
@@ -707,8 +720,27 @@ fn get_upstream_url(
     }
 }
 
-fn extract_model_from_row(row: &Value) -> Option<&str> {
-    row.get("model").and_then(Value::as_str)
+fn extract_model_from_row(row: &Value) -> Option<String> {
+    row.get("model")
+        .and_then(Value::as_str)
+        .map(|s| s.to_string())
+        .or_else(|| {
+            row.get("metadata")
+                .and_then(parse_metadata_map)
+                .and_then(|m| m.get("model").and_then(Value::as_str).map(|s| s.to_string()))
+        })
+}
+
+fn get_copilot_plan(row: &Value) -> String {
+    row.get("metadata")
+        .and_then(parse_metadata_map)
+        .and_then(|m| {
+            m.get("copilot_plan")
+                .or_else(|| m.get("plan"))
+                .and_then(Value::as_str)
+                .map(str::to_string)
+        })
+        .unwrap_or_else(|| "individual".to_string())
 }
 
 fn antigravity_base_url(active_key_row: &Value) -> String {

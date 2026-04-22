@@ -15,9 +15,13 @@ import {
     Braces,
     ChevronDown,
     ChevronRight,
+    CircleDot,
+    CircleHelp,
     FlaskConical,
     Folder,
     Loader2,
+    Plus,
+    RotateCcw,
     Server,
     X,
 } from 'lucide-react';
@@ -47,23 +51,55 @@ interface WorkspaceExplorerRowProps {
     setRowRef?: (rowKey: string, element: HTMLDivElement | null) => void;
 }
 
-function getGitBadgeClass(gitStatus?: WorkspaceEntryRow['gitStatus']): string {
-    if (gitStatus === 'M') {
-        return 'text-warning';
+function GitStatusIndicator({ status, rawStatus }: { status: string; rawStatus?: string }): React.ReactElement | null {
+    if (status === 'M') {
+        return (
+            <div className="flex items-center text-[#e2c522]" title="Modified">
+                <CircleDot className="w-3 h-3" />
+            </div>
+        );
     }
-    if (gitStatus === 'A') {
-        return 'text-success';
+    if (status === 'A') {
+        return (
+            <div className="flex items-center text-[#81b88b]" title="Added">
+                <Plus className="w-3 h-3" />
+            </div>
+        );
     }
-    if (gitStatus === 'D' || gitStatus === 'U') {
-        return 'text-destructive';
+    if (status === 'D') {
+        return (
+            <div className="flex items-center text-[#c74e39]" title="Deleted">
+                <X className="w-3 h-3" />
+            </div>
+        );
     }
-    if (gitStatus === 'R' || gitStatus === 'T') {
-        return 'text-primary';
+    if (status === 'U' || status === '?' || status === '?') {
+        return (
+            <div className="flex items-center text-[#73c991]" title="Untracked">
+                <CircleHelp className="w-3 h-3" />
+            </div>
+        );
     }
-    if (gitStatus === '?' || gitStatus === 'I') {
-        return 'text-muted-foreground';
+    if (status === 'I') {
+        return (
+          <div className="flex items-center text-[#8e8e8e]" title="Ignored">
+              <CircleHelp className="w-3 h-3" />
+          </div>
+        );
     }
-    return 'text-muted-foreground';
+    if (status === 'R') {
+        return (
+            <div className="flex items-center text-primary" title="Renamed">
+                <RotateCcw className="w-3 h-3 -scale-x-100" />
+            </div>
+        );
+    }
+    
+    return (
+        <span className="text-[9px] font-bold text-muted-foreground" title={rawStatus ?? status}>
+            {status}
+        </span>
+    );
 }
 
 function getIgnoredEntryClassName(isIgnored?: boolean): string {
@@ -117,8 +153,8 @@ const MountRowView: React.FC<{
 }> = ({ row, onToggleMount, onRemoveMount, onMountContextMenu }) => (
     <div
         className={cn(
-            'flex w-full min-w-0 items-center gap-1.5 px-3 py-1.5 cursor-pointer overflow-hidden transition-all duration-200 border-l-2 border-transparent',
-            'hover:bg-muted/30 text-muted-foreground hover:text-foreground group/mount'
+            'flex w-full min-w-0 items-center gap-1.5 px-3 py-1 cursor-pointer overflow-hidden transition-all duration-200',
+            'hover:bg-muted/20 text-muted-foreground hover:text-foreground group/mount border-b border-border/10'
         )}
         onClick={() => onToggleMount(row)}
         onContextMenu={e => onMountContextMenu(e, row.mount.id)}
@@ -127,12 +163,12 @@ const MountRowView: React.FC<{
             {row.expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
         </span>
         {row.mount.type === 'ssh' ? (
-            <Server className="w-3.5 h-3.5 text-primary" />
+            <Server className="w-3.5 h-3.5 text-primary/70" />
         ) : (
-            <Folder className="w-3.5 h-3.5 text-success" />
+            <Folder className="w-3.5 h-3.5 text-success/70" />
         )}
         <div className="flex-1 min-w-0 flex items-center gap-2">
-            <div className="typo-caption font-bold truncate text-muted-foreground/70">
+            <div className="text-[10px] font-black uppercase tracking-wider truncate text-muted-foreground/50">
                 {row.mount.name}
             </div>
             {row.loading && <Loader2 className="w-3 h-3 text-muted-foreground/60 animate-spin" />}
@@ -209,16 +245,16 @@ const EntryRowView: React.FC<{
             {...listeners}
             data-entry-id={entryId}
             className={cn(
-                'flex w-full min-w-0 items-center gap-1.5 py-1 px-2 rounded-sm cursor-pointer overflow-hidden transition-all select-none group border border-transparent outline-none',
+                'flex w-full min-w-0 items-center gap-1.5 py-0 px-2 cursor-pointer overflow-hidden transition-all select-none group border-y border-transparent outline-none relative h-[22px]',
                 isSelected
-                    ? 'bg-primary/10 text-primary border-primary/20'
-                    : 'hover:bg-muted/20 text-muted-foreground/80 hover:text-foreground',
-                isFocused && 'ring-1 ring-primary/30 bg-primary/5',
-                isOver && 'bg-primary/20 border-dashed border-primary ring-2 ring-primary/20',
+                    ? 'bg-[#37373d] text-white'
+                    : 'hover:bg-[#2a2d2e] text-[#cccccc] hover:text-white',
+                isFocused && !isSelected && 'bg-[#37373d]/50',
+                isOver && 'bg-primary/20',
                 isDragging && 'opacity-20 cursor-grabbing bg-muted/40',
                 getIgnoredEntryClassName(row.entry.isGitIgnored)
             )}
-            style={{ ...style, paddingLeft: `${row.depth * 14 + 10}px` }}
+            style={{ ...style }}
             onClick={e => {
                 e.stopPropagation();
                 onSelectEntry(row.entry, e);
@@ -233,36 +269,54 @@ const EntryRowView: React.FC<{
             onContextMenu={e => onEntryContextMenu(e, row)}
             tabIndex={-1}
         >
-            {row.entry.isDirectory ? (
-                <span className="opacity-70 group-hover:opacity-100">
-                    {row.loading ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : row.expanded ? (
-                        <ChevronDown className="w-3 h-3" />
-                    ) : (
-                        <ChevronRight className="w-3 h-3" />
-                    )}
+            {/* Indentation Guides */}
+            {Array.from({ length: row.depth }).map((_, i) => (
+                <div
+                    key={i}
+                    className="absolute h-full w-[1px] bg-white/5 group-hover:bg-white/10 transition-colors pointer-events-none"
+                    style={{ left: `${(i + 1) * 12 + 4}px` }}
+                />
+            ))}
+
+            <div 
+                className="flex items-center gap-1.5 min-w-0" 
+                style={{ paddingLeft: `${row.depth * 12}px`, zIndex: 1 }}
+            >
+                {row.entry.isDirectory ? (
+                    <span className="opacity-70 group-hover:opacity-100 shrink-0">
+                        {row.loading ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : row.expanded ? (
+                            <ChevronDown className="w-3.5 h-3.5" />
+                        ) : (
+                            <ChevronRight className="w-3.5 h-3.5" />
+                        )}
+                    </span>
+                ) : (
+                    <span className="w-3.5 shrink-0" />
+                )}
+                {row.entry.isDirectory ? (
+                    <FolderIcon folderName={row.entry.name} isOpen={row.expanded} className="w-3.5 h-3.5 shrink-0" />
+                ) : (
+                    <FileIcon fileName={row.entry.name} className="w-3.5 h-3.5 shrink-0" />
+                )}
+                <span className={cn(
+                    "flex-1 min-w-0 truncate text-[11px] font-normal transition-colors",
+                    row.gitStatus === 'M' ? 'text-[#e2c522]' : 
+                    row.gitStatus === 'A' ? 'text-[#81b88b]' :
+                    row.gitStatus === '?' ? 'text-[#73c991]' :
+                    isSelected ? 'text-white' : ''
+                )}>
+                    {row.entry.name}
                 </span>
-            ) : (
-                <span className="w-3" />
-            )}
-            {row.entry.isDirectory ? (
-                <FolderIcon folderName={row.entry.name} isOpen={row.expanded} className="w-3.5 h-3.5" />
-            ) : (
-                <FileIcon fileName={row.entry.name} className="w-3.5 h-3.5" />
-            )}
-            <span className="flex-1 min-w-0 truncate typo-caption font-normal">
-                {row.entry.name}
-            </span>
-            <WorkspaceExplorerDiagnosticsBadges diagnostics={row.diagnostics} />
-            {row.gitStatus && (
-                <span
-                    className={cn('ml-1 text-10 font-bold leading-none', getGitBadgeClass(row.gitStatus))}
-                    title={`Git: ${row.gitRawStatus ?? row.gitStatus}`}
-                >
-                    {row.gitStatus}
-                </span>
-            )}
+            </div>
+            
+            <div className="ml-auto flex items-center gap-1.5 pl-2 shrink-0 pr-1" style={{ zIndex: 1 }}>
+                <WorkspaceExplorerDiagnosticsBadges diagnostics={row.diagnostics} />
+                {row.gitStatus && (
+                    <GitStatusIndicator status={row.gitStatus} rawStatus={row.gitRawStatus} />
+                )}
+            </div>
         </div>
     );
 };

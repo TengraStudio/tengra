@@ -18,7 +18,7 @@ import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { JsonObject } from '@shared/types/common';
-import { AISystemType } from '@shared/types/file-diff';
+import { AISystemType, DiffStats } from '@shared/types/file-diff';
 import { ServiceResponse } from '@shared/types/index';
 import { getErrorMessage } from '@shared/utils/error.util';
 
@@ -302,8 +302,10 @@ export class FileSystemService {
 
             // Get current content if file exists
             let beforeContent = '';
+            let existedBefore = false;
             try {
                 beforeContent = await fs.readFile(absolutePath, 'utf-8');
+                existedBefore = true;
             } catch {
                 // File doesn't exist, beforeContent stays empty
             }
@@ -314,18 +316,157 @@ export class FileSystemService {
             await fs.writeFile(absolutePath, content, 'utf-8');
 
             // Track the change if tracker is available
+            let diffId: string | undefined;
+            let diffStats: DiffStats | undefined;
             if (this.fileChangeTracker) {
-                await this.fileChangeTracker.trackFileChange(
+                const diff = await this.fileChangeTracker.trackFileChange(
                     absolutePath,
                     beforeContent,
                     content,
-                    context
+                    {
+                        ...context,
+                        metadata: {
+                            ...(context.metadata ?? {}),
+                            existedBefore,
+                        },
+                    }
                 );
+                if (diff) {
+                    diffId = diff.id;
+                    diffStats = this.fileChangeTracker.getDiffStats(diff.diffContent);
+                }
             }
 
-            return { success: true };
+            return {
+                success: true,
+                details: {
+                    diffId: diffId ?? '',
+                    additions: diffStats?.additions ?? 0,
+                    deletions: diffStats?.deletions ?? 0,
+                    changes: diffStats?.changes ?? 0,
+                    existedBefore,
+                    path: absolutePath,
+                },
+            };
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
+    async deleteFileWithTracking(
+        filePath: string,
+        context: {
+            aiSystem: AISystemType;
+            chatSessionId?: string;
+            changeReason?: string;
+            metadata?: JsonObject;
+        }
+    ): Promise<ServiceResponse> {
+        try {
+            const expandedPath = this.expandEnvVars(filePath);
+            this.validatePath(expandedPath);
+            const absolutePath = path.resolve(expandedPath);
+
+            let beforeContent = '';
+            let existedBefore = false;
+            try {
+                beforeContent = await fs.readFile(absolutePath, 'utf-8');
+                existedBefore = true;
+            } catch {
+                // If it doesn't exist, treat as no-op.
+            }
+
+            await fs.unlink(absolutePath);
+
+            let diffId: string | undefined;
+            let diffStats: DiffStats | undefined;
+            if (this.fileChangeTracker) {
+                const diff = await this.fileChangeTracker.trackFileChange(
+                    absolutePath,
+                    beforeContent,
+                    '',
+                    {
+                        ...context,
+                        metadata: {
+                            ...(context.metadata ?? {}),
+                            operation: 'delete',
+                            existedBefore,
+                        },
+                    }
+                );
+                if (diff) {
+                    diffId = diff.id;
+                    diffStats = this.fileChangeTracker.getDiffStats(diff.diffContent);
+                }
+            }
+
+            return {
+                success: true,
+                details: {
+                    diffId: diffId ?? '',
+                    additions: diffStats?.additions ?? 0,
+                    deletions: diffStats?.deletions ?? 0,
+                    changes: diffStats?.changes ?? 0,
+                    existedBefore,
+                    path: absolutePath,
+                },
+            };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
+    async applyEditsWithTracking(
+        filePath: string,
+        edits: { startLine: number; endLine: number; replacement: string }[],
+        context: {
+            aiSystem: AISystemType;
+            chatSessionId?: string;
+            changeReason?: string;
+            metadata?: JsonObject;
+        }
+    ): Promise<ServiceResponse> {
+        try {
+            const result = await this.readFile(filePath);
+            if (!result.success || !result.data) {
+                return { success: false, error: result.error ?? 'File read failed' };
+            }
+
+            const lines = result.data.split('\n');
+            const sortedEdits = [...edits].sort((a, b) => b.startLine - a.startLine);
+
+            for (const edit of sortedEdits) {
+                if (
+                    edit.startLine < 1 ||
+                    edit.endLine > lines.length ||
+                    edit.startLine > edit.endLine
+                ) {
+                    return {
+                        success: false,
+                        error: `Invalid line range: ${edit.startLine}-${edit.endLine} (File has ${lines.length} lines)`,
+                    };
+                }
+
+                const start = edit.startLine - 1;
+                const count = edit.endLine - edit.startLine + 1;
+                lines.splice(start, count, edit.replacement);
+            }
+
+            const newContent = lines.join('\n');
+            const writeResult = await this.writeFileWithTracking(filePath, newContent, context);
+            if (!writeResult.success) {
+                return {
+                    success: false,
+                    error: writeResult.error ?? 'Failed to write edited file content',
+                };
+            }
+            return {
+                success: true,
+                message: `Applied ${edits.length} edits to ${filePath}`,
+                details: writeResult.details,
+            };
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e as Error) };
         }
     }
 

@@ -20,6 +20,7 @@ const mockGetToolDefinitions = vi.fn();
 const mockExecuteTools = vi.fn();
 const mockAddMessage = vi.fn();
 const mockUpdateMessage = vi.fn();
+const mockUpdateChat = vi.fn();
 const mockAbortChat = vi.fn();
 
 vi.mock('@/lib/chat-stream', () => ({
@@ -76,6 +77,25 @@ const createSearchWebToolTurnStream = async function* () {
             function: {
                 name: 'search_web',
                 arguments: JSON.stringify({ query: 'latest release notes' }),
+            },
+        }],
+    };
+};
+
+const createWriteToolTurnStream = async function* (
+    id: string,
+    path: string,
+    heading: string
+) {
+    yield { content: heading };
+    yield {
+        type: 'tool_calls' as const,
+        tool_calls: [{
+            id,
+            type: 'function' as const,
+            function: {
+                name: 'mcp__filesystem__write',
+                arguments: JSON.stringify({ path, content: `content for ${path}` }),
             },
         }],
     };
@@ -142,6 +162,7 @@ describe('useChatGenerator loop recovery', () => {
         mockExecuteTools.mockReset();
         mockAddMessage.mockReset();
         mockUpdateMessage.mockReset();
+        mockUpdateChat.mockReset();
         mockAbortChat.mockReset();
         mockGetToolDefinitions.mockResolvedValue([
             {
@@ -177,9 +198,25 @@ describe('useChatGenerator loop recovery', () => {
                     },
                 },
             },
+            {
+                type: 'function',
+                function: {
+                    name: 'mcp__filesystem__write',
+                    description: 'Write a file',
+                    parameters: {
+                        type: 'object',
+                        properties: {
+                            path: { type: 'string' },
+                            content: { type: 'string' },
+                        },
+                        required: ['path', 'content'],
+                    },
+                },
+            },
         ]);
         mockAddMessage.mockResolvedValue(undefined);
         mockUpdateMessage.mockResolvedValue({ success: true });
+        mockUpdateChat.mockResolvedValue({ success: true });
 
         Object.defineProperty(window, 'electron', {
             configurable: true,
@@ -190,6 +227,7 @@ describe('useChatGenerator loop recovery', () => {
                 db: {
                     addMessage: mockAddMessage,
                     updateMessage: mockUpdateMessage,
+                    updateChat: mockUpdateChat,
                 },
                 session: {
                     conversation: {
@@ -235,10 +273,9 @@ describe('useChatGenerator loop recovery', () => {
         });
 
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'codex',
                 language: 'tr',
@@ -292,10 +329,9 @@ describe('useChatGenerator loop recovery', () => {
         });
 
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'codex',
                 language: 'tr',
@@ -327,6 +363,128 @@ describe('useChatGenerator loop recovery', () => {
         );
     });
 
+    it('passes tool-call and tool-result messages to the next model turn', async () => {
+        mockChatStream
+            .mockImplementationOnce(() => createDirectoryToolTurnStream())
+            .mockImplementationOnce(() => createFinalAnswerStream());
+        mockExecuteTools.mockResolvedValue({
+            toolCallId: 'tool-call-1',
+            name: 'list_directory',
+            success: true,
+            result: {
+                path: '%USERPROFILE%/Desktop',
+                complete: true,
+                entryCount: 8,
+                entries: [{ name: 'file.txt', isDirectory: false }],
+            },
+        });
+
+        const { result } = renderHook(() => {
+            const [chats] = useState<Chat[]>([createInitialChat()]);
+            const chatGenerator = useChatGenerator({
+                chats,
+                selectedModel: 'model-a',
+                selectedProvider: 'codex',
+                language: 'tr',
+                t: (key: string) => key,
+                handleSpeak: vi.fn(),
+                autoReadEnabled: false,
+                formatChatError: (err: CatchError) =>
+                    err instanceof Error ? err.message : String(err ?? ''),
+                systemMode: 'agent',
+            });
+
+            return {
+                ...chatGenerator,
+                chats,
+            };
+        });
+
+        await act(async () => {
+            await result.current.generateResponse('chat-1', createUserMessage());
+        });
+
+        expect(mockChatStream).toHaveBeenCalledTimes(2);
+        const secondRequest = mockChatStream.mock.calls[1]?.[0] as ChatStreamRequest | undefined;
+        expect(secondRequest?.messages.some(message =>
+            message.role === 'assistant'
+            && message.toolCalls?.some(toolCall => toolCall.id === 'tool-call-1')
+        )).toBe(true);
+        expect(secondRequest?.messages.some(message =>
+            message.role === 'tool'
+            && message.toolCallId === 'tool-call-1'
+            && typeof message.content === 'string'
+            && message.content.includes('"entryCount":8')
+        )).toBe(true);
+    });
+
+    it('does not stop agentic workflows after several same-family file writes with different arguments', async () => {
+        mockChatStream
+            .mockImplementationOnce(() => createWriteToolTurnStream(
+                'write-package',
+                'next-todo-app/package.json',
+                'Creating the initial project package and dependency configuration for the Next.js task manager.'
+            ))
+            .mockImplementationOnce(() => createWriteToolTurnStream(
+                'write-tsconfig',
+                'next-todo-app/tsconfig.json',
+                'TypeScript configuration:'
+            ))
+            .mockImplementationOnce(() => createWriteToolTurnStream(
+                'write-next-config',
+                'next-todo-app/next.config.js',
+                'Next.js configuration:'
+            ))
+            .mockImplementationOnce(() => createWriteToolTurnStream(
+                'write-tailwind-config',
+                'next-todo-app/tailwind.config.ts',
+                'Tailwind CSS configuration:'
+            ))
+            .mockImplementationOnce(() => createFinalAnswerStream());
+        mockExecuteTools.mockImplementation((_toolName: string, _args: unknown, toolCallId: string) => Promise.resolve({
+            toolCallId,
+            name: 'mcp__filesystem__write',
+            success: true,
+            result: { success: true },
+        }));
+
+        const { result } = renderHook(() => {
+            const [chats] = useState<Chat[]>([createInitialChat()]);
+            const chatGenerator = useChatGenerator({
+                chats,
+                selectedModel: 'model-a',
+                selectedProvider: 'codex',
+                language: 'en',
+                t: (key: string) => key,
+                handleSpeak: vi.fn(),
+                autoReadEnabled: false,
+                formatChatError: (err: CatchError) =>
+                    err instanceof Error ? err.message : String(err ?? ''),
+                systemMode: 'agent',
+            });
+
+            return {
+                ...chatGenerator,
+                chats,
+            };
+        });
+
+        await act(async () => {
+            await result.current.generateResponse('chat-1', createUserMessage());
+        });
+
+        expect(mockExecuteTools).toHaveBeenCalledTimes(4);
+        expect(mockExecuteTools.mock.calls.map(call => call[2])).toEqual([
+            'write-package',
+            'write-tsconfig',
+            'write-next-config',
+            'write-tailwind-config',
+        ]);
+        expect(mockChatStream).toHaveBeenCalledTimes(5);
+        expect(result.current.chats[0]?.isGenerating).toBe(false);
+        expect(mockUpdateChat).toHaveBeenLastCalledWith('chat-1', { isGenerating: false });
+    });
+
     it('builds evidence-based fallback content instead of generic tool-loop limit text', async () => {
         mockChatStream
             .mockImplementationOnce(() => createSearchWebToolTurnStream())
@@ -341,10 +499,9 @@ describe('useChatGenerator loop recovery', () => {
         });
 
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'codex',
                 language: 'en',
@@ -371,6 +528,11 @@ describe('useChatGenerator loop recovery', () => {
         const assistantMessage = result.current.chats[0]?.messages[0];
         expect(assistantMessage?.content).toContain('Based on the collected evidence:');
         expect(assistantMessage?.content).not.toContain('chat.toolLoop.limitReachedPreserved');
+        expect(assistantMessage?.metadata).toEqual(expect.objectContaining({
+            aiPresentation: expect.objectContaining({
+                stage: 'answer_ready',
+            }),
+        }));
     });
 
     it('maps ENOENT failures to user-facing not-found messages', async () => {
@@ -387,10 +549,9 @@ describe('useChatGenerator loop recovery', () => {
         });
 
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'codex',
                 language: 'tr',
@@ -432,10 +593,9 @@ describe('useChatGenerator loop recovery', () => {
         });
 
         const { result } = renderHook(() => {
-            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const [chats] = useState<Chat[]>([createInitialChat()]);
             const chatGenerator = useChatGenerator({
                 chats,
-                setChats,
                 selectedModel: 'model-a',
                 selectedProvider: 'codex',
                 language: 'tr',
@@ -462,3 +622,4 @@ describe('useChatGenerator loop recovery', () => {
         expect(assistantMessage?.content).not.toContain('Toplanan kanitlar:');
     });
 });
+

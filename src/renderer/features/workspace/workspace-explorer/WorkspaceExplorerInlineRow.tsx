@@ -9,17 +9,20 @@
  */
 
 import React from 'react';
+import { ChevronRight } from 'lucide-react';
 
+import { FileIcon, FolderIcon } from '@/lib/file-icons';
 import { cn } from '@/lib/utils';
 
 /* Batch-02: Extracted Long Classes */
-const C_WORKSPACEEXPLORERINLINEROW_1 = "w-full rounded-md border border-primary/20 bg-background/90 px-2 py-1 typo-caption text-foreground outline-none focus:border-primary/40";
+const C_WORKSPACEEXPLORERINLINEROW_1 = "h-6 w-full rounded-[6px] border border-primary/70 bg-background px-2 text-[11px] text-foreground outline-none ring-0 transition-colors focus:border-primary focus-visible:border-primary placeholder:text-muted-foreground/45";
 
 
 interface WorkspaceExplorerInlineRowProps {
     rowKey: string;
     depth: number;
     draftName: string;
+    actionType: 'rename' | 'createFile' | 'createFolder';
     placeholder: string;
     isFocused: boolean;
     setRowRef?: (rowKey: string, element: HTMLDivElement | null) => void;
@@ -32,6 +35,7 @@ export const WorkspaceExplorerInlineRow: React.FC<WorkspaceExplorerInlineRowProp
     rowKey,
     depth,
     draftName,
+    actionType,
     placeholder,
     isFocused,
     setRowRef,
@@ -53,11 +57,21 @@ export const WorkspaceExplorerInlineRow: React.FC<WorkspaceExplorerInlineRowProp
         <div
             ref={element => setRowRef?.(rowKey, element)}
             className={cn(
-                'px-2 py-1',
+                'px-2 py-0 h-[22px] flex items-center',
                 isFocused && 'bg-primary/5'
             )}
-            style={{ paddingLeft: `${depth * 14 + 32}px` }}
+            style={{ paddingLeft: `${depth * 12 + 16}px` }}
         >
+            <div className="mr-1 inline-flex items-center justify-center text-muted-foreground/70">
+                <ChevronRight className="h-3.5 w-3.5" />
+            </div>
+            <div className="mr-1.5 inline-flex items-center justify-center">
+                {actionType === 'createFolder' ? (
+                    <FolderIcon folderName="folder" className="h-3.5 w-3.5" size={14} />
+                ) : (
+                    <FileIcon fileName="file.txt" className="h-3.5 w-3.5" size={14} />
+                )}
+            </div>
             <input
                 ref={inputRef}
                 type="text"
@@ -72,7 +86,13 @@ export const WorkspaceExplorerInlineRow: React.FC<WorkspaceExplorerInlineRowProp
                         onCancel();
                     }
                 }}
-                onBlur={onSubmit}
+                onBlur={() => {
+                    if (actionType === 'createFile' || actionType === 'createFolder') {
+                        onCancel();
+                        return;
+                    }
+                    onSubmit();
+                }}
                 className={C_WORKSPACEEXPLORERINLINEROW_1}
                 placeholder={placeholder}
                 tabIndex={-1}

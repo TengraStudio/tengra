@@ -119,7 +119,7 @@ export function registerProxyIpc(
 
     ipcMain.handle('proxy:saveClaudeSession', createValidatedIpcHandler('proxy:saveClaudeSession', async (_event, sessionKey: string, accountId?: string) => {
         try {
-            return await proxyService.quotaService.saveClaudeSession(sessionKey, accountId);
+            return await proxyService.saveClaudeSession(sessionKey, accountId);
         } catch (error) {
             appLogger.error('proxy', 'Failed to save manual session:', error as Error);
             return { success: false, error: (error as Error).message };
@@ -131,10 +131,6 @@ export function registerProxyIpc(
 
 
 
-    ipcMain.handle('proxy:anthropicLogin', createSafeIpcHandler('proxy:anthropicLogin', async (_event, accountId?: string) => {
-        // Legacy OAuth flow - still available but doesn't capture sessionKey
-        return await proxyService.getAnthropicAuthUrl(accountId);
-    }, { url: '', state: '', accountId: '' }));
 
     ipcMain.handle('proxy:codexLogin', createSafeIpcHandler('proxy:codexLogin', async (_event, accountId?: string) => {
         appLogger.info('ProxyIPC', `proxy:codexLogin requested${accountId ? ` for ${accountId}` : ''}`);
@@ -243,21 +239,9 @@ export function registerProxyIpc(
         return await proxyService.getClaudeQuota();
     }, { accounts: [] }));
 
-    ipcMain.handle('proxy:deleteAuthFile', createSafeIpcHandler('proxy:deleteAuthFile', async () => {
-        // Legacy file-based auth is now handled via HTTP API
-        return { success: true };
-    }, { success: true }));
 
     // Sync auth files - now handled automatically by HTTP auth API
-    ipcMain.handle('proxy:syncAuthFiles', createSafeIpcHandler('proxy:syncAuthFiles', async () => {
-        // Auth sync is now automatic via HTTP API - no manual sync needed
-        return { success: true };
-    }, { success: true }));
 
-    ipcMain.handle('proxy:downloadAuthFile', createSafeIpcHandler('proxy:downloadAuthFile', async () => {
-        // Legacy file-based auth is now handled via HTTP API
-        return { success: false, error: 'Not supported' };
-    }, { success: false, error: 'Not supported' }));
 
     void eventBus;
 }

@@ -9,9 +9,9 @@
  */
 
 import * as fs from 'fs';
-import * as path from 'path';
 
 import { BaseService } from '@main/services/base.service';
+import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
 import {
     MAX_THEME_ID_LENGTH,
     MAX_THEME_NAME_LENGTH,
@@ -24,7 +24,6 @@ import { RETRY_DEFAULTS } from '@shared/constants/defaults';
 import { JsonObject } from '@shared/types/common';
 import { CustomTheme, DEFAULT_THEME_PRESETS, ThemeColors, ThemePreset } from '@shared/types/theme';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { app } from 'electron';
 
 interface ThemeStoreData {
     currentTheme: string
@@ -65,6 +64,77 @@ const DEFAULT_THEME_STORE: ThemeStoreData = {
     preset: null
 };
 
+const BASE_DARK_COLORS: ThemeColors = {
+    background: '0 0% 0%',
+    foreground: '0 0% 100%',
+    card: '0 0% 4%',
+    cardForeground: '0 0% 100%',
+    popover: '0 0% 4%',
+    popoverForeground: '0 0% 100%',
+    primary: '199 89% 48%',
+    primaryForeground: '0 0% 100%',
+    secondary: '0 0% 10%',
+    secondaryForeground: '0 0% 100%',
+    muted: '0 0% 8%',
+    mutedForeground: '0 0% 60%',
+    accent: '199 70% 15%',
+    accentForeground: '199 89% 70%',
+    destructive: '0 72% 51%',
+    destructiveForeground: '0 0% 100%',
+    border: '0 0% 15%',
+    input: '0 0% 15%',
+    ring: '199 89% 48%',
+};
+
+const BASE_LIGHT_COLORS: ThemeColors = {
+    background: '0 0% 100%',
+    foreground: '0 0% 0%',
+    card: '0 0% 98%',
+    cardForeground: '0 0% 10%',
+    popover: '0 0% 100%',
+    popoverForeground: '0 0% 0%',
+    primary: '221 83% 53%',
+    primaryForeground: '0 0% 100%',
+    secondary: '0 0% 95%',
+    secondaryForeground: '0 0% 10%',
+    muted: '0 0% 92%',
+    mutedForeground: '0 0% 40%',
+    accent: '221 70% 95%',
+    accentForeground: '221 83% 40%',
+    destructive: '0 84% 60%',
+    destructiveForeground: '0 0% 100%',
+    border: '0 0% 85%',
+    input: '0 0% 85%',
+    ring: '221 83% 53%',
+};
+
+const BUILT_IN_THEMES: Array<{
+    id: string;
+    name: string;
+    category: CustomTheme['category'];
+    isDark: boolean;
+    colors: ThemeColors;
+}> = [
+    { id: 'graphite', name: 'Graphite', category: 'elite-dark', isDark: true, colors: BASE_DARK_COLORS },
+    { id: 'obsidian', name: 'Obsidian', category: 'elite-dark', isDark: true, colors: { ...BASE_DARK_COLORS, primary: '262 83% 58%', ring: '262 83% 58%' } },
+    { id: 'midnight', name: 'Midnight', category: 'elite-dark', isDark: true, colors: { ...BASE_DARK_COLORS, primary: '217 91% 60%', ring: '217 91% 60%' } },
+    { id: 'deep-forest', name: 'Deep Forest', category: 'elite-dark', isDark: true, colors: { ...BASE_DARK_COLORS, primary: '142 71% 45%', ring: '142 71% 45%' } },
+    { id: 'dracula', name: 'Dracula', category: 'vibrant-neon', isDark: true, colors: { ...BASE_DARK_COLORS, primary: '326 100% 74%', ring: '326 100% 74%' } },
+    { id: 'cyberpunk', name: 'Cyberpunk', category: 'vibrant-neon', isDark: true, colors: { ...BASE_DARK_COLORS, primary: '49 100% 50%', ring: '49 100% 50%' } },
+    { id: 'matrix', name: 'Matrix', category: 'vibrant-neon', isDark: true, colors: { ...BASE_DARK_COLORS, primary: '120 100% 45%', ring: '120 100% 45%' } },
+    { id: 'synthwave', name: 'Synthwave', category: 'vibrant-neon', isDark: true, colors: { ...BASE_DARK_COLORS, primary: '292 84% 61%', ring: '292 84% 61%' } },
+    { id: 'snow', name: 'Snow', category: 'professional-light', isDark: false, colors: BASE_LIGHT_COLORS },
+    { id: 'sand', name: 'Sand', category: 'professional-light', isDark: false, colors: { ...BASE_LIGHT_COLORS, primary: '35 91% 42%', ring: '35 91% 42%' } },
+    { id: 'sky', name: 'Sky', category: 'professional-light', isDark: false, colors: { ...BASE_LIGHT_COLORS, primary: '199 89% 48%', ring: '199 89% 48%' } },
+    { id: 'minimal', name: 'Minimal', category: 'professional-light', isDark: false, colors: { ...BASE_LIGHT_COLORS, primary: '0 0% 20%', ring: '0 0% 20%' } },
+    { id: 'paper', name: 'Paper', category: 'professional-light', isDark: false, colors: { ...BASE_LIGHT_COLORS, primary: '24 75% 45%', ring: '24 75% 45%' } },
+    { id: 'ocean', name: 'Ocean', category: 'artisanal', isDark: true, colors: { ...BASE_DARK_COLORS, primary: '188 86% 53%', ring: '188 86% 53%' } },
+    { id: 'rose', name: 'Rose', category: 'artisanal', isDark: false, colors: { ...BASE_LIGHT_COLORS, primary: '346 77% 50%', ring: '346 77% 50%' } },
+    { id: 'coffee', name: 'Coffee', category: 'artisanal', isDark: true, colors: { ...BASE_DARK_COLORS, primary: '25 75% 47%', ring: '25 75% 47%' } },
+];
+
+const BUILT_IN_THEME_IDS = new Set(BUILT_IN_THEMES.map(theme => theme.id));
+
 export class ThemeService extends BaseService {
     private storePath: string;
     private store: ThemeStoreData = { ...DEFAULT_THEME_STORE };
@@ -74,7 +144,7 @@ export class ThemeService extends BaseService {
 
     constructor() {
         super('ThemeService');
-        this.storePath = path.join(app.getPath('userData'), 'theme-store.json');
+        this.storePath = getDataFilePath('themes', 'theme-store.json');
     }
 
     /** Emits a structured telemetry event and logs it via appLogger. */
@@ -220,7 +290,7 @@ export class ThemeService extends BaseService {
             return false;
         }
 
-        const theme = this.store.customThemes.find(t => t.id === themeId);
+        const theme = this.getThemeDetails(themeId);
         if (!theme) {
             this.logWarn(`Theme not found: ${themeId}`);
             this.emitTelemetry({ action: 'theme.switch', themeId, success: false, timestamp: Date.now() });
@@ -255,16 +325,26 @@ export class ThemeService extends BaseService {
     }
 
     getAllThemes(): Array<{ id: string; name: string; isDark: boolean; isCustom?: boolean }> {
+        const builtIn = BUILT_IN_THEMES.map(t => ({
+            id: t.id,
+            name: t.name,
+            isDark: t.isDark,
+            isCustom: false
+        }));
         const custom = this.store.customThemes.map(t => ({
             id: t.id,
             name: t.name,
             isDark: t.isDark,
             isCustom: true
         }));
-        return [...custom];
+        return [...builtIn, ...custom];
     }
 
     getThemeDetails(themeId: string) {
+        const builtIn = BUILT_IN_THEMES.find(t => t.id === themeId);
+        if (builtIn) {
+            return { ...builtIn, isBuiltIn: true };
+        }
         const custom = this.store.customThemes.find(t => t.id === themeId);
         if (custom) {
             return { ...custom, isBuiltIn: false };
@@ -489,7 +569,7 @@ export class ThemeService extends BaseService {
             throw new Error(ThemeErrorCode.INVALID_ID);
         }
 
-        if (this.store.customThemes.some(t => t.id === themeId)) {
+        if (BUILT_IN_THEME_IDS.has(themeId) || this.store.customThemes.some(t => t.id === themeId)) {
             throw new Error(ThemeErrorCode.DUPLICATE_ID);
         }
     }

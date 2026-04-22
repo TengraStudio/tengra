@@ -18,6 +18,7 @@ pub struct TerminalSession {
     pub id: String,
     pub tx: broadcast::Sender<Vec<u8>>,
     master: Arc<parking_lot::Mutex<Box<dyn portable_pty::MasterPty + Send>>>,
+    writer: Arc<parking_lot::Mutex<Box<dyn Write + Send>>>,
 }
 
 impl TerminalSession {
@@ -47,7 +48,11 @@ impl TerminalSession {
 
         // We don't strictly need to keep the slave once the process is spawned
         // but we need to keep the master to communicate.
-        let master = Arc::new(parking_lot::Mutex::new(pair.master));
+        // portable_pty's take_writer() can only be called once, so we grab it here and reuse it.
+        let mut master_pty = pair.master;
+        let writer = master_pty.take_writer()?;
+        let master = Arc::new(parking_lot::Mutex::new(master_pty));
+        let writer = Arc::new(parking_lot::Mutex::new(writer));
         let (tx, _rx) = broadcast::channel(1024);
 
         let id = Uuid::new_v4().to_string();
@@ -68,11 +73,11 @@ impl TerminalSession {
             }
         });
 
-        Ok(Self { id, tx, master })
+        Ok(Self { id, tx, master, writer })
     }
 
     pub fn write(&self, data: &[u8]) -> anyhow::Result<()> {
-        let mut writer = self.master.lock().take_writer()?;
+        let mut writer = self.writer.lock();
         writer.write_all(data)?;
         writer.flush()?;
         Ok(())

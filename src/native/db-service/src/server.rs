@@ -11,9 +11,14 @@
 //! HTTP server implementation
 
 use axum::{
+    body::Body,
+    http::{header::AUTHORIZATION, Request, StatusCode},
+    middleware::{self, Next},
+    response::Response,
     routing::{delete, get, post, put},
     Router,
 };
+use std::path::PathBuf;
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
 
@@ -28,25 +33,11 @@ pub fn create_router(db: Arc<Database>, start_time: std::time::Instant) -> Route
         .allow_methods(Any)
         .allow_headers(Any);
 
-    Router::new()
-        // Health check
+    let api_routes = Router::new()
         .route(
-            "/health",
-            get({
-                let start = start_time;
-                move || async move {
-                    let uptime = start.elapsed().as_secs();
-                    axum::Json(ApiResponse::success(HealthResponse {
-                        status: "healthy".to_string(),
-                        version: env!("CARGO_PKG_VERSION").to_string(),
-                        uptime_seconds: uptime,
-                    }))
-                }
-            }),
+            "/api/v1/chats",
+            get(chats::list_chats).post(chats::create_chat),
         )
-        // Chat routes
-        .route("/api/v1/chats", get(chats::list_chats))
-        .route("/api/v1/chats", post(chats::create_chat))
         .route("/api/v1/chats/:id", get(chats::get_chat))
         .route("/api/v1/chats/:id", put(chats::update_chat))
         .route("/api/v1/chats/:id", delete(chats::delete_chat))
@@ -95,7 +86,114 @@ pub fn create_router(db: Arc<Database>, start_time: std::time::Instant) -> Route
         .route("/api/v1/stats", get(system::get_stats))
         // Raw query
         .route("/api/v1/query", post(system::execute_query))
+        .layer(middleware::from_fn(db_service_auth_middleware));
+
+    Router::new()
+        // Health check
+        .route(
+            "/health",
+            get({
+                let start = start_time;
+                move || async move {
+                    let uptime = start.elapsed().as_secs();
+                    axum::Json(ApiResponse::success(HealthResponse {
+                        status: "healthy".to_string(),
+                        version: env!("CARGO_PKG_VERSION").to_string(),
+                        uptime_seconds: uptime,
+                    }))
+                }
+            }),
+        )
+        .merge(api_routes)
         // State and middleware
         .with_state(db)
         .layer(cors)
+}
+
+async fn db_service_auth_middleware(
+    req: Request<Body>,
+    next: Next,
+) -> Result<Response, StatusCode> {
+    let Some(expected_token) = load_db_service_token() else {
+        tracing::error!("DB service token is not configured");
+        return Err(StatusCode::SERVICE_UNAVAILABLE);
+    };
+
+    let Some(provided_token) = req
+        .headers()
+        .get(AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.strip_prefix("Bearer "))
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    else {
+        return Err(StatusCode::UNAUTHORIZED);
+    };
+
+    if constant_time_eq(provided_token.as_bytes(), expected_token.as_bytes()) {
+        return Ok(next.run(req).await);
+    }
+
+    Err(StatusCode::UNAUTHORIZED)
+}
+
+fn load_db_service_token() -> Option<String> {
+    std::env::var("TENGRA_DB_SERVICE_TOKEN")
+        .ok()
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+        .or_else(read_db_service_token_file)
+}
+
+fn read_db_service_token_file() -> Option<String> {
+    for candidate in db_service_token_file_candidates() {
+        let Ok(contents) = std::fs::read_to_string(candidate) else {
+            continue;
+        };
+        let token = contents.trim().to_string();
+        if !token.is_empty() {
+            return Some(token);
+        }
+    }
+    None
+}
+
+fn db_service_token_file_candidates() -> Vec<PathBuf> {
+    let Some(app_data) = std::env::var("APPDATA").ok() else {
+        return Vec::new();
+    };
+
+    ["Tengra", "tengra"]
+        .into_iter()
+        .map(|root| {
+            PathBuf::from(&app_data)
+                .join(root)
+                .join("services")
+                .join("db-service.token")
+        })
+        .collect()
+}
+
+fn constant_time_eq(left: &[u8], right: &[u8]) -> bool {
+    if left.len() != right.len() {
+        return false;
+    }
+
+    let mut diff = 0u8;
+    for (left_byte, right_byte) in left.iter().zip(right.iter()) {
+        diff |= left_byte ^ right_byte;
+    }
+    diff == 0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::constant_time_eq;
+
+    #[test]
+    fn constant_time_eq_requires_same_bytes() {
+        assert!(constant_time_eq(b"same-token", b"same-token"));
+        assert!(!constant_time_eq(b"same-token", b"other-token"));
+        assert!(!constant_time_eq(b"same-token", b"same-token-extra"));
+    }
 }
