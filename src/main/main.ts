@@ -40,6 +40,7 @@ const ROAMING_ROOT = path.join(app.getPath('appData'), 'Tengra');
 const ELECTRON_SESSION_DATA_ROOT = path.join(ROAMING_ROOT, 'electron');
 app.setPath('userData', ROAMING_ROOT);
 app.setPath('sessionData', ELECTRON_SESSION_DATA_ROOT);
+const isDev = !app.isPackaged || process.env.NODE_ENV === 'development';
 
 import { appLogger, LogLevel } from '@main/logging/logger';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
@@ -47,7 +48,6 @@ import type { DockerService } from '@main/services/workspace/docker.service';
 import type { SSHService } from '@main/services/workspace/ssh.service';
 import { registerDeferredIpcHandlers, registerPostInteractiveIpcHandlers, registerPostStartupIpcHandlers } from '@main/startup/ipc';
 import { container, createMinimalServices, createServices, type Services, startDeferredServices } from '@main/startup/services';
-
 import { OPERATION_TIMEOUTS } from '@shared/constants/timeouts';
 import type { StartupMetrics } from '@shared/types/system';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -119,12 +119,14 @@ app.on('certificate-error', (event: ElectronEvent, _webContents: WebContents, ur
     handleCertificateError(event, url, callback);
 });
 
-app.commandLine.appendSwitch('js-flags', '--max-old-space-size=2048');
+app.commandLine.appendSwitch('js-flags', isDev ? '--max-old-space-size=4096' : '--max-old-space-size=2048');
 app.commandLine.appendSwitch('disable-site-isolation-trials');
 app.commandLine.appendSwitch('disable-background-timer-throttling', 'false');
 app.commandLine.appendSwitch('disable-renderer-backgrounding', 'false');
-app.commandLine.appendSwitch('enable-low-end-device-mode');
-app.commandLine.appendSwitch('process-per-site');
+if (!isDev) {
+    app.commandLine.appendSwitch('enable-low-end-device-mode');
+    app.commandLine.appendSwitch('process-per-site');
+}
 
 // Graphics: Fix for EGL/OpenGL initialization errors on Windows
 if (process.platform === 'win32') {

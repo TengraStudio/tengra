@@ -9,6 +9,7 @@ import electron from 'vite-plugin-electron';
 
 export default defineConfig(({ mode }) => {
     const nodeEnv = process.env.NODE_ENV ?? (mode === 'development' ? 'development' : 'production');
+    const isDev = nodeEnv === 'development';
     const shouldAnalyzeBundle = process.env.TENGRA_ANALYZE_BUNDLE === 'true';
     const shouldReportCompressedSize = process.env.TENGRA_REPORT_COMPRESSED_SIZE === 'true';
 
@@ -66,10 +67,11 @@ export default defineConfig(({ mode }) => {
                             entry: 'src/main/main.ts',
                             formats: ['cjs']
                         },
-                        minify: 'esbuild',
+                        minify: isDev ? false : 'esbuild',
+                        sourcemap: isDev,
                         rolldownOptions: {
                             external,
-                            treeshake: {
+                            treeshake: isDev ? false : {
                                 moduleSideEffects: false
                             }
                         }
@@ -98,10 +100,11 @@ export default defineConfig(({ mode }) => {
                         entry: 'src/main/preload.ts',
                         formats: ['cjs']
                     },
-                    minify: 'esbuild',
+                    minify: isDev ? false : 'esbuild',
+                    sourcemap: isDev,
                     rolldownOptions: {
                         external: ['electron'],
-                        treeshake: true
+                        treeshake: !isDev
                     }
                 }
             }
@@ -193,7 +196,7 @@ export default defineConfig(({ mode }) => {
                 }
             },
             chunkSizeWarningLimit: 5000,
-            minify: process.env.TENGRA_BUILD_FAST === 'true' ? false : 'esbuild',
+            minify: isDev ? false : (process.env.TENGRA_BUILD_FAST === 'true' ? false : 'esbuild'),
             commonjsOptions: {
                 include: [/node_modules/],
                 transformMixedEsModules: true,
@@ -201,9 +204,9 @@ export default defineConfig(({ mode }) => {
                 strictRequires: false
             },
             target: 'esnext',
-            sourcemap: false,
+            sourcemap: isDev,
             cssCodeSplit: true,
-            cssMinify: 'esbuild',
+            cssMinify: isDev ? false : 'esbuild',
             reportCompressedSize: shouldReportCompressedSize
         },
         // Optimize deps - pre-bundle for faster dev startup
