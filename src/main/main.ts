@@ -15,11 +15,11 @@ if (typeof process.setSourceMapsEnabled === 'function') {
     process.setSourceMapsEnabled(true);
 }
 
-import * as dotenv from 'dotenv';
+
 import type { App, BrowserWindow as ElectronBrowserWindow, Certificate, Event as ElectronEvent, WebContents } from 'electron';
 import * as electron from 'electron';
 
-dotenv.config();
+
 
 const electronModule = electron as Partial<typeof import('electron')>;
 
@@ -47,7 +47,7 @@ import type { DockerService } from '@main/services/workspace/docker.service';
 import type { SSHService } from '@main/services/workspace/ssh.service';
 import { registerDeferredIpcHandlers, registerPostInteractiveIpcHandlers, registerPostStartupIpcHandlers } from '@main/startup/ipc';
 import { container, createMinimalServices, createServices, type Services, startDeferredServices } from '@main/startup/services';
-import { validateEnvironmentVariables } from '@main/utils/env-validator.util';
+
 import { OPERATION_TIMEOUTS } from '@shared/constants/timeouts';
 import type { StartupMetrics } from '@shared/types/system';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -187,7 +187,7 @@ app.whenReady().then(async () => {
     appLogger.installConsoleRedirect();
     appLogger.info('Main', `Logger configured: level=${LogLevel[runtimeLogLevel]}, debug=${debugLogsEnabled}`);
 
-    validateEnvironmentVariables();
+
 
     const shouldShowSplash = shouldShowSplashWindow();
     if (shouldShowSplash) {
