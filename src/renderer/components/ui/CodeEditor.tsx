@@ -338,6 +338,9 @@ function buildWorkspaceEditorOverrides(
     const additionalOptions = settings?.additionalOptions ?? {};
     return {
         ...(typeof settings?.fontSize === 'number' ? { fontSize: settings.fontSize } : {}),
+        ...(typeof settings?.fontFamily === 'string' ? { fontFamily: settings.fontFamily } : {}),
+        ...(typeof settings?.fontWeight === 'string' ? { fontWeight: settings.fontWeight } : {}),
+        ...(typeof settings?.letterSpacing === 'number' ? { letterSpacing: settings.letterSpacing } : {}),
         ...(typeof settings?.fontLigatures === 'boolean'
             ? { fontLigatures: settings.fontLigatures }
             : {}),
@@ -350,6 +353,12 @@ function buildWorkspaceEditorOverrides(
         ...(typeof settings?.cursorBlinking === 'string'
             ? { cursorBlinking: settings.cursorBlinking }
             : {}),
+        ...(typeof settings?.cursorStyle === 'string'
+            ? { cursorStyle: settings.cursorStyle }
+            : {}),
+        ...(typeof settings?.cursorWidth === 'number'
+            ? { cursorWidth: settings.cursorWidth }
+            : {}),
         ...(typeof settings?.formatOnPaste === 'boolean'
             ? { formatOnPaste: settings.formatOnPaste }
             : {}),
@@ -361,12 +370,15 @@ function buildWorkspaceEditorOverrides(
             ? { lineNumbers: settings.lineNumbers }
             : {}),
         ...(typeof settings?.folding === 'boolean' ? { folding: settings.folding } : {}),
+        ...(typeof settings?.showFoldingControls === 'string'
+            ? { showFoldingControls: settings.showFoldingControls }
+            : {}),
         ...(typeof settings?.wordWrap === 'string' ? { wordWrap: settings.wordWrap } : {}),
         ...(typeof settings?.minimap === 'boolean'
             ? {
                 minimap: {
                     enabled: settings.minimap,
-                    side: 'right',
+                    side: settings.minimapSide ?? 'right',
                     showSlider: 'always',
                     renderCharacters: settings.minimapRenderCharacters ?? false,
                 },
@@ -379,11 +391,32 @@ function buildWorkspaceEditorOverrides(
         ...(typeof settings?.renderWhitespace === 'string'
             ? { renderWhitespace: settings.renderWhitespace }
             : {}),
+        ...(typeof settings?.renderLineHighlight === 'string'
+            ? { renderLineHighlight: settings.renderLineHighlight }
+            : {}),
+        ...(typeof settings?.renderControlCharacters === 'boolean'
+            ? { renderControlCharacters: settings.renderControlCharacters }
+            : {}),
+        ...(typeof settings?.roundedSelection === 'boolean'
+            ? { roundedSelection: settings.roundedSelection }
+            : {}),
+        ...(typeof settings?.scrollBeyondLastLine === 'boolean'
+            ? { scrollBeyondLastLine: settings.scrollBeyondLastLine }
+            : {}),
         ...(typeof settings?.cursorSmoothCaretAnimation === 'string'
             ? { cursorSmoothCaretAnimation: settings.cursorSmoothCaretAnimation }
             : {}),
         ...(typeof settings?.wordBasedSuggestions === 'string'
             ? { wordBasedSuggestions: settings.wordBasedSuggestions }
+            : {}),
+        ...(typeof settings?.acceptSuggestionOnEnter === 'string'
+            ? { acceptSuggestionOnEnter: settings.acceptSuggestionOnEnter }
+            : {}),
+        ...(typeof settings?.suggestFontSize === 'number'
+            ? { suggestFontSize: settings.suggestFontSize }
+            : {}),
+        ...(typeof settings?.suggestLineHeight === 'number'
+            ? { suggestLineHeight: settings.suggestLineHeight }
             : {}),
         ...(typeof settings?.stickyScroll === 'boolean'
             ? { stickyScroll: { enabled: settings.stickyScroll } }
@@ -396,6 +429,18 @@ function buildWorkspaceEditorOverrides(
             : {}),
         ...(typeof settings?.mouseWheelZoom === 'boolean'
             ? { mouseWheelZoom: settings.mouseWheelZoom }
+            : {}),
+        ...(typeof settings?.multiCursorModifier === 'string'
+            ? { multiCursorModifier: settings.multiCursorModifier }
+            : {}),
+        ...(typeof settings?.occurrenceHighlight === 'boolean'
+            ? { occurrenceHighlight: settings.occurrenceHighlight }
+            : {}),
+        ...(typeof settings?.selectionHighlight === 'boolean'
+            ? { selectionHighlight: settings.selectionHighlight }
+            : {}),
+        ...(typeof settings?.renderFinalNewline === 'string'
+            ? { renderFinalNewline: settings.renderFinalNewline }
             : {}),
         ...additionalOptions,
     };

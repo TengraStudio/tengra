@@ -63,7 +63,7 @@ export const SavedProfileSelector: React.FC<SavedProfileSelectorProps> = ({ onSe
 
     if (loading) {
         return (
-            <div className="text-10 text-muted-foreground animate-pulse p-2 mb-4 bg-muted/40 rounded-lg border border-dashed border-border/40">
+            <div className="typo-overline text-muted-foreground animate-pulse p-2 mb-4 bg-muted/40 rounded-lg border border-dashed border-border/40">
                 {t('common.loading')}
             </div>
         );
@@ -71,7 +71,7 @@ export const SavedProfileSelector: React.FC<SavedProfileSelectorProps> = ({ onSe
 
     if (profiles.length === 0) {
         return (
-            <div className="text-10 text-muted-foreground p-2 mb-4 bg-muted/40 rounded-lg border border-dashed border-border/40">
+            <div className="typo-overline text-muted-foreground p-2 mb-4 bg-muted/40 rounded-lg border border-dashed border-border/40">
                 {loadFailed ? t('errors.unexpected') : t('terminal.no_ssh_profiles')}
             </div>
         );
@@ -94,7 +94,7 @@ export const SavedProfileSelector: React.FC<SavedProfileSelectorProps> = ({ onSe
                         <span className="typo-caption font-medium text-foreground group-hover:text-success transition-colors">
                             {profile.name}
                         </span>
-                        <span className="text-10 text-muted-foreground truncate w-full">
+                        <span className="typo-overline text-muted-foreground truncate w-full">
                             {profile.username}@{profile.host}:{profile.port}
                         </span>
                     </Button>

@@ -12,6 +12,8 @@ import { Palette } from 'lucide-react';
 import type { ChangeEventHandler, Ref } from 'react';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useTheme } from '@/hooks/useTheme';
+import { resolveCssColorValueAsHex, resolveCssColorVariable } from '@/lib/theme-css';
 import { cn } from '@/lib/utils';
 
 import type { ResolvedTerminalAppearance, TerminalAppearancePreferences } from '../types/terminal-appearance';
@@ -21,7 +23,7 @@ import { TerminalShortcutModals } from './TerminalShortcutModals';
 
 /* Batch-02: Extracted Long Classes */
 const C_TERMINALAPPEARANCEMODALS_1 = "w-full px-2 py-1 rounded-sm text-left typo-caption hover:bg-accent/50 transition-colors flex items-center justify-between gap-2";
-const C_TERMINALAPPEARANCEMODALS_2 = "w-full px-2 py-1 rounded border border-border text-11 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors";
+const C_TERMINALAPPEARANCEMODALS_2 = "w-full px-2 py-1 rounded border border-border typo-overline text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors";
 
 
 interface ThemePreset {
@@ -92,6 +94,31 @@ export function TerminalAppearanceModals({
     shareShortcutPreferences,
     importShortcutShareCode,
 }: TerminalAppearanceModalsProps) {
+    useTheme();
+
+    const previewBackground =
+        resolvedTerminalAppearance.theme.background && resolvedTerminalAppearance.theme.background !== 'transparent'
+            ? resolvedTerminalAppearance.theme.background
+            : resolveCssColorVariable('terminal-preview-background', 'hsl(222 27% 12%)');
+    const backgroundPickerValue = terminalAppearance.customTheme?.background
+        ?? resolveCssColorValueAsHex(previewBackground, 'black');
+    const foregroundPickerValue = terminalAppearance.customTheme?.foreground
+        ?? resolveCssColorValueAsHex(
+            resolvedTerminalAppearance.theme.foreground ?? 'hsl(215 32% 88%)',
+            'white'
+        );
+    const cursorPickerValue = terminalAppearance.customTheme?.cursor
+        ?? resolveCssColorValueAsHex(
+            resolvedTerminalAppearance.theme.cursor ?? resolvedTerminalAppearance.theme.foreground ?? 'hsl(215 32% 88%)',
+            'white'
+        );
+    const selectionPickerValue = terminalAppearance.customTheme?.selectionBackground
+        ?? resolveCssColorValueAsHex(
+            resolvedTerminalAppearance.theme.selectionBackground
+                ?? resolveCssColorVariable('terminal-selection-background', 'hsl(209 50% 31%)'),
+            'hsl(209 50% 31%)'
+        );
+
     return (
         <>
             <input
@@ -116,7 +143,7 @@ export function TerminalAppearanceModals({
                     sideOffset={8}
                     className="w-300 p-2 bg-popover border border-border rounded-lg space-y-2"
                 >
-                    <div className="text-10 text-muted-foreground">
+                    <div className="typo-overline text-muted-foreground">
                         {t('terminal.theme')}
                     </div>
                     <div className="max-h-28 overflow-y-auto space-y-1">
@@ -129,16 +156,16 @@ export function TerminalAppearanceModals({
                                 className={C_TERMINALAPPEARANCEMODALS_1}
                             >
                                 <span className="truncate">{preset.name}</span>
-                                <span className="text-10 text-muted-foreground">
+                                <span className="typo-overline text-muted-foreground">
                                     {themeCategoryLabel(preset)}
                                 </span>
                             </button>
                         ))}
                     </div>
                     <div
-                        className="rounded border border-border/50 p-1.5 text-10 font-mono overflow-hidden"
+                        className="rounded border border-border/50 p-1.5 typo-overline font-mono overflow-hidden"
                         style={{
-                            backgroundColor: resolvedTerminalAppearance.theme.background,
+                            backgroundColor: previewBackground,
                             color: resolvedTerminalAppearance.theme.foreground,
                             fontFamily: resolvedTerminalAppearance.fontFamily,
                             fontSize: `${Math.min(terminalAppearance.fontSize, 11)}px`,
@@ -150,7 +177,7 @@ export function TerminalAppearanceModals({
                         <div style={{ color: resolvedTerminalAppearance.theme.red }}>{t('terminal.previewError')}</div>
                         <div style={{ color: resolvedTerminalAppearance.theme.yellow }}>{t('terminal.previewWarning')}</div>
                     </div>
-                    <div className="text-10 text-muted-foreground">
+                    <div className="typo-overline text-muted-foreground">
                         {t('terminal.font')}
                     </div>
                     <div className="space-y-1">
@@ -181,7 +208,7 @@ export function TerminalAppearanceModals({
                         />
                     </label>
                     <div className="pt-1 border-t border-border/50 space-y-1">
-                        <div className="text-10 text-muted-foreground">
+                        <div className="typo-overline text-muted-foreground">
                             {t('terminal.cursorStyle')}
                         </div>
                         <div className="grid grid-cols-3 gap-1">
@@ -192,7 +219,7 @@ export function TerminalAppearanceModals({
                                         applyAppearancePatch({ cursorStyle: cursorStyle.id });
                                     }}
                                     className={cn(
-                                        'px-2 py-1 rounded-sm text-11 border transition-colors',
+                                        'px-2 py-1 rounded-sm typo-overline border transition-colors',
                                         terminalAppearance.cursorStyle === cursorStyle.id
                                             ? 'bg-accent border-border text-foreground'
                                             : 'bg-transparent border-border/50 text-muted-foreground hover:text-foreground hover:bg-accent/30'
@@ -294,14 +321,14 @@ export function TerminalAppearanceModals({
                         />
                     </label>
                     <div className="pt-1 border-t border-border/50 space-y-1">
-                        <div className="text-10 text-muted-foreground">
+                        <div className="typo-overline text-muted-foreground">
                             {t('terminal.customTheme')}
                         </div>
                         <div className="grid grid-cols-2 gap-1.5">
-                            <label className="flex items-center gap-1.5 text-11">
+                            <label className="flex items-center gap-1.5 typo-overline">
                                 <input
                                     type="color"
-                                    value={terminalAppearance.customTheme?.background ?? '#1e1e1e'}
+                                    value={backgroundPickerValue}
                                     onChange={event => {
                                         applyAppearancePatch({
                                             customTheme: {
@@ -314,10 +341,10 @@ export function TerminalAppearanceModals({
                                 />
                                 <span className="text-muted-foreground">{t('terminal.colorBackground')}</span>
                             </label>
-                            <label className="flex items-center gap-1.5 text-11">
+                            <label className="flex items-center gap-1.5 typo-overline">
                                 <input
                                     type="color"
-                                    value={terminalAppearance.customTheme?.foreground ?? '#d4d4d4'}
+                                    value={foregroundPickerValue}
                                     onChange={event => {
                                         applyAppearancePatch({
                                             customTheme: {
@@ -330,10 +357,10 @@ export function TerminalAppearanceModals({
                                 />
                                 <span className="text-muted-foreground">{t('terminal.colorForeground')}</span>
                             </label>
-                            <label className="flex items-center gap-1.5 text-11">
+                            <label className="flex items-center gap-1.5 typo-overline">
                                 <input
                                     type="color"
-                                    value={terminalAppearance.customTheme?.cursor ?? '#d4d4d4'}
+                                    value={cursorPickerValue}
                                     onChange={event => {
                                         applyAppearancePatch({
                                             customTheme: {
@@ -346,13 +373,10 @@ export function TerminalAppearanceModals({
                                 />
                                 <span className="text-muted-foreground">{t('terminal.colorCursor')}</span>
                             </label>
-                            <label className="flex items-center gap-1.5 text-11">
+                            <label className="flex items-center gap-1.5 typo-overline">
                                 <input
                                     type="color"
-                                    value={
-                                        terminalAppearance.customTheme?.selectionBackground ??
-                                        '#264f78'
-                                    }
+                                    value={selectionPickerValue}
                                     onChange={event => {
                                         applyAppearancePatch({
                                             customTheme: {

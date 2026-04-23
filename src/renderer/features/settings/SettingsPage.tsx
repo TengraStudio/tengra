@@ -240,7 +240,7 @@ export function SettingsPage({
                         <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pr-1" role="tablist" aria-orientation="vertical">
                             {groupedTabs.length > 0 ? groupedTabs.map(group => (
                                 <div key={group.label} className="space-y-3">
-                                    <p className="px-3 text-10 font-bold uppercase tracking-widest text-muted-foreground/50">
+                                    <p className="px-3 typo-overline font-bold uppercase tracking-widest text-muted-foreground/50">
                                         {group.label}
                                     </p>
                                     <div className="space-y-1">
@@ -278,7 +278,7 @@ export function SettingsPage({
                                                             isActive ? "font-bold" : "font-medium"
                                                         )}>
                                                             {item.label}
-                                                        </span> 
+                                                        </span>
                                                     </span>
                                                     <ChevronRight className={cn(
                                                         'h-3.5 w-3.5 shrink-0 transition-transform duration-300',
@@ -300,7 +300,7 @@ export function SettingsPage({
 
                 <main className="settings-main min-w-0 flex-1 h-full flex flex-col overflow-hidden">
                     <div className="flex h-full min-h-0 flex-col gap-6 pb-4">
-                        <section className="settings-shell-card bg-card/30 p-6 lg:p-8"> 
+                        <section className="settings-shell-card bg-card/30 p-6 lg:p-8">
                             <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                                 <div className="space-y-2">
                                     <h2 className="text-3xl font-bold tracking-tight text-foreground">
@@ -309,7 +309,7 @@ export function SettingsPage({
                                     <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground/70">
                                         {t('settings.subtitle')}
                                     </p>
-                                </div> 
+                                </div>
                             </div>
                         </section>
 

@@ -138,7 +138,7 @@ export const WizardDetailsStep: React.FC<WizardDetailsStepProps> = ({
                                 <div className="flex flex-col items-center gap-1">
                                     <span
                                         className={cn(
-                                            'text-11 font-semibold  text-center',
+                                            'typo-overline font-semibold  text-center',
                                             formData.category === cat.id
                                                 ? 'text-primary'
                                                 : 'text-muted-foreground'

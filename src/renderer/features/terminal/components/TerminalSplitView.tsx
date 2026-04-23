@@ -30,11 +30,11 @@ interface TerminalSplitViewProps {
     tabs: TerminalTab[];
     activeTabId: string | null;
     splitView:
-        | {
-              primaryId: string;
-              secondaryId: string;
-          }
-        | null;
+    | {
+        primaryId: string;
+        secondaryId: string;
+    }
+    | null;
     getTabLayoutClass: (tabId: string) => string;
     handlePaneActivate: (tabId: string) => void;
     closeTab: (tabId: string) => void;
@@ -102,42 +102,42 @@ export function TerminalSplitView({
                 <div className="relative flex-1 min-w-0">
                     {!isGalleryView &&
                         tabs.map(tab => {
-                    const customContent = renderTabContent?.(tab) ?? null;
-                    const isVisible = splitView
-                        ? tab.id === splitView.primaryId || tab.id === splitView.secondaryId
-                        : activeTabId === tab.id;
-                    if (customContent) {
-                        return (
-                            <div
-                                key={tab.id}
-                                className={cn(getTabLayoutClass(tab.id), !isVisible && 'hidden')}
-                                onMouseDown={() => {
-                                    handlePaneActivate(tab.id);
-                                }}
-                            >
-                                {customContent}
-                            </div>
-                        );
-                    }
+                            const customContent = renderTabContent?.(tab) ?? null;
+                            const isVisible = splitView
+                                ? tab.id === splitView.primaryId || tab.id === splitView.secondaryId
+                                : activeTabId === tab.id;
+                            if (customContent) {
+                                return (
+                                    <div
+                                        key={tab.id}
+                                        className={cn(getTabLayoutClass(tab.id), !isVisible && 'hidden')}
+                                        onMouseDown={() => {
+                                            handlePaneActivate(tab.id);
+                                        }}
+                                    >
+                                        {customContent}
+                                    </div>
+                                );
+                            }
 
-                    return (
-                        <TerminalInstance
-                            key={tab.id}
-                            tab={tab}
-                            isVisible={isVisible}
-                            className={getTabLayoutClass(tab.id)}
-                            onActivate={() => {
-                                handlePaneActivate(tab.id);
-                            }}
-                            onClose={() => {
-                                closeTab(tab.id);
-                            }}
-                            workspacePath={workspacePath}
-                            appearance={terminalAppearance}
-                            resolvedAppearance={resolvedTerminalAppearance}
-                            onTerminalInstanceChange={setTerminalInstance}
-                        />
-                    );
+                            return (
+                                <TerminalInstance
+                                    key={tab.id}
+                                    tab={tab}
+                                    isVisible={isVisible}
+                                    className={getTabLayoutClass(tab.id)}
+                                    onActivate={() => {
+                                        handlePaneActivate(tab.id);
+                                    }}
+                                    onClose={() => {
+                                        closeTab(tab.id);
+                                    }}
+                                    workspacePath={workspacePath}
+                                    appearance={terminalAppearance}
+                                    resolvedAppearance={resolvedTerminalAppearance}
+                                    onTerminalInstanceChange={setTerminalInstance}
+                                />
+                            );
                         })}
                     {isGalleryView && tabs.length > 0 && (
                         <div className="absolute inset-0 p-2 overflow-auto">
@@ -160,7 +160,7 @@ export function TerminalSplitView({
                                         }}
                                     >
                                         <div className={C_TERMINALSPLITVIEW_1}>
-                                            <div className="text-11 truncate text-foreground/90">
+                                            <div className="typo-overline truncate text-foreground/90">
                                                 {tab.name}
                                             </div>
                                             {resolveTerminalTabMetadata(tab).closable !== false && (

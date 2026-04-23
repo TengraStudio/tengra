@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 /* Batch-02: Extracted Long Classes */
-const C_WORKSPACEAGENTPERMISSIONEDITOR_1 = "h-9 rounded-xl px-4 bg-primary/10 hover:bg-primary/20 text-primary text-10 font-bold border border-primary/20 transition-all shrink-0";
+const C_WORKSPACEAGENTPERMISSIONEDITOR_1 = "h-9 rounded-xl px-4 bg-primary/10 hover:bg-primary/20 text-primary typo-overline font-bold border border-primary/20 transition-all shrink-0";
 const C_WORKSPACEAGENTPERMISSIONEDITOR_2 = "inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-muted-foreground/30 transition-colors hover:text-destructive/60";
 
 
@@ -60,7 +60,7 @@ function AllowlistSection({
 }): JSX.Element {
     return (
         <div className="rounded-2xl border border-border/40 bg-background/40 p-4">
-            <div className="flex items-center gap-2 text-10 font-bold tracking-20 text-muted-foreground/30">
+            <div className="flex items-center gap-2 typo-overline font-bold tracking-20 text-muted-foreground/30">
                 {icon}
                 <span>{label}</span>
             </div>
@@ -82,7 +82,7 @@ function AllowlistSection({
                         <Badge
                             key={entry}
                             variant="outline"
-                            className="gap-1.5 rounded-lg border-border/30 bg-muted/40 px-2.5 py-1 text-10 font-bold text-foreground/70"
+                            className="gap-1.5 rounded-lg border-border/30 bg-muted/40 px-2.5 py-1 typo-overline font-bold text-foreground/70"
                         >
                             <span className="truncate max-w-150">{entry}</span>
                             <button
@@ -96,7 +96,7 @@ function AllowlistSection({
                         </Badge>
                     ))
                 ) : (
-                    <div className="text-10 text-muted-foreground/30 flex items-center gap-2 px-1 py-1 font-medium">
+                    <div className="typo-overline text-muted-foreground/30 flex items-center gap-2 px-1 py-1 font-medium">
                         {noEntriesLabel}
                     </div>
                 )}

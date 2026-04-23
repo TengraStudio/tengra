@@ -54,7 +54,7 @@ async fn run_command(state: Arc<AppState>, arguments: Value) -> ToolDispatchResp
             s
         } else {
             // Session IDs can go stale (app reload / cleanup). Fall back to a fresh session.
-            match state.terminal_manager.create_session(cwd, None) {
+            match state.terminal_manager.create_session(cwd, None, None) {
                 Ok(new_id) => match state.terminal_manager.get_session(&new_id) {
                     Some(s) => s,
                     None => {
@@ -75,7 +75,7 @@ async fn run_command(state: Arc<AppState>, arguments: Value) -> ToolDispatchResp
             }
         }
     } else {
-        match state.terminal_manager.create_session(cwd, None) {
+        match state.terminal_manager.create_session(cwd, None, None) {
             Ok(id) => match state.terminal_manager.get_session(&id) {
                 Some(s) => s,
                 None => {

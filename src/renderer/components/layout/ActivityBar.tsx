@@ -88,7 +88,7 @@ const ActivityButton: React.FC<{
         {item.icon}
         {item.badge !== undefined && (
             <span className={cn(
-                'absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-10 font-bold bg-primary text-primary-foreground',
+                'absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 typo-overline font-bold bg-primary text-primary-foreground',
                 !(typeof item.badge === 'number' && item.badge > 0) && 'bg-muted text-muted-foreground'
             )}>
                 {typeof item.badge === 'number' && item.badge > 99 ? '99+' : item.badge}
@@ -132,55 +132,55 @@ export const ActivityBar: React.FC<{
     className,
     onItemClick
 }) => {
-    const { t } = useTranslation();
-    const { activeItem, setActiveItem } = useActivityBar();
-    const resolvedItems = useMemo(
-        () => (items && items.length > 0 ? items : getDefaultActivities(t)),
-        [items, t]
-    );
-    const resolvedBottomItems = useMemo(
-        () => (
-            bottomItems && bottomItems.length > 0
-                ? bottomItems
-                : [{ id: 'settings', icon: <Settings className="w-5 h-5" />, label: t('activityBar.settings') }]
-        ),
-        [bottomItems, t]
-    );
+        const { t } = useTranslation();
+        const { activeItem, setActiveItem } = useActivityBar();
+        const resolvedItems = useMemo(
+            () => (items && items.length > 0 ? items : getDefaultActivities(t)),
+            [items, t]
+        );
+        const resolvedBottomItems = useMemo(
+            () => (
+                bottomItems && bottomItems.length > 0
+                    ? bottomItems
+                    : [{ id: 'settings', icon: <Settings className="w-5 h-5" />, label: t('activityBar.settings') }]
+            ),
+            [bottomItems, t]
+        );
 
-    const handleClick = (id: string) => {
-        setActiveItem(id);
-        onItemClick?.(id);
+        const handleClick = (id: string) => {
+            setActiveItem(id);
+            onItemClick?.(id);
+        };
+
+        return (
+            <div className={cn('flex h-full w-12 flex-col border-r border-border/30 bg-card/50', className)}>
+                {/* Top items */}
+                <div className="flex flex-1 flex-col">
+                    {resolvedItems.map(item => (
+                        <ActivityButton
+                            key={item.id}
+                            item={item}
+                            isActive={activeItem === item.id}
+                            onClick={() => handleClick(item.id)}
+                        />
+                    ))}
+                </div>
+
+                {/* Bottom items */}
+                <div className="flex flex-col border-t border-border/20">
+                    {resolvedBottomItems.map(item => (
+                        <ActivityButton
+                            key={item.id}
+                            item={item}
+                            isActive={activeItem === item.id}
+                            onClick={() => handleClick(item.id)}
+                            position="bottom"
+                        />
+                    ))}
+                </div>
+            </div>
+        );
     };
-
-    return (
-        <div className={cn('flex h-full w-12 flex-col border-r border-border/30 bg-card/50', className)}>
-            {/* Top items */}
-            <div className="flex flex-1 flex-col">
-                {resolvedItems.map(item => (
-                    <ActivityButton
-                        key={item.id}
-                        item={item}
-                        isActive={activeItem === item.id}
-                        onClick={() => handleClick(item.id)}
-                    />
-                ))}
-            </div>
-
-            {/* Bottom items */}
-            <div className="flex flex-col border-t border-border/20">
-                {resolvedBottomItems.map(item => (
-                    <ActivityButton
-                        key={item.id}
-                        item={item}
-                        isActive={activeItem === item.id}
-                        onClick={() => handleClick(item.id)}
-                        position="bottom"
-                    />
-                ))}
-            </div>
-        </div>
-    );
-};
 
 // Composite Layout with Activity Bar + Sidebar
 export const ActivityBarLayout: React.FC<{
@@ -198,61 +198,61 @@ export const ActivityBarLayout: React.FC<{
     children,
     className
 }) => {
-    const { activeItem, collapsed, setCollapsed } = useActivityBar();
-    const activeSidebar = sidebarContent[activeItem];
-    const { t } = useTranslation();
+        const { activeItem, collapsed, setCollapsed } = useActivityBar();
+        const activeSidebar = sidebarContent[activeItem];
+        const { t } = useTranslation();
 
-    return (
-        <div className={cn('flex h-full w-full', className)}>
-            {/* Activity Bar */}
-            <ActivityBar
-                items={activityItems}
-                bottomItems={bottomActivityItems}
-            />
+        return (
+            <div className={cn('flex h-full w-full', className)}>
+                {/* Activity Bar */}
+                <ActivityBar
+                    items={activityItems}
+                    bottomItems={bottomActivityItems}
+                />
 
-            {/* Sidebar */}
-            {activeSidebar && !collapsed && (
-                <div
-                    className="flex h-full flex-col overflow-hidden border-r border-border/30 bg-card/30"
-                    style={{ width: sidebarWidth }}
-                >
-                    {/* Sidebar header */}
-                    <div className="flex items-center justify-between border-b border-border/20 px-4 py-2">
-                        <span className="text-xs font-semibold text-muted-foreground">
-                            {activityItems?.find(i => i.id === activeItem)?.label ?? t('common.unknown')}
-                        </span>
-                        <button
-                            onClick={() => setCollapsed(true)}
-                            className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted"
-                            aria-label={t('aria.collapseSidebar')}
-                        >
-                            <ChevronLeft className="h-4 w-4" />
-                        </button>
+                {/* Sidebar */}
+                {activeSidebar && !collapsed && (
+                    <div
+                        className="flex h-full flex-col overflow-hidden border-r border-border/30 bg-card/30"
+                        style={{ width: sidebarWidth }}
+                    >
+                        {/* Sidebar header */}
+                        <div className="flex items-center justify-between border-b border-border/20 px-4 py-2">
+                            <span className="text-xs font-semibold text-muted-foreground">
+                                {activityItems?.find(i => i.id === activeItem)?.label ?? t('common.unknown')}
+                            </span>
+                            <button
+                                onClick={() => setCollapsed(true)}
+                                className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted"
+                                aria-label={t('aria.collapseSidebar')}
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                            </button>
+                        </div>
+                        {/* Sidebar content */}
+                        <div className="flex-1 overflow-auto">
+                            {activeSidebar}
+                        </div>
                     </div>
-                    {/* Sidebar content */}
-                    <div className="flex-1 overflow-auto">
-                        {activeSidebar}
-                    </div>
+                )}
+
+                {/* Collapsed sidebar toggle */}
+                {collapsed && activeSidebar && (
+                    <button
+                        onClick={() => setCollapsed(false)}
+                        className="flex h-full w-6 items-center justify-center border-r border-border/30 bg-transparent text-muted-foreground transition-colors hover:bg-muted/50"
+                        aria-label={t('aria.expandSidebar')}
+                    >
+                        <ChevronRight className="h-4 w-4" />
+                    </button>
+                )}
+
+                {/* Main content */}
+                <div className="min-w-0 flex-1 overflow-hidden">
+                    {children}
                 </div>
-            )}
-
-            {/* Collapsed sidebar toggle */}
-            {collapsed && activeSidebar && (
-                <button
-                    onClick={() => setCollapsed(false)}
-                    className="flex h-full w-6 items-center justify-center border-r border-border/30 bg-transparent text-muted-foreground transition-colors hover:bg-muted/50"
-                    aria-label={t('aria.expandSidebar')}
-                >
-                    <ChevronRight className="h-4 w-4" />
-                </button>
-            )}
-
-            {/* Main content */}
-            <div className="min-w-0 flex-1 overflow-hidden">
-                {children}
             </div>
-        </div>
-    );
-};
+        );
+    };
 
 export default ActivityBar;

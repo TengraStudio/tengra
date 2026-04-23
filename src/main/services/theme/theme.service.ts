@@ -18,6 +18,7 @@ import * as path from 'path';
 
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
+import { BUILTIN_THEME_IDS, BUILTIN_THEME_MANIFESTS } from '@shared/theme/builtin-theme-manifests';
 import type { ThemeManifest } from '@shared/types/theme';
 import { getErrorMessage } from '@shared/utils/error.util';
 
@@ -169,122 +170,55 @@ export class ThemeService extends BaseService {
     }
 
     private async installBuiltInThemes(): Promise<void> {
-        const darkColors = {
-            background: '0 0% 0%',
-            foreground: '0 0% 100%',
-            card: '0 0% 4%',
-            cardForeground: '0 0% 100%',
-            popover: '0 0% 4%',
-            popoverForeground: '0 0% 100%',
-            primary: '199 89% 48%',
-            primaryForeground: '0 0% 100%',
-            secondary: '0 0% 10%',
-            secondaryForeground: '0 0% 100%',
-            accent: '199 70% 15%',
-            accentForeground: '199 89% 70%',
-            destructive: '0 72% 51%',
-            destructiveForeground: '0 0% 100%',
-            muted: '0 0% 8%',
-            mutedForeground: '0 0% 60%',
-            border: '0 0% 15%',
-            input: '0 0% 15%',
-            ring: '199 89% 48%'
-        };
-        const lightColors = {
-            background: '0 0% 100%',
-            foreground: '0 0% 0%',
-            card: '0 0% 98%',
-            cardForeground: '0 0% 10%',
-            popover: '0 0% 100%',
-            popoverForeground: '0 0% 0%',
-            primary: '221 83% 53%',
-            primaryForeground: '0 0% 100%',
-            secondary: '0 0% 95%',
-            secondaryForeground: '0 0% 10%',
-            accent: '221 70% 95%',
-            accentForeground: '221 83% 40%',
-            destructive: '0 84% 60%',
-            destructiveForeground: '0 0% 100%',
-            muted: '0 0% 92%',
-            mutedForeground: '0 0% 40%',
-            border: '0 0% 85%',
-            input: '0 0% 85%',
-            ring: '221 83% 53%'
-        };
-        const builtInThemes = [
-            {
-                id: 'graphite',
-                name: 'tengra-graphite',
-                displayName: 'Graphite',
-                version: '1.0.0',
-                type: 'dark' as const,
-                description: 'Default dark Tengra theme',
-                author: 'Tengra Team',
-                colors: darkColors
-            },
-            {
-                id: 'obsidian',
-                name: 'tengra-obsidian',
-                displayName: 'Obsidian',
-                version: '1.0.0',
-                type: 'dark' as const,
-                description: 'Dark theme with violet accents',
-                author: 'Tengra Team',
-                colors: { ...darkColors, primary: '262 83% 58%', ring: '262 83% 58%' }
-            },
-            {
-                id: 'midnight',
-                name: 'tengra-midnight',
-                displayName: 'Midnight',
-                version: '1.0.0',
-                type: 'dark' as const,
-                description: 'Dark theme with blue accents',
-                author: 'Tengra Team',
-                colors: { ...darkColors, primary: '217 91% 60%', ring: '217 91% 60%' }
-            },
-            {
-                id: 'snow',
-                name: 'tengra-snow',
-                displayName: 'Snow',
-                version: '1.0.0',
-                type: 'light' as const,
-                description: 'Clean light Tengra theme',
-                author: 'Tengra Team',
-                colors: lightColors
-            },
-            {
-                id: 'black',
-                name: 'tengra-black',
-                displayName: 'Tengra Black',
-                version: '1.0.0',
-                type: 'dark' as const,
-                description: 'Pure black theme with electric cyan accents',
-                author: 'Tengra Team',
-                colors: darkColors
-            },
-            {
-                id: 'white',
-                name: 'tengra-white',
-                displayName: 'Tengra White',
-                version: '1.0.0',
-                type: 'light' as const,
-                description: 'Clean white theme with vibrant purple accents',
-                author: 'Tengra Team',
-                colors: { ...lightColors, primary: '262 83% 58%', ring: '262 83% 58%' }
-            }
-        ];
-
-        for (const theme of builtInThemes) {
+        for (const theme of BUILTIN_THEME_MANIFESTS) {
             const themePath = path.join(this.themesDir, `${theme.id}.theme.json`);
 
             try {
-                await fs.access(themePath);
-                this.logDebug(`Built-in theme ${theme.id} already installed`);
-            } catch {
-                await fs.writeFile(themePath, JSON.stringify(theme, null, 2));
-                this.logInfo(`Installed built-in theme: ${theme.displayName}`);
+                const existingTheme = await this.readThemeManifest(themePath);
+                const nextTheme = existingTheme
+                    ? this.mergeBuiltInThemeManifest(theme, existingTheme)
+                    : theme;
+
+                if (!existingTheme || JSON.stringify(existingTheme) !== JSON.stringify(nextTheme)) {
+                    await fs.writeFile(themePath, JSON.stringify(nextTheme, null, 2));
+                    this.logInfo(
+                        `${existingTheme ? 'Updated' : 'Installed'} built-in theme: ${theme.displayName}`
+                    );
+                } else {
+                    this.logDebug(`Built-in theme ${theme.id} already up to date`);
+                }
+            } catch (error) {
+                this.logError(`Failed to install built-in theme ${theme.id}`, error as Error);
             }
         }
+    }
+
+    private async readThemeManifest(themePath: string): Promise<ThemeManifest | null> {
+        try {
+            const content = await fs.readFile(themePath, 'utf-8');
+            const manifest = JSON.parse(content) as ThemeManifest;
+            return this.validateManifest(manifest) ? manifest : null;
+        } catch {
+            return null;
+        }
+    }
+
+    private mergeBuiltInThemeManifest(
+        builtInTheme: ThemeManifest,
+        existingTheme: ThemeManifest
+    ): ThemeManifest {
+        return {
+            ...builtInTheme,
+            ...existingTheme,
+            colors: {
+                ...builtInTheme.colors,
+                ...existingTheme.colors,
+            },
+            vars: {
+                ...(builtInTheme.vars ?? {}),
+                ...(existingTheme.vars ?? {}),
+            },
+        };
     }
 
     private async loadThemes(): Promise<void> {
@@ -368,6 +302,21 @@ export class ThemeService extends BaseService {
             }
         }
 
+        if (m.vars !== undefined) {
+            if (typeof m.vars !== 'object' || m.vars === null || Array.isArray(m.vars)) {
+                this.logWarn('Manifest validation failed: vars must be an object');
+                return false;
+            }
+
+            const vars = m.vars as Record<string, RuntimeValue>;
+            for (const [key, value] of Object.entries(vars)) {
+                if (typeof value !== 'string') {
+                    this.logWarn(`Manifest validation failed: invalid var "${key}"`);
+                    return false;
+                }
+            }
+        }
+
         return true;
     }
 
@@ -443,7 +392,7 @@ export class ThemeService extends BaseService {
             return false;
         }
 
-        if (id === 'black' || id === 'white') {
+        if (BUILTIN_THEME_IDS.has(id)) {
             const errorMsg = `Cannot uninstall built-in theme: ${id}`;
             themeMetrics.recordFailure('uninstallTheme', Date.now() - startTime, errorMsg);
             this.logWarn(errorMsg);

@@ -20,9 +20,11 @@ import {
     useNodesState,
 } from '@xyflow/react';
 import { Database, RotateCcw } from 'lucide-react';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/i18n';
+import { resolveCssColorVariable } from '@/lib/theme-css';
 
 import { appLogger } from '../../../utils/renderer-logger';
 
@@ -59,9 +61,18 @@ const nodeTypes = {
 
 export const EntityRelationshipDiagram: React.FC = () => {
     const { t } = useTranslation();
+    const { isLight, theme } = useTheme();
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
     const [loading, setLoading] = useState(true);
+    const relationshipStroke = useMemo(
+        () => resolveCssColorVariable('memory-relationship-edge', 'hsl(239 84% 67% / 0.4)'),
+        [theme]
+    );
+    const relationshipGridColor = useMemo(
+        () => resolveCssColorVariable('memory-relationship-grid', 'hsl(215 16% 47% / 0.35)'),
+        [theme]
+    );
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -114,7 +125,7 @@ export const EntityRelationshipDiagram: React.FC = () => {
                                         source: sourceEnt.name,
                                         target: targetEnt.name,
                                         animated: true,
-                                        style: { stroke: 'rgba(99, 102, 241, 0.4)', strokeWidth: 2 },
+                                        style: { stroke: relationshipStroke, strokeWidth: 2 },
                                     });
                                 }
                             }
@@ -130,7 +141,7 @@ export const EntityRelationshipDiagram: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [setNodes, setEdges]);
+    }, [relationshipStroke, setEdges, setNodes]);
 
     useEffect(() => {
         void loadData();
@@ -151,9 +162,9 @@ export const EntityRelationshipDiagram: React.FC = () => {
                 onEdgesChange={onEdgesChange}
                 nodeTypes={nodeTypes}
                 fitView
-                colorMode="dark"
+                colorMode={isLight ? 'light' : 'dark'}
             >
-                <Background color="rgba(255,255,255,0.05)" gap={20} />
+                <Background color={relationshipGridColor} gap={20} />
                 <Controls />
                 <MiniMap />
 

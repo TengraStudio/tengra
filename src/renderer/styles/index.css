@@ -10,10 +10,12 @@
 
 @import url('./vendor.css');
 @import url('./tailwind.css');
+@import url('./base/tailwind-theme-tokens.css');
 @import url('./base/app.css');
 @import url('./base/typography.css');
 @import url('./layout/terminal.css');
 @import url('./layers/foundation.css');
+@import url('./layers/theme-vars.css');
 @import url('./layers/theme-base.css');
 @import url('./layers/components.css');
 @import url('./layers/overlays.css');

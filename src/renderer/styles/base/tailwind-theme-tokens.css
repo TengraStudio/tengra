@@ -1,0 +1,386 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+@layer base {
+    :root {
+        /* Container */
+        --tengra-container-padding: 2rem;
+        --tengra-container-2xl: 1400px;
+        --tengra-container-3xl: 1800px;
+
+        /* Spacing scale (overrides Tailwind defaults) */
+        --tengra-space-0: 0px;
+        --tengra-space-px: 1px;
+        --tengra-space-0-5: 0.125rem;
+        --tengra-space-1: 0.25rem;
+        --tengra-space-1-5: 0.375rem;
+        --tengra-space-2: 0.5rem;
+        --tengra-space-2-5: 0.625rem;
+        --tengra-space-3: 0.75rem;
+        --tengra-space-3-5: 0.875rem;
+        --tengra-space-4: 1rem;
+        --tengra-space-5: 1.25rem;
+        --tengra-space-6: 1.5rem;
+        --tengra-space-7: 1.75rem;
+        --tengra-space-8: 2rem;
+        --tengra-space-9: 2.25rem;
+        --tengra-space-10: 2.5rem;
+        --tengra-space-11: 2.75rem;
+        --tengra-space-12: 3rem;
+        --tengra-space-14: 3.5rem;
+        --tengra-space-16: 4rem;
+        --tengra-space-20: 5rem;
+        --tengra-space-24: 6rem;
+        --tengra-space-28: 7rem;
+        --tengra-space-32: 8rem;
+        --tengra-space-36: 9rem;
+        --tengra-space-40: 10rem;
+        --tengra-space-44: 11rem;
+        --tengra-space-48: 12rem;
+        --tengra-space-52: 13rem;
+        --tengra-space-56: 14rem;
+        --tengra-space-60: 15rem;
+        --tengra-space-64: 16rem;
+        --tengra-space-72: 18rem;
+        --tengra-space-80: 20rem;
+        --tengra-space-96: 24rem;
+
+        /* Border radius tokens (Tailwind `theme.extend.borderRadius`) */
+        --tengra-radius-none: 0px;
+        --tengra-radius-default: 0.25rem;
+        --tengra-radius-sm: 0.125rem;
+        --tengra-radius-md: 0.375rem;
+        --tengra-radius-xl: 0.75rem;
+        --tengra-radius-2xl: 1rem;
+        --tengra-radius-3xl: 1.5rem;
+        --tengra-radius-full: 9999px;
+        --tengra-radius-1px: 1px;
+        --tengra-radius-2px: 2px;
+        --tengra-radius-3px: 3px;
+        --tengra-radius-6px: 6px;
+        --tengra-radius-inner-xl: calc(0.75rem - 2px);
+        --tengra-radius-card: 1.5rem;
+        --tengra-radius-card-lg: 2rem;
+        --tengra-radius-card-xl: 2.5rem;
+        --tengra-radius-card-2xl: 1.75rem;
+
+        /* Default letter spacing tokens */
+        --tengra-tracking-tighter: -0.05em;
+        --tengra-tracking-tight: -0.025em;
+        --tengra-tracking-normal: 0em;
+        --tengra-tracking-wide: 0.025em;
+        --tengra-tracking-wider: 0.05em;
+        --tengra-tracking-widest: 0.1em;
+
+        /* Letter spacing tokens (Tailwind `theme.extend.letterSpacing`) */
+        --tengra-tracking-16: 0.016em;
+        --tengra-tracking-18: 0.018em;
+        --tengra-tracking-20: 0.02em;
+        --tengra-tracking-24: 0.024em;
+        --tengra-tracking-25: 0.025em;
+        --tengra-tracking-40: 0.04em;
+        --tengra-tracking-50: 0.05em;
+        --tengra-tracking-100: 0.1em;
+        --tengra-tracking-200: 0.2em;
+        --tengra-tracking-300: 0.3em;
+        --tengra-tracking-400: 0.4em;
+        --tengra-tracking-ultra-wide: 0.15em;
+        --tengra-tracking-super-wide: 0.2em;
+        --tengra-tracking-mega-wide: 0.3em;
+
+        /* Line-height tokens */
+        --tengra-leading-3: 0.75rem;
+        --tengra-leading-4: 1rem;
+        --tengra-leading-5: 1.25rem;
+        --tengra-leading-6: 1.5rem;
+        --tengra-leading-7: 1.75rem;
+        --tengra-leading-8: 2rem;
+        --tengra-leading-9: 2.25rem;
+        --tengra-leading-10: 2.5rem;
+        --tengra-leading-none: 1;
+        --tengra-leading-tight: 1.25;
+        --tengra-leading-snug: 1.375;
+        --tengra-leading-normal: 1.5;
+        --tengra-leading-relaxed: 1.625;
+        --tengra-leading-loose: 2;
+
+        /* Scale tokens */
+        --tengra-scale-98: 0.98;
+        --tengra-scale-101: 1.01;
+        --tengra-scale-102: 1.02;
+
+        /* Spacing tokens (Tailwind `theme.extend.spacing`) */
+        --tengra-space-1px: 1px;
+        --tengra-space-3px: 3px;
+        --tengra-space-5px: 5px;
+        --tengra-space-70: 70px;
+        --tengra-space-84: 84px;
+        --tengra-space-90: 90px;
+        --tengra-space-100: 100px;
+        --tengra-space-120: 120px;
+        --tengra-space-140: 140px;
+        --tengra-space-148: 148px;
+        --tengra-space-160: 160px;
+        --tengra-space-172: 172px;
+        --tengra-space-180: 180px;
+        --tengra-space-200: 200px;
+        --tengra-space-220: 220px;
+        --tengra-space-240: 240px;
+        --tengra-space-250: 250px;
+        --tengra-space-260: 260px;
+        --tengra-space-280: 280px;
+        --tengra-space-300: 300px;
+        --tengra-space-320: 320px;
+        --tengra-space-340: 340px;
+        --tengra-space-350: 350px;
+        --tengra-space-360: 360px;
+        --tengra-space-380: 380px;
+        --tengra-space-400: 400px;
+        --tengra-space-420: 420px;
+        --tengra-space-440: 440px;
+        --tengra-space-460: 460px;
+        --tengra-space-480: 480px;
+        --tengra-space-500: 500px;
+        --tengra-space-520: 520px;
+        --tengra-space-1-25rem: 1.25rem;
+
+        /* z-index tokens */
+        --tengra-z-0: 0;
+        --tengra-z-1: 1;
+        --tengra-z-10: 10;
+        --tengra-z-20: 20;
+        --tengra-z-30: 30;
+        --tengra-z-40: 40;
+        --tengra-z-50: 50;
+        --tengra-z-95: 95;
+        --tengra-z-100: 100;
+        --tengra-z-1000: 1000;
+        --tengra-z-150: 150;
+        --tengra-z-9999: 9999;
+        --tengra-z-99999: 99999;
+        --tengra-z-10001: 10001;
+        --tengra-z-10002: 10002;
+
+        /* Translate tokens */
+        --tengra-translate-1px: 1px;
+
+        /* Width tokens */
+        --tengra-w-110: 110px;
+        --tengra-w-450: 450px;
+        --tengra-w-46p: 46%;
+        --tengra-w-70p: 70%;
+        --tengra-w-modal-72: min(100%, 72rem);
+        --tengra-w-modal-32: min(100%, 32rem);
+        --tengra-w-command-menu: min(20rem, calc(100vw - 2rem));
+
+        /* Min width tokens */
+        --tengra-minw-60: 60px;
+        --tengra-minw-16: 16px;
+        --tengra-minw-36: 36px;
+        --tengra-minw-48: 48px;
+        --tengra-minw-140: 140px;
+        --tengra-minw-200: 200px;
+        --tengra-minw-420: 420px;
+
+        /* Min height tokens */
+        --tengra-minh-300: 300px;
+        --tengra-minh-400: 400px;
+        --tengra-minh-500: 500px;
+
+        /* Height tokens */
+        --tengra-h-2px: 2px;
+        --tengra-h-22: 22px;
+        --tengra-h-40: 40px;
+        --tengra-h-48: 48px;
+        --tengra-h-60: 60px;
+        --tengra-h-450: 450px;
+        --tengra-h-480: 480px;
+        --tengra-h-500: 500px;
+        --tengra-h-580: 580px;
+        --tengra-h-600: 600px;
+        --tengra-h-60vh: 60vh;
+        --tengra-h-dialog-ssh: min(88vh, 42rem);
+        --tengra-h-screen-minus-200: calc(100vh - 200px);
+
+        /* Max height tokens */
+        --tengra-maxh-85vh: 85vh;
+        --tengra-maxh-88vh: 88vh;
+        --tengra-maxh-90vh: 90vh;
+        --tengra-maxh-dialog: min(88vh, 44rem);
+        --tengra-maxh-screen-minus-32: calc(100vh - 8rem);
+
+        /* Max width tokens */
+        --tengra-maxw-112: 28rem;
+        --tengra-maxw-90p: 90%;
+        --tengra-maxw-95p: 95%;
+        --tengra-maxw-95vw: 95vw;
+        --tengra-maxw-xxs: 12rem;
+        --tengra-maxw-xs: 20rem;
+        --tengra-maxw-2xs: 16rem;
+        --tengra-maxw-3xs: 14rem;
+        --tengra-maxw-sm: 24rem;
+        --tengra-maxw-md: 28rem;
+        --tengra-maxw-lg: 32rem;
+        --tengra-maxw-xl: 36rem;
+        --tengra-maxw-2xl: 42rem;
+        --tengra-maxw-3xl: 48rem;
+        --tengra-maxw-4xl: 56rem;
+        --tengra-maxw-5xl: 64rem;
+        --tengra-maxw-6xl: 72rem;
+        --tengra-maxw-7xl: 80rem;
+        --tengra-maxw-120: 120px;
+        --tengra-maxw-220: 220px;
+        --tengra-maxw-240: 240px;
+        --tengra-maxw-400: 400px;
+        --tengra-maxw-820: 820px;
+        --tengra-maxw-container: 1024px;
+        --tengra-maxw-container-sm: 640px;
+        --tengra-maxw-container-md: 768px;
+        --tengra-maxw-container-lg: 1024px;
+        --tengra-maxw-container-xl: 1280px;
+        --tengra-maxw-200: 200px;
+        --tengra-maxw-420: 420px;
+        --tengra-maxw-screen-sm: 640px;
+        --tengra-maxw-screen-md: 768px;
+        --tengra-maxw-screen-lg: 1024px;
+        --tengra-maxw-screen-xl: 1280px;
+        --tengra-maxw-screen-2xl: 1536px;
+
+        /* Inset tokens */
+        --tengra-inset-full-plus-2: calc(100% + 0.5rem);
+
+        /* Grid template tokens */
+        --tengra-grid-cols-todo: 2rem minmax(0,1.2fr) minmax(0,1.3fr) minmax(0,0.9fr) auto;
+        --tengra-grid-cols-380-main: 380px minmax(0,1fr);
+        --tengra-grid-cols-2fr-1fr: 2fr 1fr;
+        --tengra-grid-cols-80-main: 20rem minmax(0,1fr);
+        --tengra-grid-cols-balance-95-105: minmax(0,0.95fr) minmax(0,1.05fr);
+        --tengra-grid-cols-360-main: 360px minmax(0,1fr);
+        --tengra-grid-cols-editor-split: 1fr 400px;
+        --tengra-grid-rows-260: 260px;
+
+        /* Flex tokens */
+        --tengra-flex-2: 2 2 0%;
+
+        /* Border width tokens */
+        --tengra-border-0: 0px;
+        --tengra-border-1: 1px;
+        --tengra-border-2: 2px;
+        --tengra-border-4: 4px;
+        --tengra-border-6: 6px;
+        --tengra-border-8: 8px;
+
+        /* Ring tokens */
+        --tengra-ring-0: 0px;
+        --tengra-ring-1: 1px;
+        --tengra-ring-2: 2px;
+        --tengra-ring-4: 4px;
+        --tengra-ring-8: 8px;
+        --tengra-ring-offset-0: 0px;
+        --tengra-ring-offset-1: 1px;
+        --tengra-ring-offset-2: 2px;
+        --tengra-ring-offset-4: 4px;
+        --tengra-ring-offset-8: 8px;
+
+        /* Outline offset tokens */
+        --tengra-outline-offset-0: 0px;
+        --tengra-outline-offset-1: 1px;
+        --tengra-outline-offset-2: 2px;
+        --tengra-outline-offset-4: 4px;
+        --tengra-outline-offset-8: 8px;
+
+        /* Blur tokens */
+        --tengra-blur-sm: 4px;
+        --tengra-blur-default: 8px;
+        --tengra-blur-md: 12px;
+        --tengra-blur-lg: 16px;
+        --tengra-blur-xl: 24px;
+        --tengra-blur-2xl: 40px;
+        --tengra-blur-3xl: 64px;
+
+        /* Backdrop blur tokens */
+        --tengra-backdrop-blur-sm: 4px;
+        --tengra-backdrop-blur-default: 8px;
+        --tengra-backdrop-blur-md: 12px;
+        --tengra-backdrop-blur-lg: 16px;
+        --tengra-backdrop-blur-xl: 24px;
+        --tengra-backdrop-blur-2xl: 40px;
+        --tengra-backdrop-blur-3xl: 64px;
+        --tengra-backdrop-blur-2: 2px;
+        --tengra-backdrop-blur-4: 4px;
+        --tengra-backdrop-blur-8: 8px;
+        --tengra-backdrop-blur-16: 16px;
+
+        /* Opacity tokens */
+        --tengra-opacity-0: 0;
+        --tengra-opacity-5: 0.05;
+        --tengra-opacity-10: 0.1;
+        --tengra-opacity-15: 0.15;
+        --tengra-opacity-20: 0.2;
+        --tengra-opacity-25: 0.25;
+        --tengra-opacity-30: 0.3;
+        --tengra-opacity-35: 0.35;
+        --tengra-opacity-40: 0.4;
+        --tengra-opacity-45: 0.45;
+        --tengra-opacity-50: 0.5;
+        --tengra-opacity-55: 0.55;
+        --tengra-opacity-60: 0.6;
+        --tengra-opacity-65: 0.65;
+        --tengra-opacity-70: 0.7;
+        --tengra-opacity-75: 0.75;
+        --tengra-opacity-80: 0.8;
+        --tengra-opacity-85: 0.85;
+        --tengra-opacity-90: 0.9;
+        --tengra-opacity-95: 0.95;
+        --tengra-opacity-100: 1;
+
+        /* Drop shadow tokens */
+        --tengra-drop-shadow-sm: 0 1px 1px rgb(0 0 0 / 5%);
+        --tengra-drop-shadow: 0 1px 2px rgb(0 0 0 / 10%), 0 1px 1px rgb(0 0 0 / 6%);
+        --tengra-drop-shadow-md: 0 4px 3px rgb(0 0 0 / 7%), 0 2px 2px rgb(0 0 0 / 6%);
+        --tengra-drop-shadow-lg: 0 10px 8px rgb(0 0 0 / 4%), 0 4px 3px rgb(0 0 0 / 10%);
+        --tengra-drop-shadow-xl: 0 20px 13px rgb(0 0 0 / 3%), 0 8px 5px rgb(0 0 0 / 8%);
+        --tengra-drop-shadow-2xl: 0 25px 25px rgb(0 0 0 / 15%);
+
+        /* Default shadow tokens */
+        --tengra-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 5%);
+        --tengra-shadow: 0 1px 3px 0 rgb(0 0 0 / 10%), 0 1px 2px -1px rgb(0 0 0 / 10%);
+        --tengra-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 10%), 0 2px 4px -2px rgb(0 0 0 / 10%);
+        --tengra-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 10%), 0 4px 6px -4px rgb(0 0 0 / 10%);
+        --tengra-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 10%), 0 8px 10px -6px rgb(0 0 0 / 10%);
+        --tengra-shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 25%);
+        --tengra-shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 5%);
+
+        /* Shadow tokens (Tailwind `theme.extend.boxShadow`) */
+        --tengra-shadow-elevated: 0 8px 24px -8px hsl(var(--shadow-color) / 25%);
+        --tengra-shadow-primary-elevated: 0 10px 26px -10px hsl(var(--primary) / 35%);
+        --tengra-shadow-primary-medium: 0 6px 16px -8px hsl(var(--primary) / 25%);
+        --tengra-shadow-primary-outline: 0 0 0 1px hsl(var(--primary) / 45%);
+        --tengra-shadow-primary-glow: 0 0 16px hsl(var(--primary) / 40%);
+        --tengra-shadow-purple-soft: 0 0 12px hsl(var(--purple) / 35%);
+        --tengra-shadow-outline-background-2: 0 0 0 2px hsl(var(--background));
+        --tengra-shadow-outline-primary-1: 0 0 0 1px hsl(var(--primary) / 50%);
+        --tengra-shadow-glow-primary-strong: 0 0 10px hsl(var(--primary) / 50%);
+        --tengra-shadow-glow-primary-soft: 0 0 10px hsl(var(--primary) / 20%);
+        --tengra-shadow-glow-primary-rgb: 0 0 10px hsl(var(--primary) / 40%);
+        --tengra-shadow-glow-primary: 0 0 8px hsl(var(--primary) / 50%);
+        --tengra-shadow-glow-primary-subtle: 0 0 8px hsl(var(--primary) / 30%);
+        --tengra-shadow-glow-primary-rgb-soft: 0 0 8px hsl(var(--primary) / 40%);
+        --tengra-shadow-glow-destructive: 0 0 8px hsl(var(--destructive) / 60%);
+        --tengra-shadow-glow-destructive-rgb: 0 0 8px hsl(var(--destructive) / 50%);
+        --tengra-shadow-glow-warning: 0 0 8px hsl(var(--warning) / 40%);
+        --tengra-shadow-glow-primary-ring: 0 0 15px hsl(var(--primary) / 10%);
+        --tengra-shadow-edge-primary: 2px 0 8px hsl(var(--primary) / 50%);
+        --tengra-shadow-glow-primary-lg: 0 0 20px hsl(var(--primary) / 20%);
+        --tengra-shadow-glow-primary-hsl: 0 0 20px hsl(var(--primary) / 30%);
+        --tengra-shadow-glow-primary-file: 0 0 8px hsl(var(--primary) / 50%);
+        --tengra-shadow-modal-foreground: 0 25px 50px -12px hsl(var(--foreground) / 25%);
+    }
+}

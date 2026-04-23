@@ -39,8 +39,8 @@ export const CodexCard: React.FC<CodexCardProps> = ({ codexUsage, locale = 'en-U
                     const statusText = usageError ? t('common.error') : t('statistics.active');
                     const percentFromRequests =
                         typeof usage?.remainingRequests === 'number'
-                        && typeof usage?.totalRequests === 'number'
-                        && usage.totalRequests > 0
+                            && typeof usage?.totalRequests === 'number'
+                            && usage.totalRequests > 0
                             ? Math.max(0, Math.min(100, Math.round((usage.remainingRequests / usage.totalRequests) * 100)))
                             : null;
                     const dailyRemaining = typeof usage?.dailyUsedPercent === 'number'
@@ -57,28 +57,28 @@ export const CodexCard: React.FC<CodexCardProps> = ({ codexUsage, locale = 'en-U
                                     {acc.email ?? t('statistics.codexAccount')}
                                 </div>
                                 {(usageError || acc.isActive) && <StatusBadge status={status} text={statusText} />}
-                                {usageError && <span className="text-9 text-destructive truncate ml-2">{usageError}</span>}
+                                {usageError && <span className="typo-overline text-destructive truncate ml-2">{usageError}</span>}
                             </div>
 
                             {!usageError && usage && (
                                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 pt-2 md:grid-cols-2 xl:grid-cols-3">
                                     <div className="space-y-2">
-                                        <div className="text-10 flex items-center justify-between font-medium">
+                                        <div className="typo-overline flex items-center justify-between font-medium">
                                             <span className="text-muted-foreground truncate pr-2">{t('statistics.dailyStatus')}</span>
                                             <span className="text-foreground/80 tabular-nums shrink-0">{dailyRemaining}%</span>
                                         </div>
                                         <HorizontalProgressBar percentage={dailyRemaining} color={getQuotaColor(dailyRemaining)} />
-                                        <div className="text-9 font-medium text-muted-foreground/40 mt-1">
+                                        <div className="typo-overline font-medium text-muted-foreground/40 mt-1">
                                             {formatReset(usage.dailyResetAt, locale)}
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <div className="text-10 flex items-center justify-between font-medium">
+                                        <div className="typo-overline flex items-center justify-between font-medium">
                                             <span className="text-muted-foreground truncate pr-2">{t('statistics.weeklyStatus')}</span>
                                             <span className="text-foreground/80 tabular-nums shrink-0">{weeklyRemaining}%</span>
                                         </div>
                                         <HorizontalProgressBar percentage={weeklyRemaining} color={getQuotaColor(weeklyRemaining)} />
-                                        <div className="text-9 font-medium text-muted-foreground/40 mt-1">
+                                        <div className="typo-overline font-medium text-muted-foreground/40 mt-1">
                                             {formatReset(usage.weeklyResetAt, locale)}
                                         </div>
                                     </div>

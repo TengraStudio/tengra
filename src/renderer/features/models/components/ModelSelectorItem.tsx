@@ -1,4 +1,4 @@
-import { Brain, Check, ImageIcon, Info, Pin, Zap } from 'lucide-react';
+import { Brain, Check, ImageIcon, Info, Star, Zap } from 'lucide-react';
 import React, { useState } from 'react';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -160,17 +160,17 @@ const ModelQuotaDisplay: React.FC<{
         <div className="mt-2 space-y-1">
             {percent !== null && model.provider !== 'copilot' && (
                 <>
-                    <div className="flex items-center justify-between gap-2 text-10 font-bold">
+                    <div className="flex items-center justify-between gap-2 typo-overline font-bold">
                         <span className="text-muted-foreground/55 uppercase tracking-tight">{t('statistics.quotaStatus')}</span>
                         <span className={cn("rounded border px-1.5 py-0.5 leading-none", getQuotaTone(percent).split(' ').slice(1))}>
                             {percent}%
                         </span>
                     </div>
-                    <div className="h-1 w-full rounded-full bg-muted/20 overflow-hidden">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full border border-border/5 bg-muted/20">
                         <div
                             className={cn(
-                                "h-full transition-all duration-700 ease-out",
-                                percent <= 10 ? 'bg-destructive/70' : percent <= 30 ? 'bg-warning/70' : 'bg-primary/70'
+                                "h-full min-w-1 rounded-full shadow-sm transition-all duration-700 ease-out",
+                                percent <= 10 ? 'bg-red-500' : percent <= 30 ? 'bg-amber-500' : 'bg-emerald-500'
                             )}
                             style={{ width: `${percent}%` }}
                         />
@@ -180,12 +180,12 @@ const ModelQuotaDisplay: React.FC<{
 
             <div className="flex items-center justify-between gap-2 mt-1">
                 {creditLabel && (
-                    <div className="text-10 font-bold text-muted-foreground/45">
+                    <div className="typo-overline font-bold text-muted-foreground/45">
                         {creditLabel}
                     </div>
                 )}
                 {creditMultiplier !== undefined && creditMultiplier > 0 && (
-                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-primary/5 border border-primary/10 text-9 font-black uppercase tracking-wider text-primary/70">
+                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-primary/5 border border-primary/10 typo-overline font-black uppercase tracking-wider text-primary/70">
                         <Zap className="w-2.5 h-2.5 fill-current" />
                         <span>{creditMultiplier} {creditMultiplier === 1 ? 'Credit' : 'Credits'}</span>
                     </div>
@@ -247,9 +247,14 @@ export const ModelSelectorItem: React.FC<ModelSelectorItemProps> = ({
 
                     <div className="min-w-0 flex-1 flex flex-col">
                         <div className="flex items-center gap-2">
-                            <span className="truncate font-semibold tracking-tight text-foreground/90 text-13">
+                            <span className="truncate font-semibold tracking-tight text-foreground/90 typo-overline">
                                 {model.label}
                             </span>
+                            {model.contextWindow && (
+                                <span className="rounded-md border border-border/20 bg-muted/50 px-1.5 py-0.5 text-10 font-bold leading-none tabular-nums text-muted-foreground/60">
+                                    {model.contextWindow.toString().toLowerCase().includes('k') ? model.contextWindow : `${Math.round(Number(model.contextWindow) / 1000)}k`}
+                                </span>
+                            )}
                             {model.supportsReasoning && (
                                 <Brain className={cn("w-3 h-3 transition-colors", isSelected ? "text-accent" : "text-muted-foreground/30")} />
                             )}
@@ -273,11 +278,13 @@ export const ModelSelectorItem: React.FC<ModelSelectorItemProps> = ({
                                     toggleFavorite(model.id);
                                 }}
                                 className={cn(
-                                    "p-1 rounded-md hover:bg-muted transition-all cursor-pointer",
-                                    model.pinned ? "text-warning" : "text-muted-foreground/20 opacity-0 group-hover:opacity-100"
+                                    "p-1 rounded-md transition-all cursor-pointer hover:bg-muted/80",
+                                    model.pinned 
+                                        ? "text-warning scale-110" 
+                                        : "text-muted-foreground/20 opacity-0 group-hover:opacity-100"
                                 )}
                             >
-                                <Pin className={cn("w-3.5 h-3.5", model.pinned && "fill-current")} />
+                                <Star className={cn("w-3.5 h-3.5", model.pinned && "fill-current")} />
                             </div>
                         )}
                         {isSelected && (
@@ -309,7 +316,7 @@ export const ModelSelectorItem: React.FC<ModelSelectorItemProps> = ({
                     {model.creditMultiplier !== undefined && (
                         <div className="flex flex-col gap-1 px-3 py-2 rounded-xl bg-muted/30 border border-border/10">
                             <div className="flex items-center justify-between">
-                                <span className="text-10 font-bold text-muted-foreground/50 uppercase tracking-tighter">Usage Cost</span>
+                                <span className="typo-overline font-bold text-muted-foreground/50 uppercase tracking-tighter">Usage Cost</span>
                                 <div className="flex items-center gap-1 text-primary">
                                     <Zap className="w-3 h-3 fill-current" />
                                     <span className="text-xs font-black">{model.creditMultiplier} Credits</span>
@@ -321,7 +328,7 @@ export const ModelSelectorItem: React.FC<ModelSelectorItemProps> = ({
 
                 {model.supportsReasoning && model.thinkingLevels && model.thinkingLevels.length > 0 && (
                     <div className="space-y-3 pt-3 border-t border-border/10">
-                        <div className="flex items-center gap-2 text-10 font-black uppercase tracking-widest text-muted-foreground/40 px-0.5">
+                        <div className="flex items-center gap-2 typo-overline font-black uppercase tracking-widest text-muted-foreground/40 px-0.5">
                             <Brain className="w-3 h-3" />
                             Thinking Mode
                         </div>
@@ -338,7 +345,7 @@ export const ModelSelectorItem: React.FC<ModelSelectorItemProps> = ({
                                             onSelect(model.provider, model.id, false, level);
                                         }}
                                         className={cn(
-                                            "px-2.5 py-1 rounded-lg text-10 font-bold transition-all border",
+                                            "px-2.5 py-1 rounded-lg typo-overline font-bold transition-all border",
                                             isActive
                                                 ? "bg-primary/10 text-primary border-primary/30 shadow-sm"
                                                 : "bg-muted/10 text-muted-foreground/60 border-transparent hover:bg-muted/20 hover:text-foreground"
@@ -353,11 +360,11 @@ export const ModelSelectorItem: React.FC<ModelSelectorItemProps> = ({
                 )}
 
                 <div className="pt-2 flex flex-col gap-1.5 border-t border-border/10">
-                    <div className="flex items-center justify-between text-10 font-medium text-muted-foreground/50">
+                    <div className="flex items-center justify-between typo-overline font-medium text-muted-foreground/50">
                         <span>Context Window</span>
                         <span className="text-foreground/70 font-bold">{model.contextWindow || '128k'} tokens</span>
                     </div>
-                    <div className="flex items-center justify-between text-10 font-medium text-muted-foreground/50">
+                    <div className="flex items-center justify-between typo-overline font-medium text-muted-foreground/50">
                         <span>Training Data</span>
                         <span className="text-foreground/70 font-bold">Up to 2024</span>
                     </div>

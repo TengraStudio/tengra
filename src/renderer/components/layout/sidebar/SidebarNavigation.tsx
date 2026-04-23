@@ -365,12 +365,12 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
                                     <h3 className="text-sm font-semibold tracking-tight">{t('sidebar.downloads')}</h3>
-                                    <p className="text-10 text-muted-foreground/60 uppercase tracking-widest font-bold">
+                                    <p className="typo-overline text-muted-foreground/60 uppercase tracking-widest font-bold">
                                         {activeDownloadCount} {t('sidebar.activeDownloads')}
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-1.5">
-                                    <Badge variant="outline" className="h-5 px-1.5 text-10 bg-background/50">
+                                    <Badge variant="outline" className="h-5 px-1.5 typo-overline bg-background/50">
                                         {downloadHistory.length} {t('agent.history')}
                                     </Badge>
                                 </div>
@@ -384,7 +384,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                     <section className="space-y-3">
                                         <div className="flex items-center gap-2 px-1">
                                             <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                                            <span className="text-11 font-bold uppercase tracking-wider text-muted-foreground">
+                                            <span className="typo-overline font-bold uppercase tracking-wider text-muted-foreground">
                                                 {t('sidebar.activeDownloads')}
                                             </span>
                                         </div>
@@ -401,10 +401,10 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                                                     {task.modelRef}
                                                                 </div>
                                                                 <div className="flex items-center gap-2">
-                                                                    <Badge variant="secondary" className="h-4 px-1 text-9 uppercase font-bold tracking-tight bg-primary/10 text-primary border-none">
+                                                                    <Badge variant="secondary" className="h-4 px-1 typo-overline uppercase font-bold tracking-tight bg-primary/10 text-primary border-none">
                                                                         {task.provider}
                                                                     </Badge>
-                                                                    <span className="text-10 font-medium text-muted-foreground/50">
+                                                                    <span className="typo-overline font-medium text-muted-foreground/50">
                                                                         {getStatusLabel(task.status)}
                                                                     </span>
                                                                 </div>
@@ -414,7 +414,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                                                     {task.status === 'downloading' ? `${progressPercent}%` : ''}
                                                                 </div>
                                                                 {task.eta !== undefined && task.status === 'downloading' && (
-                                                                    <div className="text-9 font-medium text-muted-foreground/40">
+                                                                    <div className="typo-overline font-medium text-muted-foreground/40">
                                                                         {formatDuration(task.eta)}
                                                                     </div>
                                                                 )}
@@ -430,7 +430,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
 
                                                         <div className="flex items-center justify-between gap-2">
                                                             {task.received !== undefined && task.total !== undefined && (
-                                                                <div className="text-10 font-bold text-muted-foreground/40 tabular-nums">
+                                                                <div className="typo-overline font-bold text-muted-foreground/40 tabular-nums">
                                                                     {formatBytes(task.received)} / {formatBytes(task.total)}
                                                                     {task.speed !== undefined && <span className="ml-2 font-medium opacity-60">· {formatBytes(task.speed)}/s</span>}
                                                                 </div>
@@ -465,23 +465,23 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                 <section className="space-y-3">
                                     <div className="flex items-center gap-2 px-1">
                                         <LucideHistory className="w-3 h-3 text-muted-foreground/60" />
-                                        <span className="text-11 font-bold uppercase tracking-wider text-muted-foreground">
+                                        <span className="typo-overline font-bold uppercase tracking-wider text-muted-foreground">
                                             {t('sidebar.downloadsToday')}
                                         </span>
                                     </div>
                                     <div className="space-y-1.5">
                                         {todayHistory.length === 0 && activeDownloadCount === 0 && (
                                             <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                                            <LucideInbox className="w-6 h-6 text-muted-foreground/20 mb-2" />
-                                            <p className="text-xs font-medium text-muted-foreground/40 italic">
-                                                {t('sidebar.downloadHistoryEmpty')}
-                                            </p>
-                                        </div>
+                                                <LucideInbox className="w-6 h-6 text-muted-foreground/20 mb-2" />
+                                                <p className="text-xs font-medium text-muted-foreground/40 italic">
+                                                    {t('sidebar.downloadHistoryEmpty')}
+                                                </p>
+                                            </div>
                                         )}
                                         {todayHistory.map((item) => (
                                             <div key={item.id} className="group flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-muted/10 transition-colors border border-transparent hover:border-border/30">
                                                 <div className="min-w-0">
-                                                    <div className="text-11 font-semibold truncate text-foreground/80">
+                                                    <div className="typo-overline font-semibold truncate text-foreground/80">
                                                         {item.modelRef}
                                                     </div>
                                                     <div className="flex items-center gap-1.5">
@@ -491,7 +491,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                                             item.status === 'error' && "bg-destructive",
                                                             item.status === 'cancelled' && "bg-muted-foreground/40"
                                                         )} />
-                                                        <span className="text-9 font-bold text-muted-foreground/50 uppercase tracking-tighter">
+                                                        <span className="typo-overline font-bold text-muted-foreground/50 uppercase tracking-tighter">
                                                             {getStatusLabel(item.status)}
                                                         </span>
                                                     </div>
@@ -516,17 +516,17 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                     <section className="space-y-3 pt-2">
                                         <div className="flex items-center gap-2 px-1">
                                             <LucideHistory className="w-3 h-3 text-muted-foreground/30" />
-                                            <span className="text-11 font-bold uppercase tracking-wider text-muted-foreground/40">
+                                            <span className="typo-overline font-bold uppercase tracking-wider text-muted-foreground/40">
                                                 {t('sidebar.downloadsHistory')}
                                             </span>
                                         </div>
                                         <div className="space-y-1 px-1">
                                             {allHistoryPreview.filter(h => !todayHistory.some(t => t.id === h.id)).slice(0, 5).map((item) => (
                                                 <div key={`history-${item.id}`} className="flex items-center justify-between gap-4 py-1">
-                                                    <span className="truncate text-10 font-medium text-muted-foreground/60">
+                                                    <span className="truncate typo-overline font-medium text-muted-foreground/60">
                                                         {item.modelRef}
                                                     </span>
-                                                    <span className="shrink-0 text-9 font-bold text-muted-foreground/30 uppercase tracking-tight">
+                                                    <span className="shrink-0 typo-overline font-bold text-muted-foreground/30 uppercase tracking-tight">
                                                         {getStatusLabel(item.status)}
                                                     </span>
                                                 </div>
@@ -536,7 +536,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                 )}
                             </div>
                         </ScrollArea>
-                        
+
                         <div className="p-3 border-t border-border/40 bg-muted/10">
                             <Button
                                 variant="outline"

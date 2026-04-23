@@ -9,7 +9,7 @@
  */
 
 import { Button } from '@renderer/components/ui/button';
-import { ArrowDown, ArrowUp,GitMerge, RefreshCw } from 'lucide-react';
+import { ArrowDown, ArrowUp, GitMerge, RefreshCw } from 'lucide-react';
 import React from 'react';
 
 import { Remote, TrackingInfo } from './types';
@@ -23,12 +23,12 @@ interface QuickActionsProps {
     handlePush: () => Promise<void>;
 }
 
-export const GitQuickActions: React.FC<QuickActionsProps> = ({ 
-    isPulling, 
-    isPushing, 
-    remotes, 
-    trackingInfo, 
-    handlePull, 
+export const GitQuickActions: React.FC<QuickActionsProps> = ({
+    isPulling,
+    isPushing,
+    remotes,
+    trackingInfo,
+    handlePull,
     handlePush,
 }) => {
     const hasRemotes = remotes.length > 0;
@@ -36,8 +36,8 @@ export const GitQuickActions: React.FC<QuickActionsProps> = ({
     return (
         <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2">
-                <Button 
-                    variant="outline" 
+                <Button
+                    variant="outline"
                     className="flex-1 h-11 rounded-xl border-border/20 bg-background/40 hover:bg-muted/40 hover:border-indigo-500/30 transition-all font-semibold text-xs gap-2"
                     onClick={() => handlePull()}
                     disabled={isPulling || !hasRemotes}
@@ -45,12 +45,12 @@ export const GitQuickActions: React.FC<QuickActionsProps> = ({
                     {isPulling ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ArrowDown className="w-4 h-4 text-indigo-400" />}
                     Pull
                     {trackingInfo && trackingInfo.behind > 0 && (
-                        <span className="ml-1 text-10 text-indigo-400">({trackingInfo.behind})</span>
+                        <span className="ml-1 typo-overline text-indigo-400">({trackingInfo.behind})</span>
                     )}
                 </Button>
-                
-                <Button 
-                    variant="outline" 
+
+                <Button
+                    variant="outline"
                     className="flex-1 h-11 rounded-xl border-border/20 bg-background/40 hover:bg-muted/40 hover:border-indigo-500/30 transition-all font-semibold text-xs gap-2"
                     onClick={() => handlePush()}
                     disabled={isPushing || !hasRemotes}
@@ -66,7 +66,7 @@ export const GitQuickActions: React.FC<QuickActionsProps> = ({
             {!hasRemotes && (
                 <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/5 rounded-lg border border-amber-500/10">
                     <GitMerge className="w-3 h-3 text-amber-500/60" />
-                    <span className="text-10 font-bold text-amber-500/60 uppercase tracking-tight">No remotes configured</span>
+                    <span className="typo-overline font-bold text-amber-500/60 uppercase tracking-tight">No remotes configured</span>
                 </div>
             )}
         </div>

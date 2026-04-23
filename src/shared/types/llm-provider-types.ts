@@ -35,6 +35,7 @@ export interface OpenAIToolCall {
     function: {
         name: string;
         arguments: string;
+        thought_signature?: string;
     };
 }
 

@@ -124,7 +124,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
     const style = transform
         ? {
             transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-            zIndex: 100,
+            zIndex: 'var(--tengra-z-100)',
             opacity: 0.5,
         }
         : undefined;
@@ -291,7 +291,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
                 </span>
                 {node.gitStatus && (
                     <span
-                        className={cn('ml-1 text-10 font-bold leading-none', gitBadgeClass)}
+                        className={cn('ml-1 typo-overline font-bold leading-none', gitBadgeClass)}
                         title={`Git: ${node.gitRawStatus ?? node.gitStatus}`}
                     >
                         {node.gitStatus}

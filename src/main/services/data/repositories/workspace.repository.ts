@@ -151,11 +151,6 @@ export class WorkspaceRepository extends BaseRepository {
             fields.push('logo = ?');
             values.push(updates.logo);
         }
-        if (updates.rules !== undefined) {
-            const currentMetadata = this.parseRowJsonObjectField(currentWorkspace?.metadata) ?? {};
-            fields.push('metadata = ?');
-            values.push(JSON.stringify({ ...currentMetadata, rules: updates.rules }));
-        }
         if (updates.mounts !== undefined) {
             fields.push('mounts = ?');
             values.push(JSON.stringify(this.normalizeMounts(updates.mounts)));
@@ -169,6 +164,7 @@ export class WorkspaceRepository extends BaseRepository {
             values.push(JSON.stringify(updates.councilConfig));
         }
         const shouldPersistMetadata =
+            updates.rules !== undefined ||
             updates.metadata !== undefined ||
             updates.buildConfig !== undefined ||
             updates.devServer !== undefined ||
@@ -178,6 +174,9 @@ export class WorkspaceRepository extends BaseRepository {
             updates.advancedOptions !== undefined;
         if (shouldPersistMetadata) {
             const mergedMetadata = this.mergeWorkspaceMetadata(currentWorkspace?.metadata, updates);
+            if (updates.rules !== undefined) {
+                (mergedMetadata as Record<string, RuntimeValue>).rules = updates.rules;
+            }
             fields.push('metadata = ?');
             values.push(JSON.stringify(mergedMetadata));
         }

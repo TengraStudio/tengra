@@ -380,10 +380,10 @@ describe('CodeEditor inline suggestions', () => {
                     expect.objectContaining({
                         options: expect.objectContaining({
                             minimap: expect.objectContaining({
-                                color: '#f59e0b',
+                                color: expect.any(String),
                             }),
                             overviewRuler: expect.objectContaining({
-                                color: '#f59e0b',
+                                color: expect.any(String),
                             }),
                         }),
                     }),

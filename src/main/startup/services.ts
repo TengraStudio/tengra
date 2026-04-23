@@ -11,6 +11,7 @@
 import { ApiServerService } from '@main/api/api-server.service';
 import { Container } from '@main/core/container';
 import { createLazyServiceDependency, createLazyServiceProxy, type LazyServiceDependency, lazyServiceRegistry } from '@main/core/lazy-services';
+import { appLogger } from '@main/logging/logger';
 import { McpDeps } from '@main/mcp/server-utils';
 import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import type { PerformanceService } from '@main/services/analysis/performance.service';
@@ -78,6 +79,7 @@ import { CouncilCapabilityService } from '@main/services/session/capabilities/co
 import { ChatSessionRegistryService } from '@main/services/session/chat-session-registry.service';
 import { SessionDirectoryService } from '@main/services/session/session-directory.service';
 import { SessionModuleRegistryService } from '@main/services/session/session-module-registry.service';
+import { BackgroundServiceService } from '@main/services/system/background-service.service';
 import { CacheService } from '@main/services/system/cache.service';
 import { CommandService } from '@main/services/system/command.service';
 import { ConfigService } from '@main/services/system/config.service';
@@ -111,10 +113,8 @@ import type { SSHService } from '@main/services/workspace/ssh.service';
 import { TerminalService } from '@main/services/workspace/terminal.service';
 import { TerminalSmartService } from '@main/services/workspace/terminal-smart.service';
 import type { WorkspaceService } from '@main/services/workspace/workspace.service';
-import {
-    bootstrapCoreData,
-    initDeferredServices,
-    initializeContainerSafely,
+import { 
+    initDeferredServices, 
     registerServiceGroups,
     startCriticalHealthChecks,
 } from '@main/startup/service-lifecycle';
@@ -248,8 +248,35 @@ export async function startDeferredServices(): Promise<void> {
     await initDeferredServices(container);
 }
 
+/**
+ * Initialize a minimal set of services needed to create the application window.
+ * This should be extremely fast (<100ms).
+ */
+export async function createMinimalServices(): Promise<{ settingsService: SettingsService; dataService: DataService; eventBusService: EventBusService }> {
+    const dataService = container.resolve<DataService>('dataService') || new DataService();
+    if (!container.has('dataService')) {
+        container.registerInstance('dataService', dataService);
+    }
+
+    const eventBusService = new EventBusService();
+    container.registerInstance('eventBusService', eventBusService);
+
+    // Settings needs dataService for path. We pass undefined for authService initially.
+    const settingsService = new SettingsService(dataService, undefined);
+    await settingsService.initialize();
+    container.registerInstance('settingsService', settingsService);
+
+    return { settingsService, dataService, eventBusService };
+}
+
+/**
+ * Complete the initialization of all core services after the window has been created.
+ */
 export async function createServices(allowedFileRoots: Set<string>): Promise<Services> {
-    const dataService = await bootstrapCoreData(container);
+    const dataService = container.resolve<DataService>('dataService');
+    
+    // Run migrations in background to not block critical path
+    void dataService.migrate().catch(e => appLogger.error('DataService', 'Migration failed', e));
 
     registerServiceGroups({
         registerSystemServices: () => registerSystemServices(allowedFileRoots),
@@ -263,14 +290,21 @@ export async function createServices(allowedFileRoots: Set<string>): Promise<Ser
         registerLazyProxies,
     });
 
-    await initializeContainerSafely(container);
+    // Start critical services in parallel using the updated Container.init()
+    await container.init();
+    
+    // Resolve the now-ready AuthService and link it to SettingsService
+    const authService = container.resolve<AuthService>('authService');
+    const settingsService = container.resolve<SettingsService>('settingsService');
+    
+    // Update settings service with auth dependency now that it's ready
+    settingsService.setAuthService(authService);
+    await settingsService.initialize(); // Re-run to sync tokens
+
     await container.resolve<JobSchedulerService>('jobSchedulerService').start();
 
-    // 4. Post-Init Setup
-    const settingsService = container.resolve<SettingsService>('settingsService');
-    const ollamaHealthService = container.resolve<OllamaHealthService>('ollamaHealthService');
-
     // 5. Build Services Map
+    const ollamaHealthService = container.resolve<OllamaHealthService>('ollamaHealthService');
     const extensionService = container.resolve<ExtensionService>('extensionService');
     const services = buildServicesMap(dataService, settingsService, ollamaHealthService, extensionService);
 
@@ -838,14 +872,18 @@ function registerLazyProxies() {
 function registerWorkspaceServices() {
     container.register(
         'terminalService',
-        (ebs, ss, ssh) => {
-            const terminalService = new TerminalService(ebs as EventBusService, ss as SettingsService);
+        (ebs, ss, as, ssh) => {
+            const terminalService = new TerminalService(
+                ebs as EventBusService, 
+                ss as SettingsService,
+                as as AuthService
+            );
             // Register remote backends
             terminalService.addBackend(new SSHBackend(ssh as SSHService));
-            terminalService.addBackend(new DockerBackend());
+            terminalService.addBackend(new DockerBackend(as as AuthService));
             return terminalService;
         },
-        ['eventBusService', 'settingsService', 'sshService', 'dockerService']
+        ['eventBusService', 'settingsService', 'authService', 'sshService', 'dockerService']
     );
     container.register('terminalProfileService', () => new TerminalProfileService());
     container.register(
@@ -888,6 +926,11 @@ function registerWorkspaceServices() {
 
 
     // Proxy Services
+    container.register(
+        'backgroundServiceService',
+        () => new BackgroundServiceService()
+    );
+
     container.register(
         'proxyProcessManager',
         (ss, as, dbs) => new ProxyProcessManager(ss as SettingsService, as as AuthService, dbs as DatabaseService),

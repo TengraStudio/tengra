@@ -68,7 +68,7 @@ export function TerminalCommandPanels({
                                 onClick={() => {
                                     void clearCommandHistory();
                                 }}
-                                className="h-6 px-2 text-10 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40"
+                                className="h-6 px-2 typo-overline rounded border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40"
                             >
                                 {t('terminal.clearHistory')}
                             </button>
@@ -113,7 +113,7 @@ export function TerminalCommandPanels({
                                     <div className="typo-caption text-foreground truncate">
                                         {entry.command}
                                     </div>
-                                    <div className="text-10 text-muted-foreground truncate">
+                                    <div className="typo-overline text-muted-foreground truncate">
                                         {new Date(entry.timestamp).toLocaleString()}
                                         {entry.cwd ? ` - ${entry.cwd}` : ''}
                                     </div>
@@ -169,7 +169,7 @@ export function TerminalCommandPanels({
                                     <div className="typo-caption text-foreground truncate">
                                         {item.command}
                                     </div>
-                                    <div className="text-10 text-muted-foreground truncate">
+                                    <div className="typo-overline text-muted-foreground truncate">
                                         {item.source} - {item.label}
                                     </div>
                                 </button>

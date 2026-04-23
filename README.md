@@ -9,8 +9,7 @@ This project is an unofficial client and is not affiliated with GitHub, Microsof
 Requirements:
 
 - Node.js 20 or newer
-- Rust stable toolchain
-- Visual Studio Build Tools on Windows for native service builds
+- Rust stable toolchain (required for native sidecar services)
 
 ```bash
 git clone https://github.com/TengraStudio/tengra.git
@@ -22,8 +21,8 @@ npm run dev
 Production build:
 
 ```bash
-npm run build
-npm run build:exe
+npm run build          # Builds everything
+npm run build:package  # Creates installer/package
 ```
 
 ## Documentation
@@ -42,11 +41,9 @@ Common entry points:
 Before opening a release PR, run:
 
 ```bash
-npm run type-check
-npm run lint
-npm test
+npm run verify
 npm run build
-npm run secrets:scan
+npm run tool secrets:scan
 npm run audit:deps:gate
 ```
 

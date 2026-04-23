@@ -26,8 +26,9 @@ impl TerminalManager {
         &self,
         cwd: Option<String>,
         shell: Option<String>,
+        args: Option<Vec<String>>,
     ) -> anyhow::Result<String> {
-        let session = TerminalSession::new(cwd, shell)?;
+        let session = TerminalSession::new(cwd, shell, args)?;
         let id = session.id.clone();
         self.sessions.insert(id.clone(), Arc::new(session));
         Ok(id)

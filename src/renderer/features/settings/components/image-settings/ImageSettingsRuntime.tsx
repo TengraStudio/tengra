@@ -149,8 +149,8 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                                 className="h-full bg-primary transition-all duration-1000 ease-out relative rounded-full shadow-lg shadow-primary/20"
                                 style={{ width: `${progressPercentage}%` }}
                             >
-                                <div className="absolute inset-0 bg-white/20 animate-pulse" />
-                                <div className="absolute top-0 right-0 h-full w-8 bg-gradient-to-r from-transparent to-white/30 blur-sm" />
+                                <div className="absolute inset-0 bg-muted/20 animate-pulse" />
+                                <div className="absolute top-0 right-0 h-full w-8 bg-gradient-to-r from-transparent to-muted/20 blur-sm" />
                             </div>
                         </div>
                     </div>

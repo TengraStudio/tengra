@@ -30,6 +30,7 @@ struct GeminiStreamState {
     last_content: String,
     last_reasoning: String,
     tool_calls_sent: bool,
+    sent_tool_call_ids: std::collections::HashSet<String>,
 }
 
 #[derive(Default)]
@@ -355,7 +356,7 @@ fn gemini_payload_to_openai_chunk(value: Value, state: &mut GeminiStreamState) -
     let mut images = Vec::new();
 
     // 1. Process standard Gemini parts (Text, Thoughts, FunctionCalls, Images)
-    for part in parts {
+    for (index, part) in parts.iter().enumerate() {
         let is_thought_flag = part.get("thought").and_then(Value::as_bool) == Some(true)
             || part.get("thinking").and_then(Value::as_bool) == Some(true);
 
@@ -399,15 +400,29 @@ fn gemini_payload_to_openai_chunk(value: Value, state: &mut GeminiStreamState) -
         }
 
         if let Some(function_call) = part.get("functionCall") {
-            tool_calls.push(json!({
-                "index": tool_calls.len(),
-                "id": format!("gemini-call-{}", tool_calls.len()),
-                "type": "function",
-                "function": {
-                    "name": function_call.get("name").and_then(Value::as_str).unwrap_or_default(),
-                    "arguments": function_call.get("args").cloned().unwrap_or_else(|| json!({})).to_string()
+            let call_id = format!("gemini-call-{}", index);
+            if !state.sent_tool_call_ids.contains(&call_id) {
+                let name = function_call.get("name").and_then(Value::as_str).unwrap_or_default();
+                let args = function_call.get("args").cloned().unwrap_or_else(|| json!({}));
+                let thought_signature = function_call.get("thought_signature").and_then(Value::as_str);
+
+                let mut fc_obj = json!({
+                    "name": name,
+                    "arguments": args.to_string()
+                });
+
+                if let Some(ts) = thought_signature {
+                    fc_obj.as_object_mut().unwrap().insert("thought_signature".to_string(), Value::String(ts.to_string()));
                 }
-            }));
+
+                tool_calls.push(json!({
+                    "index": index,
+                    "id": call_id.clone(),
+                    "type": "function",
+                    "function": fc_obj
+                }));
+                state.sent_tool_call_ids.insert(call_id);
+            }
         }
     }
 

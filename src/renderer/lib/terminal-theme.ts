@@ -10,89 +10,124 @@
 
 import { type ITheme } from '@xterm/xterm';
 
+import { resolveCssColorVariable } from '@/lib/theme-css';
+
 /**
  * Unified Terminal Theme
  * Uses CSS variables for consistent look across different themes
  */
-const DEFAULT_TERMINAL_THEME: ITheme = {
+const TERMINAL_THEME_FALLBACKS: ITheme = {
     background: 'transparent',
-    foreground: '#d9e1ec',
-    cursor: '#7aa2f7',
-    cursorAccent: '#0f1115',
-    selectionBackground: 'rgba(122, 162, 247, 0.3)',
-    selectionForeground: '#d9e1ec',
-    black: '#1f2430',
-    red: '#e06c75',
-    green: '#98c379',
-    yellow: '#e5c07b',
-    blue: '#61afef',
-    magenta: '#c678dd',
-    cyan: '#56b6c2',
-    white: '#abb2bf',
-    brightBlack: '#5c6370',
-    brightRed: '#e06c75',
-    brightGreen: '#98c379',
-    brightYellow: '#e5c07b',
-    brightBlue: '#61afef',
-    brightMagenta: '#c678dd',
-    brightCyan: '#56b6c2',
-    brightWhite: '#ffffff',
+    foreground: 'hsl(215 32% 88%)',
+    cursor: 'hsl(217 91% 72%)',
+    cursorAccent: 'hsl(222 27% 8%)',
+    selectionBackground: 'hsl(217 91% 72% / 0.3)',
+    selectionForeground: 'hsl(215 32% 88%)',
+    black: 'hsl(220 18% 15%)',
+    red: 'hsl(355 69% 66%)',
+    green: 'hsl(95 42% 62%)',
+    yellow: 'hsl(39 66% 69%)',
+    blue: 'hsl(207 82% 66%)',
+    magenta: 'hsl(280 57% 63%)',
+    cyan: 'hsl(186 45% 56%)',
+    white: 'hsl(218 15% 71%)',
+    brightBlack: 'hsl(221 10% 41%)',
+    brightRed: 'hsl(355 69% 66%)',
+    brightGreen: 'hsl(95 42% 62%)',
+    brightYellow: 'hsl(39 66% 69%)',
+    brightBlue: 'hsl(207 82% 66%)',
+    brightMagenta: 'hsl(280 57% 63%)',
+    brightCyan: 'hsl(186 45% 56%)',
+    brightWhite: 'hsl(0 0% 100%)',
 };
 
-function getCssVariable(name: string): string | null {
-    if (typeof window === 'undefined' || typeof document === 'undefined') {
-        return null;
-    }
-    const value = window.getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-    return value.length > 0 ? value : null;
-}
-
-function resolveThemeColorVariable(name: string, fallback: string): string {
-    const token = getCssVariable(name);
-    if (!token) {
-        return fallback;
-    }
-
-    // Theme tokens are mostly stored as HSL channels like "222 47% 11%".
-    if (/^[-+]?\d/.test(token)) {
-        return `hsl(${token})`;
-    }
-
-    return token;
-}
-
-function resolveThemeColorVariableWithAlpha(name: string, alpha: number, fallback: string): string {
-    const token = getCssVariable(name);
-    if (!token) {
-        return fallback;
-    }
-
-    if (/^[-+]?\d/.test(token)) {
-        return `hsl(${token} / ${alpha})`;
-    }
-
-    return fallback;
-}
-
 export const getTerminalTheme = (): ITheme => {
-    const fallbackForeground = DEFAULT_TERMINAL_THEME.foreground ?? '#d9e1ec';
-    const fallbackCursor = DEFAULT_TERMINAL_THEME.cursor ?? '#7aa2f7';
-    const fallbackCursorAccent = DEFAULT_TERMINAL_THEME.cursorAccent ?? '#0f1115';
-    const fallbackSelectionBackground =
-        DEFAULT_TERMINAL_THEME.selectionBackground ?? 'rgba(122, 162, 247, 0.3)';
-    const fallbackSelectionForeground = DEFAULT_TERMINAL_THEME.selectionForeground ?? '#d9e1ec';
-
     return {
-        ...DEFAULT_TERMINAL_THEME,
+        ...TERMINAL_THEME_FALLBACKS,
         background: 'transparent', // Let the container handle surface opacity/blur.
-        foreground: resolveThemeColorVariable('--foreground', fallbackForeground),
-        cursor: resolveThemeColorVariable('--primary', fallbackCursor),
-        cursorAccent: resolveThemeColorVariable('--background', fallbackCursorAccent),
-        selectionBackground: resolveThemeColorVariableWithAlpha(
-            '--primary',
-            0.3,
-            fallbackSelectionBackground
+        foreground: resolveCssColorVariable(
+            'terminal-foreground',
+            TERMINAL_THEME_FALLBACKS.foreground ?? 'hsl(215 32% 88%)'
         ),
-        selectionForeground: resolveThemeColorVariable('--foreground', fallbackSelectionForeground),
+        cursor: resolveCssColorVariable(
+            'terminal-cursor',
+            TERMINAL_THEME_FALLBACKS.cursor ?? 'hsl(217 91% 72%)'
+        ),
+        cursorAccent: resolveCssColorVariable(
+            'terminal-cursor-accent',
+            TERMINAL_THEME_FALLBACKS.cursorAccent ?? 'hsl(222 27% 8%)'
+        ),
+        selectionBackground: resolveCssColorVariable(
+            'terminal-selection-background',
+            TERMINAL_THEME_FALLBACKS.selectionBackground ?? 'hsl(217 91% 72% / 0.3)'
+        ),
+        selectionForeground: resolveCssColorVariable(
+            'terminal-selection-foreground',
+            TERMINAL_THEME_FALLBACKS.selectionForeground ?? 'hsl(215 32% 88%)'
+        ),
+        black: resolveCssColorVariable(
+            'terminal-ansi-black',
+            TERMINAL_THEME_FALLBACKS.black ?? 'hsl(220 18% 15%)'
+        ),
+        red: resolveCssColorVariable(
+            'terminal-ansi-red',
+            TERMINAL_THEME_FALLBACKS.red ?? 'hsl(355 69% 66%)'
+        ),
+        green: resolveCssColorVariable(
+            'terminal-ansi-green',
+            TERMINAL_THEME_FALLBACKS.green ?? 'hsl(95 42% 62%)'
+        ),
+        yellow: resolveCssColorVariable(
+            'terminal-ansi-yellow',
+            TERMINAL_THEME_FALLBACKS.yellow ?? 'hsl(39 66% 69%)'
+        ),
+        blue: resolveCssColorVariable(
+            'terminal-ansi-blue',
+            TERMINAL_THEME_FALLBACKS.blue ?? 'hsl(207 82% 66%)'
+        ),
+        magenta: resolveCssColorVariable(
+            'terminal-ansi-magenta',
+            TERMINAL_THEME_FALLBACKS.magenta ?? 'hsl(280 57% 63%)'
+        ),
+        cyan: resolveCssColorVariable(
+            'terminal-ansi-cyan',
+            TERMINAL_THEME_FALLBACKS.cyan ?? 'hsl(186 45% 56%)'
+        ),
+        white: resolveCssColorVariable(
+            'terminal-ansi-white',
+            TERMINAL_THEME_FALLBACKS.white ?? 'hsl(218 15% 71%)'
+        ),
+        brightBlack: resolveCssColorVariable(
+            'terminal-ansi-bright-black',
+            TERMINAL_THEME_FALLBACKS.brightBlack ?? 'hsl(221 10% 41%)'
+        ),
+        brightRed: resolveCssColorVariable(
+            'terminal-ansi-bright-red',
+            TERMINAL_THEME_FALLBACKS.brightRed ?? 'hsl(355 69% 66%)'
+        ),
+        brightGreen: resolveCssColorVariable(
+            'terminal-ansi-bright-green',
+            TERMINAL_THEME_FALLBACKS.brightGreen ?? 'hsl(95 42% 62%)'
+        ),
+        brightYellow: resolveCssColorVariable(
+            'terminal-ansi-bright-yellow',
+            TERMINAL_THEME_FALLBACKS.brightYellow ?? 'hsl(39 66% 69%)'
+        ),
+        brightBlue: resolveCssColorVariable(
+            'terminal-ansi-bright-blue',
+            TERMINAL_THEME_FALLBACKS.brightBlue ?? 'hsl(207 82% 66%)'
+        ),
+        brightMagenta: resolveCssColorVariable(
+            'terminal-ansi-bright-magenta',
+            TERMINAL_THEME_FALLBACKS.brightMagenta ?? 'hsl(280 57% 63%)'
+        ),
+        brightCyan: resolveCssColorVariable(
+            'terminal-ansi-bright-cyan',
+            TERMINAL_THEME_FALLBACKS.brightCyan ?? 'hsl(186 45% 56%)'
+        ),
+        brightWhite: resolveCssColorVariable(
+            'terminal-ansi-bright-white',
+            TERMINAL_THEME_FALLBACKS.brightWhite ?? 'hsl(0 0% 100%)'
+        ),
     };
 };

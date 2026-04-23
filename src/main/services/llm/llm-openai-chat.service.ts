@@ -91,6 +91,7 @@ const normalizeToolCalls = (toolCalls: OpenAIMessage['tool_calls']): ToolCall[] 
         function: {
             name: toolCall.function.name,
             arguments: toolCall.function.arguments,
+            thought_signature: toolCall.function.thought_signature,
         },
     }));
 };

@@ -9,6 +9,11 @@
  */
 
 import type { TerminalTab } from '@/types';
+import {
+    resolveCssColorVariable,
+    resolveCssVariableStyle,
+    resolveCssVariableValue,
+} from '@/lib/theme-css';
 
 import type { TerminalAppearancePreferences } from '../types/terminal-appearance';
 
@@ -20,7 +25,18 @@ export function buildFormattedClipboardHtml(selectedText: string): string {
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
-    return `<pre style="font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 13px; background: #1e1e1e; color: #d4d4d4; padding: 8px; border-radius: 4px; overflow-x: auto;">${escaped}</pre>`;
+    const fontFamily = resolveCssVariableStyle(
+        'fontFamily',
+        'font-family',
+        "'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif"
+    );
+    const fontSize = resolveCssVariableValue('text-sm', '13px');
+    const background = resolveCssColorVariable('terminal-preview-background', 'hsl(222 27% 12%)');
+    const foreground = resolveCssColorVariable('terminal-preview-foreground', 'hsl(215 32% 88%)');
+    const padding = resolveCssVariableStyle('padding', 'tengra-space-2', '8px');
+    const borderRadius = resolveCssVariableStyle('borderRadius', 'tengra-radius-md', '4px');
+
+    return `<pre style="font-family: ${fontFamily}; font-size: ${fontSize}; background: ${background}; color: ${foreground}; padding: ${padding}; border-radius: ${borderRadius}; overflow-x: auto;">${escaped}</pre>`;
 }
 
 export function summarizePasteText(

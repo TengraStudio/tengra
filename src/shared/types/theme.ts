@@ -82,6 +82,17 @@ export interface ThemeColors {
 }
 
 /**
+ * Theme CSS variable overrides.
+ *
+ * Keys are CSS custom property names **without** the leading `--` (kebab-case),
+ * e.g. `"tengra-container-padding": "2rem"`, `"blur-1px": "1px"`.
+ *
+ * This exists to support full theming beyond the limited `colors` schema
+ * (layout, radius, spacing, shadows, typography, etc.).
+ */
+export type ThemeVars = Record<string, string>;
+
+/**
  * Theme Manifest - VSCode compatible structure
  * Allows declarative theme definitions for extension distribution
  */
@@ -99,6 +110,7 @@ export interface ThemeManifest {
 
     // Visual
     colors: ThemeColors;
+    vars?: ThemeVars;
     preview?: string; // Preview image URL or color
 
     // Distribution metadata

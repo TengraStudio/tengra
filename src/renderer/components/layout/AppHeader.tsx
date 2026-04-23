@@ -96,7 +96,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                     >
                         <SettingsIcon className="h-4 w-4" />
                         {updateCount > 0 && (
-                            <span className="pointer-events-none absolute -right-0.5 -top-0.5 z-10 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-8 font-bold leading-none text-destructive-foreground shadow-outline-background-2">
+                            <span className="pointer-events-none absolute -right-0.5 -top-0.5 z-10 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 typo-overline font-bold leading-none text-destructive-foreground shadow-outline-background-2">
                                 {updateCount}
                             </span>
                         )}

@@ -9,8 +9,9 @@
  */
 
 import { appLogger } from '@main/logging/logger';
+import { AuthService } from '@main/services/security/auth.service';
 
-import { NodePtyBackend } from './node-pty.backend';
+import { ProxyTerminalBackend } from './proxy-terminal.backend';
 import { ITerminalBackend, ITerminalProcess, TerminalCreateOptions } from './terminal-backend.interface';
 
 /**
@@ -18,17 +19,17 @@ import { ITerminalBackend, ITerminalProcess, TerminalCreateOptions } from './ter
  */
 export class DockerBackend implements ITerminalBackend {
     public readonly id = 'docker';
-    private nodePty: NodePtyBackend;
+    private proxyBackend: ProxyTerminalBackend;
 
-    constructor() {
-        this.nodePty = new NodePtyBackend();
+    constructor(authService: AuthService) {
+        this.proxyBackend = new ProxyTerminalBackend(authService);
     }
 
     /**
-     * Check if Docker is available (delegates to node-pty availability for now)
+     * Check if Docker is available (delegates to proxy availability)
      */
     public async isAvailable(): Promise<boolean> {
-        return this.nodePty.isAvailable();
+        return this.proxyBackend.isAvailable();
     }
 
     /**
@@ -43,7 +44,7 @@ export class DockerBackend implements ITerminalBackend {
         const shell = (options.metadata?.shell as string) || '/bin/sh';
         appLogger.info('DockerBackend', `Executing in container ${containerId}: ${shell}`);
 
-        // We use node-pty to run 'docker exec -it <id> <shell>'
+        // We use the proxy to run 'docker exec -it <id> <shell>'
         const dockerOptions: TerminalCreateOptions = {
             ...options,
             shell: 'docker',
@@ -52,6 +53,6 @@ export class DockerBackend implements ITerminalBackend {
             env: { ...options.env, TERM: 'xterm-256color' }
         };
 
-        return this.nodePty.create(dockerOptions);
+        return this.proxyBackend.create(dockerOptions);
     }
 }

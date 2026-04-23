@@ -35,7 +35,7 @@ const MESSAGE_ICON_COLOR_CLASSES: Record<MessageIconColor, { container: string; 
     cyan: { container: 'bg-cyan-500/10 border-cyan-500/10', text: 'text-cyan-400' },
     emerald: { container: 'bg-emerald-500/10 border-emerald-500/10', text: 'text-emerald-400' },
     yellow: { container: 'bg-yellow-500/10 border-yellow-500/10', text: 'text-yellow-400' },
-    black: { container: 'bg-black/10 border-black/15', text: 'text-black' },
+    black: { container: 'bg-muted/50 border-border/40', text: 'text-foreground' },
     red: { container: 'bg-red-500/10 border-red-500/10', text: 'text-red-400' },
     muted: { container: 'bg-muted/50 border-muted', text: 'text-muted-foreground' },
 };
@@ -49,7 +49,7 @@ const MessageIcon = ({ short, color, title }: MessageIconProps) => (
         )}
         title={title}
     >
-        <span className={cn('font-bold text-10', MESSAGE_ICON_COLOR_CLASSES[color].text)}>{short}</span>
+        <span className={cn('font-bold typo-overline', MESSAGE_ICON_COLOR_CLASSES[color].text)}>{short}</span>
     </div>
 );
 
@@ -70,10 +70,10 @@ const getSpecialModelLogo = (name: string, t: TranslationFn) => {
 };
 
 const getInferredProvider = (name: string) => {
-    if (name.startsWith('gpt-') || name.startsWith('o1-')) {return 'openai';}
-    if (name.startsWith('claude-')) {return 'anthropic';}
-    if (name.startsWith('grok-')) {return 'groq';}
-    if (name.startsWith('antigravity-')) {return 'antigravity';}
+    if (name.startsWith('gpt-') || name.startsWith('o1-')) { return 'openai'; }
+    if (name.startsWith('claude-')) { return 'anthropic'; }
+    if (name.startsWith('grok-')) { return 'groq'; }
+    if (name.startsWith('antigravity-')) { return 'antigravity'; }
     return null;
 };
 
@@ -95,7 +95,7 @@ const getProviderLogoInfo = (modelName: string, provider?: string, backend?: str
     };
 
     const matchedKey = Object.keys(logoMap).find(k => effective.includes(k));
-    if (matchedKey) {return logoMap[matchedKey];}
+    if (matchedKey) { return logoMap[matchedKey]; }
     return { logo: LogoOllama, key: effective, color: 'muted' as MessageIconColor, short: undefined };
 };
 
@@ -114,11 +114,11 @@ export interface AssistantLogoProps {
 export const AssistantLogo = memo(({ displayModel, provider, backend, t }: AssistantLogoProps) => {
     const modelName = (displayModel ?? '').toString().toLowerCase();
     const special = getSpecialModelLogo(modelName, t);
-    
+
     if (special) {
         return <MessageIcon {...special} />;
     }
-    
+
     const info = getProviderLogoInfo(modelName, provider, backend);
     const containerClasses = cn(
         UI_PRIMITIVES.ASSISTANT_LOGO_BASE,
@@ -129,13 +129,13 @@ export const AssistantLogo = memo(({ displayModel, provider, backend, t }: Assis
     if (info.logo) {
         return (
             <div className={containerClasses} title={info.key.toUpperCase()}>
-                <img 
-                    src={info.logo} 
+                <img
+                    src={info.logo}
                     className={cn(
                         'w-full h-full opacity-70 transition-all duration-300',
                         info.key !== 'antigravity' && 'theme-logo-invert'
-                    )} 
-                    alt={info.key} 
+                    )}
+                    alt={info.key}
                 />
             </div>
         );

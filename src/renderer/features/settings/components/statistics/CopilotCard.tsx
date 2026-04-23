@@ -46,33 +46,33 @@ export const CopilotCard: React.FC<CopilotCardProps> = ({ copilotQuota }) => {
                                     {acc.email ?? t('statistics.copilotAccount')}
                                 </div>
                                 {(acc.error || acc.isActive) && <StatusBadge status={status} text={statusText} />}
-                                {acc.error && <span className="text-9 text-destructive truncate ml-2">{acc.error}</span>}
+                                {acc.error && <span className="typo-overline text-destructive truncate ml-2">{acc.error}</span>}
                             </div>
 
                             {!acc.error && (
                                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 pt-2 md:grid-cols-2 xl:grid-cols-3">
                                     <div className="space-y-2">
-                                        <div className="text-10 flex items-center justify-between font-medium">
+                                        <div className="typo-overline flex items-center justify-between font-medium">
                                             <span className="text-muted-foreground truncate pr-2">{seatInfo ? t('statistics.seatsStatus') : t('statistics.usageStatus')}</span>
                                             <span className="text-foreground/80 tabular-nums shrink-0">{remaining} / {limit}</span>
                                         </div>
                                         <HorizontalProgressBar percentage={percent} color={getQuotaColor(percent)} />
-                                        <div className="text-9 font-medium text-muted-foreground/40 mt-1">
+                                        <div className="typo-overline font-medium text-muted-foreground/40 mt-1">
                                             {seatInfo?.plan_type ?? acc.copilot_plan ?? t('statistics.individual')}
                                         </div>
                                     </div>
 
                                     {acc.rate_limit && (
                                         <div className="space-y-2">
-                                            <div className="text-10 flex items-center justify-between font-medium">
+                                            <div className="typo-overline flex items-center justify-between font-medium">
                                                 <span className="text-muted-foreground truncate pr-2">{t('statistics.rateLimit')}</span>
                                                 <span className="text-foreground/80 tabular-nums shrink-0">{acc.rate_limit.remaining} / {acc.rate_limit.limit}</span>
                                             </div>
-                                            <HorizontalProgressBar 
-                                                percentage={Math.round((acc.rate_limit.remaining / acc.rate_limit.limit) * 100)} 
-                                                color={getQuotaColor(Math.round((acc.rate_limit.remaining / acc.rate_limit.limit) * 100))} 
+                                            <HorizontalProgressBar
+                                                percentage={Math.round((acc.rate_limit.remaining / acc.rate_limit.limit) * 100)}
+                                                color={getQuotaColor(Math.round((acc.rate_limit.remaining / acc.rate_limit.limit) * 100))}
                                             />
-                                            <div className="text-9 font-medium text-muted-foreground/40 mt-1">
+                                            <div className="typo-overline font-medium text-muted-foreground/40 mt-1">
                                                 {t('statistics.apiUsage')}
                                             </div>
                                         </div>

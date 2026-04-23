@@ -12,7 +12,6 @@ import {
     Activity,
     Brain,
     ChevronDown,
-    Cpu,
     Database,
     Image,
     Info,
@@ -76,8 +75,6 @@ export const SettingsSectionComponent: React.FC<SettingsSectionProps> = ({
 
     const getLabelForId = (id: SettingsCategory): string => {
         switch (id) {
-            case 'workspace':
-                return t('settings.tabs.workspace');
             case 'editor':
                 return t('settings.tabs.editor');
             case 'appearance':
@@ -96,8 +93,6 @@ export const SettingsSectionComponent: React.FC<SettingsSectionProps> = ({
                 return t('settings.tabs.speech');
             case 'statistics':
                 return t('settings.tabs.statistics');
-            case 'advanced':
-                return t('settings.tabs.advanced');
             case 'about':
                 return t('settings.tabs.about');
             case 'images':
@@ -150,7 +145,6 @@ export const SettingsSectionComponent: React.FC<SettingsSectionProps> = ({
                             {(
                                 [
                                     'general',
-                                    'workspace',
                                     'editor',
                                     'accounts',
                                     'models',
@@ -159,7 +153,6 @@ export const SettingsSectionComponent: React.FC<SettingsSectionProps> = ({
                                     'appearance',
                                     'system',
                                     'speech',
-                                    'advanced',
                                     'statistics',
                                     'images',
                                     'extensions',
@@ -217,20 +210,16 @@ const getIconForId = (id: SettingsCategory) => {
             return Activity;
         case 'about':
             return Info;
-        case 'advanced':
-            return Cpu;
         case 'accounts':
             return UserCircle;
-        case 'workspace':
-            return Database;
         case 'editor':
-            return Terminal;
+                return Terminal;
         case 'system':
-            return Activity;
+                return Activity;
         case 'usage-limits':
-            return TrendingUp;
+                return TrendingUp;
         case 'extensions':
-            return Puzzle;
+                return Puzzle;
         default:
             return LayoutGrid;
     }

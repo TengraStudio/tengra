@@ -22,7 +22,11 @@ pub struct TerminalSession {
 }
 
 impl TerminalSession {
-    pub fn new(cwd: Option<String>, shell: Option<String>) -> anyhow::Result<Self> {
+    pub fn new(
+        cwd: Option<String>,
+        shell: Option<String>,
+        args: Option<Vec<String>>,
+    ) -> anyhow::Result<Self> {
         let pty_system = NativePtySystem::default();
         let pair = pty_system.openpty(PtySize {
             rows: 24,
@@ -40,6 +44,9 @@ impl TerminalSession {
         });
 
         let mut cmd = CommandBuilder::new(shell);
+        if let Some(args) = args {
+            cmd.args(args);
+        }
         if let Some(cwd) = cwd {
             cmd.cwd(cwd);
         }
@@ -49,7 +56,7 @@ impl TerminalSession {
         // We don't strictly need to keep the slave once the process is spawned
         // but we need to keep the master to communicate.
         // portable_pty's take_writer() can only be called once, so we grab it here and reuse it.
-        let mut master_pty = pair.master;
+        let master_pty = pair.master;
         let writer = master_pty.take_writer()?;
         let master = Arc::new(parking_lot::Mutex::new(master_pty));
         let writer = Arc::new(parking_lot::Mutex::new(writer));

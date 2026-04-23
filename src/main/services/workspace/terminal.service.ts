@@ -17,11 +17,13 @@ import { BaseService } from '@main/services/base.service';
 import { getDataFilePath, getDataSubPath } from '@main/services/system/app-layout-paths.util';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { AuthService } from '@main/services/security/auth.service';
 import { AlacrittyBackend } from '@main/services/terminal/backends/alacritty.backend';
 import { pathExists } from '@main/services/terminal/backends/backend-discovery.util';
+import { DockerBackend } from '@main/services/terminal/backends/docker.backend';
 import { GhosttyBackend } from '@main/services/terminal/backends/ghostty.backend';
 import { KittyBackend } from '@main/services/terminal/backends/kitty.backend';
-import { NodePtyBackend } from '@main/services/terminal/backends/node-pty.backend';
+import { ProxyTerminalBackend } from '@main/services/terminal/backends/proxy-terminal.backend';
 import {
     ITerminalBackend,
     ITerminalProcess,
@@ -207,14 +209,24 @@ export class TerminalService extends BaseService {
     private cleanupTimer: NodeJS.Timeout | null = null;
     private powerStateUnsubscribe: (() => void) | null = null;
 
-    constructor(eventBus?: EventBusService, settingsService?: SettingsService) {
+    constructor(
+        eventBus?: EventBusService, 
+        settingsService?: SettingsService,
+        authService?: AuthService
+    ) {
         super('TerminalService');
         this.eventBus = eventBus ?? new EventBusService();
         this.settingsService = settingsService ?? new SettingsService();
-
+        
         // Register default backends
-        const nodePtyBackend = new NodePtyBackend();
-        this.backends.set(nodePtyBackend.id, nodePtyBackend);
+        if (authService) {
+            const proxyTerminalBackend = new ProxyTerminalBackend(authService);
+            this.backends.set(proxyTerminalBackend.id, proxyTerminalBackend);
+            
+            // Docker backend also needs auth for proxy communication
+            const dockerBackend = new DockerBackend(authService);
+            this.backends.set(dockerBackend.id, dockerBackend);
+        }
 
         const ghosttyBackend = new GhosttyBackend();
         this.backends.set(ghosttyBackend.id, ghosttyBackend);
@@ -402,7 +414,7 @@ export class TerminalService extends BaseService {
 
     private async detectAvailableBackends(): Promise<TerminalBackendInfo[]> {
         const backendNames: Record<string, string> = {
-            'node-pty': 'Integrated Terminal',
+            'proxy-terminal': 'Integrated Terminal',
             ghostty: 'Ghostty',
             alacritty: 'Alacritty',
             warp: 'Warp',
@@ -539,7 +551,7 @@ export class TerminalService extends BaseService {
                 .filter(backend => backend.available)
                 .map(backend => backend.id)
         );
-        let backendId = options.backendId ?? 'node-pty';
+        let backendId = options.backendId ?? 'proxy-terminal';
         let backend = this.backends.get(backendId);
 
         if (!backend || !availableBackendIds.has(backendId)) {

@@ -15,7 +15,7 @@ import { FileIcon, FolderIcon } from '@/lib/file-icons';
 import { cn } from '@/lib/utils';
 
 /* Batch-02: Extracted Long Classes */
-const C_WORKSPACEEXPLORERINLINEROW_1 = "h-6 w-full rounded-6px border border-primary/70 bg-background px-2 text-11 text-foreground outline-none ring-0 transition-colors focus:border-primary focus-visible:border-primary placeholder:text-muted-foreground/45";
+const C_WORKSPACEEXPLORERINLINEROW_1 = "h-6 w-full rounded-6px border border-primary/70 bg-background px-2 typo-overline text-foreground outline-none ring-0 transition-colors focus:border-primary focus-visible:border-primary placeholder:text-muted-foreground/45";
 
 
 interface WorkspaceExplorerInlineRowProps {

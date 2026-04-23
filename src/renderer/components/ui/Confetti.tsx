@@ -42,7 +42,14 @@ export const Confetti: React.FC<ConfettiProps> = ({
     active,
     duration = 3000,
     particleCount = 50,
-    colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4fd1c5', '#ffd93d']
+    colors = [
+        'var(--confetti-color-1)',
+        'var(--confetti-color-2)',
+        'var(--confetti-color-3)',
+        'var(--confetti-color-4)',
+        'var(--confetti-color-5)',
+        'var(--confetti-color-6)'
+    ]
 }) => {
     const [pieces, setPieces] = useState<ConfettiPiece[]>([]);
 
@@ -86,7 +93,7 @@ export const Confetti: React.FC<ConfettiProps> = ({
                         backgroundColor: piece.color,
                         animationDelay: `${piece.delay}s`,
                         '--confetti-duration': `${piece.duration}s`,
-                        borderRadius: piece.isRound ? '50%' : '2px',
+                        borderRadius: piece.isRound ? '50%' : 'var(--tengra-radius-2px)',
                         width: `${piece.size}px`,
                         height: `${piece.size}px`
                     } as React.CSSProperties}

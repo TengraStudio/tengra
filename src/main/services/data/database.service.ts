@@ -353,11 +353,14 @@ export class DatabaseService extends BaseService {
             this._uac = new UacRepository(adapter);
             this._userBehavior = new UserBehaviorRepository(adapter);
 
-            await this._uac.ensureTables();
-            await this._knowledge.ensureMemoryTables();
-            await this._knowledge.ensureFileDiffTable();
-            await this._system.ensureProductionIndexes();
-            await this.ensureMigrationInfrastructure();
+            // Parallelize table and index infrastructure checks
+            await Promise.all([
+                this._uac.ensureTables(),
+                this._knowledge.ensureMemoryTables(),
+                this._knowledge.ensureFileDiffTable(),
+                this._system.ensureProductionIndexes(),
+                this.ensureMigrationInfrastructure(),
+            ]);
             const chatRecovery = await this._chats.recoverInterruptedChats();
             if (chatRecovery.recoveredChats > 0) {
                 appLogger.info(

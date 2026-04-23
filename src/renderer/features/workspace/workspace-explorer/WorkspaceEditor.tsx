@@ -484,14 +484,14 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
 
 
     return (
-        <div className="absolute inset-0 overflow-hidden"> 
+        <div className="absolute inset-0 overflow-hidden">
             {statusMessage && (
                 <div className={cn(FLOATING_PANEL_BASE, "top-12 right-2 typo-caption text-muted-foreground px-2 py-1")}>
                     {statusMessage}
                 </div>
             )}
             {tools.semanticPreview && (
-                <pre className={cn(FLOATING_PANEL_BASE, "top-20 right-2 w-440 max-h-48 overflow-auto text-11")}>
+                <pre className={cn(FLOATING_PANEL_BASE, "top-20 right-2 w-440 max-h-48 overflow-auto typo-overline")}>
                     {tools.semanticPreview}
                 </pre>
             )}
@@ -548,7 +548,7 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
                             <div className="truncate typo-caption font-semibold text-foreground">
                                 {workspaceResults.symbol}
                             </div>
-                            <div className="text-10 text-muted-foreground/70">
+                            <div className="typo-overline text-muted-foreground/70">
                                 {workspaceResults.results.length}
                             </div>
                         </div>
@@ -572,14 +572,14 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
                                     className="flex w-full items-start gap-3 border-b border-border/20 px-3 py-2 text-left transition-colors hover:bg-muted/40"
                                 >
                                     <span className="min-w-0 flex-1">
-                                        <span className="block truncate text-12 font-medium text-foreground">
+                                        <span className="block truncate typo-overline font-medium text-foreground">
                                             {resultFileName}
                                         </span>
-                                        <span className="block truncate font-mono text-11 text-muted-foreground/80">
+                                        <span className="block truncate font-mono typo-overline text-muted-foreground/80">
                                             {result.text.trim()}
                                         </span>
                                     </span>
-                                    <span className="shrink-0 font-mono text-10 tabular-nums text-muted-foreground/60">
+                                    <span className="shrink-0 font-mono typo-overline tabular-nums text-muted-foreground/60">
                                         {result.line}
                                     </span>
                                 </button>
@@ -589,12 +589,12 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
                 </div>
             )}
             {tools.testOutput && (
-                <pre className={cn(FLOATING_PANEL_BASE, "bottom-2 right-2 w-480 max-w-90p max-h-52 overflow-auto text-11")}>
+                <pre className={cn(FLOATING_PANEL_BASE, "bottom-2 right-2 w-480 max-w-90p max-h-52 overflow-auto typo-overline")}>
                     {tools.testOutput}
                 </pre>
             )}
             {(aiReview.reviewSummary || aiReview.bugSummary || aiReview.performanceSummary) && (
-                <pre className={cn(FLOATING_PANEL_BASE, "bottom-56 right-2 w-520 max-w-90p max-h-56 overflow-auto text-11")}>
+                <pre className={cn(FLOATING_PANEL_BASE, "bottom-56 right-2 w-520 max-w-90p max-h-56 overflow-auto typo-overline")}>
                     {[aiReview.reviewSummary, aiReview.bugSummary, aiReview.performanceSummary].filter(Boolean).join('\n\n')}
                 </pre>
             )}

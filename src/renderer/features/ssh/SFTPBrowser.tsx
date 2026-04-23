@@ -42,7 +42,7 @@ interface TransferItem {
 }
 
 const REMOTE_TREE_CACHE_TTL_MS = 30_000;
-const TRANSFER_DOWNLOAD_BASE = 'C:\\Downloads';
+const TRANSFER_DOWNLOAD_BASE = '~/Downloads';
 
 export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
     const { t } = useTranslation();
@@ -230,7 +230,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
             return;
         }
         const remotePath = currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`;
-        const localPath = `${TRANSFER_DOWNLOAD_BASE}\\${item.name}`;
+        const localPath = `${TRANSFER_DOWNLOAD_BASE}/${item.name}`;
         const transferId = `download-${Date.now()}-${item.name}`;
         const queued: TransferItem = {
             id: transferId,
@@ -247,7 +247,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
         if (!uploadLocalPath.trim()) {
             return;
         }
-        const filename = uploadLocalPath.split('\\').pop() ?? '';
+        const filename = uploadLocalPath.split(/[\\/]/).pop() ?? '';
         if (!filename) {
             return;
         }
@@ -482,7 +482,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
             <div className="flex-1 flex flex-col">
             <div className="browser-toolbar p-2 border-b border-border/50 flex gap-2 items-center bg-muted/20">
                 <button onClick={handleBack} disabled={currentPath === '/'} className="px-2 py-1">← {t('ssh.back')}</button>
-                <div style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.9em' }}>
+                <div className="flex-1 truncate typo-body">
                     {currentPath}
                 </div>
                 <button onClick={() => void handleMkdir()} className="px-2 py-1">+ {t('ssh.newFolder')}</button>
@@ -536,21 +536,21 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
                     {t('ssh.noFiles')}
                 </div>
             ) : (
-                <div className="file-list" style={{ flex: 1, overflowY: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9em' }}>
+                <div className="file-list flex-1 overflow-y-auto">
+                    <table className="w-full border-collapse text-left text-sm">
                         <thead className="sticky top-0 bg-muted/50 backdrop-blur-sm shadow-sm">
                             <tr>
-                                <th style={{ padding: '8px' }}>{t('ssh.fileName')}</th>
-                                <th style={{ padding: '8px' }}>{t('ssh.fileSize')}</th>
-                                <th style={{ padding: '8px' }}>{t('ssh.fileDate')}</th>
-                                <th style={{ padding: '8px' }}>{t('ssh.fileActions')}</th>
+                                <th className="p-2">{t('ssh.fileName')}</th>
+                                <th className="p-2">{t('ssh.fileSize')}</th>
+                                <th className="p-2">{t('ssh.fileDate')}</th>
+                                <th className="p-2">{t('ssh.fileActions')}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {files.map(file => (
                                 <tr key={file.name} className="file-row border-b border-border/30 hover:bg-muted/10 transition-colors">
                                     <td
-                                        style={{ padding: '8px', cursor: file.isDirectory ? 'pointer' : 'default' }}
+                                        className={file.isDirectory ? 'cursor-pointer p-2' : 'cursor-default p-2'}
                                         onClick={() => {
                                             if (file.isDirectory) {
                                                 handleNavigate(file.name);
@@ -562,18 +562,18 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
                                     >
                                         {file.isDirectory ? '📁 ' : '📄 '} {file.name}
                                     </td>
-                                    <td style={{ padding: '8px' }}>
+                                    <td className="p-2">
                                         {!file.isDirectory && file.size
                                             ? t('ssh.fileSizeKilobytes', { size: (file.size / 1024).toFixed(1) })
                                             : t('common.notAvailable')}
                                     </td>
-                                    <td style={{ padding: '8px', fontSize: '0.8em', opacity: 0.6 }}>
+                                    <td className="p-2 text-xs opacity-60">
                                         {file.mtime ? new Date(file.mtime).toLocaleDateString() : t('common.notAvailable')}
                                     </td>
-                                    <td style={{ padding: '8px', display: 'flex', gap: '4px' }}>
-                                        <button onClick={() => void handleRename(file)} style={{ fontSize: '0.9em' }}>✎</button>
-                                        <button onClick={() => void handleDelete(file)} style={{ fontSize: '0.9em' }} className="text-destructive hover:text-destructive">🗑</button>
-                                        {!file.isDirectory && <button onClick={() => void handleDownload(file)} style={{ fontSize: '0.9em' }}>↓</button>}
+                                    <td className="flex gap-1 p-2">
+                                        <button onClick={() => void handleRename(file)} className="text-sm">✎</button>
+                                        <button onClick={() => void handleDelete(file)} className="text-sm text-destructive hover:text-destructive">🗑</button>
+                                        {!file.isDirectory && <button onClick={() => void handleDownload(file)} className="text-sm">↓</button>}
                                     </td>
                                 </tr>
                             ))}

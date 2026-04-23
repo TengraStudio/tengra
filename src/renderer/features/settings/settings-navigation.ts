@@ -12,7 +12,6 @@ import {
     BarChart,
     Bot,
     Database,
-    FolderKanban,
     Image,
     LayoutPanelLeft,
     LucideIcon,
@@ -22,7 +21,6 @@ import {
     Rocket,
     Settings,
     Share2,
-    Shield,
     Sparkles,
     TrendingUp,
     User,
@@ -53,12 +51,7 @@ export function getSettingsNavigationItems(t: SettingsTranslationFn): SettingsNa
             sectionLabel: t('settings.categories.general'),
             icon: Settings,
         },
-        {
-            id: 'workspace',
-            label: t('settings.tabs.workspace'),
-            sectionLabel: t('settings.categories.general'),
-            icon: FolderKanban,
-        },
+
         {
             id: 'editor',
             label: t('settings.tabs.editor'),
@@ -138,12 +131,7 @@ export function getSettingsNavigationItems(t: SettingsTranslationFn): SettingsNa
             icon: Share2,
         },
 
-        {
-            id: 'advanced',
-            label: t('settings.tabs.advanced'),
-            sectionLabel: t('settings.categories.security'),
-            icon: Shield,
-        },
+
         {
             id: 'about',
             label: t('settings.tabs.about'),

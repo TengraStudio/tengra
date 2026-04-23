@@ -95,7 +95,7 @@ export const WizardFooter: React.FC<WizardFooterProps> = ({
                                 : 'bg-primary text-primary-foreground shadow-primary/30 hover:shadow-primary/50'
                         )}
                     >
-                        <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                        <div className="absolute inset-0 bg-muted/20 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300 pointer-events-none" />
                         <span className="relative z-10">{getButtonLabel()}</span>
                         <div className="relative z-10 p-1.5 bg-background/40 rounded-xl group-hover/btn:translate-x-1 transition-all duration-300">
                             {getButtonContent()}

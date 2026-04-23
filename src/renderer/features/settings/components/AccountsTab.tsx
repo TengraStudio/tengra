@@ -321,7 +321,7 @@ const ProviderCard = React.memo<ProviderCardProps>(({
             </div>
 
             {hasAccounts && expanded && (
-                <div className="border-t border-border/20 bg-muted/[0.02] animate-in slide-in-from-top-2 duration-300">
+                <div className="border-t border-border/20 bg-muted/02 animate-in slide-in-from-top-2 duration-300">
                     <div className="py-2">
                         {accounts.map((account, index) => {
                             const quotaAccount = provider.id === 'antigravity'
@@ -511,7 +511,7 @@ const ApiKeyProviderCard = React.memo(({
 
             {/* Expanded Keys List */}
             {expanded && (
-                <div className="animate-in slide-in-from-top-2 space-y-4 border-t border-border/20 bg-muted/[0.02] p-5 duration-300">
+                <div className="animate-in slide-in-from-top-2 space-y-4 border-t border-border/20 bg-muted/02 p-5 duration-300">
                     <div className="space-y-3">
                         {apiKeys.map((key, index) => (
                             <div key={index} className={cn(KEY_ROW_BASE, "flex flex-col gap-3 sm:flex-row sm:items-center")} style={{ animationDelay: `${index * 50}ms` }}>
@@ -723,7 +723,7 @@ const OllamaSection = React.memo(({
                     </Badge>
                 </div>
 
-                <div className="border-t border-border/20 bg-muted/[0.02] p-5 space-y-5">
+                <div className="border-t border-border/20 bg-muted/02 p-5 space-y-5">
                     <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                         <div className="space-y-2">
                             <Label className="pl-1 typo-body font-medium text-muted-foreground">{t('accounts.serverAddress')}</Label>

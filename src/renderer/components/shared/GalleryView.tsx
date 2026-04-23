@@ -86,7 +86,7 @@ const formatDate = (timestamp: number, locale: string): string => {
 
 const MetadataBadge = ({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label?: string; value: string | number }) => (
     <Tooltip content={label ?? ''} side="top" delay={300}>
-        <Badge variant="outline" className="flex items-center gap-1.5 px-2 py-0.5 font-mono text-10 bg-muted/30 border-muted-foreground/10 text-muted-foreground hover:bg-muted/50 cursor-default">
+        <Badge variant="outline" className="flex items-center gap-1.5 px-2 py-0.5 font-mono typo-overline bg-muted/30 border-muted-foreground/10 text-muted-foreground hover:bg-muted/50 cursor-default">
             <Icon className="w-3 h-3 opacity-60" />
             <span>{value}</span>
         </Badge>
@@ -121,7 +121,7 @@ const GalleryCard = memo(({
                     className="bg-background/80 backdrop-blur-sm border-primary/50 text-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                 />
             </div>
-            
+
             <div
                 className="relative w-full h-full cursor-pointer overflow-hidden"
                 onClick={() => onPreview(img)}
@@ -273,7 +273,7 @@ export function GalleryView({ language }: GalleryViewProps) {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-b border-border/50 bg-card/30 backdrop-blur-md">
                 <div className="flex items-center gap-4">
                     <h2 className="text-xl font-bold tracking-tight">{t('gallery.title')}</h2>
-                    <Badge variant="secondary" className="font-mono text-10 h-5">
+                    <Badge variant="secondary" className="font-mono typo-overline h-5">
                         {filteredImages.length}
                     </Badge>
                 </div>
@@ -354,10 +354,10 @@ export function GalleryView({ language }: GalleryViewProps) {
 
             {/* Detail Dialog */}
             <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
-                <DialogContent className="max-w-[95vw] w-full max-h-[90vh] p-0 overflow-hidden bg-background/95 backdrop-blur-xl border-border/10 rounded-3xl sm:max-w-7xl">
-                    <div className="flex flex-col lg:flex-row h-full min-h-[500px]">
+                <DialogContent className="max-w-95vw w-full max-h-90vh p-0 overflow-hidden bg-background/95 backdrop-blur-xl border-border/10 rounded-3xl sm:max-w-7xl">
+                    <div className="flex flex-col lg:flex-row h-full min-h-500">
                         {/* Image Side */}
-                        <div className="relative flex-1 bg-black/20 flex items-center justify-center p-4 lg:p-8 min-h-[300px] group">
+                        <div className="relative flex-1 bg-muted/10 flex items-center justify-center p-4 lg:p-8 min-h-300 group">
                             {previewImage && (
                                 <img
                                     src={previewImage.url}
@@ -400,7 +400,7 @@ export function GalleryView({ language }: GalleryViewProps) {
                         </div>
 
                         {/* Metadata Side */}
-                        <div className="w-full lg:w-[420px] border-l border-border/10 flex flex-col bg-card/30">
+                        <div className="w-full lg:w-420 border-l border-border/10 flex flex-col bg-card/30">
                             <DialogHeader className="p-6 pb-4 border-b border-border/5">
                                 <div className="flex items-start justify-between">
                                     <div className="space-y-1 pr-8">
@@ -411,7 +411,7 @@ export function GalleryView({ language }: GalleryViewProps) {
                                             <Calendar className="w-3 h-3" />
                                             {previewImage && formatDate(previewImage.mtime, t('common.locale'))}
                                         </div>
-                                    </div> 
+                                    </div>
                                 </div>
                             </DialogHeader>
 
@@ -430,7 +430,7 @@ export function GalleryView({ language }: GalleryViewProps) {
 
                                             {previewImage.metadata.negative_prompt && (
                                                 <div className="space-y-2 mt-4">
-                                                    <h4 className="text-10 font-bold uppercase tracking-widest text-muted-foreground/60">{t('gallery.negativePrompt')}</h4>
+                                                    <h4 className="typo-overline font-bold uppercase tracking-widest text-muted-foreground/60">{t('gallery.negativePrompt')}</h4>
                                                     <div className="p-3 rounded-xl bg-muted/30 border border-border/10 text-xs text-muted-foreground italic select-text">
                                                         {previewImage.metadata.negative_prompt}
                                                     </div>
@@ -441,7 +441,7 @@ export function GalleryView({ language }: GalleryViewProps) {
 
                                     {/* Parameters Grid */}
                                     <div className="space-y-3 pt-2">
-                                        <h4 className="text-10 font-bold uppercase tracking-widest text-muted-foreground/50">{t('gallery.technicalParams')}</h4>
+                                        <h4 className="typo-overline font-bold uppercase tracking-widest text-muted-foreground/50">{t('gallery.technicalParams')}</h4>
                                         <div className="flex flex-wrap gap-2">
                                             {previewImage?.metadata?.model && (
                                                 <MetadataBadge icon={Sparkles} label={t('gallery.metadata.model')} value={previewImage.metadata.model} />

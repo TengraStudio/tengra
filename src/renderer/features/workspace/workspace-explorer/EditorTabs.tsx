@@ -237,53 +237,53 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
         <div className="border-b border-border/30 bg-background">
             <div className="flex overflow-x-auto scrollbar-none">
                 {orderedTabs.map(tab => {
-                const isActive = tab.id === activeTabId;
-                const isDirty = tab.content !== tab.savedContent;
-                const isDeleted = deletedTabIds.has(tab.id);
-                return (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTabId(tab.id)}
-                        onContextMenu={event => {
-                            event.preventDefault();
-                            setContextMenu({ tabId: tab.id, x: event.clientX, y: event.clientY });
-                        }}
-                        className={cn(
-                            'group flex items-center gap-2 px-3 py-2 typo-caption border-r border-border/30 transition-all min-w-120 max-w-200',
-                            isActive
-                                ? 'bg-muted/70 text-foreground border-t-2 border-t-primary'
-                                : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground border-t-2 border-t-transparent'
-                        )}
-                    >
-                        <span
+                    const isActive = tab.id === activeTabId;
+                    const isDirty = tab.content !== tab.savedContent;
+                    const isDeleted = deletedTabIds.has(tab.id);
+                    return (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTabId(tab.id)}
+                            onContextMenu={event => {
+                                event.preventDefault();
+                                setContextMenu({ tabId: tab.id, x: event.clientX, y: event.clientY });
+                            }}
                             className={cn(
-                                'truncate flex-1 text-left',
-                                isActive && 'font-medium',
-                                isDeleted && 'italic line-through opacity-75'
+                                'group flex items-center gap-2 px-3 py-2 typo-caption border-r border-border/30 transition-all min-w-120 max-w-200',
+                                isActive
+                                    ? 'bg-muted/70 text-foreground border-t-2 border-t-primary'
+                                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground border-t-2 border-t-transparent'
                             )}
                         >
-                            {tab.name}
-                        </span>
-                        {tab.isPinned && <Pin className="w-3 h-3 text-primary shrink-0" />}
-                        {isDirty && <span className="w-1.5 h-1.5 rounded-full bg-warning" />}
-                        <span
-                            onClick={event => {
-                                event.stopPropagation();
-                                if (!confirmCloseTabs([tab])) {
-                                    return;
-                                }
-                                closeTab(tab.id);
-                            }}
-                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded-sm hover:bg-muted/60 text-muted-foreground hover:text-foreground"
-                        >
-                            <X className="w-3 h-3" />
-                        </span>
-                    </button>
-                );
+                            <span
+                                className={cn(
+                                    'truncate flex-1 text-left',
+                                    isActive && 'font-medium',
+                                    isDeleted && 'italic line-through opacity-75'
+                                )}
+                            >
+                                {tab.name}
+                            </span>
+                            {tab.isPinned && <Pin className="w-3 h-3 text-primary shrink-0" />}
+                            {isDirty && <span className="w-1.5 h-1.5 rounded-full bg-warning" />}
+                            <span
+                                onClick={event => {
+                                    event.stopPropagation();
+                                    if (!confirmCloseTabs([tab])) {
+                                        return;
+                                    }
+                                    closeTab(tab.id);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 p-0.5 rounded-sm hover:bg-muted/60 text-muted-foreground hover:text-foreground"
+                            >
+                                <X className="w-3 h-3" />
+                            </span>
+                        </button>
+                    );
                 })}
             </div>
             {activeTab && (
-                <div className="flex items-center gap-1 px-3 py-1.5 text-12 text-muted-foreground/85 border-t border-border/20">
+                <div className="flex items-center gap-1 px-3 py-1.5 typo-overline text-muted-foreground/85 border-t border-border/20">
                     {buildBreadcrumbSegments(activeTab.path).map((segment, index) => (
                         <React.Fragment key={`${segment.path}:${index}`}>
                             {index > 0 && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/45" />}

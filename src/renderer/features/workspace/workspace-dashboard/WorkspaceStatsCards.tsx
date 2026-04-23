@@ -54,7 +54,7 @@ export const WorkspaceStatsCards: React.FC<WorkspaceStatsCardsProps> = ({ stats,
                         {t('workspaceDashboard.loc')}
                     </div>
                     <div className="text-2xl font-bold text-foreground">~{formattedLoc}</div>
-                    <div className="mt-1 text-10 text-muted-foreground/70">
+                    <div className="mt-1 typo-overline text-muted-foreground/70">
                         {t('workspaceDashboard.locHint')}
                     </div>
                 </div>
@@ -80,7 +80,7 @@ export const WorkspaceStatsCards: React.FC<WorkspaceStatsCardsProps> = ({ stats,
                         </div>
                         <div className="mt-1 text-3xl font-bold text-foreground">{formattedSize}</div>
                     </div>
-                    <div className="text-10 text-muted-foreground/70">
+                    <div className="typo-overline text-muted-foreground/70">
                         {t('workspaceDashboard.scannedStorageOnly')}
                     </div>
                 </div>
@@ -92,22 +92,22 @@ export const WorkspaceStatsCards: React.FC<WorkspaceStatsCardsProps> = ({ stats,
                         </div>
                         <div className="space-y-2">
                             {largestDirectories.map(entry => (
-                            <div
-                                key={entry.path}
-                                className="flex items-center justify-between gap-4 rounded-lg border border-border/40 bg-muted/10 px-3 py-2"
-                            >
-                                <div className="min-w-0">
-                                    <div className="truncate font-mono typo-caption text-foreground">
-                                        {entry.path}
+                                <div
+                                    key={entry.path}
+                                    className="flex items-center justify-between gap-4 rounded-lg border border-border/40 bg-muted/10 px-3 py-2"
+                                >
+                                    <div className="min-w-0">
+                                        <div className="truncate font-mono typo-caption text-foreground">
+                                            {entry.path}
+                                        </div>
+                                        <div className="typo-overline text-muted-foreground/70">
+                                            {t('workspaceDashboard.storageFiles', { count: entry.fileCount })}
+                                        </div>
                                     </div>
-                                    <div className="text-10 text-muted-foreground/70">
-                                        {t('workspaceDashboard.storageFiles', { count: entry.fileCount })}
+                                    <div className="shrink-0 text-sm font-semibold text-primary">
+                                        {formatBytes(entry.size)}
                                     </div>
                                 </div>
-                                <div className="shrink-0 text-sm font-semibold text-primary">
-                                    {formatBytes(entry.size)}
-                                </div>
-                            </div>
                             ))}
                         </div>
                     </>

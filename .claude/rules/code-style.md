@@ -44,3 +44,8 @@ try {
     throw error // Re-throw or handle appropriately
 }
 ```
+
+## Compatibility Requirements
+- Default to cross-platform code paths. Do not assume Windows-only, macOS-only, or Linux-only behavior unless explicitly required.
+- Use portable path/process APIs and explicit platform guards where unavoidable.
+- In renderer code, visual values must come from theme tokens or shared helpers, not hardcoded literals.

@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import React from 'react';
 
-const C_WORKSPACEHEADER_1 = "h-11 px-6 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold flex items-center gap-2 rounded-xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]";
+const C_WORKSPACEHEADER_1 = "h-11 px-6 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold flex items-center gap-2 rounded-xl shadow-lg shadow-primary/20 transition-all hover:scale-102 active:scale-98";
 const C_WORKSPACEHEADER_2 = "absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors z-10";
 
 interface WorkspacesHeaderProps {
@@ -121,7 +121,7 @@ export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
                     onClick={onNewWorkspace}
                     className={C_WORKSPACEHEADER_1}
                 >
-                    <Plus className="w-5 h-5 stroke-[2.5px]" />
+                    <Plus className="w-5 h-5 stroke-2.5" />
                     {newWorkspaceLabel}
                 </Button>
 
@@ -159,7 +159,7 @@ export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
                     <div className="w-px h-6 bg-border/20 mx-1" />
 
                     <Select value={listPreset} onValueChange={onListPresetChange}>
-                        <SelectTrigger className="h-8 w-[140px] px-2 text-xs font-bold bg-background/50 border-none text-muted-foreground focus:ring-0 rounded-lg">
+                        <SelectTrigger className="h-8 w-140 px-2 text-xs font-bold bg-background/50 border-none text-muted-foreground focus:ring-0 rounded-lg">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-border/40 shadow-2xl">

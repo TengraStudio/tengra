@@ -82,9 +82,9 @@ function GitStatusIndicator({ status, rawStatus }: { status: string; rawStatus?:
     }
     if (status === 'I') {
         return (
-          <div className="flex items-center text-git-ignored" title="Ignored">
-              <CircleHelp className="w-3 h-3" />
-          </div>
+            <div className="flex items-center text-git-ignored" title="Ignored">
+                <CircleHelp className="w-3 h-3" />
+            </div>
         );
     }
     if (status === 'R') {
@@ -94,9 +94,9 @@ function GitStatusIndicator({ status, rawStatus }: { status: string; rawStatus?:
             </div>
         );
     }
-    
+
     return (
-        <span className="text-9 font-bold text-muted-foreground" title={rawStatus ?? status}>
+        <span className="typo-overline font-bold text-muted-foreground" title={rawStatus ?? status}>
             {status}
         </span>
     );
@@ -116,7 +116,7 @@ function WorkspaceExplorerDiagnosticsBadges({
     }
 
     return (
-        <div className="flex items-center gap-1 text-10 font-semibold leading-none">
+        <div className="flex items-center gap-1 typo-overline font-semibold leading-none">
             {diagnostics.typescript > 0 && (
                 <span className="flex items-center gap-0.5 rounded-sm bg-primary/10 px-1 py-0.5 text-primary">
                     <Braces className="h-2.5 w-2.5" />
@@ -168,7 +168,7 @@ const MountRowView: React.FC<{
             <Folder className="w-3.5 h-3.5 text-success/70" />
         )}
         <div className="flex-1 min-w-0 flex items-center gap-2">
-            <div className="text-10 font-black uppercase tracking-wider truncate text-muted-foreground/50">
+            <div className="typo-overline font-black uppercase tracking-wider truncate text-muted-foreground/50">
                 {row.mount.name}
             </div>
             {row.loading && <Loader2 className="w-3 h-3 text-muted-foreground/60 animate-spin" />}
@@ -205,121 +205,121 @@ const EntryRowView: React.FC<{
     onEntryContextMenu,
     setRowRef,
 }) => {
-    const entryId = `item:${row.entry.mountId}:${row.entry.path}`;
-    const {
-        attributes,
-        listeners,
-        setNodeRef: setDraggableNodeRef,
-        transform,
-        isDragging,
-    } = useDraggable({
-        id: entryId,
-        data: row.entry,
-    });
-    const { setNodeRef: setDroppableNodeRef, isOver } = useDroppable({
-        id: `drop:${row.entry.mountId}:${row.entry.path}`,
-        disabled: !row.entry.isDirectory,
-        data: { mountId: row.entry.mountId, path: row.entry.path, isDirectory: true },
-    });
+        const entryId = `item:${row.entry.mountId}:${row.entry.path}`;
+        const {
+            attributes,
+            listeners,
+            setNodeRef: setDraggableNodeRef,
+            transform,
+            isDragging,
+        } = useDraggable({
+            id: entryId,
+            data: row.entry,
+        });
+        const { setNodeRef: setDroppableNodeRef, isOver } = useDroppable({
+            id: `drop:${row.entry.mountId}:${row.entry.path}`,
+            disabled: !row.entry.isDirectory,
+            data: { mountId: row.entry.mountId, path: row.entry.path, isDirectory: true },
+        });
 
-    const combinedRef = (element: HTMLDivElement | null) => {
-        setDraggableNodeRef(element);
-        if (row.entry.isDirectory) {
-            setDroppableNodeRef(element);
-        }
-        setRowRef?.(row.key, element);
-    };
+        const combinedRef = (element: HTMLDivElement | null) => {
+            setDraggableNodeRef(element);
+            if (row.entry.isDirectory) {
+                setDroppableNodeRef(element);
+            }
+            setRowRef?.(row.key, element);
+        };
 
-    const style = transform
-        ? {
-            transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-            zIndex: 100,
-            opacity: 0.5,
-        }
-        : undefined;
+        const style = transform
+            ? {
+                transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+                zIndex: 'var(--tengra-z-100)',
+                opacity: 0.5,
+            }
+            : undefined;
 
-    return (
-        <div
-            ref={combinedRef}
-            {...attributes}
-            {...listeners}
-            data-entry-id={entryId}
-            className={cn(
-                'flex w-full min-w-0 items-center gap-1.5 py-0 px-2 cursor-pointer overflow-hidden transition-all select-none group border-y border-transparent outline-none relative h-22',
-                isSelected
-                    ? 'bg-git-vsc-selected text-white'
-                    : 'hover:bg-git-vsc-hover text-git-vsc-dim hover:text-white',
-                isFocused && !isSelected && 'bg-git-vsc-selected/50',
-                isOver && 'bg-primary/20',
-                isDragging && 'opacity-20 cursor-grabbing bg-muted/40',
-                getIgnoredEntryClassName(row.entry.isGitIgnored)
-            )}
-            style={{ ...style }}
-            onClick={e => {
-                e.stopPropagation();
-                onSelectEntry(row.entry, e);
-                if (row.entry.isDirectory) {
-                    onToggleNode(row);
-                    return;
-                }
-                if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
-                    onOpenFile(row.entry);
-                }
-            }}
-            onContextMenu={e => onEntryContextMenu(e, row)}
-            tabIndex={-1}
-        >
-            {/* Indentation Guides */}
-            {Array.from({ length: row.depth }).map((_, i) => (
-                <div
-                    key={i}
-                    className="absolute h-full w-[1px] bg-white/5 group-hover:bg-white/10 transition-colors pointer-events-none"
-                    style={{ left: `${(i + 1) * 12 + 4}px` }}
-                />
-            ))}
-
-            <div 
-                className="flex items-center gap-1.5 min-w-0" 
-                style={{ paddingLeft: `${row.depth * 12}px`, zIndex: 1 }}
+        return (
+            <div
+                ref={combinedRef}
+                {...attributes}
+                {...listeners}
+                data-entry-id={entryId}
+                className={cn(
+                    'flex w-full min-w-0 items-center gap-1.5 py-0 px-2 cursor-pointer overflow-hidden transition-all select-none group border-y border-transparent outline-none relative h-22',
+                    isSelected
+                        ? 'bg-git-vsc-selected text-foreground'
+                        : 'hover:bg-git-vsc-hover text-git-vsc-dim hover:text-foreground',
+                    isFocused && !isSelected && 'bg-git-vsc-selected/50',
+                    isOver && 'bg-primary/20',
+                    isDragging && 'opacity-20 cursor-grabbing bg-muted/40',
+                    getIgnoredEntryClassName(row.entry.isGitIgnored)
+                )}
+                style={{ ...style }}
+                onClick={e => {
+                    e.stopPropagation();
+                    onSelectEntry(row.entry, e);
+                    if (row.entry.isDirectory) {
+                        onToggleNode(row);
+                        return;
+                    }
+                    if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                        onOpenFile(row.entry);
+                    }
+                }}
+                onContextMenu={e => onEntryContextMenu(e, row)}
+                tabIndex={-1}
             >
-                {row.entry.isDirectory ? (
-                    <span className="opacity-70 group-hover:opacity-100 shrink-0">
-                        {row.loading ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                        ) : row.expanded ? (
-                            <ChevronDown className="w-3.5 h-3.5" />
-                        ) : (
-                            <ChevronRight className="w-3.5 h-3.5" />
-                        )}
+                {/* Indentation Guides */}
+                {Array.from({ length: row.depth }).map((_, i) => (
+                    <div
+                        key={i}
+                        className="absolute h-full w-px bg-border/30 group-hover:bg-border/50 transition-colors pointer-events-none"
+                        style={{ left: `${(i + 1) * 12 + 4}px` }}
+                    />
+                ))}
+
+                <div
+                    className="flex items-center gap-1.5 min-w-0"
+                    style={{ paddingLeft: `${row.depth * 12}px`, zIndex: 'var(--tengra-z-1)' }}
+                >
+                    {row.entry.isDirectory ? (
+                        <span className="opacity-70 group-hover:opacity-100 shrink-0">
+                            {row.loading ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : row.expanded ? (
+                                <ChevronDown className="w-3.5 h-3.5" />
+                            ) : (
+                                <ChevronRight className="w-3.5 h-3.5" />
+                            )}
+                        </span>
+                    ) : (
+                        <span className="w-3.5 shrink-0" />
+                    )}
+                    {row.entry.isDirectory ? (
+                        <FolderIcon folderName={row.entry.name} isOpen={row.expanded} className="w-3.5 h-3.5 shrink-0" />
+                    ) : (
+                        <FileIcon fileName={row.entry.name} className="w-3.5 h-3.5 shrink-0" />
+                    )}
+                    <span className={cn(
+                        "flex-1 min-w-0 truncate typo-overline font-normal transition-colors",
+                        row.gitStatus === 'M' ? 'text-git-modified' :
+                            row.gitStatus === 'A' ? 'text-git-added' :
+                                row.gitStatus === '?' ? 'text-git-untracked' :
+                                    isSelected ? 'text-foreground' : ''
+                    )}>
+                        {row.entry.name}
                     </span>
-                ) : (
-                    <span className="w-3.5 shrink-0" />
-                )}
-                {row.entry.isDirectory ? (
-                    <FolderIcon folderName={row.entry.name} isOpen={row.expanded} className="w-3.5 h-3.5 shrink-0" />
-                ) : (
-                    <FileIcon fileName={row.entry.name} className="w-3.5 h-3.5 shrink-0" />
-                )}
-                <span className={cn(
-                    "flex-1 min-w-0 truncate text-11 font-normal transition-colors",
-                    row.gitStatus === 'M' ? 'text-git-modified' : 
-                    row.gitStatus === 'A' ? 'text-git-added' :
-                    row.gitStatus === '?' ? 'text-git-untracked' :
-                    isSelected ? 'text-white' : ''
-                )}>
-                    {row.entry.name}
-                </span>
+                </div>
+
+                <div className="ml-auto flex items-center gap-1.5 pl-2 shrink-0 pr-1" style={{ zIndex: 'var(--tengra-z-1)' }}>
+                    <WorkspaceExplorerDiagnosticsBadges diagnostics={row.diagnostics} />
+                    {row.gitStatus && (
+                        <GitStatusIndicator status={row.gitStatus} rawStatus={row.gitRawStatus} />
+                    )}
+                </div>
             </div>
-            
-            <div className="ml-auto flex items-center gap-1.5 pl-2 shrink-0 pr-1" style={{ zIndex: 1 }}>
-                <WorkspaceExplorerDiagnosticsBadges diagnostics={row.diagnostics} />
-                {row.gitStatus && (
-                    <GitStatusIndicator status={row.gitStatus} rawStatus={row.gitRawStatus} />
-                )}
-            </div>
-        </div>
-    );
-};
+        );
+    };
 
 export const WorkspaceExplorerRowView: React.FC<WorkspaceExplorerRowProps> = props => {
     if (props.row.type === 'mount') {

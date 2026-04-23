@@ -110,11 +110,11 @@ export const WorkspaceOverviewTab = ({
                         {t('workspaceDashboard.techStack')}
                     </h3>
                     <div className="flex flex-wrap gap-2">
-                        <span className="px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-11 font-semibold text-primary">
+                        <span className="px-3 py-1 rounded-full border border-primary/20 bg-primary/5 typo-overline font-semibold text-primary">
                             {analysis.type}
                         </span>
                         {analysis.monorepo && (
-                            <span className="px-3 py-1 rounded-full border border-border/60 bg-muted/20 text-11 font-semibold text-foreground/80">
+                            <span className="px-3 py-1 rounded-full border border-border/60 bg-muted/20 typo-overline font-semibold text-foreground/80">
                                 {analysis.monorepo.type}
                             </span>
                         )}

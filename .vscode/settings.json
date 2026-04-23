@@ -1,0 +1,8 @@
+{
+    "cmake.sourceDirectory": "C:/Users/agnes/Desktop/projects/tengra-website/tengra-backend",
+    "cmake.useCMakePresets": "always",
+    "cmake.configurePreset": "windows-debug-msvc",
+    "cmake.buildPreset": "windows-debug-msvc",
+    "cmake.generator": "Visual Studio 18 2026",
+    "search.useIgnoreFiles": false
+}

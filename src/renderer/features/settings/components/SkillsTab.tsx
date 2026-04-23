@@ -24,7 +24,7 @@ import type { SettingsSharedProps } from '../types';
 import { SettingsPanel } from './SettingsPrimitives';
 
 /* Batch-02: Extracted Long Classes */
-const C_SKILLSTAB_1 = "flex items-center gap-3 bg-muted/40 px-3 py-1.5 rounded-xl border border-border/10 ring-1 ring-inset ring-white/5 shadow-sm sm:gap-4";
+const C_SKILLSTAB_1 = "flex items-center gap-3 bg-muted/40 px-3 py-1.5 rounded-xl border border-border/10 ring-1 ring-inset ring-border/20 shadow-sm sm:gap-4";
 const C_SKILLSTAB_2 = "h-9 gap-2 px-4 rounded-xl font-black uppercase tracking-widest text-xxxs shadow-lg shadow-destructive/20 active:scale-95";
 const C_SKILLSTAB_3 = "h-9 w-9 rounded-xl border-destructive/20 text-destructive/60 hover:text-destructive hover:bg-destructive/10 hover:border-destructive/40 transition-all active:scale-90 shadow-sm";
 

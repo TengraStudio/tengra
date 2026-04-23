@@ -21,14 +21,14 @@ interface CommitCardProps {
 
 export const GitCommitCard: React.FC<CommitCardProps> = ({ commit, isSelected, onSelect }) => {
     const date = new Date(commit.date);
-    
+
     return (
         <div
             onClick={() => onSelect(commit)}
             className={cn(
                 "flex flex-col gap-1.5 p-3 cursor-pointer transition-all border-l-2 border-transparent select-none",
-                isSelected 
-                    ? "bg-primary/5 border-primary" 
+                isSelected
+                    ? "bg-primary/5 border-primary"
                     : "hover:bg-muted/50"
             )}
         >
@@ -39,11 +39,11 @@ export const GitCommitCard: React.FC<CommitCardProps> = ({ commit, isSelected, o
                 )}>
                     {commit.message}
                 </span>
-                <span className="text-10 font-mono text-muted-foreground/50 shrink-0">
+                <span className="typo-overline font-mono text-muted-foreground/50 shrink-0">
                     {commit.hash.substring(0, 7)}
                 </span>
             </div>
-            <div className="flex items-center justify-between text-10 text-muted-foreground/40 font-medium">
+            <div className="flex items-center justify-between typo-overline text-muted-foreground/40 font-medium">
                 <span className="truncate max-w-120">{commit.author}</span>
                 <span>{date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
             </div>

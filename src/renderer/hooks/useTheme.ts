@@ -33,13 +33,13 @@ export const useThemeDetection = () => {
 
     useEffect(() => {
         const updateThemeInfo = () => {
-            const newTheme = document.documentElement.getAttribute('data-theme');
-            if (newTheme) {
-                setTheme(newTheme);
-                // Use manifest type instead of calculating luminance
-                setIsLight(themeRegistry.isLightTheme(newTheme));
-            }
+            const newTheme = document.documentElement.getAttribute('data-theme') ?? 'black';
+            setTheme(newTheme);
+            setIsLight(themeRegistry.isLightTheme(newTheme));
         };
+
+        // Subscribe to registry changes (in case themes are loaded later)
+        const unsubscribe = themeRegistry.subscribe(updateThemeInfo);
 
         // Observer for changes to data-theme attribute
         const observer = new MutationObserver(mutations => {
@@ -55,7 +55,13 @@ export const useThemeDetection = () => {
             attributeFilter: ['data-theme'],
         });
 
-        return () => observer.disconnect();
+        // Initial update in case it changed between state init and effect
+        updateThemeInfo();
+
+        return () => {
+            observer.disconnect();
+            unsubscribe();
+        };
     }, []);
 
     return {

@@ -282,7 +282,7 @@ function ServerItem({
                                             <div className="min-w-0">
                                                 <div className="truncate text-xs font-bold text-foreground">{action.name}</div>
                                                 {action.description && (
-                                                    <div className="mt-0.5 line-clamp-1 text-10 font-medium text-muted-foreground/60">
+                                                    <div className="mt-0.5 line-clamp-1 typo-overline font-medium text-muted-foreground/60">
                                                         {action.description}
                                                     </div>
                                                 )}
@@ -296,7 +296,7 @@ function ServerItem({
                                                         size="sm"
                                                         onClick={() => setActionPolicy(action.name, policy.id)}
                                                         className={cn(
-                                                            "h-7 rounded-md px-2 text-10 font-black uppercase tracking-wide",
+                                                            "h-7 rounded-md px-2 typo-overline font-black uppercase tracking-wide",
                                                             draftActionPermissions[action.name] === policy.id
                                                                 ? policy.className
                                                                 : "border-border/40 bg-muted/20 text-muted-foreground hover:bg-muted"
@@ -328,7 +328,7 @@ function ServerItem({
                                                 }
                                             }}
                                             className={cn(
-                                                "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all active:scale-[0.98]",
+                                                "flex items-center gap-3 p-3 rounded-6px cursor-pointer transition-all active:scale-98",
                                                 draftPermissions.includes(perm.id)
                                                     ? "bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/20 shadow-glow-primary-soft"
                                                     : "bg-background/20 border-border/40 text-muted-foreground opacity-70 hover:opacity-100 hover:border-border/60"
@@ -342,7 +342,7 @@ function ServerItem({
                                             </div>
                                             <div className="flex-1 flex flex-col items-start text-left">
                                                 <span className="text-xs font-bold tracking-tight">{t(`settings.mcp.permissions.${perm.id}`)}</span>
-                                                <span className="text-10 opacity-60 line-clamp-1">{t(`settings.mcp.permissions.${perm.id}_desc`)}</span>
+                                                <span className="typo-overline opacity-60 line-clamp-1">{t(`settings.mcp.permissions.${perm.id}_desc`)}</span>
                                             </div>
                                             <div className={cn(
                                                 "h-4 w-4 rounded-full border flex items-center justify-center transition-colors",

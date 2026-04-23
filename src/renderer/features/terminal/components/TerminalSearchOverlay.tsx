@@ -100,7 +100,7 @@ export function TerminalSearchOverlay({
                         setSearchActiveMatchIndex(-1);
                     }}
                     className={cn(
-                        'h-6 px-1.5 text-10 rounded border transition-colors',
+                        'h-6 px-1.5 typo-overline rounded border transition-colors',
                         searchUseRegex
                             ? 'border-primary/70 text-primary bg-primary/10'
                             : 'border-border text-muted-foreground hover:text-foreground hover:bg-accent/40'
@@ -139,7 +139,7 @@ export function TerminalSearchOverlay({
             <div className="mt-1 flex items-center justify-between gap-2">
                 <span
                     className={cn(
-                        'text-10',
+                        'typo-overline',
                         searchStatus === 'invalid-regex' || searchStatus === 'not-found'
                             ? 'text-destructive'
                             : 'text-muted-foreground'
@@ -166,7 +166,7 @@ export function TerminalSearchOverlay({
                                     setSearchHistoryIndex(-1);
                                     resetActiveSearchCursor();
                                 }}
-                                className="px-1.5 py-0.5 rounded text-10 text-muted-foreground hover:text-foreground hover:bg-accent/40 truncate max-w-56"
+                                className="px-1.5 py-0.5 rounded typo-overline text-muted-foreground hover:text-foreground hover:bg-accent/40 truncate max-w-56"
                                 title={entry}
                             >
                                 {entry}
@@ -184,7 +184,7 @@ export function TerminalSearchOverlay({
                                 jumpToSearchMatch(index);
                             }}
                             className={cn(
-                                'w-full text-left px-1.5 py-1 rounded text-10 transition-colors',
+                                'w-full text-left px-1.5 py-1 rounded typo-overline transition-colors',
                                 index === searchActiveMatchIndex
                                     ? 'bg-primary/10 text-primary'
                                     : 'text-muted-foreground hover:text-foreground hover:bg-accent/40'

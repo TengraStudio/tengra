@@ -18,7 +18,7 @@ import { SettingsSharedProps } from '../types';
 
 const AboutTab = React.lazy(() => import('@/features/settings/components/AboutTab').then(m => ({ default: m.AboutTab })));
 const AccountsTab = React.lazy(() => import('@/features/settings/components/AccountsTab').then(m => ({ default: m.AccountsTab })));
-const AdvancedTab = React.lazy(() => import('@/features/settings/components/AdvancedTab').then(m => ({ default: m.AdvancedTab })));
+
 const AppearanceTab = React.lazy(() => import('@/features/settings/components/AppearanceTab').then(m => ({ default: m.AppearanceTab })));
 
 const EditorTab = React.lazy(() => import('@/features/settings/components/EditorTab').then(m => ({ default: m.EditorTab })));
@@ -32,7 +32,7 @@ const PersonasTab = React.lazy(() => import('@/features/settings/components/Pers
 const SpeechTab = React.lazy(() => import('@/features/settings/components/SpeechTab').then(m => ({ default: m.SpeechTab })));
 const StatisticsTab = React.lazy(() => import('@/features/settings/components/StatisticsTab').then(m => ({ default: m.StatisticsTab })));
 const SystemTab = React.lazy(() => import('@/features/settings/components/SystemTab').then(m => ({ default: m.SystemTab })));
-const WorkspaceTab = React.lazy(() => import('@/features/settings/components/WorkspaceTab').then(m => ({ default: m.WorkspaceTab })));
+
 const SocialMediaTab = React.lazy(() => import('@/features/settings/components/SocialMediaTab').then(m => ({ default: m.SocialMediaTab })));
 
 // Extensions Category Tabs
@@ -61,7 +61,7 @@ const SettingsTabRenderer: React.FC<SettingsTabContentProps> = ({
 }) => {
     switch (activeTab) {
         case 'general': return <GeneralTab {...sharedProps} groupedModels={groupedModels} />;
-        case 'workspace': return <WorkspaceTab {...sharedProps} />;
+
         case 'editor': return <EditorTab {...sharedProps} />;
         case 'accounts': return <AccountsTab {...sharedProps} />;
         case 'appearance': return <AppearanceTab {...sharedProps} />;
@@ -73,7 +73,7 @@ const SettingsTabRenderer: React.FC<SettingsTabContentProps> = ({
         case 'personas': return <PersonasTab {...sharedProps} />;
         case 'speech': return <SpeechTab {...sharedProps} />;
 
-        case 'advanced': return <AdvancedTab {...sharedProps} installedModels={installedModels} proxyModels={proxyModels} />;
+
         case 'about': return <AboutTab {...sharedProps} onReset={() => { void handleFactoryReset(); }} />;
         case 'usage-limits': return <ModelUsageLimitsTab {...sharedProps} groupedModels={groupedModels} />;
         case 'images': return <ImageSettingsTab {...sharedProps} />;

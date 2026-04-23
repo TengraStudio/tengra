@@ -11,7 +11,6 @@
 export type SettingsCategory =
     | 'accounts'
     | 'general'
-    | 'workspace'
     | 'editor'
     | 'appearance'
     | 'system'
@@ -22,7 +21,6 @@ export type SettingsCategory =
     | 'statistics'
     | 'personas'
     | 'speech'
-    | 'advanced'
     | 'about'
     | 'images'
     | 'extensions'

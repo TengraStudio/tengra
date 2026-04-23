@@ -433,7 +433,7 @@ export const TerminalComponent = ({ cwd, workspaceId }: TerminalComponentProps) 
 
     return (
         <div className="w-full h-full relative group flex flex-col gap-2 min-h-300">
-            <div className="flex flex-wrap items-center gap-2 text-11">
+            <div className="flex flex-wrap items-center gap-2 typo-overline">
                 <span className={cn(
                     'inline-flex items-center rounded-full px-2 py-1 border',
                     terminalRuntimeHealth?.terminalAvailable ? 'border-success/50 text-success' : 'border-destructive/50 text-destructive'
@@ -460,7 +460,7 @@ export const TerminalComponent = ({ cwd, workspaceId }: TerminalComponentProps) 
                     ref={terminalRef}
                     className="relative w-full h-full bg-card rounded-xl overflow-hidden border border-border/50 shadow-2xl backdrop-blur-sm"
                     style={{
-                        boxShadow: 'inset 0 1px 0 0 hsl(var(--border) / 0.1), 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)'
+                        boxShadow: 'var(--terminal-surface-shadow)'
                     }}
                 />
                 {/* Subtle top gradient overlay */}

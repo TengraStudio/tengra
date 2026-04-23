@@ -1,4 +1,5 @@
 import { resolve } from 'path';
+import fs from 'fs';
 
 import react from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
@@ -11,129 +12,118 @@ export default defineConfig(({ mode }) => {
     const shouldAnalyzeBundle = process.env.TENGRA_ANALYZE_BUNDLE === 'true';
     const shouldReportCompressedSize = process.env.TENGRA_REPORT_COMPRESSED_SIZE === 'true';
 
-    return {
-        plugins: [
-            // reactGlobalPlugin(), // Removed
-            react({
-                jsxRuntime: 'automatic',
-                jsxImportSource: 'react'
-            }),
-            electron([
-                {
-                    entry: 'src/main/main.ts',
-                    onstart(options) {
-                        // Unset ELECTRON_RUN_AS_NODE to ensure Electron runs properly
-                        // This variable may be set by IDE environments like VSCode
-                        const env = { ...process.env };
-                        delete env.ELECTRON_RUN_AS_NODE;
-                        void options.startup(['.', '--no-sandbox'], { env });
-                    },
-                    vite: {
-                        resolve: {
-                            alias: {
-                                '@main': resolve(__dirname, 'src/main'),
-                                '@shared': resolve(__dirname, 'src/shared'),
-                                '@renderer': resolve(__dirname, 'src/renderer'),
-                            }
-                        },
-                        build: {
-                            outDir: 'dist/main',
-                            emptyOutDir: true, // UZAY OPTİMİZASYONU: Eski dosyaları temizle
-                            lib: {
-                                entry: 'src/main/main.ts',
-                                formats: ['cjs']
-                            },
-                            // AGRESIF MİNİFİCATION: Main process'te de minify
-                            minify: 'esbuild',
-                            rollupOptions: {
-                                external: [
-                                    'electron',
-                                    'fs',
-                                    'path',
-                                    'child_process',
-                                    'util',
-                                    'os',
-                                    'http',
-                                    'https',
-                                    'events',
-                                    'stream',
-                                    'net',
-                                    'tls',
-                                    'crypto',
-                                    'fs/promises',
-                                    'node-pty',
-                                    '@primno/dpapi',
-                                    'ssh2',
-                                    'ws',
-                                    'bufferutil',
-                                    'utf-8-validate',
-                                    'better-sqlite3', // Native module
-                                    // discord.js and its optional native dependencies
-                                    'discord.js',
-                                    '@discordjs/ws',
-                                    '@discordjs/rest',
-                                    '@discordjs/collection',
-                                    'zlib-sync',
-                                    'erlpack',
-                                    '@discordjs/opus',
-                                    'sodium',
-                                    'sodium-native',
-                                    'libsodium-wrappers',
-                                ],
-                                // UZAY OPTİMİZASYONU: Main process code splitting
-                                output: {
-                                    // Main process'te manuel chunk zorlaması circular chunk uyarısı
-                                    // ürettiği için varsayılan Rollup chunklama stratejisi kullanılıyor.
-                                },
-                                // AGRESIF tree shaking
-                                treeshake: {
-                                    preset: 'recommended',
-                                    moduleSideEffects: false
-                                }
-                            }
-                        }
-                    }
+    const buildTarget = process.env.TENGRA_BUILD_TARGET ?? 'all';
+    const isMainOnly = buildTarget === 'main';
+    const isRendererOnly = buildTarget === 'renderer';
+
+    const plugins = [
+        react({
+            jsxRuntime: 'automatic',
+            jsxImportSource: 'react'
+        }),
+    ];
+
+    const pkg = JSON.parse(fs.readFileSync(resolve(__dirname, 'package.json'), 'utf-8'));
+    const external = [
+        'electron',
+        'node-pty',
+        'better-sqlite3',
+        'ssh2',
+        'ws',
+        '@primno/dpapi',
+        ...Object.keys(pkg.dependencies || {}),
+        ...require('module').builtinModules,
+        ...require('module').builtinModules.map((m: string) => `node:${m}`),
+        /^@discordjs\/.*/,
+        'zlib-sync',
+        'erlpack'
+    ];
+
+    if (!isRendererOnly) {
+        const electronEntries: any[] = [];
+        
+        // Only include main.ts in the plugin if we are NOT doing a parallel main-only build
+        if (!isMainOnly) {
+            electronEntries.push({
+                entry: 'src/main/main.ts',
+                onstart(options: any) {
+                    const env = { ...process.env };
+                    delete env.ELECTRON_RUN_AS_NODE;
+                    void options.startup(['.', '--no-sandbox'], { env });
                 },
-                {
-                    entry: 'src/main/preload.ts',
-                    onstart(options) {
-                        options.reload();
+                vite: {
+                    resolve: {
+                        alias: {
+                            '@main': resolve(__dirname, 'src/main'),
+                            '@shared': resolve(__dirname, 'src/shared'),
+                            '@renderer': resolve(__dirname, 'src/renderer'),
+                        }
                     },
-                    vite: {
-                        resolve: {
-                            alias: {
-                                '@main': resolve(__dirname, 'src/main'),
-                                '@shared': resolve(__dirname, 'src/shared'),
-                            }
+                    build: {
+                        outDir: 'dist/main',
+                        emptyOutDir: true,
+                        lib: {
+                            entry: 'src/main/main.ts',
+                            formats: ['cjs']
                         },
-                        build: {
-                            outDir: 'dist/preload',
-                            emptyOutDir: true, // UZAY OPTİMİZASYONU: Eski dosyaları temizle
-                            lib: {
-                                entry: 'src/main/preload.ts',
-                                formats: ['cjs']
-                            },
-                            // AGRESIF MİNİFİCATION: Preload da minify
-                            minify: 'esbuild',
-                            rollupOptions: {
-                                external: ['electron'],
-                                treeshake: true
+                        minify: 'esbuild',
+                        rollupOptions: {
+                            external,
+                            treeshake: {
+                                preset: 'recommended',
+                                moduleSideEffects: false
                             }
                         }
                     }
                 }
-            ]),
-            ...(shouldAnalyzeBundle
-                ? [
-                    visualizer({
-                        filename: 'dist/stats.html',
-                        open: false,
-                        gzipSize: true,
-                        brotliSize: true
-                    })
-                ]
-                : [])
-        ],
+            });
+        }
+
+        // Always include preload.ts in the plugin when building backend
+        electronEntries.push({
+            entry: 'src/main/preload.ts',
+            onstart(options: any) {
+                options.reload();
+            },
+            vite: {
+                resolve: {
+                    alias: {
+                        '@main': resolve(__dirname, 'src/main'),
+                        '@shared': resolve(__dirname, 'src/shared'),
+                    }
+                },
+                build: {
+                    outDir: 'dist/preload',
+                    emptyOutDir: true,
+                    lib: {
+                        entry: 'src/main/preload.ts',
+                        formats: ['cjs']
+                    },
+                    minify: 'esbuild',
+                    rollupOptions: {
+                        external: ['electron'],
+                        treeshake: true
+                    }
+                }
+            }
+        });
+
+        plugins.push(electron(electronEntries));
+    }
+
+    if (shouldAnalyzeBundle) {
+        plugins.push(
+            visualizer({
+                filename: `dist/stats-${buildTarget}.html`,
+                open: false,
+                gzipSize: true,
+                brotliSize: true
+            })
+        );
+    }
+
+    return {
+        plugins,
         resolve: {
             alias: {
                 '@': resolve(__dirname, 'src/renderer'),
@@ -165,14 +155,19 @@ export default defineConfig(({ mode }) => {
                 }
                 : {})
         },
-        build: {
+        build: isMainOnly ? {
+            outDir: 'dist/main',
+            emptyOutDir: false,
+            lib: {
+                entry: 'src/main/main.ts',
+                formats: ['cjs']
+            },
+            rollupOptions: { external }
+        } : {
             outDir: 'dist/renderer',
-            // UZAY SEVİYESİ OPTİMİZASYON: Eski build dosyalarını temizle
             emptyOutDir: true,
             rollupOptions: {
-                // Rollup cache'ini etkinleştir (hızlı rebuild)
                 cache: true,
-                // AGRESIF tree shaking
                 treeshake: {
                     preset: 'recommended',
                     moduleSideEffects: 'no-external',
@@ -180,8 +175,6 @@ export default defineConfig(({ mode }) => {
                     unknownGlobalSideEffects: false
                 },
                 output: {
-                    // CODE SPLITTING: Sadece lazy-loadable büyük kütüphaneleri ayır
-                    // NOT: React/React-DOM AYRILMAMALI - internal state paylaşımı bozulur
                     manualChunks: (id: string) => {
                         if (id.includes('node_modules/monaco-editor')) {
                             return 'monaco';
@@ -210,34 +203,24 @@ export default defineConfig(({ mode }) => {
                         if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/scheduler')) {
                             return 'react-vendor';
                         }
-                        
-                        // Let Rollup/Vite handle the rest naturally for better dynamic chunking
                     },
-                    // UZAY OPTİMİZASYONU: Dosya isimlerini hash'le (cache için)
                     entryFileNames: 'assets/[name]-[hash].js',
                     chunkFileNames: 'assets/[name]-[hash].js',
                     assetFileNames: 'assets/[name]-[hash].[ext]'
                 }
             },
-            // Electron desktop dağıtımında bazı vendor/chunk'lar doğal olarak büyük.
-            // 500k uyarı eşiği yerine gerçekçi bir eşik kullanıyoruz.
             chunkSizeWarningLimit: 5000,
-            // Build süresi için terser yerine esbuild minifier kullan
-            minify: 'esbuild',
-            // CommonJS interop
+            minify: process.env.TENGRA_BUILD_FAST === 'true' ? false : 'esbuild',
             commonjsOptions: {
                 include: [/node_modules/],
                 transformMixedEsModules: true,
                 esmExternals: true,
                 strictRequires: false
             },
-            // Modern tarayıcı hedefi (Electron Chromium 120+)
             target: 'esnext',
-            // Production'da sourcemap yok (boyut tasarrufu)
             sourcemap: false,
-            // CSS code splitting
             cssCodeSplit: true,
-            // Sıkıştırılmış boyut raporu pahalı; gerektiğinde env ile açılır.
+            cssMinify: 'esbuild',
             reportCompressedSize: shouldReportCompressedSize
         },
         // Optimize deps - pre-bundle for faster dev startup

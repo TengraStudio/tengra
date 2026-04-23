@@ -21,7 +21,6 @@ import {
     BuildSection,
     CouncilSection,
     DevServerSection,
-    EditorSection,
     GeneralSection,
     GitSection,
     IntelligenceSection,
@@ -144,9 +143,6 @@ const WorkspaceSettingsPanelBase: React.FC<WorkspaceSettingsPanelProps> = ({
                             <DevServerSection formData={formData} setFormData={setFormData} t={t} models={models} />
                         )}
 
-                        {activeSection === 'editor' && (
-                            <EditorSection formData={formData} setFormData={setFormData} t={t} models={models} />
-                        )}
 
                         {activeSection === 'advanced' && (
                             <AdvancedSection formData={formData} setFormData={setFormData} t={t} models={models} />

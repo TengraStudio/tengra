@@ -70,3 +70,14 @@ const callback = useCallback((arg) => action(arg), [action])
 ## No Emojis in Code
 - Never use emojis in JSX or comments
 - Use icons from lucide-react instead
+
+## Theme System
+- Do not hardcode renderer colors, shadows, radii, spacing, or layout values when a theme token can be used.
+- Add new visual/layout values as CSS custom properties first, then map them into Tailwind/theme manifests if the value should be user-themeable.
+- For canvas, Monaco, xterm, SVG/icon libraries, and generated HTML, resolve shared theme tokens through the renderer theme helpers instead of embedding literal colors.
+- If a new CSS variable becomes part of the theme contract, run `npm run themes:sync`.
+
+## Cross-Platform Compatibility
+- Generated code must work on Windows, macOS, and Linux unless the task is explicitly platform-specific.
+- Avoid OS-specific path separators, shell syntax, fonts, and filesystem/process assumptions without a fallback.
+- Prefer shared repo abstractions and standards-based APIs over platform-specific shortcuts.

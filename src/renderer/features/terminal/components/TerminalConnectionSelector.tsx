@@ -78,7 +78,7 @@ export const TerminalConnectionSelector: React.FC<TerminalConnectionSelectorProp
                         id: c.Id,
                         name: Array.isArray(c.Names) ? c.Names[0].replace(/^\//, '') : c.Id.substring(0, 12),
                         status: c.Status
-                     }));
+                    }));
                     setContainers(mappedContainers);
                 } else {
                     setContainers([]);
@@ -100,8 +100,8 @@ export const TerminalConnectionSelector: React.FC<TerminalConnectionSelectorProp
 
     return (
         <div className={UI_PRIMITIVES.OVERLAY_BASE} onClick={onClose}>
-            <div 
-                className={cn(UI_PRIMITIVES.PANEL_BASE, "w-400 max-h-500 shadow-2xl")} 
+            <div
+                className={cn(UI_PRIMITIVES.PANEL_BASE, "w-400 max-h-500 shadow-2xl")}
                 onClick={e => e.stopPropagation()}
             >
                 <div className={UI_PRIMITIVES.PANEL_SUB_HEADER}>
@@ -111,8 +111,8 @@ export const TerminalConnectionSelector: React.FC<TerminalConnectionSelectorProp
                 <div className="flex-1 overflow-y-auto p-1 space-y-4">
                     {/* Local Terminal */}
                     <div className="space-y-1">
-                        <div 
-                            className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "group")} 
+                        <div
+                            className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "group")}
                             onClick={() => handleSelect({ id: 'local', name: t('terminal.local'), type: 'local' })}
                         >
                             <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -132,9 +132,9 @@ export const TerminalConnectionSelector: React.FC<TerminalConnectionSelectorProp
                             <div className="px-3 py-2 text-xxs text-muted-foreground italic">{t('terminal.no_ssh_profiles')}</div>
                         )}
                         {sshProfiles.map(profile => (
-                            <div 
-                                key={profile.id} 
-                                className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "group")} 
+                            <div
+                                key={profile.id}
+                                className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "group")}
                                 onClick={() => handleSelect({
                                     id: profile.id,
                                     name: profile.name || profile.host,
@@ -160,9 +160,9 @@ export const TerminalConnectionSelector: React.FC<TerminalConnectionSelectorProp
                             <div className="px-3 py-2 text-xxs text-muted-foreground italic">{t('terminal.no_containers')}</div>
                         )}
                         {containers.map(container => (
-                            <div 
-                                key={container.id} 
-                                className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "group")} 
+                            <div
+                                key={container.id}
+                                className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "group")}
                                 onClick={() => handleSelect({
                                     id: container.id,
                                     name: container.name,
@@ -171,7 +171,7 @@ export const TerminalConnectionSelector: React.FC<TerminalConnectionSelectorProp
                                 })}
                             >
                                 <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
-                                    <div className="text-10 font-bold border border-current px-1 rounded">D</div>
+                                    <div className="typo-overline font-bold border border-current px-1 rounded">D</div>
                                 </div>
                                 <div className="flex-1 flex flex-col">
                                     <span className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "p-0 bg-transparent font-bold")}>{container.name}</span>

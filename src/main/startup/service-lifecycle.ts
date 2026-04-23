@@ -80,6 +80,23 @@ export async function initDeferredServices(container: ContainerLike): Promise<vo
 
 /** Services that don't need to be ready before the main window is shown. */
 const DEFERRED_SERVICE_NAMES: string[] = [
+    // Heavy Workspace Services
+    'terminalService',
+    'gitService',
+    'lspService',
+    'dockerService',
+    'sshService',
+    'extensionService',
+    
+    // AI & Proxy Infrastructure
+    'llmService',
+    'ollamaService',
+    'localAIService',
+    'copilotService',
+    'proxyService',
+    'proxyProcessManager',
+    'backgroundModelResolver',
+
     // Analysis & monitoring
     'telemetryService',
     'usageTrackingService',
@@ -91,6 +108,7 @@ const DEFERRED_SERVICE_NAMES: string[] = [
     // Export & screenshot
     'exportService',
     'screenshotService',
+    
     // Advanced AI services
     'advancedMemoryService',
     'embeddingService',
@@ -103,8 +121,10 @@ const DEFERRED_SERVICE_NAMES: string[] = [
     'inlineSuggestionService',
     'promptTemplatesService',
     'modelRegistryService',
+    
     // Agent services
     'agentService',
+    
     // Workspace & external
     'marketplaceService',
     'mcpPluginService',

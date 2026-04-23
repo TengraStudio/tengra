@@ -112,7 +112,7 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
     const { ps, wm, handleUpdateWorkspace, submitEntryModal, entryBusy, t } =
         useWorkspaceDetailsController({ workspace, language });
     const taskRunner = useWorkspaceTaskRunner({
-        workspace 
+        workspace
     });
 
     const tl = useTerminalLayout({
@@ -136,7 +136,7 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
         handleBranchSelect,
     } = useWorkspaceBranchState({
         workspacePath,
-        enabled: branchStateEnabled, 
+        enabled: branchStateEnabled,
         t,
     });
 
@@ -152,7 +152,7 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                 updatedAt: Date.now(),
             });
         } catch (error) {
-            appLogger.error('WorkspaceDetails', 'Logo upload failed', error as Error); 
+            appLogger.error('WorkspaceDetails', 'Logo upload failed', error as Error);
         }
     }, [handleUpdateWorkspace, workspace.path]);
 
@@ -163,7 +163,7 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
         setQuickSwitchQuery: qs.setQuickSwitchQuery,
         setQuickSwitchIndex: qs.setQuickSwitchIndex,
         showTerminal: ps.showTerminal,
-        setShowTerminal: ps.setShowTerminal, 
+        setShowTerminal: ps.setShowTerminal,
         setIsMaximizedTerminal: tl.setIsMaximizedTerminal,
         setTerminalHeight: ps.setTerminalHeight,
         lastExpandedTerminalHeightRef: tl.lastExpandedTerminalHeightRef,
@@ -309,7 +309,7 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                         void handleUpdateWorkspace({ title });
                     }}
                     handleRunWorkspace={() => {
-                        performanceMonitor.mark('workspace:terminal:requested'); 
+                        performanceMonitor.mark('workspace:terminal:requested');
                         ps.setShowTerminal(true);
                     }}
                     onBack={onBack}
@@ -390,17 +390,17 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
 
             <React.Profiler id="WorkspaceTerminalLayer" onRender={onRender}>
                 <WorkspaceTerminalLayer
-                    showTerminal={ps.showTerminal} 
+                    showTerminal={ps.showTerminal}
                     isMaximizedTerminal={tl.isMaximizedTerminal}
                     isResizingTerminal={tl.isResizingTerminal}
                     sidebarCollapsed={ps.sidebarCollapsed}
-                    terminalHeight={ps.terminalHeight} 
+                    terminalHeight={ps.terminalHeight}
                     dockedTerminalRightInsetPx={tl.dockedTerminalRightInsetPx}
                     dockedTerminalBottomOffsetPx={Math.max(0, commandStripHeightPx - 1)}
                     lastExpandedTerminalHeightRef={tl.lastExpandedTerminalHeightRef}
                     setShowTerminal={ps.setShowTerminal}
                     setIsMaximizedTerminal={tl.setIsMaximizedTerminal}
-                    setIsResizingTerminal={tl.setIsResizingTerminal} 
+                    setIsResizingTerminal={tl.setIsResizingTerminal}
                     setTerminalHeight={ps.setTerminalHeight}
                     workspaceId={workspace.id}
                     workspacePath={workspacePath}
@@ -436,11 +436,11 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                                 >
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0">
-                                            <div className="truncate text-11 font-semibold text-foreground">
+                                            <div className="truncate typo-overline font-semibold text-foreground">
                                                 {task.command}
                                             </div>
                                             {latestLine && (
-                                                <div className="truncate text-10 text-muted-foreground">
+                                                <div className="truncate typo-overline text-muted-foreground">
                                                     {latestLine}
                                                 </div>
                                             )}
@@ -476,7 +476,7 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                     onMouseDown={tl.handleCommandStripResizeStart}
                 />
                 <CommandStrip
-                    className="transition-[margin] duration-200"
+                    className="transition-margin duration-200"
                     language={language}
                     branchName={currentBranchName}
                     branches={availableBranches}

@@ -89,6 +89,12 @@ Create `my-theme.theme.json`:
     "primary": "217 91% 60%",
     ...
   },
+  "vars": {
+    "tengra-container-padding": "2rem",
+    "tengra-radius-card-lg": "2rem",
+    "tengra-grid-cols-editor-split": "1fr 420px",
+    "terminal-bg": "#0b1016"
+  },
   "tags": ["dark", "blue", "modern"]
 }
 ```
@@ -144,6 +150,7 @@ interface ThemeManifest {
   type: ThemeType;      // 'light' | 'dark' | 'highContrast'
   version: string;      // Semver
   colors: ThemeColors;  // HSL color definitions
+  vars?: Record<string, string>; // CSS vars (no leading `--`)
   author?: string;
   description?: string;
   tags?: string[];

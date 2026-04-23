@@ -24,6 +24,7 @@ use std::sync::Arc;
 pub struct CreateTerminalRequest {
     pub cwd: Option<String>,
     pub shell: Option<String>,
+    pub args: Option<Vec<String>>,
 }
 
 #[derive(Serialize)]
@@ -37,7 +38,7 @@ pub async fn create_terminal(
 ) -> impl IntoResponse {
     match state
         .terminal_manager
-        .create_session(payload.cwd, payload.shell)
+        .create_session(payload.cwd, payload.shell, payload.args)
     {
         Ok(id) => (
             axum::http::StatusCode::CREATED,

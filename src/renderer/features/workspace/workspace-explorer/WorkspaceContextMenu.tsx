@@ -60,7 +60,7 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
             style={{
                 left: contextMenu.x,
                 top: contextMenu.y,
-                zIndex: 99999,
+                zIndex: 'var(--tengra-z-99999)',
             }}
             onClick={e => e.stopPropagation()}
         >

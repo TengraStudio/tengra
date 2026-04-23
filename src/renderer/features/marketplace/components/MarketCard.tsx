@@ -34,11 +34,11 @@ import { cn } from '@/lib/utils';
 import { useDownloadStore } from '@/store/download.store';
 
 /* Batch-02: Extracted Long Classes */
-const C_MARKETCARD_1 = "flex h-5 items-center gap-1 rounded bg-amber-500/10 px-2 py-0.5 text-xxxs font-black uppercase tracking-wider text-amber-500 ring-1 ring-inset ring-amber-500/20 shadow-glow-amber";
+const C_MARKETCARD_1 = "flex h-5 items-center gap-1 rounded bg-warning/10 px-2 py-0.5 text-xxxs font-black uppercase tracking-wider text-warning ring-1 ring-inset ring-warning/20 shadow-glow-amber";
 const C_MARKETCARD_2 = "flex h-5 items-center gap-1 rounded bg-success/10 px-2 py-0.5 text-xxxs font-black uppercase tracking-wider text-success ring-1 ring-inset ring-success/20";
-const C_MARKETCARD_3 = "flex h-5 items-center gap-1 rounded bg-muted/40 px-2 py-0.5 text-xxxs font-black uppercase tracking-wider text-muted-foreground/60 ring-1 ring-inset ring-white/5";
+const C_MARKETCARD_3 = "flex h-5 items-center gap-1 rounded bg-muted/40 px-2 py-0.5 text-xxxs font-black uppercase tracking-wider text-muted-foreground/60 ring-1 ring-inset ring-border/20";
 const C_MARKETCARD_4 = "h-8 px-2 flex items-center gap-1.5 rounded-md text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95 text-xxxs font-bold uppercase tracking-wider";
-const C_MARKETCARD_5 = "h-8 px-3 flex items-center gap-2 rounded-md bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white transition-all active:scale-95 text-xxxs font-bold uppercase tracking-wider";
+const C_MARKETCARD_5 = "h-8 px-3 flex items-center gap-2 rounded-md bg-warning/10 text-warning hover:bg-warning hover:text-warning-foreground transition-all active:scale-95 text-xxxs font-bold uppercase tracking-wider";
 const C_MARKETCARD_6 = "bg-primary/5 text-primary hover:bg-primary hover:text-primary-foreground px-3 py-1 rounded text-xxxs font-black uppercase tracking-widest transition-all active:scale-95";
 
 

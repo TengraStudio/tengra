@@ -153,7 +153,7 @@ const WorkspaceCardMenu: React.FC<{ workspace: Workspace }> = ({ workspace }) =>
                             : t('workspaces.archiveWorkspace')}
                     </span>
                 </DropdownMenuItem>
-                <DropdownMenuItem 
+                <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
                     onClick={() => onDelete(workspace)}
                 >
@@ -170,7 +170,7 @@ const WorkspaceCardInfo: React.FC<{ workspace: Workspace }> = ({ workspace }) =>
         <h3 className="text-lg font-bold text-foreground truncate tracking-tight">
             {workspace.title}
         </h3>
-        <p className="text-11 text-muted-foreground/40 whitespace-pre font-mono bg-muted/20 px-2 py-0.5 rounded-md inline-block max-w-full overflow-hidden text-ellipsis">
+        <p className="typo-overline text-muted-foreground/40 whitespace-pre font-mono bg-muted/20 px-2 py-0.5 rounded-md inline-block max-w-full overflow-hidden text-ellipsis">
             {workspace.path}
         </p>
     </div>
@@ -183,18 +183,18 @@ const WorkspaceCardFooter: React.FC<{ workspace: Workspace }> = ({ workspace }) 
         archived: 'workspaces.statusArchived',
         draft: 'workspaces.statusDraft'
     };
-    
+
     // Default workspaces don't need an 'Active' badge as it's clear they are current
     const showStatus = workspace.status !== 'active';
 
     return (
-        <div className="pt-4 border-t border-border/20 mt-auto flex items-center justify-between text-11 text-muted-foreground/50">
+        <div className="pt-4 border-t border-border/20 mt-auto flex items-center justify-between typo-overline text-muted-foreground/50">
             <span className="flex items-center gap-1.5 font-medium">
                 <Calendar className="w-3.5 h-3.5" />
                 {new Date(workspace.createdAt).toLocaleDateString()}
             </span>
             {showStatus && (
-                <div className="px-2 py-0.5 rounded-md text-10 font-bold uppercase tracking-wider bg-muted/50 border border-border/40 text-muted-foreground/80">
+                <div className="px-2 py-0.5 rounded-md typo-overline font-bold uppercase tracking-wider bg-muted/50 border border-border/40 text-muted-foreground/80">
                     {t(statusTranslationKey[workspace.status])}
                 </div>
             )}
@@ -206,16 +206,16 @@ const WorkspaceLogo: React.FC<{ workspace: Workspace; className?: string }> = ({
     const [error, setError] = React.useState(false);
     const baseLogoUrl = toSafeFileUrl(workspace.logo);
     const logoUrl = baseLogoUrl && !error ? (baseLogoUrl.startsWith('data:') ? baseLogoUrl : `${baseLogoUrl}?v=${workspace.updatedAt}`) : null;
-    
+
     if (!logoUrl) {
         return <Terminal className={cn("w-5 h-5 text-muted-foreground/50", className)} />;
     }
 
     return (
-        <img 
-            src={logoUrl} 
-            alt={workspace.title} 
-            className={cn("w-full h-full object-cover", className)} 
+        <img
+            src={logoUrl}
+            alt={workspace.title}
+            className={cn("w-full h-full object-cover", className)}
             onError={() => setError(true)}
         />
     );
@@ -225,26 +225,26 @@ const WorkspaceBackgroundLogo: React.FC<{ workspace: Workspace }> = ({ workspace
     const [error, setError] = React.useState(false);
     const baseLogoUrl = toSafeFileUrl(workspace.logo);
     const logoUrl = baseLogoUrl && !error ? (baseLogoUrl.startsWith('data:') ? baseLogoUrl : `${baseLogoUrl}?v=${workspace.updatedAt}`) : null;
-    
+
     if (!logoUrl) {
         return (
-            <div className="absolute -right-4 -bottom-4 opacity-[0.02] text-foreground pointer-events-none select-none rotate-12 z-0">
+            <div className="absolute -right-4 -bottom-4 opacity-02 text-foreground pointer-events-none select-none rotate-12 z-0">
                 <Terminal size={140} strokeWidth={1} />
             </div>
         );
     }
 
     return (
-        <img 
-            src={logoUrl} 
-            alt="" 
-            className="absolute -right-8 -bottom-8 w-48 h-48 opacity-[0.04] grayscale brightness-0 invert pointer-events-none select-none rotate-12 z-0 object-contain transition-all duration-700 blur-[1px] group-hover:scale-110 group-hover:rotate-6" 
+        <img
+            src={logoUrl}
+            alt=""
+            className="absolute -right-8 -bottom-8 w-48 h-48 opacity-04 grayscale brightness-0 invert pointer-events-none select-none rotate-12 z-0 object-contain transition-all duration-700 blur-1 group-hover:scale-110 group-hover:rotate-6"
             onError={() => setError(true)}
         />
     );
 };
 
-const cardContainerClassName = 
+const cardContainerClassName =
     "group bg-card border border-border/40 rounded-xl p-5 cursor-pointer transition-all duration-300 hover:shadow-2xl hover:shadow-black/10 hover:border-primary/40 flex flex-col gap-5 relative overflow-hidden ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 
 export const WorkspaceCard = memo<WorkspaceCardProps>(({
@@ -294,7 +294,7 @@ export const WorkspaceCard = memo<WorkspaceCardProps>(({
             )}
         >
             <WorkspaceBackgroundLogo workspace={workspace} />
-            
+
             <WorkspaceSelectionCheckbox isSelected={isSelected} onToggle={onToggleSelection} />
 
             <div className="flex items-start justify-between relative z-10">
@@ -314,7 +314,7 @@ export const WorkspaceCard = memo<WorkspaceCardProps>(({
             <div className="relative z-10">
                 <WorkspaceCardInfo workspace={workspace} />
             </div>
-            
+
             <div className="relative z-10 mt-auto">
                 <WorkspaceCardFooter workspace={workspace} />
             </div>

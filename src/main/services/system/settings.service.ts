@@ -317,6 +317,14 @@ export class SettingsService extends BaseService {
         this.settings = { ...DEFAULT_SETTINGS };
     }
 
+    /**
+     * Set the auth service dependency after initial boot.
+     * This is used during phased startup to link security after the window is shown.
+     */
+    setAuthService(service: AuthService): void {
+        this.authService = service;
+    }
+
     /** Loads settings from disk and synchronizes tokens to the auth service. */
     async initialize(): Promise<void> {
         if (this.initialized) {

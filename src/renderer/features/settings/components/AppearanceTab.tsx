@@ -29,6 +29,7 @@ import {
 } from '@renderer/features/terminal/constants/terminal-panel-constants';
 import { useTerminalAppearance } from '@renderer/features/terminal/hooks/useTerminalAppearance';
 import type { ThemeManifest } from '@shared/types/theme';
+import { BUILTIN_THEME_MANIFESTS } from '@shared/theme/builtin-theme-manifests';
 import {
     Accessibility,
     BaggageClaim,
@@ -40,7 +41,7 @@ import {
     Terminal,
     Type,
 } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { getTerminalTheme } from '@/lib/terminal-theme';
 import { resolveAppFontPreset } from '@/lib/typography-settings';
@@ -67,6 +68,11 @@ interface TerminalPreviewProps {
     t: (key: string) => string;
 }
 
+interface ThemeActionStatus {
+    message: string;
+    tone: 'success' | 'error';
+}
+
 function TerminalPreview({
     cursorStyle,
     fontFamily,
@@ -76,8 +82,8 @@ function TerminalPreview({
     t,
 }: TerminalPreviewProps): JSX.Element {
     return (
-        <div className="relative h-full overflow-hidden rounded-card-lg border border-border/40 bg-black p-1">
-            <div className="h-full rounded-card-2xl border border-white/5 p-8">
+        <div className="relative h-full overflow-hidden rounded-card-lg border border-border/40 bg-background p-1">
+            <div className="h-full rounded-card-2xl border border-border/20 p-8">
                 <div className="mb-8 flex items-center gap-2 opacity-40">
                     <div className="h-2.5 w-2.5 rounded-full bg-destructive/60" />
                     <div className="h-2.5 w-2.5 rounded-full bg-warning/60" />
@@ -167,48 +173,41 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
     t,
 }) => {
     const [themes, setThemes] = useState<ThemeManifest[]>([]);
+    const [themeActionStatus, setThemeActionStatus] = useState<ThemeActionStatus | null>(null);
     const { settings: a11ySettings, updateSettings } = useA11ySettings();
     const { terminalAppearance, setTerminalAppearance } = useTerminalAppearance({
         storageKey: TERMINAL_APPEARANCE_STORAGE_KEY,
         defaultAppearance: DEFAULT_TERMINAL_APPEARANCE,
     });
+    const themeImportInputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        let cancelled = false;
-
-        void (async () => {
-            try {
-                const loadedThemes = await themeIpc.getAllThemes();
-                if (!cancelled) {
-                    setThemes(loadedThemes);
-                }
-            } catch {
-                if (!cancelled) {
-                    setThemes([]);
-                }
-            }
-        })();
-
-        return () => {
-            cancelled = true;
-        };
+    const refreshThemes = useCallback(async () => {
+        try {
+            const loadedThemes = await themeIpc.getAllThemes();
+            setThemes(loadedThemes.length > 0 ? loadedThemes : BUILTIN_THEME_MANIFESTS);
+        } catch {
+            setThemes(BUILTIN_THEME_MANIFESTS);
+        }
     }, []);
 
-    const themeOptions = useMemo(() => {
-        const availableThemes: Array<Pick<ThemeManifest, 'id' | 'displayName' | 'type'>> =
-            themes.length > 0
-                ? themes
-                : [
-                    { id: 'graphite', displayName: 'Graphite', type: 'dark' },
-                    { id: 'snow', displayName: 'Snow', type: 'light' },
-                ];
+    useEffect(() => {
+        void refreshThemes();
+    }, [refreshThemes]);
 
-        return availableThemes.map(theme => ({
+    const availableThemes = themes.length > 0 ? themes : BUILTIN_THEME_MANIFESTS;
+
+    const themeOptions = useMemo(() => {
+        const manifestOptions: Array<Pick<ThemeManifest, 'id' | 'displayName' | 'type'>> =
+            availableThemes.length > 0
+                ? availableThemes
+                : BUILTIN_THEME_MANIFESTS;
+
+        return manifestOptions.map(theme => ({
             value: theme.id,
             label: theme.displayName,
             type: theme.type,
         }));
-    }, [themes]);
+    }, [availableThemes]);
 
     const typographyScaleOptions = [
         { value: 'compact', label: t('settings.typographyScaleCompact') },
@@ -231,6 +230,99 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
         () => resolveTerminalAppearance(getTerminalTheme(), terminalAppearance),
         [terminalAppearance]
     );
+    const currentThemeId = settings?.general.theme ?? 'graphite';
+    const currentThemeManifest = useMemo(
+        () => availableThemes.find(theme => theme.id === currentThemeId) ?? null,
+        [availableThemes, currentThemeId]
+    );
+    const currentThemeVars = useMemo(
+        () => Object.entries(currentThemeManifest?.vars ?? {}),
+        [currentThemeManifest]
+    );
+    const currentThemeColors = useMemo(
+        () => Object.entries(currentThemeManifest?.colors ?? {}),
+        [currentThemeManifest]
+    );
+    const currentThemeVarGroups = useMemo(() => {
+        const keys = currentThemeVars.map(([key]) => key);
+        const layoutVars = keys.filter(key => key.startsWith('tengra-')).length;
+        const terminalVars = keys.filter(key => key.startsWith('terminal-')).length;
+        const iconVars = keys.filter(key => key.startsWith('icon-')).length;
+        const featureVars = keys.length - layoutVars - terminalVars - iconVars;
+
+        return [
+            { label: t('settings.themeManifestLayoutVars'), count: layoutVars },
+            { label: t('settings.themeManifestTerminalVars'), count: terminalVars },
+            { label: t('settings.themeManifestIconVars'), count: iconVars },
+            { label: t('settings.themeManifestFeatureVars'), count: featureVars },
+        ].filter(group => group.count > 0);
+    }, [currentThemeVars, t]);
+
+    const handleImportTheme = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+
+        if (!file) {
+            return;
+        }
+
+        try {
+            const themeManifest = JSON.parse(await file.text()) as ThemeManifest;
+            await themeIpc.installTheme(themeManifest);
+            await refreshThemes();
+            setThemeActionStatus({
+                tone: 'success',
+                message: t('settings.themeManifestImportSuccess', {
+                    name: themeManifest.displayName ?? themeManifest.id,
+                }),
+            });
+        } catch (error) {
+            setThemeActionStatus({
+                tone: 'error',
+                message:
+                    error instanceof SyntaxError
+                        ? t('settings.themeManifestImportInvalidJson')
+                        : t('settings.themeManifestImportFailed'),
+            });
+        }
+    }, [refreshThemes, t]);
+
+    const handleDownloadCurrentTheme = useCallback(() => {
+        if (!currentThemeManifest) {
+            return;
+        }
+
+        const payload = JSON.stringify(currentThemeManifest, null, 2);
+        const blob = new Blob([payload], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `${currentThemeManifest.id}.theme.json`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+
+        setThemeActionStatus({
+            tone: 'success',
+            message: t('settings.themeManifestDownloadSuccess', {
+                name: currentThemeManifest.displayName,
+            }),
+        });
+    }, [currentThemeManifest, t]);
+
+    const handleOpenThemesDirectory = useCallback(async () => {
+        try {
+            await themeIpc.openThemesDirectory();
+            setThemeActionStatus({
+                tone: 'success',
+                message: t('settings.themeManifestOpenFolderSuccess'),
+            });
+        } catch {
+            setThemeActionStatus({
+                tone: 'error',
+                message: t('settings.themeManifestOpenFolderFailed'),
+            });
+        }
+    }, [t]);
 
     const resolutionOptions = [
         { value: 'auto', label: 'Auto (Recommended)' },
@@ -242,6 +334,13 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
 
     return (
         <div className="space-y-8 pb-16 lg:space-y-10 animate-in fade-in duration-500">
+            <input
+                ref={themeImportInputRef}
+                type="file"
+                accept="application/json,.json"
+                className="hidden"
+                onChange={handleImportTheme}
+            />
             <div className="px-1">
                 <div className="mb-3 flex items-center gap-4">
                     <div className={UI_PRIMITIVES.ICON_WRAPPER}>
@@ -376,6 +475,158 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                         <Badge variant="outline" className="h-6 border-border/40 bg-muted/20 px-3 font-mono text-muted-foreground/60">
                             {settings?.general.fontSize}px
                         </Badge>
+                    </div>
+                </div>
+            </div>
+
+            <div className={cn(SECTION_CONTAINER_CLASS, "space-y-6")}>
+                <div className="flex items-center gap-4">
+                    <div className={UI_PRIMITIVES.ICON_WRAPPER}>
+                        <Palette className="h-7 w-7" />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-bold text-foreground">
+                            {t('settings.themeManifestTitle')}
+                        </h3>
+                        <p className="mt-1 text-sm text-muted-foreground/70">
+                            {t('settings.themeManifestDescription')}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 xl:grid-cols-balance-95-105">
+                    <div className="rounded-card-lg border border-border/20 bg-muted/10 p-5">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="text-lg font-semibold text-foreground">
+                                {currentThemeManifest?.displayName ?? t('settings.theme')}
+                            </h4>
+                            {currentThemeManifest && (
+                                <>
+                                    <Badge variant="outline" className="uppercase">
+                                        {currentThemeManifest.type}
+                                    </Badge>
+                                    {currentThemeManifest.category && (
+                                        <Badge variant="outline">
+                                            {currentThemeManifest.category}
+                                        </Badge>
+                                    )}
+                                </>
+                            )}
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+                            <div className="rounded-2xl border border-border/20 bg-background/70 p-3">
+                                <div className="typo-caption text-muted-foreground">
+                                    {t('settings.themeManifestInstalledCount')}
+                                </div>
+                                <div className="mt-1 text-lg font-semibold text-foreground">
+                                    {availableThemes.length}
+                                </div>
+                            </div>
+                            <div className="rounded-2xl border border-border/20 bg-background/70 p-3">
+                                <div className="typo-caption text-muted-foreground">
+                                    {t('settings.themeManifestColorCount')}
+                                </div>
+                                <div className="mt-1 text-lg font-semibold text-foreground">
+                                    {currentThemeColors.length}
+                                </div>
+                            </div>
+                            <div className="rounded-2xl border border-border/20 bg-background/70 p-3">
+                                <div className="typo-caption text-muted-foreground">
+                                    {t('settings.themeManifestVarCount')}
+                                </div>
+                                <div className="mt-1 text-lg font-semibold text-foreground">
+                                    {currentThemeVars.length}
+                                </div>
+                            </div>
+                            <div className="rounded-2xl border border-border/20 bg-background/70 p-3">
+                                <div className="typo-caption text-muted-foreground">
+                                    {t('settings.themeManifestCurrentId')}
+                                </div>
+                                <div className="mt-1 truncate text-sm font-semibold text-foreground">
+                                    {currentThemeId}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-5 flex flex-wrap gap-3">
+                            <button
+                                type="button"
+                                onClick={() => themeImportInputRef.current?.click()}
+                                className="rounded-2xl border border-border/30 bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/30"
+                            >
+                                {t('settings.themeManifestImport')}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleDownloadCurrentTheme}
+                                disabled={!currentThemeManifest}
+                                className="rounded-2xl border border-border/30 bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/30 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {t('settings.themeManifestDownload')}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => void handleOpenThemesDirectory()}
+                                className="rounded-2xl border border-border/30 bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/30"
+                            >
+                                {t('settings.themeManifestOpenFolder')}
+                            </button>
+                        </div>
+
+                        {themeActionStatus && (
+                            <div className={cn(
+                                'mt-4 rounded-2xl border px-4 py-3 text-sm',
+                                themeActionStatus.tone === 'success'
+                                    ? 'border-success/30 bg-success/10 text-success'
+                                    : 'border-destructive/30 bg-destructive/10 text-destructive'
+                            )}>
+                                {themeActionStatus.message}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="rounded-card-lg border border-border/20 bg-muted/10 p-5">
+                        <div className="flex items-center justify-between gap-3">
+                            <h4 className="text-lg font-semibold text-foreground">
+                                {t('settings.themeManifestTokenCoverage')}
+                            </h4>
+                            <Badge variant="outline">
+                                {currentThemeVars.length} {t('settings.themeManifestVarsLabel')}
+                            </Badge>
+                        </div>
+
+                        {currentThemeVars.length > 0 ? (
+                            <>
+                                <div className="mt-4 grid grid-cols-2 gap-3">
+                                    {currentThemeVarGroups.map(group => (
+                                        <div key={group.label} className="rounded-2xl border border-border/20 bg-background/70 p-3">
+                                            <div className="typo-caption text-muted-foreground">
+                                                {group.label}
+                                            </div>
+                                            <div className="mt-1 text-lg font-semibold text-foreground">
+                                                {group.count}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    {currentThemeVars.slice(0, 16).map(([key]) => (
+                                        <code
+                                            key={key}
+                                            className="rounded-full border border-border/30 bg-background/80 px-3 py-1 text-xxs text-muted-foreground"
+                                        >
+                                            {key}
+                                        </code>
+                                    ))}
+                                </div>
+                            </>
+                        ) : (
+                            <div className="mt-4 rounded-2xl border border-border/20 bg-background/70 p-4 text-sm text-muted-foreground">
+                                {t('settings.themeManifestNoVars')}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

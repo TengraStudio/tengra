@@ -9,7 +9,7 @@
  */
 
 import { Plus, X } from 'lucide-react';
-import React, { useEffect,useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -74,7 +74,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     // Close on escape
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {setIsOpen(false);}
+            if (e.key === 'Escape') { setIsOpen(false); }
         };
 
         if (isOpen) {
@@ -89,7 +89,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
         const angleStep = Math.PI / (total + 1);
         const angle = angleStep * (index + 1) + (position.includes('right') ? Math.PI / 2 : 0);
         const radius = 80;
-        
+
         const x = Math.cos(angle) * radius;
         const y = -Math.sin(angle) * radius;
 
@@ -121,7 +121,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                             setIsOpen(false);
                         }}
                         className={cn(
-                            'absolute flex items-center justify-center w-12 h-12 rounded-full border border-white/10 shadow-lg text-white transition-all duration-300 pointer-events-none opacity-0',
+                            'absolute flex items-center justify-center w-12 h-12 rounded-full border border-border/30 shadow-lg text-foreground transition-all duration-300 pointer-events-none opacity-0',
                             isOpen && 'pointer-events-auto opacity-100'
                         )}
                         style={{
@@ -146,7 +146,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                 return (
                     <span
                         key={`label-${action.label}`}
-                        className="absolute px-2 py-1 rounded-md bg-black/80 text-white text-10 font-medium whitespace-nowrap pointer-events-none animate-in fade-in duration-300"
+                        className="absolute px-2 py-1 rounded-md bg-popover/95 text-popover-foreground typo-overline font-medium whitespace-nowrap pointer-events-none animate-in fade-in duration-300"
                         style={{
                             transform: `translate(${x}px, ${y + 35}px)`
                         }}

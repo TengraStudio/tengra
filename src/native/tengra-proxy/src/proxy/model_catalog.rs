@@ -173,6 +173,15 @@ fn get_catalog() -> &'static Vec<ModelInfo> {
             },
             // OpenAI Codex (OAuth)
             ModelInfo {
+                id: "gpt-5.5",
+                provider: "codex",
+                owned_by: "openai",
+                created: 1_767_225_600,//will be updated
+                context_length: 1_050_000,//will be updated
+                max_completion_tokens: 128_000,//will be updated
+                thinking_levels: &["minimal", "low", "medium", "high"],
+            },
+            ModelInfo {
                 id: "gpt-5.4",
                 provider: "codex",
                 owned_by: "openai",

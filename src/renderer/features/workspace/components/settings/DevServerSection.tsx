@@ -70,7 +70,7 @@ export const DevServerSection: React.FC<SettingsSectionProps> = ({ formData, set
                     </div>
 
                     <div className="flex items-center justify-between p-3 px-4 bg-background/40 rounded-xl border border-border/20 self-end h-40">
-                        <Label className="text-sm font-medium translate-y-[1px]">{t('workspaces.autoStart')}</Label>
+                        <Label className="text-sm font-medium translate-y-1px">{t('workspaces.autoStart')}</Label>
                         <Switch
                             checked={formData.devAutoStart}
                             onCheckedChange={(checked) =>

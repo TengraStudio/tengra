@@ -45,6 +45,9 @@ import {
 } from 'lucide-react';
 import { DefaultExtensionType, defaultStyles, FileIcon as ReactFileIcon } from 'react-file-icon';
 
+import { useTheme } from '@/hooks/useTheme';
+import { resolveCssColorVariable } from '@/lib/theme-css';
+
 export interface IconProps {
     size?: number;
     className?: string;
@@ -200,17 +203,8 @@ const EXTENSION_CSS_VAR_MAP: Record<string, string> = {
     'md': '--icon-md', 'sql': '--icon-sql', 'sh': '--icon-sh',
 };
 
-// Fallback colors for SSR and when CSS vars are not available
-const EXTENSION_COLOR_FALLBACKS: Record<string, string> = {
-    'ts': 'theme("colors.brand.typescript")', 'tsx': 'theme("colors.brand.typescript")', 'js': 'theme("colors.brand.javascript")', 'jsx': 'theme("colors.brand.react")',
-    'py': 'theme("colors.brand.python")', 'ipynb': 'theme("colors.brand.rust")', 'rs': 'theme("colors.brand.database")', 'go': 'theme("colors.brand.go")',
-    'rb': 'theme("colors.brand.ruby")', 'php': 'theme("colors.brand.php")', 'java': 'theme("colors.brand.java")', 'kt': 'theme("colors.brand.swift")',
-    'c': 'theme("colors.brand.c")', 'h': 'theme("colors.brand.c")', 'cpp': 'theme("colors.brand.cpp")', 'cs': 'theme("colors.brand.csharp")',
-    'swift': 'theme("colors.brand.git")', 'dart': 'theme("colors.brand.flutter")', 'html': 'theme("colors.brand.html")', 'css': 'theme("colors.brand.css")',
-    'scss': 'theme("colors.brand.sass")', 'sass': 'theme("colors.brand.sass")', 'vue': 'theme("colors.brand.vue")', 'svelte': 'theme("colors.brand.svelte")',
-    'json': '#000000', 'yaml': '#CB171E', 'yml': '#CB171E', 'xml': '#0060AC',
-    'md': '#083FA1', 'sql': '#CC2927', 'sh': '#4EAA25',
-};
+const DEFAULT_ICON_COLOR = 'hsl(215 16% 47%)';
+const DEFAULT_ICON_GLYPH_COLOR = 'hsl(0 0% 100% / 0.8)';
 
 // Type mappings for react-file-icon
 type FileIconType = 'acrobat' | 'audio' | 'binary' | 'code' | 'compressed' |
@@ -233,70 +227,8 @@ const EXTENSION_TYPE_MAP: Record<string, FileIconType> = {
     'json': 'settings', 'yaml': 'settings', 'yml': 'settings', 'ini': 'settings',
 };
 
-/**
- * Helper to get CSS variable value
- */
-function getCSSVariableValue(variableName: string): string {
-    if (typeof window === 'undefined') {
-        // Fallback for SSR - return hex colors based on variable name
-        const fallbacks: Record<string, string> = {
-            '--icon-source': '#3B82F6',
-            '--icon-lib': '#6366F1',
-            '--icon-git': '#F97316',
-            '--icon-github': '#6366F1',
-            '--icon-config': '#8B5CF6',
-            '--icon-settings': '#8B5CF6',
-            '--icon-components': '#22C55E',
-            '--icon-ui': '#22C55E',
-            '--icon-pages': '#3B82F6',
-            '--icon-routes': '#3B82F6',
-            '--icon-api': '#EC4899',
-            '--icon-graphql': '#E10098',
-            '--icon-test': '#F59E0B',
-            '--icon-cypress': '#17202C',
-            '--icon-playwright': '#2EAD33',
-            '--icon-build': '#6B7280',
-            '--icon-next': '#000000',
-            '--icon-nuxt': '#00DC82',
-            '--icon-dependencies': '#6B7280',
-            '--icon-assets': '#EF4444',
-            '--icon-fonts': '#8B5CF6',
-            '--icon-styles': '#EC4899',
-            '--icon-css': '#38BDF8',
-            '--icon-scss': 'theme("colors.brand.sass")',
-            '--icon-less': '#1D365D',
-            '--icon-public': '#10B981',
-            '--icon-types': 'theme("colors.brand.typescript")',
-            '--icon-hooks': 'theme("colors.brand.react")',
-            '--icon-composables': 'theme("colors.brand.vue")',
-            '--icon-utils': '#6366F1',
-            '--icon-data': '#0EA5E9',
-            '--icon-prisma': '#2D3748',
-            '--icon-features': '#8B5CF6',
-            '--icon-docs': '#10B981',
-            '--icon-security': '#EF4444',
-            '--icon-scripts': '#22C55E',
-            '--icon-tools': '#6B7280',
-            '--icon-vscode': '#0078D4',
-            '--icon-idea': '#000000',
-            '--icon-husky': 'theme("colors.brand.vue")',
-            '--icon-circleci': '#343434',
-            '--icon-jenkins': '#D24939',
-            '--icon-workflows': '#2088FF',
-            '--icon-default': '#60A5FA'
-        };
-        return fallbacks[variableName] ?? '#6B7280';
-    }
-
-    const value = getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
-    if (value) {
-        // Convert HSL to hex if needed
-        if (value.includes(' ')) {
-            return `hsl(${value})`;
-        }
-        return value;
-    }
-    return '#6B7280';
+function resolveIconColor(variableName: string): string {
+    return resolveCssColorVariable(variableName, DEFAULT_ICON_COLOR);
 }
 
 /**
@@ -309,13 +241,13 @@ export function getFolderIconInfo(folderName: string, isOpen: boolean = false) {
         const config = SPECIAL_FOLDER_ICONS[lowerName];
         return {
             Icon: config.icon,
-            color: getCSSVariableValue(config.cssVar)
+            color: resolveIconColor(config.cssVar)
         };
     }
 
     return {
         Icon: isOpen ? FolderOpen : Folder,
-        color: getCSSVariableValue('--icon-default')
+        color: resolveIconColor('--icon-default')
     };
 }
 
@@ -323,6 +255,7 @@ export function getFolderIconInfo(folderName: string, isOpen: boolean = false) {
  * FolderIcon Component
  */
 export function FolderIcon({ folderName, isOpen = false, className = 'w-4 h-4', size = 16 }: { folderName: string; isOpen?: boolean; className?: string; size?: number }) {
+    useTheme();
     const { Icon, color } = getFolderIconInfo(folderName, isOpen);
     return <Icon className={className} size={size} style={{ color }} />;
 }
@@ -331,24 +264,29 @@ export function FolderIcon({ folderName, isOpen = false, className = 'w-4 h-4', 
  * FileIcon Component
  */
 export function FileIcon({ fileName, className = 'w-4 h-4', size = 16 }: { fileName: string; className?: string; size?: number }) {
+    useTheme();
     const lowerName = fileName.toLowerCase();
     const ext = lowerName.split('.').pop() ?? '';
 
     const cssVar = EXTENSION_CSS_VAR_MAP[ext];
-    const color = cssVar ? getCSSVariableValue(cssVar) : (EXTENSION_COLOR_FALLBACKS[ext] ?? '#6B7280');
+    const color = resolveIconColor(cssVar ?? '--icon-default');
+    const glyphColor = resolveCssColorVariable('--icon-glyph', DEFAULT_ICON_GLYPH_COLOR);
     const type = EXTENSION_TYPE_MAP[ext];
     const defaultStyle = (ext as DefaultExtensionType) in defaultStyles ? defaultStyles[ext as DefaultExtensionType] : undefined;
+    const iconStyle = {
+        ...(defaultStyle ?? {}),
+        color,
+        labelColor: color,
+        glyphColor,
+    };
 
     return (
         <div className={`${className} inline-flex items-center justify-center`}>
             <div style={{ width: size, height: size }}>
                 <ReactFileIcon
                     extension={ext}
-                    color={color}
                     type={type}
-                    labelColor={color}
-                    glyphColor="rgba(255,255,255,0.8)"
-                    {...(defaultStyle ?? {})}
+                    {...iconStyle}
                 />
             </div>
         </div>

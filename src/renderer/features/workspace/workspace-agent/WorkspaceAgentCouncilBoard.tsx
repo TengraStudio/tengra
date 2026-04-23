@@ -43,6 +43,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useTheme } from '@/hooks/useTheme';
+import { resolveCssColorVariable, resolveCssVariableStyle, resolveCssVariableValue } from '@/lib/theme-css';
 import { cn } from '@/lib/utils';
 
 interface SessionCouncilRuntime {
@@ -90,6 +92,7 @@ function AgentCanvas({
     t: (key: string, options?: Record<string, string | number>) => string;
 }): JSX.Element {
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
+    const { theme } = useTheme();
 
     React.useEffect(() => {
         const canvas = canvasRef.current;
@@ -103,8 +106,25 @@ function AgentCanvas({
 
         const width = canvas.width;
         const height = canvas.height;
+        const boardBackground = resolveCssColorVariable('council-board-bg', 'hsl(222 27% 8%)');
+        const orbitColor = resolveCssColorVariable('council-board-orbit', 'hsl(189 94% 43% / 0.35)');
+        const connectionColor = resolveCssColorVariable('council-board-connection', 'hsl(0 0% 100% / 0.14)');
+        const chairFillColor = resolveCssColorVariable('council-board-chair-fill', 'hsl(189 94% 43%)');
+        const chairTextColor = resolveCssColorVariable('council-board-chair-text', 'hsl(190 100% 92%)');
+        const agentFillColor = resolveCssColorVariable('council-board-agent-fill', 'hsl(141 76% 73%)');
+        const helperFillColor = resolveCssColorVariable('council-board-helper-fill', 'hsl(38 92% 50%)');
+        const agentTextColor = resolveCssColorVariable('council-board-agent-text', 'hsl(210 40% 98%)');
+        const assistStrokeColor = resolveCssColorVariable('council-board-assist-stroke', 'hsl(38 92% 50% / 0.65)');
+        const draftStrokeColor = resolveCssColorVariable('council-board-draft-stroke', 'hsl(300 76% 53% / 0.65)');
+        const approveStrokeColor = resolveCssColorVariable('council-board-approve-stroke', 'hsl(141 76% 73% / 0.7)');
+        const rejectStrokeColor = resolveCssColorVariable('council-board-reject-stroke', 'hsl(0 93% 73% / 0.7)');
+        const reviseStrokeColor = resolveCssColorVariable('council-board-revise-stroke', 'hsl(48 96% 64% / 0.7)');
+        const messageStrokeColor = resolveCssColorVariable('council-board-message-stroke', 'hsl(197 97% 61% / 0.35)');
+        const boardFontFamily = resolveCssVariableStyle('fontFamily', 'font-family', 'sans-serif');
+        const boardFontSize = resolveCssVariableValue('text-xs', '0.75rem');
+
         context.clearRect(0, 0, width, height);
-        context.fillStyle = '#05070c';
+        context.fillStyle = boardBackground;
         context.fillRect(0, 0, width, height);
 
         const centerX = width / 2;
@@ -112,18 +132,18 @@ function AgentCanvas({
         const orbit = Math.min(width, height) / 3;
         const nodePositions = new globalThis.Map<string, { x: number; y: number }>();
 
-        context.strokeStyle = 'rgba(34,211,238,0.35)';
+        context.strokeStyle = orbitColor;
         context.lineWidth = 1;
         context.beginPath();
         context.arc(centerX, centerY, orbit, 0, Math.PI * 2);
         context.stroke();
 
-        context.fillStyle = '#22d3ee';
+        context.fillStyle = chairFillColor;
         context.beginPath();
         context.arc(centerX, centerY, 20, 0, Math.PI * 2);
         context.fill();
-        context.fillStyle = '#d9fbff';
-        context.font = '12px sans-serif';
+        context.fillStyle = chairTextColor;
+        context.font = `500 ${boardFontSize} ${boardFontFamily}`;
         context.textAlign = 'center';
         context.fillText(chairman?.name ?? t('workspaceAgent.chairmanFallback'), centerX, centerY + 40);
         nodePositions.set(chairman?.id ?? 'chairman', { x: centerX, y: centerY });
@@ -133,16 +153,16 @@ function AgentCanvas({
             const x = centerX + Math.cos(angle) * orbit;
             const y = centerY + Math.sin(angle) * orbit;
             nodePositions.set(agent.id, { x, y });
-            context.strokeStyle = 'rgba(255,255,255,0.14)';
+            context.strokeStyle = connectionColor;
             context.beginPath();
             context.moveTo(centerX, centerY);
             context.lineTo(x, y);
             context.stroke();
-            context.fillStyle = agent.helpAvailable ? '#f59e0b' : '#86efac';
+            context.fillStyle = agent.helpAvailable ? helperFillColor : agentFillColor;
             context.beginPath();
             context.arc(x, y, 14, 0, Math.PI * 2);
             context.fill();
-            context.fillStyle = '#f8fafc';
+            context.fillStyle = agentTextColor;
             context.fillText(agent.name, x, y + 28);
         });
 
@@ -152,7 +172,7 @@ function AgentCanvas({
             if (!owner || !helper) {
                 return;
             }
-            context.strokeStyle = 'rgba(245,158,11,0.65)';
+            context.strokeStyle = assistStrokeColor;
             context.lineWidth = 2;
             context.beginPath();
             context.moveTo(helper.x, helper.y);
@@ -165,7 +185,7 @@ function AgentCanvas({
             if (!source) {
                 return;
             }
-            context.strokeStyle = 'rgba(217,70,239,0.65)';
+            context.strokeStyle = draftStrokeColor;
             context.lineWidth = 2;
             context.beginPath();
             context.moveTo(source.x, source.y);
@@ -181,10 +201,10 @@ function AgentCanvas({
             }
             context.strokeStyle =
                 decision.decision === 'approve'
-                    ? 'rgba(134,239,172,0.7)'
+                    ? approveStrokeColor
                     : decision.decision === 'reject'
-                        ? 'rgba(248,113,113,0.7)'
-                        : 'rgba(250,204,21,0.7)';
+                        ? rejectStrokeColor
+                        : reviseStrokeColor;
             context.setLineDash([4, 6]);
             context.beginPath();
             context.moveTo(centerX, centerY);
@@ -202,14 +222,14 @@ function AgentCanvas({
             if (!from || !to) {
                 return;
             }
-            context.strokeStyle = 'rgba(56,189,248,0.35)';
+            context.strokeStyle = messageStrokeColor;
             context.lineWidth = 1;
             context.beginPath();
             context.moveTo(from.x, from.y);
             context.lineTo(to.x, to.y);
             context.stroke();
         });
-    }, [assistEvents, chairman, decisions, drafts, messages, subagents, t]);
+    }, [assistEvents, chairman, decisions, drafts, messages, subagents, t, theme]);
 
     return (
         <canvas

@@ -36,7 +36,7 @@ import { appLogger } from '@/utils/renderer-logger';
 /* Batch-02: Extracted Long Classes */
 const C_EXTENSIONPLUGINSTAB_1 = "m-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs animate-in fade-in duration-300";
 const C_EXTENSIONPLUGINSTAB_2 = "absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-success border-2 border-background shadow-glow-success-strong";
-const C_EXTENSIONPLUGINSTAB_3 = "bg-muted px-4 py-1.5 rounded-xl border border-border/20 flex items-center gap-4 shadow-sm ring-1 ring-inset ring-white/5 sm:gap-5 lg:gap-6";
+const C_EXTENSIONPLUGINSTAB_3 = "bg-muted px-4 py-1.5 rounded-xl border border-border/20 flex items-center gap-4 shadow-sm ring-1 ring-inset ring-border/20 sm:gap-5 lg:gap-6";
 const C_EXTENSIONPLUGINSTAB_4 = "h-9 w-9 rounded-xl border-destructive/20 text-destructive/60 hover:text-destructive hover:bg-destructive/10 hover:border-destructive/40 transition-all active:scale-90 shadow-sm";
 const C_EXTENSIONPLUGINSTAB_5 = "flex items-center justify-between gap-4 sticky top-0 z-10 bg-card/60 backdrop-blur-md pb-4 pt-1 border-b border-border/5 mb-2 sm:gap-5 lg:gap-6";
 const C_EXTENSIONPLUGINSTAB_6 = "py-12 px-6 rounded-2xl border border-dashed border-border/40 bg-muted/5 flex flex-col items-center justify-center text-center space-y-3 sm:flex-row";

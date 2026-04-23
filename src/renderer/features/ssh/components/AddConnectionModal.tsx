@@ -133,7 +133,7 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
     }
 
     return (
-        <div className="modal-overlay" style={{ zIndex: 1000 }}>
+        <div className="modal-overlay z-1000">
             <div className={C_ADDCONNECTIONMODAL_1}>
                 <div className="border-b border-border/20 px-4 py-4 sm:px-5">
                     <h3 className="text-lg font-semibold">{t('ssh.newConnectionTitle')}</h3>

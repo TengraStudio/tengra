@@ -229,11 +229,11 @@ export function Tooltip({
                                 content
                             )}
                             {description && (
-                                <div className="text-10 text-muted-foreground/90">{description}</div>
+                                <div className="typo-overline text-muted-foreground/90">{description}</div>
                             )}
                             {shortcut && (
                                 <div className="pt-1">
-                                    <kbd className="inline-block px-1.5 py-0.5 font-mono text-10 tracking-50 text-foreground bg-background/70 border border-border/60 rounded">
+                                    <kbd className="inline-block px-1.5 py-0.5 font-mono typo-overline tracking-50 text-foreground bg-background/70 border border-border/60 rounded">
                                         {shortcut}
                                     </kbd>
                                 </div>

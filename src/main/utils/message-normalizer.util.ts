@@ -25,7 +25,7 @@ const MAX_IMAGES = 20;
 type OpenCodeInputText = { type: 'input_text'; text: string };
 type OpenCodeOutputText = { type: 'output_text'; text: string };
 type OpenCodeInputImage = { type: 'input_image'; image_url: { url: string } };
-type OpenCodeFunctionCall = { type: 'function_call'; call_id: string; name: string; arguments: string };
+type OpenCodeFunctionCall = { type: 'function_call'; call_id: string; name: string; arguments: string; thought_signature?: string };
 type OpenCodeFunctionCallOutput = { type: 'function_call_output'; call_id: string; output: string };
 type OpenCodeContentPart =
     | OpenCodeInputText
@@ -466,7 +466,8 @@ export class MessageNormalizer {
                 type: 'function_call',
                 call_id: callId,
                 name: toolCall.function.name,
-                arguments: toolCall.function.arguments
+                arguments: toolCall.function.arguments,
+                thought_signature: (toolCall.function as { thought_signature?: string }).thought_signature
             });
         }
     }

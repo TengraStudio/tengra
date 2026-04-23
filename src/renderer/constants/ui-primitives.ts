@@ -18,7 +18,7 @@ export const UI_PRIMITIVES = {
     SECTION_CARD: "space-y-6 rounded-3xl border border-border/20 bg-card p-5 sm:p-6 lg:p-8",
     PREVIEW_BOX: "rounded-card-lg border border-border/15 bg-muted/10 p-6 sm:p-8 transition-all hover:border-border/25",
     PANEL_BASE: "flex flex-col h-full w-full overflow-hidden border border-border/60 bg-card",
-    OVERLAY_BASE: "absolute inset-0 z-[100] flex items-center justify-center bg-background/40 backdrop-blur-sm",
+    OVERLAY_BASE: "absolute inset-0 z-100 flex items-center justify-center bg-background/40 backdrop-blur-sm",
     
     // Rows & Items
     SETTINGS_ROW: "flex flex-col gap-4 rounded-2xl border border-border/15 p-4 transition-colors hover:bg-muted/10 sm:flex-row sm:items-center sm:justify-between",
@@ -40,7 +40,7 @@ export const UI_PRIMITIVES = {
     PREVIEW_CARD: "relative overflow-hidden rounded-card-lg border border-border/40 bg-card transition-all hover:border-border/60",
     
     // Interactive
-    ACTION_BUTTON_PRIMARY: "group relative flex items-center gap-2 overflow-hidden rounded-2xl bg-primary px-8 py-4 text-sm font-bold text-primary-foreground shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02] hover:bg-primary/90 active:scale-95",
+    ACTION_BUTTON_PRIMARY: "group relative flex items-center gap-2 overflow-hidden rounded-2xl bg-primary px-8 py-4 text-sm font-bold text-primary-foreground shadow-2xl shadow-primary/20 transition-all hover:scale-102 hover:bg-primary/90 active:scale-95",
     ACTION_BUTTON_GHOST: "p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95",
     ITEM_OVERLAY: "absolute inset-0 bg-background/90 backdrop-blur-sm px-3 py-2 flex items-center gap-3 animate-in fade-in duration-200",
     
@@ -52,8 +52,8 @@ export const UI_PRIMITIVES = {
     CODE_BLOCK: "max-h-52 overflow-x-auto overflow-y-auto rounded-md border border-border/40 bg-muted/40 p-2 font-mono typo-caption text-muted-foreground",
     FILE_LIST_ITEM: "flex items-center gap-2 rounded-lg border border-border/30 bg-background/50 px-3 py-2 text-left hover:border-primary/40 hover:bg-primary/5 transition-all group/file",
     ASSISTANT_LOGO_BASE: "flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-muted overflow-hidden transition-all duration-300",
-    COMMAND_OUTPUT_CONTAINER: "overflow-hidden rounded-lg border border-border/40 bg-[#0b1016]",
-    COMMAND_OUTPUT_HEADER: "flex items-center justify-between border-b border-white/10 bg-black/15 px-3 py-2",
+    COMMAND_OUTPUT_CONTAINER: "overflow-hidden rounded-lg border border-border/40 bg-terminal-bg",
+    COMMAND_OUTPUT_HEADER: "flex items-center justify-between border-b border-border/30 bg-muted/10 px-3 py-2",
     TERMINAL_TAB: "flex items-center gap-2 px-3 py-1.5 rounded-md typo-caption font-medium transition-all whitespace-nowrap border border-transparent min-w-24 max-w-48 flex-shrink-0",
 
     // Animation Utility

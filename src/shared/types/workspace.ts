@@ -174,27 +174,45 @@ export interface Workspace {
     // Editor Settings
     editor?: {
         fontSize?: number;
+        fontFamily?: string;
+        fontWeight?: string;
+        letterSpacing?: number;
         lineHeight?: number;
         minimap?: boolean;
+        minimapSide?: 'left' | 'right';
+        minimapRenderCharacters?: boolean;
         wordWrap?: 'on' | 'off' | 'wordWrapColumn' | 'bounded';
         lineNumbers?: 'on' | 'off' | 'relative' | 'interval';
         tabSize?: number;
         cursorBlinking?: 'blink' | 'smooth' | 'phase' | 'expand' | 'solid';
+        cursorStyle?: 'block' | 'line' | 'underline' | 'line-thin' | 'block-outline' | 'underline-thin';
+        cursorWidth?: number;
         fontLigatures?: boolean;
         formatOnPaste?: boolean;
         formatOnType?: boolean;
         smoothScrolling?: boolean;
         folding?: boolean;
+        showFoldingControls?: 'always' | 'mouseover';
         codeLens?: boolean;
         inlayHints?: boolean;
         renderWhitespace?: 'none' | 'boundary' | 'selection' | 'trailing' | 'all';
+        renderLineHighlight?: 'none' | 'gutter' | 'line' | 'all';
+        renderControlCharacters?: boolean;
+        roundedSelection?: boolean;
+        scrollBeyondLastLine?: boolean;
         cursorSmoothCaretAnimation?: 'on' | 'off' | 'explicit';
         wordBasedSuggestions?: 'off' | 'currentDocument' | 'matchingDocuments' | 'allDocuments';
+        acceptSuggestionOnEnter?: 'on' | 'off' | 'smart';
+        suggestFontSize?: number;
+        suggestLineHeight?: number;
         stickyScroll?: boolean;
         bracketPairColorization?: boolean;
         guidesIndentation?: boolean;
         mouseWheelZoom?: boolean;
-        minimapRenderCharacters?: boolean;
+        multiCursorModifier?: 'ctrlCmd' | 'alt';
+        occurrenceHighlight?: boolean;
+        selectionHighlight?: boolean;
+        renderFinalNewline?: 'on' | 'off' | 'dimmed';
         additionalOptions?: Record<string, JsonValue>;
     };
 }

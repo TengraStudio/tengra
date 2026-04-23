@@ -14,7 +14,6 @@ import { Workspace } from '@/types';
 
 import { WorkspaceSettingsFormData } from '../components/settings/types';
 
-type WorkspaceEditor = NonNullable<Workspace['editor']>;
 
 function getBuildState(config?: Workspace['buildConfig']) {
     const defaults = {
@@ -54,26 +53,6 @@ function getDevState(server?: Workspace['devServer']) {
     };
 }
 
-function getEditorState(editor?: Workspace['editor']) {
-    return {
-        editorFontSize: editor?.fontSize ?? 14,
-        editorLineHeight: editor?.lineHeight ?? 1.6,
-        editorMinimap: editor?.minimap ?? true,
-        editorWordWrap: editor?.wordWrap ?? 'off',
-        editorLineNumbers: editor?.lineNumbers ?? 'on',
-        editorTabSize: editor?.tabSize ?? 4,
-        editorCursorBlinking: editor?.cursorBlinking ?? 'smooth',
-        editorFontLigatures: editor?.fontLigatures ?? true,
-        editorFormatOnPaste: editor?.formatOnPaste ?? true,
-        editorSmoothScrolling: editor?.smoothScrolling ?? true,
-        editorFolding: editor?.folding ?? true,
-        editorCodeLens: editor?.codeLens ?? true,
-        editorInlayHints: editor?.inlayHints ?? true,
-        editorAdditionalOptions: editor?.additionalOptions
-            ? JSON.stringify(editor.additionalOptions, null, 2)
-            : '',
-    };
-}
 
 function getIntelligenceState(intelligence?: Workspace['intelligence']) {
     return {
@@ -105,7 +84,6 @@ function getInitialState(workspace: Workspace): WorkspaceSettingsFormData {
         ...getBuildState(workspace.buildConfig),
         ...getDevState(workspace.devServer),
         ...getAdvancedState(workspace.advancedOptions),
-        ...getEditorState(workspace.editor),
     };
 }
 
@@ -143,39 +121,6 @@ function checkAdvancedDirty(
     );
 }
 
-function normalizeEditorAdditionalOptions(source: string): string {
-    const trimmed = source.trim();
-    if (!trimmed) {
-        return '';
-    }
-
-    try {
-        return JSON.stringify(JSON.parse(trimmed), null, 2);
-    } catch {
-        return trimmed;
-    }
-}
-
-function checkEditorDirty(formData: WorkspaceSettingsFormData, editor?: Workspace['editor']): boolean {
-    const defaults = getEditorState(editor);
-    return (
-        formData.editorFontSize !== defaults.editorFontSize ||
-        formData.editorLineHeight !== defaults.editorLineHeight ||
-        formData.editorMinimap !== defaults.editorMinimap ||
-        formData.editorWordWrap !== defaults.editorWordWrap ||
-        formData.editorLineNumbers !== defaults.editorLineNumbers ||
-        formData.editorTabSize !== defaults.editorTabSize ||
-        formData.editorCursorBlinking !== defaults.editorCursorBlinking ||
-        formData.editorFontLigatures !== defaults.editorFontLigatures ||
-        formData.editorFormatOnPaste !== defaults.editorFormatOnPaste ||
-        formData.editorSmoothScrolling !== defaults.editorSmoothScrolling ||
-        formData.editorFolding !== defaults.editorFolding ||
-        formData.editorCodeLens !== defaults.editorCodeLens ||
-        formData.editorInlayHints !== defaults.editorInlayHints ||
-        normalizeEditorAdditionalOptions(formData.editorAdditionalOptions) !==
-            normalizeEditorAdditionalOptions(defaults.editorAdditionalOptions)
-    );
-}
 
 function checkIsDirty(formData: WorkspaceSettingsFormData, workspace: Workspace): boolean {
     const generalDirty =
@@ -206,8 +151,7 @@ function checkIsDirty(formData: WorkspaceSettingsFormData, workspace: Workspace)
         gitDirty ||
         checkBuildDirty(formData, workspace.buildConfig) ||
         checkDevDirty(formData, workspace.devServer) ||
-        checkAdvancedDirty(formData, workspace.advancedOptions) ||
-        checkEditorDirty(formData, workspace.editor)
+        checkAdvancedDirty(formData, workspace.advancedOptions)
     );
 }
 
@@ -226,22 +170,6 @@ export const useWorkspaceSettingsForm = (
     const isDirty = useMemo(() => checkIsDirty(formData, workspace), [formData, workspace]);
 
     const handleSave = useCallback(async () => {
-        const parseEditorAdditionalOptions = (): WorkspaceEditor['additionalOptions'] => {
-            const trimmed = formData.editorAdditionalOptions.trim();
-            if (!trimmed) {
-                return undefined;
-            }
-
-            try {
-                const parsed = JSON.parse(trimmed) as WorkspaceEditor['additionalOptions'];
-                return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-                    ? parsed
-                    : undefined;
-            } catch {
-                return workspace.editor?.additionalOptions;
-            }
-        };
-
         const buildConfig = {
             buildCommand: formData.buildCommand,
             testCommand: formData.testCommand,
@@ -281,23 +209,6 @@ export const useWorkspaceSettingsForm = (
             autoFetch: formData.gitAutoFetch,
         };
 
-        const editor = {
-            fontSize: formData.editorFontSize,
-            lineHeight: formData.editorLineHeight,
-            minimap: formData.editorMinimap,
-            wordWrap: formData.editorWordWrap,
-            lineNumbers: formData.editorLineNumbers,
-            tabSize: formData.editorTabSize,
-            cursorBlinking: formData.editorCursorBlinking,
-            fontLigatures: formData.editorFontLigatures,
-            formatOnPaste: formData.editorFormatOnPaste,
-            smoothScrolling: formData.editorSmoothScrolling,
-            folding: formData.editorFolding,
-            codeLens: formData.editorCodeLens,
-            inlayHints: formData.editorInlayHints,
-            additionalOptions: parseEditorAdditionalOptions(),
-        };
-
         const updates: Partial<Workspace> = {
             title: formData.title,
             description: formData.description,
@@ -312,11 +223,10 @@ export const useWorkspaceSettingsForm = (
             advancedOptions,
             intelligence,
             git,
-            editor,
         };
 
         await onUpdate(updates);
-    }, [formData, onUpdate, workspace.advancedOptions, workspace.editor?.additionalOptions]);
+    }, [formData, onUpdate, workspace.advancedOptions]);
 
     const handleReset = useCallback(() => {
         setFormData(getInitialState(workspace));

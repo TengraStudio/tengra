@@ -169,7 +169,7 @@ export const AccessibilitySettings: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
                 {/* System Preferences Info */}
-                <div className="p-6 rounded-3xl bg-primary/[0.03] border border-primary/20 shadow-xl shadow-primary/5 relative overflow-hidden group">
+                <div className="p-6 rounded-3xl bg-primary/03 border border-primary/20 shadow-xl shadow-primary/5 relative overflow-hidden group">
                     <div className={C_ACCESSIBILITYSETTINGS_2} />
                     <div className="flex items-center gap-3 mb-4 relative z-10">
                         <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">

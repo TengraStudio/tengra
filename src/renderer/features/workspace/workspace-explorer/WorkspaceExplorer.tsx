@@ -50,7 +50,7 @@ import {
 import { WorkspaceEntry, WorkspaceMount } from '@/types';
 
 /* Batch-02: Extracted Long Classes */
-const C_WORKSPACEEXPLORER_1 = "h-7 w-full rounded border border-border/40 bg-zinc-900/50 pl-7 pr-2 text-11 text-foreground outline-none transition-all focus:border-primary/50 placeholder:text-muted-foreground/40";
+const C_WORKSPACEEXPLORER_1 = "h-7 w-full rounded border border-border/40 bg-zinc-900/50 pl-7 pr-2 typo-overline text-foreground outline-none transition-all focus:border-primary/50 placeholder:text-muted-foreground/40";
 
 
 interface WorkspaceExplorerProps {
@@ -262,7 +262,7 @@ function applyExplorerDiagnostics(
 
         const nextDiagnostics =
             diagnosticsSnapshot.byPath[
-                normalizeWorkspaceExplorerDiagnosticPath(row.entry.path)
+            normalizeWorkspaceExplorerDiagnosticPath(row.entry.path)
             ];
         return nextDiagnostics ? { ...row, diagnostics: nextDiagnostics } : row;
     });
@@ -1030,7 +1030,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                 )}
             >
                 <div className="flex items-center gap-2 overflow-hidden">
-                    <span className="text-10 font-black uppercase tracking-wider text-muted-foreground/50 truncate pl-1">
+                    <span className="typo-overline font-black uppercase tracking-wider text-muted-foreground/50 truncate pl-1">
                         {t('workspace.files')}
                     </span>
                 </div>

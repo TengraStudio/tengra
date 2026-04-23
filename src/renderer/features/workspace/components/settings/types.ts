@@ -31,21 +31,6 @@ export interface WorkspaceSettingsFormData {
     fileWatchEnabled: boolean
     indexingEnabled: boolean
     autoSave: boolean
-    // Editor
-    editorFontSize: number
-    editorLineHeight: number
-    editorMinimap: boolean
-    editorWordWrap: NonNullable<Workspace['editor']>['wordWrap']
-    editorLineNumbers: NonNullable<Workspace['editor']>['lineNumbers']
-    editorTabSize: number
-    editorCursorBlinking: NonNullable<Workspace['editor']>['cursorBlinking']
-    editorFontLigatures: boolean
-    editorFormatOnPaste: boolean
-    editorSmoothScrolling: boolean
-    editorFolding: boolean
-    editorCodeLens: boolean
-    editorInlayHints: boolean
-    editorAdditionalOptions: string
     // Intelligence
     intelligenceModelId: string
     intelligenceDiscussModelId: string
@@ -69,7 +54,6 @@ export type WorkspaceSettingsSection =
     | 'workspace'
     | 'build'
     | 'dev'
-    | 'editor'
     | 'advanced'
     | 'environment'
 

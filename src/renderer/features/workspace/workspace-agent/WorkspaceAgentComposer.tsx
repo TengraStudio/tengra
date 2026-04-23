@@ -218,7 +218,7 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                         align="start"
                         className={C_WORKSPACEAGENTCOMPOSER_3}
                     >
-                        <div className="px-3 py-1.5 text-10 font-bold uppercase tracking-widest text-muted-foreground/30 border-b border-border/30 mb-1.5">
+                        <div className="px-3 py-1.5 typo-overline font-bold uppercase tracking-widest text-muted-foreground/30 border-b border-border/30 mb-1.5">
                             {t('workspaceAgent.permissions.profile')}
                         </div>
                         <div className="space-y-0.5">
@@ -233,7 +233,7 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                                         <span className="block text-sm font-bold text-foreground/90 group-hover:text-foreground transition-colors">
                                             {option.title}
                                         </span>
-                                        <span className="block text-10 text-muted-foreground/50 leading-snug mt-0.5">
+                                        <span className="block typo-overline text-muted-foreground/50 leading-snug mt-0.5">
                                             {option.description}
                                         </span>
                                     </span>

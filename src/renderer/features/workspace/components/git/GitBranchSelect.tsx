@@ -31,9 +31,9 @@ export const GitBranchSelect: React.FC<BranchSelectProps> = ({ branch, branches,
     }
 
     return (
-        <Select 
-            value={branch ?? ''} 
-            onValueChange={(value) => { void handleCheckout(value); }} 
+        <Select
+            value={branch ?? ''}
+            onValueChange={(value) => { void handleCheckout(value); }}
             disabled={isCheckingOut}
         >
             <SelectTrigger className="h-10 rounded-xl border-border/20 bg-background/40 hover:bg-muted/40 transition-all font-semibold text-xs focus:ring-indigo-500/20">
@@ -48,14 +48,14 @@ export const GitBranchSelect: React.FC<BranchSelectProps> = ({ branch, branches,
                 {branches.map((b: string) => {
                     const isSelected = b === branch;
                     return (
-                        <SelectItem 
-                            key={b} 
-                            value={b} 
+                        <SelectItem
+                            key={b}
+                            value={b}
                             className="text-xs focus:bg-indigo-500/10 focus:text-indigo-400 py-2.5"
                         >
                             <div className="flex items-center justify-between w-full">
                                 <span>{b}</span>
-                                {isSelected && <Badge variant="outline" className="ml-2 h-4 px-1 border-none bg-indigo-500/10 text-indigo-400 text-8 uppercase">Active</Badge>}
+                                {isSelected && <Badge variant="outline" className="ml-2 h-4 px-1 border-none bg-indigo-500/10 text-indigo-400 typo-overline uppercase">Active</Badge>}
                             </div>
                         </SelectItem>
                     );

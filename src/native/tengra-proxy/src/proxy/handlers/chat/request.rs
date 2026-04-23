@@ -622,12 +622,18 @@ fn content_to_gemini_message_parts(message: &ChatMessage) -> Vec<Value> {
             .cloned()
             .unwrap_or_else(|| Value::Object(Map::new()));
         let parsed_arguments = parse_json_string_value(arguments);
+
+        let mut fc = json!({
+            "name": name,
+            "args": parsed_arguments
+        });
+
+        if let Some(ts) = function.and_then(|f| f.get("thought_signature")).and_then(Value::as_str) {
+            fc.as_object_mut().unwrap().insert("thought_signature".to_string(), Value::String(ts.to_string()));
+        }
+
         parts.push(json!({
-            "functionCall": {
-                "id": part.get("id").and_then(Value::as_str).unwrap_or_default(),
-                "name": name,
-                "args": parsed_arguments
-            }
+            "functionCall": fc
         }));
     }
     parts

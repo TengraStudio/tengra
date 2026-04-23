@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { useThemeDetection } from '@/hooks/useTheme';
 import { Label } from '@radix-ui/react-label';
 import type {
     WorkspaceAgentCommandPolicy,
@@ -91,7 +92,7 @@ const ModelSelectorQuotaBanner: React.FC<{
     const isCodex = activeCategory.id === 'codex';
     const isClaude = activeCategory.id === 'claude';
 
-    if (!['antigravity', 'copilot', 'codex', 'claude'].includes(activeCategory.id)) { return null; }
+    const isVisible = ['antigravity', 'copilot', 'codex', 'claude'].includes(activeCategory.id);
 
     const items: Array<{ label: string; percent: number; sublabel?: string; value?: string }> = [];
 
@@ -138,55 +139,59 @@ const ModelSelectorQuotaBanner: React.FC<{
         });
     }
 
-    if (items.length === 0) { return null; }
+    // Persistent cache to prevent flickering when data is temporarily null/loading
+    const [quotaCache, setQuotaCache] = useState<Record<string, typeof items>>({});
+
+    useEffect(() => {
+        if (items.length > 0) {
+            setQuotaCache(prev => ({ ...prev, [activeCategory.id]: items }));
+        }
+    }, [items, activeCategory.id]);
+
+    const effectiveItems = items.length > 0 ? items : (quotaCache[activeCategory.id] || []);
+
+    if (!isVisible || effectiveItems.length === 0) { return null; }
 
     return (
-        <div className="mx-2 mb-4 mt-1 px-4 py-2.5 rounded-xl border border-primary/10 bg-primary/[0.02] backdrop-blur-sm shadow-quota-banner">
+        <div className="mx-2 mb-4 mt-1 rounded-xl border border-primary/10 bg-primary/02 px-4 py-2.5 shadow-primary-medium backdrop-blur-sm">
             <div className="flex items-center gap-3 mb-2">
                 <Brain className="w-3 h-3 text-primary/50" />
-                <span className="text-9 font-black text-primary/40 uppercase tracking-widest">{t('statistics.quotaStatus')}</span>
+                <span className="typo-overline font-black text-primary/40 uppercase tracking-widest">{t('statistics.quotaStatus')}</span>
             </div>
             <div className="space-y-3">
-                {items.map((item, idx) => (
+                {effectiveItems.map((item, idx) => (
                     <div key={idx} className="flex items-center gap-4 group">
                         {(item.label || item.value) && (
-                            <div className="flex flex-col min-w-80">
+                            <div className="flex min-w-60 flex-col">
                                 {item.label && (
-                                    <span className="text-9 font-bold text-muted-foreground/50 uppercase tracking-tight italic leading-none mb-0.5">
+                                    <span className="typo-overline font-bold text-muted-foreground/50 uppercase tracking-tight italic leading-none mb-0.5">
                                         {item.label}
                                     </span>
                                 )}
                                 {item.value && (
-                                    <span className="text-10 font-black text-foreground/80 tabular-nums leading-none">
+                                    <span className="typo-overline font-black text-foreground/80 tabular-nums leading-none">
                                         {item.value}
                                     </span>
                                 )}
                             </div>
                         )}
 
-                        <div className="flex-1 flex items-center gap-3">
-                            <div className="relative flex-1 h-1.5 rounded-full bg-muted/20 overflow-hidden border border-border/5 shadow-inner">
-                                <div
-                                    className={cn(
-                                        "h-full transition-all duration-1000 ease-out relative z-10",
-                                        item.percent <= 10 ? 'bg-destructive' : item.percent <= 30 ? 'bg-warning' : 'bg-primary'
-                                    )}
-                                    style={{ width: `${item.percent}%` }}
-                                />
-                                <div
-                                    className={cn(
-                                        "absolute inset-0 opacity-20 blur-2px",
-                                        item.percent <= 10 ? 'bg-destructive' : item.percent <= 30 ? 'bg-warning' : 'bg-primary'
-                                    )}
-                                    style={{ width: `${item.percent}%` }}
-                                />
-                            </div>
+                        <div className="flex-1 flex items-center gap-3 w-full">
+                             <div className="relative h-2 w-full flex-1 overflow-hidden rounded-full border border-border/10 bg-muted/30">
+                                 <div
+                                     className={cn(
+                                         "h-full min-w-1 rounded-full shadow-sm transition-all duration-700 ease-out",
+                                         item.percent <= 10 ? 'bg-red-500' : item.percent <= 30 ? 'bg-amber-500' : 'bg-emerald-500'
+                                     )}
+                                     style={{ width: `${item.percent}%` }}
+                                 />
+                             </div>
 
                             <div className={cn(
                                 "flex items-baseline gap-1.5 min-w-36 justify-end",
                                 item.percent <= 10 ? 'text-destructive' : item.percent <= 30 ? 'text-warning' : 'text-primary'
                             )}>
-                                <span className="text-11 font-black tabular-nums italic">
+                                <span className="typo-overline font-black tabular-nums italic">
                                     {item.percent}%
                                 </span>
                             </div>
@@ -328,6 +333,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     onUpdatePermissionPolicy: _onUpdatePermissionPolicy,
     triggerRef
 }) => {
+    const { isDark } = useThemeDetection();
     const modalRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -458,7 +464,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
 
         if (explicitThinkingLevel) {
             onThinkingLevelChange?.(id, explicitThinkingLevel);
-            
+
             const isAlreadySelected = selectedModels.some(m => m.model === id && m.provider === provider);
             if (!isAlreadySelected) {
                 onSelect(provider, id, isMulti, false);
@@ -556,7 +562,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                         {logoAsset ? (
                                             (() => {
                                                 const providerId = cat.id.toLowerCase();
-                                                const isBrandColored = ['gemini', 'huggingface', 'nvidia', 'antigravity'].includes(providerId);
+                                                const isBrandColored = ['gemini', 'google', 'huggingface', 'nvidia', 'antigravity'].includes(providerId);
 
                                                 return (
                                                     <img
@@ -564,8 +570,13 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                                         alt={cat.name}
                                                         className={cn(
                                                             'w-6 h-6 object-contain transition-all duration-300',
-                                                            !isBrandColored && 'theme-logo-invert'
+                                                            isActive ? 'opacity-100' : 'opacity-30 group-hover:opacity-60'
                                                         )}
+                                                        style={!isBrandColored ? {
+                                                            filter: isDark
+                                                                ? 'invert(1)'
+                                                                : (isActive ? 'brightness(0)' : 'grayscale(1)')
+                                                        } : {}}
                                                     />
                                                 );
                                             })()
@@ -615,7 +626,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                     {searchQuery ? 'No models match your search' : `No models available for ${activeCategory?.name || 'this provider'}`}
                                 </div>
                                 {!searchQuery && (
-                                    <p className="text-10 text-muted-foreground/40 leading-relaxed max-w-200 mx-auto">
+                                    <p className="typo-overline text-muted-foreground/40 leading-relaxed max-w-200 mx-auto">
                                         This might be because the account is not linked or the models are still loading.
                                     </p>
                                 )}
@@ -627,7 +638,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                         <div className="flex items-center justify-center gap-6">
                             {/* Mode Selection */}
                             <div className="space-y-1.5 flex flex-col items-center">
-                                <Label className="text-10 font-semibold uppercase tracking-50 text-muted-foreground/50 px-0.5">
+                                <Label className="typo-overline font-semibold uppercase tracking-50 text-muted-foreground/50 px-0.5">
                                     {t('workspaceAgent.permissions.mode')}
                                 </Label>
                                 <Select
@@ -655,7 +666,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                 <>
                                     {/* Shell Protection */}
                                     <div className="space-y-1.5">
-                                        <Label className="text-10 font-semibold uppercase tracking-50 text-muted-foreground/50 px-0.5 flex items-center justify-center gap-1.5">
+                                        <Label className="typo-overline font-semibold uppercase tracking-50 text-muted-foreground/50 px-0.5 flex items-center justify-center gap-1.5">
                                             <Zap className="w-3 h-3 opacity-40 shrink-0" />
                                             <span className="truncate">{t('workspaceAgent.permissions.shell')}</span>
                                         </Label>
@@ -681,7 +692,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
 
                                     {/* Filesystem Protection */}
                                     <div className="space-y-1.5 flex flex-col items-center">
-                                        <Label className="text-10 font-semibold uppercase tracking-50 text-muted-foreground/50 px-0.5 flex items-center justify-center gap-1.5">
+                                        <Label className="typo-overline font-semibold uppercase tracking-50 text-muted-foreground/50 px-0.5 flex items-center justify-center gap-1.5">
                                             <Brain className="w-3 h-3 opacity-40 shrink-0" />
                                             <span className="truncate">{t('workspaceAgent.permissions.filesystem')}</span>
                                         </Label>

@@ -26,6 +26,7 @@ import { Language, useTranslation } from '@/i18n';
 import { recordSSHManagerHealthEvent } from '@/store/ssh-manager-health.store';
 import { SSHConnection } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
+import { cn } from '@/lib/utils';
 
 import { AddConnectionModal, SSHProfileTestUIResult } from './components/AddConnectionModal';
 import { SSHConnectionList } from './components/SSHConnectionList';
@@ -38,6 +39,7 @@ import { useSSHConnections } from './hooks/useSSHConnections';
 
 /* Batch-02: Extracted Long Classes */
 const C_SSHMANAGER_1 = "modal-content ssh-manager flex h-dialog-ssh w-modal-72 flex-col overflow-hidden rounded-2xl border border-border/30 bg-popover shadow-lg";
+const C_SSHMANAGER_TAB_BUTTON = "border-none px-4 py-2 whitespace-nowrap transition-colors";
 
 
 interface SSHManagerProps { isOpen: boolean; onClose: () => void; language: Language; }
@@ -66,7 +68,18 @@ const CONNECT_RETRY_DELAY_MS = 150;
 const SSHTabs: React.FC<{ activeTab: SSHTabId, onTabChange: (id: SSHTabId) => void, t: (k: string) => string }> = ({ activeTab, onTabChange, t }) => (
     <div className="ssh-tabs flex border-b border-border/50 bg-muted/20 overflow-x-auto">
         {[{ id: 'terminal', label: t('ssh.terminal') }, { id: 'dashboard', label: t('ssh.dashboard') }, { id: 'files', label: t('ssh.files') }, { id: 'packages', label: t('ssh.packages') }, { id: 'logs', label: t('ssh.logs') }, { id: 'management', label: t('ssh.management') }, { id: 'sync', label: t('ssh.syncProfiles') }, { id: 'recovery', label: t('ssh.recoveryToolkit') }, { id: 'keys', label: t('ssh.keyManagement') }, { id: 'tunnels', label: t('ssh.tunnels') }].map(tab => (
-            <button key={tab.id} onClick={() => { onTabChange(tab.id as SSHTabId); }} style={{ padding: '8px 16px', backgroundColor: activeTab === tab.id ? 'var(--background)' : 'transparent', border: 'none', color: activeTab === tab.id ? 'var(--foreground)' : 'var(--muted-foreground)', borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : 'none', whiteSpace: 'nowrap' }}>{tab.label}</button>
+            <button
+                key={tab.id}
+                onClick={() => { onTabChange(tab.id as SSHTabId); }}
+                className={cn(
+                    C_SSHMANAGER_TAB_BUTTON,
+                    activeTab === tab.id
+                        ? 'bg-background text-foreground border-b-2 border-b-primary'
+                        : 'bg-transparent text-muted-foreground'
+                )}
+            >
+                {tab.label}
+            </button>
         ))}
     </div>
 );

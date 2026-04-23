@@ -640,6 +640,7 @@ export class StreamParser {
             function: {
                 name,
                 arguments: args,
+                thought_signature: (functionObject as { thought_signature?: string }).thought_signature
             },
         };
     }
@@ -721,6 +722,7 @@ type StreamPayload = OpenAIStreamPayload & {
         function?: {
             name?: string;
             arguments?: string;
+            thought_signature?: string;
         };
         content?: StreamItemContent[];
     };

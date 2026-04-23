@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { FileText,X } from 'lucide-react';
+import { FileText, X } from 'lucide-react';
 import React from 'react';
 
 import { CodeEditor } from '@/components/ui/CodeEditor';
@@ -64,9 +64,9 @@ export const FilesTab: React.FC<FilesTabProps> = ({
                         >
                             {/* Active Top Border Accent */}
                             {activeFile === file.path && (
-                                <div className="absolute top-0 left-0 right-0 h-2px bg-primary shadow-[0_0_8px_rgb(var(--primary)_/_0.5)]" />
+                                <div className="absolute top-0 left-0 right-0 h-2px bg-primary shadow-glow-primary-file" />
                             )}
-                            
+
                             <FileIcon
                                 fileName={file.name}
                                 className={cn(
@@ -75,12 +75,12 @@ export const FilesTab: React.FC<FilesTabProps> = ({
                                 )}
                             />
                             <span className={cn(
-                                "truncate flex-1 text-left text-11 tracking-tight",
+                                "truncate flex-1 text-left typo-overline tracking-tight",
                                 activeFile === file.path ? "font-bold" : "font-medium"
                             )}>
                                 {file.name}
                             </span>
-                            
+
                             <div className="flex items-center justify-center min-w-16">
                                 {file.isDirty ? (
                                     <div className="w-2 h-2 rounded-full bg-primary/80 shrink-0" />
@@ -137,36 +137,36 @@ export const FilesTab: React.FC<FilesTabProps> = ({
 
                             <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
                                 <div className="p-3 rounded-lg bg-zinc-900/40 border border-zinc-800/50 flex flex-col items-center gap-2 shadow-sm">
-                                    <span className="text-10 font-black uppercase tracking-tight text-muted-foreground/40">
+                                    <span className="typo-overline font-black uppercase tracking-tight text-muted-foreground/40">
                                         {t('workspaceDashboard.filesTab.shortcuts')}
                                     </span>
                                     <div className="flex items-center gap-2">
-                                        <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 text-10 border border-zinc-700 text-muted-foreground">
+                                        <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 typo-overline border border-zinc-700 text-muted-foreground">
                                             {t('shortcuts.ctrl')}
                                         </kbd>
-                                        <span className="text-10 text-muted-foreground/40">+</span>
-                                        <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 text-10 border border-zinc-700 text-muted-foreground">
+                                        <span className="typo-overline text-muted-foreground/40">+</span>
+                                        <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 typo-overline border border-zinc-700 text-muted-foreground">
                                             P
                                         </kbd>
                                     </div>
-                                    <span className="text-10 text-muted-foreground/60">
+                                    <span className="typo-overline text-muted-foreground/60">
                                         {t('workspaceDashboard.filesTab.quickSearch')}
                                     </span>
                                 </div>
                                 <div className="p-3 rounded-lg bg-zinc-900/40 border border-zinc-800/50 flex flex-col items-center gap-2 shadow-sm">
-                                    <span className="text-10 font-black uppercase tracking-tight text-muted-foreground/40">
+                                    <span className="typo-overline font-black uppercase tracking-tight text-muted-foreground/40">
                                         {t('workspaceDashboard.filesTab.navigation')}
                                     </span>
                                     <div className="flex items-center gap-2">
-                                        <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 text-10 border border-zinc-700 text-muted-foreground">
+                                        <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 typo-overline border border-zinc-700 text-muted-foreground">
                                             {t('shortcuts.ctrl')}
                                         </kbd>
-                                        <span className="text-10 text-muted-foreground/40">+</span>
-                                        <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 text-10 border border-zinc-700 text-muted-foreground">
+                                        <span className="typo-overline text-muted-foreground/40">+</span>
+                                        <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 typo-overline border border-zinc-700 text-muted-foreground">
                                             B
                                         </kbd>
                                     </div>
-                                    <span className="text-10 text-muted-foreground/60">
+                                    <span className="typo-overline text-muted-foreground/60">
                                         {t('workspaceDashboard.filesTab.toggleExplorer')}
                                     </span>
                                 </div>

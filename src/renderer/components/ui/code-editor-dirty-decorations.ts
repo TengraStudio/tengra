@@ -12,6 +12,9 @@ import type { Monaco } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 import React from 'react';
 
+import { useTheme } from '@/hooks/useTheme';
+import { resolveCssColorVariable } from '@/lib/theme-css';
+
 interface UseCodeEditorDirtyDecorationsOptions {
     editorRef: React.MutableRefObject<editor.IStandaloneCodeEditor | null>;
     monacoRef: React.MutableRefObject<Monaco | null>;
@@ -60,6 +63,11 @@ export function useCodeEditorDirtyDecorations({
     savedValue,
 }: UseCodeEditorDirtyDecorationsOptions): void {
     const decorationIdsRef = React.useRef<string[]>([]);
+    const { theme } = useTheme();
+    const dirtyDecorationColor = React.useMemo(
+        () => resolveCssColorVariable('editor-dirty-decoration', 'hsl(38 92% 50%)'),
+        [theme]
+    );
 
     React.useEffect(() => {
         const editorInstance = editorRef.current;
@@ -88,11 +96,11 @@ export function useCodeEditorDirtyDecorations({
                 options: {
                     isWholeLine: true,
                     overviewRuler: {
-                        color: '#f59e0b',
+                        color: dirtyDecorationColor,
                         position: monaco.editor.OverviewRulerLane.Right,
                     },
                     minimap: {
-                        color: '#f59e0b',
+                        color: dirtyDecorationColor,
                         position: monaco.editor.MinimapPosition.Inline,
                     },
                 },
@@ -113,5 +121,5 @@ export function useCodeEditorDirtyDecorations({
             subscription.dispose();
             decorationIdsRef.current = activeEditor.deltaDecorations(decorationIdsRef.current, []);
         };
-    }, [editorMounted, editorRef, monacoRef, savedValue]);
+    }, [dirtyDecorationColor, editorMounted, editorRef, monacoRef, savedValue]);
 }

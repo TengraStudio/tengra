@@ -12,31 +12,31 @@
 
 /* Monaco Editor Overlays - High z-index to appear above all UI components */
 .monaco-editor .monaco-hover {
-    z-index: 10000 !important;
+    z-index: var(--tengra-z-10000, 10000) !important;
 }
 
 .monaco-editor .editor-widget {
-    z-index: 10000 !important;
+    z-index: var(--tengra-z-10000, 10000) !important;
 }
 
 .monaco-editor .suggest-widget {
-    z-index: 10001 !important;
+    z-index: var(--tengra-z-10001, 10001) !important;
 }
 
 .monaco-editor .parameter-hints-widget {
-    z-index: 10001 !important;
+    z-index: var(--tengra-z-10001, 10001) !important;
 }
 
 .monaco-editor .monaco-editor-hover {
-    z-index: 10000 !important;
+    z-index: var(--tengra-z-10000, 10000) !important;
 }
 
 .monaco-editor .overflowingContentWidgets {
-    z-index: 10000 !important;
+    z-index: var(--tengra-z-10000, 10000) !important;
 }
 
 .monaco-editor .contentWidgets {
-    z-index: 10000 !important;
+    z-index: var(--tengra-z-10000, 10000) !important;
 }
 
 /* Agent Panel Animations */

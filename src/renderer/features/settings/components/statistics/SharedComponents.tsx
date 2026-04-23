@@ -22,14 +22,14 @@ export const HorizontalProgressBar = ({ percentage, color = "var(--primary)" }: 
 
     return (
         <div className="h-1 w-full bg-muted/10 rounded-full overflow-hidden">
-        <div 
-            className="h-full rounded-full transition-all duration-1000 ease-out" 
-            style={{ 
-                width: `${Math.max(0, Math.min(100, percentage))}%`, 
-                backgroundColor: resolvedColor
-            }} 
-        />
-    </div>
+            <div
+                className="h-full rounded-full transition-all duration-1000 ease-out"
+                style={{
+                    width: `${Math.max(0, Math.min(100, percentage))}%`,
+                    backgroundColor: resolvedColor
+                }}
+            />
+        </div>
     );
 };
 
@@ -39,7 +39,7 @@ export const StatusBadge = ({ status, text }: { status: 'active' | 'error' | 'ex
         error: "bg-destructive/10 text-destructive border-destructive/20",
         expired: "bg-warning/10 text-warning border-warning/20",
     };
-    
+
     const dots = {
         active: "bg-success",
         error: "bg-destructive",
@@ -47,7 +47,7 @@ export const StatusBadge = ({ status, text }: { status: 'active' | 'error' | 'ex
     };
 
     return (
-        <div className={cn("text-9 font-bold py-0.5 px-2.5 rounded-full border   flex items-center gap-2", colors[status])}>
+        <div className={cn("typo-overline font-bold py-0.5 px-2.5 rounded-full border   flex items-center gap-2", colors[status])}>
             <div className={cn("w-1.5 h-1.5 rounded-full", dots[status])} />
             {text}
         </div>
@@ -60,6 +60,6 @@ export const getQuotaColor = (percentage: number): string => {
     }
     if (percentage <= 60) {
         return 'var(--warning)';
-    } 
+    }
     return 'var(--success)';
 };

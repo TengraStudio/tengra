@@ -39,7 +39,7 @@ export const SettingsHeader: React.FC<SettingsHeaderProps> = ({
                         {t('workspaces.workspaceSettings')}
                     </h2>
                     {isDirty && (
-                        <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 text-10 py-0 px-2 animate-pulse">
+                        <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 typo-overline py-0 px-2 animate-pulse">
                             {t('workspaces.unsavedChanges')}
                         </Badge>
                     )}

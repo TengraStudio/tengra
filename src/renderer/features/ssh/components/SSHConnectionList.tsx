@@ -16,6 +16,8 @@ import { SSHConnection } from '@/types';
 
 /* Batch-02: Extracted Long Classes */
 const C_SSHCONNECTIONLIST_1 = "typo-caption px-2 py-0.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded border border-destructive/20";
+const C_SSHCONNECTIONLIST_2 = "typo-body text-foreground/70";
+const C_SSHCONNECTIONLIST_3 = "mt-1.25 flex items-center justify-between";
 
 
 // PERF-001-2: Virtualization threshold and constants
@@ -76,8 +78,8 @@ const ConnectionCard = memo(({
         onClick={() => conn.status === 'connected' && onSelect(conn.id)}
     >
         <div className="font-bold text-foreground">{conn.name !== '' ? conn.name : conn.host}</div>
-        <div style={{ fontSize: '0.8em', opacity: 0.7 }}>{conn.username}@{conn.host}</div>
-        <div style={{ marginTop: '5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className={C_SSHCONNECTIONLIST_2}>{conn.username}@{conn.host}</div>
+        <div className={C_SSHCONNECTIONLIST_3}>
             <span className={cn(
                 "text-xxs font-bold  ",
                 conn.status === 'connected' ? "text-primary" :
@@ -188,8 +190,7 @@ export const SSHConnectionList: React.FC<SSHConnectionListProps> = ({
     return (
         <div className="border-r border-border/50 p-4 flex flex-col bg-muted/20 w-64">
             <button
-                className="primary-btn"
-                style={{ marginBottom: '16px' }}
+                className="primary-btn mb-4"
                 onClick={onAdd}
             >
                 {t('ssh.newConnection')}

@@ -99,7 +99,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: isUp ? 4 : -4, scale: 0.95 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            style={{ position: strategy, top: y ?? 0, left: x ?? 0, zIndex: 10000, width: width || 'auto' }}
+            style={{ position: strategy, top: y ?? 0, left: x ?? 0, zIndex: 'var(--tengra-z-10001)', width: width || 'auto' }}
             className="bg-background/95 backdrop-blur-16 border border-border/40 rounded-xl shadow-2xl overflow-hidden"
             onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
         >

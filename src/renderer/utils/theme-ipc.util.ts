@@ -19,7 +19,7 @@ type ThemeIpcContract = IpcContractMap & {
         response: ThemeManifest[];
     };
     'theme:runtime:install': {
-        args: [string];
+        args: [ThemeManifest];
         response: void;
     };
     'theme:runtime:uninstall': {
@@ -67,6 +67,7 @@ const themeManifestSchema: z.ZodType<ThemeManifest> = z.object({
     version: z.string(),
     type: z.enum(['light', 'dark', 'highContrast']),
     colors: themeColorsSchema,
+    vars: z.record(z.string(), z.string()).optional(),
     preview: z.string().optional(),
     category: z.enum(['elite-dark', 'vibrant-neon', 'professional-light', 'artisanal']).optional(),
     downloads: z.number().optional(),
@@ -95,14 +96,14 @@ export const themeIpc = {
     },
 
     /**
-     * Install a theme from a JSON file path
+     * Install a theme manifest
      */
-    async installTheme(themePath: string): Promise<void> {
+    async installTheme(themeManifest: ThemeManifest): Promise<void> {
         await invokeTypedIpc<ThemeIpcContract, 'theme:runtime:install'>(
             'theme:runtime:install',
-            [themePath],
+            [themeManifest],
             {
-            argsSchema: z.tuple([z.string().min(1)]),
+            argsSchema: z.tuple([themeManifestSchema]),
             responseSchema: z.void()
             }
         );

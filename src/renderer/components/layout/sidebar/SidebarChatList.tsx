@@ -8,8 +8,8 @@
  * (at your option) any later version.
  */
 
-import { Folder as FolderIcon, FolderOpen, FolderPlus, type LucideIcon,MessageSquare, Pin as PinIcon, Search, Trash2 } from 'lucide-react';
-import React, { useCallback,useMemo } from 'react';
+import { Folder as FolderIcon, FolderOpen, FolderPlus, type LucideIcon, MessageSquare, Pin as PinIcon, Search, Trash2 } from 'lucide-react';
+import React, { useCallback, useMemo } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
 import { Chat, Folder } from '@/types';
@@ -34,7 +34,7 @@ interface SidebarChatListProps {
     onClearAll?: () => void;
 }
 
-type SidebarListItem = 
+type SidebarListItem =
     | { type: 'header', label: string, icon?: LucideIcon, action?: { label: string, icon: LucideIcon, onClick: () => void } }
     | { type: 'chat', chat: Chat, isIndented?: boolean }
     | { type: 'folder', folder: Folder, isExpanded: boolean, count: number }
@@ -77,10 +77,10 @@ export const SidebarChatList = React.memo(
             // 2. Folders
             if (activeFolders.length > 0) {
                 if (!isCollapsed) {
-                    items.push({ 
-                        type: 'header', 
-                        label: t('sidebar.folders'), 
-                        action: { label: t('sidebar.newFolder'), icon: FolderPlus, onClick: () => createFolder(t('sidebar.newFolder')) } 
+                    items.push({
+                        type: 'header',
+                        label: t('sidebar.folders'),
+                        action: { label: t('sidebar.newFolder'), icon: FolderPlus, onClick: () => createFolder(t('sidebar.newFolder')) }
                     });
                 }
 
@@ -97,7 +97,7 @@ export const SidebarChatList = React.memo(
                     const isExpanded = expandedFolders.has(folder.id);
                     const chats = folderChatsById.get(folder.id) || [];
                     items.push({ type: 'folder', folder, isExpanded, count: chats.length });
-                    
+
                     if (isExpanded) {
                         if (chats.length > 0) {
                             chats.forEach(chat => {
@@ -114,8 +114,8 @@ export const SidebarChatList = React.memo(
             // 3. Recent
             if (recentChats.length > 0) {
                 if (!isCollapsed) {
-                    items.push({ 
-                        type: 'header', 
+                    items.push({
+                        type: 'header',
                         label: t('sidebar.recent'),
                         action: onClearAll ? { label: t('sidebar.clearHistory'), icon: Trash2, onClick: onClearAll } : undefined
                     });
@@ -181,7 +181,7 @@ export const SidebarChatList = React.memo(
                     return (
                         <div className="flex flex-col items-center justify-center py-4 px-2 text-muted-foreground/30 overflow-hidden w-full">
                             {item.label === t('sidebar.noChats') && <MessageSquare className="w-6 h-6 mb-2 opacity-20" />}
-                            <p className="text-center text-10 italic font-medium truncate w-full">{item.label}</p>
+                            <p className="text-center typo-overline italic font-medium truncate w-full">{item.label}</p>
                         </div>
                     );
                 case 'divider':

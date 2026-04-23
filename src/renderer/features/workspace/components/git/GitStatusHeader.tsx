@@ -9,16 +9,17 @@
  */
 
 import { cn } from '@renderer/lib/utils';
-import { 
-    Activity, 
-    CheckCircle2, 
-    Clock, 
-    FileMinus, 
-    FilePlus, 
-    Hash} from 'lucide-react';
+import {
+    Activity,
+    CheckCircle2,
+    Clock,
+    FileMinus,
+    FilePlus,
+    Hash
+} from 'lucide-react';
 import React from 'react';
 
-import { DiffStats,GitData } from './types';
+import { DiffStats, GitData } from './types';
 
 interface StatusHeaderProps {
     gitData: GitData;
@@ -35,8 +36,8 @@ export const GitStatusHeader: React.FC<StatusHeaderProps> = ({ gitData, diffStat
     return (
         <div className="space-y-6">
             <div className="space-y-3">
-                <span className="text-11 font-bold text-muted-foreground/60 uppercase tracking-widest px-1">{t('workspaceDashboard.gitSectionStatus')}</span>
-                
+                <span className="typo-overline font-bold text-muted-foreground/60 uppercase tracking-widest px-1">{t('workspaceDashboard.gitSectionStatus')}</span>
+
                 <div className="p-4 rounded-xl bg-card border border-border/40 space-y-5">
                     {/* Primary Status */}
                     <div className="flex items-center justify-between">
@@ -49,7 +50,7 @@ export const GitStatusHeader: React.FC<StatusHeaderProps> = ({ gitData, diffStat
                                 {gitData.isClean ? t('workspaceDashboard.clean') : t('workspaceDashboard.dirty')}
                             </span>
                         </div>
-                        <span className="text-10 font-bold text-muted-foreground/40 bg-muted/50 px-2 py-0.5 rounded uppercase tracking-tighter">
+                        <span className="typo-overline font-bold text-muted-foreground/40 bg-muted/50 px-2 py-0.5 rounded uppercase tracking-tighter">
                             {gitData.branch}
                         </span>
                     </div>
@@ -59,7 +60,7 @@ export const GitStatusHeader: React.FC<StatusHeaderProps> = ({ gitData, diffStat
                     {/* Detailed Reason (Why it's dirty) */}
                     {!gitData.isClean ? (
                         <div className="grid grid-cols-1 gap-3">
-                            <div className="text-10 font-bold text-muted-foreground/30 uppercase tracking-widest mb-1 px-1">{t('workspaceDashboard.status')}</div>
+                            <div className="typo-overline font-bold text-muted-foreground/30 uppercase tracking-widest mb-1 px-1">{t('workspaceDashboard.status')}</div>
                             <div className="space-y-2.5">
                                 {addedCount > 0 && (
                                     <div className="flex items-center justify-between text-xs px-1">
@@ -89,7 +90,7 @@ export const GitStatusHeader: React.FC<StatusHeaderProps> = ({ gitData, diffStat
                                     </div>
                                 )}
                                 {diffStats && (
-                                    <div className="pt-2 border-t border-border/5 mt-2 flex items-center gap-4 text-11 font-medium px-1">
+                                    <div className="pt-2 border-t border-border/5 mt-2 flex items-center gap-4 typo-overline font-medium px-1">
                                         <span className="text-emerald-500/60">+{diffStats.total.added} {t('workspaceDashboard.linesAdded')}</span>
                                         <span className="text-rose-500/60">-{diffStats.total.deleted} {t('workspaceDashboard.linesDeleted')}</span>
                                     </div>
@@ -99,7 +100,7 @@ export const GitStatusHeader: React.FC<StatusHeaderProps> = ({ gitData, diffStat
                     ) : (
                         <div className="flex flex-col items-center gap-3 py-4 text-center opacity-40 grayscale">
                             <CheckCircle2 className="w-8 h-8 text-emerald-500" />
-                            <p className="text-10 font-bold uppercase tracking-widest">{t('workspaceDashboard.clean')}</p>
+                            <p className="typo-overline font-bold uppercase tracking-widest">{t('workspaceDashboard.clean')}</p>
                         </div>
                     )}
 

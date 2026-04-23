@@ -103,7 +103,7 @@ const StatusBarItemView: React.FC<{
             onClick={item.onClick}
             title={item.tooltip}
             className={cn(
-                'flex items-center gap-1 px-2 py-0.5 text-10 transition-colors',
+                'flex items-center gap-1 px-2 py-0.5 typo-overline transition-colors',
                 item.onClick && 'cursor-pointer hover:bg-foreground/10'
             )}
             style={item.backgroundColor ? { backgroundColor: item.backgroundColor } : undefined}
@@ -160,7 +160,7 @@ export const GitBranchStatus: React.FC<{
     <div
         onClick={onClick}
         className={cn(
-            'flex items-center gap-1 px-2 py-0.5 text-10',
+            'flex items-center gap-1 px-2 py-0.5 typo-overline',
             onClick && 'cursor-pointer hover:bg-foreground/10'
         )}
     >
@@ -178,7 +178,7 @@ export const ConnectionStatus: React.FC<{
     <div
         onClick={onClick}
         className={cn(
-            'flex items-center gap-1 px-2 py-0.5 text-10',
+            'flex items-center gap-1 px-2 py-0.5 typo-overline',
             onClick && 'cursor-pointer hover:bg-foreground/10'
         )}
     >
@@ -204,7 +204,7 @@ export const NotificationBell: React.FC<{
     >
         <Bell className="h-3.5 w-3.5" />
         {count > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-destructive px-1 text-8 font-bold">
+            <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-destructive px-1 typo-overline font-bold">
                 {count > 99 ? '99+' : count}
             </span>
         )}
@@ -220,7 +220,7 @@ export const LoadingStatus: React.FC<{
     }
 
     return (
-        <div className="flex items-center gap-1 px-2 py-0.5 text-10">
+        <div className="flex items-center gap-1 px-2 py-0.5 typo-overline">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
             {label && <span>{label}</span>}
         </div>
@@ -241,7 +241,7 @@ export const ErrorStatus: React.FC<{
         <div
             onClick={onClick}
             className={cn(
-                'flex items-center gap-1 bg-destructive/50 px-2 py-0.5 text-10',
+                'flex items-center gap-1 bg-destructive/50 px-2 py-0.5 typo-overline',
                 onClick && 'cursor-pointer hover:bg-destructive/70'
             )}
         >
@@ -267,7 +267,7 @@ export const WarningStatus: React.FC<{
         <div
             onClick={onClick}
             className={cn(
-                'flex items-center gap-1 bg-warning/50 px-2 py-0.5 text-10',
+                'flex items-center gap-1 bg-warning/50 px-2 py-0.5 typo-overline',
                 onClick && 'cursor-pointer hover:bg-warning/70'
             )}
         >
@@ -286,7 +286,7 @@ export const ModelStatus: React.FC<{
     <div
         onClick={onClick}
         className={cn(
-            'flex items-center gap-1 px-2 py-0.5 text-10',
+            'flex items-center gap-1 px-2 py-0.5 typo-overline',
             onClick && 'cursor-pointer hover:bg-foreground/10'
         )}
     >

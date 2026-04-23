@@ -186,7 +186,7 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
                             ) : (
                                 <>
                                     {isBranchSwitching && (
-                                        <div className="px-3 py-2 text-11 text-primary flex items-center gap-2">
+                                        <div className="px-3 py-2 typo-overline text-primary flex items-center gap-2">
                                             <Loader2 className="w-3 h-3 animate-spin" />
                                             {t('workspace.switchingBranch')}
                                         </div>

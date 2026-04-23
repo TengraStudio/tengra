@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import React, { useEffect, useSyncExternalStore } from 'react';
+import React, { useEffect, useRef, useSyncExternalStore } from 'react';
 
 import { useTheme } from '@/hooks/useTheme';
 import { themeRegistry } from '@/themes/theme-registry.service';
@@ -21,6 +21,7 @@ import { appLogger } from '@/utils/renderer-logger';
  */
 export const RuntimeThemeManager: React.FC = () => {
     const { theme } = useTheme();
+    const appliedVarsRef = useRef<Set<string>>(new Set());
     useSyncExternalStore(
         themeRegistry.subscribe,
         themeRegistry.getSnapshot,
@@ -31,30 +32,14 @@ export const RuntimeThemeManager: React.FC = () => {
     const manifest = themeRegistry.getTheme(theme);
 
     useEffect(() => {
-        // 'black' and 'white' are hardcoded in styles/index.css for reliability/stability
-        if (theme === 'black' || theme === 'white') {
-            // Cleanup dynamic properties to ensure styles/index.css takes over
-            const root = document.documentElement;
-            root.style.removeProperty('--primary');
-            root.style.removeProperty('--background');
-            root.style.removeProperty('--foreground');
-            root.style.removeProperty('--card');
-            root.style.removeProperty('--card-foreground');
-            root.style.removeProperty('--popover');
-            root.style.removeProperty('--popover-foreground');
-            root.style.removeProperty('--secondary');
-            root.style.removeProperty('--secondary-foreground');
-            root.style.removeProperty('--muted');
-            root.style.removeProperty('--muted-foreground');
-            root.style.removeProperty('--accent');
-            root.style.removeProperty('--accent-foreground');
-            root.style.removeProperty('--destructive');
-            root.style.removeProperty('--destructive-foreground');
-            root.style.removeProperty('--border');
-            root.style.removeProperty('--input');
-            root.style.removeProperty('--ring');
-            return;
+        const root = document.documentElement;
+
+        // Cleanup any previously-applied theme variables to avoid leakage across themes.
+        // Only removes variables that were set by this manager (tracked in `appliedVarsRef`).
+        for (const cssVarName of appliedVarsRef.current) {
+            root.style.removeProperty(cssVarName);
         }
+        appliedVarsRef.current.clear();
 
         if (!manifest) {
             appLogger.debug('RuntimeThemeManager', `Theme ${theme} manifest not found in registry yet.`);
@@ -63,8 +48,12 @@ export const RuntimeThemeManager: React.FC = () => {
 
         appLogger.info('RuntimeThemeManager', `Applying theme: ${manifest.displayName} (${theme})`);
 
-        const root = document.documentElement;
         const colors = manifest.colors;
+        const vars = manifest.vars ?? {};
+
+        const markApplied = (cssVarName: string) => {
+            appliedVarsRef.current.add(cssVarName);
+        };
 
         try {
             // Apply all colors from manifest to CSS variables
@@ -72,23 +61,36 @@ export const RuntimeThemeManager: React.FC = () => {
                 if (typeof value !== 'string') {
                     return;
                 }
-                
+
                 // Convert camelCase to kebab-case (e.g. primaryForeground -> --primary-foreground)
-                const cssVar = `--${key.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}`;
-                root.style.setProperty(cssVar, value);
+                const cssVarName = `--${key.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}`;
+                root.style.setProperty(cssVarName, value);
+                markApplied(cssVarName);
+            });
+
+            // Apply raw CSS variable overrides (`vars`) for full theming (layout/spacing/radius/shadows/etc.)
+            Object.entries(vars).forEach(([key, value]) => {
+                if (typeof value !== 'string') {
+                    return;
+                }
+                const cssVarName = key.startsWith('--') ? key : `--${key}`;
+                root.style.setProperty(cssVarName, value);
+                markApplied(cssVarName);
             });
 
             // Ensure shadcn/ui mandatory mappings
             if (colors.primary) {
                 root.style.setProperty('--ring', colors.primary);
+                markApplied('--ring');
             }
             if (colors.background) {
                 root.style.setProperty('--card', colors.background);
+                markApplied('--card');
             }
             if (colors.foreground) {
                 root.style.setProperty('--card-foreground', colors.foreground);
+                markApplied('--card-foreground');
             }
-
         } catch (error) {
             appLogger.error('RuntimeThemeManager', `Failed to apply theme variables for ${theme}`, error as Error);
         }

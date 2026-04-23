@@ -121,15 +121,15 @@ const PRIORITY_CONFIG: Record<TaskPriority, { icon: React.ElementType; color: st
 };
 
 // Draggable Task Card Component
-const TaskCard = ({ 
-    task, 
-    isOverlay = false, 
-    onEdit, 
+const TaskCard = ({
+    task,
+    isOverlay = false,
+    onEdit,
     onDelete,
     onToggleSubtask,
     onAddSubtask
-}: { 
-    task: Task; 
+}: {
+    task: Task;
     isOverlay?: boolean;
     onEdit: (task: Task) => void;
     onDelete: (id: string) => void;
@@ -146,8 +146,8 @@ const TaskCard = ({
     } : undefined;
 
     const completedSubtasks = task.subtasks.filter(s => s.completed).length;
-    const progressPerc = task.subtasks.length > 0 
-        ? Math.round((completedSubtasks / task.subtasks.length) * 100) 
+    const progressPerc = task.subtasks.length > 0
+        ? Math.round((completedSubtasks / task.subtasks.length) * 100)
         : 0;
 
     const priority = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.medium;
@@ -170,11 +170,11 @@ const TaskCard = ({
                     <div className="flex flex-col gap-1.5 flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                             <priority.icon className={cn("w-3 h-3 shrink-0", priority.color)} />
-                            <span className={cn("text-10 font-medium uppercase tracking-tight", priority.color)}>
+                            <span className={cn("typo-overline font-medium uppercase tracking-tight", priority.color)}>
                                 {priority.label}
                             </span>
                             {task.estimation && (
-                                <Badge variant="outline" className="h-4 px-1.5 text-9 border-border/10 bg-muted/20 text-muted-foreground/60 rounded-sm font-medium">
+                                <Badge variant="outline" className="h-4 px-1.5 typo-overline border-border/10 bg-muted/20 text-muted-foreground/60 rounded-sm font-medium">
                                     <Zap className="w-2.5 h-2.5 mr-1 text-primary/40" />
                                     {task.estimation}
                                 </Badge>
@@ -214,7 +214,7 @@ const TaskCard = ({
 
                 {task.subtasks.length > 0 && (
                     <div className="space-y-2 py-1">
-                        <div className="flex items-center justify-between text-10 text-muted-foreground/40 font-medium">
+                        <div className="flex items-center justify-between typo-overline text-muted-foreground/40 font-medium">
                             <span className="flex items-center gap-1.5">
                                 <CheckSquare className="w-3 h-3" />
                                 {completedSubtasks}/{task.subtasks.length}
@@ -222,17 +222,17 @@ const TaskCard = ({
                             <span>{progressPerc}%</span>
                         </div>
                         <div className="h-1 w-full bg-muted/20 rounded-full overflow-hidden">
-                            <div 
-                                className="h-full bg-primary/30 transition-all duration-700 ease-in-out" 
+                            <div
+                                className="h-full bg-primary/30 transition-all duration-700 ease-in-out"
                                 style={{ width: `${progressPerc}%` }}
                             />
                         </div>
-                        
+
                         <div className="flex flex-col gap-1.5 pt-1" onPointerDown={(e) => e.stopPropagation()}>
                             {task.subtasks.map(sub => (
                                 <div key={sub.id} className="flex items-center gap-2 group/sub">
-                                    <Checkbox 
-                                        checked={sub.completed} 
+                                    <Checkbox
+                                        checked={sub.completed}
                                         onCheckedChange={() => onToggleSubtask(task.id, sub.id)}
                                         className="h-3.5 w-3.5 rounded border-border/40 data-[state=checked]:bg-primary/40 data-[state=checked]:border-none"
                                     />
@@ -250,13 +250,13 @@ const TaskCard = ({
 
                 <div className="flex items-center justify-between pt-2 border-t border-border/10">
                     {task.deadline ? (
-                        <div className="flex items-center gap-1.5 text-10 text-muted-foreground/40 font-medium">
+                        <div className="flex items-center gap-1.5 typo-overline text-muted-foreground/40 font-medium">
                             <CalendarIcon className="w-3 h-3 text-muted-foreground/20" />
                             {format(new Date(task.deadline), 'MMM d, yyyy')}
                         </div>
                     ) : <div />}
-                    
-                    <div className="flex items-center gap-1 text-9 text-muted-foreground/20 font-medium opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest pl-2">
+
+                    <div className="flex items-center gap-1 typo-overline text-muted-foreground/20 font-medium opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest pl-2">
                         <Hash className="w-2.5 h-2.5" />
                         {task.id.slice(0, 4)}
                     </div>
@@ -267,15 +267,15 @@ const TaskCard = ({
 };
 
 // Droppable Column Component
-const TaskColumn = ({ 
-    category, 
+const TaskColumn = ({
+    category,
     tasks,
     onEdit,
     onDelete,
     onToggleSubtask,
     onAddSubtask
-}: { 
-    category: typeof CATEGORIES[0]; 
+}: {
+    category: typeof CATEGORIES[0];
     tasks: Task[];
     onEdit: (task: Task) => void;
     onDelete: (id: string) => void;
@@ -293,12 +293,12 @@ const TaskColumn = ({
                 <h3 className="text-sm font-semibold text-foreground/80 tracking-tight pt-0.5">
                     {category.label}
                 </h3>
-                <Badge variant="secondary" className="ml-auto bg-muted/40 text-muted-foreground/50 border-none font-medium text-10 px-2 h-5 rounded-md">
+                <Badge variant="secondary" className="ml-auto bg-muted/40 text-muted-foreground/50 border-none font-medium typo-overline px-2 h-5 rounded-md">
                     {tasks.length}
                 </Badge>
             </div>
 
-            <div 
+            <div
                 ref={setNodeRef}
                 className={cn(
                     "flex-1 p-2.5 rounded-2xl transition-all min-h-400",
@@ -306,20 +306,20 @@ const TaskColumn = ({
                 )}
             >
                 {tasks.map(task => (
-                    <TaskCard 
-                        key={task.id} 
-                        task={task} 
-                        onEdit={onEdit} 
+                    <TaskCard
+                        key={task.id}
+                        task={task}
+                        onEdit={onEdit}
                         onDelete={onDelete}
                         onToggleSubtask={onToggleSubtask}
                         onAddSubtask={onAddSubtask}
                     />
                 ))}
-                
+
                 {tasks.length === 0 && !isOver && (
                     <div className="h-full flex flex-col items-center justify-center py-24 grayscale opacity-20 transition-opacity hover:opacity-30">
                         <category.icon className="w-12 h-12 mb-4" />
-                        <span className="text-11 font-medium tracking-200 uppercase">Empty</span>
+                        <span className="typo-overline font-medium tracking-200 uppercase">Empty</span>
                     </div>
                 )}
             </div>
@@ -334,13 +334,13 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
         const loadedTasks = (workspace?.metadata?.todos as unknown) as Task[];
         return Array.isArray(loadedTasks) ? loadedTasks : [];
     });
-    
+
     const [searchQuery, setSearchQuery] = useState('');
     const [activeId, setActiveId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [loading] = useState(false);
-    
+
     // Custom modal states
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
@@ -415,7 +415,7 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
         const newStatus = over.id as TaskStatus;
 
         if (CATEGORIES.some(cat => cat.id === newStatus)) {
-            updateTasksAndSave(prev => prev.map(task => 
+            updateTasksAndSave(prev => prev.map(task =>
                 task.id === taskId ? { ...task, status: newStatus } : task
             ));
         }
@@ -445,16 +445,16 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
         }
 
         if (editingTask) {
-            updateTasksAndSave(prev => prev.map(t => 
-                t.id === editingTask.id 
-                    ? { 
-                        ...t, 
-                        title: formData.title, 
-                        description: formData.description, 
+            updateTasksAndSave(prev => prev.map(t =>
+                t.id === editingTask.id
+                    ? {
+                        ...t,
+                        title: formData.title,
+                        description: formData.description,
                         deadline: formData.deadline || undefined,
                         priority: formData.priority,
                         estimation: formData.estimation || undefined
-                      } 
+                    }
                     : t
             ));
         } else {
@@ -495,7 +495,7 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
             }
             return {
                 ...task,
-                subtasks: task.subtasks.map(sub => 
+                subtasks: task.subtasks.map(sub =>
                     sub.id === subtaskId ? { ...sub, completed: !sub.completed } : sub
                 )
             };
@@ -530,15 +530,15 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
         if (!query) {
             return tasks;
         }
-        return tasks.filter(t => 
-            t.title.toLowerCase().includes(query) || 
+        return tasks.filter(t =>
+            t.title.toLowerCase().includes(query) ||
             t.description.toLowerCase().includes(query)
         );
     }, [tasks, searchQuery]);
 
-    const activeTask = useMemo(() => 
-        tasks.find(t => t.id === activeId), 
-    [tasks, activeId]);
+    const activeTask = useMemo(() =>
+        tasks.find(t => t.id === activeId),
+        [tasks, activeId]);
 
     const stats = useMemo(() => {
         const total = tasks.length;
@@ -568,13 +568,13 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
                         <div className="flex flex-col">
                             <h2 className="text-sm font-semibold tracking-tight text-foreground/80">Project Workspace</h2>
                             <div className="flex items-center gap-3 mt-0.5">
-                                <span className="text-10 text-muted-foreground/40 font-medium uppercase tracking-widest">{stats.total} Tasks</span>
+                                <span className="typo-overline text-muted-foreground/40 font-medium uppercase tracking-widest">{stats.total} Tasks</span>
                                 <div className="w-1 h-1 rounded-full bg-border/40" />
-                                <span className="text-10 text-emerald-500/50 font-medium uppercase tracking-widest">{stats.completed} Done</span>
+                                <span className="typo-overline text-emerald-500/50 font-medium uppercase tracking-widest">{stats.completed} Done</span>
                                 {stats.bugs > 0 && (
                                     <>
                                         <div className="w-1 h-1 rounded-full bg-border/40" />
-                                        <span className="text-10 text-rose-500/50 font-medium uppercase tracking-widest">{stats.bugs} Bugs</span>
+                                        <span className="typo-overline text-rose-500/50 font-medium uppercase tracking-widest">{stats.bugs} Bugs</span>
                                     </>
                                 )}
                             </div>
@@ -583,16 +583,16 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
                     <div className="h-6 w-px bg-border/20 mx-1" />
                     <div className="relative group">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/20 group-focus-within:text-primary/40 transition-colors" />
-                        <Input 
+                        <Input
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
-                            placeholder={t('workspaceTodo.filterBoardPlaceholder')} 
+                            placeholder={t('workspaceTodo.filterBoardPlaceholder')}
                             className="h-9 w-64 pl-9 pr-4 rounded-xl border-border/10 bg-background/20 text-xs focus-visible:ring-1 focus-visible:ring-primary/20 shadow-sm"
                         />
                     </div>
                 </div>
-                
-                <Button 
+
+                <Button
                     onClick={handleOpenCreateModal}
                     className="h-9 px-6 rounded-xl bg-primary/80 text-primary-foreground text-xs font-semibold hover:bg-primary shadow-lg shadow-primary/10 transition-all active:scale-95"
                 >
@@ -602,17 +602,17 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
             </div>
 
             {/* Board Container */}
-            <DndContext 
-                sensors={sensors} 
-                onDragStart={handleDragStart} 
+            <DndContext
+                sensors={sensors}
+                onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
             >
                 <ScrollArea className="flex-1 w-full border-none">
                     <div className="flex h-full p-10 gap-10 min-w-max">
                         {CATEGORIES.map((category) => (
-                            <TaskColumn 
-                                key={category.id} 
-                                category={category} 
+                            <TaskColumn
+                                key={category.id}
+                                category={category}
                                 tasks={filteredTasks.filter(t => t.status === category.id)}
                                 onEdit={handleOpenEditModal}
                                 onDelete={handleDeleteTask}
@@ -625,13 +625,13 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
 
                 <DragOverlay>
                     {activeTask ? (
-                        <TaskCard 
-                            task={activeTask} 
-                            isOverlay 
-                            onEdit={() => {}} 
-                            onDelete={() => {}} 
-                            onToggleSubtask={() => {}}
-                            onAddSubtask={() => {}}
+                        <TaskCard
+                            task={activeTask}
+                            isOverlay
+                            onEdit={() => { }}
+                            onDelete={() => { }}
+                            onToggleSubtask={() => { }}
+                            onAddSubtask={() => { }}
                         />
                     ) : null}
                 </DragOverlay>
@@ -661,7 +661,7 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
                                     className="h-10 border-border/20 bg-background/40 focus-visible:ring-1 focus-visible:ring-primary/20 text-sm"
                                 />
                             </div>
-                            
+
                             <div className="grid gap-2">
                                 <Label htmlFor="desc" className="text-xs font-medium text-muted-foreground/70">Description</Label>
                                 <Textarea
@@ -669,15 +669,15 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
                                     placeholder={t('workspaceTodo.taskContextPlaceholder')}
                                     value={formData.description}
                                     onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                                    className="min-h-32 border-border/20 bg-background/40 focus-visible:ring-1 focus-visible:ring-primary/20 resize-none text-13 leading-relaxed"
+                                    className="min-h-32 border-border/20 bg-background/40 focus-visible:ring-1 focus-visible:ring-primary/20 resize-none typo-overline leading-relaxed"
                                 />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
                                     <Label className="text-xs font-medium text-muted-foreground/70">Priority</Label>
-                                    <Select 
-                                        value={formData.priority} 
+                                    <Select
+                                        value={formData.priority}
                                         onValueChange={(val: TaskPriority) => setFormData(prev => ({ ...prev, priority: val }))}
                                     >
                                         <SelectTrigger className="h-10 border-border/20 bg-background/40 focus:ring-primary/20 text-xs">
@@ -716,14 +716,14 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
                     </div>
 
                     <div className="px-7 py-4 border-t border-border/10 bg-muted/5 flex justify-end gap-3">
-                        <Button 
-                            variant="ghost" 
+                        <Button
+                            variant="ghost"
                             onClick={() => setIsModalOpen(false)}
                             className="text-xs text-muted-foreground/50 hover:bg-transparent"
                         >
                             Cancel
                         </Button>
-                        <Button 
+                        <Button
                             onClick={handleSaveTask}
                             disabled={!formData.title.trim()}
                             className="h-10 px-8 bg-primary/80 text-primary-foreground text-xs font-semibold hover:bg-primary shadow-lg shadow-primary/10 transition-all rounded-lg"
@@ -773,14 +773,14 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
                         </div>
                     </div>
                     <div className="px-7 py-4 border-t border-border/10 bg-muted/5 flex justify-end gap-3">
-                        <Button 
-                            variant="ghost" 
+                        <Button
+                            variant="ghost"
                             onClick={() => setIsSubtaskPromptOpen(false)}
                             className="text-xs text-muted-foreground/50 hover:bg-transparent"
                         >
                             Cancel
                         </Button>
-                        <Button 
+                        <Button
                             onClick={confirmAddSubtask}
                             disabled={!subtaskTitle.trim()}
                             className="h-10 px-8 bg-primary/80 text-primary-foreground text-xs font-semibold hover:bg-primary shadow-lg shadow-primary/10 transition-all rounded-lg"

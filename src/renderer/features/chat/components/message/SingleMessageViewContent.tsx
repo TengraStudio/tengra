@@ -352,12 +352,12 @@ const TerminalToolCard = memo(({
     return (
         <div className="w-full rounded-xl border border-border/25 bg-muted/10 px-3 py-2">
             <div className="flex items-center justify-between gap-3">
-                <div className="text-11 font-medium text-muted-foreground">
+                <div className="typo-overline font-medium text-muted-foreground">
                     {data.title}
                 </div>
                 <div className="flex items-center gap-2">
                     {headerRight && (
-                        <div className="text-11 text-muted-foreground/70 tabular-nums">
+                        <div className="typo-overline text-muted-foreground/70 tabular-nums">
                             {headerRight}
                         </div>
                     )}
@@ -653,25 +653,25 @@ function buildToolActivityLines(
         const argKeys = Object.keys(args ?? {});
 
         // 1) Name-based classification (fast path)
-        if (lower.includes('filesystem')) {return 'files';}
-        if (lower.includes('terminal')) {return 'command';}
-        if (lower.includes('git')) {return 'git';}
-        if (lower.includes('clipboard')) {return 'clipboard';}
-        if (lower.includes('web')) {return 'web';}
-        if (lower.includes('screenshot') || lower.includes('capture')) {return 'screenshot';}
-        if (lower.includes('workspace')) {return 'workspace';}
-        if (lower.includes('process')) {return 'process';}
-        if (lower.includes('performance')) {return 'performance';}
-        if (lower.includes('system')) {return 'system';}
-        if (lower.includes('proxy')) {return 'proxy';}
+        if (lower.includes('filesystem')) { return 'files'; }
+        if (lower.includes('terminal')) { return 'command'; }
+        if (lower.includes('git')) { return 'git'; }
+        if (lower.includes('clipboard')) { return 'clipboard'; }
+        if (lower.includes('web')) { return 'web'; }
+        if (lower.includes('screenshot') || lower.includes('capture')) { return 'screenshot'; }
+        if (lower.includes('workspace')) { return 'workspace'; }
+        if (lower.includes('process')) { return 'process'; }
+        if (lower.includes('performance')) { return 'performance'; }
+        if (lower.includes('system')) { return 'system'; }
+        if (lower.includes('proxy')) { return 'proxy'; }
 
         // 2) Args-based heuristics (covers providers that omit "filesystem/terminal" in tool names)
-        if (argKeys.some(k => k.toLowerCase() === 'command' || k.toLowerCase() === 'cmd')) {return 'command';}
-        if (argKeys.some(k => k.toLowerCase() === 'cwd')) {return 'command';}
+        if (argKeys.some(k => k.toLowerCase() === 'command' || k.toLowerCase() === 'cmd')) { return 'command'; }
+        if (argKeys.some(k => k.toLowerCase() === 'cwd')) { return 'command'; }
         if (argKeys.some(k => ['path', 'file', 'files', 'oldpath', 'newpath', 'sourcepath', 'destinationpath'].includes(k.toLowerCase()))) {
             return 'files';
         }
-        if (argKeys.some(k => ['url', 'href', 'query'].includes(k.toLowerCase()))) {return 'web';}
+        if (argKeys.some(k => ['url', 'href', 'query'].includes(k.toLowerCase()))) { return 'web'; }
 
         return 'background';
     })();
@@ -679,16 +679,16 @@ function buildToolActivityLines(
     const friendly = (() => {
         const lower = name.toLowerCase();
         if (categoryKey === 'system') {
-            if (lower.includes('env')) {return 'Checked environment';}
-            if (lower.includes('gpu')) {return 'Checked graphics';}
-            if (lower.includes('health')) {return 'Checked health';}
-            if (lower.includes('info')) {return 'Checked computer info';}
+            if (lower.includes('env')) { return 'Checked environment'; }
+            if (lower.includes('gpu')) { return 'Checked graphics'; }
+            if (lower.includes('health')) { return 'Checked health'; }
+            if (lower.includes('info')) { return 'Checked computer info'; }
             return 'Checked computer';
         }
         if (categoryKey === 'process') {
-            if (lower.includes('spawn')) {return 'Started a task';}
-            if (lower.includes('kill')) {return 'Stopped a task';}
-            if (lower.includes('list')) {return 'Checked running tasks';}
+            if (lower.includes('spawn')) { return 'Started a task'; }
+            if (lower.includes('kill')) { return 'Stopped a task'; }
+            if (lower.includes('list')) { return 'Checked running tasks'; }
             return 'Checked running tasks';
         }
 
@@ -1046,7 +1046,7 @@ const FileChangesCard = memo(({
         try {
             for (const id of diffIds) {
                 // Best-effort. If one fails, keep going.
-                 
+
                 await window.electron.files.revertFileChange(id);
             }
         } finally {

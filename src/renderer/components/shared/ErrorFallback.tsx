@@ -54,7 +54,7 @@ export const ErrorFallback = ({
 
                 <div className="p-6 pt-2 space-y-4">
                     <div className="relative group">
-                        <div className="absolute -top-2 left-3 px-2 py-0.5 text-10 font-bold text-destructive/70 bg-card border border-border rounded pointer-events-none">
+                        <div className="absolute -top-2 left-3 px-2 py-0.5 typo-overline font-bold text-destructive/70 bg-card border border-border rounded pointer-events-none">
                             {t('errors.errorMessageLabel')}
                         </div>
                         <pre className="text-sm font-mono bg-muted/30 text-foreground p-5 border border-border/50 rounded-xl overflow-auto whitespace-pre-wrap max-h-200">
@@ -75,7 +75,7 @@ export const ErrorFallback = ({
                             </button>
                             {showStack && (
                                 <div className="animate-in slide-in-from-top-1 duration-200">
-                                    <pre className="text-10 font-mono bg-muted/50 text-muted-foreground p-4 rounded-lg max-h-300 overflow-auto whitespace-pre leading-relaxed border border-border/20">
+                                    <pre className="typo-overline font-mono bg-muted/50 text-muted-foreground p-4 rounded-lg max-h-300 overflow-auto whitespace-pre leading-relaxed border border-border/20">
                                         {error.stack}
                                     </pre>
                                 </div>

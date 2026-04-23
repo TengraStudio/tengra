@@ -22,9 +22,10 @@ import {
     useNodesState,
 } from '@xyflow/react';
 import { Network, RotateCcw } from 'lucide-react';
-import React, { useCallback, useEffect, useMemo,useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Input } from '@/components/ui/input';
+import { useTheme } from '@/hooks/useTheme';
 import {
     Select,
     SelectContent,
@@ -33,6 +34,7 @@ import {
     SelectValue
 } from '@/components/ui/select';
 import { useTranslation } from '@/i18n';
+import { resolveCssColorVariable } from '@/lib/theme-css';
 import { cn } from '@/lib/utils';
 
 import { appLogger } from '../../../utils/renderer-logger';
@@ -79,6 +81,7 @@ const nodeTypes = {
 
 export const MemoryGraphView: React.FC = () => {
     const { t } = useTranslation();
+    const { isLight, theme } = useTheme();
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
     const [allMemories, setAllMemories] = useState<AdvancedSemanticFragment[]>([]);
@@ -101,6 +104,30 @@ export const MemoryGraphView: React.FC = () => {
             );
         }),
         [allMemories, categoryFilter, searchQuery]
+    );
+    const neutralEdgeColor = useMemo(
+        () => resolveCssColorVariable('border', 'hsl(215 16% 47%)'),
+        [theme]
+    );
+    const mutedLabelColor = useMemo(
+        () => resolveCssColorVariable('muted-foreground', 'hsl(215 16% 47%)'),
+        [theme]
+    );
+    const destructiveColor = useMemo(
+        () => resolveCssColorVariable('destructive', 'hsl(0 72% 51%)'),
+        [theme]
+    );
+    const memoryNodeColor = useMemo(
+        () => resolveCssColorVariable('memory-graph-node-memory', 'hsl(239 84% 67%)'),
+        [theme]
+    );
+    const defaultNodeColor = useMemo(
+        () => resolveCssColorVariable('memory-graph-node-default', 'hsl(215 20% 65%)'),
+        [theme]
+    );
+    const relationshipGridColor = useMemo(
+        () => resolveCssColorVariable('memory-relationship-grid', 'hsl(215 16% 47% / 0.35)'),
+        [theme]
     );
 
     const loadData = useCallback(async () => {
@@ -169,8 +196,8 @@ export const MemoryGraphView: React.FC = () => {
                     target: relatedId,
                     label: t('memory.graphEdgeRelated'),
                     animated: true,
-                     style: { stroke: 'hsl(var(--border))' },
-                     labelStyle: { fill: 'hsl(var(--muted-foreground))', fontSize: 8 },
+                    style: { stroke: neutralEdgeColor },
+                    labelStyle: { fill: mutedLabelColor, fontSize: 8 },
                 });
             });
 
@@ -183,16 +210,16 @@ export const MemoryGraphView: React.FC = () => {
                     source: memory.id,
                     target: contradictId,
                     label: t('memory.graphEdgeContradicts'),
-                     style: { stroke: 'hsl(var(--destructive))', strokeWidth: 2 },
-                     labelStyle: { fill: 'hsl(var(--destructive))', fontSize: 8 },
-                     markerEnd: { type: MarkerType.ArrowClosed, color: 'hsl(var(--destructive))' },
+                    style: { stroke: destructiveColor, strokeWidth: 2 },
+                    labelStyle: { fill: destructiveColor, fontSize: 8 },
+                    markerEnd: { type: MarkerType.ArrowClosed, color: destructiveColor },
                 });
             });
         });
 
         setNodes(newNodes);
         setEdges(newEdges);
-    }, [filteredMemories, setEdges, setNodes, t]);
+    }, [destructiveColor, filteredMemories, mutedLabelColor, neutralEdgeColor, setEdges, setNodes, t]);
 
     return (
         <div className="w-full h-full flex flex-col bg-background relative overflow-hidden rounded-2xl border border-border/30 shadow-2xl">
@@ -215,17 +242,20 @@ export const MemoryGraphView: React.FC = () => {
                     onEdgesChange={onEdgesChange}
                     nodeTypes={nodeTypes}
                     fitView
-                    colorMode="dark"
+                    colorMode={isLight ? 'light' : 'dark'}
                 >
-                    <Background color="hsl(var(--border))" gap={20} size={1} />
+                    <Background color={relationshipGridColor} gap={20} size={1} />
                     <Controls className="bg-background/80 border-border/40 backdrop-blur-xl rounded-xl overflow-hidden" />
                     <MiniMap
-                        style={{ backgroundColor: 'hsl(var(--muted) / 0.5)', borderRadius: '12px' }}
+                        style={{
+                            backgroundColor: 'hsl(var(--muted) / 0.5)',
+                            borderRadius: 'var(--tengra-radius-xl)',
+                        }}
                         nodeColor={(n) => {
                             if (n.type === 'memory') {
-                                return '#6366f1';
+                                return memoryNodeColor;
                             }
-                            return '#94a3b8';
+                            return defaultNodeColor;
                         }}
                     />
 

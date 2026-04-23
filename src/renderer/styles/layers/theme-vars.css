@@ -1,0 +1,439 @@
+/**
+ * Tengra - Your Personal AI Assistant
+ * Copyright (c) 2026 TengraStudio
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+/* stylelint-disable */
+
+@layer base {
+    :root {
+        --radius: 0.625rem;
+        --font-family: var(--font-sans);
+
+        /* Brand / Icon Colors (shared) */
+        --brand-typescript: #3178C6;
+        --brand-javascript: #F7DF1E;
+        --brand-react: #61DAFB;
+        --brand-python: #3776AB;
+        --brand-rust: #F37626;
+        --brand-database: #DEA584;
+        --brand-go: #00ADD8;
+        --brand-ruby: #CC342D;
+        --brand-php: #777BB4;
+        --brand-java: #ED8B00;
+        --brand-swift: #7F52FF;
+        --brand-c: #A8B9CC;
+        --brand-cpp: #00599C;
+        --brand-csharp: #512BD4;
+        --brand-git: #F05138;
+        --brand-flutter: #0175C2;
+        --brand-html: #E34F26;
+        --brand-css: #1572B6;
+        --brand-sass: #CF649A;
+        --brand-vue: #42B883;
+        --brand-svelte: #FF3E00;
+        --brand-angular: #DD0031;
+        --brand-docker: #2496ED;
+        --brand-kubernetes: #326CE5;
+        --brand-nodejs: #339933;
+
+        /* Git Related Colors (shared) */
+        --git-modified: #e2c522;
+        --git-added: #81b88b;
+        --git-deleted: #c74e39;
+        --git-untracked: #73c991;
+        --git-ignored: #8e8e8e;
+        --git-diff-added-text: #3fb950;
+        --git-diff-added-bg: #2ea04326;
+        --git-diff-added-border: #3fb950;
+        --git-diff-deleted-text: #f85149;
+        --git-diff-deleted-bg: #f851491a;
+        --git-diff-deleted-border: #f85149;
+        --git-diff-neutral-text: #7d8590;
+        --git-diff-neutral-bg: #161b22;
+        --git-gh-bg: #0d1117;
+        --git-gh-header: #161b22;
+        --git-gh-hover: #1c2128;
+        --git-vsc-selected: #37373d;
+        --git-vsc-hover: #2a2d2e;
+        --git-vsc-dim: #cccccc;
+
+        /* Shadow Fixed Colors (shared) */
+        --shadow-fixed-amber: 245 158 11;
+        --shadow-fixed-success: 34 197 94;
+        --shadow-fixed-black: 0 0% 0%;
+
+        /* Fixed Shadow Values (shared) */
+        --shadow-card-sm: 0 2px 8px -2px hsl(var(--shadow-fixed-black) / 0.1);
+        --shadow-card-md: 0 2px 8px -2px hsl(var(--shadow-fixed-black) / 0.2);
+        --shadow-card-dark: 0 0 8px hsl(var(--shadow-fixed-black) / 0.2);
+        --shadow-glow-amber: 0 0 8px hsl(var(--shadow-fixed-amber) / 0.15);
+        --shadow-glow-success: 0 0 8px hsl(var(--shadow-fixed-success) / 0.4);
+        --shadow-glow-success-strong: 0 0 10px hsl(var(--shadow-fixed-success) / 0.6);
+        --shadow-modal-heavy: 0 32px 64px -16px hsl(var(--shadow-fixed-black) / 0.3);
+
+        /* Gradient & Effect Colors (shared) */
+        --white-transparent-15: rgba(255, 255, 255, 0.15);
+        --progress-stripes-white: linear-gradient(45deg, var(--white-transparent-15) 25%, transparent 25%, transparent 50%, var(--white-transparent-15) 50%, var(--white-transparent-15) 75%, transparent 75%, transparent);
+
+        /* Specific App Colors (shared) */
+        --terminal-bg: #0b1016;
+
+        /* Specific Values Mapping (shared) */
+        --stroke-2-5: 2.5px;
+        --opacity-02: 0.02;
+        --opacity-03: 0.03;
+        --opacity-04: 0.04;
+        --blur-1px: 1px;
+        --left-38px: 38px;
+        --top-36px: 36px;
+
+        /* Audit-fix: Missing variables */
+        --action-transform: translate(0, 0);
+
+        /* File explorer / file icon variables */
+        --icon-glyph: hsl(var(--foreground) / 80%);
+        --icon-default: hsl(var(--muted-foreground));
+        --icon-source: var(--brand-typescript);
+        --icon-lib: var(--brand-react);
+        --icon-git: var(--brand-git);
+        --icon-github: var(--brand-csharp);
+        --icon-config: var(--purple);
+        --icon-settings: var(--purple);
+        --icon-components: hsl(var(--success));
+        --icon-ui: hsl(var(--success));
+        --icon-pages: hsl(var(--info));
+        --icon-routes: hsl(var(--info));
+        --icon-api: hsl(var(--accent-foreground));
+        --icon-graphql: hsl(var(--accent-foreground));
+        --icon-test: hsl(var(--warning));
+        --icon-cypress: hsl(var(--foreground) / 90%);
+        --icon-playwright: hsl(var(--success));
+        --icon-build: hsl(var(--muted-foreground));
+        --icon-next: hsl(var(--foreground));
+        --icon-nuxt: var(--brand-vue);
+        --icon-dependencies: hsl(var(--muted-foreground));
+        --icon-assets: hsl(var(--destructive));
+        --icon-fonts: var(--purple);
+        --icon-styles: hsl(var(--accent-foreground));
+        --icon-css: var(--brand-css);
+        --icon-scss: var(--brand-sass);
+        --icon-less: var(--brand-cpp);
+        --icon-public: hsl(var(--success));
+        --icon-types: var(--brand-typescript);
+        --icon-hooks: var(--brand-react);
+        --icon-composables: var(--brand-vue);
+        --icon-utils: var(--brand-csharp);
+        --icon-data: hsl(var(--info));
+        --icon-prisma: hsl(var(--foreground) / 70%);
+        --icon-features: var(--purple);
+        --icon-docs: hsl(var(--success));
+        --icon-security: hsl(var(--destructive));
+        --icon-scripts: hsl(var(--success));
+        --icon-tools: hsl(var(--muted-foreground));
+        --icon-vscode: #0078D4;
+        --icon-idea: hsl(var(--foreground));
+        --icon-husky: var(--brand-vue);
+        --icon-circleci: hsl(var(--foreground) / 70%);
+        --icon-jenkins: #D24939;
+        --icon-workflows: #2088FF;
+        --icon-ts: var(--brand-typescript);
+        --icon-js: var(--brand-javascript);
+        --icon-jsx: var(--brand-react);
+        --icon-py: var(--brand-python);
+        --icon-ipynb: var(--brand-rust);
+        --icon-rs: var(--brand-database);
+        --icon-go: var(--brand-go);
+        --icon-rb: var(--brand-ruby);
+        --icon-php: var(--brand-php);
+        --icon-java: var(--brand-java);
+        --icon-kt: var(--brand-swift);
+        --icon-c: var(--brand-c);
+        --icon-cpp: var(--brand-cpp);
+        --icon-cs: var(--brand-csharp);
+        --icon-swift: var(--brand-git);
+        --icon-dart: var(--brand-flutter);
+        --icon-html: var(--brand-html);
+        --icon-css-file: var(--brand-css);
+        --icon-vue: var(--brand-vue);
+        --icon-svelte: var(--brand-svelte);
+        --icon-json: hsl(var(--foreground));
+        --icon-yaml: #CB171E;
+        --icon-xml: #0060AC;
+        --icon-md: #083FA1;
+        --icon-sql: #CC2927;
+        --icon-sh: #4EAA25;
+
+        /* Terminal system palette */
+        --terminal-foreground: hsl(var(--foreground));
+        --terminal-cursor: hsl(var(--primary));
+        --terminal-cursor-accent: hsl(var(--background));
+        --terminal-selection-background: hsl(var(--primary) / 30%);
+        --terminal-selection-foreground: hsl(var(--foreground));
+        --terminal-ansi-black: hsl(var(--muted));
+        --terminal-ansi-red: hsl(var(--destructive));
+        --terminal-ansi-green: hsl(var(--success));
+        --terminal-ansi-yellow: hsl(var(--warning));
+        --terminal-ansi-blue: hsl(var(--info));
+        --terminal-ansi-magenta: hsl(var(--purple));
+        --terminal-ansi-cyan: hsl(var(--cyan));
+        --terminal-ansi-white: hsl(var(--foreground) / 85%);
+        --terminal-ansi-bright-black: hsl(var(--muted-foreground));
+        --terminal-ansi-bright-red: hsl(var(--destructive));
+        --terminal-ansi-bright-green: hsl(var(--success-light));
+        --terminal-ansi-bright-yellow: hsl(var(--warning-light));
+        --terminal-ansi-bright-blue: hsl(var(--info-light));
+        --terminal-ansi-bright-magenta: hsl(var(--fuchsia));
+        --terminal-ansi-bright-cyan: hsl(var(--cyan));
+        --terminal-ansi-bright-white: hsl(var(--foreground));
+        --terminal-preview-background: hsl(var(--card));
+        --terminal-preview-foreground: hsl(var(--foreground));
+        --terminal-surface-shadow:
+            inset 0 1px 0 0 hsl(var(--border) / 10%),
+            0 20px 25px -5px hsl(var(--shadow-color) / 30%),
+            0 10px 10px -5px hsl(var(--shadow-color) / 20%);
+
+        /* Visual helper colors */
+        --confetti-color-1: hsl(var(--primary));
+        --confetti-color-2: hsl(var(--accent-foreground));
+        --confetti-color-3: hsl(var(--info));
+        --confetti-color-4: hsl(var(--destructive));
+        --confetti-color-5: hsl(var(--success));
+        --confetti-color-6: hsl(var(--warning));
+        --editor-dirty-decoration: hsl(var(--warning));
+        --memory-graph-node-memory: hsl(var(--primary));
+        --memory-graph-node-default: hsl(var(--muted-foreground));
+        --memory-relationship-edge: hsl(var(--primary) / 40%);
+        --memory-relationship-grid: hsl(var(--border) / 35%);
+        --council-board-bg: hsl(var(--background));
+        --council-board-orbit: hsl(var(--info) / 35%);
+        --council-board-connection: hsl(var(--foreground) / 14%);
+        --council-board-chair-fill: hsl(var(--info));
+        --council-board-chair-text: hsl(var(--background));
+        --council-board-agent-fill: hsl(var(--success-light));
+        --council-board-helper-fill: hsl(var(--warning));
+        --council-board-agent-text: hsl(var(--foreground));
+        --council-board-assist-stroke: hsl(var(--warning) / 65%);
+        --council-board-draft-stroke: hsl(var(--accent-foreground) / 65%);
+        --council-board-approve-stroke: hsl(var(--success) / 70%);
+        --council-board-reject-stroke: hsl(var(--destructive) / 70%);
+        --council-board-revise-stroke: hsl(var(--warning) / 70%);
+        --council-board-message-stroke: hsl(var(--info) / 35%);
+    }
+
+    /* WHITE THEME (Light) */
+    :root,
+    [data-theme='white'] {
+        --background: 0 0% 100%;
+        --foreground: 0 0% 0%;
+
+        --card: 0 0% 98%;
+        --card-foreground: 0 0% 10%;
+
+        --popover: 0 0% 100%;
+        --popover-foreground: 0 0% 0%;
+
+        /* Vibrant Electric Purple/Blue for Light Mode */
+        --primary: 250 100% 65%;
+        --primary-foreground: 0 0% 100%;
+
+        --secondary: 0 0% 96%;
+        --secondary-foreground: 0 0% 10%;
+
+        --muted: 0 0% 96%;
+        --muted-foreground: 0 0% 45%;
+
+        --accent: 0 0% 96%;
+        --accent-foreground: 250 100% 40%;
+
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 98%;
+
+        --border: 0 0% 90%;
+        --input: 0 0% 90%;
+        --ring: 250 100% 65%;
+
+        --glow-color: 250 100% 65%;
+
+        /* Semantic Colors */
+        --success: 160 84% 39%;
+        --success-foreground: 0 0% 100%;
+        --warning: 38 92% 50%;
+        --warning-foreground: 0 0% 0%;
+        --info: 199 89% 48%;
+        --info-foreground: 0 0% 100%;
+        --error: 0 84% 60%;
+        --error-foreground: 0 0% 100%;
+
+        /* Additional Semantic Colors */
+        --success-light: 160 60% 55%;
+        --info-light: 199 70% 65%;
+        --warning-light: 38 80% 65%;
+        --neutral: 0 0% 50%;
+        --neutral-light: 0 0% 70%;
+        --neutral-dark: 0 0% 30%;
+
+        /* Brand Accent Colors */
+        --indigo: 239 84% 67%;
+        --purple: 270 95% 75%;
+        --cyan: 180 100% 45%;
+        --orange: 25 95% 53%;
+        --fuchsia: 295 82% 80%;
+
+        /* Code Syntax Highlighting - Light Theme */
+        --code-keyword: 262 90% 60%;
+        --code-function: 211 60% 48%;
+        --code-string: 142 71% 35%;
+        --code-comment: 0 0% 45%;
+        --code-variable: 0 72% 55%;
+        --code-number: 30 80% 50%;
+        --code-operator: 250 100% 65%;
+
+        /* Monaco Editor Tokens */
+        --editor-background: var(--background);
+        --editor-foreground: var(--foreground);
+        --editor-gutter-background: var(--background);
+        --editor-line-number: var(--muted-foreground);
+        --editor-line-number-active: var(--foreground);
+        --editor-cursor: var(--primary);
+        --editor-selection: var(--primary);
+        --editor-selection-inactive: var(--accent);
+        --editor-line-highlight: var(--card);
+        --editor-widget-background: var(--card);
+        --editor-widget-border: var(--border);
+        --editor-indent-guide: var(--border);
+        --editor-indent-guide-active: var(--ring);
+        --editor-token-comment: var(--code-comment);
+        --editor-token-keyword: var(--code-keyword);
+        --editor-token-string: var(--code-string);
+        --editor-token-number: var(--code-number);
+        --editor-token-type: var(--code-function);
+        --editor-token-invalid: var(--destructive);
+
+        /* Glass/Overlay Colors */
+        --glass-bg: 0 0% 100%;
+        --glass-border: 0 0% 0%;
+        --shadow-color: 250 20% 10%;
+
+        /* Standardized Shadows - HSL based */
+        --shadow-sm: 0 1px 2px 0 hsl(var(--shadow-color) / 0.04);
+        --shadow-md: 0 2px 4px -2px hsl(var(--shadow-color) / 0.08);
+        --shadow-lg: 0 4px 8px -4px hsl(var(--shadow-color) / 0.12);
+        --shadow-xl: 0 8px 16px -8px hsl(var(--shadow-color) / 0.16);
+        --shadow-premium: 0 10px 24px -12px hsl(var(--shadow-color) / 0.18);
+    }
+
+    /* BLACK THEME (Dark) */
+    [data-theme='black'] {
+        --background: 0 0% 0%;
+        --foreground: 0 0% 100%;
+
+        --card: 0 0% 4%;
+        --card-foreground: 0 0% 100%;
+
+        --popover: 0 0% 4%;
+        --popover-foreground: 0 0% 100%;
+
+        /* Vibrant Electric Cyan/Blue for Dark Mode */
+        --primary: 190 100% 60%;
+        --primary-foreground: 0 0% 0%;
+
+        --secondary: 0 0% 10%;
+        --secondary-foreground: 0 0% 100%;
+
+        --muted: 0 0% 10%;
+        --muted-foreground: 0 0% 60%;
+
+        --accent: 0 0% 10%;
+        --accent-foreground: 190 100% 60%;
+
+        --destructive: 0 62% 30%;
+        --destructive-foreground: 0 0% 100%;
+
+        --border: 0 0% 12%;
+        --input: 0 0% 12%;
+        --ring: 190 100% 60%;
+
+        --glow-color: 190 100% 60%;
+        --premium-gradient: linear-gradient(135deg, hsl(190 100% 60%) 0%, hsl(250 100% 65%) 100%);
+
+        /* Semantic Colors - Dark Theme */
+        --success: 160 84% 45%;
+        --success-foreground: 0 0% 0%;
+        --warning: 38 92% 55%;
+        --warning-foreground: 0 0% 0%;
+        --info: 199 89% 55%;
+        --info-foreground: 0 0% 0%;
+        --error: 0 72% 55%;
+        --error-foreground: 0 0% 100%;
+
+        /* Additional Semantic Colors - Dark */
+        --success-light: 160 70% 60%;
+        --info-light: 199 80% 70%;
+        --warning-light: 38 85% 70%;
+        --neutral: 0 0% 50%;
+        --neutral-light: 0 0% 65%;
+        --neutral-dark: 0 0% 35%;
+
+        /* Brand Accent Colors - Dark */
+        --indigo: 239 84% 75%;
+        --purple: 270 95% 82%;
+        --cyan: 180 100% 60%;
+        --orange: 25 95% 65%;
+        --fuchsia: 295 82% 85%;
+
+        /* Code Syntax Highlighting - Dark Theme */
+        --code-keyword: 286 60% 67%;
+        --code-function: 207 82% 66%;
+        --code-string: 95 38% 62%;
+        --code-comment: 0 0% 40%;
+        --code-variable: 355 65% 65%;
+        --code-number: 29 54% 61%;
+        --code-operator: 190 100% 60%;
+
+        /* Monaco Editor Tokens */
+        --editor-background: var(--background);
+        --editor-foreground: var(--foreground);
+        --editor-gutter-background: var(--background);
+        --editor-line-number: var(--muted-foreground);
+        --editor-line-number-active: var(--foreground);
+        --editor-cursor: var(--primary);
+        --editor-selection: var(--primary);
+        --editor-selection-inactive: var(--accent);
+        --editor-line-highlight: var(--card);
+        --editor-widget-background: var(--card);
+        --editor-widget-border: var(--border);
+        --editor-indent-guide: var(--border);
+        --editor-indent-guide-active: var(--ring);
+        --editor-token-comment: var(--code-comment);
+        --editor-token-keyword: var(--code-keyword);
+        --editor-token-string: var(--code-string);
+        --editor-token-number: var(--code-number);
+        --editor-token-type: var(--code-function);
+        --editor-token-invalid: var(--destructive);
+
+        /* Glass/Overlay Colors - Dark */
+        --glass-bg: 0 0% 100%;
+        --glass-border: 0 0% 100%;
+        --shadow-color: 0 0% 0%;
+
+        /* Standardized Shadows - Dark mode tinted */
+        --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.35);
+        --shadow-md: 0 2px 6px -3px hsl(0 0% 0% / 0.45);
+        --shadow-lg: 0 6px 12px -6px hsl(0 0% 0% / 0.55);
+        --shadow-xl: 0 10px 20px -10px hsl(0 0% 0% / 0.65);
+        --shadow-premium: 0 14px 28px -14px hsl(0 0% 0% / 0.72), 0 0 0 1px hsl(var(--border) / 0.18);
+    }
+
+    /* Utility for logos that should be white in dark mode and original in light mode */
+    [data-theme='black'] .theme-logo-invert,
+    .dark .theme-logo-invert {
+        filter: grayscale(100%) brightness(0) invert(1);
+        opacity: 0.9;
+    }
+}

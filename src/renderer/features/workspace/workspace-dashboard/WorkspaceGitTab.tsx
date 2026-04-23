@@ -13,12 +13,13 @@ import { Button } from '@renderer/components/ui/button';
 import { ScrollArea } from '@renderer/components/ui/scroll-area';
 import { useGitData } from '@renderer/features/workspace/hooks/useGitData';
 import { cn } from '@renderer/lib/utils';
-import { 
+import {
     ArrowDown,
     ArrowUp,
-    GitBranch, 
-    RefreshCw} from 'lucide-react';
-import React, { useCallback,useEffect, useState } from 'react';
+    GitBranch,
+    RefreshCw
+} from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import type { Workspace } from '@/types';
 
@@ -133,19 +134,19 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
             {/* Top Toolbar */}
             <div className="flex items-center justify-between px-6 h-14 border-b border-border/40 shrink-0">
                 <div className="flex items-center gap-4">
-                    <GitBranchSelect 
-                        branch={gitData.branch} 
-                        branches={branches} 
-                        isCheckingOut={isCheckingOut} 
-                        handleCheckout={handleCheckout} 
+                    <GitBranchSelect
+                        branch={gitData.branch}
+                        branches={branches}
+                        isCheckingOut={isCheckingOut}
+                        handleCheckout={handleCheckout}
                     />
-                    
+
                     <div className="h-4 w-px bg-border/40 mx-1" />
-                    
+
                     <div className="flex items-center gap-2">
-                        <Button 
-                            variant="ghost" 
-                            size="sm" 
+                        <Button
+                            variant="ghost"
+                            size="sm"
                             className={cn(
                                 "h-8 px-3 text-xs font-semibold rounded-md",
                                 view === 'changes' ? "bg-muted text-foreground" : "text-muted-foreground"
@@ -154,14 +155,14 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
                         >
                             Changes
                             {gitData.changedFiles.length > 0 && (
-                                <Badge variant="secondary" className="ml-2 h-4 px-1 bg-primary/10 text-primary border-none min-w-[1.25rem] flex justify-center">
+                                <Badge variant="secondary" className="ml-2 h-4 px-1 bg-primary/10 text-primary border-none min-w-1-25rem flex justify-center">
                                     {gitData.changedFiles.length}
                                 </Badge>
                             )}
                         </Button>
-                        <Button 
-                            variant="ghost" 
-                            size="sm" 
+                        <Button
+                            variant="ghost"
+                            size="sm"
                             className={cn(
                                 "h-8 px-3 text-xs font-semibold rounded-md",
                                 view === 'history' ? "bg-muted text-foreground" : "text-muted-foreground"
@@ -175,21 +176,21 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
 
                 <div className="flex items-center gap-2">
                     {trackingInfo && (
-                        <div className="flex items-center gap-3 px-3 text-11 font-medium text-muted-foreground border-r border-border/40 mr-2 h-6">
+                        <div className="flex items-center gap-3 px-3 typo-overline font-medium text-muted-foreground border-r border-border/40 mr-2 h-6">
                             <span className="flex items-center gap-1"><ArrowUp className="w-3 h-3 text-emerald-500/60" /> {trackingInfo.ahead}</span>
                             <span className="flex items-center gap-1"><ArrowDown className="w-3 h-3 text-indigo-500/60" /> {trackingInfo.behind}</span>
                         </div>
                     )}
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
+                    <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-8 px-2 hover:bg-muted text-muted-foreground"
                         onClick={() => fetchGitData()}
                     >
                         <RefreshCw className={cn("w-3.5 h-3.5", gitData.loading && "animate-spin")} />
                     </Button>
-                    <Button 
-                        size="sm" 
+                    <Button
+                        size="sm"
                         className="h-8 px-4 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-md"
                         onClick={() => handlePull()}
                         disabled={isPulling}
@@ -239,18 +240,18 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
                                     />
                                 </div>
                             ) : (
-                                    <GitCommitHistory
-                                        gitData={gitData}
-                                        selectedCommit={selectedCommit}
-                                        loadingDiff={loadingDiff}
-                                        commitDiff={commitDiff}
-                                        isLoadingMore={isLoadingMore}
-                                        hasMoreCommits={hasMoreCommits}
-                                        handleCommitSelect={handleCommitSelect}
-                                        handleLoadMoreCommits={handleLoadMoreCommits}
-                                        fetchGitData={fetchGitData}
-                                        t={t}
-                                    />
+                                <GitCommitHistory
+                                    gitData={gitData}
+                                    selectedCommit={selectedCommit}
+                                    loadingDiff={loadingDiff}
+                                    commitDiff={commitDiff}
+                                    isLoadingMore={isLoadingMore}
+                                    hasMoreCommits={hasMoreCommits}
+                                    handleCommitSelect={handleCommitSelect}
+                                    handleLoadMoreCommits={handleLoadMoreCommits}
+                                    fetchGitData={fetchGitData}
+                                    t={t}
+                                />
                             )}
                         </div>
                     </ScrollArea>

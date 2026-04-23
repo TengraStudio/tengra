@@ -94,7 +94,7 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                 <div className="flex items-center gap-2" style={noDragStyle}>
                     <div className="flex items-center gap-2 px-2">
                         <div
-                            className="flex items-center gap-1 rounded-md border border-border/60 px-2 py-1 text-10 text-muted-foreground"
+                            className="flex items-center gap-1 rounded-md border border-border/60 px-2 py-1 typo-overline text-muted-foreground"
                             title={t('titleBar.lazyServicesStatus', {
                                 loaded: lazyStatus.loaded,
                                 registered: lazyStatus.registered

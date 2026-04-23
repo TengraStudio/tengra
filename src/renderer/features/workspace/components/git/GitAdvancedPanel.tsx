@@ -55,7 +55,7 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ workspacePat
     return (
         <div className="space-y-6">
             <div className="space-y-3">
-                <span className="text-11 font-semibold text-muted-foreground uppercase tracking-wider px-1">{t('git.advanced.branchManagement')}</span>
+                <span className="typo-overline font-semibold text-muted-foreground uppercase tracking-wider px-1">{t('git.advanced.branchManagement')}</span>
                 <div className="p-4 rounded-lg bg-card border border-border/40 space-y-4">
                     <div className="flex gap-2">
                         <Input
@@ -64,16 +64,16 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ workspacePat
                             placeholder={t('git.advanced.enterNewBranchName')}
                             className="h-8 text-xs bg-background/50 border-border/20"
                         />
-                        <Button 
-                            disabled={!newBranchName.trim()} 
+                        <Button
+                            disabled={!newBranchName.trim()}
                             onClick={handleCreateBranch}
                             size="sm"
-                            className="h-8 px-3 text-11 font-bold"
+                            className="h-8 px-3 typo-overline font-bold"
                         >
                             <Plus className="w-3 h-3" />
                         </Button>
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-foreground/70 truncate mr-4">{git.currentBranch}</span>
                         <div className="flex gap-1">
@@ -86,7 +86,7 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ workspacePat
             </div>
 
             <div className="space-y-3">
-                <span className="text-11 font-semibold text-muted-foreground uppercase tracking-wider px-1">{t('git.advanced.maintenance')}</span>
+                <span className="typo-overline font-semibold text-muted-foreground uppercase tracking-wider px-1">{t('git.advanced.maintenance')}</span>
                 <div className="flex flex-col gap-2">
                     <Button variant="outline" className="justify-start h-9 text-xs font-medium border-border/20 hover:bg-muted/40 transition-colors" onClick={() => git.refreshAll()}>
                         <RefreshCw className="w-3.5 h-3.5 mr-2 text-muted-foreground/40" />

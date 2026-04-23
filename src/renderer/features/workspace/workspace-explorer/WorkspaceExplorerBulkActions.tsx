@@ -15,10 +15,10 @@ import type { WorkspaceBulkAction } from '@/store/workspace-explorer.store';
 import type { WorkspaceEntry } from '@/types';
 
 /* Batch-02: Extracted Long Classes */
-const C_WORKSPACEEXPLORERBULKACTIONS_1 = "inline-flex h-7 items-center gap-1 rounded-md border border-border/50 bg-background/70 px-2 text-11 font-medium text-foreground transition-colors hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-50";
+const C_WORKSPACEEXPLORERBULKACTIONS_1 = "inline-flex h-7 items-center gap-1 rounded-md border border-border/50 bg-background/70 px-2 typo-overline font-medium text-foreground transition-colors hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-50";
 const C_WORKSPACEEXPLORERBULKACTIONS_2 = "h-8 flex-1 rounded-md border border-border/50 bg-background/70 px-2 typo-caption text-foreground outline-none transition-colors focus:border-primary/40";
-const C_WORKSPACEEXPLORERBULKACTIONS_3 = "inline-flex h-8 items-center rounded-md bg-primary/15 px-2 text-11 font-semibold text-foreground transition-colors hover:bg-primary/20";
-const C_WORKSPACEEXPLORERBULKACTIONS_4 = "inline-flex h-8 items-center rounded-md border border-border/50 px-2 text-11 font-medium text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground";
+const C_WORKSPACEEXPLORERBULKACTIONS_3 = "inline-flex h-8 items-center rounded-md bg-primary/15 px-2 typo-overline font-semibold text-foreground transition-colors hover:bg-primary/20";
+const C_WORKSPACEEXPLORERBULKACTIONS_4 = "inline-flex h-8 items-center rounded-md border border-border/50 px-2 typo-overline font-medium text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground";
 
 
 interface WorkspaceExplorerBulkActionsProps {
@@ -72,7 +72,7 @@ export function WorkspaceExplorerBulkActions({
     return (
         <div className="mx-4 mb-2 rounded-lg border border-border/50 bg-muted/20 p-2">
             <div className="flex flex-wrap items-center gap-2">
-                <span className="text-11 font-semibold text-muted-foreground">
+                <span className="typo-overline font-semibold text-muted-foreground">
                     {t('common.itemsSelected', { count: selectedEntries.length })}
                 </span>
                 <ToolbarActionButton

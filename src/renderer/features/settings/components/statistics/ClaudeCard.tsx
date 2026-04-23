@@ -43,31 +43,31 @@ export const ClaudeCard: React.FC<ClaudeCardProps> = ({ claudeQuota, locale = 'e
                                     {acc.email ?? t('statistics.claudeAccount')}
                                 </div>
                                 {(acc.error || acc.isActive) && <StatusBadge status={status} text={statusText} />}
-                                {acc.error && <span className="text-9 text-destructive truncate ml-2">{acc.error}</span>}
+                                {acc.error && <span className="typo-overline text-destructive truncate ml-2">{acc.error}</span>}
                             </div>
 
                             {!acc.error && (
                                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 pt-2 md:grid-cols-2 xl:grid-cols-3">
                                     {acc.fiveHour && (
                                         <div className="space-y-2">
-                                            <div className="text-10 flex items-center justify-between font-medium">
+                                            <div className="typo-overline flex items-center justify-between font-medium">
                                                 <span className="text-muted-foreground truncate pr-2">{t('statistics.fiveHourStatus')}</span>
                                                 <span className="text-foreground/80 tabular-nums shrink-0">{100 - acc.fiveHour.utilization}%</span>
                                             </div>
                                             <HorizontalProgressBar percentage={100 - acc.fiveHour.utilization} color={getQuotaColor(100 - acc.fiveHour.utilization)} />
-                                            <div className="text-9 font-medium text-muted-foreground/40 mt-1">
+                                            <div className="typo-overline font-medium text-muted-foreground/40 mt-1">
                                                 {formatReset(acc.fiveHour.resetsAt, locale)}
                                             </div>
                                         </div>
                                     )}
                                     {acc.sevenDay && (
                                         <div className="space-y-2">
-                                            <div className="text-10 flex items-center justify-between font-medium">
+                                            <div className="typo-overline flex items-center justify-between font-medium">
                                                 <span className="text-muted-foreground truncate pr-2">{t('statistics.sevenDayStatus')}</span>
                                                 <span className="text-foreground/80 tabular-nums shrink-0">{100 - acc.sevenDay.utilization}%</span>
                                             </div>
                                             <HorizontalProgressBar percentage={100 - acc.sevenDay.utilization} color={getQuotaColor(100 - acc.sevenDay.utilization)} />
-                                            <div className="text-9 font-medium text-muted-foreground/40 mt-1">
+                                            <div className="typo-overline font-medium text-muted-foreground/40 mt-1">
                                                 {formatReset(acc.sevenDay.resetsAt, locale)}
                                             </div>
                                         </div>

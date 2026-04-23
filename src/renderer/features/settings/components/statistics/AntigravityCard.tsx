@@ -103,12 +103,12 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({
                     const isActiveAccount = acc.isActive === true
                         || (activeAccountId !== null && acc.accountId === activeAccountId)
                         || (activeAccountEmail !== null && normalizeEmail(acc.email) === normalizeEmail(activeAccountEmail));
-                    const status = acc.success === false 
-                        ? (acc.authExpired ? 'expired' : 'error') 
+                    const status = acc.success === false
+                        ? (acc.authExpired ? 'expired' : 'error')
                         : 'active';
                     const models = dedupeAccountModels(acc.models);
-                    const statusText = acc.success === false 
-                        ? (acc.authExpired ? t('errors.quota.authExpired') : t(`statistics.status${acc.status ?? 'Error'}`)) 
+                    const statusText = acc.success === false
+                        ? (acc.authExpired ? t('errors.quota.authExpired') : t(`statistics.status${acc.status ?? 'Error'}`))
                         : t('statistics.active');
                     const creditAmount = acc.antigravityAiCredits?.creditAmount;
                     const creditLabel = typeof creditAmount === 'number'
@@ -124,7 +124,7 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({
                                 {acc.success === false && <StatusBadge status={status} text={statusText} />}
                                 {acc.success !== false && isActiveAccount && <StatusBadge status={status} text={statusText} />}
                                 {creditLabel && (
-                                    <div className="text-9 rounded-full border border-border/20 bg-background/70 px-2.5 py-0.5 font-bold text-muted-foreground">
+                                    <div className="typo-overline rounded-full border border-border/20 bg-background/70 px-2.5 py-0.5 font-bold text-muted-foreground">
                                         {creditLabel}
                                     </div>
                                 )}
@@ -134,12 +134,12 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({
                                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 pt-2 md:grid-cols-2 xl:grid-cols-3">
                                     {models.map((m: ModelQuotaItem) => (
                                         <div key={m.id} className="space-y-2">
-                                            <div className="text-10 flex items-center justify-between font-medium">
+                                            <div className="typo-overline flex items-center justify-between font-medium">
                                                 <span className="text-muted-foreground truncate pr-2">{m.name || m.id}</span>
                                                 <span className="text-foreground/80 tabular-nums shrink-0">{Math.round(m.percentage || 0)}%</span>
                                             </div>
                                             <HorizontalProgressBar percentage={m.percentage || 0} color={getQuotaColor(m.percentage || 0)} />
-                                            <div className="text-9 font-medium text-muted-foreground/40 mt-1">
+                                            <div className="typo-overline font-medium text-muted-foreground/40 mt-1">
                                                 {formatReset(m.reset, locale)}
                                             </div>
                                         </div>

@@ -11,6 +11,7 @@
 import { appLogger } from '@main/logging/logger';
 import { ThemeService } from '@main/services/theme/theme.service';
 import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { themeStore } from '@main/utils/theme-store.util';
 import { ThemeManifest } from '@shared/types/theme';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent, shell } from 'electron';
 
@@ -29,7 +30,6 @@ function validateThemeId(value: RuntimeValue): string | null {
     if (!trimmed || trimmed.length > MAX_ID_LENGTH) {
         return null;
     }
-    // Only allow alphanumeric, dashes, and underscores
     if (!/^[a-zA-Z0-9_-]+$/.test(trimmed)) {
         return null;
     }
@@ -45,75 +45,81 @@ export function registerThemeIpc(
 ): void {
     appLogger.info('ThemeIPC', 'Registering theme IPC handlers');
 
-    // Runtime theme management
-    ipcMain.handle('theme:runtime:getAll', createSafeIpcHandler('theme:runtime:getAll',
+    ipcMain.handle('theme:runtime:getAll', createSafeIpcHandler(
+        'theme:runtime:getAll',
         async () => {
             return themeService.getAllThemes();
-        }, []
+        },
+        []
     ));
 
-    ipcMain.handle('theme:runtime:install', createIpcHandler('theme:runtime:install',
+    ipcMain.handle('theme:runtime:install', createIpcHandler(
+        'theme:runtime:install',
         async (_event: IpcMainInvokeEvent, themeManifest: RuntimeValue) => {
             if (!themeManifest || typeof themeManifest !== 'object') {
                 throw new Error('error.theme.invalid_manifest');
             }
+
             const result = await themeService.installTheme(themeManifest as ThemeManifest);
-            
-            // Notify renderer
             const mainWindow = getMainWindow();
             if (mainWindow) {
                 mainWindow.webContents.send('theme:runtime:updated');
             }
-            
+
             return result;
         }
     ));
 
-    ipcMain.handle('theme:runtime:uninstall', createIpcHandler('theme:runtime:uninstall',
+    ipcMain.handle('theme:runtime:uninstall', createIpcHandler(
+        'theme:runtime:uninstall',
         async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue) => {
             const themeId = validateThemeId(themeIdRaw);
             if (!themeId) {
                 throw new Error('error.theme.invalid_id');
             }
+
             const result = await themeService.uninstallTheme(themeId);
-            
-            // Notify renderer
             const mainWindow = getMainWindow();
             if (mainWindow) {
                 mainWindow.webContents.send('theme:runtime:updated');
             }
-            
+
             return result;
         }
     ));
 
-    ipcMain.handle('theme:runtime:openDirectory', createSafeIpcHandler('theme:runtime:openDirectory',
+    ipcMain.handle('theme:runtime:openDirectory', createSafeIpcHandler(
+        'theme:runtime:openDirectory',
         async () => {
             const themesDir = themeService.getThemesDirectory();
             await shell.openPath(themesDir);
             return true;
-        }, false
+        },
+        false
     ));
 
-    // Legacy theme store handlers (kept for backward compatibility)
+    ipcMain.handle('theme:getCurrent', createSafeIpcHandler(
+        'theme:getCurrent',
+        async () => themeStore.getCurrentTheme(),
+        ''
+    ));
 
+    ipcMain.handle('theme:set', createSafeIpcHandler(
+        'theme:set',
+        async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue) => {
+            const themeId = validateThemeId(themeIdRaw);
+            if (!themeId) {
+                return null;
+            }
 
+            return themeStore.setTheme(themeId);
+        },
+        null
+    ));
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    ipcMain.handle('theme:getAll', createSafeIpcHandler(
+        'theme:getAll',
+        async () => themeStore.getAllThemes(),
+        []
+    ));
 }
-

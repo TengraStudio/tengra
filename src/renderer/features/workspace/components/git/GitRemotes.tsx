@@ -21,10 +21,10 @@ interface RemotesProps {
 export const GitRemotes: React.FC<RemotesProps> = ({ remotes }) => {
     return (
         <div className="space-y-3">
-            <span className="text-11 font-semibold text-muted-foreground uppercase tracking-wider px-1">Remotes</span>
+            <span className="typo-overline font-semibold text-muted-foreground uppercase tracking-wider px-1">Remotes</span>
             <div className="p-4 rounded-lg bg-card border border-border/40 space-y-3">
                 {remotes.length === 0 ? (
-                    <div className="py-4 text-center text-10 text-muted-foreground/30 font-bold uppercase tracking-widest">
+                    <div className="py-4 text-center typo-overline text-muted-foreground/30 font-bold uppercase tracking-widest">
                         Local Only
                     </div>
                 ) : (
@@ -34,7 +34,7 @@ export const GitRemotes: React.FC<RemotesProps> = ({ remotes }) => {
                                 <Globe className="w-3 h-3 text-primary/40" />
                                 <span className="text-xs font-bold text-foreground/80">{remote.name}</span>
                             </div>
-                            <div className="text-10 font-medium text-muted-foreground/50 truncate font-mono">
+                            <div className="typo-overline font-medium text-muted-foreground/50 truncate font-mono">
                                 {remote.url}
                             </div>
                         </div>

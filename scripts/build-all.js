@@ -51,7 +51,7 @@ function terminateProcessTree(proc) {
     }
 }
 
-function runCommand(command, args, name) {
+function runCommand(command, args, name, extraEnv = {}) {
     return new Promise((resolve, reject) => {
         const commandLine = [command, ...args].join(' ');
         writeStdout(`[${name}] Starting: ${commandLine}`);
@@ -60,7 +60,7 @@ function runCommand(command, args, name) {
             cwd: PROJECT_ROOT,
             shell: true,
             stdio: ['ignore', 'pipe', 'pipe'],
-            env: { ...process.env, FORCE_COLOR: '1' }
+            env: { ...process.env, ...extraEnv, FORCE_COLOR: '1' }
         });
 
         activeProcesses.push({ proc, name });
@@ -103,18 +103,20 @@ function cleanup() {
 
 async function build() {
     const startTime = Date.now();
-    writeStdout('Starting optimized build orchestration...');
-    writeStdout(`[BuildMode] strict=${STRICT_BUILD} bundleBudget=${ENFORCE_BUNDLE_BUDGET}`);
+    const ARGS = process.argv.slice(2);
+    const SHOULD_PACKAGE = ARGS.includes('--package') || ARGS.includes('--publish');
+    const IS_PUBLISH = ARGS.includes('--publish');
+
+    writeStdout('Starting multi-target optimized build orchestration...');
+    writeStdout(`[BuildMode] strict=${STRICT_BUILD} bundleBudget=${ENFORCE_BUNDLE_BUDGET} package=${SHOULD_PACKAGE} publish=${IS_PUBLISH}`);
 
     try {
-        // Native build is fast and should be done first to avoid blocking others
         const results = [];
-        results.push(await runCommand('node', ['scripts/compile-native.js'], 'NativeBuild'));
-
-        // Run TypeCheck and ViteBuild in parallel, as they are the main bottlenecks
         const coreTasks = [
+            runCommand('node', ['scripts/compile-native.js'], 'NativeBuild'),
             runCommand('npm', ['run', 'type-check', '--', '--pretty', 'false'], 'TypeCheck'),
-            runCommand('npx', ['vite', 'build'], 'ViteBuild'),
+            runCommand('npx', ['vite', 'build'], 'Vite:Main', { TENGRA_BUILD_TARGET: 'main' }),
+            runCommand('npx', ['vite', 'build'], 'Vite:Renderer', { TENGRA_BUILD_TARGET: 'renderer' }),
         ];
 
         if (STRICT_BUILD) {
@@ -130,6 +132,24 @@ async function build() {
             results.push(await runCommand('node', ['scripts/tasks/audit-bundle-size.js'], 'BundleBudget'));
         } else {
             writeStdout('[BundleBudget] Skipped. Set TENGRA_ENFORCE_BUNDLE_BUDGET=true to enforce.');
+        }
+
+        // Packaging Step
+        if (SHOULD_PACKAGE) {
+            writeStdout('\nStarting packaging phase...');
+            if (IS_PUBLISH) {
+                // Build for all platforms one by one as requested
+                const platforms = ['--win', '--mac', '--linux'];
+                for (const platform of platforms) {
+                    writeStdout(`[Package] Building for ${platform}...`);
+                    results.push(await runCommand('npx', ['electron-builder', platform], `Package:${platform.slice(2)}`));
+                }
+            } else {
+                // Build for current platform with zero compression for speed
+                const platform = process.platform === 'win32' ? '--win' : (process.platform === 'darwin' ? '--mac' : '--linux');
+                writeStdout(`[Package] Building for current platform (${platform}) with high-speed compression...`);
+                results.push(await runCommand('npx', ['electron-builder', platform, '--config.compression=store'], 'Package:Local'));
+            }
         }
 
         const sortedByDuration = [...results].sort((a, b) => b.durationMs - a.durationMs);
