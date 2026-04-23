@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { WorkspaceOverviewTab } from '@renderer/features/workspace/components';
+import { WorkspaceOverviewTab } from './WorkspaceOverviewTab';
 import { useWorkspaceDashboardLogic } from '@renderer/features/workspace/hooks/useWorkspaceDashboardLogic';
 import { RefreshCw } from 'lucide-react';
 import React from 'react';
@@ -25,32 +25,32 @@ const TerminalComponent = React.lazy(() =>
 );
 
 const WorkspaceFilesTab = React.lazy(() =>
-    import('@renderer/features/workspace/components').then(m => ({
+    import('./WorkspaceFilesTab').then(m => ({
         default: m.WorkspaceFilesTab,
     }))
 );
 
 const WorkspaceGitTab = React.lazy(() =>
-    import('@renderer/features/workspace/components').then(m => ({
+    import('./WorkspaceGitTab').then(m => ({
         default: m.WorkspaceGitTab,
     }))
 );
 
 
 const WorkspaceSearchTab = React.lazy(() =>
-    import('@renderer/features/workspace/components').then(m => ({
+    import('./WorkspaceSearchTab').then(m => ({
         default: m.WorkspaceSearchTab,
     }))
 );
 
 const WorkspaceSettingsPanel = React.lazy(() =>
-    import('@renderer/features/workspace/components').then(m => ({
+    import('./WorkspaceSettingsPanel').then(m => ({
         default: m.WorkspaceSettingsPanel,
     }))
 );
 
 const WorkspaceTodoTab = React.lazy(() =>
-    import('@renderer/features/workspace/components').then(m => ({
+    import('./WorkspaceTodoTab').then(m => ({
         default: m.WorkspaceTodoTab,
     }))
 );

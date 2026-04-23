@@ -1,7 +1,7 @@
 import { resolve } from 'path';
 import fs from 'fs';
 
-import react from '@vitejs/plugin-react-oxc';
+import react from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { defineConfig } from 'vite';
 import electron from 'vite-plugin-electron';
@@ -67,10 +67,9 @@ export default defineConfig(({ mode }) => {
                             formats: ['cjs']
                         },
                         minify: 'esbuild',
-                        rollupOptions: {
+                        rolldownOptions: {
                             external,
                             treeshake: {
-                                preset: 'recommended',
                                 moduleSideEffects: false
                             }
                         }
@@ -100,7 +99,7 @@ export default defineConfig(({ mode }) => {
                         formats: ['cjs']
                     },
                     minify: 'esbuild',
-                    rollupOptions: {
+                    rolldownOptions: {
                         external: ['electron'],
                         treeshake: true
                     }
@@ -140,20 +139,6 @@ export default defineConfig(({ mode }) => {
         define: {
             'process.env.NODE_ENV': JSON.stringify(nodeEnv),
             '__BUILD_TIME__': JSON.stringify(new Date().toISOString())
-        },
-        esbuild: {
-            target: 'esnext',
-            keepNames: false,
-            jsx: 'automatic',
-            jsxImportSource: 'react',
-            treeShaking: true,
-            ...(nodeEnv === 'production'
-                ? {
-                    drop: ['console', 'debugger'],
-                    legalComments: 'none',
-                    pure: ['performanceMonitor.mark']
-                }
-                : {})
         },
         build: isMainOnly ? {
             outDir: 'dist/main',
@@ -278,9 +263,8 @@ export default defineConfig(({ mode }) => {
             ],
             // Exclude large deps that don't need pre-bundling
             exclude: ['@lancedb/lancedb', 'apache-arrow'],
-            esbuildOptions: {
+            rolldownOptions: {
                 target: 'esnext',
-                keepNames: false,
                 jsx: 'automatic',
                 jsxImportSource: 'react'
             }

@@ -82,7 +82,9 @@ export function validateEnvironmentVariables(envExamplePath?: string): Validatio
 
     // Check if .env.example exists
     if (!fs.existsSync(examplePath)) {
-        appLogger.warn('EnvValidator', '.env.example file not found', { path: examplePath });
+        if (process.env.NODE_ENV === 'development') {
+            appLogger.warn('EnvValidator', '.env.example file not found', { path: examplePath });
+        }
         return result;
     }
 

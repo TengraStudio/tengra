@@ -253,8 +253,12 @@ export async function startDeferredServices(): Promise<void> {
  * This should be extremely fast (<100ms).
  */
 export async function createMinimalServices(): Promise<{ settingsService: SettingsService; dataService: DataService; eventBusService: EventBusService }> {
-    const dataService = container.resolve<DataService>('dataService') || new DataService();
-    if (!container.has('dataService')) {
+    let dataService: DataService;
+    
+    if (container.has('dataService')) {
+        dataService = container.resolve<DataService>('dataService');
+    } else {
+        dataService = new DataService();
         container.registerInstance('dataService', dataService);
     }
 
