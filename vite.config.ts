@@ -1,7 +1,7 @@
 import { resolve } from 'path';
 import fs from 'fs';
 
-import react from '@vitejs/plugin-react';
+import react from '@vitejs/plugin-react-oxc';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { defineConfig } from 'vite';
 import electron from 'vite-plugin-electron';
@@ -162,14 +162,12 @@ export default defineConfig(({ mode }) => {
                 entry: 'src/main/main.ts',
                 formats: ['cjs']
             },
-            rollupOptions: { external }
+            rolldownOptions: { external }
         } : {
             outDir: 'dist/renderer',
             emptyOutDir: true,
-            rollupOptions: {
-                cache: true,
+            rolldownOptions: {
                 treeshake: {
-                    preset: 'recommended',
                     moduleSideEffects: 'no-external',
                     propertyReadSideEffects: false,
                     unknownGlobalSideEffects: false
