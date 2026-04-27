@@ -8,9 +8,9 @@
  * (at your option) any later version.
  */
 
-export * from '@renderer/features/settings/components/BrowserClosureModal';
-export * from '@renderer/features/settings/components/DeviceCodeModal';
-export * from '@renderer/features/settings/components/ManualSessionModal';
-export * from '@renderer/features/settings/components/SettingsSearch';
-export * from '@renderer/features/settings/components/SettingsTabContent';
-export * from '@renderer/features/settings/components/SkillsTab';
+export * from '@/features/settings/components/BrowserClosureModal';
+export * from '@/features/settings/components/DeviceCodeModal';
+export * from '@/features/settings/components/ManualSessionModal';
+export * from '@/features/settings/components/SettingsSearch';
+export * from '@/features/settings/components/SettingsTabContent';
+export * from '@/features/settings/components/SkillsTab';

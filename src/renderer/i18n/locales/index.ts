@@ -8,8 +8,9 @@
  * (at your option) any later version.
  */
 
-import enLocalePackData from '@renderer/i18n/locales/en.locale.json';
 import type { LocalePack } from '@shared/types/locale';
+
+import enLocalePackData from '@/i18n/locales/en.locale.json';
 
 export const enLocalePack = enLocalePackData satisfies LocalePack;
 export const en = enLocalePackData.translations;

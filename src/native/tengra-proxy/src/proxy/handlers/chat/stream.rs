@@ -1,4 +1,4 @@
-/**
+/*
  * Tengra - Your Personal AI Assistant
  * Copyright (c) 2026 TengraStudio
  *
@@ -506,7 +506,7 @@ fn gemini_payload_to_openai_chunk(value: Value, state: &mut GeminiStreamState) -
     .to_string()
 }
 
-fn unwrap_gemini_stream_payload<'a>(value: &'a Value) -> &'a Value {
+fn unwrap_gemini_stream_payload(value: &Value) -> &Value {
     value.get("response").unwrap_or(value)
 }
 

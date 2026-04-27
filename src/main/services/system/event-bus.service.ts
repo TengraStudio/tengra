@@ -252,7 +252,7 @@ export class EventBusService extends BaseService {
     /**
      * Get the number of listeners for an event
      */
-    listenerCount(event: string): number {
+    listenerCount(event: string | symbol): number {
         return this.bus.listenerCount(event);
     }
 }

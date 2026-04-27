@@ -9,7 +9,7 @@
  */
 
 
-import { Activity, Clock, Cpu, HardDrive } from 'lucide-react';
+import { IconActivity, IconClock, IconCpu, IconDatabase } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -66,7 +66,7 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
             <Card className="bg-card/40 border-border/50 transition-premium hover:shadow-md hover:border-primary/30">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground/80">{t('ssh.cpuUsage')}</CardTitle>
-                    <Cpu size={16} className="text-primary" />
+                    <IconCpu size={16} className="text-primary" />
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-end gap-2">
@@ -86,7 +86,7 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
             <Card className="bg-card/40 border-border/50 transition-premium hover:shadow-md hover:border-primary/30">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground/80">{t('ssh.memoryUsage')}</CardTitle>
-                    <Activity size={16} className="text-primary/80" />
+                    <IconActivity size={16} className="text-primary/80" />
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-end gap-2">
@@ -107,7 +107,7 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
             <Card className="bg-card/40 border-border/50 transition-premium hover:shadow-md hover:border-success/30">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground/80">{t('ssh.diskUsage')}</CardTitle>
-                    <HardDrive size={16} className="text-success" />
+                    <IconDatabase size={16} className="text-success" />
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-end gap-2">
@@ -128,7 +128,7 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
             <Card className="bg-card/40 border-border/50 transition-premium hover:shadow-md hover:border-primary/20">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground/80">{t('ssh.uptime')}</CardTitle>
-                    <Clock size={16} className="text-primary/70" />
+                    <IconClock size={16} className="text-primary/70" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-lg font-bold text-foreground truncate" title={stats.uptime}>

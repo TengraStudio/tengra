@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { FolderPlus, Search } from 'lucide-react';
+import { IconFolderPlus, IconSearch } from '@tabler/icons-react';
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 /* Batch-02: Extracted Long Classes */
 const C_CHATSEARCH_1 = "absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40 group-focus-within:text-primary transition-colors";
 const C_CHATSEARCH_2 = "w-full border border-border/30 bg-muted/20 focus:border-primary/50 focus:bg-muted/30 typo-caption rounded-lg pl-8 pr-3 py-2 outline-none transition-all font-medium placeholder:text-muted-foreground/50";
-const C_CHATSEARCH_3 = "w-full h-7 text-xxs font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 border border-border/40 justify-start px-2";
+const C_CHATSEARCH_3 = "w-full h-7 text-sm font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 border border-border/40 justify-start px-2";
 
 
 
@@ -36,7 +36,7 @@ export const ChatSearch: React.FC<ChatSearchProps> = ({
     return (
         <div className="space-y-2 px-3 pb-2">
             <div className="relative group">
-                <Search className={C_CHATSEARCH_1} />
+                <IconSearch className={C_CHATSEARCH_1} />
                 <input
                     type="text"
                     placeholder={t('sidebar.searchChats')}
@@ -51,7 +51,7 @@ export const ChatSearch: React.FC<ChatSearchProps> = ({
                 onClick={() => setIsCreatingFolder(true)}
                 className={C_CHATSEARCH_3}
             >
-                <FolderPlus className="w-3.5 h-3.5 mr-2" />
+                <IconFolderPlus className="w-3.5 h-3.5 mr-2" />
                 {t('sidebar.newFolder')}
             </Button>
         </div>

@@ -9,7 +9,7 @@
  */
 
 import { MemoryCategory } from '@shared/types/advanced-memory';
-import { Plus } from 'lucide-react';
+import { IconPlus } from '@tabler/icons-react';
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -57,7 +57,7 @@ export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({
         <div className={C_ADDMEMORYMODAL_1}>
             <Card className="w-full max-w-lg p-6 bg-popover/90 backdrop-blur-2xl border-border/50 shadow-2xl space-y-4">
                 <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Plus className="w-5 h-5 text-primary" />
+                    <IconPlus className="w-5 h-5 text-primary" />
                     {t('memory.addTitle')}
                 </h2>
 

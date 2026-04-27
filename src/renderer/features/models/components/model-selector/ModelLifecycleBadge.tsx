@@ -8,8 +8,9 @@
  * (at your option) any later version.
  */
 
-import type { ModelListItem } from '@renderer/features/models/types';
 import React from 'react';
+
+import type { ModelListItem } from '@/features/models/types';
 
 interface ModelLifecycleBadgeProps {
     model: Pick<ModelListItem, 'lifecycle' | 'replacementModelId' | 'sunsetDate' | 'description'>;
@@ -29,7 +30,7 @@ export const ModelLifecycleBadge: React.FC<ModelLifecycleBadgeProps> = ({ model 
 
     return (
         <span
-            className="text-xxxs font-bold text-warning bg-warning/15 px-1.5 py-0.5 rounded leading-none mr-1 border border-warning/30"
+            className="text-sm font-bold text-warning bg-warning/15 px-1.5 py-0.5 rounded leading-none mr-1 border border-warning/30"
             title={title}
         >
             {label}

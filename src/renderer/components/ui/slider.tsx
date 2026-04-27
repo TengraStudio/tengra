@@ -11,8 +11,9 @@
 "use client";
 
 import * as SliderPrimitive from "@radix-ui/react-slider";
-import { cn } from "@renderer/lib/utils";
 import * as React from "react";
+
+import { cn } from "@/lib/utils";
 
 /* Batch-02: Extracted Long Classes */
 const C_SLIDER_1 = "block h-4 w-4 rounded-full border border-primary/50 bg-background transition-colors focus-visible:outline-none focus-visible:border-primary disabled:pointer-events-none disabled:opacity-50";

@@ -8,11 +8,12 @@
  * (at your option) any later version.
  */
 
-import { Button } from '@renderer/components/ui/button';
-import { Input } from '@renderer/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@renderer/components/ui/select';
-import { Play, Sparkles, Wand2, Zap } from 'lucide-react';
+import { IconBolt,IconPlayerPlay, IconSparkles, IconWand } from '@tabler/icons-react';
 import React from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 /* Batch-02: Extracted Long Classes */
 const C_IMAGESETTINGSEDIT_1 = "bg-card rounded-3xl border border-border/40 p-8 space-y-8 shadow-sm group/edit hover:border-border/60 transition-all duration-500 overflow-hidden relative lg:p-10";
@@ -65,7 +66,7 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1 relative z-10">
                 <div className="flex items-center gap-4">
                     <div className={C_IMAGESETTINGSEDIT_2}>
-                        <Wand2 className="w-6 h-6" />
+                        <IconWand className="w-6 h-6" />
                     </div>
                     <div>
                         <h3 className="text-lg font-bold text-foreground group-hover/edit:text-primary transition-colors">
@@ -91,14 +92,14 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                         onClick={() => { void handleRunBatch(); }}
                         className={C_IMAGESETTINGSEDIT_4}
                     >
-                        <Play className="w-4 h-4" />
+                        <IconPlayerPlay className="w-4 h-4" />
                         {t('settings.images.batchRun')}
                     </Button>
                 </div>
 
                 <div className="pt-8 border-t border-border/10 space-y-8">
                     <div className="flex items-center gap-3 px-1">
-                        <Sparkles className="w-3.5 h-3.5 text-primary" />
+                        <IconSparkles className="w-3.5 h-3.5 text-primary" />
                         <div className="typo-body font-bold text-muted-foreground/40">Transformation Settings</div>
                     </div>
 
@@ -184,7 +185,7 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                         onClick={() => { void handleRunEdit(); }}
                         className={C_IMAGESETTINGSEDIT_8}
                     >
-                        <Zap className="w-5 h-5" />
+                        <IconBolt className="w-5 h-5" />
                         {t('settings.images.editRun')}
                     </Button>
                 </div>

@@ -19,7 +19,7 @@ import { AccountWrapper } from '../../types';
 import { getQuotaColor, HorizontalProgressBar, StatusBadge } from './SharedComponents';
 
 interface AntigravityCardProps {
-    t: (key: string) => string
+    t: (key: string, options?: Record<string, string | number>) => string
     quotaData: AccountWrapper<QuotaResponse> | null
     locale?: string
     activeAccountId?: string | null
@@ -140,7 +140,7 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({
                                             </div>
                                             <HorizontalProgressBar percentage={m.percentage || 0} color={getQuotaColor(m.percentage || 0)} />
                                             <div className="typo-overline font-medium text-muted-foreground/40 mt-1">
-                                                {formatReset(m.reset, locale)}
+                                                {t('statistics.resetsAt', { time: formatReset(m.reset, locale) })}
                                             </div>
                                         </div>
                                     ))}

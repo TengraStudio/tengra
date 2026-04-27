@@ -9,18 +9,7 @@
  */
 
 import { MemoryStatistics } from '@shared/types/advanced-memory';
-import {
-    AlertTriangle,
-    Archive,
-    CheckCircle,
-    Download,
-    Gauge,
-    Plus,
-    RefreshCw,
-    Sparkles,
-    TrendingDown,
-    Upload,
-} from 'lucide-react';
+import { IconAlertTriangle, IconArchive, IconCircleCheck, IconDownload, IconGauge, IconPlus, IconRefresh, IconSparkles, IconTrendingDown, IconUpload } from '@tabler/icons-react';
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -76,7 +65,7 @@ export const MemoryHeader: React.FC<MemoryHeaderProps> = ({
             <div>
                 <h1 className="text-3xl font-bold">{t('memory.title')}</h1>
                 <p className="text-muted-foreground mt-1">{t('memory.subtitle')}</p>
-                <div className="mt-2 flex items-center gap-4 text-xs font-semibold">
+                <div className="mt-2 flex items-center gap-4 text-sm font-semibold">
                     <span className={overallTone}>
                         Health: {healthStatus}
                     </span>
@@ -96,27 +85,27 @@ export const MemoryHeader: React.FC<MemoryHeaderProps> = ({
             </div>
             <div className="flex items-center gap-3">
                 <Button variant="outline" size="sm" onClick={onRefresh} className="gap-2">
-                    <RefreshCw className={cn('w-4 h-4', isLoading && 'animate-spin')} />
+                    <IconRefresh className={cn('w-4 h-4', isLoading && 'animate-spin')} />
                     {t('common.refresh')}
                 </Button>
                 <Button variant="outline" size="sm" onClick={onRunDecay} className="gap-2">
-                    <TrendingDown className="w-4 h-4" />
+                    <IconTrendingDown className="w-4 h-4" />
                     {t('memory.runDecay')}
                 </Button>
                 <Button variant="outline" size="sm" onClick={onRecategorize} className="gap-2">
-                    <Sparkles className="w-4 h-4 text-primary" />
+                    <IconSparkles className="w-4 h-4 text-primary" />
                     {t('memory.recategorizeAll')}
                 </Button>
                 <Button variant="outline" size="sm" onClick={onExport} className="gap-2">
-                    <Download className="w-4 h-4" />
+                    <IconDownload className="w-4 h-4" />
                     {t('memory.export')}
                 </Button>
                 <Button variant="outline" size="sm" onClick={onImport} className="gap-2">
-                    <Upload className="w-4 h-4" />
+                    <IconUpload className="w-4 h-4" />
                     {t('memory.import')}
                 </Button>
                 <Button size="sm" onClick={onAddMemory} className="gap-2">
-                    <Plus className="w-4 h-4" />
+                    <IconPlus className="w-4 h-4" />
                     {t('memory.addAction')}
                 </Button>
             </div>
@@ -131,7 +120,7 @@ interface ErrorDisplayProps {
 
 export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ error }) => (
     <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive flex items-center gap-3">
-        <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+        <IconAlertTriangle className="w-5 h-5 flex-shrink-0" />
         <p className="text-sm font-medium">{error}</p>
     </div>
 );
@@ -191,32 +180,32 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ stats }) => (
         <StatCard
             label="memory.stats.pending"
             value={stats.pendingValidation}
-            icon={CheckCircle}
+            icon={IconCircleCheck}
             color="text-warning"
             highlight={stats.pendingValidation > 0}
         />
         <StatCard
             label="memory.stats.confirmed"
             value={stats.byStatus.confirmed}
-            icon={CheckCircle}
+            icon={IconCircleCheck}
             color="text-success"
         />
         <StatCard
             label="memory.stats.archived"
             value={stats.byStatus.archived}
-            icon={Archive}
+            icon={IconArchive}
             color="text-muted-foreground"
         />
         <StatCard
             label="memory.stats.avgConfidence"
             value={`${(stats.averageConfidence * 100).toFixed(0)}%`}
-            icon={Gauge}
+            icon={IconGauge}
             color="text-primary"
         />
         <StatCard
             label="memory.stats.contradictions"
             value={stats.contradictions}
-            icon={AlertTriangle}
+            icon={IconAlertTriangle}
             color="text-warning"
             highlight={stats.contradictions > 0}
         />

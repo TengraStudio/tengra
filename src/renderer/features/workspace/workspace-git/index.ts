@@ -8,16 +8,16 @@
  * (at your option) any later version.
  */
 
-export * from '@renderer/features/workspace/components/git/GitAdvancedPanel';
-export * from '@renderer/features/workspace/components/git/GitBranchSelect';
-export * from '@renderer/features/workspace/components/git/GitChangeStats';
-export * from '@renderer/features/workspace/components/git/GitCommitCard';
-export * from '@renderer/features/workspace/components/git/GitCommitDiffView';
-export * from '@renderer/features/workspace/components/git/GitCommitHistory';
-export * from '@renderer/features/workspace/components/git/GitCommitSection';
-export * from '@renderer/features/workspace/components/git/GitDiffLine';
-export * from '@renderer/features/workspace/components/git/GitQuickActions';
-export * from '@renderer/features/workspace/components/git/GitRemotes';
-export * from '@renderer/features/workspace/components/git/GitStatusHeader';
-export * from '@renderer/features/workspace/components/git/GitTrackingStatus';
-export * from '@renderer/features/workspace/workspace-git/GitCommitGenerator';
+export * from '@/features/workspace/components/git/GitAdvancedPanel';
+export * from '@/features/workspace/components/git/GitBranchSelect';
+export * from '@/features/workspace/components/git/GitChangeStats';
+export * from '@/features/workspace/components/git/GitCommitCard';
+export * from '@/features/workspace/components/git/GitCommitDiffView';
+export * from '@/features/workspace/components/git/GitCommitHistory';
+export * from '@/features/workspace/components/git/GitCommitSection';
+export * from '@/features/workspace/components/git/GitDiffLine';
+export * from '@/features/workspace/components/git/GitQuickActions';
+export * from '@/features/workspace/components/git/GitRemotes';
+export * from '@/features/workspace/components/git/GitStatusHeader';
+export * from '@/features/workspace/components/git/GitTrackingStatus';
+export * from '@/features/workspace/workspace-git/GitCommitGenerator';

@@ -70,5 +70,46 @@ export function getManagedRuntimeManifestsDir(): string {
 }
 
 export function getManagedRuntimeBinaryPath(executable: string): string {
-    return path.join(getManagedRuntimeBinDir(), normalizeExecutableName(executable));
+    const normalizedName = normalizeExecutableName(executable);
+    
+    // 1. Check bundled resources/bin (Modern structured path)
+    // We use multiple ways to find the resources path to be safe
+    const possibleResourcePaths = [
+        process.resourcesPath,
+        path.join(app.getAppPath(), '..'),
+        path.join(path.dirname(app.getPath('exe')), 'resources')
+    ];
+
+    for (const resPath of possibleResourcePaths) {
+        if (!resPath) {continue;}
+        
+        // Try platform-specific path first (e.g., bin/win32/...)
+        const platformPath = path.join(resPath, 'bin', process.platform, normalizedName);
+        if (fs.existsSync(platformPath)) {
+            return platformPath;
+        }
+
+        // Fallback to flat path (e.g., bin/...)
+        const bundledPath = path.join(resPath, 'bin', normalizedName);
+        if (fs.existsSync(bundledPath)) {
+            return bundledPath;
+        }
+    }
+
+    // 2. Check in app root (Legacy/Portable fallback)
+    const appRootDirBin = path.join(path.dirname(app.getPath('exe')), 'bin', normalizedName);
+    if (fs.existsSync(appRootDirBin)) {
+        return appRootDirBin;
+    }
+
+    // 3. In development, check project root bin
+    if (!app.isPackaged) {
+        const devBinPath = path.join(app.getAppPath(), 'bin', normalizedName);
+        if (fs.existsSync(devBinPath)) {
+            return devBinPath;
+        }
+    }
+
+    // 4. Final fallback to managed runtime directory in AppData
+    return path.join(getManagedRuntimeBinDir(), normalizedName);
 }

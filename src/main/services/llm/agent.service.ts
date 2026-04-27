@@ -14,6 +14,7 @@ import path from 'path';
 
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
+import { t } from '@main/utils/i18n.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { app } from 'electron';
 
@@ -162,7 +163,7 @@ export class AgentService extends BaseService {
         const builtIns: AgentTemplate[] = [
             {
                 name: 'Debugger',
-                description: 'Root-cause focused debugging specialist',
+                description: t('auto.rootcauseFocusedDebuggingSpecialist'),
                 systemPrompt: 'You are a debugging specialist. You isolate root causes and propose minimal-risk fixes.',
                 tools: ['code_search'],
                 parentModel: 'gpt-4o',
@@ -170,7 +171,7 @@ export class AgentService extends BaseService {
             },
             {
                 name: 'SecurityReviewer',
-                description: 'Security-first reviewer',
+                description: t('auto.securityfirstReviewer'),
                 systemPrompt: 'You analyze attack surfaces and prioritize exploitability and blast radius.',
                 tools: ['code_search'],
                 parentModel: 'gpt-4o',
@@ -178,7 +179,7 @@ export class AgentService extends BaseService {
             },
             {
                 name: 'DocsWriter',
-                description: 'Technical documentation assistant',
+                description: t('auto.technicalDocumentationAssistant'),
                 systemPrompt: 'You convert code and architecture into concise, accurate technical docs.',
                 tools: [],
                 parentModel: 'gpt-4o',
@@ -285,21 +286,21 @@ export class AgentService extends BaseService {
         const builtIns: AgentDefinition[] = [
             {
                 name: 'TechLead',
-                description: 'Senior Technical Architect',
+                description: t('auto.seniorTechnicalArchitect'),
                 systemPrompt: 'You are an expert Technical Lead. You always think about system architecture, scalability, and clean code patterns. You are strict about types and error handling.',
                 tools: ['code_search'],
                 parentModel: 'gpt-4o'
             },
             {
                 name: 'QA',
-                description: 'Quality Assurance Engineer',
+                description: t('auto.qualityAssuranceEngineer'),
                 systemPrompt: 'You are a QA Engineer. Your goal is to break the code. You suggest edge cases, unit tests, and security vulnerabilities.',
                 tools: [],
                 parentModel: 'gpt-4o'
             },
             {
                 name: 'Designer',
-                description: 'UI/UX Designer',
+                description: t('auto.uiuxDesigner'),
                 systemPrompt: 'You are a UI/UX expert. You focus on aesthetics, whitespace, color theory, and user experience. You critique usage of CSS and layout.',
                 tools: [],
                 parentModel: 'gpt-4o'

@@ -8,9 +8,10 @@
  * (at your option) any later version.
  */
 
-import { invokeIpc, invokeTypedIpc, type IpcContractMap } from '@renderer/lib/ipc-client';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
+
+import { invokeIpc, invokeTypedIpc, type IpcContractMap } from '@/lib/ipc-client';
 
 describe('ipc-client', () => {
     it('validates response and returns typed data', async () => {

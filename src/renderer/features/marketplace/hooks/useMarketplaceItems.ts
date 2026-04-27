@@ -64,7 +64,6 @@ export function useMarketplaceItems({ mode, registry, localPlugins, query, insta
         switch (mode) {
             case 'mcp': items = registry.mcp || []; break;
             case 'themes': items = registry.themes || []; break;
-            case 'personas': items = registry.personas || []; break;
             case 'prompts': items = registry.prompts || []; break;
             case 'languages': items = registry.languages || []; break;
             case 'iconPacks': items = registry.iconPacks || []; break;

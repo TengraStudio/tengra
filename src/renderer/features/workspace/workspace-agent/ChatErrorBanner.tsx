@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { AlertTriangle, ArrowRightLeft, RefreshCw } from 'lucide-react';
+import { IconAlertTriangle, IconArrowsRightLeft, IconRefresh } from '@tabler/icons-react';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -77,7 +77,7 @@ export const ChatErrorBanner: React.FC<ChatErrorBannerProps> = ({
             )}
         >
             <div className="flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+                <IconAlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
                 <p className="typo-caption text-foreground/90 leading-relaxed">
                     {t(ERROR_MESSAGE_KEYS[errorKind])}
                 </p>
@@ -97,7 +97,7 @@ export const ChatErrorBanner: React.FC<ChatErrorBannerProps> = ({
                     onClick={onRetry}
                     className={C_CHATERRORBANNER_1}
                 >
-                    <RefreshCw className="w-3 h-3" />
+                    <IconRefresh className="w-3 h-3" />
                     {t('chat.errorRetry')}
                 </button>
 
@@ -106,7 +106,7 @@ export const ChatErrorBanner: React.FC<ChatErrorBannerProps> = ({
                         onClick={onSwitchModel}
                         className={C_CHATERRORBANNER_2}
                     >
-                        <ArrowRightLeft className="w-3 h-3" />
+                        <IconArrowsRightLeft className="w-3 h-3" />
                         {t('chat.errorSwitchModel')}
                     </button>
                 )}

@@ -8,24 +8,18 @@
  * (at your option) any later version.
  */
 
-import { Input } from '@renderer/components/ui/input';
+import { IconClock, IconGlobe, IconSettings, IconShield, IconVolume } from '@tabler/icons-react';
+import React, { useEffect, useMemo, useState } from 'react';
+
+import { Input } from '@/components/ui/input';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@renderer/components/ui/select';
-import { Switch } from '@renderer/components/ui/switch';
-import {
-    Clock,
-    Globe,
-    Settings,
-    Shield,
-    Volume2,
-} from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
-
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useVoice } from '@/features/voice/hooks/useVoice';
 import { localeRegistry } from '@/i18n/locale-registry.service';
 import type { GroupedModels } from '@/types';
@@ -85,7 +79,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
             <SettingsPanel
                 title={t('settings.generalTitle')}
                 description={t('settings.generalDescription')}
-                icon={Settings}
+                icon={IconSettings}
             >
                 <div className="grid gap-5 md:grid-cols-2">
                     <SettingsField label={t('settings.language')}>
@@ -97,7 +91,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                         >
                             <SelectTrigger className="h-11 w-full rounded-2xl bg-background">
                                 <div className="flex items-center gap-2">
-                                    <Globe className="h-3.5 w-3.5 text-primary/50" />
+                                    <IconGlobe className="h-3.5 w-3.5 text-primary/50" />
                                     <SelectValue />
                                 </div>
                             </SelectTrigger>
@@ -179,7 +173,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                                     }}
                                 />
                             )}
-                            icon={Shield}
+                            icon={IconShield}
                         />
                     </div>
 
@@ -216,7 +210,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
             <SettingsPanel
                 title={t('voice.interfaceTitle')}
                 description={t('voice.interfaceSubtitle')}
-                icon={Volume2}
+                icon={IconVolume}
             >
                 <div className="space-y-4">
                     <SettingsToggleRow
@@ -230,7 +224,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                                 }}
                             />
                         )}
-                        icon={Volume2}
+                        icon={IconVolume}
                     />
                     <SettingsToggleRow
                         title={t('voice.continuousListening')}
@@ -243,7 +237,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                                 }}
                             />
                         )}
-                        icon={Clock}
+                        icon={IconClock}
                     />
                     <div className="grid gap-5 md:grid-cols-2">
                         <SettingsField label={t('voice.wakeWord')}>

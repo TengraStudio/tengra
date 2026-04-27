@@ -97,7 +97,7 @@ describe('ProxyProcessManager runtime launch configuration', () => {
             updateFromProxy: vi.fn().mockResolvedValue(undefined),
             reloadLinkedAccountsCache: vi.fn().mockResolvedValue(undefined),
             getActiveToken: vi.fn().mockImplementation((provider) => {
-                if (provider === 'proxy_key') return Promise.resolve('proxy-api-key');
+                if (provider === 'proxy_key') {return Promise.resolve('proxy-api-key');}
                 return Promise.resolve(null);
             }),
             getAccountsByProviderFull: vi.fn().mockResolvedValue([]),

@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { RotateCcw, Smile, Volume2, VolumeX } from 'lucide-react';
+import { IconMoodSmile, IconRotate, IconVolume, IconVolumeOff } from '@tabler/icons-react';
 import React, { memo } from 'react';
 
 import { Message } from '@/types';
@@ -101,7 +101,7 @@ export const MessageActions = memo(
                     title={t('messageBubble.stop')}
                     aria-label={t('messageBubble.stop')}
                 >
-                    <VolumeX className="w-3.5 h-3.5" />
+                    <IconVolumeOff className="w-3.5 h-3.5" />
                 </button>
             ) : (
                 <button
@@ -111,7 +111,7 @@ export const MessageActions = memo(
                     title={t('messageBubble.speakAloud')}
                     aria-label={t('messageBubble.speakAloud')}
                 >
-                    <Volume2 className="w-3.5 h-3.5" />
+                    <IconVolume className="w-3.5 h-3.5" />
                 </button>
             )}
             <CopyButton text={displayContent} t={t} />
@@ -128,7 +128,7 @@ export const MessageActions = memo(
                     title={t('messageBubble.regenerate')}
                     aria-label={t('messageBubble.regenerate')}
                 >
-                    <RotateCcw className="w-3.5 h-3.5" />
+                    <IconRotate className="w-3.5 h-3.5" />
                 </button>
             )}
             <div className="relative group/react">
@@ -139,7 +139,7 @@ export const MessageActions = memo(
                     aria-label={t('messageBubble.react')}
                     aria-haspopup="true"
                 >
-                    <Smile className="w-3.5 h-3.5" />
+                    <IconMoodSmile className="w-3.5 h-3.5" />
                 </button>
                 <div
                     className={C_MESSAGEACTIONS_5}

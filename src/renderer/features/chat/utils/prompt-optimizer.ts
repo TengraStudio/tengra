@@ -51,7 +51,7 @@ const VAGUE_WORDS = [
 ];
 
 const CONTEXT_INDICATORS = [
-    'you are', 'act as', 'role:', 'persona:', 'context:',
+    'you are', 'act as', 'role:', 'context:',
     'background:', 'as a', 'imagine you',
 ];
 
@@ -175,7 +175,7 @@ export class PromptOptimizerService {
                 ),
                 suggestedText: this.tr(
                     'chat.promptOptimizer.constraintSuggestedText',
-                    'Constraints: Keep the response under [N] words. Do not include [X].'
+                    'Constraints: Keep the response under [N] words. Do not include [IconX].'
                 ),
             });
         }

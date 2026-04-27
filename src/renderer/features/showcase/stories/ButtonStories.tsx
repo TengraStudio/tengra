@@ -12,7 +12,7 @@
  * Story definitions for Button and RippleButton components.
  * Showcases variants, sizes, and states.
  */
-import { Loader2, Plus, Save, Trash2 } from 'lucide-react';
+import { IconDeviceFloppy, IconLoader2, IconPlus, IconTrash } from '@tabler/icons-react';
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -33,10 +33,10 @@ const ButtonWrapper: React.FC<Record<string, RendererDataValue>> = (props) => {
   };
 
   const iconMap: Record<string, React.ReactNode> = {
-    plus: <Plus className="w-4 h-4 mr-2" />,
-    save: <Save className="w-4 h-4 mr-2" />,
-    trash: <Trash2 className="w-4 h-4 mr-2" />,
-    loader: <Loader2 className="w-4 h-4 mr-2 animate-spin" />,
+    plus: <IconPlus className="w-4 h-4 mr-2" />,
+    save: <IconDeviceFloppy className="w-4 h-4 mr-2" />,
+    trash: <IconTrash className="w-4 h-4 mr-2" />,
+    loader: <IconLoader2 className="w-4 h-4 mr-2 animate-spin" />,
   };
 
   return (

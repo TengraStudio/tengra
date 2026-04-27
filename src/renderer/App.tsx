@@ -8,31 +8,18 @@
  * (at your option) any later version.
  */
 
-import { MemoizedAppHeader as AppHeader } from '@renderer/components/layout/AppHeader';
-import { AppModals } from '@renderer/components/layout/AppModals';
-import { LayoutManager } from '@renderer/components/layout/LayoutManager';
-import { OfflineBanner } from '@renderer/components/layout/OfflineBanner';
-import { SessionLockOverlay } from '@renderer/components/layout/SessionLockOverlay';
-import { Sidebar } from '@renderer/components/layout/Sidebar';
-import { ToastsContainer } from '@renderer/components/layout/ToastsContainer';
-import { ErrorBoundary } from '@renderer/components/shared/ErrorBoundary';
-import { ErrorFallback } from '@renderer/components/shared/ErrorFallback';
-import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech';
-import { useVoiceInput } from '@renderer/features/chat/hooks/useVoiceInput';
-import { ChatTemplate } from '@renderer/features/chat/types';
-import { SettingsCategory } from '@renderer/features/settings/types';
-import { useVoiceActions } from '@renderer/features/voice/hooks/useVoiceActions';
-import { useAppInitialization } from '@renderer/hooks/useAppInitialization';
-import { AppView, useAppState } from '@renderer/hooks/useAppState';
-import { useKeyboardShortcuts } from '@renderer/hooks/useKeyboardShortcuts';
-import { useSessionTimeout } from '@renderer/hooks/useSessionTimeout';
-import { useLanguage, useTranslation } from '@renderer/i18n';
-import { useBreakpoint } from '@renderer/lib/responsive';
-import { trackResponsiveBreakpoint } from '@renderer/store/responsive-analytics.store';
-import { ViewManager } from '@renderer/views/ViewManager';
 import * as React from 'react';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 
+import { MemoizedAppHeader as AppHeader } from '@/components/layout/AppHeader';
+import { AppModals } from '@/components/layout/AppModals';
+import { LayoutManager } from '@/components/layout/LayoutManager';
+import { OfflineBanner } from '@/components/layout/OfflineBanner';
+import { SessionLockOverlay } from '@/components/layout/SessionLockOverlay';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { ToastsContainer } from '@/components/layout/ToastsContainer';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
+import { ErrorFallback } from '@/components/shared/ErrorFallback';
 import { useAuthSettingsUi } from '@/context/AuthContext';
 import {
     useChatComposer,
@@ -42,13 +29,26 @@ import {
 } from '@/context/ChatContext';
 import { useModel } from '@/context/ModelContext';
 import { useWorkspaceSelection } from '@/context/WorkspaceContext';
+import { useTextToSpeech } from '@/features/chat/hooks/useTextToSpeech';
+import { useVoiceInput } from '@/features/chat/hooks/useVoiceInput';
+import { ChatTemplate } from '@/features/chat/types';
+import { SettingsCategory } from '@/features/settings/types';
+import { useVoiceActions } from '@/features/voice/hooks/useVoiceActions';
+import { useAppInitialization } from '@/hooks/useAppInitialization';
+import { AppView, useAppState } from '@/hooks/useAppState';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useSessionTimeout } from '@/hooks/useSessionTimeout';
+import { useLanguage, useTranslation } from '@/i18n';
+import { useBreakpoint } from '@/lib/responsive';
 import { useMarketplaceStore } from '@/store/marketplace.store';
+import { trackResponsiveBreakpoint } from '@/store/responsive-analytics.store';
+import { ViewManager } from '@/views/ViewManager';
 
 
 // Lazy load heavy layout components
-const UpdateNotification = lazy(() => import('@renderer/components/layout/UpdateNotification').then(m => ({ default: m.UpdateNotification })));
-const VoiceOverlay = lazy(() => import('@renderer/features/voice/components/VoiceOverlay').then(m => ({ default: m.VoiceOverlay })));
-const DetachedTerminalWindow = lazy(() => import('@renderer/features/terminal/components/DetachedTerminalWindow').then(m => ({ default: m.DetachedTerminalWindow })));
+const UpdateNotification = lazy(() => import('@/components/layout/UpdateNotification').then(m => ({ default: m.UpdateNotification })));
+const VoiceOverlay = lazy(() => import('@/features/voice/components/VoiceOverlay').then(m => ({ default: m.VoiceOverlay })));
+const DetachedTerminalWindow = lazy(() => import('@/features/terminal/components/DetachedTerminalWindow').then(m => ({ default: m.DetachedTerminalWindow })));
 
 
 function useDeferredNonCriticalUi(): boolean {
@@ -341,7 +341,7 @@ const SelectionPersistenceConnector: React.FC = () => {
     }, [selectedWorkspace?.id]);
 
     return null;
-}; 
+};
 
 export default function App() {
     if (isDetachedTerminalWindow) {
@@ -377,12 +377,7 @@ function MainApp() {
     const nonCriticalUiReady = useDeferredNonCriticalUi();
     useAppInitialization();
 
-    // Auto-collapse sidebar when entering the workspace view.
-    useEffect(() => {
-        if (!isSidebarCollapsed && currentView === 'workspace') {
-            setIsSidebarCollapsed(true);
-        }
-    }, [currentView, isSidebarCollapsed, setIsSidebarCollapsed]);
+
 
     const lastBreakpoint = React.useRef(breakpoint);
     useEffect(() => {

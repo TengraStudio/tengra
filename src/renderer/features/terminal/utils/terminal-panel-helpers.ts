@@ -8,12 +8,12 @@
  * (at your option) any later version.
  */
 
-import type { TerminalTab } from '@/types';
 import {
     resolveCssColorVariable,
     resolveCssVariableStyle,
     resolveCssVariableValue,
 } from '@/lib/theme-css';
+import type { TerminalTab } from '@/types';
 
 import type { TerminalAppearancePreferences } from '../types/terminal-appearance';
 

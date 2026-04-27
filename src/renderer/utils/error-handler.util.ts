@@ -8,11 +8,11 @@
  * (at your option) any later version.
  */
 
-import { enLocalePack } from '@renderer/i18n/locales';
 import { JsonValue } from '@shared/types/common';
 import { getErrorMessage, getErrorRecoveryStrategy } from '@shared/utils/error.util';
 
 import { localeRegistry } from '@/i18n/locale-registry.service';
+import { enLocalePack } from '@/i18n/locales';
 import { appLogger } from '@/utils/renderer-logger';
 
 interface CustomWindow extends Window {

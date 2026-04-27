@@ -17,7 +17,7 @@ import { DatabaseAdapter, SqlValue } from '@shared/types/database';
 import { DbDetailedStats, DbStats, DbTokenStats } from '@shared/types/db-api';
 import { v4 as uuidv4 } from 'uuid';
 
-import { AuditLogEntry, Folder, JobState, LinkedAccount, Prompt, TokenUsageRecord } from '../database.service';
+import { Folder, JobState, LinkedAccount, Prompt, TokenUsageRecord } from '../database.service';
 
 import { BaseRepository } from './base.repository';
 
@@ -118,8 +118,7 @@ export class SystemRepository extends BaseRepository {
             'CREATE INDEX IF NOT EXISTS idx_usage_tracking_provider_model ON usage_tracking(provider, model)',
 
             // Operational dashboards
-            'CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp DESC)',
-            'CREATE INDEX IF NOT EXISTS idx_audit_logs_category_timestamp ON audit_logs(category, timestamp DESC)',
+
             'CREATE INDEX IF NOT EXISTS idx_linked_accounts_provider_active ON linked_accounts(provider, is_active)',
             'CREATE INDEX IF NOT EXISTS idx_prompts_created_at ON prompts(created_at DESC)',
 
@@ -570,61 +569,7 @@ export class SystemRepository extends BaseRepository {
         await this.adapter.prepare('DELETE FROM linked_accounts WHERE id = ?').run(id);
     }
 
-    // --- Audit Logs ---
-    async addAuditLog(entry: AuditLogEntry): Promise<void> {
-        await this.adapter.prepare('INSERT INTO audit_logs(id, timestamp, action, category, user_id, details, success) VALUES(?, ?, ?, ?, ?, ?, ?)')
-            .run(uuidv4(), entry.timestamp, entry.action, entry.category, entry.userId ?? null, entry.details ? JSON.stringify(entry.details) : null, entry.success ? 1 : 0);
-    }
 
-    async getAuditLogs(options: { category?: string; startDate?: number; endDate?: number; limit?: number } = {}): Promise<AuditLogEntry[]> {
-        let sql = 'SELECT * FROM audit_logs WHERE 1=1';
-        const params: (string | number | null)[] = [];
-        if (options.category) { sql += ' AND category = ?'; params.push(options.category); }
-        if (options.startDate) { sql += ' AND timestamp >= ?'; params.push(options.startDate); }
-        if (options.endDate) { sql += ' AND timestamp <= ?'; params.push(options.endDate); }
-        sql += ' ORDER BY timestamp DESC';
-        if (options.limit) { sql += ' LIMIT ?'; params.push(options.limit); }
-        const rows = await this.adapter.prepare(sql).all<JsonObject>(...params);
-        return rows.map(row => ({
-            timestamp: Number(row.timestamp),
-            action: String(row.action),
-            category: String(row.category) as AuditLogEntry['category'],
-            userId: row.user_id as string | undefined,
-            details: this.parseJsonField(row.details as string | null, undefined),
-            success: Boolean(row.success)
-        }));
-    }
-
-    async clearAuditLogs(): Promise<void> {
-        await this.adapter.prepare('DELETE FROM audit_logs').run();
-    }
-
-    async countAuditLogs(): Promise<number> {
-        const row = await this.adapter.prepare('SELECT count(*) as count FROM audit_logs').get<{ count: number }>();
-        return row?.count ?? 0;
-    }
-
-    async pruneAuditLogsOlderThan(timestamp: number): Promise<number> {
-        const result = await this.adapter.prepare('DELETE FROM audit_logs WHERE timestamp < ?').run(timestamp);
-        return Number((result as { changes?: number }).changes ?? 0);
-    }
-
-    async pruneAuditLogsToMaxEntries(maxEntries: number): Promise<number> {
-        const bounded = Math.max(0, Math.floor(maxEntries));
-        if (bounded === 0) {
-            await this.clearAuditLogs();
-            return 0;
-        }
-        const result = await this.adapter.prepare(`
-            DELETE FROM audit_logs
-            WHERE id IN (
-                SELECT id FROM audit_logs
-                ORDER BY timestamp DESC
-                LIMIT -1 OFFSET ?
-            )
-        `).run(bounded);
-        return Number((result as { changes?: number }).changes ?? 0);
-    }
 
     // --- Job States ---
     async getJobState(id: string) {

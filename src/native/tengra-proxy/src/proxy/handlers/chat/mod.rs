@@ -1,4 +1,4 @@
-/**
+/*
  * Tengra - Your Personal AI Assistant
  * Copyright (c) 2026 TengraStudio
  *
@@ -655,8 +655,8 @@ fn get_upstream_url(
 
         // GitHub Copilot
         "copilot" => {
-            let model_owned = extract_model_from_row(active_key_row).unwrap_or_default();
-            let model = model_owned.as_str();
+            let _model_owned = extract_model_from_row(active_key_row).unwrap_or_default();
+            let _model = _model_owned.as_str();
             let plan = get_copilot_plan(active_key_row);
             let subdomain = match plan.as_str() {
                 "individual" => "api.individual.githubcopilot.com",

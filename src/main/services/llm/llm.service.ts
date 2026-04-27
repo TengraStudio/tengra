@@ -725,7 +725,7 @@ export class LLMService {
         const buildProxyBaseUrl = () => {
             const proxyStatus = this.deps.proxyService.getEmbeddedProxyStatus();
             const port = proxyStatus.port ?? 8317;
-            return `http://localhost:${port}/v1`;
+            return `http://127.0.0.1:${port}/v1`;
         };
 
         if (p.includes('nvidia')) {
@@ -746,7 +746,7 @@ export class LLMService {
 
         if (p.includes('ollama')) {
             const settings = this.deps.settingsService.getSettings();
-            const ollamaUrl = (settings['ollama'] as JsonObject | undefined)?.url ?? 'http://localhost:11434';
+            const ollamaUrl = (settings['ollama'] as JsonObject | undefined)?.url ?? 'http://127.0.0.1:11434';
             const ollamaBaseUrl = `${(ollamaUrl as string).replace(/\/$/, '')}/v1`;
             return { model, tools, baseUrl: ollamaBaseUrl, apiKey: 'ollama', provider, temperature: temp, workspaceRoot };
         }

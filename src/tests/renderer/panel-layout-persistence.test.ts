@@ -8,12 +8,13 @@
  * (at your option) any later version.
  */
 
+import { describe, expect, it } from 'vitest';
+
 import {
     parsePersistedPanelLayout,
     sanitizePersistedPanelLayout,
     serializePersistedPanelLayout,
-} from '@renderer/components/layout/panel-layout-persistence';
-import { describe, expect, it } from 'vitest';
+} from '@/components/layout/panel-layout-persistence';
 
 describe('panel layout persistence helpers', () => {
     it('migrates and sanitizes legacy group payloads', () => {

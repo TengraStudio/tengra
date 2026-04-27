@@ -64,7 +64,7 @@ test.describe('Workspace Management E2E', () => {
         }
     });
 
-    test('should open workspace creation wizard if available', async () => {
+    test('should open workspace creation setup if available', async () => {
         const newWorkspaceButton = appWindow.locator('button', {
             hasText: /new workspace|create new workspace|yeni proje|oluştur/i
         }).first();
@@ -72,12 +72,12 @@ test.describe('Workspace Management E2E', () => {
         if (await newWorkspaceButton.count() > 0 && await newWorkspaceButton.isVisible()) {
             await newWorkspaceButton.click();
 
-            // A modal or wizard should appear
-            const modal = appWindow.locator('[role="dialog"], .modal, [class*="Modal"], [class*="Wizard"]').first();
+            // A modal or setup should appear
+            const modal = appWindow.locator('[role="dialog"], .modal, [class*="Modal"], [class*="Setup"]').first();
             if (await modal.count() > 0) {
                 await expect(modal).toBeVisible();
 
-                // Close the wizard
+                // Close the setup
                 await appWindow.keyboard.press('Escape');
                 await expect(modal).not.toBeVisible();
             }

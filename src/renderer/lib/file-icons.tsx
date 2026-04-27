@@ -11,38 +11,30 @@
 /**
  * Unified File & Folder Icon Pack
  * Provides VS Code-style icons for the file explorer
- * Uses react-file-icon for files and Lucide for folders with custom colors
+ * Uses react-file-icon for files and Tabler for folders with custom colors
  */
 
 import {
-    Blocks,
-    Database,
-    Folder,
-    FolderArchive,
-    FolderCheck,
-    FolderCode,
-    FolderCog,
-    FolderDot,
-    FolderGit,
-    FolderHeart,
-    FolderInput,
-    FolderKanban,
-    FolderKey,
-    FolderLock,
-    FolderOpen,
-    FolderOutput,
-    FolderSearch,
-    FolderSymlink,
-    FolderSync,
-    FolderTree,
-    Globe,
-    Layers,
-    Layout,
-    type LucideIcon,
-    Palette,
-    Settings,
-    TestTube2
-} from 'lucide-react';
+    IconBlocks,
+    IconDatabase,
+    IconFlask,
+    IconFolder,
+    IconFolderCheck,
+    IconFolderCode,
+    IconFolderCog,
+    IconFolderDown,
+    IconFolderHeart,
+    IconFolderOpen,
+    IconFolderRoot,
+    IconFolders,
+    IconFolderSearch,
+    IconFolderSymlink,
+    IconFolderUp,
+    IconGlobe,
+    IconLayout,
+    IconPalette,
+    IconSettings,
+    IconStack} from '@tabler/icons-react';
 import { DefaultExtensionType, defaultStyles, FileIcon as ReactFileIcon } from 'react-file-icon';
 
 import { useTheme } from '@/hooks/useTheme';
@@ -55,140 +47,140 @@ export interface IconProps {
 
 // Custom folder icon config
 interface FolderIconConfig {
-    icon: LucideIcon;
+    icon: any;
     cssVar: string;
 }
 
 // Special folder name to icon mapping with CSS variable references
 const SPECIAL_FOLDER_ICONS: Record<string, FolderIconConfig> = {
     // Source code
-    'src': { icon: FolderCode, cssVar: '--icon-source' },
-    'source': { icon: FolderCode, cssVar: '--icon-source' },
-    'lib': { icon: FolderCode, cssVar: '--icon-lib' },
-    'libs': { icon: FolderCode, cssVar: '--icon-lib' },
+    'src': { icon: IconFolderCode, cssVar: '--icon-source' },
+    'source': { icon: IconFolderCode, cssVar: '--icon-source' },
+    'lib': { icon: IconFolderCode, cssVar: '--icon-lib' },
+    'libs': { icon: IconFolderCode, cssVar: '--icon-lib' },
 
     // Version control
-    '.git': { icon: FolderGit, cssVar: '--icon-git' },
-    '.github': { icon: FolderGit, cssVar: '--icon-github' },
-    '.gitlab': { icon: FolderGit, cssVar: '--icon-git' },
+    '.git': { icon: IconFolderCode, cssVar: '--icon-git' },
+    '.github': { icon: IconFolderCode, cssVar: '--icon-github' },
+    '.gitlab': { icon: IconFolderCode, cssVar: '--icon-git' },
 
     // Config
-    'config': { icon: FolderCog, cssVar: '--icon-config' },
-    'configs': { icon: FolderCog, cssVar: '--icon-config' },
-    '.config': { icon: FolderCog, cssVar: '--icon-config' },
-    'settings': { icon: Settings, cssVar: '--icon-settings' },
+    'config': { icon: IconFolderCog, cssVar: '--icon-config' },
+    'configs': { icon: IconFolderCog, cssVar: '--icon-config' },
+    '.config': { icon: IconFolderCog, cssVar: '--icon-config' },
+    'settings': { icon: IconSettings, cssVar: '--icon-settings' },
 
     // Components
-    'components': { icon: Blocks, cssVar: '--icon-components' },
-    'component': { icon: Blocks, cssVar: '--icon-components' },
-    'ui': { icon: Layout, cssVar: '--icon-ui' },
-    'widgets': { icon: Blocks, cssVar: '--icon-components' },
+    'components': { icon: IconBlocks, cssVar: '--icon-components' },
+    'component': { icon: IconBlocks, cssVar: '--icon-components' },
+    'ui': { icon: IconLayout, cssVar: '--icon-ui' },
+    'widgets': { icon: IconBlocks, cssVar: '--icon-components' },
 
     // Pages / Views
-    'pages': { icon: Layout, cssVar: '--icon-pages' },
-    'views': { icon: Layout, cssVar: '--icon-pages' },
-    'screens': { icon: Layout, cssVar: '--icon-pages' },
-    'routes': { icon: FolderSymlink, cssVar: '--icon-routes' },
+    'pages': { icon: IconLayout, cssVar: '--icon-pages' },
+    'views': { icon: IconLayout, cssVar: '--icon-pages' },
+    'screens': { icon: IconLayout, cssVar: '--icon-pages' },
+    'routes': { icon: IconFolderSymlink, cssVar: '--icon-routes' },
 
     // API / Services
-    'api': { icon: Globe, cssVar: '--icon-api' },
-    'apis': { icon: Globe, cssVar: '--icon-api' },
-    'services': { icon: Globe, cssVar: '--icon-api' },
-    'graphql': { icon: Globe, cssVar: '--icon-graphql' },
+    'api': { icon: IconGlobe, cssVar: '--icon-api' },
+    'apis': { icon: IconGlobe, cssVar: '--icon-api' },
+    'services': { icon: IconGlobe, cssVar: '--icon-api' },
+    'graphql': { icon: IconGlobe, cssVar: '--icon-graphql' },
 
     // Tests
-    'test': { icon: TestTube2, cssVar: '--icon-test' },
-    'tests': { icon: TestTube2, cssVar: '--icon-test' },
-    '__tests__': { icon: TestTube2, cssVar: '--icon-test' },
-    'spec': { icon: TestTube2, cssVar: '--icon-test' },
-    'specs': { icon: TestTube2, cssVar: '--icon-test' },
-    'e2e': { icon: TestTube2, cssVar: '--icon-test' },
-    'cypress': { icon: TestTube2, cssVar: '--icon-cypress' },
-    'playwright': { icon: TestTube2, cssVar: '--icon-playwright' },
+    'test': { icon: IconFlask, cssVar: '--icon-test' },
+    'tests': { icon: IconFlask, cssVar: '--icon-test' },
+    '__tests__': { icon: IconFlask, cssVar: '--icon-test' },
+    'spec': { icon: IconFlask, cssVar: '--icon-test' },
+    'specs': { icon: IconFlask, cssVar: '--icon-test' },
+    'e2e': { icon: IconFlask, cssVar: '--icon-test' },
+    'cypress': { icon: IconFlask, cssVar: '--icon-cypress' },
+    'playwright': { icon: IconFlask, cssVar: '--icon-playwright' },
 
     // Build output
-    'dist': { icon: FolderOutput, cssVar: '--icon-build' },
-    'build': { icon: FolderOutput, cssVar: '--icon-build' },
-    'out': { icon: FolderOutput, cssVar: '--icon-build' },
-    'output': { icon: FolderOutput, cssVar: '--icon-build' },
-    '.next': { icon: FolderOutput, cssVar: '--icon-next' },
-    '.nuxt': { icon: FolderOutput, cssVar: '--icon-nuxt' },
+    'dist': { icon: IconFolderUp, cssVar: '--icon-build' },
+    'build': { icon: IconFolderUp, cssVar: '--icon-build' },
+    'out': { icon: IconFolderUp, cssVar: '--icon-build' },
+    'output': { icon: IconFolderUp, cssVar: '--icon-build' },
+    '.next': { icon: IconFolderUp, cssVar: '--icon-next' },
+    '.nuxt': { icon: IconFolderUp, cssVar: '--icon-nuxt' },
 
     // Dependencies
-    'node_modules': { icon: FolderArchive, cssVar: '--icon-dependencies' },
-    'vendor': { icon: FolderArchive, cssVar: '--icon-dependencies' },
-    'packages': { icon: FolderArchive, cssVar: '--icon-dependencies' },
+    'node_modules': { icon: IconFolders, cssVar: '--icon-dependencies' },
+    'vendor': { icon: IconFolders, cssVar: '--icon-dependencies' },
+    'packages': { icon: IconFolders, cssVar: '--icon-dependencies' },
 
     // Assets
-    'assets': { icon: FolderHeart, cssVar: '--icon-assets' },
-    'images': { icon: FolderHeart, cssVar: '--icon-assets' },
-    'img': { icon: FolderHeart, cssVar: '--icon-assets' },
-    'icons': { icon: FolderHeart, cssVar: '--icon-assets' },
-    'fonts': { icon: FolderHeart, cssVar: '--icon-fonts' },
-    'media': { icon: FolderHeart, cssVar: '--icon-assets' },
+    'assets': { icon: IconFolderHeart, cssVar: '--icon-assets' },
+    'images': { icon: IconFolderHeart, cssVar: '--icon-assets' },
+    'img': { icon: IconFolderHeart, cssVar: '--icon-assets' },
+    'icons': { icon: IconFolderHeart, cssVar: '--icon-assets' },
+    'fonts': { icon: IconFolderHeart, cssVar: '--icon-fonts' },
+    'media': { icon: IconFolderHeart, cssVar: '--icon-assets' },
 
     // Styles
-    'styles': { icon: Palette, cssVar: '--icon-styles' },
-    'css': { icon: Palette, cssVar: '--icon-css' },
-    'scss': { icon: Palette, cssVar: '--icon-scss' },
-    'less': { icon: Palette, cssVar: '--icon-less' },
+    'styles': { icon: IconPalette, cssVar: '--icon-styles' },
+    'css': { icon: IconPalette, cssVar: '--icon-css' },
+    'scss': { icon: IconPalette, cssVar: '--icon-scss' },
+    'less': { icon: IconPalette, cssVar: '--icon-less' },
 
     // Public
-    'public': { icon: FolderTree, cssVar: '--icon-public' },
-    'static': { icon: FolderTree, cssVar: '--icon-public' },
+    'public': { icon: IconFolderRoot, cssVar: '--icon-public' },
+    'static': { icon: IconFolderRoot, cssVar: '--icon-public' },
 
     // Types
-    'types': { icon: FolderDot, cssVar: '--icon-types' },
-    '@types': { icon: FolderDot, cssVar: '--icon-types' },
-    'typings': { icon: FolderDot, cssVar: '--icon-types' },
-    'interfaces': { icon: FolderDot, cssVar: '--icon-types' },
+    'types': { icon: IconFolderRoot, cssVar: '--icon-types' },
+    '@types': { icon: IconFolderRoot, cssVar: '--icon-types' },
+    'typings': { icon: IconFolderRoot, cssVar: '--icon-types' },
+    'interfaces': { icon: IconFolderRoot, cssVar: '--icon-types' },
 
     // Hooks / Utils
-    'hooks': { icon: FolderSync, cssVar: '--icon-hooks' },
-    'composables': { icon: FolderSync, cssVar: '--icon-composables' },
-    'utils': { icon: FolderKanban, cssVar: '--icon-utils' },
-    'utilities': { icon: FolderKanban, cssVar: '--icon-utils' },
-    'helpers': { icon: FolderKanban, cssVar: '--icon-utils' },
+    'hooks': { icon: IconFolders, cssVar: '--icon-hooks' },
+    'composables': { icon: IconFolders, cssVar: '--icon-composables' },
+    'utils': { icon: IconFolder, cssVar: '--icon-utils' },
+    'utilities': { icon: IconFolder, cssVar: '--icon-utils' },
+    'helpers': { icon: IconFolder, cssVar: '--icon-utils' },
 
     // Data
-    'data': { icon: Database, cssVar: '--icon-data' },
-    'database': { icon: Database, cssVar: '--icon-data' },
-    'db': { icon: Database, cssVar: '--icon-data' },
-    'models': { icon: Database, cssVar: '--icon-data' },
-    'schema': { icon: Database, cssVar: '--icon-data' },
-    'migrations': { icon: Database, cssVar: '--icon-test' },
-    'prisma': { icon: Database, cssVar: '--icon-prisma' },
+    'data': { icon: IconDatabase, cssVar: '--icon-data' },
+    'database': { icon: IconDatabase, cssVar: '--icon-data' },
+    'db': { icon: IconDatabase, cssVar: '--icon-data' },
+    'models': { icon: IconDatabase, cssVar: '--icon-data' },
+    'schema': { icon: IconDatabase, cssVar: '--icon-data' },
+    'migrations': { icon: IconDatabase, cssVar: '--icon-test' },
+    'prisma': { icon: IconDatabase, cssVar: '--icon-prisma' },
 
     // Features / Modules 
-    'features': { icon: Layers, cssVar: '--icon-features' },
-    'modules': { icon: Layers, cssVar: '--icon-features' },
-    'domains': { icon: Layers, cssVar: '--icon-features' },
+    'features': { icon: IconStack, cssVar: '--icon-features' },
+    'modules': { icon: IconStack, cssVar: '--icon-features' },
+    'domains': { icon: IconStack, cssVar: '--icon-features' },
 
     // Docs
-    'docs': { icon: FolderSearch, cssVar: '--icon-docs' },
-    'documentation': { icon: FolderSearch, cssVar: '--icon-docs' },
+    'docs': { icon: IconFolderSearch, cssVar: '--icon-docs' },
+    'documentation': { icon: IconFolderSearch, cssVar: '--icon-docs' },
 
     // Security
-    '.ssh': { icon: FolderKey, cssVar: '--icon-security' },
-    'keys': { icon: FolderKey, cssVar: '--icon-security' },
-    'certs': { icon: FolderLock, cssVar: '--icon-security' },
-    'secrets': { icon: FolderLock, cssVar: '--icon-security' },
+    '.ssh': { icon: IconFolder, cssVar: '--icon-security' },
+    'keys': { icon: IconFolder, cssVar: '--icon-security' },
+    'certs': { icon: IconFolder, cssVar: '--icon-security' },
+    'secrets': { icon: IconFolder, cssVar: '--icon-security' },
 
     // Scripts
-    'scripts': { icon: FolderInput, cssVar: '--icon-scripts' },
-    'bin': { icon: FolderInput, cssVar: '--icon-scripts' },
-    'tools': { icon: FolderCog, cssVar: '--icon-tools' },
+    'scripts': { icon: IconFolderDown, cssVar: '--icon-scripts' },
+    'bin': { icon: IconFolderDown, cssVar: '--icon-scripts' },
+    'tools': { icon: IconFolderCog, cssVar: '--icon-tools' },
 
     // Hidden
-    '.vscode': { icon: FolderCog, cssVar: '--icon-vscode' },
-    '.idea': { icon: FolderCog, cssVar: '--icon-idea' },
-    '.husky': { icon: FolderDot, cssVar: '--icon-husky' },
-    '.cache': { icon: FolderArchive, cssVar: '--icon-dependencies' },
+    '.vscode': { icon: IconFolderCog, cssVar: '--icon-vscode' },
+    '.idea': { icon: IconFolderCog, cssVar: '--icon-idea' },
+    '.husky': { icon: IconFolderRoot, cssVar: '--icon-husky' },
+    '.cache': { icon: IconFolders, cssVar: '--icon-dependencies' },
 
     // CI/CD
-    '.circleci': { icon: FolderSync, cssVar: '--icon-circleci' },
-    '.jenkins': { icon: FolderSync, cssVar: '--icon-jenkins' },
-    'workflows': { icon: FolderCheck, cssVar: '--icon-workflows' },
+    '.circleci': { icon: IconFolders, cssVar: '--icon-circleci' },
+    '.jenkins': { icon: IconFolders, cssVar: '--icon-jenkins' },
+    'workflows': { icon: IconFolderCheck, cssVar: '--icon-workflows' },
 };
 
 // Extended file extension mapping with CSS variable references
@@ -246,7 +238,7 @@ export function getFolderIconInfo(folderName: string, isOpen: boolean = false) {
     }
 
     return {
-        Icon: isOpen ? FolderOpen : Folder,
+        Icon: isOpen ? IconFolderOpen : IconFolder,
         color: resolveIconColor('--icon-default')
     };
 }

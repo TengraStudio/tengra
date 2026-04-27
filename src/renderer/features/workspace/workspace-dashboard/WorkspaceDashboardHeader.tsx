@@ -1,33 +1,14 @@
-/**
- * Tengra - Your Personal AI Assistant
- * Copyright (c) 2026 TengraStudio
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- */
-
-import { Camera, Check, Pencil, RefreshCw, Sparkles } from 'lucide-react';
+import { IconCamera, IconCheck, IconPencil, IconSparkles } from '@tabler/icons-react';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
-import { cn } from '@/lib/utils';
 import type { Workspace } from '@/types';
 import { toSafeFileUrl } from '@/utils/safe-file-url.util';
 
-/* Batch-02: Extracted Long Classes */
-const C_WORKSPACEDASHBOARDHEADER_1 = "w-32 h-32 rounded-2xl bg-muted/40 border-2 border-dashed border-border flex items-center justify-center overflow-hidden transition-all group-hover:border-primary/50 shadow-inner";
-const C_WORKSPACEDASHBOARDHEADER_2 = "absolute inset-0 bg-primary/60 backdrop-blur-2 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2 text-primary-foreground sm:flex-row";
-const C_WORKSPACEDASHBOARDHEADER_3 = "text-sm text-muted-foreground leading-relaxed cursor-pointer hover:text-foreground transition-colors max-w-2xl flex items-start gap-2";
-const C_WORKSPACEDASHBOARDHEADER_4 = "p-2 rounded-lg bg-muted/20 border border-border text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all flex items-center gap-2 typo-caption";
-
-
-interface WorkspaceDashboardHeaderProps {
+export const WorkspaceDashboardHeader: React.FC<{
     workspace: Workspace;
     workspaceRoot: string;
     type: string;
-    loading: boolean;
     isEditingName: boolean;
     setIsEditingName: (val: boolean) => void;
     editName: string;
@@ -39,14 +20,10 @@ interface WorkspaceDashboardHeaderProps {
     setEditDesc: (val: string) => void;
     handleSaveDesc: () => Promise<void>;
     onUploadLogo?: () => void;
-    analyzeWorkspace: () => Promise<void>;
-}
-
-export const WorkspaceDashboardHeader: React.FC<WorkspaceDashboardHeaderProps> = ({
+}> = ({
     workspace,
     workspaceRoot,
     type,
-    loading,
     isEditingName,
     setIsEditingName,
     editName,
@@ -58,42 +35,38 @@ export const WorkspaceDashboardHeader: React.FC<WorkspaceDashboardHeaderProps> =
     setEditDesc,
     handleSaveDesc,
     onUploadLogo,
-    analyzeWorkspace
 }) => {
     const { t } = useTranslation();
     const baseLogoUrl = toSafeFileUrl(workspace.logo);
-    // Use a unique cache-buster URL that changes every time updatedAt changes
     const workspaceLogoUrl = baseLogoUrl && baseLogoUrl.startsWith('data:') ? baseLogoUrl : (baseLogoUrl ? `${baseLogoUrl}?v=${workspace.updatedAt}` : null);
 
     return (
-        <div className="flex flex-col md:flex-row gap-8 items-start bg-card/40 p-6 rounded-3xl border border-border backdrop-blur-sm">
+        <div className="flex flex-col md:flex-row gap-10 items-start">
             {/* Logo Area */}
             <div className="relative group shrink-0">
-                <div className={C_WORKSPACEDASHBOARDHEADER_1}>
+                <div className="w-24 h-24 rounded-2xl bg-muted/5 border border-border/5 flex items-center justify-center overflow-hidden transition-all group-hover:border-primary/20">
                     {workspaceLogoUrl ? (
                         <img 
-                            key={workspace.updatedAt}
                             src={workspaceLogoUrl} 
-                            alt={t('workspaces.logoAlt')} 
-                            className="w-full h-full object-cover animate-in fade-in duration-500" 
+                            alt="" 
+                            className="w-full h-full object-cover grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500" 
                         />
                     ) : (
-                        <Sparkles className="w-10 h-10 text-muted-foreground/20" />
+                        <IconSparkles className="w-8 h-8 text-muted-foreground/10" />
                     )}
 
                     <button
                         onClick={onUploadLogo}
-                        className={C_WORKSPACEDASHBOARDHEADER_2}
+                        className="absolute inset-0 bg-primary/80 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center text-primary-foreground"
                     >
-                        <Camera className="w-6 h-6" />
-                        <span className="text-xxs font-bold">{t('workspaces.changeLogo')}</span>
+                        <IconCamera className="w-5 h-5" />
                     </button>
                 </div>
             </div>
 
             {/* Name & Description Area */}
             <div className="flex-1 space-y-4 w-full">
-                <div className="space-y-1 group">
+                <div className="space-y-1.5 group">
                     {isEditingName ? (
                         <div className="flex items-center gap-2">
                             <input
@@ -105,19 +78,19 @@ export const WorkspaceDashboardHeader: React.FC<WorkspaceDashboardHeaderProps> =
                                     if (e.key === 'Escape') { setIsEditingName(false); }
                                 }}
                                 onBlur={() => { void handleSaveName(); }}
-                                className="text-3xl font-bold bg-transparent border border-primary/50 rounded-lg px-2 py-1 outline-none w-full text-foreground"
+                                className="text-2xl font-bold bg-transparent border-b border-primary/30 outline-none w-full text-foreground py-1"
                             />
-                            <button onClick={() => { void handleSaveName(); }} className="p-2 bg-primary text-primary-foreground rounded-lg">
-                                <Check className="w-4 h-4" />
+                            <button onClick={() => { void handleSaveName(); }} className="p-1.5 text-primary">
+                                <IconCheck className="w-5 h-5" />
                             </button>
                         </div>
                     ) : (
                         <h1
                             onClick={() => { setIsEditingName(true); }}
-                            className="text-4xl font-bold text-foreground cursor-pointer hover:text-primary transition-colors flex items-center gap-3"
+                            className="text-3xl font-bold text-foreground/90 cursor-pointer hover:text-primary transition-colors flex items-center gap-3 tracking-tight"
                         >
                             {workspace.title}
-                            <Pencil className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+                            <IconPencil className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground/40" />
                         </h1>
                     )}
                 </div>
@@ -130,38 +103,30 @@ export const WorkspaceDashboardHeader: React.FC<WorkspaceDashboardHeaderProps> =
                                 value={editDesc}
                                 onChange={e => setEditDesc(e.target.value)}
                                 onBlur={() => { void handleSaveDesc(); }}
-                                className="w-full bg-muted/40 border border-primary/30 rounded-xl p-3 text-sm text-foreground outline-none min-h-80 resize-none"
+                                className="w-full bg-muted/5 border border-border/5 rounded-xl p-4 text-sm text-foreground outline-none min-h-[120px] resize-none leading-relaxed"
                                 placeholder={t('workspaces.workspaceDescPlaceholder')}
                             />
                         </div>
                     ) : (
                         <p
                             onClick={() => { setIsEditingDesc(true); }}
-                            className={C_WORKSPACEDASHBOARDHEADER_3}
+                            className="text-[13px] text-muted-foreground/50 leading-relaxed cursor-pointer hover:text-foreground/70 transition-colors max-w-2xl flex items-start gap-2 group"
                         >
                             {workspace.description || t('workspaces.noDescription')}
-                            <Pencil className="w-3 h-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <IconPencil className="w-3 h-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </p>
                     )}
                 </div>
 
-                <div className="flex items-center gap-4 pt-2">
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-success/10 border border-success/20 rounded-md">
-                        <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                        <span className="text-xxs font-bold text-success">{type}</span>
+                <div className="flex items-center gap-6 pt-2">
+                    <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-success/40" />
+                        <span className="text-[11px] font-bold text-muted-foreground/40 tracking-widest">{type}</span>
                     </div>
-                    <div className="text-xxs font-medium text-muted-foreground font-mono bg-accent/50 px-2 py-1 rounded border border-border">
+                    
+                    <div className="text-[11px] font-medium text-muted-foreground/30 font-mono">
                         {workspaceRoot}
                     </div>
-                    <button
-                        onClick={() => { void analyzeWorkspace(); }}
-                        disabled={loading}
-                        className={C_WORKSPACEDASHBOARDHEADER_4}
-                        title={t('common.refresh')}
-                    >
-                        <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
-                        {loading ? t('common.loading') : t('common.refresh')}
-                    </button>
                 </div>
             </div>
         </div>

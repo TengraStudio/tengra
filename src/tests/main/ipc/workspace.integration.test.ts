@@ -9,7 +9,6 @@
  */
 
 import { registerWorkspaceIpc } from '@main/ipc/workspace';
-import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { LogoService } from '@main/services/external/logo.service';
 import { InlineSuggestionService } from '@main/services/llm/inline-suggestion.service';
@@ -39,7 +38,6 @@ let mockWorkspaceService: WorkspaceService;
 let mockLogoService: LogoService;
 let mockInlineSuggestionService: InlineSuggestionService;
 let mockCodeIntelligenceService: CodeIntelligenceService;
-let mockAuditLogService: AuditLogService;
 let mockJobSchedulerService: JobSchedulerService;
 let mockDatabaseService: DatabaseService;
 let scheduledTasks: Map<string, () => Promise<void>>;
@@ -141,10 +139,6 @@ describe('Workspace IPC Integration', () => {
             updateFileIndex: vi.fn().mockResolvedValue(undefined),
         } as never as CodeIntelligenceService;
 
-        mockAuditLogService = {
-            logFileSystemOperation: vi.fn().mockResolvedValue(undefined)
-        } as never as AuditLogService;
-
         mockJobSchedulerService = {
             schedule: vi.fn((key: string, task: () => Promise<void>) => {
                 scheduledTasks.set(key, task);
@@ -163,8 +157,7 @@ describe('Workspace IPC Integration', () => {
             inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
             jobSchedulerService: mockJobSchedulerService,
-            databaseService: mockDatabaseService,
-            auditLogService: mockAuditLogService
+            databaseService: mockDatabaseService
         }, new Set<string>());
         expect(ipcMainHandlers.has('workspace:analyze')).toBe(true);
         expect(ipcMainHandlers.has('workspace:analyzeSummary')).toBe(true);
@@ -184,8 +177,7 @@ describe('Workspace IPC Integration', () => {
             inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
             jobSchedulerService: mockJobSchedulerService,
-            databaseService: mockDatabaseService,
-            auditLogService: mockAuditLogService
+            databaseService: mockDatabaseService
         }, new Set<string>());
         const handler = ipcMainHandlers.get('workspace:analyze');
 
@@ -211,8 +203,7 @@ describe('Workspace IPC Integration', () => {
             inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
             jobSchedulerService: mockJobSchedulerService,
-            databaseService: mockDatabaseService,
-            auditLogService: mockAuditLogService
+            databaseService: mockDatabaseService
         }, new Set<string>());
         const handler = ipcMainHandlers.get('workspace:analyzeSummary');
 
@@ -238,8 +229,7 @@ describe('Workspace IPC Integration', () => {
             inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
             jobSchedulerService: mockJobSchedulerService,
-            databaseService: mockDatabaseService,
-            auditLogService: mockAuditLogService
+            databaseService: mockDatabaseService
         }, new Set<string>());
         const handler = ipcMainHandlers.get('workspace:getFileDiagnostics');
 
@@ -279,8 +269,7 @@ describe('Workspace IPC Integration', () => {
             inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
             jobSchedulerService: mockJobSchedulerService,
-            databaseService: mockDatabaseService,
-            auditLogService: mockAuditLogService
+            databaseService: mockDatabaseService
         }, new Set<string>());
         const handler = ipcMainHandlers.get('workspace:getFileDefinition');
 
@@ -324,8 +313,7 @@ describe('Workspace IPC Integration', () => {
             inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
             jobSchedulerService: mockJobSchedulerService,
-            databaseService: mockDatabaseService,
-            auditLogService: mockAuditLogService
+            databaseService: mockDatabaseService
         }, new Set<string>());
         const handler = ipcMainHandlers.get('workspace:generateLogo');
 
@@ -352,8 +340,7 @@ describe('Workspace IPC Integration', () => {
             inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
             jobSchedulerService: mockJobSchedulerService,
-            databaseService: mockDatabaseService,
-            auditLogService: mockAuditLogService
+            databaseService: mockDatabaseService
         }, new Set<string>());
         const handler = ipcMainHandlers.get('workspace:uploadLogo');
 
@@ -377,8 +364,7 @@ describe('Workspace IPC Integration', () => {
             inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
             jobSchedulerService: mockJobSchedulerService,
-            databaseService: mockDatabaseService,
-            auditLogService: mockAuditLogService
+            databaseService: mockDatabaseService
         }, new Set<string>());
         const handler = ipcMainHandlers.get('workspace:analyze');
 
@@ -403,8 +389,7 @@ describe('Workspace IPC Integration', () => {
             inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
             jobSchedulerService: mockJobSchedulerService,
-            databaseService: mockDatabaseService,
-            auditLogService: mockAuditLogService
+            databaseService: mockDatabaseService
         }, new Set<string>());
         const handler = ipcMainHandlers.get('workspace:saveEnv');
 
@@ -413,11 +398,6 @@ describe('Workspace IPC Integration', () => {
             success: true,
             data: { success: true }
         });
-        expect(vi.mocked(mockAuditLogService!.logFileSystemOperation)).toHaveBeenCalledWith(
-            'workspace.save-env',
-            true,
-            expect.objectContaining({ rootPath: '/root', variableCount: 1 })
-        );
     });
 
     it('returns null-safe active workspace state for setActive and clearActive', async () => {
@@ -431,8 +411,7 @@ describe('Workspace IPC Integration', () => {
             inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
             jobSchedulerService: mockJobSchedulerService,
-            databaseService: mockDatabaseService,
-            auditLogService: mockAuditLogService
+            databaseService: mockDatabaseService
         }, new Set<string>());
 
         const setActiveHandler = ipcMainHandlers.get('workspace:setActive');
@@ -468,8 +447,7 @@ describe('Workspace IPC Integration', () => {
             inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
             jobSchedulerService: mockJobSchedulerService,
-            databaseService: mockDatabaseService,
-            auditLogService: mockAuditLogService
+            databaseService: mockDatabaseService
         }, new Set<string>());
 
         const watchHandler = ipcMainHandlers.get('workspace:watch');
@@ -513,8 +491,7 @@ describe('Workspace IPC Integration', () => {
             inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
             jobSchedulerService: mockJobSchedulerService,
-            databaseService: mockDatabaseService,
-            auditLogService: mockAuditLogService
+            databaseService: mockDatabaseService
         }, new Set<string>());
 
         const watchHandler = ipcMainHandlers.get('workspace:watch');
@@ -557,8 +534,7 @@ describe('Workspace IPC Integration', () => {
                 inlineSuggestionService: mockInlineSuggestionService,
                 codeIntelligenceService: mockCodeIntelligenceService,
                 jobSchedulerService: mockJobSchedulerService,
-                databaseService: mockDatabaseService,
-                auditLogService: mockAuditLogService
+                databaseService: mockDatabaseService
             }, new Set<string>());
 
             const watchHandler = ipcMainHandlers.get('workspace:watch');

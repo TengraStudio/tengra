@@ -20,6 +20,7 @@ import {
     resolveRuntimeProviderForLocalModel,
 } from '@main/services/llm/local-runtime.types';
 import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
+import { t } from '@main/utils/i18n.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 
 interface HFApiModel {
@@ -600,9 +601,9 @@ export class HuggingFaceService extends BaseService {
 
     getConversionPresets(): HFConversionPreset[] {
         return [
-            { id: 'balanced', quantization: 'Q4_K_M', description: 'Best default for quality/performance balance' },
+            { id: 'balanced', quantization: 'Q4_K_M', description: t('auto.bestDefaultForQualityperformanceBalance') },
             { id: 'quality', quantization: 'Q6_K', description: 'Higher quality, larger memory usage' },
-            { id: 'speed', quantization: 'Q5_K_M', description: 'Faster inference with strong quality' },
+            { id: 'speed', quantization: 'Q5_K_M', description: t('auto.fasterInferenceWithStrongQuality') },
             { id: 'tiny', quantization: 'Q8_0', description: 'Smallest footprint for constrained systems' }
         ];
     }
@@ -654,18 +655,18 @@ export class HuggingFaceService extends BaseService {
         }
 
         try {
-            onProgress({ stage: 'validate', percent: 10, message: 'Validating conversion environment...' });
+            onProgress({ stage: 'validate', percent: 10, message: t('auto.validatingConversionEnvironment') });
             
             appLogger.info('HuggingFaceService', `Starting conversion: ${options.sourcePath} -> ${options.outputPath} (${options.quantization})`);
             
             // Mocking the process for now to satisfy the IPC contract
-            onProgress({ stage: 'convert', percent: 30, message: 'Preparing conversion pipeline...' });
+            onProgress({ stage: 'convert', percent: 30, message: t('auto.preparingConversionPipeline') });
             await new Promise(r => setTimeout(r, 800));
             
             onProgress({ stage: 'quantize', percent: 60, message: `Setting up quantization for ${options.quantization}...` });
             await new Promise(r => setTimeout(r, 800));
             
-            onProgress({ stage: 'finalize', percent: 90, message: 'Finalizing model file...' });
+            onProgress({ stage: 'finalize', percent: 90, message: t('auto.finalizingModelFile') });
             await new Promise(r => setTimeout(r, 400));
 
             return { 

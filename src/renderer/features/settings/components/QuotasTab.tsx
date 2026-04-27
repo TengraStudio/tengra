@@ -8,10 +8,10 @@
  * (at your option) any later version.
  */
 
-import { Badge } from '@renderer/components/ui/badge';
-import { Activity, Layers, ShieldAlert } from 'lucide-react';
+import { IconActivity, IconLayersLinked, IconShieldExclamation } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
 
+import { Badge } from '@/components/ui/badge';
 import type { LinkedAccountInfo } from '@/electron';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -64,7 +64,7 @@ export const QuotasTab: React.FC<QuotasTabProps> = ({
             <div className="px-1">
                 <div className="mb-3 flex items-center gap-4">
                     <div className="rounded-2xl bg-primary/10 p-3 text-primary">
-                        <Layers className="w-7 h-7" />
+                        <IconLayersLinked className="w-7 h-7" />
                     </div>
                     <div>
                         <h3 className="text-2xl font-semibold text-foreground leading-none">
@@ -81,7 +81,7 @@ export const QuotasTab: React.FC<QuotasTabProps> = ({
                 <div className="rounded-3xl border border-destructive/30 bg-destructive/5 p-6 mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
                     <div className="flex items-start gap-4">
                         <div className="rounded-2xl bg-destructive/10 p-3 text-destructive">
-                            <ShieldAlert className="w-6 h-6" />
+                            <IconShieldExclamation className="w-6 h-6" />
                         </div>
                         <div className="space-y-2">
                             <h4 className="text-lg font-bold text-foreground">
@@ -98,7 +98,7 @@ export const QuotasTab: React.FC<QuotasTabProps> = ({
             <div className="rounded-3xl border border-border/20 bg-muted/5 p-5 sm:p-6">
                 <div className="mb-4 flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
-                        <Activity className="w-4 h-4 text-primary" />
+                        <IconActivity className="w-4 h-4 text-primary" />
                         <h4 className="typo-caption font-medium text-foreground">{t('statistics.connectedServices')}</h4>
                     </div>
                     <Badge variant="outline" className="h-6 w-fit border-border/20 px-2 typo-body text-muted-foreground">

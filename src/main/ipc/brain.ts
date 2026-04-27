@@ -9,7 +9,7 @@
  */
 
 /**
- * IPC handlers for Brain Service
+ * IPC handlers for IconBrain Service
  * User-focused memory system
  */
 
@@ -41,6 +41,6 @@ export function registerBrainIpcHandlers(getMainWindow: () => BrowserWindow | nu
 
     // Get brain stats
 
-    appLogger.debug('BrainIPC', 'Brain IPC handlers registered');
+    appLogger.debug('BrainIPC', 'IconBrain IPC handlers registered');
 }
 

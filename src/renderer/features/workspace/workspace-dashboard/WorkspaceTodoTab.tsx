@@ -18,62 +18,45 @@ import {
     useSensors,
 } from '@dnd-kit/core';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
-import { Badge } from '@renderer/components/ui/badge';
-import { Button } from '@renderer/components/ui/button';
-import { Card } from '@renderer/components/ui/card';
-import { Checkbox } from '@renderer/components/ui/checkbox';
+import { JsonValue } from '@shared/types/common';
+import { IconAlertCircle, IconBolt,IconBulb, IconCalendar as CalendarIcon, IconCircle, IconCircleCheck, IconClock, IconDots, IconEdit, IconFlag, IconHash, IconListCheck, IconPlus, IconSearch, IconSquareCheck, IconTrash } from '@tabler/icons-react';
+import { format } from 'date-fns';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     ConfirmationModal
-} from '@renderer/components/ui/ConfirmationModal';
+} from '@/components/ui/ConfirmationModal';
 import {
     Dialog,
     DialogContent,
     DialogDescription,
     DialogHeader,
     DialogTitle,
-} from '@renderer/components/ui/dialog';
+} from '@/components/ui/dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-} from '@renderer/components/ui/dropdown-menu';
-import { Input } from '@renderer/components/ui/input';
-import { Label } from '@renderer/components/ui/label';
-import { ScrollArea } from '@renderer/components/ui/scroll-area';
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@renderer/components/ui/select';
-import { Textarea } from '@renderer/components/ui/textarea';
-import { cn } from '@renderer/lib/utils';
-import { JsonValue } from '@shared/types/common';
-import { format } from 'date-fns';
-import {
-    AlertCircle,
-    Calendar as CalendarIcon,
-    CheckCircle2,
-    CheckSquare,
-    Circle,
-    Clock,
-    Edit3,
-    Flag,
-    Hash,
-    Lightbulb,
-    ListTodo,
-    MoreHorizontal,
-    Plus,
-    Search,
-    Trash2,
-    Zap,
-} from 'lucide-react';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 import { Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -106,18 +89,18 @@ interface WorkspaceTodoTabProps {
 }
 
 const CATEGORIES: { id: TaskStatus; label: string; icon: React.ElementType; color: string }[] = [
-    { id: 'idea', label: 'Ideas / Tasks', icon: Lightbulb, color: 'text-amber-500' },
-    { id: 'in_progress', label: 'In Progress', icon: Clock, color: 'text-blue-500' },
-    { id: 'approved', label: 'Approved', icon: CheckCircle2, color: 'text-emerald-500' },
-    { id: 'upcoming', label: 'Upcoming', icon: Circle, color: 'text-slate-500' },
-    { id: 'bug', label: 'Errors & Bugs', icon: AlertCircle, color: 'text-rose-500' },
+    { id: 'idea', label: 'Ideas / Tasks', icon: IconBulb, color: 'text-amber-500' },
+    { id: 'in_progress', label: 'In Progress', icon: IconClock, color: 'text-blue-500' },
+    { id: 'approved', label: 'Approved', icon: IconCircleCheck, color: 'text-emerald-500' },
+    { id: 'upcoming', label: 'Upcoming', icon: IconCircle, color: 'text-slate-500' },
+    { id: 'bug', label: 'Errors & Bugs', icon: IconAlertCircle, color: 'text-rose-500' },
 ];
 
 const PRIORITY_CONFIG: Record<TaskPriority, { icon: React.ElementType; color: string; label: string }> = {
-    low: { icon: Flag, color: 'text-slate-400', label: 'Low' },
-    medium: { icon: Flag, color: 'text-blue-400', label: 'Medium' },
-    high: { icon: Flag, color: 'text-amber-400', label: 'High' },
-    urgent: { icon: AlertCircle, color: 'text-rose-500', label: 'Urgent' },
+    low: { icon: IconFlag, color: 'text-slate-400', label: 'Low' },
+    medium: { icon: IconFlag, color: 'text-blue-400', label: 'Medium' },
+    high: { icon: IconFlag, color: 'text-amber-400', label: 'High' },
+    urgent: { icon: IconAlertCircle, color: 'text-rose-500', label: 'Urgent' },
 };
 
 // Draggable Task Card Component
@@ -170,17 +153,17 @@ const TaskCard = ({
                     <div className="flex flex-col gap-1.5 flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                             <priority.icon className={cn("w-3 h-3 shrink-0", priority.color)} />
-                            <span className={cn("typo-overline font-medium uppercase tracking-tight", priority.color)}>
+                            <span className={cn("typo-overline font-medium uppercase ", priority.color)}>
                                 {priority.label}
                             </span>
                             {task.estimation && (
                                 <Badge variant="outline" className="h-4 px-1.5 typo-overline border-border/10 bg-muted/20 text-muted-foreground/60 rounded-sm font-medium">
-                                    <Zap className="w-2.5 h-2.5 mr-1 text-primary/40" />
+                                    <IconBolt className="w-2.5 h-2.5 mr-1 text-primary/40" />
                                     {task.estimation}
                                 </Badge>
                             )}
                         </div>
-                        <h4 className="text-sm font-medium text-foreground leading-tight tracking-tight pr-4 break-words">
+                        <h4 className="text-sm font-medium text-foreground leading-tight pr-4 break-words">
                             {task.title}
                         </h4>
                     </div>
@@ -188,18 +171,18 @@ const TaskCard = ({
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-full hover:bg-muted">
-                                    <MoreHorizontal className="h-4 w-4 text-muted-foreground/60" />
+                                    <IconDots className="h-4 w-4 text-muted-foreground/60" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-40 border-border/40 backdrop-blur-xl">
-                                <DropdownMenuItem onClick={() => onEdit(task)} className="text-xs py-2">
-                                    <Edit3 className="mr-2 h-3.5 w-3.5" /> Edit Details
+                                <DropdownMenuItem onClick={() => onEdit(task)} className="text-sm py-2">
+                                    <IconEdit className="mr-2 h-3.5 w-3.5" /> Edit Details
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => onAddSubtask(task.id)} className="text-xs py-2">
-                                    <ListTodo className="mr-2 h-3.5 w-3.5" /> Add Subtask
+                                <DropdownMenuItem onClick={() => onAddSubtask(task.id)} className="text-sm py-2">
+                                    <IconListCheck className="mr-2 h-3.5 w-3.5" /> Add Subtask
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => onDelete(task.id)} className="text-xs py-2 text-destructive focus:text-destructive">
-                                    <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Task
+                                <DropdownMenuItem onClick={() => onDelete(task.id)} className="text-sm py-2 text-destructive focus:text-destructive">
+                                    <IconTrash className="mr-2 h-3.5 w-3.5" /> Delete Task
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -207,7 +190,7 @@ const TaskCard = ({
                 </div>
 
                 {task.description && (
-                    <p className="text-xs text-muted-foreground/60 line-clamp-2 leading-relaxed">
+                    <p className="text-sm text-muted-foreground/60 line-clamp-2 leading-relaxed">
                         {task.description}
                     </p>
                 )}
@@ -216,7 +199,7 @@ const TaskCard = ({
                     <div className="space-y-2 py-1">
                         <div className="flex items-center justify-between typo-overline text-muted-foreground/40 font-medium">
                             <span className="flex items-center gap-1.5">
-                                <CheckSquare className="w-3 h-3" />
+                                <IconSquareCheck className="w-3 h-3" />
                                 {completedSubtasks}/{task.subtasks.length}
                             </span>
                             <span>{progressPerc}%</span>
@@ -237,7 +220,7 @@ const TaskCard = ({
                                         className="h-3.5 w-3.5 rounded border-border/40 data-[state=checked]:bg-primary/40 data-[state=checked]:border-none"
                                     />
                                     <span className={cn(
-                                        "text-xs transition-colors cursor-default",
+                                        "text-sm transition-colors cursor-default",
                                         sub.completed ? "text-muted-foreground/20 line-through" : "text-muted-foreground/70"
                                     )}>
                                         {sub.title}
@@ -256,8 +239,8 @@ const TaskCard = ({
                         </div>
                     ) : <div />}
 
-                    <div className="flex items-center gap-1 typo-overline text-muted-foreground/20 font-medium opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest pl-2">
-                        <Hash className="w-2.5 h-2.5" />
+                    <div className="flex items-center gap-1 typo-overline text-muted-foreground/20 font-medium opacity-0 group-hover:opacity-100 transition-opacity uppercase pl-2">
+                        <IconHash className="w-2.5 h-2.5" />
                         {task.id.slice(0, 4)}
                     </div>
                 </div>
@@ -290,7 +273,7 @@ const TaskColumn = ({
         <div className="flex flex-col w-80 shrink-0">
             <div className="flex items-center gap-2.5 mb-5 px-1.5">
                 <category.icon className={cn("w-4 h-4", category.color)} />
-                <h3 className="text-sm font-semibold text-foreground/80 tracking-tight pt-0.5">
+                <h3 className="text-sm font-semibold text-foreground/80 pt-0.5">
                     {category.label}
                 </h3>
                 <Badge variant="secondary" className="ml-auto bg-muted/40 text-muted-foreground/50 border-none font-medium typo-overline px-2 h-5 rounded-md">
@@ -319,7 +302,7 @@ const TaskColumn = ({
                 {tasks.length === 0 && !isOver && (
                     <div className="h-full flex flex-col items-center justify-center py-24 grayscale opacity-20 transition-opacity hover:opacity-30">
                         <category.icon className="w-12 h-12 mb-4" />
-                        <span className="typo-overline font-medium tracking-200 uppercase">Empty</span>
+                        <span className="typo-overline font-medium uppercase">Empty</span>
                     </div>
                 )}
             </div>
@@ -550,8 +533,8 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
     if (loading) {
         return (
             <div className="flex h-full items-center justify-center p-12 text-muted-foreground/30">
-                <Clock className="w-5 h-5 animate-spin mr-3" />
-                <span className="text-xs font-semibold tracking-wider uppercase tracking-widest">Board Sync...</span>
+                <IconClock className="w-5 h-5 animate-spin mr-3" />
+                <span className="text-sm font-semibold uppercase ">Board Sync...</span>
             </div>
         );
     }
@@ -563,18 +546,18 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
                 <div className="flex items-center gap-8">
                     <div className="flex items-center gap-4">
                         <div className="p-2 rounded-xl bg-primary/5 border border-primary/10 shadow-sm">
-                            <CheckSquare className="w-5 h-5 text-primary/60" />
+                            <IconSquareCheck className="w-5 h-5 text-primary/60" />
                         </div>
                         <div className="flex flex-col">
-                            <h2 className="text-sm font-semibold tracking-tight text-foreground/80">Project Workspace</h2>
+                            <h2 className="text-sm font-semibold text-foreground/80">Project Workspace</h2>
                             <div className="flex items-center gap-3 mt-0.5">
-                                <span className="typo-overline text-muted-foreground/40 font-medium uppercase tracking-widest">{stats.total} Tasks</span>
+                                <span className="typo-overline text-muted-foreground/40 font-medium uppercase ">{stats.total} Tasks</span>
                                 <div className="w-1 h-1 rounded-full bg-border/40" />
-                                <span className="typo-overline text-emerald-500/50 font-medium uppercase tracking-widest">{stats.completed} Done</span>
+                                <span className="typo-overline text-emerald-500/50 font-medium uppercase ">{stats.completed} Done</span>
                                 {stats.bugs > 0 && (
                                     <>
                                         <div className="w-1 h-1 rounded-full bg-border/40" />
-                                        <span className="typo-overline text-rose-500/50 font-medium uppercase tracking-widest">{stats.bugs} Bugs</span>
+                                        <span className="typo-overline text-rose-500/50 font-medium uppercase ">{stats.bugs} Bugs</span>
                                     </>
                                 )}
                             </div>
@@ -582,21 +565,21 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
                     </div>
                     <div className="h-6 w-px bg-border/20 mx-1" />
                     <div className="relative group">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/20 group-focus-within:text-primary/40 transition-colors" />
+                        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/20 group-focus-within:text-primary/40 transition-colors" />
                         <Input
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
                             placeholder={t('workspaceTodo.filterBoardPlaceholder')}
-                            className="h-9 w-64 pl-9 pr-4 rounded-xl border-border/10 bg-background/20 text-xs focus-visible:ring-1 focus-visible:ring-primary/20 shadow-sm"
+                            className="h-9 w-64 pl-9 pr-4 rounded-xl border-border/10 bg-background/20 text-sm focus-visible:ring-1 focus-visible:ring-primary/20 shadow-sm"
                         />
                     </div>
                 </div>
 
                 <Button
                     onClick={handleOpenCreateModal}
-                    className="h-9 px-6 rounded-xl bg-primary/80 text-primary-foreground text-xs font-semibold hover:bg-primary shadow-lg shadow-primary/10 transition-all active:scale-95"
+                    className="h-9 px-6 rounded-xl bg-primary/80 text-primary-foreground text-sm font-semibold hover:bg-primary shadow-lg shadow-primary/10 transition-all active:scale-95"
                 >
-                    <Plus className="w-4 h-4 mr-2" />
+                    <IconPlus className="w-4 h-4 mr-2" />
                     Create Task
                 </Button>
             </div>
@@ -645,14 +628,14 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
                             <DialogTitle className="text-lg font-semibold text-foreground/80">
                                 {editingTask ? 'Edit Task' : 'Create New Task'}
                             </DialogTitle>
-                            <DialogDescription className="text-xs text-muted-foreground/50">
+                            <DialogDescription className="text-sm text-muted-foreground/50">
                                 Enter the basic details to finalize your task.
                             </DialogDescription>
                         </DialogHeader>
 
                         <div className="space-y-5">
                             <div className="grid gap-2">
-                                <Label htmlFor="title" className="text-xs font-medium text-muted-foreground/70">Task Title</Label>
+                                <Label htmlFor="title" className="text-sm font-medium text-muted-foreground/70">Task Title</Label>
                                 <Input
                                     id="title"
                                     placeholder={t('workspaceTodo.taskOverviewPlaceholder')}
@@ -663,7 +646,7 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="desc" className="text-xs font-medium text-muted-foreground/70">Description</Label>
+                                <Label htmlFor="desc" className="text-sm font-medium text-muted-foreground/70">Description</Label>
                                 <Textarea
                                     id="desc"
                                     placeholder={t('workspaceTodo.taskContextPlaceholder')}
@@ -675,41 +658,41 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                    <Label className="text-xs font-medium text-muted-foreground/70">Priority</Label>
+                                    <Label className="text-sm font-medium text-muted-foreground/70">Priority</Label>
                                     <Select
                                         value={formData.priority}
                                         onValueChange={(val: TaskPriority) => setFormData(prev => ({ ...prev, priority: val }))}
                                     >
-                                        <SelectTrigger className="h-10 border-border/20 bg-background/40 focus:ring-primary/20 text-xs">
+                                        <SelectTrigger className="h-10 border-border/20 bg-background/40 focus:ring-primary/20 text-sm">
                                             <SelectValue placeholder={t('workspaceTodo.selectPriority')} />
                                         </SelectTrigger>
                                         <SelectContent className="border-border/40 backdrop-blur-xl bg-background/95">
-                                            <SelectItem value="low" className="text-xs">Low</SelectItem>
-                                            <SelectItem value="medium" className="text-xs">Medium</SelectItem>
-                                            <SelectItem value="high" className="text-xs">High</SelectItem>
-                                            <SelectItem value="urgent" className="text-xs text-rose-500 font-medium">Urgent</SelectItem>
+                                            <SelectItem value="low" className="text-sm">Low</SelectItem>
+                                            <SelectItem value="medium" className="text-sm">Medium</SelectItem>
+                                            <SelectItem value="high" className="text-sm">High</SelectItem>
+                                            <SelectItem value="urgent" className="text-sm text-rose-500 font-medium">Urgent</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label className="text-xs font-medium text-muted-foreground/70">Estimate</Label>
+                                    <Label className="text-sm font-medium text-muted-foreground/70">Estimate</Label>
                                     <Input
                                         placeholder="e.g. 2h, 5"
                                         value={formData.estimation}
                                         onChange={e => setFormData(prev => ({ ...prev, estimation: e.target.value }))}
-                                        className="h-10 border-border/20 bg-background/40 focus-visible:ring-1 focus-visible:ring-primary/20 text-xs"
+                                        className="h-10 border-border/20 bg-background/40 focus-visible:ring-1 focus-visible:ring-primary/20 text-sm"
                                     />
                                 </div>
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="deadline" className="text-xs font-medium text-muted-foreground/70">Deadline</Label>
+                                <Label htmlFor="deadline" className="text-sm font-medium text-muted-foreground/70">Deadline</Label>
                                 <Input
                                     id="deadline"
                                     type="date"
                                     value={formData.deadline}
                                     onChange={e => setFormData(prev => ({ ...prev, deadline: e.target.value }))}
-                                    className="h-10 border-border/20 bg-background/40 focus-visible:ring-1 focus-visible:ring-primary/20 text-xs"
+                                    className="h-10 border-border/20 bg-background/40 focus-visible:ring-1 focus-visible:ring-primary/20 text-sm"
                                 />
                             </div>
                         </div>
@@ -719,14 +702,14 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
                         <Button
                             variant="ghost"
                             onClick={() => setIsModalOpen(false)}
-                            className="text-xs text-muted-foreground/50 hover:bg-transparent"
+                            className="text-sm text-muted-foreground/50 hover:bg-transparent"
                         >
                             Cancel
                         </Button>
                         <Button
                             onClick={handleSaveTask}
                             disabled={!formData.title.trim()}
-                            className="h-10 px-8 bg-primary/80 text-primary-foreground text-xs font-semibold hover:bg-primary shadow-lg shadow-primary/10 transition-all rounded-lg"
+                            className="h-10 px-8 bg-primary/80 text-primary-foreground text-sm font-semibold hover:bg-primary shadow-lg shadow-primary/10 transition-all rounded-lg"
                         >
                             {editingTask ? 'Apply Changes' : 'Create Task'}
                         </Button>
@@ -750,13 +733,13 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
                             <DialogTitle className="text-lg font-semibold text-foreground/80">
                                 Add Subtask
                             </DialogTitle>
-                            <DialogDescription className="text-xs text-muted-foreground/50">
+                            <DialogDescription className="text-sm text-muted-foreground/50">
                                 Enter a title for the new subtask.
                             </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="subtaskTitle" className="text-xs font-medium text-muted-foreground/70">Subtask Title</Label>
+                                <Label htmlFor="subtaskTitle" className="text-sm font-medium text-muted-foreground/70">Subtask Title</Label>
                                 <Input
                                     id="subtaskTitle"
                                     autoFocus
@@ -776,14 +759,14 @@ export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, o
                         <Button
                             variant="ghost"
                             onClick={() => setIsSubtaskPromptOpen(false)}
-                            className="text-xs text-muted-foreground/50 hover:bg-transparent"
+                            className="text-sm text-muted-foreground/50 hover:bg-transparent"
                         >
                             Cancel
                         </Button>
                         <Button
                             onClick={confirmAddSubtask}
                             disabled={!subtaskTitle.trim()}
-                            className="h-10 px-8 bg-primary/80 text-primary-foreground text-xs font-semibold hover:bg-primary shadow-lg shadow-primary/10 transition-all rounded-lg"
+                            className="h-10 px-8 bg-primary/80 text-primary-foreground text-sm font-semibold hover:bg-primary shadow-lg shadow-primary/10 transition-all rounded-lg"
                         >
                             Add
                         </Button>

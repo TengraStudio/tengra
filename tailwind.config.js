@@ -27,11 +27,6 @@ module.exports = {
                 mono: ['var(--font-mono)', 'Cascadia Mono', 'Cascadia Code', 'Consolas', 'Courier New', 'ui-monospace', 'monospace'],
             },
             fontSize: {
-                micro: ['var(--text-8)', { lineHeight: '1.2' }], 
-                10: ['var(--text-10)', { lineHeight: '1.2' }],
-                xxxs: ['var(--text-xxxs)', { lineHeight: '1.2' }],
-                xxs: ['var(--text-xxs)', { lineHeight: '1.2' }],
-                xs: ['var(--text-xs)', { lineHeight: '1.35' }],
                 sm: ['var(--text-sm)', { lineHeight: '1.55' }],
                 base: ['var(--text-base)', { lineHeight: '1.68' }],
                 lg: ['var(--text-lg)', { lineHeight: '1.68' }],

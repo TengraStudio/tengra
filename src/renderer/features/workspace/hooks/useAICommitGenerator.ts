@@ -8,10 +8,11 @@
  * (at your option) any later version.
  */
 
-import { fetchModels, getSelectableProviderId } from '@renderer/features/models/utils/model-fetcher';
-import { appLogger } from '@renderer/utils/renderer-logger';
-import { ModelInfo } from '@/types';
 import { useCallback, useState } from 'react';
+
+import { fetchModels, getSelectableProviderId } from '@/features/models/utils/model-fetcher';
+import { ModelInfo } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface AIProviderInfo {
     provider: string;

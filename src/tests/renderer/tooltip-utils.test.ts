@@ -8,12 +8,13 @@
  * (at your option) any later version.
  */
 
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
 import {
     clampToViewport,
     resolveTooltipPosition,
     type TooltipPosition,
-} from '@renderer/components/ui/tooltip-utils';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+} from '@/components/ui/tooltip-utils';
 
 function setViewport(width: number, height: number): void {
     Object.defineProperty(window, 'innerWidth', {

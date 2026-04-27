@@ -1,5 +1,5 @@
 use crate::tools::ToolDispatchResponse;
-/**
+/*
  * Tengra - Your Personal AI Assistant
  * Copyright (c) 2026 TengraStudio
  *
@@ -11,7 +11,7 @@ use crate::tools::ToolDispatchResponse;
 use serde_json::{json, Value};
 use std::process::Command;
 
-pub async fn handle_action(action: &str, args: Value) -> ToolDispatchResponse {
+pub async fn handle_action(action: &str, _args: Value) -> ToolDispatchResponse {
     match action {
         "listContainers" => list_containers().await,
         "stats" => stats().await,

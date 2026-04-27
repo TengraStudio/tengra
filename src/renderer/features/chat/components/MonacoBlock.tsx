@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Check, Copy } from 'lucide-react';
+import { IconCheck, IconCopy } from '@tabler/icons-react';
 import { Highlight, themes } from 'prism-react-renderer';
 import React, { memo, useState } from 'react';
 
@@ -16,7 +16,7 @@ import { Language, useTranslation } from '@/i18n';
 import { normalizeLanguage } from '@/utils/language-map';
 
 /* Batch-02: Extracted Long Classes */
-const C_MONACOBLOCK_1 = "text-xxs text-muted-foreground font-bold opacity-60 group-hover/code:opacity-100 transition-opacity flex items-center gap-1.5";
+const C_MONACOBLOCK_1 = "text-sm text-muted-foreground font-bold opacity-60 group-hover/code:opacity-100 transition-opacity flex items-center gap-1.5";
 
 
 const PRISM_LANGUAGE_ALIASES: Record<string, string> = {
@@ -156,9 +156,9 @@ const BlockHeader: React.FC<{
                 className="p-1.5 hover:bg-muted/40 rounded-md transition-colors text-muted-foreground hover:text-foreground relative"
             >
                 {copied ? (
-                    <Check className="w-3.5 h-3.5 text-success" />
+                    <IconCheck className="w-3.5 h-3.5 text-success" />
                 ) : (
-                    <Copy className="w-3.5 h-3.5" />
+                    <IconCopy className="w-3.5 h-3.5" />
                 )}
             </button>
         </div>

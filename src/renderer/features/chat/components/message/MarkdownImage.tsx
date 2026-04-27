@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Code2 } from 'lucide-react';
+import { IconCode } from '@tabler/icons-react';
 import { memo } from 'react';
 
 /* Batch-02: Extracted Long Classes */
@@ -60,7 +60,7 @@ export const MarkdownImage = memo(
                     }}
                     className={C_MARKDOWNIMAGE_2}
                 >
-                    <Code2 className="w-3.5 h-3.5" />
+                    <IconCode className="w-3.5 h-3.5" />
                     {t('messageBubble.convertToCode')}
                 </button>
             )}

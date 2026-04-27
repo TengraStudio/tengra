@@ -9,6 +9,7 @@
  */
 
 import { BaseService } from '@main/services/base.service';
+import { t } from '@main/utils/i18n.util';
 import { RuntimeManifestSchema } from '@shared/schemas/runtime-manifest.schema';
 import { JsonObject } from '@shared/types/common';
 import {
@@ -29,7 +30,7 @@ export class RuntimeManifestService extends BaseService {
             kind: 'service',
             source: 'external',
             requirement: 'optional',
-            description: 'Local LLM runtime for offline inference.',
+            description: t('auto.localLlmRuntimeForOfflineInference'),
             installUrl: 'https://ollama.com/download',
             supportedPlatforms: ['win32', 'darwin', 'linux'],
             supportedArches: ['x64', 'arm64'],
@@ -42,7 +43,7 @@ export class RuntimeManifestService extends BaseService {
             kind: 'runtime',
             source: 'external',
             requirement: 'optional',
-            description: 'Local image generation runtime.',
+            description: t('auto.localImageGenerationRuntime'),
             supportedPlatforms: ['win32', 'darwin', 'linux'],
             supportedArches: ['x64', 'arm64'],
             targets: [],
@@ -80,7 +81,7 @@ export class RuntimeManifestService extends BaseService {
             kind: 'tool',
             source: 'external',
             requirement: 'optional',
-            description: 'Productivity-focused terminal experience.',
+            description: t('auto.productivityfocusedTerminalExperience'),
             installUrl: 'https://www.warp.dev/download',
             supportedPlatforms: ['win32', 'darwin', 'linux'],
             supportedArches: ['x64', 'arm64'],

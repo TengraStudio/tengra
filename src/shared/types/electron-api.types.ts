@@ -139,6 +139,7 @@ export interface ElectronAPI {
     // Window controls
     minimize: () => void;
     maximize: () => void;
+    fullscreen: () => void;
     close: () => void;
     resizeWindow: (resolution: string) => void;
     updateWindow: (patch: Partial<AppSettings['window']>) => Promise<void>;

@@ -8,11 +8,11 @@
  * (at your option) any later version.
  */
 
-import { Plus } from 'lucide-react';
+import logoBlack from '@assets/tengra_black.png';
+import logoWhite from '@assets/tengra_white.png';
+import { IconPlus } from '@tabler/icons-react';
 import React, { useMemo } from 'react';
 
-import logoBlack from '@/assets/tengra_black.png';
-import logoWhite from '@/assets/tengra_white.png';
 import { UI_PRIMITIVES } from '@/constants/ui-primitives';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/i18n';
@@ -65,7 +65,7 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
                     isCollapsed && 'px-0'
                 )}
             >
-                <Plus className="w-4 h-4 stroke-2" />
+                <IconPlus className="w-4 h-4 stroke-2" />
                 {!isCollapsed && (<>{newChatLabel}</>)}
             </button>
         </div>

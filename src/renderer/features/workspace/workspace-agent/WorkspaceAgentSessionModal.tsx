@@ -9,15 +9,7 @@
  */
 
 import type { WorkspaceAgentSessionSummary } from '@shared/types/workspace-agent-session';
-import {
-    Archive,
-    ArchiveRestore,
-    Check,
-    MessageSquareDot,
-    PencilLine,
-    Sparkles,
-    X,
-} from 'lucide-react';
+import { IconArchive, IconArchiveOff, IconCheck, IconMessageDots, IconPencil, IconSparkles, IconX } from '@tabler/icons-react';
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -120,7 +112,7 @@ export const WorkspaceAgentSessionModal: React.FC<WorkspaceAgentSessionModalProp
                                                     onClick={() => void submitRename()}
                                                     title={t('common.save')}
                                                 >
-                                                    <Check className="h-4 w-4" />
+                                                    <IconCheck className="h-4 w-4" />
                                                 </Button>
                                                 <Button
                                                     variant="ghost"
@@ -128,7 +120,7 @@ export const WorkspaceAgentSessionModal: React.FC<WorkspaceAgentSessionModalProp
                                                     onClick={stopEditing}
                                                     title={t('common.cancel')}
                                                 >
-                                                    <X className="h-4 w-4" />
+                                                    <IconX className="h-4 w-4" />
                                                 </Button>
                                             </div>
                                         </div>
@@ -160,7 +152,7 @@ export const WorkspaceAgentSessionModal: React.FC<WorkspaceAgentSessionModalProp
                                         }
                                         title={t('common.edit')}
                                     >
-                                        <PencilLine className="h-4 w-4" />
+                                        <IconPencil className="h-4 w-4" />
                                     </Button>
                                     <Button
                                         variant="ghost"
@@ -169,21 +161,21 @@ export const WorkspaceAgentSessionModal: React.FC<WorkspaceAgentSessionModalProp
                                         title={session.archived ? t('common.unarchive') : t('common.delete')}
                                     >
                                         {session.archived ? (
-                                            <ArchiveRestore className="h-4 w-4" />
+                                            <IconArchiveOff className="h-4 w-4" />
                                         ) : (
-                                            <Archive className="h-4 w-4" />
+                                            <IconArchive className="h-4 w-4" />
                                         )}
                                     </Button>
                                 </div>
                             </div>
 
-                            <div className="mt-3 flex flex-wrap items-center gap-2 text-xxs text-muted-foreground">
+                            <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                                 <span className="inline-flex items-center gap-1">
-                                    <Sparkles className="h-3.5 w-3.5" />
+                                    <IconSparkles className="h-3.5 w-3.5" />
                                     {session.strategy}
                                 </span>
                                 <span className="inline-flex items-center gap-1">
-                                    <MessageSquareDot className="h-3.5 w-3.5" />
+                                    <IconMessageDots className="h-3.5 w-3.5" />
                                     {session.messageCount}
                                 </span>
                                 <span>{formatUpdatedAt(session.updatedAt)}</span>

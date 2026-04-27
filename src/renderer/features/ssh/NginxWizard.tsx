@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Globe, Loader2, Play, Save, Server, ShieldCheck } from 'lucide-react';
+import { IconDeviceFloppy, IconGlobe, IconLoader2, IconPlayerPlay, IconServer, IconShieldCheck } from '@tabler/icons-react';
 import React, { useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
@@ -88,7 +88,7 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
             <div className="max-w-2xl mx-auto w-full space-y-6">
                 <div className="flex items-center gap-3 border-b border-border pb-4">
                     <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                        <Server className="w-6 h-6" />
+                        <IconServer className="w-6 h-6" />
                     </div>
                     <div>
                         <h2 className="text-xl font-semibold">{t('ssh.nginx.title')}</h2>
@@ -100,7 +100,7 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
                     <div className="space-y-2">
                         <label className="typo-caption font-bold text-muted-foreground">{t('ssh.nginx.domain')}</label>
                         <div className="relative">
-                            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <IconGlobe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <input
                                 value={domain}
                                 onChange={(e) => setDomain(e.target.value)}
@@ -126,7 +126,7 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
                         onClick={generateConfig}
                         className="typo-caption font-medium text-primary hover:underline flex items-center gap-1"
                     >
-                        <Play className="w-3 h-3" />
+                        <IconPlayerPlay className="w-3 h-3" />
                         {t('ssh.nginx.preview')}
                     </button>
                     <button
@@ -134,7 +134,7 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
                         disabled={isGenerating || !domain}
                         className={C_NGINXWIZARD_1}
                     >
-                        {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        {isGenerating ? <IconLoader2 className="w-4 h-4 animate-spin" /> : <IconDeviceFloppy className="w-4 h-4" />}
                         {t('ssh.nginx.apply')}
                     </button>
                 </div>
@@ -146,7 +146,7 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
                         status.type === 'error' && 'bg-destructive/10 border-destructive/20 text-destructive',
                         status.type === 'info' && 'bg-primary/10 border-primary/20 text-primary'
                     )}>
-                        {status.type === 'success' && <ShieldCheck className="w-5 h-5 flex-shrink-0" />}
+                        {status.type === 'success' && <IconShieldCheck className="w-5 h-5 flex-shrink-0" />}
                         <p>{status.message}</p>
                     </div>
                 )}

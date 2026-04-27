@@ -8,15 +8,16 @@
  * (at your option) any later version.
  */
 
+import React from 'react';
+
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@renderer/components/ui/select';
-import { useTranslation } from '@renderer/i18n';
-import React from 'react';
+} from '@/components/ui/select';
+import { useTranslation } from '@/i18n';
 
 type SandboxLanguage = 'javascript' | 'typescript' | 'python' | 'shell';
 

@@ -173,23 +173,18 @@ export class FileSystemService {
             const absolutePath = path.resolve(expandedPath);
 
             const stats = await fs.stat(absolutePath);
-            if (stats.size > 10 * 1024 * 1024) {
-                return { success: false, error: `File too large (max 10MB): ${filePath}` };
+            if (stats.size > 50 * 1024 * 1024) {
+                return { success: false, error: `File too large (max 50MB): ${filePath}` };
             }
 
-            if (await this.isBinaryFile(absolutePath)) {
-                return { success: false, error: `Cannot read binary file as text: ${filePath}` };
-            }
-
-            // Read the file after validation
             const content = await fs.readFile(absolutePath);
 
             // UTF-16 LE BOM detection (common on Windows/PowerShell)
             if (content.length >= 2 && content[0] === 0xFF && content[1] === 0xFE) {
-                return { success: true, data: content.toString('utf16le') };
+                return { success: true, data: content.toString('utf16le').replace(/^\uFEFF/, '') };
             }
 
-            return { success: true, data: content.toString('utf-8') };
+            return { success: true, data: content.toString('utf-8').split('\0').join('') };
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };
         }

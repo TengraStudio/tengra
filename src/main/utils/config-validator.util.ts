@@ -13,6 +13,7 @@
  * Validates application settings with type safety
  */
 
+import { t } from '@main/utils/i18n.util';
 import { JsonObject, JsonValue } from '@shared/types/common';
 
 export type ValidationResult = {
@@ -39,54 +40,54 @@ type Validator<T = JsonValue | undefined> = (value: T, path: string) => Validati
 export const validators = {
     required: <T extends JsonValue | undefined>(value: T, path: string): ValidationError[] => {
         if (value === undefined) {
-            return [{ path, message: 'Value is required' }];
+            return [{ path, message: t('auto.valueIsRequired') }];
         }
         return [];
     },
 
     string: (value: JsonValue | undefined, path: string): ValidationError[] => {
         if (value !== undefined && typeof value !== 'string') {
-            return [{ path, message: 'Must be a string', value }];
+            return [{ path, message: t('auto.mustBeAString'), value }];
         }
         return [];
     },
 
     number: (value: JsonValue | undefined, path: string): ValidationError[] => {
         if (value !== undefined && typeof value !== 'number') {
-            return [{ path, message: 'Must be a number', value }];
+            return [{ path, message: t('auto.mustBeANumber'), value }];
         }
         return [];
     },
 
     boolean: (value: JsonValue | undefined, path: string): ValidationError[] => {
         if (value !== undefined && typeof value !== 'boolean') {
-            return [{ path, message: 'Must be a boolean', value }];
+            return [{ path, message: t('auto.mustBeABoolean'), value }];
         }
         return [];
     },
 
     url: (value: JsonValue | undefined, path: string): ValidationError[] => {
         if (value === undefined || value === '') { return []; }
-        if (typeof value !== 'string') { return [{ path, message: 'Must be a string', value }]; }
+        if (typeof value !== 'string') { return [{ path, message: t('auto.mustBeAString'), value }]; }
         try {
             new URL(value);
             return [];
         } catch {
-            return [{ path, message: 'Must be a valid URL', value }];
+            return [{ path, message: t('auto.mustBeAValidUrl'), value }];
         }
     },
 
     port: (value: JsonValue | undefined, path: string): ValidationError[] => {
         if (value === undefined) { return []; }
         if (typeof value !== 'number' || value < 1 || value > 65535) {
-            return [{ path, message: 'Must be a valid port (1-65535)', value }];
+            return [{ path, message: t('auto.mustBeAValidPort165535'), value }];
         }
         return [];
     },
 
     email: (value: JsonValue | undefined, path: string): ValidationError[] => {
         if (value === undefined || value === '') { return []; }
-        if (typeof value !== 'string') { return [{ path, message: 'Must be a string', value }]; }
+        if (typeof value !== 'string') { return [{ path, message: t('auto.mustBeAString'), value }]; }
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(value as string)) {
             return [{ path, message: 'Must be a valid email address', value }];
@@ -186,7 +187,7 @@ function validateSchemaFields(config: JsonObject, schema: Schema, basePath: stri
  */
 function validateField(value: JsonValue | undefined, field: SchemaField, path: string): { errors: ValidationError[], warnings: ValidationWarning[] } {
     if (field.required && (value === undefined || value === null)) {
-        return { errors: [{ path, message: 'This field is required' }], warnings: [] };
+        return { errors: [{ path, message: t('auto.thisFieldIsRequired') }], warnings: [] };
     }
 
     if (value === undefined) {
@@ -239,7 +240,7 @@ function validateUnknownKeys(config: JsonObject, schema: Schema, basePath: strin
         if (!(key in schema)) {
             warnings.push({
                 path,
-                message: 'Unknown configuration key',
+                message: t('auto.unknownConfigurationKey'),
                 suggestion: 'This key may be deprecated or misspelled'
             });
         }
@@ -261,12 +262,12 @@ function validateType(value: JsonValue, type: SchemaField['type'], path: string)
             return validators.boolean(value, path);
         case 'object':
             if (typeof value !== 'object' || Array.isArray(value) || value === null) {
-                return [{ path, message: 'Must be an object', value }];
+                return [{ path, message: t('auto.mustBeAnObject'), value }];
             }
             return [];
         case 'array':
             if (!Array.isArray(value)) {
-                return [{ path, message: 'Must be an array', value }];
+                return [{ path, message: t('auto.mustBeAnArray'), value }];
             }
             return [];
         default:

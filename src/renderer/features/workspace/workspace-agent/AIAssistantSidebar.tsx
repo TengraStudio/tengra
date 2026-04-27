@@ -8,17 +8,17 @@
  * (at your option) any later version.
  */
 
-import { useAuth } from '@renderer/context/AuthContext';
-import { useWorkspaceAgentSessions } from '@renderer/features/workspace/hooks/useWorkspaceAgentSessions';
-import { WorkspaceAgentComposer } from '@renderer/features/workspace/workspace-agent/WorkspaceAgentComposer';
-import { WorkspaceAgentConversation } from '@renderer/features/workspace/workspace-agent/WorkspaceAgentConversation';
-import { WorkspaceAgentCouncilBoard } from '@renderer/features/workspace/workspace-agent/WorkspaceAgentCouncilBoard';
-import { WorkspaceAgentPanelHeader } from '@renderer/features/workspace/workspace-agent/WorkspaceAgentPanelHeader';
-import { WorkspaceAgentSessionModal } from '@renderer/features/workspace/workspace-agent/WorkspaceAgentSessionModal';
-import { motion } from '@renderer/lib/framer-motion-compat';
 import React from 'react';
 
+import { useAuth } from '@/context/AuthContext';
+import { useWorkspaceAgentSessions } from '@/features/workspace/hooks/useWorkspaceAgentSessions';
+import { WorkspaceAgentComposer } from '@/features/workspace/workspace-agent/WorkspaceAgentComposer';
+import { WorkspaceAgentConversation } from '@/features/workspace/workspace-agent/WorkspaceAgentConversation';
+import { WorkspaceAgentCouncilBoard } from '@/features/workspace/workspace-agent/WorkspaceAgentCouncilBoard';
+import { WorkspaceAgentPanelHeader } from '@/features/workspace/workspace-agent/WorkspaceAgentPanelHeader';
+import { WorkspaceAgentSessionModal } from '@/features/workspace/workspace-agent/WorkspaceAgentSessionModal';
 import { Language } from '@/i18n';
+import { motion } from '@/lib/framer-motion-compat';
 import type { Workspace } from '@/types';
 
 interface AIAssistantSidebarProps {

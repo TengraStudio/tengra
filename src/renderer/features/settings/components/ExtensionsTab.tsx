@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { RefreshCw } from 'lucide-react';
+import { IconRefresh } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react'; 
 
 import { Button } from '@/components/ui/button';
@@ -51,7 +51,7 @@ export const ExtensionsTab: React.FC<ExtensionsTabProps> = ({
                     onClick={() => void marketplaceStore.checkLiveUpdates()}
                     className="h-8 gap-2"
                 >
-                    <RefreshCw className="h-4 w-4" /> 
+                    <IconRefresh className="h-4 w-4" /> 
                 </Button>
             </div>
 

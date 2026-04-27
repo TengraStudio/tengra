@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Folder as FolderIcon, FolderOpen, FolderPlus, type LucideIcon, MessageSquare, Pin as PinIcon, Search, Trash2 } from 'lucide-react';
+import { IconFolder as FolderIcon, IconFolderOpen, IconFolderPlus, IconMessage, IconPin as PinIcon, IconSearch, IconTrash, IconTrash as Trash2 } from '@tabler/icons-react';
 import React, { useCallback, useMemo } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
@@ -35,7 +35,7 @@ interface SidebarChatListProps {
 }
 
 type SidebarListItem =
-    | { type: 'header', label: string, icon?: LucideIcon, action?: { label: string, icon: LucideIcon, onClick: () => void } }
+    | { type: 'header', label: string, icon?: any, action?: { label: string, icon: any, onClick: () => void } }
     | { type: 'chat', chat: Chat, isIndented?: boolean }
     | { type: 'folder', folder: Folder, isExpanded: boolean, count: number }
     | { type: 'empty-state', label: string }
@@ -80,7 +80,7 @@ export const SidebarChatList = React.memo(
                     items.push({
                         type: 'header',
                         label: t('sidebar.folders'),
-                        action: { label: t('sidebar.newFolder'), icon: FolderPlus, onClick: () => createFolder(t('sidebar.newFolder')) }
+                        action: { label: t('sidebar.newFolder'), icon: IconFolderPlus, onClick: () => createFolder(t('sidebar.newFolder')) }
                     });
                 }
 
@@ -137,7 +137,7 @@ export const SidebarChatList = React.memo(
                 case 'header':
                     return (
                         <div className="flex items-center justify-between px-2 py-1 mt-2 first:mt-0">
-                            <p className="text-xxs font-semibold text-muted-foreground/50 flex items-center gap-1 uppercase tracking-wider">
+                            <p className="text-sm font-semibold text-muted-foreground/50 flex items-center gap-1 uppercase ">
                                 {item.icon && <item.icon className="w-2.5 h-2.5" />}
                                 {item.label}
                             </p>
@@ -161,7 +161,7 @@ export const SidebarChatList = React.memo(
                 case 'folder':
                     return (
                         <SidebarItem
-                            icon={item.isExpanded ? FolderOpen : FolderIcon}
+                            icon={item.isExpanded ? IconFolderOpen : FolderIcon}
                             label={item.folder.name}
                             onClick={() => toggleFolder(item.folder.id)}
                             badge={item.count}
@@ -172,7 +172,7 @@ export const SidebarChatList = React.memo(
                                     onClick={e => { e.stopPropagation(); deleteFolder(item.folder.id); }}
                                     className="p-1 hover:bg-destructive/10 hover:text-destructive rounded text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
-                                    <Trash2 className="w-3 h-3" />
+                                    <IconTrash className="w-3 h-3" />
                                 </button>
                             )}
                         />
@@ -180,8 +180,8 @@ export const SidebarChatList = React.memo(
                 case 'empty-state':
                     return (
                         <div className="flex flex-col items-center justify-center py-4 px-2 text-muted-foreground/30 overflow-hidden w-full">
-                            {item.label === t('sidebar.noChats') && <MessageSquare className="w-6 h-6 mb-2 opacity-20" />}
-                            <p className="text-center typo-overline italic font-medium truncate w-full">{item.label}</p>
+                            {item.label === t('sidebar.noChats') && <IconMessage className="w-6 h-6 mb-2 opacity-20" />}
+                            <p className="text-center typo-overline font-medium truncate w-full">{item.label}</p>
                         </div>
                     );
                 case 'divider':
@@ -197,13 +197,13 @@ export const SidebarChatList = React.memo(
                 {!isCollapsed && (
                     <div className="px-3 pb-2 shrink-0">
                         <div className="relative">
-                            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
+                            <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
                             <input
                                 type="text"
                                 placeholder={t('sidebar.searchChats')}
                                 value={searchQuery}
                                 onChange={onSearchChange}
-                                className="w-full rounded-lg border border-border/40 bg-muted/30 py-2 pl-8 pr-3 text-xs font-medium outline-none transition-colors focus:border-primary/50"
+                                className="w-full rounded-lg border border-border/40 bg-muted/30 py-2 pl-8 pr-3 text-sm font-medium outline-none transition-colors focus:border-primary/50"
                             />
                         </div>
                     </div>

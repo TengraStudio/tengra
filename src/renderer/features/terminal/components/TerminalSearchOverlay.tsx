@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { ChevronDown, ChevronUp, Search, X } from 'lucide-react';
+import { IconChevronDown, IconChevronUp, IconSearch, IconX } from '@tabler/icons-react';
 import { type Dispatch, type RefObject, type SetStateAction } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -63,7 +63,7 @@ export function TerminalSearchOverlay({
     return (
         <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-1 min-w-300">
             <div className="flex items-center gap-1">
-                <Search className="w-3.5 h-3.5 text-muted-foreground" />
+                <IconSearch className="w-3.5 h-3.5 text-muted-foreground" />
                 <input
                     ref={searchInputRef}
                     value={searchQuery}
@@ -117,7 +117,7 @@ export function TerminalSearchOverlay({
                     className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
                     aria-label={t('aria.findPrevious')}
                 >
-                    <ChevronUp className="w-3.5 h-3.5" />
+                    <IconChevronUp className="w-3.5 h-3.5" />
                 </button>
                 <button
                     onClick={() => {
@@ -126,14 +126,14 @@ export function TerminalSearchOverlay({
                     className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
                     aria-label={t('aria.findNext')}
                 >
-                    <ChevronDown className="w-3.5 h-3.5" />
+                    <IconChevronDown className="w-3.5 h-3.5" />
                 </button>
                 <button
                     onClick={closeTerminalSearch}
                     className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
                     aria-label={t('common.close')}
                 >
-                    <X className="w-3.5 h-3.5" />
+                    <IconX className="w-3.5 h-3.5" />
                 </button>
             </div>
             <div className="mt-1 flex items-center justify-between gap-2">

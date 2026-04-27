@@ -19,7 +19,7 @@ import { AppSettings, ClaudeQuota, CodexUsage, CopilotQuota, QuotaResponse } fro
 import { useModelCategories } from '../hooks/useModelCategories';
 import { useModelSelectorLogic } from '../hooks/useModelSelectorLogic';
 
-import { ModelSelectorModal } from './ModelSelectorModal';
+import { ModelSelectorPopover } from './ModelSelectorPopover';
 import { ModelSelectorTrigger } from './ModelSelectorTrigger';
 
 interface ModelSelectorProps {
@@ -344,7 +344,7 @@ export const ModelSelector = memo(({
                 chatMode={chatMode}
             />
 
-            <ModelSelectorModal
+            <ModelSelectorPopover
                 isOpen={isOpen}
                 triggerRef={triggerRef}
                 onClose={handleClose}

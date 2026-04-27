@@ -1,6 +1,6 @@
 pub mod ast;
 pub mod conflict_resolver;
-/**
+/*
  * Tengra - Your Personal AI Assistant
  * Copyright (c) 2026 TengraStudio
  *

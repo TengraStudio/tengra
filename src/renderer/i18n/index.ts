@@ -8,12 +8,12 @@
  * (at your option) any later version.
  */
 
-import { enLocalePack } from '@renderer/i18n/locales';
 import { JsonValue } from '@shared/types/common';
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { useSettings } from '@/context/SettingsContext';
 import { localeRegistry } from '@/i18n/locale-registry.service';
+import { enLocalePack } from '@/i18n/locales';
 import { readCachedSettings } from '@/store/settings.store';
 import { translateErrorMessage } from '@/utils/error-handler.util';
 

@@ -70,7 +70,7 @@ export class MultiLLMOrchestrator extends EventEmitter {
     }
 
     private initializeDefaultConfigs() {
-        // Cloud providers can handle more concurrent requests
+        // IconCloud providers can handle more concurrent requests
         this.setProviderConfig('openai', {
             maxConcurrent: 5,
             priority: 10,

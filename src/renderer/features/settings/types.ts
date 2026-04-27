@@ -19,7 +19,6 @@ export type SettingsCategory =
     | 'skills'
     | 'quotas'
     | 'statistics'
-    | 'personas'
     | 'speech'
     | 'about'
     | 'images'
@@ -43,7 +42,6 @@ export interface AuthBusyState {
     startedAt: number
 }
 export type AuthFile = { provider?: string; type?: string; name?: string }
-export type PersonaDraft = { name: string; description: string; prompt: string }
 export interface AccountWrapper<T> {
     accounts: (T & { accountId?: string; email?: string; error?: string; isActive?: boolean })[]
 }

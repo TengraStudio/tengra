@@ -1,5 +1,5 @@
 use crate::tools::ToolDispatchResponse;
-/**
+/*
  * Tengra - Your Personal AI Assistant
  * Copyright (c) 2026 TengraStudio
  *
@@ -162,16 +162,14 @@ async fn log(args: Value) -> ToolDispatchResponse {
             }
 
             let mut commits = Vec::new();
-            for oid in revwalk.take(count) {
-                if let Ok(oid) = oid {
-                    if let Ok(commit) = repo.find_commit(oid) {
-                        commits.push(json!({
-                            "id": oid.to_string(),
-                            "message": commit.message().unwrap_or(""),
-                            "author": commit.author().name().unwrap_or(""),
-                            "time": commit.time().seconds(),
-                        }));
-                    }
+            for oid in revwalk.take(count).flatten() {
+                if let Ok(commit) = repo.find_commit(oid) {
+                    commits.push(json!({
+                        "id": oid.to_string(),
+                        "message": commit.message().unwrap_or(""),
+                        "author": commit.author().name().unwrap_or(""),
+                        "time": commit.time().seconds(),
+                    }));
                 }
             }
 

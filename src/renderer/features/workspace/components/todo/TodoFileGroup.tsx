@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { ChevronDown, ChevronRight, FileText } from 'lucide-react';
+import { IconChevronDown, IconChevronRight, IconFileText } from '@tabler/icons-react';
 
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
@@ -51,11 +51,11 @@ export const TodoFileGroup = ({
                 onClick={() => onToggleExpand(file.path)}
                 className={C_TODOFILEGROUP_1}
             >
-                {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                <FileText className="w-3 h-3" />
+                {isExpanded ? <IconChevronDown className="w-3 h-3" /> : <IconChevronRight className="w-3 h-3" />}
+                <IconFileText className="w-3 h-3" />
                 <span className="truncate">{file.relativePath}</span>
                 <div className="h-px bg-muted/20 flex-1 group-hover:bg-muted/40 transition-colors" />
-                <span className={cn("px-1.5 py-0.5 rounded text-xxs", pendingCount > 0 ? "bg-primary/20 text-primary" : "bg-muted/30 text-muted-foreground")}>
+                <span className={cn("px-1.5 py-0.5 rounded text-sm", pendingCount > 0 ? "bg-primary/20 text-primary" : "bg-muted/30 text-muted-foreground")}>
                     {pendingCount} {t('workspaceDashboard.pending')}
                 </span>
             </button>

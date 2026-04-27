@@ -8,13 +8,14 @@
  * (at your option) any later version.
  */
 
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
     __resetNotificationCenterForTests,
     pushNotification,
     scheduleNotification,
-} from '@renderer/store/notification-center.store';
-import { getNotificationCenterHealthSnapshot } from '@renderer/store/notification-center-health.store';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+} from '@/store/notification-center.store';
+import { getNotificationCenterHealthSnapshot } from '@/store/notification-center-health.store';
 
 describe('notification center health store', () => {
     beforeEach(() => {

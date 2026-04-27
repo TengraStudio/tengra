@@ -8,4 +8,4 @@
  * (at your option) any later version.
  */
 
-export * from '@renderer/features/workspace/workspace-dashboard/WorkspaceSettingsPanel';
+export * from '@/features/workspace/workspace-dashboard/WorkspaceSettingsPanel';

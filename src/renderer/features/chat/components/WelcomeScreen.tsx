@@ -8,13 +8,13 @@
  * (at your option) any later version.
  */
 
-import { ChatTemplate } from '@renderer/features/chat/types';
-import { Activity, Code, PenTool, Search } from 'lucide-react';
+import { IconActivity, IconCode, IconSearch,IconVectorBezier2 } from '@tabler/icons-react';
 import React, { useMemo } from 'react';
 
-import logoBlack from '@/assets/tengra_black.png';
-import logoWhite from '@/assets/tengra_white.png';
+import logoBlack from '@assets/tengra_black.png';
+import logoWhite from '@assets/tengra_white.png';
 import { Button } from '@/components/ui/button';
+import { ChatTemplate } from '@/features/chat/types';
 import { useThemeDetection } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
 
@@ -58,10 +58,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                         className="h-auto items-start justify-start gap-3 rounded-md border-border/50 px-3 py-3 text-left font-normal"
                     >
                         <div className={cn("flex h-8 w-8 items-center justify-center rounded-md bg-muted/60", template.iconColor)}>
-                            {template.id === 'code' ? <Code className="w-4 h-4" /> :
-                                template.id === 'write' ? <PenTool className="w-4 h-4" /> :
-                                    template.id === 'debug' ? <Activity className="w-4 h-4" /> :
-                                        <Search className="w-4 h-4" />}
+                            {template.id === 'code' ? <IconCode className="w-4 h-4" /> :
+                                template.id === 'write' ? <IconVectorBezier2 className="w-4 h-4" /> :
+                                    template.id === 'debug' ? <IconActivity className="w-4 h-4" /> :
+                                        <IconSearch className="w-4 h-4" />}
                         </div>
                         <div className="space-y-0.5">
                             <div className="text-sm font-medium text-foreground">{template.title}</div>

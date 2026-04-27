@@ -8,9 +8,9 @@
  * (at your option) any later version.
  */
 
-import { CommonBatches } from '@renderer/utils/ipc-batch.util';
 import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { CommonBatches } from '@/utils/ipc-batch.util';
 import { appLogger } from '@/utils/renderer-logger';
 
 import { DetailedStats } from '../types';

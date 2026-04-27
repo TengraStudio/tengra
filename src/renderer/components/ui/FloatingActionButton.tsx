@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Plus, X } from 'lucide-react';
+import { IconPlus, IconX } from '@tabler/icons-react';
 import React, { useEffect, useRef, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -38,10 +38,10 @@ interface FloatingActionButtonProps {
  * @example
  * ```tsx
  * <FloatingActionButton
- *   actions={[
- *     { icon: <Plus />, label: 'New Chat', onClick: () => {} },
- *     { icon: <Settings />, label: 'Settings', onClick: () => {} }
- *   ]}
+ * actions={[
+ * { icon: <IconPlus />, label: 'New Chat', onClick: () => {} },
+ * { icon: <IconSettings />, label: 'Settings', onClick: () => {} }
+ * ]}
  * />
  * ```
  */
@@ -49,8 +49,8 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     actions,
     className,
     position = 'bottom-right',
-    mainIcon = <Plus className="w-6 h-6" />,
-    closeIcon = <X className="w-6 h-6" />
+    mainIcon = <IconPlus className="w-6 h-6" />,
+    closeIcon = <IconX className="w-6 h-6" />
 }) => {
     const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);

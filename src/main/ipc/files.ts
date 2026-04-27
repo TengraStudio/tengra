@@ -12,7 +12,6 @@ import { resolve } from 'path';
 
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
-import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import { FileChangeTracker } from '@main/services/data/file-change-tracker.service';
 import { FileSystemService } from '@main/services/data/filesystem.service';
 import { createValidatedIpcHandler as baseCreateValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
@@ -63,17 +62,7 @@ const FILE_PERFORMANCE_BUDGET_MS = {
     SEARCH: 200
 } as const;
 const MAX_FILE_TELEMETRY_EVENTS = 200;
-const AUDITED_FILE_ACTIONS = new Set([
-    'files.selectDirectory',
-    'files.selectFile',
-    'files.writeFileWithTracking',
-    'files.writeFile',
-    'files.createDirectory',
-    'files.deleteFile',
-    'files.deleteDirectory',
-    'files.copyPath',
-    'files.renamePath',
-]);
+
 
 type ErrorCodePayload = { errorCode?: string; messageKey?: string; uiState?: string };
 type ExistsResponse = { success: boolean; data: boolean; errorCode?: string; messageKey?: string; uiState?: string };
@@ -87,7 +76,6 @@ export function registerFilesIpc(
     getMainWindow: () => BrowserWindow | null,
     fileSystemService: FileSystemService,
     allowedRoots: Set<string>,
-    auditLogService?: AuditLogService,
     fileChangeTracker?: FileChangeTracker
 ): void {
     appLogger.debug('FilesIPC', 'Registering files IPC handlers');
@@ -197,24 +185,7 @@ export function registerFilesIpc(
         }
         return true;
     };
-    const auditFileOperation = async (action: string, targetPath: string | undefined, result: RuntimeValue) => {
-        if (!auditLogService || !AUDITED_FILE_ACTIONS.has(action)) {
-            return;
-        }
-        await auditLogService?.logFileSystemOperation(action, isResultSuccessful(result), {
-            targetPath,
-        });
-    };
-    void _getFilesHealthSummary;
-    const runWithFileAudit = async <T extends RuntimeValue>(
-        action: string,
-        targetPath: string | undefined,
-        operation: () => Promise<T>
-    ): Promise<T> => {
-        const result = await operation();
-        await auditFileOperation(action, targetPath, result);
-        return result;
-    };
+
     const withDefaultErrorCode = <TDefault extends RuntimeValue>(defaultValue: TDefault, error: Error): TDefault => {
         if (typeof defaultValue !== 'object' || defaultValue === null) {
             return defaultValue;
@@ -278,9 +249,7 @@ export function registerFilesIpc(
     });
 
     ipcMain.handle('files:exists', createValidatedIpcHandler<ExistsResponse, [string]>('files:exists', async (_event, filePath: string) => {
-        const result = await runWithFileAudit('files.exists', filePath, async () => {
-            return await fileSystemService.fileExists(filePath);
-        });
+        const result = await fileSystemService.fileExists(filePath);
         return {
             success: true,
             data: result.exists,
@@ -321,7 +290,7 @@ export function registerFilesIpc(
             fileSystemService.updateAllowedRoots(Array.from(allowedRoots));
         }
 
-        await auditFileOperation('files.selectDirectory', chosenPath, { success: !!chosenPath });
+
 
         return { success: true, path: chosenPath };
     }, { defaultValue: { success: false } }));
@@ -352,42 +321,34 @@ export function registerFilesIpc(
             fileSystemService.updateAllowedRoots(Array.from(allowedRoots));
         }
 
-        await auditFileOperation('files.selectFile', chosenPath, { success: !!chosenPath });
+
 
         return { success: true, path: chosenPath };
     }, { defaultValue: { success: false } }));
 
     ipcMain.handle('files:listDirectory', createValidatedIpcHandler('files:listDirectory', async (_event, dirPath: string) => {
-        return await runWithFileAudit('files.listDirectory', dirPath, async () => {
-            return await fileSystemService.listDirectory(dirPath);
-        });
+        return await fileSystemService.listDirectory(dirPath);
     }, {
         defaultValue: { success: false, data: [] },
         argsSchema: z.tuple([PathSchema])
     }));
 
     ipcMain.handle('files:readFile', createValidatedIpcHandler('files:readFile', async (_event, filePath: string) => {
-        return await runWithFileAudit('files.readFile', filePath, async () => {
-            return await fileSystemService.readFile(filePath);
-        });
+        return await fileSystemService.readFile(filePath);
     }, {
         defaultValue: { success: false, content: '' },
         argsSchema: z.tuple([PathSchema])
     }));
 
     ipcMain.handle('files:readImage', createValidatedIpcHandler('files:readImage', async (_event, filePath: string) => {
-        return await runWithFileAudit('files.readImage', filePath, async () => {
-            return await fileSystemService.readImage(filePath);
-        });
+        return await fileSystemService.readImage(filePath);
     }, {
         defaultValue: { success: false, data: '' },
         argsSchema: z.tuple([PathSchema])
     }));
 
     ipcMain.handle('files:readPdf', createValidatedIpcHandler('files:readPdf', async (_event, filePath: string) => {
-        return await runWithFileAudit('files.readPdf', filePath, async () => {
-            return await fileSystemService.readPdf(filePath);
-        });
+        return await fileSystemService.readPdf(filePath);
     }, {
         defaultValue: { success: false, text: '' },
         argsSchema: z.tuple([PathSchema])
@@ -398,12 +359,10 @@ export function registerFilesIpc(
         async (_event, filePath: string, content: string, context?: z.infer<typeof WriteContextSchema>) => {
         const aiSystem = context?.aiSystem;
         if (aiSystem) {
-            const trackedResult = await runWithFileAudit('files.writeFileWithTracking', filePath, async () => {
-                return await fileSystemService.writeFileWithTracking(filePath, content, {
-                    aiSystem,
-                    chatSessionId: context.chatSessionId,
-                    changeReason: context.changeReason ?? 'AI file modification',
-                });
+            const trackedResult = await fileSystemService.writeFileWithTracking(filePath, content, {
+                aiSystem,
+                chatSessionId: context.chatSessionId,
+                changeReason: context.changeReason ?? 'AI file modification',
             });
             if (trackedResult.success) {
                 return { success: true, uiState: 'ready' };
@@ -415,9 +374,7 @@ export function registerFilesIpc(
                 uiState: 'failure'
             };
         }
-        const writeResult = await runWithFileAudit('files.writeFile', filePath, async () => {
-            return await fileSystemService.writeFile(filePath, content);
-        });
+        const writeResult = await fileSystemService.writeFile(filePath, content);
         if (writeResult.success) {
             return { success: true, uiState: 'ready' };
         }
@@ -439,45 +396,35 @@ export function registerFilesIpc(
     }));
 
     ipcMain.handle('files:createDirectory', createValidatedIpcHandler('files:createDirectory', async (_event, dirPath: string) => {
-        return await runWithFileAudit('files.createDirectory', dirPath, async () => {
-            return await fileSystemService.createDirectory(dirPath);
-        });
+        return await fileSystemService.createDirectory(dirPath);
     }, {
         defaultValue: { success: false },
         argsSchema: z.tuple([PathSchema])
     }));
 
     ipcMain.handle('files:deleteFile', createValidatedIpcHandler('files:deleteFile', async (_event, filePath: string) => {
-        return await runWithFileAudit('files.deleteFile', filePath, async () => {
-            return await fileSystemService.deleteFile(filePath);
-        });
+        return await fileSystemService.deleteFile(filePath);
     }, {
         defaultValue: { success: false },
         argsSchema: z.tuple([PathSchema])
     }));
 
     ipcMain.handle('files:deleteDirectory', createValidatedIpcHandler('files:deleteDirectory', async (_event, dirPath: string) => {
-        return await runWithFileAudit('files.deleteDirectory', dirPath, async () => {
-            return await fileSystemService.deleteDirectory(dirPath);
-        });
+        return await fileSystemService.deleteDirectory(dirPath);
     }, {
         defaultValue: { success: false },
         argsSchema: z.tuple([PathSchema])
     }));
 
     ipcMain.handle('files:copyPath', createValidatedIpcHandler('files:copyPath', async (_event, sourcePath: string, destinationPath: string) => {
-        return await runWithFileAudit('files.copyPath', `${sourcePath} -> ${destinationPath}`, async () => {
-            return await fileSystemService.copyPath(sourcePath, destinationPath);
-        });
+        return await fileSystemService.copyPath(sourcePath, destinationPath);
     }, {
         defaultValue: { success: false },
         argsSchema: z.tuple([PathSchema, PathSchema])
     }));
 
     ipcMain.handle('files:renamePath', createValidatedIpcHandler('files:renamePath', async (_event, oldPath: string, newPath: string) => {
-        return await runWithFileAudit('files.renamePath', `${oldPath} -> ${newPath}`, async () => {
-            return await fileSystemService.moveFile(oldPath, newPath);
-        });
+        return await fileSystemService.moveFile(oldPath, newPath);
     }, {
         defaultValue: { success: false },
         argsSchema: z.tuple([PathSchema, PathSchema])
@@ -495,9 +442,7 @@ export function registerFilesIpc(
     }));
 
     ipcMain.handle('files:searchFiles', createValidatedIpcHandler<SearchFilesResponse, [string, string]>('files:searchFiles', async (_event, dirPath: string, pattern: string) => {
-        const result = await runWithFileAudit('files.searchFiles', dirPath, async () => {
-            return await fileSystemService.searchFiles(dirPath, pattern);
-        });
+        const result = await fileSystemService.searchFiles(dirPath, pattern);
         const results = result.data ?? [];
         return {
             success: result.success,
@@ -517,10 +462,8 @@ export function registerFilesIpc(
 
 
     ipcMain.handle('files:searchFilesStream', createValidatedIpcHandler('files:searchFilesStream', async (event, dirPath: string, pattern: string, jobId: string) => {
-        return await runWithFileAudit('files.searchFilesStream', dirPath, async () => {
-            return await fileSystemService.searchFilesStream(dirPath, pattern, (foundPath: string) => {
-                event.sender.send(`files:searchResult:${jobId}`, foundPath);
-            });
+        return await fileSystemService.searchFilesStream(dirPath, pattern, (foundPath: string) => {
+            event.sender.send(`files:searchResult:${jobId}`, foundPath);
         });
     }, {
         defaultValue: undefined,

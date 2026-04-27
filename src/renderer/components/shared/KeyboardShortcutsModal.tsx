@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Download, Keyboard, RotateCcw, Search, Upload, X } from 'lucide-react';
+import { IconDownload, IconKeyboard, IconRotate, IconSearch, IconUpload, IconX } from '@tabler/icons-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -62,14 +62,14 @@ const ShortcutItem: React.FC<ShortcutItemProps> = ({
             <span className="font-medium text-foreground">{label}</span>
             <div className="flex items-center gap-2">
                 {keys.map((key, i) => (
-                    <kbd key={`${key}-${i}`} className="inline-flex items-center justify-center h-7 min-w-7 px-2 font-mono text-xs font-semibold text-foreground bg-background border border-border/50 rounded shadow-sm">
+                    <kbd key={`${key}-${i}`} className="inline-flex items-center justify-center h-7 min-w-7 px-2 font-mono text-sm font-semibold text-foreground bg-background border border-border/50 rounded shadow-sm">
                         {key}
                     </kbd>
                 ))}
                 {onCapture && (
                     <button
                         onClick={onCapture}
-                        className={cn('px-2.5 py-1 text-xs font-medium border rounded-md transition-colors cursor-pointer backdrop-blur-sm', isRecording ? 'bg-primary/10 text-primary border-primary/30 shadow-glow-primary-soft animate-pulse' : 'bg-transparent border-transparent text-muted-foreground hover:bg-muted hover:border-border/60 hover:text-foreground')}
+                        className={cn('px-2.5 py-1 text-sm font-medium border rounded-md transition-colors cursor-pointer backdrop-blur-sm', isRecording ? 'bg-primary/10 text-primary border-primary/30 shadow-glow-primary-soft animate-pulse' : 'bg-transparent border-transparent text-muted-foreground hover:bg-muted hover:border-border/60 hover:text-foreground')}
                     >
                         {isRecording ? t('shortcuts.pressKeys') : t('common.edit')}
                     </button>
@@ -313,7 +313,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-muted/10">
                     <div className="flex items-center gap-3">
-                        <div className="flex justify-center items-center p-2 bg-primary/10 rounded-lg text-primary"><Keyboard className="w-5 h-5" aria-hidden="true" /></div>
+                        <div className="flex justify-center items-center p-2 bg-primary/10 rounded-lg text-primary"><IconKeyboard className="w-5 h-5" aria-hidden="true" /></div>
                         <h2 id="shortcuts-modal-title" className="text-lg font-bold text-foreground m-0">{t('shortcuts.title')}</h2>
                     </div>
                     <button
@@ -322,13 +322,13 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
                         className="p-2 text-muted-foreground bg-transparent border-none rounded-lg cursor-pointer transition-colors hover:bg-muted hover:text-foreground"
                         aria-label={t('shortcuts.close')}
                     >
-                        <X className="w-5 h-5" aria-hidden="true" />
+                        <IconX className="w-5 h-5" aria-hidden="true" />
                     </button>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 px-6 py-3 border-b border-border/50 bg-background/50">
                     <div className="relative flex-1 min-w-200">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <input
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
@@ -338,28 +338,28 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
                     </div>
                     <button
                         onClick={handleExport}
-                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-foreground bg-background border border-border/50 rounded-md cursor-pointer transition-colors hover:bg-muted shadow-sm"
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground bg-background border border-border/50 rounded-md cursor-pointer transition-colors hover:bg-muted shadow-sm"
                     >
-                        <Download className="w-3.5 h-3.5 text-muted-foreground" /> {t('shortcuts.export')}
+                        <IconDownload className="w-3.5 h-3.5 text-muted-foreground" /> {t('shortcuts.export')}
                     </button>
                     <button
                         onClick={() => importInputRef.current?.click()}
-                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-foreground bg-background border border-border/50 rounded-md cursor-pointer transition-colors hover:bg-muted shadow-sm"
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground bg-background border border-border/50 rounded-md cursor-pointer transition-colors hover:bg-muted shadow-sm"
                     >
-                        <Upload className="w-3.5 h-3.5 text-muted-foreground" /> {t('shortcuts.import')}
+                        <IconUpload className="w-3.5 h-3.5 text-muted-foreground" /> {t('shortcuts.import')}
                     </button>
                     <button
                         onClick={handleResetAll}
-                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-foreground bg-background border border-border/50 rounded-md cursor-pointer transition-colors hover:bg-muted shadow-sm"
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground bg-background border border-border/50 rounded-md cursor-pointer transition-colors hover:bg-muted shadow-sm"
                     >
-                        <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" /> {t('shortcuts.resetAll')}
+                        <IconRotate className="w-3.5 h-3.5 text-muted-foreground" /> {t('shortcuts.resetAll')}
                     </button>
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-background">
                     <div className="space-y-3">
-                        <h3 className="text-sm font-semibold text-primary/80 uppercase tracking-wider">{t('shortcuts.general')}</h3>
+                        <h3 className="text-sm font-semibold text-primary/80 uppercase ">{t('shortcuts.general')}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {grouped.general.map(def => (
                                 <ShortcutItem
@@ -376,7 +376,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
                     </div>
 
                     <div className="space-y-3">
-                        <h3 className="text-sm font-semibold text-primary/80 uppercase tracking-wider">{t('shortcuts.navigation')}</h3>
+                        <h3 className="text-sm font-semibold text-primary/80 uppercase ">{t('shortcuts.navigation')}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {grouped.navigation.map(def => (
                                 <ShortcutItem
@@ -392,7 +392,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
                     </div>
 
                     <div className="space-y-3">
-                        <h3 className="text-sm font-semibold text-primary/80 uppercase tracking-wider">{t('shortcuts.chat')}</h3>
+                        <h3 className="text-sm font-semibold text-primary/80 uppercase ">{t('shortcuts.chat')}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {grouped.chat.map(def => (
                                 <ShortcutItem
@@ -412,7 +412,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
 
                 {/* Footer */}
                 <div className="p-4 border-t border-border/50 bg-muted/10 text-center">
-                    <p className="text-xs text-muted-foreground m-0">{t('shortcuts.footer')}</p>
+                    <p className="text-sm text-muted-foreground m-0">{t('shortcuts.footer')}</p>
                 </div>
             </div>
         </div>

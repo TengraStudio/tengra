@@ -8,8 +8,9 @@
  * (at your option) any later version.
  */
 
-import { useWorkspaceManager } from '@renderer/features/workspace/hooks/useWorkspaceManager';
 import React from 'react';
+
+import { useWorkspaceManager } from '@/features/workspace/hooks/useWorkspaceManager';
 
 const FLOATING_TERMINAL_DEFAULT_HEIGHT = 320;
 

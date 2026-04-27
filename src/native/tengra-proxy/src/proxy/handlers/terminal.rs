@@ -1,5 +1,5 @@
 use crate::proxy::server::AppState;
-/**
+/*
  * Tengra - Your Personal AI Assistant
  * Copyright (c) 2026 TengraStudio
  *

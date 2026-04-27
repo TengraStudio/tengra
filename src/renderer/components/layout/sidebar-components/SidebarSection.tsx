@@ -9,7 +9,7 @@
  */
 
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Tooltip } from '@/components/ui/tooltip';
@@ -17,7 +17,7 @@ import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 
 /* Batch-02: Extracted Long Classes */
-const C_SIDEBARSECTION_1 = "absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-xxxs font-bold flex items-center justify-center text-primary-foreground";
+const C_SIDEBARSECTION_1 = "absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-sm font-bold flex items-center justify-center text-primary-foreground";
 
 
 type BadgeVariant = 'default' | 'warning' | 'error' | 'success';
@@ -125,7 +125,7 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({ id, title, icon, badge, b
         onClick={onToggle}
         className={cn(
             'sidebar-section-header w-full flex items-center justify-between',
-            'px-3 py-2 mx-0.5 rounded-lg text-xxs font-semibold  ',
+            'px-3 py-2 mx-0.5 rounded-lg text-sm font-semibold ',
             'text-muted-foreground/70 hover:text-foreground hover:bg-background/40 hover:backdrop-blur-sm transition-all duration-200',
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 group',
             isExpanded && 'text-foreground bg-background/20'
@@ -134,13 +134,13 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({ id, title, icon, badge, b
     >
         <div className="flex items-center gap-2">
             <motion.div animate={{ rotate: isExpanded ? 0 : -90 }} transition={{ duration: 0.2, ease: "easeInOut" }} className={cn("bg-muted/50 rounded-sm p-0.5", isExpanded && "bg-transparent")}>
-                <ChevronDown className="w-2.5 h-2.5 opacity-70 group-hover:opacity-100" />
+                <IconChevronDown className="w-2.5 h-2.5 opacity-70 group-hover:opacity-100" />
             </motion.div>
             {icon && <span className="opacity-70 group-hover:opacity-100 transition-opacity">{icon}</span>}
             <span>{title}</span>
         </div>
         {badge !== undefined && (
-            <span className={cn('px-1.5 py-0.5 rounded-full text-xxxs font-medium border border-transparent', BADGE_CLASSES[badgeVariant ?? 'default'], "group-hover:border-border/20 group-hover:shadow-sm transition-all")}>{badge}</span>
+            <span className={cn('px-1.5 py-0.5 rounded-full text-sm font-medium border border-transparent', BADGE_CLASSES[badgeVariant ?? 'default'], "group-hover:border-border/20 group-hover:shadow-sm transition-all")}>{badge}</span>
         )}
     </button>
 );
@@ -210,7 +210,7 @@ const SidebarCollapsedSection: React.FC<{
                             </span>
                         )}
                     </div>
-                    <ChevronRight className="w-3 h-3 ml-1 opacity-50" />
+                    <IconChevronRight className="w-3 h-3 ml-1 opacity-50" />
                 </button>
             </Tooltip>
 

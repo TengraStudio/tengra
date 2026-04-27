@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { AlertTriangle, Sparkles, Wrench } from 'lucide-react';
+import { IconAlertTriangle, IconSparkles, IconTools } from '@tabler/icons-react';
 
 import { cn } from '@/lib/utils';
 
@@ -51,10 +51,10 @@ export function TerminalSemanticPanel({
         <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 min-w-80 max-w-lg">
             <div className="flex items-center justify-between gap-3 mb-2">
                 <div className="flex items-center gap-2 typo-caption font-semibold">
-                    <AlertTriangle className="w-3.5 h-3.5 text-warning" />
+                    <IconAlertTriangle className="w-3.5 h-3.5 text-warning" />
                     {t('terminal.semanticIssues')}
                 </div>
-                <div className="flex items-center gap-2 text-xxxs text-muted-foreground">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span>
                         {t('terminal.semanticErrors')}: {activeSemanticErrorCount}
                     </span>
@@ -83,7 +83,7 @@ export function TerminalSemanticPanel({
                             <div className="flex items-center justify-between gap-2">
                                 <span
                                     className={cn(
-                                        'text-xxxs   font-semibold',
+                                        'text-sm font-semibold',
                                         issue.severity === 'error'
                                             ? 'text-destructive'
                                             : 'text-warning'
@@ -102,7 +102,7 @@ export function TerminalSemanticPanel({
                                                 className={C_TERMINALSEMANTICPANEL_2}
                                                 title={t('terminal.aiExplainError')}
                                             >
-                                                <Sparkles className="w-3 h-3" />
+                                                <IconSparkles className="w-3 h-3" />
                                             </button>
                                             <button
                                                 onClick={e => {
@@ -112,11 +112,11 @@ export function TerminalSemanticPanel({
                                                 className={C_TERMINALSEMANTICPANEL_3}
                                                 title={t('terminal.aiFixError')}
                                             >
-                                                <Wrench className="w-3 h-3" />
+                                                <IconTools className="w-3 h-3" />
                                             </button>
                                         </>
                                     )}
-                                    <span className="text-xxxs text-muted-foreground">
+                                    <span className="text-sm text-muted-foreground">
                                         {new Date(issue.timestamp).toLocaleTimeString()}
                                     </span>
                                 </div>

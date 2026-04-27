@@ -8,11 +8,11 @@
  * (at your option) any later version.
  */
 
-import { Button } from '@renderer/components/ui/button';
-import { Modal } from '@renderer/components/ui/modal';
-import { Brain,Lightbulb, Sparkles, Zap } from 'lucide-react';
+import { IconBolt,IconBrain, IconBulb, IconSparkles } from '@tabler/icons-react';
 import { useEffect,useState } from 'react';
 
+import { Button } from '@/components/ui/button';
+import { Modal } from '@/components/ui/modal';
 import { Language,useTranslation } from '@/i18n';
 
 
@@ -52,19 +52,19 @@ export function TipModal({ language = 'en' }: { language?: Language }) {
                 <div className="relative">
                     <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
                     <div className="relative bg-background border border-border/50 p-4 rounded-2xl shadow-xl">
-                        <Lightbulb className="w-10 h-10 text-primary animate-pulse" />
+                        <IconBulb className="w-10 h-10 text-primary animate-pulse" />
                     </div>
                     <div className="absolute -top-2 -right-2 bg-accent text-accent-foreground p-1.5 rounded-full shadow-md animate-bounce">
-                        <Sparkles className="w-4 h-4" />
+                        <IconSparkles className="w-4 h-4" />
                     </div>
                 </div>
 
                 <div className="space-y-3">
                     <h3 className="flex items-center justify-center gap-2 text-xl font-bold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">
-                        <Zap className="w-5 h-5 text-accent" />
+                        <IconBolt className="w-5 h-5 text-accent" />
                         {t('tips.didYouKnow')}
                     </h3>
-                    <p className="text-muted-foreground leading-relaxed italic border-l-2 border-primary/30 pl-4 py-1 text-left">
+                    <p className="text-muted-foreground leading-relaxed border-l-2 border-primary/30 pl-4 py-1 text-left">
                         "{currentTip}"
                     </p>
                 </div>
@@ -74,7 +74,7 @@ export function TipModal({ language = 'en' }: { language?: Language }) {
                         {t('tips.gotIt')}
                     </Button>
                     <Button className="flex-1 shadow-lg shadow-primary/20" onClick={() => setIsOpen(false)}>
-                        <Brain className="w-4 h-4 mr-2" />
+                        <IconBrain className="w-4 h-4 mr-2" />
                         {t('tips.discoverMore')}
                     </Button>
                 </div>
@@ -82,7 +82,7 @@ export function TipModal({ language = 'en' }: { language?: Language }) {
                 <div className="pt-2">
                     <button
                         onClick={() => setIsOpen(false)}
-                        className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors cursor-pointer bg-transparent border-none p-2"
+                        className="text-sm text-muted-foreground/60 hover:text-muted-foreground transition-colors cursor-pointer bg-transparent border-none p-2"
                     >
                         {t('tips.dontShowAgain')}
                     </button>

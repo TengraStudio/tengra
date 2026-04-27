@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { CheckCircle2, Image } from 'lucide-react';
+import { IconCircleCheck, IconPhoto } from '@tabler/icons-react';
 import React from 'react';
 
 import { cn } from '@/lib/utils';
@@ -34,7 +34,7 @@ export const ImageSettingsProvider: React.FC<ImageSettingsProviderProps> = ({
         <div className="space-y-6">
             <div className="flex items-center gap-3 px-1">
                 <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                <h4 className="text-xxs font-bold text-muted-foreground">
+                <h4 className="text-sm font-bold text-muted-foreground">
                     {t('settings.images.provider')}
                 </h4>
             </div>
@@ -57,7 +57,7 @@ export const ImageSettingsProvider: React.FC<ImageSettingsProviderProps> = ({
                                     ? "bg-primary border-primary/20 text-primary-foreground shadow-lg shadow-primary/20 scale-110"
                                     : "bg-background border-border/20 text-muted-foreground group-hover:text-primary group-hover:border-primary/20 group-hover:scale-105"
                             )}>
-                                {p === 'sd-cpp' ? <span className="font-bold text-sm">SD</span> : <Image className="w-6 h-6" />}
+                                {p === 'sd-cpp' ? <span className="font-bold text-sm">SD</span> : <IconPhoto className="w-6 h-6" />}
                             </div>
                             <div className="min-w-0">
                                 <div className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
@@ -70,7 +70,7 @@ export const ImageSettingsProvider: React.FC<ImageSettingsProviderProps> = ({
                         </div>
                         {currentProvider === p && (
                             <div className="absolute right-6 top-1/2 -translate-y-1/2 z-10 animate-in zoom-in-50 duration-500">
-                                <CheckCircle2 className="w-6 h-6 text-primary" />
+                                <IconCircleCheck className="w-6 h-6 text-primary" />
                             </div>
                         )}
                         <div className={C_IMAGESETTINGSPROVIDER_1} />

@@ -29,7 +29,7 @@ export const TypingDots = () => {
                 <div className={C_MESSAGEUIEXTRAS_2} />
                 <div className="w-2 h-2 bg-gradient-to-r from-primary to-primary/80 rounded-full animate-bounce shadow-lg shadow-primary/30" />
             </div>
-            <span className="text-xxs text-muted-foreground/50 font-medium animate-pulse">
+            <span className="text-sm text-muted-foreground/50 font-medium animate-pulse">
                 {t('messageBubble.thinking')}
             </span>
         </div>

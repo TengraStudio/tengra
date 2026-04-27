@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { FilePlus, FolderPlus, History, Pencil, SquareArrowDown, SquareArrowUp, Trash2 } from 'lucide-react';
+import { IconFilePlus, IconFolderPlus, IconHistory, IconPencil, IconSquareArrowDown, IconSquareArrowUp, IconTrash } from '@tabler/icons-react';
 import React from 'react';
 import { createPortal } from 'react-dom';
 
@@ -75,7 +75,7 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
                     }}
                     className={C_WORKSPACECONTEXTMENU_2}
                 >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <IconTrash className="w-3.5 h-3.5" />
                     {t('workspace.removeMount')}
                 </button>
             )}
@@ -90,7 +90,7 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
                                     onClick={() => onContextAction('stage')}
                                     className={C_WORKSPACECONTEXTMENU_3}
                                 >
-                                    <SquareArrowUp className="w-3.5 h-3.5" />
+                                    <IconSquareArrowUp className="w-3.5 h-3.5" />
                                     {t('workspaceDashboard.stage')}
                                 </button>
                             )}
@@ -99,7 +99,7 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
                                     onClick={() => onContextAction('unstage')}
                                     className={C_WORKSPACECONTEXTMENU_4}
                                 >
-                                    <SquareArrowDown className="w-3.5 h-3.5" />
+                                    <IconSquareArrowDown className="w-3.5 h-3.5" />
                                     {t('workspaceDashboard.unstage')}
                                 </button>
                             )}
@@ -107,7 +107,7 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
                                 onClick={() => onContextAction('gitHistory')}
                                 className={C_WORKSPACECONTEXTMENU_5}
                             >
-                                <History className="w-3.5 h-3.5" />
+                                <IconHistory className="w-3.5 h-3.5" />
                                 {t('agent.history')}
                             </button>
                             <div className="h-px bg-border/50 my-1 mx-2" />
@@ -119,14 +119,14 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
                                 onClick={() => onContextAction('createFile')}
                                 className={C_WORKSPACECONTEXTMENU_6}
                             >
-                                <FilePlus className="w-3.5 h-3.5" />
+                                <IconFilePlus className="w-3.5 h-3.5" />
                                 {t('workspace.newFile')}
                             </button>
                             <button
                                 onClick={() => onContextAction('createFolder')}
                                 className={C_WORKSPACECONTEXTMENU_7}
                             >
-                                <FolderPlus className="w-3.5 h-3.5" />
+                                <IconFolderPlus className="w-3.5 h-3.5" />
                                 {t('workspace.newFolder')}
                             </button>
                             <div className="h-px bg-border/50 my-1 mx-2" />
@@ -136,14 +136,14 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
                         onClick={() => onContextAction('rename')}
                         className={C_WORKSPACECONTEXTMENU_8}
                     >
-                        <Pencil className="w-3.5 h-3.5" />
+                        <IconPencil className="w-3.5 h-3.5" />
                         {t('workspace.rename')}
                     </button>
                     <button
                         onClick={() => onContextAction('delete')}
                         className={C_WORKSPACECONTEXTMENU_9}
                     >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <IconTrash className="w-3.5 h-3.5" />
                         {t('common.delete')}
                     </button>
                 </>

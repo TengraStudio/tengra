@@ -8,8 +8,7 @@
  * (at your option) any later version.
  */
 
-import { WorkspaceEntryRow } from '@renderer/features/workspace/hooks/useWorkspaceExplorerTree';
-
+import { WorkspaceEntryRow } from '@/features/workspace/hooks/useWorkspaceExplorerTree';
 import { WorkspaceEntry } from '@/types';
 
 export function getWorkspaceEntryKey(entry: WorkspaceEntry): string {

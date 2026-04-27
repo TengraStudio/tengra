@@ -14,8 +14,8 @@
  * Renders the tab navigation for switching between pending, confirmed, archived memories and stats.
  */
 
-import { Archive, CheckCircle, Clock, Gauge, LayoutGrid } from 'lucide-react';
-import { LucideIcon } from 'lucide-react';
+import type { Icon } from '@tabler/icons-react';
+import { IconArchive, IconCircleCheck, IconClock, IconGauge, IconLayoutGrid } from '@tabler/icons-react';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -42,14 +42,14 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   const tabs: Array<{
     id: TabType;
     label: string;
-    icon: LucideIcon;
+    icon: Icon;
     count?: number;
   }> = [
-      { id: 'pending', label: t('memory.tabs.pending'), icon: Clock, count: pendingCount },
-      { id: 'confirmed', label: t('memory.tabs.confirmed'), icon: CheckCircle, count: confirmedCount },
-      { id: 'archived', label: t('memory.tabs.archived'), icon: Archive, count: archivedCount },
-      { id: 'visualization', label: t('memory.tabs.visualization'), icon: LayoutGrid },
-      { id: 'stats', label: t('memory.tabs.stats'), icon: Gauge },
+      { id: 'pending', label: t('memory.tabs.pending'), icon: IconClock, count: pendingCount },
+      { id: 'confirmed', label: t('memory.tabs.confirmed'), icon: IconCircleCheck, count: confirmedCount },
+      { id: 'archived', label: t('memory.tabs.archived'), icon: IconArchive, count: archivedCount },
+      { id: 'visualization', label: t('memory.tabs.visualization'), icon: IconLayoutGrid },
+      { id: 'stats', label: t('memory.tabs.stats'), icon: IconGauge },
     ];
 
   return (
@@ -70,7 +70,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
           {tab.count !== undefined && tab.count > 0 && (
             <span
               className={cn(
-                'ml-1 px-1.5 py-0.5 rounded-full text-xxs font-bold',
+                'ml-1 px-1.5 py-0.5 rounded-full text-sm font-bold',
                 activeTab === tab.id ? 'bg-muted/50' : 'bg-primary/20 text-primary'
               )}
             >

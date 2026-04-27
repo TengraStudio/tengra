@@ -8,8 +8,9 @@
  * (at your option) any later version.
  */
 
-import { fetchModels, getSelectableProviderId, groupModels } from '@renderer/features/models/utils/model-fetcher';
 import { describe, expect, it, vi } from 'vitest';
+
+import { fetchModels, getSelectableProviderId, groupModels } from '@/features/models/utils/model-fetcher';
 
 describe('groupModels', () => {
     it('maps copilot token aliases to copilot provider', () => {

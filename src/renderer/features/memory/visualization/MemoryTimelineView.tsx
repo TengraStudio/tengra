@@ -10,8 +10,8 @@
 
 import { AdvancedSemanticFragment } from '@shared/types/advanced-memory';
 import { EpisodicMemory } from '@shared/types/memory';
+import { IconBrain, IconHistory, IconMessage } from '@tabler/icons-react';
 import { format } from 'date-fns';
-import { Brain, History, MessageSquare } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -128,7 +128,7 @@ export const MemoryTimelineView: React.FC = () => {
             <div className="p-4 border-b border-border/30 flex items-center justify-between bg-muted/20 backdrop-blur-md">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-info/20 rounded-xl text-info">
-                        <History className="w-5 h-5" />
+                        <IconHistory className="w-5 h-5" />
                     </div>
                     <div>
                         <h2 className="text-sm font-bold">{t('memory.timelineView')}</h2>
@@ -151,7 +151,7 @@ export const MemoryTimelineView: React.FC = () => {
                                 key={f}
                                 onClick={() => setFilter(f)}
                                 className={cn(
-                                    'px-3 py-1 rounded-md text-xxxs font-bold transition-all',
+                                    'px-3 py-1 rounded-md text-sm font-bold transition-all',
                                     filter === f
                                         ? 'bg-primary text-primary-foreground shadow-lg'
                                         : 'text-muted-foreground hover:text-foreground'
@@ -215,11 +215,11 @@ export const MemoryTimelineView: React.FC = () => {
                                                     <div className="flex items-center gap-2">
                                                         {item.type === 'episode' ? (
                                                             <div className="p-1.5 bg-warning/20 rounded-lg text-warning">
-                                                                <MessageSquare className="w-3.5 h-3.5" />
+                                                                <IconMessage className="w-3.5 h-3.5" />
                                                             </div>
                                                         ) : (
                                                             <div className="p-1.5 bg-accent/20 rounded-lg text-accent">
-                                                                <Brain className="w-3.5 h-3.5" />
+                                                                <IconBrain className="w-3.5 h-3.5" />
                                                             </div>
                                                         )}
                                                         <span className="typo-caption font-bold text-foreground/60">

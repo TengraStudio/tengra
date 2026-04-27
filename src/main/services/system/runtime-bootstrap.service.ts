@@ -16,6 +16,7 @@ import * as fsPromises from 'fs/promises';
 import * as path from 'path';
 
 import { BaseService } from '@main/services/base.service';
+import { t } from '@main/utils/i18n.util';
 import { NETWORK_DEFAULTS } from '@shared/constants/app-config';
 import { JsonObject } from '@shared/types/common';
 import {
@@ -60,6 +61,7 @@ export class RuntimeBootstrapService extends BaseService {
         'raw.githubusercontent.com',
     ]);
     private latestExecutionResult: RuntimeBootstrapExecutionResult | null = null;
+    public onScanFinished?: (result: RuntimeBootstrapExecutionResult) => void;
 
     constructor(
         private readonly runtimeManifestService: RuntimeManifestService = new RuntimeManifestService(),
@@ -96,7 +98,7 @@ export class RuntimeBootstrapService extends BaseService {
 
         if (componentId === 'sd-cpp') {
             await this.ensureManagedRuntime();
-            return { success: true, message: 'Stable Diffusion CPP runtime install triggered' };
+            return { success: true, message: t('auto.stableDiffusionCppRuntimeInstallTriggere') };
         }
 
         return { success: false, message: `No runtime action is registered for ${componentId}` };
@@ -128,6 +130,7 @@ export class RuntimeBootstrapService extends BaseService {
         const entries = this.scanPlan(plan);
         const health = await this.runtimeHealthService.assessPlan(this.buildHealthPlan(plan, entries));
         this.latestExecutionResult = this.buildExecutionResult(plan, entries, health);
+        this.onScanFinished?.(this.latestExecutionResult);
         return this.latestExecutionResult;
     }
 
@@ -137,6 +140,7 @@ export class RuntimeBootstrapService extends BaseService {
         const entries = await this.executePlan(plan);
         const health = await this.runtimeHealthService.assessPlan(this.buildHealthPlan(plan, entries));
         this.latestExecutionResult = this.buildExecutionResult(plan, entries, health);
+        this.onScanFinished?.(this.latestExecutionResult);
         return this.latestExecutionResult;
     }
 
@@ -231,6 +235,20 @@ export class RuntimeBootstrapService extends BaseService {
             envManifestUrl === undefined &&
             resolvedManifestUrl === NETWORK_DEFAULTS.RUNTIME_MANIFEST_URL;
 
+        // PRE-LAUNCH BYPASS: Disable manifest network fetch while repo is private
+        // TODO: Remove this once the repository is public
+        const isPreLaunch = true;
+        if (isPreLaunch && usesDefaultManifestUrl) {
+            this.logInfo('Runtime manifest fetch skipped (pre-launch phase)');
+            if (fs.existsSync(cachedManifestPath)) {
+                const cachedManifestText = await fsPromises.readFile(cachedManifestPath, 'utf8');
+                return this.runtimeManifestService.parseManifest(
+                    safeJsonParse<JsonObject>(cachedManifestText, {})
+                );
+            }
+            return this.createEmptyManifest();
+        }
+
         // OPTIMIZATION: Load cached manifest immediately for sub-1s boot
         let cachedManifest: RuntimeManifest | null = null;
         try {
@@ -247,8 +265,13 @@ export class RuntimeBootstrapService extends BaseService {
         // If we have a cached manifest, trigger the network update in the background and return cache
         if (cachedManifest && usesDefaultManifestUrl) {
             void (async () => {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s bg timeout
                 try {
-                    const response = await fetch(resolvedManifestUrl, { redirect: 'follow' });
+                    const response = await fetch(resolvedManifestUrl, {
+                        redirect: 'follow',
+                        signal: controller.signal,
+                    });
                     if (response.ok) {
                         const manifestText = await response.text();
                         await this.cacheManifest(manifestText);
@@ -256,15 +279,22 @@ export class RuntimeBootstrapService extends BaseService {
                     }
                 } catch (e) {
                     this.logDebug('Background runtime manifest update failed', e);
+                } finally {
+                    clearTimeout(timeoutId);
                 }
             })();
             return cachedManifest;
         }
 
         // Fallback for missing cache or custom URL: blocking load
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s blocking timeout
         try {
             this.validateDownloadUrl(resolvedManifestUrl);
-            const response = await fetch(resolvedManifestUrl, { redirect: 'follow' });
+            const response = await fetch(resolvedManifestUrl, {
+                redirect: 'follow',
+                signal: controller.signal,
+            });
             if (!response.ok) {
                 throw new Error('error.system.manifest_read_failed');
             }
@@ -279,6 +309,8 @@ export class RuntimeBootstrapService extends BaseService {
                 usesDefaultManifestUrl,
                 error
             );
+        } finally {
+            clearTimeout(timeoutId);
         }
     }
 
@@ -475,16 +507,25 @@ export class RuntimeBootstrapService extends BaseService {
 
     private async downloadTarget(target: RuntimeManifestTarget): Promise<string> {
         this.validateDownloadUrl(target.downloadUrl);
-        const response = await fetch(target.downloadUrl, { redirect: 'follow' });
-        if (!response.ok) {
-            throw new Error('error.llm.download_failed');
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minute timeout for large binary downloads
+        try {
+            const response = await fetch(target.downloadUrl, {
+                redirect: 'follow',
+                signal: controller.signal,
+            });
+            if (!response.ok) {
+                throw new Error('error.llm.download_failed');
+            }
+            const downloadPath = path.join(getManagedRuntimeDownloadsDir(), target.assetName);
+            const buffer = Buffer.from(await response.arrayBuffer());
+            this._performChecksumVerification(buffer, target.sha256);
+            await fsPromises.mkdir(path.dirname(downloadPath), { recursive: true });
+            await fsPromises.writeFile(downloadPath, buffer);
+            return downloadPath;
+        } finally {
+            clearTimeout(timeoutId);
         }
-        const downloadPath = path.join(getManagedRuntimeDownloadsDir(), target.assetName);
-        const buffer = Buffer.from(await response.arrayBuffer());
-        this._performChecksumVerification(buffer, target.sha256);
-        await fsPromises.mkdir(path.dirname(downloadPath), { recursive: true });
-        await fsPromises.writeFile(downloadPath, buffer);
-        return downloadPath;
     }
 
     private _performChecksumVerification(data: Buffer, expectedSha256: string): void {

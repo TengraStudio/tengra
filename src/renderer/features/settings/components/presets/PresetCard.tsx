@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Check, Trash2 } from 'lucide-react';
+import { IconCheck, IconTrash } from '@tabler/icons-react';
 import React from 'react';
 
 import { cn } from '@/lib/utils';
@@ -48,7 +48,7 @@ export const PresetCard: React.FC<PresetCardProps> = ({
                     onClick={(e) => { e.stopPropagation(); onDelete(preset.id); }}
                     className={C_PRESETCARD_1}
                 >
-                    <Trash2 size={10} />
+                    <IconTrash size={10} />
                 </button>
             )}
             <div className="flex flex-col items-center gap-2">
@@ -58,13 +58,13 @@ export const PresetCard: React.FC<PresetCardProps> = ({
                         preset.id === 'precise' ? t('ssh.presets.precise') :
                             preset.id === 'coding' ? t('ssh.presets.coding') : preset.name}
                 </div>
-                <div className="text-xxs opacity-60">
+                <div className="text-sm opacity-60">
                     T:{preset.temperature} P:{preset.topP}
                 </div>
             </div>
             {isActive && (
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-current rounded-full flex items-center justify-center">
-                    <Check size={10} className="text-background" />
+                    <IconCheck size={10} className="text-background" />
                 </div>
             )}
         </div>

@@ -83,8 +83,10 @@ export interface AppSettings {
         fontSize: number;
         fontFamily?: string;
         typographyScale?: 'compact' | 'balanced' | 'comfortable';
-        highContrast?: boolean;
+
         reduceMotion?: boolean;
+        screenReaderAnnouncements?: boolean;
+        enhancedFocusIndicators?: boolean;
 
         defaultModel?: string;
         defaultTerminalBackend?: string;
@@ -116,74 +118,56 @@ export interface AppSettings {
         agentAllowedCommands?: string[];
         agentDisallowedCommands?: string[];
         agentAllowedPaths?: string[];
+        dismissedLanguagePrompts?: string[];
     };
     modelGovernance?: ModelGovernanceSettings;
     github?: {
         username?: string;
-        token?: string;
     };
     openai?: {
-        apiKeys?: string[];
-        apiKey?: string; // Legacy support - kept for backward compatibility
         accessToken?: string; // For web session auth
         email?: string;
         model: string;
     };
     claude?: {
-        apiKeys?: string[];
-        apiKey?: string; // Legacy support
         model: string;
     };
     anthropic?: {
-        apiKeys?: string[];
-        apiKey?: string; // Legacy support
         model: string;
     };
 
     groq?: {
-        apiKeys?: string[];
-        apiKey?: string; // Legacy support
         model: string;
     };
     nvidia?: {
-        apiKeys?: string[];
-        apiKey?: string; // Legacy support
         model: string;
     };
     huggingface?: {
-        apiKey: string;
+        model: string;
     };
     // API Key based AI providers
     gemini?: {
-        apiKeys?: string[];
         model: string;
     };
     mistral?: {
-        apiKeys?: string[];
         model: string;
     };
     together?: {
-        apiKeys?: string[];
         model: string;
     };
     perplexity?: {
-        apiKeys?: string[];
         model: string;
     };
     cohere?: {
-        apiKeys?: string[];
         model: string;
     };
     xai?: {
-        apiKeys?: string[];
         model: string;
     };
     deepseek?: {
-        apiKeys?: string[];
         model: string;
     };
     openrouter?: {
-        apiKeys?: string[];
         model: string;
     };
     antigravity?: {
@@ -196,7 +180,6 @@ export interface AppSettings {
     };
     copilot?: {
         connected: boolean;
-        token?: string;
     };
     userAvatar?: string;
     aiAvatar?: string;
@@ -204,7 +187,6 @@ export interface AppSettings {
         enabled: boolean;
         url: string;
         key: string;
-        apiKey?: string;
         managementPassword?: string;
         port?: number;
         authStoreKey?: string;
@@ -229,12 +211,6 @@ export interface AppSettings {
             requireBiometricOnUnlock?: boolean;
         };
     };
-    personas?: {
-        id: string;
-        name: string;
-        description: string;
-        prompt: string;
-    }[];
     window?: {
         width: number;
         height: number;
@@ -383,6 +359,9 @@ export interface AppSettings {
         cursorStyle?: 'bar' | 'block' | 'underline';
         cursorBlink?: boolean;
         scrollback?: number;
+        themePresetId?: string;
+        surfaceOpacity?: number;
+        surfaceBlur?: number;
     };
     remoteAccounts?: {
         discord?: {

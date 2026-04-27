@@ -12,7 +12,7 @@ import * as path from 'path';
 
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
-import { AuditLogService } from '@main/services/analysis/audit-log.service';
+
 import { DatabaseService } from '@main/services/data/database.service';
 import { LogoService } from '@main/services/external/logo.service';
 import { InlineSuggestionService } from '@main/services/llm/inline-suggestion.service';
@@ -61,7 +61,7 @@ export interface WorkspaceIpcDeps {
     /** Service for database access and workspace lookups. */
     databaseService: DatabaseService;
     /** Optional service for audit logging sensitive/destructive workspace operations. */
-    auditLogService?: AuditLogService;
+
 }
 
 interface WorkspaceLookup {
@@ -303,7 +303,7 @@ export const registerWorkspaceIpc = (
         codeIntelligenceService,
         jobSchedulerService,
         databaseService,
-        auditLogService,
+
     } = deps;
     const resolvedWorkspaceService = workspaceService;
     const workspaceAutoIndexer = createWorkspaceAutoIndexer(
@@ -378,23 +378,7 @@ export const registerWorkspaceIpc = (
     /**
      * Internal utility for audit logging sensitive file system operations.
      */
-    const logDestructiveAction = async (
-        action: string,
-        rootPath: string,
-        success: boolean,
-        details?: Record<string, string | number | boolean>,
-        error?: string
-    ): Promise<void> => {
-        if (!auditLogService) {
-            return;
-        }
-        const context = resolvedWorkspaceService.getAuditContext(rootPath);
-        await auditLogService.logFileSystemOperation(action, success, {
-            ...context,
-            ...(details ?? {}),
-            ...(error ? { error } : {}),
-        });
-    };
+
 
     const validateSender = createMainWindowSenderValidator(getWindow, 'workspace operation');
 
@@ -688,21 +672,12 @@ export const registerWorkspaceIpc = (
             'workspace:applyLogo',
             async (event, workspacePath: string, tempLogoPath: string) => {
                 validateSender(event);
-                try {
-                    const result = await logoService.applyLogo(workspacePath, tempLogoPath);
-                    
-                    // Dynamically allow this workspace root for safe-file protocol
-                    allowedFileRoots.add(path.resolve(workspacePath));
-                    
-                    await logDestructiveAction('workspace.apply-logo', workspacePath, true, {
-                        hasTempLogoPath: Boolean(tempLogoPath),
-                    });
-                    return result;
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : 'Unknown error';
-                    await logDestructiveAction('workspace.apply-logo', workspacePath, false, undefined, message);
-                    throw error;
-                }
+                const result = await logoService.applyLogo(workspacePath, tempLogoPath);
+                
+                // Dynamically allow this workspace root for safe-file protocol
+                allowedFileRoots.add(path.resolve(workspacePath));
+                
+                return result;
             },
             {
                 argsSchema: z.tuple([WorkspaceRootPathSchema, LargeDataUriSchema]),
@@ -854,15 +829,11 @@ export const registerWorkspaceIpc = (
                 validateSender(event);
                 try {
                     await resolvedWorkspaceService.saveEnvVars(rootPath, vars);
-                    await logDestructiveAction('workspace.save-env', rootPath, true, {
-                        variableCount: Object.keys(vars).length,
-                    });
+
                     return { success: true };
                 } catch (error) {
                     const message = error instanceof Error ? error.message : 'Unknown error';
-                    await logDestructiveAction('workspace.save-env', rootPath, false, {
-                        variableCount: Object.keys(vars).length,
-                    }, message);
+
                     throw error;
                 }
             },

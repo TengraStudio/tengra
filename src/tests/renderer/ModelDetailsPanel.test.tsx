@@ -8,10 +8,11 @@
  * (at your option) any later version.
  */
 
-import { ModelDetailsPanel } from '@renderer/features/models/components/ModelDetailsPanel';
-import type { OllamaLibraryModel } from '@renderer/features/models/types';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+
+import { ModelDetailsPanel } from '@/features/models/components/ModelDetailsPanel';
+import type { OllamaLibraryModel } from '@/features/models/types';
 
 describe('ModelDetailsPanel', () => {
     it('sanitizes longDescriptionHtml script and event-handler payloads', () => {

@@ -207,7 +207,7 @@ describe('TerminalSmartService', () => {
 
         it('should handle non-JSON LLM response', async () => {
             mockLlm.chat.mockResolvedValue({
-                content: 'This command does X',
+                content: 'This command does IconX',
                 role: 'assistant'
             });
             const result = await service.explainCommand({
@@ -340,7 +340,7 @@ describe('TerminalSmartService', () => {
         });
 
         it('should truncate long error output in prompt', async () => {
-            const longError = 'X'.repeat(3000);
+            const longError = 'IconX'.repeat(3000);
             mockLlm.chat.mockResolvedValue({
                 content: '{"suggestedCommand":"fix","explanation":"fixed","confidence":"medium"}',
                 role: 'assistant'

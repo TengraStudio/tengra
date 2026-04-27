@@ -76,7 +76,7 @@ export class BackgroundServiceService extends BaseService {
      * Removes background task registrations.
      */
     async unregisterAll(): Promise<void> {
-        if (process.platform !== 'win32') return;
+        if (process.platform !== 'win32') {return;}
 
         const services = ['tengra-proxy', 'tengra-db-service'];
         for (const id of services) {

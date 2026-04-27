@@ -13,18 +13,7 @@
  * Compare responses from multiple AI models side by side.
  */
 
-import {
-    BarChart3,
-    Check,
-    ChevronDown,
-    Clock,
-    Copy,
-    Loader2,
-    Play,
-    Plus,
-    X,
-    Zap,
-} from 'lucide-react';
+import { IconBolt,IconChartBar, IconCheck, IconChevronDown, IconClock, IconCopy, IconLoader2, IconPlayerPlay, IconPlus, IconX } from '@tabler/icons-react';
 import React, { useCallback, useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
@@ -87,7 +76,7 @@ const ModelSelector = ({
                 aria-label={`Select model for slot ${slot.id}`}
             >
                 <span className="font-medium">{currentModel?.name ?? slot.model}</span>
-                <ChevronDown
+                <IconChevronDown
                     className={cn('w-4 h-4 transition-transform', isOpen && 'rotate-180')}
                     aria-hidden="true"
                 />
@@ -165,9 +154,9 @@ const ResponseCardHeader = ({
                     aria-label={t('modelComparison.copyResponse')}
                 >
                     {copiedId === slot.id ? (
-                        <Check className="w-4 h-4 text-success" aria-hidden="true" />
+                        <IconCheck className="w-4 h-4 text-success" aria-hidden="true" />
                     ) : (
-                        <Copy className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                        <IconCopy className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                     )}
                 </button>
             ) : null}
@@ -177,7 +166,7 @@ const ResponseCardHeader = ({
                     className="p-1.5 hover:bg-destructive/10 hover:text-destructive rounded-md transition-colors"
                     aria-label={t('modelComparison.removeSlot')}
                 >
-                    <X className="w-4 h-4" aria-hidden="true" />
+                    <IconX className="w-4 h-4" aria-hidden="true" />
                 </button>
             )}
         </div>
@@ -192,7 +181,7 @@ const ResponseCardContent = ({ slot, t }: { slot: ComparisonSlot; t: (key: strin
                 role="status"
                 aria-label={t('modelComparison.loadingResponse')}
             >
-                <Loader2 className="w-6 h-6 animate-spin text-primary" aria-hidden="true" />
+                <IconLoader2 className="w-6 h-6 animate-spin text-primary" aria-hidden="true" />
             </div>
         ) : slot.response?.error ? (
             <div className="text-destructive text-sm" role="alert">
@@ -220,15 +209,15 @@ const ResponseCardStats = ({
         aria-label={t('modelComparison.metrics')}
     >
         <span className="flex items-center gap-1" title={t('modelComparison.responseTime')}>
-            <Clock className="w-3 h-3" aria-hidden="true" />
+            <IconClock className="w-3 h-3" aria-hidden="true" />
             {(response.responseTime / 1000).toFixed(2)}s
         </span>
         <span className="flex items-center gap-1" title={t('modelComparison.tokenCount')}>
-            <Zap className="w-3 h-3" aria-hidden="true" />
+            <IconBolt className="w-3 h-3" aria-hidden="true" />
             {response.tokens} {t('modelComparison.tokensUnit')}
         </span>
         <span className="flex items-center gap-1" title={t('modelComparison.tokensPerSecond')}>
-            <BarChart3 className="w-3 h-3" aria-hidden="true" />
+            <IconChartBar className="w-3 h-3" aria-hidden="true" />
             {(response.tokens / (response.responseTime / 1000 || 1)).toFixed(1)} {t('modelComparison.tokensPerSecondUnit')}
         </span>
     </div>
@@ -309,9 +298,9 @@ const PromptInput = ({
                     )}
                 >
                     {isComparing ? (
-                        <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                        <IconLoader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                     ) : (
-                        <Play className="w-4 h-4" aria-hidden="true" />
+                        <IconPlayerPlay className="w-4 h-4" aria-hidden="true" />
                     )}
                     {t('modelComparison.compare')}
                 </button>
@@ -456,7 +445,7 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({
                     aria-label={t('modelComparison.addModel')}
                     className={C_MODELCOMPARISON_3}
                 >
-                    <Plus className="w-4 h-4" aria-hidden="true" />
+                    <IconPlus className="w-4 h-4" aria-hidden="true" />
                     {t('modelComparison.addModel')}
                 </button>
             )}

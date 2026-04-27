@@ -8,10 +8,10 @@
  * (at your option) any later version.
  */
 
-import { enLocalePack } from '@renderer/i18n/locales';
 import { JsonValue } from '@shared/types/common';
 import type { LocalePack, LocalePackManifest } from '@shared/types/locale';
 
+import { enLocalePack } from '@/i18n/locales';
 import { localeIpc } from '@/utils/locale-ipc.util';
 import { appLogger } from '@/utils/renderer-logger';
 

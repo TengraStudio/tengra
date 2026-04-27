@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Bookmark, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { IconBookmark, IconThumbDown, IconThumbUp } from '@tabler/icons-react';
 import { memo } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
@@ -49,7 +49,7 @@ export const MessageFooter = memo(
         const showModel = config?.showModel ?? true;
         const showResponseTime = config?.showResponseTime ?? true;
         return (
-            <div className="flex items-center gap-3 mt-2 text-xxs text-muted-foreground/40 font-medium">
+            <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground/40 font-medium">
                 {showTimestamp && (
                     <span>
                         {new Date(message.timestamp).toLocaleTimeString(t('common.locale'), {
@@ -87,7 +87,7 @@ export const MessageFooter = memo(
                     <>
                         <span className="h-1 rounded-full bg-muted-foreground/20" />
                         <span className="text-warning/60 flex items-center gap-1">
-                            <Bookmark className="w-2.5 h-2.5 fill-current" />
+                            <IconBookmark className="w-2.5 h-2.5 fill-current" />
                         </span>
                     </>
                 )}
@@ -116,7 +116,7 @@ export const MessageFooter = memo(
                                 aria-label={t('messageReactions.thumbsUp')}
                                 aria-pressed={message.rating === 1}
                             >
-                                <ThumbsUp className={cn('w-2.5 h-2.5', message.rating === 1 && 'fill-current')} />
+                                <IconThumbUp className={cn('w-2.5 h-2.5', message.rating === 1 && 'fill-current')} />
                             </button>
                             <button
                                 type="button"
@@ -131,11 +131,11 @@ export const MessageFooter = memo(
                                 aria-label={t('messageReactions.thumbsDown')}
                                 aria-pressed={message.rating === -1}
                             >
-                                <ThumbsDown className={cn('w-2.5 h-2.5', message.rating === -1 && 'fill-current')} />
+                                <IconThumbDown className={cn('w-2.5 h-2.5', message.rating === -1 && 'fill-current')} />
                             </button>
                         </span>
                     </>
-                )}            </div>
+                )} </div>
         );
     }
 );

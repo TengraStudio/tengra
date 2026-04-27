@@ -8,10 +8,10 @@
  * (at your option) any later version.
  */
 
-import { ChatTemplate } from '@renderer/features/chat/types';
 import React, { lazy, memo, Suspense } from 'react';
 
 import { LoadingState } from '@/components/ui/LoadingState';
+import { ChatTemplate } from '@/features/chat/types';
 
 const ChatView = lazy(() => import('@/features/chat/components/ChatView').then(m => ({ default: m.ChatView })));
 

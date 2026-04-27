@@ -8,12 +8,12 @@
  * (at your option) any later version.
  */
 
-export * from '@renderer/features/workspace/workspace-agent/AIAssistantSidebar';
-export * from '@renderer/features/workspace/workspace-agent/ChatErrorBanner';
-export * from '@renderer/features/workspace/workspace-agent/WorkspaceAgentComposer';
-export * from '@renderer/features/workspace/workspace-agent/WorkspaceAgentConversation';
-export * from '@renderer/features/workspace/workspace-agent/WorkspaceAgentCouncilBoard';
-export * from '@renderer/features/workspace/workspace-agent/WorkspaceAgentCouncilSetup';
-export * from '@renderer/features/workspace/workspace-agent/WorkspaceAgentPanelHeader';
-export * from '@renderer/features/workspace/workspace-agent/WorkspaceAgentPermissionEditor';
-export * from '@renderer/features/workspace/workspace-agent/WorkspaceAgentSessionModal';
+export * from '@/features/workspace/workspace-agent/AIAssistantSidebar';
+export * from '@/features/workspace/workspace-agent/ChatErrorBanner';
+export * from '@/features/workspace/workspace-agent/WorkspaceAgentComposer';
+export * from '@/features/workspace/workspace-agent/WorkspaceAgentConversation';
+export * from '@/features/workspace/workspace-agent/WorkspaceAgentCouncilBoard';
+export * from '@/features/workspace/workspace-agent/WorkspaceAgentCouncilSetup';
+export * from '@/features/workspace/workspace-agent/WorkspaceAgentPanelHeader';
+export * from '@/features/workspace/workspace-agent/WorkspaceAgentPermissionEditor';
+export * from '@/features/workspace/workspace-agent/WorkspaceAgentSessionModal';

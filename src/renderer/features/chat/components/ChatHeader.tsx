@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Download, Eraser, Search, X } from 'lucide-react';
+import { IconDownload, IconEraser, IconSearch, IconX } from '@tabler/icons-react';
 import { memo, useEffect } from 'react';
 
 import { useDebounce } from '@/hooks/useDebounce';
@@ -82,7 +82,7 @@ export const ChatHeader = memo(({
                         title={t('chat.clear')}
                         aria-label={t('chat.clear')}
                     >
-                        <Eraser className="h-3.5 w-3.5" />
+                        <IconEraser className="h-3.5 w-3.5" />
                         <span>{t('chat.clear')}</span>
                     </button>
                     {onExport && (
@@ -91,12 +91,12 @@ export const ChatHeader = memo(({
                             className="text-muted-foreground/50 hover:text-foreground transition-colors p-2"
                             title={t('chat.exportChat')}
                         >
-                            <Download className="w-5 h-5" />
+                            <IconDownload className="w-5 h-5" />
                         </button>
                     )}
                 </div>
                 <div className="relative w-full">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
+                    <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
                     <input
                         type="text"
                         placeholder={t('chat.searchMessages')}
@@ -111,7 +111,7 @@ export const ChatHeader = memo(({
                             className="absolute right-3 top-1/2 -translate-y-1/2 hover:text-foreground text-muted-foreground/40"
                             aria-label={t('common.clear')}
                         >
-                            <X className="w-3.5 h-3.5" />
+                            <IconX className="w-3.5 h-3.5" />
                         </button>
                     )}
                 </div>

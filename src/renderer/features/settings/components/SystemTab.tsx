@@ -8,10 +8,10 @@
  * (at your option) any later version.
  */
 
-import { Button } from '@renderer/components/ui/button';
-import { CloudDownload, Cpu, Power, Settings, ShieldCheck, Terminal, Zap } from 'lucide-react';
+import { IconBolt,IconCloudDownload, IconCpu, IconPower, IconSettings, IconShieldCheck, IconTerminal } from '@tabler/icons-react';
 import React from 'react';
 
+import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import type { AppSettings } from '@/types/settings';
 
@@ -80,7 +80,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
             <div className="px-1">
                 <div className="flex items-center gap-4 mb-3">
                     <div className="rounded-2xl bg-primary/10 p-3.5 text-primary">
-                        <Settings className="w-7 h-7" />
+                        <IconSettings className="w-7 h-7" />
                     </div>
                     <div>
                         <h3 className="text-2xl font-semibold text-foreground leading-none">
@@ -103,7 +103,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                 <div className="relative z-10 flex flex-col gap-6 px-1 md:flex-row md:items-center md:justify-between">
                     <div className="flex items-center gap-4">
                         <div className="rounded-2xl bg-primary/10 p-3 text-primary">
-                            <CloudDownload className="w-6 h-6" />
+                            <IconCloudDownload className="w-6 h-6" />
                         </div>
                         <div>
                             <h3 className="text-lg font-semibold text-foreground">
@@ -170,7 +170,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
             <div className="overflow-hidden rounded-3xl border border-border/30 bg-card p-6 sm:p-8">
                 <div className="relative z-10 flex items-center gap-4 px-1">
                     <div className="rounded-2xl bg-primary/10 p-3.5 text-primary">
-                        <Cpu className="w-6 h-6" />
+                        <IconCpu className="w-6 h-6" />
                     </div>
                     <div>
                         <h3 className="text-lg font-semibold text-foreground">
@@ -186,7 +186,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                     <div className={C_SYSTEMTAB_5}>
                         <div className="space-y-1">
                             <div className="flex items-center gap-2 typo-body font-medium text-foreground">
-                                <Power className="w-3.5 h-3.5 text-primary opacity-40" />
+                                <IconPower className="w-3.5 h-3.5 text-primary opacity-40" />
                                 {t('general.startOnStartup')}
                             </div>
                             <div className="typo-body leading-relaxed text-muted-foreground/70">
@@ -202,7 +202,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                     <div className={C_SYSTEMTAB_6}>
                         <div className="space-y-1">
                             <div className="flex items-center gap-2 typo-body font-medium text-foreground">
-                                <Terminal className="w-3.5 h-3.5 text-primary opacity-40" />
+                                <IconTerminal className="w-3.5 h-3.5 text-primary opacity-40" />
                                 {t('general.workAtBackground')}
                             </div>
                             <div className="typo-body leading-relaxed text-muted-foreground/70">
@@ -218,7 +218,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                     <div className={C_SYSTEMTAB_7}>
                         <div className="space-y-1">
                             <div className="flex items-center gap-2 typo-body font-medium text-foreground">
-                                <Zap className="w-3.5 h-3.5 text-primary opacity-40" />
+                                <IconBolt className="w-3.5 h-3.5 text-primary opacity-40" />
                                 {t('settings.lowPowerMode')}
                             </div>
                             <div className="typo-body leading-relaxed text-muted-foreground/70">
@@ -234,7 +234,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                     <div className={C_SYSTEMTAB_8}>
                         <div className="space-y-1">
                             <div className="flex items-center gap-2 typo-body font-medium text-foreground">
-                                <ShieldCheck className="w-3.5 h-3.5 text-primary opacity-40" />
+                                <IconShieldCheck className="w-3.5 h-3.5 text-primary opacity-40" />
                                 {t('settings.autoHibernation')}
                             </div>
                             <div className="typo-body leading-relaxed text-muted-foreground/70">

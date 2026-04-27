@@ -151,7 +151,7 @@ describe('PromptTemplatesService', () => {
         });
 
         it('returns null for non-existent template', async () => {
-            const result = await service.updateTemplate('missing-id', { name: 'X' });
+            const result = await service.updateTemplate('missing-id', { name: 'IconX' });
             expect(result).toBeNull();
         });
     });

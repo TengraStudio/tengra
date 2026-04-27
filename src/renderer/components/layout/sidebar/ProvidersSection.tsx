@@ -8,10 +8,10 @@
  * (at your option) any later version.
  */
 
-import { SidebarMenuItem, SidebarSection } from '@renderer/components/layout/sidebar-components';
-import { Brain, Cpu, Sparkles } from 'lucide-react';
+import { IconBrain, IconCpu, IconSparkles } from '@tabler/icons-react';
 import React from 'react';
 
+import { SidebarMenuItem, SidebarSection } from '@/components/layout/sidebar-components';
 import { SettingsCategory } from '@/features/settings/types';
 import { Language, useTranslation } from '@/i18n';
 
@@ -36,13 +36,13 @@ export const ProvidersSectionComponent: React.FC<ProvidersSectionProps> = ({
         <SidebarSection
             id="ai-providers"
             title={t('sidebar.aiProviders')}
-            icon={<Sparkles className="w-3.5 h-3.5" />}
+            icon={<IconSparkles className="w-3.5 h-3.5" />}
             defaultExpanded={false}
             badge={4}
         >
             <SidebarMenuItem
                 id="ollama"
-                icon={<Brain className="w-4 h-4" />}
+                icon={<IconBrain className="w-4 h-4" />}
                 label={t('sidebar.ollama')}
                 description={t('sidebar.ollamaDescription')}
                 onClick={() => onOpenSettings('models' as SettingsCategory)}
@@ -51,7 +51,7 @@ export const ProvidersSectionComponent: React.FC<ProvidersSectionProps> = ({
             />
             <SidebarMenuItem
                 id="openai"
-                icon={<Sparkles className="w-4 h-4" />}
+                icon={<IconSparkles className="w-4 h-4" />}
                 label={t('sidebar.openai')}
                 description={t('sidebar.openaiDescription')}
                 onClick={() => onOpenSettings('models' as SettingsCategory)}
@@ -59,7 +59,7 @@ export const ProvidersSectionComponent: React.FC<ProvidersSectionProps> = ({
             />
             <SidebarMenuItem
                 id="anthropic"
-                icon={<Brain className="w-4 h-4" />}
+                icon={<IconBrain className="w-4 h-4" />}
                 label={t('sidebar.anthropic')}
                 description={t('sidebar.anthropicDescription')}
                 onClick={() => onOpenSettings('models' as SettingsCategory)}
@@ -67,7 +67,7 @@ export const ProvidersSectionComponent: React.FC<ProvidersSectionProps> = ({
             />
             <SidebarMenuItem
                 id="copilot"
-                icon={<Cpu className="w-4 h-4" />}
+                icon={<IconCpu className="w-4 h-4" />}
                 label={t('sidebar.copilot')}
                 description={t('sidebar.copilotDescription')}
                 onClick={() => onOpenSettings('accounts' as SettingsCategory)}

@@ -8,9 +8,9 @@
  * (at your option) any later version.
  */
 
-import { LinkedAccountInfo } from '@renderer/electron.d';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { LinkedAccountInfo } from '@/electron.d';
 import { appLogger } from '@/utils/renderer-logger';
 
 const PROVIDER_ALIASES: Record<string, string[]> = {

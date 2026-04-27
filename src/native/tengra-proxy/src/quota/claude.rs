@@ -1,4 +1,4 @@
-/**
+/*
  * Tengra - Your Personal AI Assistant
  * Copyright (c) 2026 TengraStudio
  *
@@ -39,8 +39,7 @@ pub async fn fetch_claude_quota(token: &str, org_id: Option<&str>) -> Result<Quo
     let usage: serde_json::Value = res.json().await?;
 
     // Map five_hour (most restrictive usually) as the primary quota
-    let quota = if let Some(five) = usage.get("five_hour") {
-        Some(QuotaInfo {
+    let quota = usage.get("five_hour").map(|five| QuotaInfo {
             remaining: 100.0
                 - five
                     .get("utilization")
@@ -55,10 +54,7 @@ pub async fn fetch_claude_quota(token: &str, org_id: Option<&str>) -> Result<Quo
             five_hour_reset_at: None,
             weekly_used_percent: None,
             weekly_reset_at: None,
-        })
-    } else {
-        None
-    };
+        });
 
     Ok(QuotaResult {
         success: true,

@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Terminal } from 'lucide-react';
+import { IconTerminal } from '@tabler/icons-react';
 
 /* Batch-02: Extracted Long Classes */
 const C_TERMINALEMPTYSTATE_1 = "mt-4 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg typo-caption font-bold transition-all border border-primary/30";
@@ -23,7 +23,7 @@ type TerminalEmptyStateProps = {
 export function TerminalEmptyState({ title, actionLabel, onCreate }: TerminalEmptyStateProps) {
     return (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground opacity-50">
-            <Terminal className="w-12 h-12 mb-4 opacity-20" />
+            <IconTerminal className="w-12 h-12 mb-4 opacity-20" />
             <p className="text-sm">{title}</p>
             <button
                 onClick={onCreate}

@@ -54,13 +54,13 @@ export const EmptyState: React.FC<EmptyStateProps> = memo(({
     <div className="flex flex-col gap-1">
       <h3 className="font-bold text-muted-foreground">{title}</h3>
       {description && (
-        <p className="text-xs text-muted-foreground/50 max-w-72 line-clamp-3">{description}</p>
+        <p className="text-sm text-muted-foreground/50 max-w-72 line-clamp-3">{description}</p>
       )}
     </div>
     {action && (
       <button
         onClick={action.onClick}
-        className="mt-2 py-2 px-4 bg-primary/20 text-primary border border-primary/30 rounded-lg text-xs font-bold hover:bg-primary/30 transition-colors"
+        className="mt-2 py-2 px-4 bg-primary/20 text-primary border border-primary/30 rounded-lg text-sm font-bold hover:bg-primary/30 transition-colors"
       >
         {action.label}
       </button>

@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { X } from 'lucide-react';
+import { IconX } from '@tabler/icons-react';
 import React, { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -200,7 +200,7 @@ const ModalBase: React.FC<ModalProps> = ({
                 )}
             >
                 <div className="flex items-center justify-between p-6 border-b border-border/50 bg-muted/30 backdrop-blur-md">
-                    {title && <h3 id={titleId} className="text-xl font-bold tracking-tight text-foreground">{title}</h3>}
+                    {title && <h3 id={titleId} className="text-xl font-bold text-foreground">{title}</h3>}
                     {!preventClose && (
                         <button
                             type="button"
@@ -208,7 +208,7 @@ const ModalBase: React.FC<ModalProps> = ({
                             className="p-2 rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all active:scale-95"
                             aria-label={t('aria.closeModal')}
                         >
-                            <X className="w-5 h-5" aria-hidden="true" />
+                            <IconX className="w-5 h-5" aria-hidden="true" />
                         </button>
                     )}
                 </div>

@@ -113,9 +113,6 @@ describe('AUD-2026-02-27-01: auth:poll-token must not expose access_token', () =
                 }),
                 detectProvider: vi.fn().mockReturnValue('copilot')
             } as never as AuthIpcDependencies['authService'],
-            auditLogService: {
-                logAuthenticationEvent: vi.fn().mockResolvedValue(undefined)
-            } as never as AuthIpcDependencies['auditLogService'],
             getMainWindow: vi.fn().mockReturnValue({
                 webContents: { id: 1 },
                 isDestroyed: vi.fn().mockReturnValue(false)

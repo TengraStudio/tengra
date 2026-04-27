@@ -12,8 +12,9 @@
  * Hook for tracking proxy embed status with loading, error, and empty states.
  * Provides reactive UI state for ProxyService lifecycle.
  */
-import { useTranslation } from '@renderer/i18n';
 import { useCallback, useEffect, useRef, useState } from 'react';
+
+import { useTranslation } from '@/i18n';
 
 /** Possible UI states for the proxy embed service */
 export type ProxyUiState = 'idle' | 'loading' | 'running' | 'stopped' | 'error';

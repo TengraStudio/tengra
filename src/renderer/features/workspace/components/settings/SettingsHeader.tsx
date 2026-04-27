@@ -8,10 +8,11 @@
  * (at your option) any later version.
  */
 
-import { Badge } from '@renderer/components/ui/badge';
-import { Button } from '@renderer/components/ui/button';
-import { RotateCcw, Save, Settings } from 'lucide-react';
+import { IconDeviceFloppy, IconRotate, IconSettings } from '@tabler/icons-react';
 import React from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 interface SettingsHeaderProps {
     t: (key: string) => string;
@@ -28,44 +29,42 @@ export const SettingsHeader: React.FC<SettingsHeaderProps> = ({
     onReset,
     onSave,
 }) => (
-    <div className="px-8 py-5 border-b border-border/40 flex items-center justify-between shrink-0 bg-background/40 backdrop-blur-md">
-        <div className="flex items-center gap-4">
-            <div className="p-2.5 rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
-                <Settings className="w-5 h-5 animate-spin-slow" />
+    <div className="px-6 py-4 border-b border-border/10 flex items-center justify-between shrink-0 bg-background/20">
+        <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/5 text-primary border border-primary/10">
+                <IconSettings className="w-4 h-4" />
             </div>
             <div>
                 <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-bold text-foreground tracking-tight">
+                    <h2 className="text-sm font-semibold text-foreground tracking-tight">
                         {t('workspaces.workspaceSettings')}
                     </h2>
                     {isDirty && (
-                        <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 typo-overline py-0 px-2 animate-pulse">
-                            {t('workspaces.unsavedChanges')}
-                        </Badge>
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary" title={t('workspaces.unsavedChanges')} />
                     )}
                 </div>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mt-0.5">{workspaceTitle}</p>
+                <p className="text-[10px] text-muted-foreground/40 font-medium uppercase tracking-wider">{workspaceTitle}</p>
             </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
             <Button
                 variant="ghost"
                 size="sm"
                 onClick={onReset}
                 disabled={!isDirty}
-                className="gap-2 text-muted-foreground hover:text-foreground"
+                className="h-8 text-[11px] font-medium text-muted-foreground/60 hover:text-foreground"
             >
-                <RotateCcw className="w-4 h-4" />
+                <IconRotate className="w-3.5 h-3.5 mr-1.5" />
                 {t('common.reset')}
             </Button>
             <Button
                 size="sm"
                 onClick={onSave}
                 disabled={!isDirty}
-                className="gap-2 px-6 shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+                className="h-8 px-4 text-[11px] font-semibold transition-all hover:bg-primary/90"
             >
-                <Save className="w-4 h-4" />
+                <IconDeviceFloppy className="w-3.5 h-3.5 mr-1.5" />
                 {t('common.save')}
             </Button>
         </div>

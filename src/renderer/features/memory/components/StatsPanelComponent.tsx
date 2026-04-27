@@ -15,7 +15,7 @@
  */
 
 import { AdvancedMemoryHealthSummary, MemoryCategory, MemoryStatistics } from '@shared/types/advanced-memory';
-import { Gauge,Sparkles, Tag } from 'lucide-react';
+import { IconGauge, IconSparkles, IconTag } from '@tabler/icons-react';
 import React from 'react';
 
 import { Card } from '@/components/ui/card';
@@ -50,7 +50,7 @@ const StatsPanelContent = ({
       {/* By Category */}
       <Card className="p-6 bg-muted/20 border-border/40">
         <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
-          <Tag className="w-4 h-4 text-primary" />
+          <IconTag className="w-4 h-4 text-primary" />
           {t('memory.stats.memoriesByCategory')}
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -72,7 +72,7 @@ const StatsPanelContent = ({
       {/* By Source */}
       <Card className="p-6 bg-muted/20 border-border/40">
         <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-primary" />
+          <IconSparkles className="w-4 h-4 text-primary" />
           {t('memory.stats.memoriesBySource')}
         </h3>
         <div className="space-y-2">
@@ -88,7 +88,7 @@ const StatsPanelContent = ({
       {/* Health Metrics */}
       <Card className="p-6 bg-muted/20 border-border/40">
         <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
-          <Gauge className="w-4 h-4 text-primary" />
+          <IconGauge className="w-4 h-4 text-primary" />
           {t('memory.stats.healthMetrics')}
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -116,7 +116,7 @@ const StatsPanelContent = ({
       {memoryContext && (
         <Card className="p-6 bg-muted/20 border-border/40">
           <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
-            <Gauge className="w-4 h-4 text-primary" />
+            <IconGauge className="w-4 h-4 text-primary" />
             {t('memory.stats.runtime.title')}
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -139,10 +139,10 @@ interface MetricCardProps {
 
 const MetricCard: React.FC<MetricCardProps> = ({ label, value, subtitle }) => (
   <div className="p-3 rounded-lg bg-muted/30">
-    <p className="text-xxs font-bold text-muted-foreground/60">
+    <p className="text-sm font-bold text-muted-foreground/60">
       {label}
     </p>
     <p className="text-xl font-bold">{value}</p>
-    {subtitle && <p className="text-xxs text-muted-foreground/50">{subtitle}</p>}
+    {subtitle && <p className="text-sm text-muted-foreground/50">{subtitle}</p>}
   </div>
 );

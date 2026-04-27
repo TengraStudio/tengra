@@ -87,7 +87,7 @@ export const SlashMenu = React.memo(({ isOpen, onClose, query, onSelect, command
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             className={C_SLASHMENU_1}
         >
-            <div className="px-3 py-2 text-xxs font-bold text-muted-foreground bg-muted/20 border-b border-border/50">
+            <div className="px-3 py-2 text-sm font-bold text-muted-foreground bg-muted/20 border-b border-border/50">
                 {t('common.commands')}
             </div>
             <div className="max-h-52 overflow-y-auto p-1 custom-scrollbar">
@@ -110,7 +110,7 @@ export const SlashMenu = React.memo(({ isOpen, onClose, query, onSelect, command
                         <div className="flex-1 min-w-0">
                             <div className="text-sm font-bold truncate leading-tight">{cmd.label}</div>
                             <div className={cn(
-                                "text-xxs truncate mt-0.5",
+                                "text-sm truncate mt-0.5",
                                 idx === selectedIndex ? "text-foreground/70" : "text-muted-foreground"
                             )}>{cmd.description}</div>
                         </div>

@@ -14,7 +14,7 @@
  * Displays an empty state when there are no items to display.
  */
 
-import { LucideIcon } from 'lucide-react';
+import type { Icon } from '@tabler/icons-react';
 import React from 'react';
 
 /* Batch-02: Extracted Long Classes */
@@ -22,7 +22,7 @@ const C_EMPTYSTATE_1 = "flex flex-col items-center justify-center py-20 text-cen
 
 
 interface EmptyStateProps {
-  icon: LucideIcon;
+  icon: Icon;
   title: string;
   description: string;
 }

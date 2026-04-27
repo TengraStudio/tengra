@@ -30,19 +30,19 @@ function getSplashHtml(): string {
   <title>Tengra</title>
   <style>
     :root {
-      color-scheme: light;
-      --bg: #f5f5f5;
-      --fg: #111111;
-      --muted: #5f6670;
-      --line: #dedede;
+      color-scheme: dark;
+      --bg: #0c0d10;
+      --accent: #3b82f6;
+      --fg: #f8fafc;
+      --muted: #94a3b8;
     }
     * { box-sizing: border-box; }
     html, body {
       margin: 0;
       width: 100%;
       height: 100%;
-      background: radial-gradient(120% 120% at 0% 0%, #ffffff 0%, var(--bg) 60%, #ececec 100%);
-      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       color: var(--fg);
       overflow: hidden;
     }
@@ -52,44 +52,49 @@ function getSplashHtml(): string {
       align-items: center;
       justify-content: center;
       flex-direction: column;
-      gap: 14px;
+      gap: 20px;
       user-select: none;
     }
     .brand {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
     .subtitle {
-      font-size: 13px;
+      font-size: 11px;
+      font-weight: 600;
       color: var(--muted);
-      letter-spacing: 0.02em;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
     }
     .progress {
-      width: 240px;
-      height: 4px;
+      width: 200px;
+      height: 2px;
       border-radius: 999px;
       overflow: hidden;
-      background: #e3e3e3;
-      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.05);
     }
     .bar {
-      width: 35%;
+      width: 40%;
       height: 100%;
-      background: linear-gradient(90deg, #111111, #4a4f56);
-      animation: slide 1.05s ease-in-out infinite;
+      background: var(--accent);
+      box-shadow: 0 0 15px var(--accent);
+      animation: slide 1.5s cubic-bezier(0.65, 0, 0.35, 1) infinite;
     }
     @keyframes slide {
-      0% { transform: translateX(-130%); }
-      50% { transform: translateX(95%); }
-      100% { transform: translateX(280%); }
+      0% { transform: translateX(-150%); }
+      100% { transform: translateX(250%); }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="brand">TENGRA</div>
-    <div class="subtitle">Starting services...</div>
+    <div class="subtitle">Initializing Services</div>
     <div class="progress"><div class="bar"></div></div>
   </div>
 </body>
@@ -120,7 +125,7 @@ export function showSplashWindow(): BrowserWindow {
         autoHideMenuBar: true,
         alwaysOnTop: true,
         center: true,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: '#0c0d10',
         icon: nativeImage.createFromPath(getSplashIconPath()),
         webPreferences: {
             sandbox: true,
@@ -153,6 +158,3 @@ export function closeSplashWindow(): void {
     splashWindow.close();
     splashWindow = null;
 }
-
-
-

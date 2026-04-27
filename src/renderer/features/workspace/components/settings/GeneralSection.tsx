@@ -1,27 +1,17 @@
-/**
- * Tengra - Your Personal AI Assistant
- * Copyright (c) 2026 TengraStudio
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- */
+import { IconBolt, IconDatabase, IconEyeOff, IconFileSearch, IconInfoCircle } from '@tabler/icons-react';
+import React from 'react';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@renderer/components/ui/card';
-import { Input } from '@renderer/components/ui/input';
-import { Label } from '@renderer/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@renderer/components/ui/select';
-import { Textarea } from '@renderer/components/ui/textarea';
-import { Info } from 'lucide-react';
-import React from 'react';
-
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { Workspace } from '@/types';
 
 import { SettingsSectionProps } from './types';
@@ -31,27 +21,32 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({
     setFormData,
     t,
 }) => (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="flex flex-col gap-1.5">
-            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                <Info className="w-6 h-6 text-primary" />
-                {t('workspaces.basicInfo')}
-            </h2>
-            <p className="text-muted-foreground">{t('workspaces.basicInfoDesc')}</p>
-        </div>
+    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        {/* Basic Information */}
+        <div className="space-y-6">
+            <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/5 text-primary border border-primary/10">
+                    <IconInfoCircle className="w-5 h-5" />
+                </div>
+                <div>
+                    <h2 className="text-lg font-semibold text-foreground tracking-tight">
+                        {t('workspaces.basicInfo')}
+                    </h2>
+                    <p className="text-sm text-muted-foreground/60">
+                        {t('workspaces.basicInfoDesc')}
+                    </p>
+                </div>
+            </div>
 
-        <Card className="border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden border-2 shadow-xl shadow-primary/5">
-            <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
-                <CardTitle className="text-base font-semibold">{t('workspaces.workspaceDetails')}</CardTitle>
-                <CardDescription>{t('workspaces.workspaceDetailsDesc')}</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-6">
+            <div className="space-y-6 pl-11">
                 <div className="space-y-2">
-                    <Label className="text-sm font-medium">{t('workspaces.workspaceTitle')}</Label>
+                    <Label className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">
+                        {t('workspaces.workspaceTitle')}
+                    </Label>
                     <Input
                         type="text"
                         value={formData.title}
-                        className="bg-background/50 focus-visible:ring-primary/30"
+                        className="bg-muted/5 border-border/10 focus:border-primary/20 transition-all"
                         placeholder={t('workspaces.namePlaceholder')}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                             setFormData(prev => ({ ...prev, title: e.target.value }))
@@ -59,26 +54,30 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label className="text-sm font-medium">{t('workspaces.description')}</Label>
+                    <Label className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">
+                        {t('workspaces.description')}
+                    </Label>
                     <Textarea
                         value={formData.description}
-                        className="min-h-24 bg-background/50 resize-none focus-visible:ring-primary/30"
+                        className="min-h-24 bg-muted/5 border-border/10 focus:border-primary/20 transition-all resize-none"
                         placeholder={t('workspaces.descPlaceholder')}
                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                             setFormData(prev => ({ ...prev, description: e.target.value }))
                         }
-                        rows={4}
+                        rows={3}
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label className="text-sm font-medium">{t('workspaces.status')}</Label>
+                    <Label className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">
+                        {t('workspaces.status')}
+                    </Label>
                     <Select
                         value={formData.status}
                         onValueChange={(val: string) =>
                             setFormData(prev => ({ ...prev, status: val as Workspace['status'] }))
                         }
                     >
-                        <SelectTrigger className="bg-background/50">
+                        <SelectTrigger className="bg-muted/5 border-border/10">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -88,7 +87,129 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({
                         </SelectContent>
                     </Select>
                 </div>
-            </CardContent>
-        </Card>
+            </div>
+        </div>
+
+        <div className="h-px bg-border/5 ml-11" />
+
+        {/* Indexing Engine */}
+        <div className="space-y-6">
+            <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/5 text-primary border border-primary/10">
+                    <IconDatabase className="w-5 h-5" />
+                </div>
+                <div>
+                    <h2 className="text-lg font-semibold text-foreground tracking-tight">
+                        {t('workspaces.advancedEngine')}
+                    </h2>
+                    <p className="text-sm text-muted-foreground/60">
+                        {t('workspaces.advancedEngineDesc')}
+                    </p>
+                </div>
+            </div>
+
+            <div className="space-y-8 pl-11">
+                <div className="flex items-center justify-between p-4 rounded-xl border border-border/5 bg-muted/5 group hover:bg-muted/10 transition-all">
+                    <div className="space-y-0.5">
+                        <Label className="text-sm font-medium text-foreground">
+                            {t('workspaces.semanticIndexing')}
+                        </Label>
+                        <p className="text-xs text-muted-foreground/60">
+                            {t('workspaces.semanticIndexingDesc')}
+                        </p>
+                    </div>
+                    <Switch
+                        checked={formData.indexingEnabled}
+                        onCheckedChange={checked =>
+                            setFormData(prev => ({ ...prev, indexingEnabled: checked }))
+                        }
+                    />
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <Label className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">
+                            {t('workspaces.maxFileSize')} (bytes)
+                        </Label>
+                        <Input
+                            type="number"
+                            value={formData.indexingMaxFileSize}
+                            className="bg-muted/5 border-border/10 font-mono"
+                            onChange={e =>
+                                setFormData(prev => ({ ...prev, indexingMaxFileSize: parseInt(e.target.value) || 0 }))
+                            }
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">
+                            {t('workspaces.maxConcurrency')}
+                        </Label>
+                        <Input
+                            type="number"
+                            min={1}
+                            max={16}
+                            value={formData.indexingMaxConcurrency}
+                            className="bg-muted/5 border-border/10 font-mono"
+                            onChange={e =>
+                                setFormData(prev => ({ ...prev, indexingMaxConcurrency: parseInt(e.target.value) || 4 }))
+                            }
+                        />
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <Label className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider flex items-center gap-2">
+                        <IconEyeOff className="w-3.5 h-3.5" />
+                        {t('workspaces.exclusionPatterns')}
+                    </Label>
+                    <Textarea
+                        placeholder={t('workspaces.exclusionPatternsPlaceholder')}
+                        value={formData.indexingExclude}
+                        className="min-h-20 bg-muted/5 border-border/10 font-mono text-[13px] resize-none"
+                        onChange={e =>
+                            setFormData(prev => ({ ...prev, indexingExclude: e.target.value }))
+                        }
+                    />
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
+                    <div className="flex items-center justify-between p-4 rounded-xl border border-border/5 bg-muted/5 group hover:bg-muted/10 transition-all">
+                        <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                                <IconFileSearch className="w-3.5 h-3.5 text-primary/60" />
+                                <Label className="text-sm font-medium text-foreground">
+                                    {t('workspaces.fileWatcher')}
+                                </Label>
+                            </div>
+                            <p className="text-xs text-muted-foreground/60">{t('workspaces.fileWatcherDesc')}</p>
+                        </div>
+                        <Switch
+                            checked={formData.fileWatchEnabled}
+                            onCheckedChange={checked =>
+                                setFormData(prev => ({ ...prev, fileWatchEnabled: checked }))
+                            }
+                        />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 rounded-xl border border-border/5 bg-muted/5 group hover:bg-muted/10 transition-all">
+                        <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                                <IconBolt className="w-3.5 h-3.5 text-warning/60" />
+                                <Label className="text-sm font-medium text-foreground">
+                                    {t('workspaces.autoSaveLabel')}
+                                </Label>
+                            </div>
+                            <p className="text-xs text-muted-foreground/60">{t('workspaces.autoSaveDesc')}</p>
+                        </div>
+                        <Switch
+                            checked={formData.autoSave}
+                            onCheckedChange={checked =>
+                                setFormData(prev => ({ ...prev, autoSave: checked }))
+                            }
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 );

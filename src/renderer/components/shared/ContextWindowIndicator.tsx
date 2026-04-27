@@ -47,7 +47,7 @@ const ContextWindowIndicator: React.FC<ContextWindowIndicatorProps> = ({
 
     return (
         <div className="flex flex-col gap-1.5 w-full max-w-sm px-1 font-sans">
-            <div className="flex items-center justify-between text-xs font-medium text-muted-foreground tracking-tight">
+            <div className="flex items-center justify-between text-sm font-medium text-muted-foreground ">
                 <span className="font-semibold text-foreground/80 truncate pr-2" title={modelName}>{modelName}</span>
                 <span className="whitespace-nowrap tabular-nums text-foreground/70">
                     {t('contextWindow.usage', {

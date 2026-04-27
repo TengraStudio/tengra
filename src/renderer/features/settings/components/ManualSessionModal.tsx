@@ -8,13 +8,13 @@
  * (at your option) any later version.
  */
 
-import { Button } from '@renderer/components/ui/button';
-import { Input } from '@renderer/components/ui/input';
-import { useTranslation } from '@renderer/i18n';
-import { AlertCircle, Check, Key, Loader2, ShieldCheck, X } from 'lucide-react';
+import { IconAlertCircle, IconCheck, IconKey, IconLoader2, IconShieldCheck, IconX } from '@tabler/icons-react';
 import React, { useCallback, useState } from 'react';
 
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 /* Batch-02: Extracted Long Classes */
@@ -46,13 +46,13 @@ const HeaderSection: React.FC<{
 }> = ({ email, t }) => (
     <div className={C_MANUALSESSIONMODAL_1}>
         <div className="p-2.5 rounded-xl bg-primary/10 text-primary shadow-sm">
-            <ShieldCheck className="w-5.5 h-5.5" />
+            <IconShieldCheck className="w-5.5 h-5.5" />
         </div>
         <div className="space-y-1.5 flex-1 min-w-0">
             <p className="text-sm font-bold text-foreground truncate">
                 {t('auth.completeConnection', { email: email ?? t('auth.yourAccount') })}
             </p>
-            <p className="text-xxs text-muted-foreground leading-relaxed font-medium opacity-80">
+            <p className="text-sm text-muted-foreground leading-relaxed font-medium opacity-80">
                 {t('auth.sessionKeyDescription')}
             </p>
         </div>
@@ -61,8 +61,8 @@ const HeaderSection: React.FC<{
 
 const InstructionsSection: React.FC<{ t: (key: string) => string }> = ({ t }) => (
     <div className="space-y-4 px-1">
-        <h4 className="text-xxs font-bold text-primary/70 flex items-center gap-2">
-            <AlertCircle className="w-3.5 h-3.5" />
+        <h4 className="text-sm font-bold text-primary/70 flex items-center gap-2">
+            <IconAlertCircle className="w-3.5 h-3.5" />
             {t('auth.howToFindKey')}
         </h4>
         <ul className="grid grid-cols-1 gap-2.5">
@@ -101,13 +101,13 @@ const InputSection: React.FC<InputSectionProps> = ({
     <div className="space-y-2.5 px-0.5">
         <label
             htmlFor="sessionKey"
-            className="text-xxs font-bold text-muted-foreground/70 ml-1"
+            className="text-sm font-bold text-muted-foreground/70 ml-1"
         >
             {t('auth.sessionKeyLabel')}
         </label>
         <div className="relative group">
             <div className={C_MANUALSESSIONMODAL_4}>
-                <Key className="w-4 h-4" />
+                <IconKey className="w-4 h-4" />
             </div>
             <Input
                 id="sessionKey"
@@ -128,13 +128,13 @@ const InputSection: React.FC<InputSectionProps> = ({
                     onClick={() => setSessionKey('')}
                     className={C_MANUALSESSIONMODAL_5}
                 >
-                    <X className="w-3.5 h-3.5" />
+                    <IconX className="w-3.5 h-3.5" />
                 </Button>
             )}
         </div>
         {error && (
-            <p className="text-xxs text-destructive font-bold ml-1 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 px-1">
-                <AlertCircle className="w-3.5 h-3.5" />
+            <p className="text-sm text-destructive font-bold ml-1 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 px-1">
+                <IconAlertCircle className="w-3.5 h-3.5" />
                 {error}
             </p>
         )}
@@ -149,19 +149,19 @@ interface SaveButtonProps {
 
 const SaveButtonContent: React.FC<SaveButtonProps> = ({ isSaving, success, t }) => {
     if (isSaving) {
-        return <Loader2 className="w-4.5 h-4.5 animate-spin" />;
+        return <IconLoader2 className="w-4.5 h-4.5 animate-spin" />;
     }
     if (success) {
         return (
             <>
-                <Check className="w-4.5 h-4.5" />
+                <IconCheck className="w-4.5 h-4.5" />
                 {t('auth.validatedAndSaved')}
             </>
         );
     }
     return (
         <>
-            <ShieldCheck className="w-4.5 h-4.5" />
+            <IconShieldCheck className="w-4.5 h-4.5" />
             {t('auth.saveSessionKey')}
         </>
     );
@@ -263,7 +263,7 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
                         onClick={() => void handleSave()}
                         disabled={isSaving || success || !sessionKey.startsWith('sk-ant-sid')}
                         className={cn(
-                            'w-full sm:flex-2 h-12 rounded-2xl typo-body font-bold   flex items-center justify-center gap-3 transition-all shadow-xl',
+                            'w-full sm:flex-2 h-12 rounded-2xl typo-body font-bold flex items-center justify-center gap-3 transition-all shadow-xl',
                             success
                                 ? 'bg-success hover:bg-success text-foreground shadow-emerald-500/20'
                                 : 'bg-primary text-primary-foreground shadow-primary/20 hover:scale-102 active:scale-95 disabled:scale-100 disabled:opacity-40 disabled:grayscale'

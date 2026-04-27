@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { PanelLeft, PanelLeftClose, Plus, Search } from 'lucide-react';
+import { IconLayoutSidebar, IconLayoutSidebarLeftCollapse, IconPlus, IconSearch } from '@tabler/icons-react';
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -74,7 +74,7 @@ export const SidebarNewChatButton: React.FC<SidebarNewChatButtonProps> = ({
             title={t('sidebar.newChat')}
             aria-label={t('sidebar.newChat')}
         >
-            <Plus
+            <IconPlus
                 className={cn(
                     'w-4 h-4 transition-transform group-hover:rotate-90',
                     !isCollapsed && 'mr-2'
@@ -104,10 +104,10 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({ isCollapsed, onSea
     }
     return (
         <div className="p-4 border-t border-border/20 bg-muted/5">
-            <div className="flex items-center justify-between text-xxs text-muted-foreground/40 font-bold px-1">
+            <div className="flex items-center justify-between text-sm text-muted-foreground/40 font-bold px-1">
                 <span>{t('app.versionShort', { version: '1.2.0' })}</span>
                 <div className="flex items-center gap-2">
-                    <Search
+                    <IconSearch
                         className="w-3 h-3 hover:text-primary cursor-pointer transition-colors"
                         onClick={onSearch}
                     />
@@ -145,9 +145,9 @@ const SidebarToggleButton = ({
             aria-label={isCollapsed ? t('sidebar.expand') : t('sidebar.collapse')}
         >
             {isCollapsed ? (
-                <PanelLeft className="w-4 h-4" />
+                <IconLayoutSidebar className="w-4 h-4" />
             ) : (
-                <PanelLeftClose className="w-4 h-4" />
+                <IconLayoutSidebarLeftCollapse className="w-4 h-4" />
             )}
         </Button>
     );

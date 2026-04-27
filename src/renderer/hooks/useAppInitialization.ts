@@ -8,12 +8,12 @@
  * (at your option) any later version.
  */
 
-import { Language, useLanguage } from '@renderer/i18n';
-import { localeRegistry } from '@renderer/i18n/locale-registry.service';
-import { themeRegistry } from '@renderer/themes/theme-registry.service';
 import { useCallback, useEffect, useRef } from 'react';
 
+import { Language, useLanguage } from '@/i18n';
+import { localeRegistry } from '@/i18n/locale-registry.service';
 import { marketplaceStore } from '@/store/marketplace.store';
+import { themeRegistry } from '@/themes/theme-registry.service';
 import { unwrapSettingsResponse } from '@/utils/app-settings.util';
 import { appLogger } from '@/utils/renderer-logger';
 

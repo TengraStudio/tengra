@@ -13,6 +13,7 @@
  * Reusable prompts with variable substitution
  */
 
+import { t } from '@main/utils/i18n.util';
 import { JsonObject } from '@shared/types/common';
 
 // SEC-015-3: Patterns that could indicate prompt injection attempts
@@ -244,8 +245,8 @@ export const BUILTIN_TEMPLATES: PromptTemplate[] = [
 Provide detailed feedback with specific line references where applicable.`,
         variables: [
             { name: 'language', type: 'string', defaultValue: 'typescript', placeholder: 'programming language' },
-            { name: 'code', type: 'textarea', required: true, placeholder: 'Paste your code here' },
-            { name: 'focus', type: 'textarea', placeholder: 'Any specific areas to focus on?' }
+            { name: 'code', type: 'textarea', required: true, placeholder: t('auto.pasteYourCodeHere') },
+            { name: 'focus', type: 'textarea', placeholder: t('auto.anySpecificAreasToFocusOn') }
         ],
         category: 'development',
         tags: ['code', 'review', 'quality'],
@@ -255,7 +256,7 @@ Provide detailed feedback with specific line references where applicable.`,
     {
         id: 'explain-code',
         name: 'Explain Code',
-        description: 'Get a detailed explanation of code',
+        description: t('auto.getADetailedExplanationOfCode'),
         template: `Explain the following {{language}} code in detail:
 
 \`\`\`{{language}}
@@ -282,7 +283,7 @@ Target explanation level: {{level|intermediate}}`,
     {
         id: 'write-tests',
         name: 'Write Unit Tests',
-        description: 'Generate unit tests for code',
+        description: t('auto.generateUnitTestsForCode'),
         template: `Write comprehensive unit tests for the following {{language}} code using {{framework}}:
 
 \`\`\`{{language}}
@@ -338,7 +339,7 @@ Provide the refactored code with explanations for each change.`,
     {
         id: 'summarize',
         name: 'Summarize Text',
-        description: 'Create a concise summary',
+        description: t('auto.createAConciseSummary'),
         template: `Summarize the following text in {{length}} format:
 
 {{text}}
@@ -357,7 +358,7 @@ Output format: {{format|bullet points}}`,
     {
         id: 'translate',
         name: 'Translate Text',
-        description: 'Translate text between languages',
+        description: t('auto.translateTextBetweenLanguages'),
         template: `Translate the following text from {{source}} to {{target}}:
 
 {{text}}

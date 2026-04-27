@@ -8,13 +8,13 @@
  * (at your option) any later version.
  */
 
-import { NginxWizard } from '@renderer/features/ssh/NginxWizard';
-import { PackageManager } from '@renderer/features/ssh/PackageManager';
-import { SFTPBrowser } from '@renderer/features/ssh/SFTPBrowser';
-import { SSHLogs } from '@renderer/features/ssh/SSHLogs';
-import { StatsDashboard } from '@renderer/features/ssh/StatsDashboard';
 import React from 'react';
 
+import { NginxWizard } from '@/features/ssh/NginxWizard';
+import { PackageManager } from '@/features/ssh/PackageManager';
+import { SFTPBrowser } from '@/features/ssh/SFTPBrowser';
+import { SSHLogs } from '@/features/ssh/SSHLogs';
+import { StatsDashboard } from '@/features/ssh/StatsDashboard';
 import { Language } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 

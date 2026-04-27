@@ -1,4 +1,4 @@
-/**
+/*
  * Tengra - Your Personal AI Assistant
  * Copyright (c) 2026 TengraStudio
  *
@@ -11,8 +11,6 @@ use anyhow::{anyhow, Result};
 use reqwest::{Client, Response};
 use serde::Serialize;
 use serde_json::{Map, Value};
-use std::fs;
-use std::path::PathBuf;
 use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
@@ -39,29 +37,6 @@ struct LinkedAccountsCache {
     rows: Vec<Value>,
 }
 
-fn get_db_port_path() -> Option<PathBuf> {
-    // Windows: %APPDATA%/Tengra/services/db-service.port
-    let app_data = std::env::var("APPDATA").ok()?;
-    let path = PathBuf::from(app_data)
-        .join("Tengra")
-        .join("services")
-        .join("db-service.port");
-
-    if path.exists() {
-        Some(path)
-    } else {
-        // Fallback for lower case "tengra"
-        let path_lower = PathBuf::from(std::env::var("APPDATA").ok()?)
-            .join("tengra")
-            .join("services")
-            .join("db-service.port");
-        if path_lower.exists() {
-            Some(path_lower)
-        } else {
-            None
-        }
-    }
-}
 
 fn db_client() -> &'static Client {
     DB_CLIENT.get_or_init(|| {
@@ -94,9 +69,12 @@ async fn get_db_query_url() -> Result<String> {
     if let Some(cached) = db_query_url_cache().read().await.clone() {
         return Ok(cached);
     }
-    let port_path = get_db_port_path().ok_or_else(|| anyhow!("db-service.port file not found"))?;
-    let port_str = fs::read_to_string(port_path)?.trim().to_string();
-    let port: u16 = port_str.parse()?;
+    
+    let port = std::env::var("TENGRA_DB_PORT")
+        .ok()
+        .and_then(|p| p.parse::<u16>().ok())
+        .unwrap_or(42000);
+
     let url = format!("http://127.0.0.1:{}/api/v1/query", port);
     *db_query_url_cache().write().await = Some(url.clone());
     Ok(url)
@@ -283,9 +261,7 @@ fn normalize_openai_metadata_map(row: &Value) -> Option<Map<String, Value>> {
     let token_object = metadata.get("token").and_then(Value::as_object).cloned();
     let mut changed = false;
 
-    let Some(token) = token_object else {
-        return None;
-    };
+    let token = token_object?;
 
     for key in [
         "access_token",

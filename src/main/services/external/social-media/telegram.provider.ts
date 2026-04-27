@@ -64,7 +64,7 @@ export class TelegramProvider extends SocialMediaProvider {
 
         try {
             const me = await this.apiRequest<{ username: string }>('getMe');
-            appLogger.info('TelegramProvider', `Bot @${me.username} is connected.`);
+            appLogger.info('TelegramProvider', `IconRobot @${me.username} is connected.`);
             this.startPolling();
         } catch (error) {
             appLogger.error('TelegramProvider', 'Failed to initialize bot', error as Error);
@@ -72,7 +72,7 @@ export class TelegramProvider extends SocialMediaProvider {
         }
     }
 
-    /** Make a typed request to the Telegram Bot API */
+    /** Make a typed request to the Telegram IconRobot API */
     private async apiRequest<T = TelegramApiResult>(method: string, data: Record<string, unknown> = {}): Promise<T> {
         const url = `https://api.telegram.org/bot${this.token}/${method}`;
         try {

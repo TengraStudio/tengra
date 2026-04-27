@@ -20,7 +20,7 @@
  */
 
 import { AdvancedSemanticFragment, MemoryCategory, MemoryVersion, PendingMemory } from '@shared/types/advanced-memory';
-import { BarChart3 } from 'lucide-react';
+import { IconChartBar } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Card } from '@/components/ui/card';
@@ -386,7 +386,7 @@ export const MemoryInspector: React.FC = () => {
             <Card className="p-4 bg-muted/20 border-border/40">
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2 text-sm font-semibold">
-                        <BarChart3 className="w-4 h-4 text-primary" />
+                        <IconChartBar className="w-4 h-4 text-primary" />
                         <span>{t('memory.contextUsage')}</span>
                     </div>
                     {showReplaceImport && (

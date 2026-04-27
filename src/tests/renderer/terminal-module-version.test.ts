@@ -8,12 +8,13 @@
  * (at your option) any later version.
  */
 
+import { describe, expect, it } from 'vitest';
+
 import {
     isTerminalModuleVersionCompatible,
     serializeTerminalModuleVersion,
     TERMINAL_MODULE_VERSION,
-} from '@renderer/features/terminal/utils/module-version';
-import { describe, expect, it } from 'vitest';
+} from '@/features/terminal/utils/module-version';
 
 describe('terminal module version utils', () => {
     it('serializes the current module version as semver', () => {

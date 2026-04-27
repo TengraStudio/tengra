@@ -8,8 +8,7 @@
  * (at your option) any later version.
  */
 
-import type { ModelListItem } from '@renderer/features/models/types';
-
+import type { ModelListItem } from '@/features/models/types';
 import type { ModelInfo } from '@/types';
 
 export type SelectorChatMode = 'instant' | 'thinking' | 'agent';

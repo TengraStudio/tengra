@@ -1,7 +1,7 @@
 use dashmap::DashMap;
 use serde_json::{json, Value};
 use std::process::Stdio;
-/**
+/*
  * Tengra - Your Personal AI Assistant
  * Copyright (c) 2026 TengraStudio
  *
@@ -21,6 +21,7 @@ pub struct LspManager {
 }
 
 pub struct LspClient {
+    #[allow(dead_code)]
     pub language_id: String,
     tx: mpsc::Sender<LspRequest>,
 }

@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { AudioLines, File as FileIcon, FileCode, FileText, Image as ImageIcon, Video, X } from 'lucide-react';
+import { IconFile as FileIcon, IconFileCode, IconFileText, IconPhoto as ImageIcon, IconVideo, IconWaveSine, IconX } from '@tabler/icons-react';
 import { memo } from 'react';
 
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
@@ -32,10 +32,10 @@ interface AttachmentListProps {
 export const AttachmentList = memo(({ attachments, onRemove, t }: AttachmentListProps) => {
     const getFileIcon = (type: string) => {
         if (type === 'image') { return <ImageIcon size={12} />; }
-        if (type === 'video') { return <Video size={12} />; }
-        if (type === 'audio') { return <AudioLines size={12} />; }
-        if (type.includes('text') || type.includes('json') || type.includes('md')) { return <FileText size={12} />; }
-        if (type.includes('code') || type.includes('javascript') || type.includes('python')) { return <FileCode size={12} />; }
+        if (type === 'video') { return <IconVideo size={12} />; }
+        if (type === 'audio') { return <IconWaveSine size={12} />; }
+        if (type.includes('text') || type.includes('json') || type.includes('md')) { return <IconFileText size={12} />; }
+        if (type.includes('code') || type.includes('javascript') || type.includes('python')) { return <IconFileCode size={12} />; }
         return <FileIcon size={12} />;
     };
 
@@ -73,7 +73,7 @@ export const AttachmentList = memo(({ attachments, onRemove, t }: AttachmentList
                                 className={C_ATTACHMENTLIST_2}
                                 aria-label={t('input.removeAttachment', { name: att.name })}
                             >
-                                <X size={12} aria-hidden="true" />
+                                <IconX size={12} aria-hidden="true" />
                             </button>
                         </div>
                     ))}

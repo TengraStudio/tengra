@@ -16,8 +16,7 @@
  * useCallback, and stabilized the presence interval via useRef.
  */
 
-import { cn } from '@renderer/lib/utils';
-import { AlertTriangle, CheckCircle2, Copy, Loader2, RefreshCw, Sparkles, XCircle } from 'lucide-react';
+import { IconAlertTriangle, IconCircleCheck, IconCircleX,IconCopy, IconLoader2, IconRefresh, IconSparkles } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ResponsiveContainer } from '@/components/responsive/ResponsiveContainer';
@@ -27,6 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 import { Message } from '@/types';
 
 // #region Types
@@ -129,7 +129,7 @@ const FinalResult: React.FC<FinalResultProps> = ({ results, t }) => {
                 {results.consensus && (
                     <div>
                         <div className="flex items-center gap-2 mb-2">
-                            <CheckCircle2 className="w-4 h-4 text-primary" />
+                            <IconCircleCheck className="w-4 h-4 text-primary" />
                             <span className="text-sm font-medium">{t('chat.collaboration.consensus')}</span>
                         </div>
                         <p className="text-sm">{results.consensus}</p>
@@ -138,7 +138,7 @@ const FinalResult: React.FC<FinalResultProps> = ({ results, t }) => {
                 {results.bestResponse && (
                     <div>
                         <div className="flex items-center gap-2 mb-2">
-                            <CheckCircle2 className="w-4 h-4 text-primary" />
+                            <IconCircleCheck className="w-4 h-4 text-primary" />
                             <span className="text-sm font-medium">{t('chat.collaboration.bestResponse')}</span>
                         </div>
                         <p className="text-sm mb-2">{results.bestResponse.content}</p>
@@ -282,7 +282,7 @@ const SessionRecordingCard = React.memo<SessionRecordingCardProps>(({
                 {sessionRecording ? t('chat.collaboration.stopRecording') : t('chat.collaboration.startRecording')}
             </Button>
             <Button size="sm" variant="outline" onClick={onGenerateLink}>
-                <Copy className="w-3 h-3 mr-1" />
+                <IconCopy className="w-3 h-3 mr-1" />
                 {t('chat.collaboration.generateShareLink')}
             </Button>
         </div>
@@ -514,13 +514,13 @@ export function MultiModelCollaboration({
         <ResponsiveContainer className="w-full space-y-4">
             <Card className="p-4 space-y-4">
                 <div className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-primary" />
+                    <IconSparkles className="w-5 h-5 text-primary" />
                     <h3 className="text-lg font-semibold">{s.t('chat.collaboration.title')}</h3>
                 </div>
 
                 {availableModels.length === 0 && (
                     <div className="p-4 bg-muted/50 border border-muted rounded-md text-center space-y-2">
-                        <AlertTriangle className="w-6 h-6 text-warning mx-auto" />
+                        <IconAlertTriangle className="w-6 h-6 text-warning mx-auto" />
                         <p className="text-sm text-muted-foreground">{s.t('chat.collaboration.noModelsAvailable')}</p>
                     </div>
                 )}
@@ -595,21 +595,21 @@ export function MultiModelCollaboration({
 
                 <Button onClick={s.handleRunClick} disabled={s.isRunning || s.selectedModels.length === 0} className="w-full">
                     {s.isRunning ? (
-                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{s.t('chat.collaboration.running')}</>
+                        <><IconLoader2 className="w-4 h-4 mr-2 animate-spin" />{s.t('chat.collaboration.running')}</>
                     ) : (
-                        <><Sparkles className="w-4 h-4 mr-2" />{s.t('chat.collaboration.run')}</>
+                        <><IconSparkles className="w-4 h-4 mr-2" />{s.t('chat.collaboration.run')}</>
                     )}
                 </Button>
 
                 {s.error && (
                     <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md space-y-2">
                         <div className="flex items-center gap-2">
-                            <XCircle className="w-4 h-4 text-destructive shrink-0" />
+                            <IconCircleX className="w-4 h-4 text-destructive shrink-0" />
                             <span className="text-sm text-destructive flex-1">{s.error}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Button variant="outline" size="sm" onClick={s.handleRunClick} disabled={s.isRunning || s.selectedModels.length === 0}>
-                                <RefreshCw className="w-3 h-3 mr-1" />{s.t('chat.collaboration.retry')}
+                                <IconRefresh className="w-3 h-3 mr-1" />{s.t('chat.collaboration.retry')}
                             </Button>
                             <Button variant="ghost" size="sm" onClick={s.handleDismissError}>
                                 {s.t('chat.collaboration.dismiss')}

@@ -8,22 +8,22 @@
  * (at your option) any later version.
  */
 
-import { useChatListening } from '@renderer/context/ChatContext';
-import { useModel } from '@renderer/context/ModelContext';
-import {
-    useWorkspaceLibrary,
-    useWorkspaceSelection,
-    useWorkspaceTerminal,
-} from '@renderer/context/WorkspaceContext';
-import { ChatTemplate } from '@renderer/features/chat/types';
-import { ExtensionViewHost } from '@renderer/features/extensions/components/ExtensionViewHost';
-import { AppView } from '@renderer/hooks/useAppState';
 import React, { Suspense, useEffect, useMemo } from 'react';
 
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { renderViewSkeleton, ViewSkeletonId } from '@/components/ui/view-skeletons';
 import { useAuth, useAuthSettingsUi } from '@/context/AuthContext';
+import { useChatListening } from '@/context/ChatContext';
+import { useModel } from '@/context/ModelContext';
+import {
+    useWorkspaceLibrary,
+    useWorkspaceSelection,
+    useWorkspaceTerminal,
+} from '@/context/WorkspaceContext';
+import { ChatTemplate } from '@/features/chat/types';
+import { ExtensionViewHost } from '@/features/extensions/components/ExtensionViewHost';
+import { AppView } from '@/hooks/useAppState';
 import { useTranslation } from '@/i18n';
 import {
     getAnimationDurationMs,
@@ -186,7 +186,7 @@ const ListeningOverlay: React.FC = () => {
             className={C_VIEWMANAGER_1}
         >
             <div className="w-2 h-2 rounded-full bg-current animate-ping" />
-            <span className="text-xs font-bold text-xxs">
+            <span className="text-sm font-bold text-sm">
                 {t('audioChat.listeningLabel')}
             </span>
         </div>

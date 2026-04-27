@@ -8,14 +8,14 @@
  * (at your option) any later version.
  */
 
-import { ModelCard } from '@renderer/features/models/components/ModelCard';
-import { ModelDetailsPanel } from '@renderer/features/models/components/ModelDetailsPanel';
-import { useModelExplorer } from '@renderer/features/models/hooks/useModelExplorer';
-import { HFModel, OllamaLibraryModel } from '@renderer/features/models/types';
-import { Box, ChevronLeft, ChevronRight, Database, Loader2, Search, X } from 'lucide-react';
+import { IconBox, IconChevronLeft, IconChevronRight, IconDatabase, IconLoader2, IconSearch, IconX } from '@tabler/icons-react';
 import React from 'react';
 
 import { SelectDropdown } from '@/components/ui/SelectDropdown';
+import { ModelCard } from '@/features/models/components/ModelCard';
+import { ModelDetailsPanel } from '@/features/models/components/ModelDetailsPanel';
+import { useModelExplorer } from '@/features/models/hooks/useModelExplorer';
+import { HFModel, OllamaLibraryModel } from '@/features/models/types';
 import type { Language } from '@/i18n';
 import { useTranslation } from '@/i18n';
 import { AnimatePresence } from '@/lib/framer-motion-compat';
@@ -59,8 +59,8 @@ const ExplorerHeader: React.FC<ExplorerHeaderProps> = ({ query, totalHf, onSearc
             <div className="flex items-center gap-2">
                 <p className="text-sm text-muted-foreground">{t('modelExplorer.subtitle')}</p>
                 <div className="px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 flex items-center gap-1.5">
-                    <Box className="w-3 h-3 text-primary" />
-                    <span className="text-xxs font-bold text-primary">
+                    <IconBox className="w-3 h-3 text-primary" />
+                    <span className="text-sm font-bold text-primary">
                         {totalHf > 0 ? `${totalHf.toLocaleString()} ` : ''}{t('modelExplorer.ggufCompatible')}
                     </span>
                 </div>
@@ -68,7 +68,7 @@ const ExplorerHeader: React.FC<ExplorerHeaderProps> = ({ query, totalHf, onSearc
         </div>
         <div className="flex items-center gap-6">
             <div className="flex-1 relative group">
-                <Search className={C_MODELEXPLORER_1} />
+                <IconSearch className={C_MODELEXPLORER_1} />
                 <input
                     className={C_MODELEXPLORER_2}
                     placeholder={t('modelExplorer.searchPlaceholder')}
@@ -78,7 +78,7 @@ const ExplorerHeader: React.FC<ExplorerHeaderProps> = ({ query, totalHf, onSearc
             </div>
             {onClose && (
                 <button onClick={onClose} className="p-3 hover:bg-muted/50 rounded-2xl transition-all active:scale-95 border border-transparent hover:border-border/50">
-                    <X className="w-5 h-5" />
+                    <IconX className="w-5 h-5" />
                 </button>
             )}
         </div>
@@ -90,18 +90,18 @@ const ExplorerActions: React.FC<ExplorerActionsProps> = ({ activeSource, setActi
         <div className="flex gap-3">
             <button onClick={() => setActiveSource('all')} className={cn("px-6 py-2.5 rounded-xl typo-caption font-bold transition-all border", activeSource === 'all' ? "bg-primary text-primary-foreground border-primary" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>{t('modelExplorer.allSources')}</button>
             <button onClick={() => setActiveSource('ollama')} className={cn("px-6 py-2.5 rounded-xl typo-caption font-bold transition-all border flex items-center gap-2", activeSource === 'ollama' ? "bg-warning/10 text-warning border-warning/40" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>
-                <Database className="w-3.5 h-3.5" />
+                <IconDatabase className="w-3.5 h-3.5" />
                 <span>{t('modelExplorer.sourceOllama')}</span>
             </button>
             <button onClick={() => setActiveSource('huggingface')} className={cn("px-6 py-2.5 rounded-xl typo-caption font-bold transition-all border flex items-center gap-2", activeSource === 'huggingface' ? "bg-warning/10 text-warning-600 border-warning/30 dark:text-warning" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>
-                <Box className="w-3.5 h-3.5" />
+                <IconBox className="w-3.5 h-3.5" />
                 <span>{t('modelExplorer.sourceHuggingFace')}</span>
             </button>
         </div>
 
         <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-xl border border-border/30">
-                <span className="text-xxs font-bold text-muted-foreground/50 whitespace-nowrap">{t('modelExplorer.sort')}</span>
+                <span className="text-sm font-bold text-muted-foreground/50 whitespace-nowrap">{t('modelExplorer.sort')}</span>
                 <SelectDropdown
                     value={sortBy}
                     options={[
@@ -115,9 +115,9 @@ const ExplorerActions: React.FC<ExplorerActionsProps> = ({ activeSource, setActi
             </div>
 
             <div className="flex items-center bg-muted/20 rounded-xl p-1 border border-border/50">
-                <button disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))} className="p-2 rounded-lg hover:bg-muted transition-all disabled:opacity-30"><ChevronLeft className="w-4 h-4" /></button>
-                <span className="px-4 text-xxs font-bold text-muted-foreground border-x border-border/30">{t('modelExplorer.page')} {page + 1}</span>
-                <button onClick={() => setPage(p => p + 1)} className="p-2 rounded-lg hover:bg-muted transition-all"><ChevronRight className="w-4 h-4" /></button>
+                <button disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))} className="p-2 rounded-lg hover:bg-muted transition-all disabled:opacity-30"><IconChevronLeft className="w-4 h-4" /></button>
+                <span className="px-4 text-sm font-bold text-muted-foreground border-x border-border/30">{t('modelExplorer.page')} {page + 1}</span>
+                <button onClick={() => setPage(p => p + 1)} className="p-2 rounded-lg hover:bg-muted transition-all"><IconChevronRight className="w-4 h-4" /></button>
             </div>
         </div>
     </div>
@@ -199,14 +199,14 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                 <div className={cn("flex-1 overflow-y-auto p-8 pt-4 transition-all duration-500 ease-in-out", selectedModel ? "w-1/2 pr-4" : "w-full")}>
                     {loading && (
                         <div className="flex flex-col items-center justify-center py-10 space-y-4">
-                            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                            <IconLoader2 className="w-8 h-8 animate-spin text-primary" />
                             <p className="text-muted-foreground typo-caption animate-pulse">{t('modelExplorer.searching')}</p>
                         </div>
                     )}
 
                     {!loading && displayModels.length === 0 && (
                         <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                            <Search className="w-12 h-12 mb-4 opacity-20" />
+                            <IconSearch className="w-12 h-12 mb-4 opacity-20" />
                             <p>{t('modelExplorer.noModels')}</p>
                         </div>
                     )}

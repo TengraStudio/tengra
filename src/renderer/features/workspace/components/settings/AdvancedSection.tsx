@@ -8,13 +8,14 @@
  * (at your option) any later version.
  */
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@renderer/components/ui/card';
-import { Input } from '@renderer/components/ui/input';
-import { Label } from '@renderer/components/ui/label';
-import { Switch } from '@renderer/components/ui/switch';
-import { Textarea } from '@renderer/components/ui/textarea';
-import { Database, EyeOff, FileSearch, Zap } from 'lucide-react';
+import { IconBolt,IconDatabase, IconEyeOff, IconFileSearch } from '@tabler/icons-react';
 import React from 'react';
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 
 import { SettingsSectionProps } from './types';
 
@@ -25,8 +26,8 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({
 }) => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="flex flex-col gap-1.5">
-            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                <Database className="w-6 h-6 text-primary" />
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+                <IconDatabase className="w-6 h-6 text-primary" />
                 {t('workspaces.advancedEngine')}
             </h2>
             <p className="text-muted-foreground">
@@ -37,7 +38,7 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({
         <Card className="border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden border-2 shadow-xl shadow-primary/5">
             <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
                 <div className="flex items-center gap-2">
-                    <FileSearch className="w-4 h-4 text-primary" />
+                    <IconFileSearch className="w-4 h-4 text-primary" />
                     <CardTitle className="text-base font-semibold">{t('workspaces.indexingControl')}</CardTitle>
                 </div>
                 <CardDescription>{t('workspaces.indexingControlDesc')}</CardDescription>
@@ -46,7 +47,7 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({
                 <div className="flex items-center justify-between p-4 bg-background/40 rounded-xl border border-border/20">
                     <div className="space-y-1">
                         <Label className="text-sm font-semibold">{t('workspaces.semanticIndexing')}</Label>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-sm text-muted-foreground">
                             {t('workspaces.semanticIndexingDesc')}
                         </p>
                     </div>
@@ -90,7 +91,7 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({
         <Card className="border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden border-2 shadow-xl shadow-primary/5">
             <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
                 <div className="flex items-center gap-2">
-                    <EyeOff className="w-4 h-4 text-primary" />
+                    <IconEyeOff className="w-4 h-4 text-primary" />
                     <CardTitle className="text-base font-semibold">{t('workspaces.exclusionPatterns')}</CardTitle>
                 </div>
                 <CardDescription>{t('workspaces.exclusionPatternsDesc')}</CardDescription>
@@ -99,7 +100,7 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({
                 <Textarea
                     placeholder={t('workspaces.exclusionPatternsPlaceholder')}
                     value={formData.indexingExclude}
-                    className="min-h-24 bg-background/50 font-mono text-xs"
+                    className="min-h-24 bg-background/50 font-mono text-sm"
                     onChange={e =>
                         setFormData(prev => ({ ...prev, indexingExclude: e.target.value }))
                     }
@@ -110,7 +111,7 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({
         <Card className="border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden border-2 shadow-xl shadow-primary/5">
             <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
                 <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-primary" />
+                    <IconBolt className="w-4 h-4 text-primary" />
                     <CardTitle className="text-base font-semibold">{t('workspaces.dynamicFeatures')}</CardTitle>
                 </div>
                 <CardDescription>{t('workspaces.dynamicFeaturesDesc')}</CardDescription>
@@ -119,7 +120,7 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({
                 <div className="flex items-center justify-between p-4 bg-background/40 rounded-xl border border-border/20">
                     <div className="space-y-1">
                         <Label className="text-sm font-semibold">{t('workspaces.fileWatcher')}</Label>
-                        <p className="text-xs text-muted-foreground">{t('workspaces.fileWatcherDesc')}</p>
+                        <p className="text-sm text-muted-foreground">{t('workspaces.fileWatcherDesc')}</p>
                     </div>
                     <Switch
                         checked={formData.fileWatchEnabled}
@@ -132,7 +133,7 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({
                 <div className="flex items-center justify-between p-4 bg-background/40 rounded-xl border border-border/20">
                     <div className="space-y-1">
                         <Label className="text-sm font-semibold">{t('workspaces.autoSaveLabel')}</Label>
-                        <p className="text-xs text-muted-foreground">{t('workspaces.autoSaveDesc')}</p>
+                        <p className="text-sm text-muted-foreground">{t('workspaces.autoSaveDesc')}</p>
                     </div>
                     <Switch
                         checked={formData.autoSave}

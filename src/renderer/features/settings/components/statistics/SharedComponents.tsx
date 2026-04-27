@@ -47,7 +47,7 @@ export const StatusBadge = ({ status, text }: { status: 'active' | 'error' | 'ex
     };
 
     return (
-        <div className={cn("typo-overline font-bold py-0.5 px-2.5 rounded-full border   flex items-center gap-2", colors[status])}>
+        <div className={cn("typo-overline font-bold py-0.5 px-2.5 rounded-full border flex items-center gap-2", colors[status])}>
             <div className={cn("w-1.5 h-1.5 rounded-full", dots[status])} />
             {text}
         </div>

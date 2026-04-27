@@ -10,16 +10,7 @@
 
 import type { MarketplaceSkill } from '@shared/types/marketplace';
 import type { ProxySkill } from '@shared/types/skill';
-import {
-    CheckCircle2,
-    ChevronLeft,
-    ChevronRight,
-    Download,
-    RefreshCw,
-    Search,
-    Sparkles,
-    Trash2,
-} from 'lucide-react';
+import { IconChevronLeft, IconChevronRight, IconCircleCheck, IconDownload, IconLayoutGrid, IconList, IconRefresh, IconSearch, IconSparkles, IconTrash } from '@tabler/icons-react';
 import { useCallback, useMemo, useState } from 'react';
 
 import {
@@ -36,8 +27,8 @@ import { pushNotification } from '@/store/notification-center.store';
 import type { MarketplaceQueryState } from '../marketplace-query.types';
 
 /* Batch-02: Extracted Long Classes */
-const C_SKILLSMARKETPLACE_1 = "w-full bg-muted/40 rounded-lg px-12 py-2.5 text-sm focus:outline-none transition-all font-medium placeholder:text-muted-foreground/30";
-const C_SKILLSMARKETPLACE_2 = "h-8 px-2 flex items-center gap-1.5 rounded-md text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95 text-xxxs font-bold uppercase tracking-wider";
+const C_SKILLSMARKETPLACE_1 = "w-full bg-muted/30 rounded-xl px-12 py-3 text-sm focus:outline-none transition-all font-medium border border-transparent focus:border-primary/20 placeholder:text-muted-foreground/20";
+const C_SKILLSMARKETPLACE_2 = "h-8 px-3 flex items-center gap-2 rounded-lg text-destructive/40 hover:text-destructive hover:bg-destructive/5 transition-colors text-xs font-semibold";
 
 
 const PAGE_SIZE = 24;
@@ -158,8 +149,8 @@ export function SkillsMarketplace({
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center py-32 space-y-5">
-                <RefreshCw className="w-8 h-8 text-primary animate-spin opacity-40" />
-                <p className="typo-caption font-bold text-muted-foreground animate-pulse">
+                <IconRefresh className="w-8 h-8 text-primary/40 animate-spin" />
+                <p className="text-xs font-semibold text-muted-foreground/30 uppercase tracking-widest">
                     {t('marketplace.syncing')}
                 </p>
             </div>
@@ -168,9 +159,9 @@ export function SkillsMarketplace({
 
     if (marketplaceSkills.length === 0) {
         return (
-            <div className="col-span-full py-20 text-center border border-dashed border-border/40 rounded-xl bg-muted/5">
-                <Sparkles className="w-10 h-10 text-muted-foreground/20 mx-auto mb-4" />
-                <p className="text-sm text-muted-foreground font-bold">
+            <div className="col-span-full py-20 text-center border border-dashed border-border/20 rounded-2xl bg-muted/5">
+                <IconSparkles className="w-10 h-10 text-muted-foreground/10 mx-auto mb-4" />
+                <p className="text-sm text-muted-foreground/40 font-semibold tracking-tight">
                     {t('settings.skills.marketplaceEmpty')}
                 </p>
             </div>
@@ -178,37 +169,51 @@ export function SkillsMarketplace({
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col gap-4 px-1 md:flex-row md:items-center justify-between">
-                <div className="flex items-center gap-4 flex-1">
-                    <div className="relative flex-1 max-w-lg">
-                        <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/30" />
+        <div className="space-y-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 px-1">
+                <div className="flex items-center gap-4 flex-1 w-full max-w-2xl">
+                    <div className="relative flex-1">
+                        <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/20" />
                         <input
                             type="text"
-                            value={search}
                             placeholder={t('marketplace.search')}
-                            onChange={event => {
-                                onQueryChange(prev => ({ ...prev, search: event.target.value, page: 1 }));
-                            }}
+                            value={search}
+                            onChange={(e) => onQueryChange(prev => ({ ...prev, search: e.target.value, page: 1 }))}
                             className={C_SKILLSMARKETPLACE_1}
                         />
                     </div>
+
+                    <div className="flex items-center gap-1 p-1 bg-muted/20 rounded-xl shrink-0">
+                        <button
+                            onClick={() => onQueryChange(prev => ({ ...prev, viewMode: 'list' }))}
+                            className={cn(
+                                'p-2 rounded-lg transition-all',
+                                query.viewMode === 'list' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/30'
+                            )}
+                        >
+                            <IconList className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={() => onQueryChange(prev => ({ ...prev, viewMode: 'grid' }))}
+                            className={cn(
+                                'p-2 rounded-lg transition-all',
+                                query.viewMode === 'grid' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/30'
+                            )}
+                        >
+                            <IconLayoutGrid className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
+
                 <div className="flex items-center gap-3">
                     <Select
                         value={filter}
-                        onValueChange={value => {
-                            onQueryChange(prev => ({
-                                ...prev,
-                                filter: value as MarketplaceQueryState['filter'],
-                                page: 1,
-                            }));
-                        }}
+                        onValueChange={value => onQueryChange(prev => ({ ...prev, filter: value as any, page: 1 }))}
                     >
-                        <SelectTrigger className="h-10 w-40 text-xxxs font-black bg-muted/20 border-none rounded-lg uppercase tracking-widest text-muted-foreground/60">
+                        <SelectTrigger className="h-9 w-40 text-xs font-semibold bg-muted/30 border-none rounded-xl text-muted-foreground/50 hover:bg-muted/40 transition-colors">
                             <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="border-none shadow-2xl">
+                        <SelectContent className="border-border/10 bg-background/95 backdrop-blur-xl shadow-2xl rounded-xl">
                             <SelectItem value="all">{t('marketplace.mcp.filters.all')}</SelectItem>
                             <SelectItem value="installed">{t('modelExplorer.installed')}</SelectItem>
                             <SelectItem value="not_installed">{t('marketplace.install')}</SelectItem>
@@ -217,7 +222,12 @@ export function SkillsMarketplace({
                 </div>
             </div>
 
-            <div className="divide-y divide-muted/10 border-t border-muted/10">
+            <div className={cn(
+                'transition-all duration-300',
+                query.viewMode === 'grid' 
+                    ? 'grid grid-cols-1 lg:grid-cols-2 gap-4' 
+                    : 'flex flex-col gap-4'
+            )}>
                 {pagedSkills.map(item => {
                     const installed = installedSkillIds.has(item.id);
                     const isInstalling = installingId === item.id;
@@ -226,28 +236,28 @@ export function SkillsMarketplace({
                         <div
                             key={item.id}
                             className={cn(
-                                'group relative flex items-start gap-4 p-4 transition-colors duration-200',
-                                installed ? 'bg-primary/[0.03]' : 'bg-transparent hover:bg-muted/30'
+                                'group relative flex items-start gap-4 p-5 transition-all duration-200 border border-transparent rounded-2xl h-full',
+                                installed ? 'bg-primary/[0.02] border-primary/10' : 'bg-transparent hover:bg-muted/30 hover:border-border/30'
                             )}
                         >
-                            {/* Icon */}
+                            {/* Icon Container */}
                             <div className={cn(
-                                'flex h-12 w-12 shrink-0 items-center justify-center rounded-lg transition-transform',
+                                'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-all',
                                 installed
-                                    ? 'bg-primary/10 text-primary'
-                                    : 'bg-muted/50 text-muted-foreground group-hover:scale-105'
+                                    ? 'bg-primary/10 text-primary shadow-inner'
+                                    : 'bg-muted/40 text-muted-foreground/40 group-hover:bg-muted/60 group-hover:text-muted-foreground'
                             )}>
-                                <Sparkles className="w-6 h-6" />
+                                <IconSparkles className="w-6 h-6" />
                             </div>
 
                             <div className="flex flex-1 flex-col min-w-0 py-0.5">
                                 <div className="flex items-center justify-between gap-4">
                                     <div className="flex items-center gap-2 min-w-0">
-                                        <h3 className="truncate text-base font-semibold text-foreground/90">
+                                        <h3 className="truncate text-base font-semibold text-foreground tracking-tight">
                                             {item.name}
                                         </h3>
                                         {installed && (
-                                            <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success opacity-80" />
+                                            <IconCircleCheck className="h-3.5 w-3.5 shrink-0 text-primary/60" />
                                         )}
                                     </div>
                                     
@@ -258,22 +268,22 @@ export function SkillsMarketplace({
                                                 void handleInstall(item.id);
                                             }}
                                             className={cn(
-                                            'h-8 px-4 flex items-center gap-2 rounded-md transition-all active:scale-95 text-xxxs font-bold uppercase tracking-wider',
+                                            'h-8 px-4 flex items-center gap-2 rounded-lg transition-all text-xs font-semibold',
                                             installed
-                                                ? 'bg-success/10 text-success'
+                                                ? 'bg-primary/5 text-primary'
                                                 : isInstalling
-                                                    ? 'bg-muted text-muted-foreground animate-pulse'
-                                                    : 'bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground'
+                                                    ? 'bg-muted/60 text-muted-foreground/40 animate-pulse'
+                                                    : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm'
                                         )}
                                         >
                                             {isInstalling ? (
-                                                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                                <IconRefresh className="h-3.5 w-3.5 animate-spin" />
                                             ) : (
-                                                <Download className={cn('h-3.5 w-3.5', installed && 'hidden')} />
+                                                <IconDownload className={cn('h-3.5 w-3.5', installed && 'hidden')} />
                                             )}
                                             {installed
                                                 ? t('modelExplorer.installed')
-                                                : t('marketplace.install')}
+                                                : isInstalling ? t('marketplace.installing') : t('marketplace.install')}
                                         </button>
                                         {installed && (
                                             <button
@@ -284,9 +294,9 @@ export function SkillsMarketplace({
                                                 className={C_SKILLSMARKETPLACE_2}
                                             >
                                                 {isUninstalling ? (
-                                                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                                    <IconRefresh className="h-3.5 w-3.5 animate-spin" />
                                                 ) : (
-                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                    <IconTrash className="h-3.5 w-3.5" />
                                                 )}
                                                 {t('common.remove')}
                                             </button>
@@ -294,13 +304,13 @@ export function SkillsMarketplace({
                                     </div>
                                 </div>
 
-                                <div className="mt-1 flex items-center gap-2 text-xxs font-medium text-muted-foreground/60">
+                                <div className="mt-1.5 flex items-center gap-2 text-xs font-medium text-muted-foreground/40">
                                     <span className="truncate">{item.provider}</span>
-                                    <span className="opacity-30">•</span>
-                                    <span className="font-bold">v{item.version}</span>
+                                    <span className="opacity-20">•</span>
+                                    <span className="tracking-wider uppercase opacity-80 text-[10px]">skill</span>
                                 </div>
 
-                                <p className="mt-2 line-clamp-1 text-sm text-muted-foreground/50 group-hover:text-muted-foreground/70 transition-colors">
+                                <p className="mt-3 line-clamp-1 text-sm text-muted-foreground/50 group-hover:text-muted-foreground/70 transition-colors">
                                     {item.description}
                                 </p>
                             </div>
@@ -310,28 +320,29 @@ export function SkillsMarketplace({
             </div>
 
             {filteredSkills.length > PAGE_SIZE ? (
-                <div className="flex items-center justify-center gap-6 pt-6">
+                <div className="flex items-center justify-center gap-8 pt-8">
                     <button
                         type="button"
                         onClick={() => onQueryChange(prev => ({ ...prev, page: Math.max(1, activePage - 1) }))}
                         disabled={activePage <= 1}
-                        className="p-2 rounded-full hover:bg-muted text-muted-foreground/40 hover:text-foreground transition-all active:scale-90"
+                        className="p-2.5 rounded-xl hover:bg-muted text-muted-foreground/20 hover:text-foreground transition-all disabled:opacity-0"
                     >
-                        <ChevronLeft className="h-5 w-5" />
+                        <IconChevronLeft className="h-5 w-5" />
                     </button>
-                    <span className="text-xxxs font-black uppercase tracking-super-wide text-muted-foreground/30">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/20">
                         {t('common.pageOf', { current: activePage, total: totalPages })}
                     </span>
                     <button
                         type="button"
                         onClick={() => onQueryChange(prev => ({ ...prev, page: Math.min(totalPages, activePage + 1) }))}
                         disabled={activePage >= totalPages}
-                        className="p-2 rounded-full hover:bg-muted text-muted-foreground/40 hover:text-foreground transition-all active:scale-90"
+                        className="p-2.5 rounded-xl hover:bg-muted text-muted-foreground/20 hover:text-foreground transition-all disabled:opacity-0"
                     >
-                        <ChevronRight className="h-5 w-5" />
+                        <IconChevronRight className="h-5 w-5" />
                     </button>
                 </div>
             ) : null}
         </div>
     );
 }
+

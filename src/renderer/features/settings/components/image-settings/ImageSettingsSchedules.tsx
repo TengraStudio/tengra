@@ -8,13 +8,14 @@
  * (at your option) any later version.
  */
 
-import { Badge } from '@renderer/components/ui/badge';
-import { Button } from '@renderer/components/ui/button';
-import { Input } from '@renderer/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@renderer/components/ui/select';
-import { cn } from '@renderer/lib/utils';
-import { CalendarClock, Plus, Zap } from 'lucide-react';
+import { IconBolt,IconCalendarClock, IconPlus } from '@tabler/icons-react';
 import React from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 import { ImageScheduleEntry } from '../../types';
 
@@ -65,7 +66,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1 relative z-10">
                 <div className="flex items-center gap-4">
                     <div className={C_IMAGESETTINGSSCHEDULES_2}>
-                        <CalendarClock className="w-6 h-6" />
+                        <IconCalendarClock className="w-6 h-6" />
                     </div>
                     <div>
                         <h3 className="text-lg font-bold text-foreground group-hover/schedules:text-primary transition-colors">
@@ -135,7 +136,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                     onClick={() => { void handleCreateSchedule(); }}
                     className={C_IMAGESETTINGSSCHEDULES_5}
                 >
-                    <Plus className="w-4 h-4" />
+                    <IconPlus className="w-4 h-4" />
                     {t('settings.images.scheduleCreate')}
                 </Button>
             </div>
@@ -147,7 +148,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                             "p-2 rounded-xl border transition-all",
                             queueStats.running ? "bg-success/10 border-success/20 text-success animate-pulse" : "bg-muted/30 border-border/10 text-muted-foreground/40"
                         )}>
-                            <Zap className="w-4 h-4" />
+                            <IconBolt className="w-4 h-4" />
                         </div>
                         <div>
                             <div className="typo-body font-bold text-foreground">{t('settings.images.queueTitle')}</div>
@@ -170,7 +171,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                             <div key={p} className="space-y-1">
                                 <div className="typo-body font-bold text-muted-foreground/30 text-center">{p}</div>
                                 <div className={cn(
-                                    "text-sm font-bold text-center  tabular-nums",
+                                    "text-sm font-bold text-center tabular-nums",
                                     p === 'high' ? "text-primary" : "text-foreground"
                                 )}>
                                     {queueStats.byPriority?.[p] ?? 0}
@@ -199,7 +200,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                                         </div>
                                         <div className="flex flex-wrap items-center gap-3">
                                             <Badge variant="outline" className={cn(
-                                                "h-5 typo-body px-2 font-bold   border-border/40 rounded-md",
+                                                "h-5 typo-body px-2 font-bold border-border/40 rounded-md",
                                                 entry.status === 'scheduled' ? "text-primary bg-primary/5" : "text-muted-foreground/60 bg-muted/20"
                                             )}>
                                                 {entry.status}

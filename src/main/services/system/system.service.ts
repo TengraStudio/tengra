@@ -14,6 +14,7 @@ import * as os from 'os';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { ISystemService } from '@main/types/services';
+import { t } from '@main/utils/i18n.util';
 import { ServiceResponse, SystemInfo } from '@shared/types';
 import type { MarketplaceGpuDevice } from '@shared/types/marketplace';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -200,7 +201,7 @@ Add-Type -TypeDefinition $code
 `.replace(/\n/g, ' ');
                 await this.runCommand('powershell', ['-Command', code]);
             }
-            return { success: true, message: 'Wallpaper changed' };
+            return { success: true, message: t('auto.wallpaperChanged') };
         } catch (e) {
             this.logError(`Failed to set wallpaper to ${imagePath}`, e);
             return { success: false, error: e instanceof Error ? e.message : String(e) };

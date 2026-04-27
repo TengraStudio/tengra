@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import React from 'react';
 
 import { UI_PRIMITIVES } from '@/constants/ui-primitives';
@@ -32,9 +32,9 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
             >
                 <div className="transition-transform duration-300">
                     {isCollapsed ? (
-                        <ChevronRight className="w-4 h-4" />
+                        <IconChevronRight className="w-4 h-4" />
                     ) : (
-                        <ChevronLeft className="w-4 h-4" />
+                        <IconChevronLeft className="w-4 h-4" />
                     )}
                 </div>
             </button>

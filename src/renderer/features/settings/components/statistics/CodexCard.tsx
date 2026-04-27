@@ -69,7 +69,7 @@ export const CodexCard: React.FC<CodexCardProps> = ({ codexUsage, locale = 'en-U
                                         </div>
                                         <HorizontalProgressBar percentage={dailyRemaining} color={getQuotaColor(dailyRemaining)} />
                                         <div className="typo-overline font-medium text-muted-foreground/40 mt-1">
-                                            {formatReset(usage.dailyResetAt, locale)}
+                                            {t('statistics.resetsAt', { time: formatReset(usage.dailyResetAt, locale) })}
                                         </div>
                                     </div>
                                     <div className="space-y-2">
@@ -79,7 +79,7 @@ export const CodexCard: React.FC<CodexCardProps> = ({ codexUsage, locale = 'en-U
                                         </div>
                                         <HorizontalProgressBar percentage={weeklyRemaining} color={getQuotaColor(weeklyRemaining)} />
                                         <div className="typo-overline font-medium text-muted-foreground/40 mt-1">
-                                            {formatReset(usage.weeklyResetAt, locale)}
+                                            {t('statistics.resetsAt', { time: formatReset(usage.weeklyResetAt, locale) })}
                                         </div>
                                     </div>
                                 </div>

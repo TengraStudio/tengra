@@ -8,8 +8,9 @@
  * (at your option) any later version.
  */
 
-import { collectTerminalSearchMatches } from '@renderer/features/terminal/utils/terminal-search';
 import { describe, expect, it } from 'vitest';
+
+import { collectTerminalSearchMatches } from '@/features/terminal/utils/terminal-search';
 
 describe('terminal search utils', () => {
     it('collects plain-text matches across rows', () => {

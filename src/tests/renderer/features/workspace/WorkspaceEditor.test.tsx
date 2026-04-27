@@ -11,8 +11,8 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { WorkspaceEditor, WorkspaceEditorProps } from '@/features/workspace/components/workspace/WorkspaceEditor';
 import type { WorkspaceSnippet } from '@/features/workspace/utils/snippet-manager';
+import { WorkspaceEditor, WorkspaceEditorProps } from '@/features/workspace/workspace-explorer/WorkspaceEditor';
 import { EditorTab } from '@/types';
 
 const {

@@ -8,9 +8,10 @@
  * (at your option) any later version.
  */
 
-import { cn } from '@renderer/lib/utils';
-import { Info } from 'lucide-react';
+import { IconInfoCircle } from '@tabler/icons-react';
 import React from 'react';
+
+import { cn } from '@/lib/utils';
 
 /* Batch-02: Extracted Long Classes */
 const C_SETTINGSPRIMITIVES_1 = "flex flex-col gap-3 rounded-md border border-border/40 bg-background px-3 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-5";
@@ -33,7 +34,7 @@ export const SettingsPanel: React.FC<{
                 </div>
                 {description && (
                     <p className="flex max-w-2xl items-center gap-1.5 text-sm leading-relaxed text-muted-foreground">
-                        <Info className="h-3 w-3 shrink-0" />
+                        <IconInfoCircle className="h-3 w-3 shrink-0" />
                         {description}
                     </p>
                 )}

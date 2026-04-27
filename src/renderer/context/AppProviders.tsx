@@ -8,7 +8,6 @@
  * (at your option) any later version.
  */
 
-import { LanguageProvider, useTranslation } from '@renderer/i18n';
 import { Component, ErrorInfo, ReactNode } from 'react';
 
 import { RuntimeBootstrapBoundary } from '@/components/runtime/RuntimeBootstrapBoundary';
@@ -19,6 +18,7 @@ import { ModelProvider } from '@/context/ModelContext';
 import { SettingsProvider } from '@/context/SettingsContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { WorkspaceProvider } from '@/context/WorkspaceContext';
+import { LanguageProvider, useTranslation } from '@/i18n';
 import { RuntimeIconPackManager } from '@/themes/RuntimeIconPackManager';
 import { RuntimeThemeManager } from '@/themes/RuntimeThemeManager';
 import { appLogger } from '@/utils/renderer-logger';

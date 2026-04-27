@@ -8,9 +8,9 @@
  * (at your option) any later version.
  */
 
-import { useAuthManager } from '@renderer/features/settings/hooks/useAuthManager';
 import { createContext, ReactNode, useContext, useMemo } from 'react';
 
+import { useAuthManager } from '@/features/settings/hooks/useAuthManager';
 import { translateErrorMessage } from '@/utils/error-handler.util';
 
 type AuthContextType = ReturnType<typeof useAuthManager>

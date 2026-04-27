@@ -42,7 +42,8 @@ function getDevState(server?: Workspace['devServer']) {
         devAutoStart: server?.autoStart ?? false,
     };
 }
-function getAdvancedState(options?: Workspace['advancedOptions']) {
+
+function getAdvancedState(options?: Workspace['advancedOptions']) {
     return {
         fileWatchEnabled: options?.fileWatchEnabled ?? true,
         indexingEnabled: options?.indexingEnabled ?? true,
@@ -92,21 +93,21 @@ function checkBuildDirty(
     config?: Workspace['buildConfig']
 ): boolean {
     const defaults = getBuildState(config);
-    const fields: (keyof typeof defaults)[] = [
-        'buildCommand',
-        'testCommand',
-        'lintCommand',
-        'outputDir',
-        'envFile',
-    ];
-    return fields.some(field => formData[field] !== defaults[field]);
+    return (
+        formData.buildCommand !== defaults.buildCommand ||
+        formData.testCommand !== defaults.testCommand ||
+        formData.lintCommand !== defaults.lintCommand ||
+        formData.outputDir !== defaults.outputDir ||
+        formData.envFile !== defaults.envFile
+    );
 }
 
 function checkDevDirty(formData: WorkspaceSettingsFormData, server?: Workspace['devServer']): boolean {
+    const defaults = getDevState(server);
     return (
-        formData.devCommand !== (server?.command ?? '') ||
-        formData.devPort !== (server?.port ?? 3000) ||
-        formData.devAutoStart !== (server?.autoStart ?? false)
+        formData.devCommand !== defaults.devCommand ||
+        formData.devPort !== defaults.devPort ||
+        formData.devAutoStart !== defaults.devAutoStart
     );
 }
 
@@ -114,10 +115,14 @@ function checkAdvancedDirty(
     formData: WorkspaceSettingsFormData,
     options?: Workspace['advancedOptions']
 ): boolean {
+    const defaults = getAdvancedState(options);
     return (
-        formData.fileWatchEnabled !== (options?.fileWatchEnabled ?? true) ||
-        formData.indexingEnabled !== (options?.indexingEnabled ?? true) ||
-        formData.autoSave !== (options?.autoSave ?? false)
+        formData.fileWatchEnabled !== defaults.fileWatchEnabled ||
+        formData.indexingEnabled !== defaults.indexingEnabled ||
+        formData.autoSave !== defaults.autoSave ||
+        formData.indexingMaxFileSize !== defaults.indexingMaxFileSize ||
+        formData.indexingExclude !== defaults.indexingExclude ||
+        formData.indexingMaxConcurrency !== defaults.indexingMaxConcurrency
     );
 }
 

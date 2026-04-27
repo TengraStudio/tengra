@@ -9,7 +9,7 @@
  */
 
 /**
- * Brain Service - User-Focused Memory System
+ * IconBrain Service - User-Focused Memory System
  * 
  * Stores ONLY user-related information:
  * - User preferences (language, style, formatting)
@@ -71,7 +71,7 @@ export class BrainService {
     async initialize(): Promise<void> {
         if (this.isInitialized) { return; }
 
-        // Brain service uses DB fallback only (doesn't need native service)
+        // IconBrain service uses DB fallback only (doesn't need native service)
         // This avoids conflicts with memory-service which uses the same executable
         appLogger.info('BrainService', 'Initializing brain service with DB fallback');
 
@@ -81,7 +81,7 @@ export class BrainService {
     /** Resets initialization state. */
     async cleanup(): Promise<void> {
         this.isInitialized = false;
-        appLogger.info('BrainService', 'Brain service cleaned up');
+        appLogger.info('BrainService', 'IconBrain service cleaned up');
     }
 
     /**
@@ -95,7 +95,7 @@ export class BrainService {
         // Validate it's actually user-related
         if (!this.isUserFact(content)) {
             appLogger.warn('BrainService', `Rejected non-user fact: "${content}"`);
-            throw new Error('Brain only stores user-related information');
+            throw new Error('IconBrain only stores user-related information');
         }
 
         const embedding = await this.embedding.generateEmbedding(content);

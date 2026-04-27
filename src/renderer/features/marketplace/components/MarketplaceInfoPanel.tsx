@@ -10,8 +10,8 @@
 
 import type { MarketplaceModelPerformanceEstimate, MarketplaceModelTag } from '@shared/types/marketplace';
 import { compareVersions } from '@shared/utils/extension.util';
+import { IconAlertTriangle, IconDownload, IconX } from '@tabler/icons-react';
 import DOMPurify from 'dompurify';
-import { Download, TriangleAlert, X } from 'lucide-react';
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -19,8 +19,8 @@ import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
 
 /* Batch-02: Extracted Long Classes */
-const C_MARKETPLACEINFOPANEL_1 = "sticky top-6 self-start max-h-screen-minus-32 overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-500 w-full lg:w-480 px-8";
-const C_MARKETPLACEINFOPANEL_2 = "inline-flex items-center gap-2 rounded-full bg-amber-500/10 px-4 py-2 text-xxxs font-black uppercase tracking-wider text-amber-500";
+const C_MARKETPLACEINFOPANEL_1 = "sticky top-6 self-start max-h-[calc(100vh-32px)] overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-500 w-full lg:w-[480px] px-8 custom-scrollbar";
+const C_MARKETPLACEINFOPANEL_2 = "inline-flex items-center gap-2 rounded-lg bg-warning/5 px-4 py-2 text-[10px] font-bold tracking-tight text-warning border border-warning/10 uppercase";
 const C_MARKETPLACEINFOPANEL_3 = "opacity-0 group-hover/tag:opacity-100 p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all active:scale-95";
 
 
@@ -59,16 +59,10 @@ const formatBytes = (bytes: number): string => {
     if (bytes <= 0) {
         return '0 B';
     }
-    if (bytes >= 1024 * 1024 * 1024) {
-        return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-    }
-    if (bytes >= 1024 * 1024) {
-        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-    }
-    if (bytes >= 1024) {
-        return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-    }
-    return `${Math.max(1, Math.round(bytes))} B`;
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 };
 
 export function MarketplaceInfoPanel({
@@ -107,69 +101,69 @@ export function MarketplaceInfoPanel({
         <aside className={C_MARKETPLACEINFOPANEL_1}>
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
-                    <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                    <p className="text-xxxs font-black uppercase tracking-super-wide text-muted-foreground/30">{t('common.info')}</p>
+                    <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground/30">{t('common.info')}</p>
                 </div>
                 <button
                     onClick={onClose}
-                    className="p-1 rounded-full hover:bg-muted text-muted-foreground/40 hover:text-foreground transition-all active:scale-90"
+                    className="p-2 rounded-xl hover:bg-muted text-muted-foreground/40 hover:text-foreground transition-all"
                 >
-                    <X className="w-5 h-5" />
+                    <IconX className="w-4 h-4" />
                 </button>
             </div>
 
             <div className="space-y-10">
-                <div className="space-y-3">
-                    <h3 className="text-3xl font-black tracking-tighter text-foreground/90 leading-none">{item.name}</h3>
-                    <p className="text-sm leading-relaxed text-muted-foreground/60 font-medium max-w-90p">{item.description}</p>
+                <div className="space-y-4">
+                    <h3 className="text-3xl font-semibold text-foreground tracking-tight leading-tight">{item.name}</h3>
+                    <p className="text-sm leading-relaxed text-muted-foreground/60 font-medium">{item.description}</p>
                 </div>
 
                 {hasUpdate && item.installedVersion && (
                     <div className={C_MARKETPLACEINFOPANEL_2}>
-                        <TriangleAlert className="h-3.5 w-3.5" />
+                        <IconAlertTriangle className="h-3.5 w-3.5" />
                         {`${t('common.update')}: v${item.installedVersion} → v${item.version}`}
                     </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-x-8 gap-y-6">
-                    <div className="space-y-1">
-                        <span className="text-xxxs font-black text-muted-foreground/30 uppercase tracking-super-wide">{t('common.type')}</span>
-                        <p className="text-xs font-bold text-foreground/70 uppercase tracking-widest">{item.itemType}</p>
+                <div className="grid grid-cols-2 gap-x-12 gap-y-8 border-y border-border/10 py-10">
+                    <div className="space-y-2">
+                        <span className="text-[10px] font-bold text-muted-foreground/20 uppercase tracking-widest">{t('common.type')}</span>
+                        <p className="text-xs font-semibold text-foreground/70 uppercase tracking-wider">{item.itemType}</p>
                     </div>
-                    <div className="space-y-1">
-                        <span className="text-xxxs font-black text-muted-foreground/30 uppercase tracking-super-wide">{t('mcp.version')}</span>
-                        <p className="text-xs font-bold text-foreground/70">{item.version}</p>
+                    <div className="space-y-2">
+                        <span className="text-[10px] font-bold text-muted-foreground/20 uppercase tracking-widest">{t('mcp.version')}</span>
+                        <p className="text-xs font-semibold text-foreground/70">{item.version}</p>
                     </div>
-                    <div className="space-y-1">
-                        <span className="text-xxxs font-black text-muted-foreground/30 uppercase tracking-super-wide">{t('marketplace.author')}</span>
-                        <p className="text-xs font-bold text-foreground/70">{item.author}</p>
+                    <div className="space-y-2">
+                        <span className="text-[10px] font-bold text-muted-foreground/20 uppercase tracking-widest">{t('marketplace.author')}</span>
+                        <p className="text-xs font-semibold text-foreground/70">{item.author}</p>
                     </div>
-                    <div className="space-y-1">
-                        <span className="text-xxxs font-black text-muted-foreground/30 uppercase tracking-super-wide">{t('marketplace.downloads')}</span>
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-foreground/70">
-                            <Download className="w-3.5 h-3.5 opacity-40" />
+                    <div className="space-y-2">
+                        <span className="text-[10px] font-bold text-muted-foreground/20 uppercase tracking-widest">{t('marketplace.downloads')}</span>
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground/70">
+                            <IconDownload className="w-3.5 h-3.5 opacity-40" />
                             {formatNumber(item.downloads || item.pullCount || 0)}
                         </div>
                     </div>
                 </div>
 
                 {item.performance && (
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                         <div className="flex items-center gap-3">
-                            <span className="text-xxxs font-black text-muted-foreground/30 uppercase tracking-super-wide">{t('marketplace.performance')}</span>
-                            <div className="h-px flex-1 bg-muted/20" />
-                            <span className="text-xxxs font-black text-primary uppercase tracking-wider">
+                            <span className="text-[10px] font-bold text-muted-foreground/20 uppercase tracking-widest">{t('marketplace.performance')}</span>
+                            <div className="h-px flex-1 bg-border/5" />
+                            <span className="text-[10px] font-bold text-primary uppercase tracking-widest">
                                 {t(`marketplace.modelFit.${item.performance.fit}`)}
                             </span>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-muted/20 rounded-xl p-4 transition-colors hover:bg-muted/30">
-                                <span className="text-micro font-black text-muted-foreground/40 uppercase tracking-widest">{t('marketplace.tokensPerSecond')}</span>
-                                <p className="text-lg font-black text-foreground/80 mt-1">{item.performance.estimatedTokensPerSecond.toFixed(1)} <span className="text-xxxs text-muted-foreground/40">t/s</span></p>
+                            <div className="bg-muted/30 rounded-2xl p-5 border border-border/5">
+                                <span className="text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest">{t('marketplace.tokensPerSecond')}</span>
+                                <p className="text-xl font-semibold text-foreground/80 mt-2">{item.performance.estimatedTokensPerSecond.toFixed(1)} <span className="text-xs text-muted-foreground/30 font-medium">t/s</span></p>
                             </div>
-                            <div className="bg-muted/20 rounded-xl p-4 transition-colors hover:bg-muted/30">
-                                <span className="text-micro font-black text-muted-foreground/40 uppercase tracking-widest">{t('marketplace.ram')}</span>
-                                <p className="text-lg font-black text-foreground/80 mt-1">{formatBytes(item.performance.estimatedMemoryBytes)}</p>
+                            <div className="bg-muted/30 rounded-2xl p-5 border border-border/5">
+                                <span className="text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest">{t('marketplace.ram')}</span>
+                                <p className="text-xl font-semibold text-foreground/80 mt-2">{formatBytes(item.performance.estimatedMemoryBytes)}</p>
                             </div>
                         </div>
                     </div>
@@ -178,10 +172,10 @@ export function MarketplaceInfoPanel({
                 {item.readme && (
                     <div className="space-y-6">
                         <div className="flex items-center gap-3">
-                            <span className="text-xxxs font-black text-muted-foreground/30 uppercase tracking-super-wide">Documentation</span>
-                            <div className="h-px flex-1 bg-muted/20" />
+                            <span className="text-[10px] font-bold text-muted-foreground/20 uppercase tracking-widest">Documentation</span>
+                            <div className="h-px flex-1 bg-border/5" />
                         </div>
-                        <div className="prose prose-invert prose-sm max-w-full text-muted-foreground/60 leading-relaxed font-medium">
+                        <div className="prose prose-invert prose-sm max-w-full text-muted-foreground/70 leading-relaxed">
                             {((item.provider === 'ollama' || item.provider === 'huggingface') && (item.readme.includes('<h2') || item.readme.includes('<li>') || item.readme.includes('<p>') || item.readme.includes('<h1>'))) ? (
                                 <div
                                     className={cn(`${item.provider}-readme`, 'rich-text')}
@@ -191,13 +185,13 @@ export function MarketplaceInfoPanel({
                                 <ReactMarkdown
                                     remarkPlugins={[remarkGfm]}
                                     components={{
-                                        h1: ({ ...props }) => <h1 className="text-base font-black mt-8 mb-4 text-foreground/80 first:mt-0 tracking-tight" {...props} />,
-                                        h2: ({ ...props }) => <h2 className="text-sm font-black mt-6 mb-3 text-foreground/70 first:mt-0 tracking-tight" {...props} />,
-                                        p: ({ ...props }) => <p className="mb-4 last:mb-0" {...props} />,
-                                        ul: ({ ...props }) => <ul className="list-disc ml-4 mb-4 space-y-1" {...props} />,
+                                        h1: ({ ...props }) => <h1 className="text-lg font-semibold mt-10 mb-5 text-foreground first:mt-0 tracking-tight" {...props} />,
+                                        h2: ({ ...props }) => <h2 className="text-base font-semibold mt-8 mb-4 text-foreground/80 first:mt-0 tracking-tight" {...props} />,
+                                        p: ({ ...props }) => <p className="mb-5 last:mb-0" {...props} />,
+                                        ul: ({ ...props }) => <ul className="list-disc ml-4 mb-5 space-y-2" {...props} />,
                                         li: ({ ...props }) => <li className="pl-1" {...props} />,
-                                        code: ({ ...props }) => <code className="bg-muted/50 px-1.5 py-0.5 rounded-md font-mono text-xs text-primary/80" {...props} />,
-                                        pre: ({ ...props }) => <pre className="bg-muted/20 p-4 rounded-xl overflow-x-auto mb-4 scrollbar-hide" {...props} />,
+                                        code: ({ ...props }) => <code className="bg-muted/50 px-1.5 py-0.5 rounded-md font-mono text-[13px] text-primary/90" {...props} />,
+                                        pre: ({ ...props }) => <pre className="bg-muted/30 p-5 rounded-2xl border border-border/5 overflow-x-auto mb-6 scrollbar-hide" {...props} />,
                                     }}
                                 >
                                     {item.readme}
@@ -208,55 +202,55 @@ export function MarketplaceInfoPanel({
                 )}
 
                 {item.isReadmeLoading && !item.readme && (
-                    <div className="mt-8 pt-8 border-t border-muted/10">
-                        <div className="flex items-center gap-3 text-muted-foreground/30 animate-pulse">
-                            <span className="text-xxxs font-black uppercase tracking-super-wide">{t('marketplace.syncing')}</span>
-                            <div className="h-px flex-1 bg-muted/20" />
+                    <div className="mt-8 pt-8 border-t border-border/5">
+                        <div className="flex items-center gap-3 text-muted-foreground/20 animate-pulse">
+                            <span className="text-[10px] font-bold uppercase tracking-widest">{t('marketplace.syncing')}</span>
+                            <div className="h-px flex-1 bg-border/5" />
                         </div>
                     </div>
                 )}
 
                 {item.provider === 'ollama' && paginatedSubmodels.length > 0 && (
-                    <div className="mt-10 pt-10 border-t border-muted/10 space-y-6">
+                    <div className="mt-12 pt-12 border-t border-border/10 space-y-8 pb-10">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <span className="text-xxxs font-black text-muted-foreground/30 uppercase tracking-super-wide">{t('mcp.version')}s</span>
-                                <span className="text-xxxs font-black text-muted-foreground/20">({totalSubmodels})</span>
+                                <span className="text-[10px] font-bold text-muted-foreground/20 uppercase tracking-widest">{t('mcp.version')}s</span>
+                                <span className="text-[10px] font-bold text-muted-foreground/10">({totalSubmodels})</span>
                             </div>
                             {totalPages > 1 && (
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-4">
                                     <button
                                         disabled={currentPage === 1}
                                         onClick={() => setCurrentPage(prev => prev - 1)}
-                                        className="text-xxxs font-black uppercase tracking-widest text-primary disabled:opacity-20 transition-opacity"
+                                        className="text-[10px] font-bold uppercase tracking-wider text-primary disabled:opacity-20 transition-opacity"
                                     >
                                         Prev
                                     </button>
-                                    <span className="text-xxxs font-black text-muted-foreground/20">{currentPage} / {totalPages}</span>
+                                    <span className="text-[10px] font-bold text-muted-foreground/20">{currentPage} / {totalPages}</span>
                                     <button
                                         disabled={currentPage === totalPages}
                                         onClick={() => setCurrentPage(prev => prev + 1)}
-                                        className="text-xxxs font-black uppercase tracking-widest text-primary disabled:opacity-20 transition-opacity"
+                                        className="text-[10px] font-bold uppercase tracking-wider text-primary disabled:opacity-20 transition-opacity"
                                     >
                                         Next
                                     </button>
                                 </div>
                             )}
                         </div>
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             {paginatedSubmodels.map(tag => (
                                 <div 
                                     key={tag.id} 
-                                    className="group/tag relative flex items-center justify-between p-4 rounded-xl bg-muted/20 hover:bg-muted/30 transition-all"
+                                    className="group/tag relative flex items-center justify-between p-5 rounded-2xl bg-muted/20 border border-transparent hover:bg-muted/30 hover:border-border/5 transition-all"
                                 >
-                                    <div className="space-y-1 min-w-0">
+                                    <div className="space-y-1.5 min-w-0">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-xs font-black text-foreground/80 truncate">{tag.name}</span>
+                                            <span className="text-sm font-semibold text-foreground/80 truncate">{tag.name}</span>
                                             {tag.installed && (
-                                                <div className="h-1.5 w-1.5 rounded-full bg-success shadow-glow-success" />
+                                                <div className="h-1 w-1 rounded-full bg-primary" />
                                             )}
                                         </div>
-                                        <div className="flex gap-3 text-xxxs font-black text-muted-foreground/40 uppercase tracking-tighter">
+                                        <div className="flex gap-4 text-[10px] font-bold text-muted-foreground/30 uppercase tracking-wider">
                                             {tag.modelSize && <span>{tag.modelSize} Params</span>}
                                             {tag.tensorType && <span>{tag.tensorType}</span>}
                                             <span>{tag.size || tag.contextWindow}</span>
@@ -272,7 +266,7 @@ export function MarketplaceInfoPanel({
                                             })}
                                             className={C_MARKETPLACEINFOPANEL_3}
                                         >
-                                            <Download className="w-4 h-4" />
+                                            <IconDownload className="w-4 h-4" />
                                         </button>
                                     )}
                                 </div>

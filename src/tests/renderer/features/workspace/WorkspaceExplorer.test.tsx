@@ -23,7 +23,7 @@ import { ContextMenuAction, ContextMenuState } from '../../../../renderer/featur
 import { WorkspaceExplorer } from '../../../../renderer/features/workspace/components/WorkspaceExplorer';
 
 // Mock the hooks
-vi.mock('@renderer/features/workspace/hooks/useWorkspaceExplorerLogic', () => ({
+vi.mock('@/features/workspace/hooks/useWorkspaceExplorerLogic', () => ({
     useWorkspaceExplorerLogic: vi.fn(() => ({
         expandedMounts: {},
         rootNodes: {},
@@ -38,7 +38,7 @@ vi.mock('@renderer/features/workspace/hooks/useWorkspaceExplorerLogic', () => ({
 }));
 
 // Mock the utils
-vi.mock('@renderer/features/workspace/utils/workspaceUtils', () => ({
+vi.mock('@/features/workspace/utils/workspaceUtils', () => ({
     getWorkspaceExplorerStorageKey: vi.fn(() => 'test-storage-key'),
     getWorkspaceTreeStorageKey: vi.fn(() => 'test-tree-key'),
     loadExpandedMountState: vi.fn(() => ({})),
@@ -46,16 +46,6 @@ vi.mock('@renderer/features/workspace/utils/workspaceUtils', () => ({
     loadExpandedTreeState: vi.fn(() => ({})),
     saveExpandedTreeState: vi.fn(),
 }));
-
-// Mock lucide-react icons
-vi.mock('lucide-react', async importOriginal => {
-    const actual = await importOriginal<typeof import('lucide-react')>();
-    return {
-        ...actual,
-        Folder: () => <span data-testid="folder-icon">Folder</span>,
-        Plus: () => <span data-testid="plus-icon">Plus</span>,
-    };
-});
 
 // Mock cn utility
 vi.mock('@/lib/utils', () => ({
@@ -69,17 +59,17 @@ vi.mock('@/i18n', () => ({
 }));
 
 // Mock WorkspaceMountItem
-vi.mock('@renderer/features/workspace/components/workspace/WorkspaceMountItem', () => ({
+vi.mock('@/features/workspace/components/workspace/WorkspaceMountItem', () => ({
     WorkspaceMountItem: ({
         mount,
         isExpanded,
         onToggle,
-        onRemove, 
+        onRemove,
     }: {
         mount: WorkspaceMount;
         isExpanded: boolean;
         onToggle: (id: string) => void;
-        onRemove: (id: string) => void; 
+        onRemove: (id: string) => void;
     }) => (
         <div data-testid={`mount-item-${mount.id}`}>
             <span>{mount.name}</span>
@@ -94,7 +84,7 @@ vi.mock('@renderer/features/workspace/components/workspace/WorkspaceMountItem', 
 }));
 
 // Mock WorkspaceContextMenu
-vi.mock('@renderer/features/workspace/components/workspace/WorkspaceContextMenu', () => ({
+vi.mock('@/features/workspace/components/workspace/WorkspaceContextMenu', () => ({
     WorkspaceContextMenu: ({
         contextMenu,
         onClose,
@@ -184,7 +174,7 @@ describe('WorkspaceExplorer', () => {
                 ...base.workspace,
                 watch: vi.fn().mockResolvedValue(true),
                 unwatch: vi.fn().mockResolvedValue(true),
-                onFileChange: vi.fn(() => () => {}),
+                onFileChange: vi.fn(() => () => { }),
             },
         } as typeof window.electron;
     });
@@ -226,7 +216,7 @@ describe('WorkspaceExplorer', () => {
             const props = createMockProps({ mounts: [] });
             render(<WorkspaceExplorer {...props} />);
             expect(screen.getByText('workspace.noMounts')).toBeInTheDocument();
-        }); 
+        });
     });
 
     describe('Mount Management', () => {
@@ -361,7 +351,7 @@ describe('WorkspaceExplorer', () => {
             expect(screen.getByText('Mount 2')).toBeInTheDocument();
             expect(screen.getByText('Mount 3')).toBeInTheDocument();
         });
-   
+
         it('should handle multiple selected entries', async () => {
             const onContextAction = vi.fn();
             const entries = [
@@ -422,7 +412,7 @@ describe('WorkspaceExplorer', () => {
     describe('State Persistence', () => {
         it('should load expanded tree state on mount', async () => {
             const { loadExpandedTreeState } = await import(
-                '@renderer/features/workspace/utils/workspaceUtils'
+                '@/features/workspace/utils/workspaceUtils'
             );
             render(<WorkspaceExplorer {...mockProps} />);
             expect(loadExpandedTreeState).toHaveBeenCalled();
@@ -430,7 +420,7 @@ describe('WorkspaceExplorer', () => {
 
         it('should save expanded tree state on change', async () => {
             const { saveExpandedTreeState } = await import(
-                '@renderer/features/workspace/utils/workspaceUtils'
+                '@/features/workspace/utils/workspaceUtils'
             );
             render(<WorkspaceExplorer {...mockProps} />);
 

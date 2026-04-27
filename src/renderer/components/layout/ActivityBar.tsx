@@ -13,17 +13,7 @@
  * VSCode-like vertical activity bar with icon buttons for switching views.
  */
 
-import {
-    Bug,
-    ChevronLeft,
-    ChevronRight,
-    FolderTree,
-    GitBranch,
-    MessageSquare,
-    Puzzle,
-    Search,
-    Settings
-} from 'lucide-react';
+import { IconBug, IconChevronLeft, IconChevronRight, IconFolderOpen, IconGitBranch, IconMessage, IconPuzzle, IconSearch, IconSettings } from '@tabler/icons-react';
 import React, { createContext, useContext, useMemo } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -56,12 +46,12 @@ export const useActivityBar = () => {
 };
 
 const getDefaultActivities = (t: (key: string) => string): ActivityItem[] => [
-    { id: 'chat', icon: <MessageSquare className="w-5 h-5" />, label: t('activityBar.chat') },
-    { id: 'explorer', icon: <FolderTree className="w-5 h-5" />, label: t('activityBar.explorer') },
-    { id: 'search', icon: <Search className="w-5 h-5" />, label: t('activityBar.search') },
-    { id: 'git', icon: <GitBranch className="w-5 h-5" />, label: t('activityBar.sourceControl') },
-    { id: 'debug', icon: <Bug className="w-5 h-5" />, label: t('activityBar.debug') },
-    { id: 'extensions', icon: <Puzzle className="w-5 h-5" />, label: t('activityBar.extensions') }
+    { id: 'chat', icon: <IconMessage className="w-5 h-5" />, label: t('activityBar.chat') },
+    { id: 'explorer', icon: <IconFolderOpen className="w-5 h-5" />, label: t('activityBar.explorer') },
+    { id: 'search', icon: <IconSearch className="w-5 h-5" />, label: t('activityBar.search') },
+    { id: 'git', icon: <IconGitBranch className="w-5 h-5" />, label: t('activityBar.sourceControl') },
+    { id: 'debug', icon: <IconBug className="w-5 h-5" />, label: t('activityBar.debug') },
+    { id: 'extensions', icon: <IconPuzzle className="w-5 h-5" />, label: t('activityBar.extensions') }
 ];
 
 // Activity Button Component
@@ -142,7 +132,7 @@ export const ActivityBar: React.FC<{
             () => (
                 bottomItems && bottomItems.length > 0
                     ? bottomItems
-                    : [{ id: 'settings', icon: <Settings className="w-5 h-5" />, label: t('activityBar.settings') }]
+                    : [{ id: 'settings', icon: <IconSettings className="w-5 h-5" />, label: t('activityBar.settings') }]
             ),
             [bottomItems, t]
         );
@@ -218,7 +208,7 @@ export const ActivityBarLayout: React.FC<{
                     >
                         {/* Sidebar header */}
                         <div className="flex items-center justify-between border-b border-border/20 px-4 py-2">
-                            <span className="text-xs font-semibold text-muted-foreground">
+                            <span className="text-sm font-semibold text-muted-foreground">
                                 {activityItems?.find(i => i.id === activeItem)?.label ?? t('common.unknown')}
                             </span>
                             <button
@@ -226,7 +216,7 @@ export const ActivityBarLayout: React.FC<{
                                 className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted"
                                 aria-label={t('aria.collapseSidebar')}
                             >
-                                <ChevronLeft className="h-4 w-4" />
+                                <IconChevronLeft className="h-4 w-4" />
                             </button>
                         </div>
                         {/* Sidebar content */}
@@ -243,7 +233,7 @@ export const ActivityBarLayout: React.FC<{
                         className="flex h-full w-6 items-center justify-center border-r border-border/30 bg-transparent text-muted-foreground transition-colors hover:bg-muted/50"
                         aria-label={t('aria.expandSidebar')}
                     >
-                        <ChevronRight className="h-4 w-4" />
+                        <IconChevronRight className="h-4 w-4" />
                     </button>
                 )}
 

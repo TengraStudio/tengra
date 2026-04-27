@@ -9,7 +9,7 @@
  */
 
 import { PromptTemplate } from '@shared/types/templates';
-import { BookTemplate, Search, X } from 'lucide-react';
+import { IconNotebook, IconSearch, IconX } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -63,15 +63,15 @@ export const PromptTemplateLibrary: React.FC<PromptTemplateLibraryProps> = ({ on
     return (
         <div className={C_PROMPTTEMPLATELIBRARY_1}>
             <div className="flex items-center gap-2 p-3 border-b border-border">
-                <BookTemplate className="w-4 h-4 text-primary" />
+                <IconNotebook className="w-4 h-4 text-primary" />
                 <span className="text-sm font-bold text-foreground">{t('prompts.library.title')}</span>
                 <div className="flex-1" />
                 <button onClick={onClose} className="p-1 rounded hover:bg-muted/30">
-                    <X className="w-4 h-4 text-muted-foreground" />
+                    <IconX className="w-4 h-4 text-muted-foreground" />
                 </button>
             </div>
             <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50">
-                <Search className="w-3.5 h-3.5 text-muted-foreground" />
+                <IconSearch className="w-3.5 h-3.5 text-muted-foreground" />
                 <input
                     type="text"
                     value={search}
@@ -109,7 +109,7 @@ export const PromptTemplateLibrary: React.FC<PromptTemplateLibraryProps> = ({ on
                         <div className="flex items-center gap-2">
                             <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{tp.name}</span>
                             {tp.category && (
-                                <span className="px-1.5 py-0.5 rounded text-xxs bg-primary/10 text-primary/70">{tp.category}</span>
+                                <span className="px-1.5 py-0.5 rounded text-sm bg-primary/10 text-primary/70">{tp.category}</span>
                             )}
                         </div>
                         {tp.description && (

@@ -8,6 +8,8 @@
  * (at your option) any later version.
  */
 
+import React from 'react';
+
 import {
     createWorkspaceShareCode,
     filterWorkspaceSnippets,
@@ -15,9 +17,7 @@ import {
     parseWorkspaceShareCode,
     saveWorkspaceSnippets,
     WorkspaceSnippet,
-} from '@renderer/features/workspace/utils/snippet-manager';
-import React from 'react';
-
+} from '@/features/workspace/utils/snippet-manager';
 import { useTranslation } from '@/i18n';
 
 interface UseEditorSnippetsParams {

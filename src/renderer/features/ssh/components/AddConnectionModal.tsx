@@ -8,20 +8,20 @@
  * (at your option) any later version.
  */
 
-import { Checkbox } from '@renderer/components/ui/checkbox';
-import { Input } from '@renderer/components/ui/input';
-import { Label } from '@renderer/components/ui/label';
+import React, { useEffect, useState } from 'react';
+
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@renderer/components/ui/select';
-import { Textarea } from '@renderer/components/ui/textarea';
-import { localizeIpcValidationMessage } from '@renderer/features/ssh/utils/ipc-validation-message';
-import React, { useEffect, useState } from 'react';
-
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { localizeIpcValidationMessage } from '@/features/ssh/utils/ipc-validation-message';
 import { cn } from '@/lib/utils';
 
 /* Batch-02: Extracted Long Classes */

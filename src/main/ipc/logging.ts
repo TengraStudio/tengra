@@ -9,6 +9,7 @@
  */
 
 import { appLogger, LogLevel } from '@main/logging/logger';
+import { safeOn } from '@main/utils/ipc-wrapper.util';
 import { JsonValue } from '@shared/types/common';
 import { BrowserWindow, ipcMain } from 'electron';
 
@@ -91,7 +92,8 @@ export function pushLogEntry(level: 'debug' | 'info' | 'warn' | 'error', source:
 export function registerLoggingIpc() {
     appLogger.debug('LoggingIPC', 'Registering logging IPC handlers');
 
-    ipcMain.on('log:write', handleLogWrite);
+    safeOn('log:write', handleLogWrite);
+
 
 
 

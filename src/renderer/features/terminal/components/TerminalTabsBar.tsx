@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { AlertTriangle, TerminalSquare, X } from 'lucide-react';
+import { IconAlertTriangle, IconTerminal, IconX } from '@tabler/icons-react';
 import React from 'react';
 
 import { UI_PRIMITIVES } from '@/constants/ui-primitives';
@@ -81,14 +81,14 @@ export function TerminalTabsBar({
                         )}
                     >
                         {isWorkspaceIssuesTab ? (
-                            <AlertTriangle
+                            <IconAlertTriangle
                                 className={cn(
                                     'w-3.5 h-3.5 flex-shrink-0',
                                     activeTabId === tab.id ? 'text-warning' : 'opacity-70'
                                 )}
                             />
                         ) : (
-                            <TerminalSquare
+                            <IconTerminal
                                 className={cn(
                                     'w-3.5 h-3.5 flex-shrink-0',
                                     activeTabId === tab.id ? 'text-primary' : 'opacity-70'
@@ -104,7 +104,7 @@ export function TerminalTabsBar({
                                 }}
                                 className="ml-1 p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
                             >
-                                <X className="w-3 h-3" />
+                                <IconX className="w-3 h-3" />
                             </div>
                         )}
                     </button>

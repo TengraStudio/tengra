@@ -68,7 +68,7 @@ interface UseChatGeneratorProps {
     autoReadEnabled: boolean;
     formatChatError: (err: CatchError) => string;
     quotas?: { accounts: import('@/types/quota').QuotaResponse[] } | null | undefined;
-    linkedAccounts?: Array<import('@renderer/electron.d').LinkedAccountInfo> | undefined;
+    linkedAccounts?: Array<import('@/electron.d').LinkedAccountInfo> | undefined;
 }
 
 interface AntigravityCreditConfirmationState {
@@ -84,10 +84,6 @@ const logRendererError = (message: string, error: Error): void => {
 
 export const useChatGenerator = (
     props: UseChatGeneratorProps & {
-        selectedPersona?:
-        | { id: string; name: string; description: string; prompt: string }
-        | null
-        | undefined;
         systemMode: 'thinking' | 'agent' | 'fast';
     }
 ): {
@@ -107,7 +103,6 @@ export const useChatGenerator = (
         selectedProvider,
         selectedModels,
         language,
-        selectedPersona,
         activeWorkspacePath,
         workspaceId,
         t,
@@ -287,7 +282,7 @@ export const useChatGenerator = (
                 const allTools: ToolDefinition[] = (await window.electron.getToolDefinitions()) ?? [];
                 await generateMultiModelResponse({
                     chatId, assistantId, userMessage, models: modelsToUse, allTools, chats,
-                    appSettings, language, selectedPersona, activeWorkspacePath, workspaceId,
+                    appSettings, language, activeWorkspacePath, workspaceId,
                     autoReadEnabled, handleSpeak, t, formatChatError, systemMode, intentClassification,
                     getReasoningEffort, createModelToolList, prepareMessages
                 });
@@ -299,7 +294,7 @@ export const useChatGenerator = (
 
                 const { allMessages, presetOptions } = prepareMessages({
                     chatId, chats, userMessage, appSettings, selectedModel: activeModel,
-                    selectedProvider, language, selectedPersona, activeWorkspacePath, systemMode, toolingEnabled: shouldEnableTools
+                    selectedProvider, language, activeWorkspacePath, systemMode, toolingEnabled: shouldEnableTools
                 });
 
                 const reasoningEffort = getReasoningEffort(activeModel, appSettings);

@@ -8,15 +8,7 @@
  * (at your option) any later version.
  */
 
-import { ChatErrorState } from '@renderer/features/chat/components/ChatErrorState';
-import { ChatHeader } from '@renderer/features/chat/components/ChatHeader';
-import { ChatInput } from '@renderer/features/chat/components/ChatInput';
-import { ExportModal } from '@renderer/features/chat/components/ExportModal';
-import { MessageList } from '@renderer/features/chat/components/MessageList';
-import { MultiModelCollaboration } from '@renderer/features/chat/components/MultiModelCollaboration';
-import { WelcomeScreen } from '@renderer/features/chat/components/WelcomeScreen';
-import { ChatTemplate } from '@renderer/features/chat/types';
-import { ChevronDown } from 'lucide-react';
+import { IconChevronDown } from '@tabler/icons-react';
 import React, { useCallback, useRef } from 'react';
 import { VirtuosoHandle } from 'react-virtuoso';
 
@@ -24,7 +16,15 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
 import { useModel } from '@/context/ModelContext';
+import { ChatErrorState } from '@/features/chat/components/ChatErrorState';
 import { ChatFilePreviewPanel, ChatPreviewTab, createLoadingDiffTab, createLoadingFileTab } from '@/features/chat/components/ChatFilePreviewPanel';
+import { ChatHeader } from '@/features/chat/components/ChatHeader';
+import { ChatInput } from '@/features/chat/components/ChatInput';
+import { ExportModal } from '@/features/chat/components/ExportModal';
+import { MessageList } from '@/features/chat/components/MessageList';
+import { MultiModelCollaboration } from '@/features/chat/components/MultiModelCollaboration';
+import { WelcomeScreen } from '@/features/chat/components/WelcomeScreen';
+import { ChatTemplate } from '@/features/chat/types';
 import { WORKSPACE_NAVIGATE_EVENT, WorkspaceNavigationAction } from '@/features/workspace/utils/workspace-navigation';
 import { useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
@@ -255,7 +255,7 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
                             onClick={handleScrollToBottom}
                             className={C_CHATVIEW_1}
                         >
-                            <ChevronDown className="h-4 w-4" />
+                            <IconChevronDown className="h-4 w-4" />
                         </motion.button>
                     )}
                 </AnimatePresence>

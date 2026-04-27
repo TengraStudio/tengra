@@ -581,14 +581,68 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
             );
             const initialAccountIds = getProviderAccountsForProvider(provider, existingAccounts)
                 .map(account => account.id);
+
+            // Special handling for Ollama native connect
+            if (provider === 'ollama') {
+                appLogger.debug('BrowserAuth', `[ollama] Step 2: Calling initiateConnect`);
+                const response = await withTimeout(
+                    window.electron.ollama.initiateConnect(),
+                    BROWSER_AUTH_LOGIN_INIT_TIMEOUT_MS,
+                    'ollama connect initialization'
+                ) as any;
+
+                if (requestId !== activeRequestRef.current) {return;}
+                if (!response.success || !response.connectUrl || !response.code) {
+                    resetBrowserAuthState(response.error || t('auth.failedUrlForProvider', { provider }));
+                    return;
+                }
+
+                const request: BrowserAuthRequest = {
+                    provider: 'ollama',
+                    state: response.code, // use code as state for tracking
+                    accountId: 'pending_ollama_' + response.code,
+                    initialAccountIds,
+                    startedAt: Date.now()
+                };
+
+                pendingBrowserAuthRef.current = request;
+                setAuthBusy(request);
+                window.electron.openExternal(response.connectUrl);
+                setAuthNotice(t('auth.connecting'));
+
+                // Custom polling for Ollama connect
+                const pollOllama = async () => {
+                    if (requestId !== activeRequestRef.current) {return;}
+                    try {
+                        const result = await window.electron.ollama.pollConnectStatus(
+                            response.code,
+                            response.privateKeyB64,
+                            response.publicKeyB64
+                        ) as any;
+                        if (requestId !== activeRequestRef.current) {return;}
+                        if (result.success) {
+                            await completeBrowserAuth(request);
+                        } else if (result.error && !result.error.includes('pending') && !result.error.includes('waiting')) {
+                            resetBrowserAuthState(result.error);
+                        } else {
+                            pollTimeoutRef.current = setTimeout(pollOllama, 3000);
+                        }
+                    } catch (e) {
+                        if (requestId !== activeRequestRef.current) {return;}
+                        pollTimeoutRef.current = setTimeout(pollOllama, 3000);
+                    }
+                };
+                pollTimeoutRef.current = setTimeout(pollOllama, 3000);
+                return;
+            }
+
             appLogger.debug('BrowserAuth', `[${provider}] Step 2: Calling ${provider}Login (initialAccounts=${initialAccountIds.length})`);
             const loginRequest = provider === 'codex'
                 ? window.electron.codexLogin()
                 : provider === 'claude'
                     ? window.electron.claudeLogin()
-                    : provider === 'antigravity'
-                        ? window.electron.antigravityLogin()
-                        : window.electron.ollamaLogin();
+                    : window.electron.antigravityLogin();
+
             const response = await withTimeout(
                 loginRequest,
                 BROWSER_AUTH_LOGIN_INIT_TIMEOUT_MS,
@@ -634,7 +688,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                     : t('auth.connectionFailedGeneric')
             );
         }
-    }, [authBusy, cancelBrowserAuthAttempt, clearPollTimeout, pendingBrowserAuth, pollConnection, resetBrowserAuthState, setAuthBusy, setAuthNotice, t]);
+    }, [authBusy, cancelBrowserAuthAttempt, clearPollTimeout, completeBrowserAuth, pendingBrowserAuth, pollConnection, resetBrowserAuthState, setAuthBusy, setAuthNotice, t]);
 
     const cancelBrowserAuth = useCallback(async () => {
         await cancelBrowserAuthAttempt(pendingBrowserAuth);

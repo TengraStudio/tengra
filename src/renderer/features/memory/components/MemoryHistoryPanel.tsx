@@ -9,7 +9,7 @@
  */
 
 import { MemoryVersion } from '@shared/types/advanced-memory';
-import { History, RotateCcw } from 'lucide-react';
+import { IconHistory, IconRotate } from '@tabler/icons-react';
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -32,7 +32,7 @@ export const MemoryHistoryPanel: React.FC<MemoryHistoryPanelProps> = ({
         <div className="flex flex-col h-full bg-muted/10 border-l border-border/40 animate-in slide-in-from-right duration-300 w-80">
             <div className="p-4 border-b border-border/40 flex items-center justify-between bg-muted/20">
                 <div className="flex items-center gap-2 font-bold">
-                    <History className="w-4 h-4 text-primary" />
+                    <IconHistory className="w-4 h-4 text-primary" />
                     {t('memory.historyTitle')}
                 </div>
                 <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">×</Button>
@@ -45,7 +45,7 @@ export const MemoryHistoryPanel: React.FC<MemoryHistoryPanelProps> = ({
                     history.map((version, index) => (
                         <div key={index} className="space-y-2 group">
                             <div className="flex items-center justify-between">
-                                <span className="text-xxxs font-bold text-muted-foreground/60">
+                                <span className="text-sm font-bold text-muted-foreground/60">
                                     {new Date(version.timestamp).toLocaleString()}
                                 </span>
                                 {index > 0 && (
@@ -53,9 +53,9 @@ export const MemoryHistoryPanel: React.FC<MemoryHistoryPanelProps> = ({
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => onRollback(index)}
-                                        className="h-6 px-2 text-xxxs opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="h-6 px-2 text-sm opacity-0 group-hover:opacity-100 transition-opacity"
                                     >
-                                        <RotateCcw className="w-3 h-3 mr-1" />
+                                        <IconRotate className="w-3 h-3 mr-1" />
                                         {t('memory.rollback')}
                                     </Button>
                                 )}
@@ -63,11 +63,11 @@ export const MemoryHistoryPanel: React.FC<MemoryHistoryPanelProps> = ({
                             <div className="p-3 bg-muted/30 rounded-lg text-sm border border-transparent group-hover:border-primary/20 transition-colors">
                                 <p className="leading-relaxed opacity-80">{version.content}</p>
                                 <div className="mt-2 flex gap-1 items-center overflow-hidden">
-                                    <span className="text-xxxs bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold">
+                                    <span className="text-sm bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold">
                                         {version.category}
                                     </span>
                                     {version.tags.map((tag, i) => (
-                                        <span key={i} className="text-xxxs bg-muted/30 text-muted-foreground px-1.5 py-0.5 rounded">
+                                        <span key={i} className="text-sm bg-muted/30 text-muted-foreground px-1.5 py-0.5 rounded">
                                             #{tag}
                                         </span>
                                     ))}

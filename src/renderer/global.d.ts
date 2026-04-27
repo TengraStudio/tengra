@@ -8,4 +8,5 @@
  * (at your option) any later version.
  */
 
-declare const __BUILD_TIME__: string;
+declare const __BUILD_TIME__: number;
+declare const __APP_VERSION__: string;

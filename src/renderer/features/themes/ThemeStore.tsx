@@ -13,7 +13,7 @@
  * Browse, preview, and install themes for the application.
  */
 
-import { Check, Download, Moon, Palette, Search, Star, Sun } from 'lucide-react';
+import { IconCheck, IconDownload, IconMoon, IconPalette, IconSearch, IconStar, IconSun } from '@tabler/icons-react';
 import React, { useMemo, useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
@@ -84,8 +84,8 @@ const ThemeCard: React.FC<{
         >
             <div className="h-32 w-full" style={{ background: theme.preview }}>
                 <div className="absolute top-2 right-2 flex gap-1">
-                    {theme.isPremium && <span className="px-2 py-0.5 bg-warning/90 text-primary-foreground text-xxs font-bold rounded-full">{t('themeStore.pro')}</span>}
-                    {isActive && <span className="px-2 py-0.5 bg-primary text-primary-foreground text-xxs font-bold rounded-full flex items-center gap-1"><Check className="w-3 h-3" /> {t('themeStore.active')}</span>}
+                    {theme.isPremium && <span className="px-2 py-0.5 bg-warning/90 text-primary-foreground text-sm font-bold rounded-full">{t('themeStore.pro')}</span>}
+                    {isActive && <span className="px-2 py-0.5 bg-primary text-primary-foreground text-sm font-bold rounded-full flex items-center gap-1"><IconCheck className="w-3 h-3" /> {t('themeStore.active')}</span>}
                 </div>
                 <div className="absolute bottom-2 left-2 flex gap-1">
                     {Object.values(theme.colors).map((color, i) => (
@@ -96,15 +96,15 @@ const ThemeCard: React.FC<{
             <div className="p-3 bg-card/40 backdrop-blur-sm">
                 <div className="flex items-center justify-between mb-1">
                     <h3 className="font-medium text-sm truncate">{theme.name}</h3>
-                    <div className="flex items-center gap-1 text-warning"><Star className="w-3 h-3 fill-current" /><span className="typo-caption">{theme.rating}</span></div>
+                    <div className="flex items-center gap-1 text-warning"><IconStar className="w-3 h-3 fill-current" /><span className="typo-caption">{theme.rating}</span></div>
                 </div>
                 <p className="typo-caption text-muted-foreground truncate">{theme.author}</p>
                 <div className="flex items-center justify-between mt-2">
-                    <span className="text-xxs text-muted-foreground/60"><Download className="w-3 h-3 inline mr-1" />{theme.downloads.toLocaleString()}</span>
+                    <span className="text-sm text-muted-foreground/60"><IconDownload className="w-3 h-3 inline mr-1" />{theme.downloads.toLocaleString()}</span>
                     {!isActive && (
                         <button
                             onClick={(e) => { e.stopPropagation(); void onApplyTheme?.(theme.id); }}
-                            className="px-2 py-1 text-xxs font-medium bg-primary/10 hover:bg-primary/20 text-primary rounded transition-colors"
+                            className="px-2 py-1 text-sm font-medium bg-primary/10 hover:bg-primary/20 text-primary rounded transition-colors"
                         >{t('themeStore.apply')}</button>
                     )}
                 </div>
@@ -125,7 +125,7 @@ const ThemePreviewModal: React.FC<{
             <div className="overflow-y-auto p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-2">
                     <h2 className="text-xl font-semibold">{theme.name}</h2>
-                    <div className="flex items-center gap-1 text-warning"><Star className="w-4 h-4 fill-current" /><span>{theme.rating}</span></div>
+                    <div className="flex items-center gap-1 text-warning"><IconStar className="w-4 h-4 fill-current" /><span>{theme.rating}</span></div>
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">{t('themeStore.by')} {theme.author}</p>
                 <p className="text-sm mb-4">{theme.description}</p>
@@ -133,7 +133,7 @@ const ThemePreviewModal: React.FC<{
                     {Object.entries(theme.colors).map(([name, color]) => (
                         <div key={name} className="flex flex-col items-center">
                             <div className="h-8 w-8 rounded-lg border border-border/30" style={{ background: color }} />
-                            <span className="text-xxs text-muted-foreground mt-1 capitalize">{name}</span>
+                            <span className="text-sm text-muted-foreground mt-1 capitalize">{name}</span>
                         </div>
                     ))}
                 </div>
@@ -207,7 +207,7 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
             {/* Header */}
             <div className="p-4 border-b border-border/50 bg-card/40 backdrop-blur-sm">
                 <div className="flex items-center gap-3 mb-4">
-                    <Palette className="w-6 h-6 text-primary" />
+                    <IconPalette className="w-6 h-6 text-primary" />
                     <div>
                         <h1 className="text-lg font-bold">{t('themeStore.title')}</h1>
                         <p className="typo-caption text-muted-foreground">{t('themeStore.subtitle')}</p>
@@ -216,7 +216,7 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
 
                 {/* Search */}
                 <div className="relative mb-3">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
+                    <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
                     <input
                         type="text"
                         placeholder={t('themeStore.searchPlaceholder')}
@@ -229,10 +229,10 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                 {/* Filters */}
                 <div className="flex gap-2">
                     {[
-                        { id: 'all', label: t('themeStore.filterAll'), icon: Palette },
-                        { id: 'installed', label: t('themeStore.filterInstalled'), icon: Check },
-                        { id: 'dark', label: t('themeStore.filterDark'), icon: Moon },
-                        { id: 'light', label: t('themeStore.filterLight'), icon: Sun }
+                        { id: 'all', label: t('themeStore.filterAll'), icon: IconPalette },
+                        { id: 'installed', label: t('themeStore.filterInstalled'), icon: IconCheck },
+                        { id: 'dark', label: t('themeStore.filterDark'), icon: IconMoon },
+                        { id: 'light', label: t('themeStore.filterLight'), icon: IconSun }
                     ].map(({ id, label, icon: Icon }) => (
                         <button
                             key={id}
@@ -267,7 +267,7 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
 
                 {filteredThemes.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-12 text-muted-foreground/50">
-                        <Palette className="w-12 h-12 mb-3 opacity-30" />
+                        <IconPalette className="w-12 h-12 mb-3 opacity-30" />
                         <p className="text-sm">{t('themeStore.noThemes')}</p>
                     </div>
                 )}

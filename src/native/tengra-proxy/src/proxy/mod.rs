@@ -1,4 +1,4 @@
-/**
+/*
  * Tengra - Your Personal AI Assistant
  * Copyright (c) 2026 TengraStudio
  *
@@ -14,5 +14,4 @@ pub mod model_service;
 pub mod server;
 pub mod skills;
 pub mod types;
-
-pub use server::AppState;
+ 

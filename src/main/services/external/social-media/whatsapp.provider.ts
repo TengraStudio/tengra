@@ -21,7 +21,7 @@ export interface WhatsAppConfig {
     allowedUserIds: string[];
 }
 
-/** WhatsApp Cloud API message response */
+/** WhatsApp IconCloud API message response */
 interface WhatsAppApiResponse {
     messaging_product: string;
     contacts?: Array<{ input: string; wa_id: string }>;
@@ -47,7 +47,7 @@ interface WhatsAppWebhookValue {
 }
 
 /**
- * WhatsApp Business Cloud API provider.
+ * WhatsApp Business IconCloud API provider.
  * Uses the Meta Graph API to send and receive messages.
  *
  * `mode: 'api'` → Uses WhatsApp Business API token + phone number ID (botId).

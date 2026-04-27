@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Check, Image as ImageIcon, Loader2, Sparkles, Upload, Wand2 } from 'lucide-react';
+import { IconCheck, IconLoader2, IconPhoto as ImageIcon, IconSparkles, IconUpload, IconWand } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
 
 import {
@@ -209,7 +209,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                             onClick={() => setMode('auto')}
                                             className="justify-start h-10"
                                         >
-                                            <Sparkles className="w-4 h-4 mr-2" />
+                                            <IconSparkles className="w-4 h-4 mr-2" />
                                             {t('common.auto')}
                                         </Button>
                                         <Button
@@ -217,7 +217,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                             onClick={() => setMode('manual')}
                                             className="justify-start h-10"
                                         >
-                                            <Wand2 className="w-4 h-4 mr-2" />
+                                            <IconWand className="w-4 h-4 mr-2" />
                                             {t('common.manual')}
                                         </Button>
                                     </div>
@@ -338,9 +338,9 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                                 disabled={isAnalyzing}
                                             >
                                                 {isAnalyzing ? (
-                                                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                                    <IconLoader2 className="w-4 h-4 animate-spin mr-2" />
                                                 ) : (
-                                                    <Sparkles className="w-4 h-4 mr-2" />
+                                                    <IconSparkles className="w-4 h-4 mr-2" />
                                                 )}
                                                 {suggestions.length > 0
                                                     ? t('workspaces.reAnalyzeWorkspace')
@@ -386,12 +386,12 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                 >
                                     {isGenerating ? (
                                         <>
-                                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                            <IconLoader2 className="w-4 h-4 animate-spin mr-2" />
                                             {t('common.generating')}
                                         </>
                                     ) : (
                                         <>
-                                            <Wand2 className="w-4 h-4 mr-2" />
+                                            <IconWand className="w-4 h-4 mr-2" />
                                             {t('common.generateLogos')}
                                         </>
                                     )}
@@ -414,7 +414,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                 >
                                     <div className="flex flex-col items-center gap-4 text-center">
                                         <div className="p-4 rounded-full bg-muted">
-                                            <Upload className="w-8 h-8 text-muted-foreground" />
+                                            <IconUpload className="w-8 h-8 text-muted-foreground" />
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-sm font-medium">
@@ -473,7 +473,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                                 size="sm"
                                                 onClick={() => void handleApply(logoPath)}
                                             >
-                                                <Check className="w-4 h-4 mr-2" />
+                                                <IconCheck className="w-4 h-4 mr-2" />
                                                 {t('workspace.applyLogo')}
                                             </Button>
                                         </div>

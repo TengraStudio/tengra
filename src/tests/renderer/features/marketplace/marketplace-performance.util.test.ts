@@ -8,9 +8,10 @@
  * (at your option) any later version.
  */
 
-import { estimateMarketplaceModelPerformance } from '@renderer/features/marketplace/utils/marketplace-performance.util';
 import type { MarketplaceModel, MarketplaceRuntimeProfile } from '@shared/types/marketplace';
 import { describe, expect, it } from 'vitest';
+
+import { estimateMarketplaceModelPerformance } from '@/features/marketplace/utils/marketplace-performance.util';
 
 const GB = 1024 * 1024 * 1024;
 

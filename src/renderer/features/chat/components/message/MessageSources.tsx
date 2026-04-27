@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { FileCode, Sparkles } from 'lucide-react';
+import { IconFileCode, IconSparkles } from '@tabler/icons-react';
 import { memo } from 'react';
 
 /* Batch-02: Extracted Long Classes */
@@ -40,8 +40,8 @@ export const MessageSources = memo(
         }
         return (
             <div className="flex flex-wrap gap-2 mt-3 animate-fade-in">
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-primary/5 border border-primary/10 text-xxs text-primary font-bold mb-1">
-                    <Sparkles className="w-3 h-3" />
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-primary/5 border border-primary/10 text-sm text-primary font-bold mb-1">
+                    <IconSparkles className="w-3 h-3" />
                     {t('chat.sources')}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -52,7 +52,7 @@ export const MessageSources = memo(
                             className={C_MESSAGESOURCES_1}
                             title={path}
                         >
-                            <FileCode className="w-3.5 h-3.5 text-primary/60 group-hover/chip:text-primary" />
+                            <IconFileCode className="w-3.5 h-3.5 text-primary/60 group-hover/chip:text-primary" />
                             <span>{path.split(/[\\/]/).pop() ?? path}</span>
                         </button>
                     ))}

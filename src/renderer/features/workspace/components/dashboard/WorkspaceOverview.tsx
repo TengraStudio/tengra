@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Camera, Check, Pencil, RefreshCw, Sparkles } from 'lucide-react';
+import { IconCamera, IconCheck, IconPencil, IconRefresh, IconSparkles } from '@tabler/icons-react';
 
 import { cn } from '@/lib/utils';
 import { Workspace, WorkspaceAnalysis, WorkspaceStats } from '@/types';
@@ -71,15 +71,15 @@ export function WorkspaceOverviewHeader({
                     {workspaceLogoUrl ? (
                         <img src={workspaceLogoUrl} alt={t('workspaces.logoAlt')} className="w-full h-full object-cover" />
                     ) : (
-                        <Sparkles className="w-10 h-10 text-muted-foreground/20" />
+                        <IconSparkles className="w-10 h-10 text-muted-foreground/20" />
                     )}
 
                     <button
                         onClick={onOpenLogoGenerator}
                         className={C_WORKSPACEOVERVIEW_2}
                     >
-                        <Camera className="w-6 h-6" />
-                        <span className="text-xxs font-bold">{t('workspaces.changeLogo')}</span>
+                        <IconCamera className="w-6 h-6" />
+                        <span className="text-sm font-bold">{t('workspaces.changeLogo')}</span>
                     </button>
                 </div>
             </div>
@@ -101,7 +101,7 @@ export function WorkspaceOverviewHeader({
                                 className="text-3xl font-bold bg-transparent border border-primary/50 rounded-lg px-2 py-1 outline-none w-full text-foreground"
                             />
                             <button onClick={onSaveName} className="p-2 bg-primary text-primary-foreground rounded-lg">
-                                <Check className="w-4 h-4" />
+                                <IconCheck className="w-4 h-4" />
                             </button>
                         </div>
                     ) : (
@@ -110,7 +110,7 @@ export function WorkspaceOverviewHeader({
                             className="text-4xl font-bold text-foreground cursor-pointer hover:text-primary transition-colors flex items-center gap-3"
                         >
                             {workspace.title}
-                            <Pencil className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+                            <IconPencil className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
                         </h1>
                     )}
                 </div>
@@ -133,7 +133,7 @@ export function WorkspaceOverviewHeader({
                             className={C_WORKSPACEOVERVIEW_3}
                         >
                             {workspace.description}
-                            <Pencil className="w-3 h-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <IconPencil className="w-3 h-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </p>
                     )}
                 </div>
@@ -141,9 +141,9 @@ export function WorkspaceOverviewHeader({
                 <div className="flex items-center gap-4 pt-2">
                     <div className="flex items-center gap-1.5 px-2.5 py-1 bg-success/10 border border-success/20 rounded-md">
                         <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                        <span className="text-xxs font-bold text-success">{analysis.type}</span>
+                        <span className="text-sm font-bold text-success">{analysis.type}</span>
                     </div>
-                    <div className="text-xxs font-medium text-muted-foreground font-mono bg-accent/50 px-2 py-1 rounded border border-border">
+                    <div className="text-sm font-medium text-muted-foreground font-mono bg-accent/50 px-2 py-1 rounded border border-border">
                         {workspaceRoot}
                     </div>
                     <button
@@ -152,7 +152,7 @@ export function WorkspaceOverviewHeader({
                         className={C_WORKSPACEOVERVIEW_4}
                         title={t('common.refresh')}
                     >
-                        <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
+                        <IconRefresh className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
                         {loading ? t('common.loading') : t('common.refresh')}
                     </button>
                 </div>
@@ -172,15 +172,15 @@ export function WorkspaceStatsCards({ stats, analysis, t, formatBytes }: Workspa
     return (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-xxs font-bold text-muted-foreground mb-1">{t('workspaceDashboard.fileCount')}</div>
+                <div className="text-sm font-bold text-muted-foreground mb-1">{t('workspaceDashboard.fileCount')}</div>
                 <div className="text-2xl font-bold text-foreground">{stats?.fileCount ?? 0}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-xxs font-bold text-muted-foreground mb-1">{t('workspaceDashboard.loc')}</div>
+                <div className="text-sm font-bold text-muted-foreground mb-1">{t('workspaceDashboard.loc')}</div>
                 <div className="text-2xl font-bold text-foreground">~{stats?.loc ?? 0}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-xxs font-bold text-muted-foreground mb-1">{t('workspaceDashboard.totalSize')}</div>
+                <div className="text-sm font-bold text-muted-foreground mb-1">{t('workspaceDashboard.totalSize')}</div>
                 <div className="text-2xl font-bold text-foreground">{stats ? formatBytes(stats.totalSize) : '0 B'}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
@@ -188,7 +188,7 @@ export function WorkspaceStatsCards({ stats, analysis, t, formatBytes }: Workspa
                 <div className="text-2xl font-bold text-foreground">{analysis.monorepo?.packages.length ?? Object.keys(analysis.dependencies).length}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-xxs font-bold text-muted-foreground mb-1">{t('workspaceDashboard.type')}</div>
+                <div className="text-sm font-bold text-muted-foreground mb-1">{t('workspaceDashboard.type')}</div>
                 <div className="text-2xl font-bold text-primary capitalize">{analysis.type}</div>
             </div>
         </div>

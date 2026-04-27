@@ -9,6 +9,7 @@
  */
 
 const { spawn } = require('child_process');
+const fs = require('fs');
 const path = require('path');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
@@ -101,6 +102,17 @@ function cleanup() {
     }
 }
 
+function cleanPackagingOutputs() {
+    const releaseDir = path.join(PROJECT_ROOT, 'release');
+    const outputDirs = ['win-unpacked', 'linux-unpacked', 'mac-unpacked'];
+    for (const outputDir of outputDirs) {
+        const targetPath = path.join(releaseDir, outputDir);
+        if (fs.existsSync(targetPath)) {
+            fs.rmSync(targetPath, { recursive: true, force: true });
+        }
+    }
+}
+
 async function build() {
     const startTime = Date.now();
     const ARGS = process.argv.slice(2);
@@ -112,12 +124,29 @@ async function build() {
 
     try {
         const results = [];
+        
+        // Sync versions across all components before building
+        // Auto-increment patch version if we are publishing
+        const isPublish = process.argv.includes('--publish');
+        const syncArgs = ['scripts/sync-versions.js'];
+        if (isPublish) {
+            syncArgs.push('--increment');
+        }
+        
+        await runCommand('node', syncArgs, 'VersionSync');
+
+        const isFastBuild = process.env.TENGRA_BUILD_FAST === 'true';
         const coreTasks = [
             runCommand('node', ['scripts/compile-native.js'], 'NativeBuild'),
-            runCommand('npm', ['run', 'type-check', '--', '--pretty', 'false'], 'TypeCheck'),
             runCommand('npx', ['vite', 'build'], 'Vite:Main', { TENGRA_BUILD_TARGET: 'main' }),
             runCommand('npx', ['vite', 'build'], 'Vite:Renderer', { TENGRA_BUILD_TARGET: 'renderer' }),
         ];
+
+        if (!isFastBuild) {
+            coreTasks.push(runCommand('npm', ['run', 'type-check', '--', '--pretty', 'false'], 'TypeCheck'));
+        } else {
+            writeStdout('[TypeCheck] Skipped due to TENGRA_BUILD_FAST=true');
+        }
 
         if (STRICT_BUILD) {
             coreTasks.push(runCommand('npm', ['run', 'lint'], 'Lint'));
@@ -137,13 +166,29 @@ async function build() {
         // Packaging Step
         if (SHOULD_PACKAGE) {
             writeStdout('\nStarting packaging phase...');
+            cleanPackagingOutputs();
             if (IS_PUBLISH) {
-                // Build for all platforms one by one as requested
+                // Build for all platforms in parallel where possible
                 const platforms = ['--win', '--mac', '--linux'];
+                const packageTasks = [];
+                
                 for (const platform of platforms) {
-                    writeStdout(`[Package] Building for ${platform}...`);
-                    results.push(await runCommand('npx', ['electron-builder', platform], `Package:${platform.slice(2)}`));
+                    if (platform === '--mac' && process.platform === 'win32') {
+                        writeStdout('[Package] Skipping --mac build: macOS builds are not supported on Windows without remote build services.');
+                        continue;
+                    }
+                    
+                    let targetPlatform = platform;
+                    if (platform === '--linux' && process.platform === 'win32') {
+                        writeStdout('[Package] Linux targets (AppImage/DEB/RPM) are not natively supported on Windows. Building Linux ZIP instead.');
+                        targetPlatform = '--linux zip';
+                    }
+
+                    packageTasks.push(runCommand('npx', ['electron-builder', targetPlatform], `Package:${platform.slice(2)}`));
                 }
+                
+                const packageResults = await Promise.all(packageTasks);
+                results.push(...packageResults);
             } else {
                 // Build for current platform with zero compression for speed
                 const platform = process.platform === 'win32' ? '--win' : (process.platform === 'darwin' ? '--mac' : '--linux');

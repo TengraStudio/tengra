@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Briefcase, DownloadCloud, History as LucideHistory, Inbox as LucideInbox, MessageSquare, Pause, Play, RefreshCcw, Rocket, ShoppingBag, X } from 'lucide-react';
+import { IconBriefcase, IconCloudDownload, IconHistory, IconInbox, IconMessage, IconPlayerPause, IconPlayerPlay, IconRefresh, IconRocket, IconShoppingBag, IconX } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AnimatedProgressBar } from '@/components/ui/AnimatedProgressBar';
@@ -75,23 +75,23 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
     const extensions = useExtensionStore(s => s.extensions);
 
     const navItems = useMemo(() => {
-        const items: Array<{ view: AppView; icon: typeof MessageSquare; label: string; badge?: number; testId: string }> = [
+        const items: Array<{ view: AppView; icon: typeof IconMessage; label: string; badge?: number; testId: string }> = [
             {
                 view: 'chat',
-                icon: MessageSquare,
+                icon: IconMessage,
                 label: t('sidebar.chats'),
                 badge: chatsCount > 0 ? chatsCount : undefined,
                 testId: 'sidebar-nav-chat'
             },
             {
                 view: 'workspace',
-                icon: Rocket,
+                icon: IconRocket,
                 label: t('sidebar.workspaces'),
                 testId: 'sidebar-nav-workspace'
             },
             {
                 view: 'marketplace',
-                icon: ShoppingBag,
+                icon: IconShoppingBag,
                 label: t('sidebar.marketplace'),
                 testId: 'sidebar-nav-marketplace'
             }
@@ -104,7 +104,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                     if (view.type === 'sidebar') {
                         items.push({
                             view: view.id,
-                            icon: view.icon === 'Briefcase' ? Briefcase : Rocket, // Basic icon mapping for now
+                            icon: view.icon === 'Briefcase' ? IconBriefcase : IconRocket, // Basic icon mapping for now
                             label: view.title,
                             testId: `sidebar-nav-ext-${view.id}`
                         });
@@ -346,7 +346,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
             <Popover>
                 <PopoverTrigger asChild>
                     <SidebarItem
-                        icon={DownloadCloud}
+                        icon={IconCloudDownload}
                         label={t('sidebar.downloads')}
                         active={false}
                         isCollapsed={isCollapsed}
@@ -364,8 +364,8 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                         <div className="p-4 border-b border-border/40 bg-muted/20">
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
-                                    <h3 className="text-sm font-semibold tracking-tight">{t('sidebar.downloads')}</h3>
-                                    <p className="typo-overline text-muted-foreground/60 uppercase tracking-widest font-bold">
+                                    <h3 className="text-sm font-semibold ">{t('sidebar.downloads')}</h3>
+                                    <p className="typo-overline text-muted-foreground/60 uppercase font-bold">
                                         {activeDownloadCount} {t('sidebar.activeDownloads')}
                                     </p>
                                 </div>
@@ -384,7 +384,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                     <section className="space-y-3">
                                         <div className="flex items-center gap-2 px-1">
                                             <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                                            <span className="typo-overline font-bold uppercase tracking-wider text-muted-foreground">
+                                            <span className="typo-overline font-bold uppercase text-muted-foreground">
                                                 {t('sidebar.activeDownloads')}
                                             </span>
                                         </div>
@@ -397,11 +397,11 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                                     <div key={task.downloadId} className="group relative rounded-xl border border-border/40 bg-muted/10 p-3 transition-all hover:bg-muted/20 hover:border-border/60">
                                                         <div className="flex items-start justify-between gap-3 mb-2.5">
                                                             <div className="min-w-0 flex-1">
-                                                                <div className="text-xs font-bold truncate text-foreground/90 mb-0.5">
+                                                                <div className="text-sm font-bold truncate text-foreground/90 mb-0.5">
                                                                     {task.modelRef}
                                                                 </div>
                                                                 <div className="flex items-center gap-2">
-                                                                    <Badge variant="secondary" className="h-4 px-1 typo-overline uppercase font-bold tracking-tight bg-primary/10 text-primary border-none">
+                                                                    <Badge variant="secondary" className="h-4 px-1 typo-overline uppercase font-bold bg-primary/10 text-primary border-none">
                                                                         {task.provider}
                                                                     </Badge>
                                                                     <span className="typo-overline font-medium text-muted-foreground/50">
@@ -410,7 +410,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                                                 </div>
                                                             </div>
                                                             <div className="text-right shrink-0">
-                                                                <div className="text-xs font-black text-primary">
+                                                                <div className="text-sm font-bold text-primary">
                                                                     {task.status === 'downloading' ? `${progressPercent}%` : ''}
                                                                 </div>
                                                                 {task.eta !== undefined && task.status === 'downloading' && (
@@ -442,7 +442,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                                                     className="h-6 w-6 rounded-md hover:bg-background/80"
                                                                     onClick={() => isPaused ? handleResume(task.downloadId) : handlePause(task.downloadId)}
                                                                 >
-                                                                    {isPaused ? <Play className="h-2.5 w-2.5 fill-current" /> : <Pause className="h-2.5 w-2.5 fill-current" />}
+                                                                    {isPaused ? <IconPlayerPlay className="h-2.5 w-2.5 fill-current" /> : <IconPlayerPause className="h-2.5 w-2.5 fill-current" />}
                                                                 </Button>
                                                                 <Button
                                                                     variant="ghost"
@@ -450,7 +450,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                                                     className="h-6 w-6 rounded-md hover:bg-destructive/10 hover:text-destructive"
                                                                     onClick={() => handleCancel(task.downloadId)}
                                                                 >
-                                                                    <X className="h-2.5 w-2.5" />
+                                                                    <IconX className="h-2.5 w-2.5" />
                                                                 </Button>
                                                             </div>
                                                         </div>
@@ -464,16 +464,16 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                 {/* Today History Section */}
                                 <section className="space-y-3">
                                     <div className="flex items-center gap-2 px-1">
-                                        <LucideHistory className="w-3 h-3 text-muted-foreground/60" />
-                                        <span className="typo-overline font-bold uppercase tracking-wider text-muted-foreground">
+                                        <IconHistory className="w-3 h-3 text-muted-foreground/60" />
+                                        <span className="typo-overline font-bold uppercase text-muted-foreground">
                                             {t('sidebar.downloadsToday')}
                                         </span>
                                     </div>
                                     <div className="space-y-1.5">
                                         {todayHistory.length === 0 && activeDownloadCount === 0 && (
                                             <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                                                <LucideInbox className="w-6 h-6 text-muted-foreground/20 mb-2" />
-                                                <p className="text-xs font-medium text-muted-foreground/40 italic">
+                                                <IconInbox className="w-6 h-6 text-muted-foreground/20 mb-2" />
+                                                <p className="text-sm font-medium text-muted-foreground/40 ">
                                                     {t('sidebar.downloadHistoryEmpty')}
                                                 </p>
                                             </div>
@@ -491,7 +491,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                                             item.status === 'error' && "bg-destructive",
                                                             item.status === 'cancelled' && "bg-muted-foreground/40"
                                                         )} />
-                                                        <span className="typo-overline font-bold text-muted-foreground/50 uppercase tracking-tighter">
+                                                        <span className="typo-overline font-bold text-muted-foreground/50 uppercase ">
                                                             {getStatusLabel(item.status)}
                                                         </span>
                                                     </div>
@@ -503,7 +503,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                                         className="h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                                                         onClick={() => handleRetry(item.id)}
                                                     >
-                                                        <RefreshCcw className="w-3 h-3" />
+                                                        <IconRefresh className="w-3 h-3" />
                                                     </Button>
                                                 )}
                                             </div>
@@ -515,8 +515,8 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                 {allHistoryPreview.length > todayHistory.length && (
                                     <section className="space-y-3 pt-2">
                                         <div className="flex items-center gap-2 px-1">
-                                            <LucideHistory className="w-3 h-3 text-muted-foreground/30" />
-                                            <span className="typo-overline font-bold uppercase tracking-wider text-muted-foreground/40">
+                                            <IconHistory className="w-3 h-3 text-muted-foreground/30" />
+                                            <span className="typo-overline font-bold uppercase text-muted-foreground/40">
                                                 {t('sidebar.downloadsHistory')}
                                             </span>
                                         </div>
@@ -526,7 +526,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                                                     <span className="truncate typo-overline font-medium text-muted-foreground/60">
                                                         {item.modelRef}
                                                     </span>
-                                                    <span className="shrink-0 typo-overline font-bold text-muted-foreground/30 uppercase tracking-tight">
+                                                    <span className="shrink-0 typo-overline font-bold text-muted-foreground/30 uppercase ">
                                                         {getStatusLabel(item.status)}
                                                     </span>
                                                 </div>
@@ -540,10 +540,10 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                         <div className="p-3 border-t border-border/40 bg-muted/10">
                             <Button
                                 variant="outline"
-                                className="w-full h-8 text-xs font-bold border-border/40 hover:bg-background"
+                                className="w-full h-8 text-sm font-bold border-border/40 hover:bg-background"
                                 onClick={() => onChangeView('marketplace')} // Redirect to marketplace or something relevant
                             >
-                                <ShoppingBag className="w-3 h-3 mr-2" />
+                                <IconShoppingBag className="w-3 h-3 mr-2" />
                                 {t('nav.marketplace')}
                             </Button>
                         </div>

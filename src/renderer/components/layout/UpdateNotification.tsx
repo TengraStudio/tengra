@@ -8,8 +8,8 @@
  * (at your option) any later version.
  */
 
+import { type Icon,IconAlertCircle, IconCircleCheck, IconDownload, IconRefresh, IconX } from '@tabler/icons-react';
 import type { IpcRendererEvent } from 'electron';
-import { AlertCircle, CheckCircle, Download, LucideIcon, RefreshCw, X } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -38,7 +38,7 @@ interface UpdateStatus {
 }
 
 interface StateConfig {
-    icon: LucideIcon;
+    icon: Icon;
     iconClass: string;
     title: string | ((version?: string) => string);
     content?: string | ((status: UpdateStatus) => React.ReactNode);
@@ -48,34 +48,34 @@ const getStateConfigs = (
     t: (key: string, options?: Record<string, string | number>) => string
 ): Partial<Record<UpdateState, StateConfig>> => ({
     checking: {
-        icon: RefreshCw,
+        icon: IconRefresh,
         iconClass: 'text-primary animate-spin',
         title: t('updateNotification.checkingTitle'),
     },
     available: {
-        icon: Download,
+        icon: IconDownload,
         iconClass: 'text-primary',
         title: version => t('updateNotification.availableTitle', { version: version ?? '' }),
         content: t('updateNotification.availableContent'),
     },
     downloading: {
-        icon: Download,
+        icon: IconDownload,
         iconClass: 'text-primary animate-pulse',
         title: t('updateNotification.downloadingTitle'),
     },
     downloaded: {
-        icon: CheckCircle,
+        icon: IconCircleCheck,
         iconClass: 'text-success',
         title: t('updateNotification.downloadedTitle'),
         content: t('updateNotification.downloadedContent'),
     },
     error: {
-        icon: AlertCircle,
+        icon: IconAlertCircle,
         iconClass: 'text-destructive',
         title: t('updateNotification.errorTitle'),
     },
     'not-available': {
-        icon: CheckCircle,
+        icon: IconCircleCheck,
         iconClass: 'text-muted-foreground',
         title: t('updateNotification.uptodateTitle'),
     },
@@ -102,7 +102,7 @@ function formatBytes(bytes: number, decimals = 2): string {
 
 const DownloadProgress: React.FC<{ status: UpdateStatus }> = ({ status }) => (
     <div className="mt-3 space-y-2">
-        <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
+        <div className="flex items-center justify-between text-sm text-muted-foreground font-mono">
             <span>{formatBytes(status.bytesPerSecond ?? 0)}/s</span>
             <span>{Math.round(status.progress ?? 0)}%</span>
         </div>
@@ -195,7 +195,7 @@ export const UpdateNotification: React.FC = () => {
                         onClick={handleDismiss}
                         className="p-1 -m-1 text-muted-foreground/60 hover:text-foreground transition-colors hover:bg-muted/50 rounded-md cursor-pointer"
                     >
-                        <X className="w-4 h-4" />
+                        <IconX className="w-4 h-4" />
                     </button>
                 </div>
 

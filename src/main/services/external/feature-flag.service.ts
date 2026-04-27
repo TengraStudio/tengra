@@ -13,6 +13,7 @@ import * as path from 'path';
 
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
+import { t } from '@main/utils/i18n.util';
 import { JsonObject } from '@shared/types/common';
 import { TengraError } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
@@ -95,10 +96,10 @@ export class FeatureFlagService extends BaseService {
 
     /** Default feature flags for council modules */
     private defaults: FeatureFlag[] = [
-        { id: 'council.planning', enabled: true, description: 'Enable council plan generation' },
-        { id: 'council.routing', enabled: true, description: 'Enable quota-aware routing' },
-        { id: 'council.teamwork', enabled: true, description: 'Enable multi-agent teamwork/reassignment' },
-        { id: 'council.recovery', enabled: true, description: 'Enable crash-safe recovery' },
+        { id: 'council.planning', enabled: true, description: t('auto.enableCouncilPlanGeneration') },
+        { id: 'council.routing', enabled: true, description: t('auto.enableQuotaawareRouting') },
+        { id: 'council.teamwork', enabled: true, description: t('auto.enableMultiagentTeamworkreassignment') },
+        { id: 'council.recovery', enabled: true, description: t('auto.enableCrashsafeRecovery') },
         { id: 'council.governance', enabled: true, description: 'Enable model governance enforcement' }
     ];
 

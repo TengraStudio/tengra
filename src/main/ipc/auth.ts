@@ -23,7 +23,6 @@ import {
     revokeAccountOptionsSchema
 } from '@main/ipc/validation';
 import { appLogger } from '@main/logging/logger';
-import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import { CopilotService } from '@main/services/llm/copilot.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import {
@@ -44,7 +43,7 @@ export interface AuthIpcDependencies {
     proxyService: ProxyService;
     copilotService: CopilotService;
     authService: AuthService;
-    auditLogService?: AuditLogService;
+
     getMainWindow: () => BrowserWindow | null;
     eventBus: EventBusService;
 }
@@ -59,7 +58,7 @@ export interface AuthIpcDependencies {
  * @param deps.eventBus Service for event broadcasting.
  */
 export function registerAuthIpc(deps: AuthIpcDependencies) {
-    const { proxyService, copilotService, authService, auditLogService, getMainWindow, eventBus } = deps;
+    const { proxyService, copilotService, authService, getMainWindow, eventBus } = deps;
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'auth operation');
     const createValidatedIpcHandler = <T = JsonValue, Args extends RuntimeValue[] = RuntimeValue[]>(
         handlerName: string,
@@ -113,10 +112,7 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
 
             appLogger.info('AuthIPC', `Linking ${provider} account for identity: ${email ?? 'unknown'}`);
             const linkedAccount = await authService.linkAccount(provider, tokenData);
-            await auditLogService?.logAuthenticationEvent('auth.poll-token.link-account', true, {
-                provider,
-                email
-            });
+
 
             if (appId === 'copilot') {
                 copilotService.setGithubToken(token);
@@ -131,9 +127,7 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
                 account: linkedAccount
             };
         } catch (error) {
-            await auditLogService?.logAuthenticationEvent('auth.poll-token.link-account', false, {
-                error: getErrorMessage(error as Error)
-            });
+
             return { success: false, error: getErrorMessage(error as Error) };
         }
     }, {
@@ -149,15 +143,11 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
     ipcMain.handle('auth:set-active-linked-account', createValidatedIpcHandler('auth:set-active-linked-account', async (_event, provider: string, accountId: string) => {
         try {
             await authService.setActiveAccount(provider, accountId);
-            await auditLogService?.logAuthenticationEvent('auth.set-active-account', true, { provider, accountId });
+
             return { success: true };
         } catch (error) {
             appLogger.error('AuthIPC', 'Failed to set active linked account', error as Error);
-            await auditLogService?.logAuthenticationEvent('auth.set-active-account', false, {
-                provider,
-                accountId,
-                error: getErrorMessage(error as Error)
-            });
+
             return { success: false, error: getErrorMessage(error as Error) };
         }
     }, {
@@ -168,17 +158,11 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
     ipcMain.handle('auth:link-account', createValidatedIpcHandler('auth:link-account', async (_event, provider: string, tokenData: TokenData) => {
         try {
             const account = await authService.linkAccount(provider, tokenData);
-            await auditLogService?.logAuthenticationEvent('auth.link-account', true, {
-                provider,
-                accountId: account.id
-            });
+
             return { success: true, account };
         } catch (error) {
             appLogger.error('AuthIPC', 'Failed to link account', error as Error);
-            await auditLogService?.logAuthenticationEvent('auth.link-account', false, {
-                provider,
-                error: getErrorMessage(error as Error)
-            });
+
             return { success: false, error: getErrorMessage(error as Error) };
         }
     }, {
@@ -189,14 +173,11 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
     ipcMain.handle('auth:unlink-account', createValidatedIpcHandler('auth:unlink-account', async (_event, accountId: string) => {
         try {
             await authService.unlinkAccount(accountId);
-            await auditLogService?.logAuthenticationEvent('auth.unlink-account', true, { accountId });
+
             return { success: true };
         } catch (error) {
             appLogger.error('AuthIPC', 'Failed to unlink account', error as Error);
-            await auditLogService?.logAuthenticationEvent('auth.unlink-account', false, {
-                accountId,
-                error: getErrorMessage(error as Error)
-            });
+
             return { success: false, error: getErrorMessage(error as Error) };
         }
     }, {
@@ -207,14 +188,11 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
     ipcMain.handle('auth:unlink-provider', createValidatedIpcHandler('auth:unlink-provider', async (_event, provider: string) => {
         try {
             await authService.unlinkAllForProvider(provider);
-            await auditLogService?.logAuthenticationEvent('auth.unlink-provider', true, { provider });
+
             return { success: true };
         } catch (error) {
             appLogger.error('AuthIPC', 'Failed to unlink provider', error as Error);
-            await auditLogService?.logAuthenticationEvent('auth.unlink-provider', false, {
-                provider,
-                error: getErrorMessage(error as Error)
-            });
+
             return { success: false, error: getErrorMessage(error as Error) };
         }
     }, {
@@ -274,16 +252,8 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
     ) => {
         try {
             const exported = await authService.exportCredentials(options);
-            await auditLogService?.logAuthenticationEvent('auth.export-credentials', true, {
-                provider: options.provider,
-                expiresAt: exported.expiresAt
-            });
             return { success: true, ...exported };
         } catch (error) {
-            await auditLogService?.logAuthenticationEvent('auth.export-credentials', false, {
-                provider: options.provider,
-                error: getErrorMessage(error as Error)
-            });
             return { success: false, error: getErrorMessage(error as Error) };
         }
     }, {
@@ -297,15 +267,8 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
     ) => {
         try {
             const result = await authService.importCredentials(payload.payload, payload.password);
-            await auditLogService?.logAuthenticationEvent('auth.import-credentials', true, {
-                imported: result.imported,
-                skipped: result.skipped
-            });
             return { success: true, ...result };
         } catch (error) {
-            await auditLogService?.logAuthenticationEvent('auth.import-credentials', false, {
-                error: getErrorMessage(error as Error)
-            });
             return { success: false, error: getErrorMessage(error as Error) };
         }
     }, {
@@ -319,12 +282,9 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
     ) => {
         try {
             const backup = authService.createMasterKeyBackup(passphrase);
-            await auditLogService?.logAuthenticationEvent('auth.create-master-key-backup', true);
             return { success: true, backup };
         } catch (error) {
-            await auditLogService?.logAuthenticationEvent('auth.create-master-key-backup', false, {
-                error: getErrorMessage(error as Error)
-            });
+
             return { success: false, error: getErrorMessage(error as Error) };
         }
     }, {
@@ -339,12 +299,10 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
     ) => {
         try {
             await authService.restoreMasterKeyBackup(backupPayload, passphrase);
-            await auditLogService?.logAuthenticationEvent('auth.restore-master-key-backup', true);
+
             return { success: true };
         } catch (error) {
-            await auditLogService?.logAuthenticationEvent('auth.restore-master-key-backup', false, {
-                error: getErrorMessage(error as Error)
-            });
+
             return { success: false, error: getErrorMessage(error as Error) };
         }
     }, {

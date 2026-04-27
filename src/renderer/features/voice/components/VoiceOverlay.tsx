@@ -13,7 +13,7 @@
  * UI-11: Voice-first interface option
  */
 
-import { AlertCircle, Command,Mic, MicOff } from 'lucide-react';
+import { IconAlertCircle, IconCommand, IconMicrophone, IconMicrophoneOff } from '@tabler/icons-react';
 import React from 'react';
 import { useSyncExternalStore } from 'react';
 
@@ -56,11 +56,11 @@ export const VoiceOverlay: React.FC = () => {
                             <div className="absolute inset-0 rounded-full bg-primary animate-ping opacity-20" />
                         )}
                         {session.error ? (
-                            <AlertCircle className="w-5 h-5 text-destructive" />
+                            <IconAlertCircle className="w-5 h-5 text-destructive" />
                         ) : session.isListening ? (
-                            <Mic className="w-5 h-5 text-primary animate-pulse" />
+                            <IconMicrophone className="w-5 h-5 text-primary animate-pulse" />
                         ) : (
-                            <MicOff className="w-5 h-5 text-muted-foreground" />
+                            <IconMicrophoneOff className="w-5 h-5 text-muted-foreground" />
                         )}
                     </div>
 
@@ -86,7 +86,7 @@ export const VoiceOverlay: React.FC = () => {
 
                         {session.lastCommand && (
                             <div className="mt-2 flex items-center gap-2 typo-caption font-semibold text-primary">
-                                <Command className="w-3 h-3" />
+                                <IconCommand className="w-3 h-3" />
                                 <span>{t('voice.feedback.executedPrefix')}: {session.lastCommand.description}</span>
                             </div>
                         )}

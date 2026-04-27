@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { ImagePlus } from 'lucide-react';
+import { IconPhotoPlus } from '@tabler/icons-react';
 import React, { useCallback, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -105,7 +105,7 @@ export const ImageDropZone: React.FC<ImageDropZoneProps> = ({
                         aria-label={t('imageAttachment.dropHere')}
                     >
                         <div className="flex flex-col items-center gap-2 text-primary">
-                            <ImagePlus size={32} aria-hidden="true" />
+                            <IconPhotoPlus size={32} aria-hidden="true" />
                             <span className="text-sm font-medium">
                                 {t('imageAttachment.dropHere')}
                             </span>

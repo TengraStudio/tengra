@@ -9,30 +9,45 @@
  */
 
 import { RuntimeBootstrapService } from '@main/services/system/runtime-bootstrap.service';
-import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { t } from '@main/utils/i18n.util';
+import { createSafeIpcHandler, safeHandle } from '@main/utils/ipc-wrapper.util';
 import { RuntimeBootstrapExecutionResult } from '@shared/types/runtime-manifest';
 import { ipcMain } from 'electron';
 
-export function registerRuntimeIpc(runtimeBootstrapService: RuntimeBootstrapService): void {
-    ipcMain.handle(
+export function registerRuntimeIpc(
+    runtimeBootstrapService: RuntimeBootstrapService,
+    getIsMainProcessReady?: () => boolean
+): void {
+
+    safeHandle(
         'runtime:get-status',
         createSafeIpcHandler<RuntimeBootstrapExecutionResult | null>(
             'runtime:get-status',
-            async () => runtimeBootstrapService.getLatestExecutionResult(),
+            async () => {
+                const result = runtimeBootstrapService.getLatestExecutionResult();
+                if (result) {
+                    result.mainProcessReady = getIsMainProcessReady ? getIsMainProcessReady() : true;
+                }
+                return result;
+            },
             null
-        )
+        ),
+        false // Do not overwrite the early handler
     );
 
-    ipcMain.handle(
+    safeHandle(
         'runtime:refresh-status',
         createSafeIpcHandler<RuntimeBootstrapExecutionResult | null>(
             'runtime:refresh-status',
-            async () => runtimeBootstrapService.scanManagedRuntime(),
+            async () => {
+                return await runtimeBootstrapService.scanManagedRuntime();
+            },
             null
-        )
+        ),
+        false // Do not overwrite early handler
     );
 
-    ipcMain.handle(
+    safeHandle(
         'runtime:repair',
         createSafeIpcHandler<RuntimeBootstrapExecutionResult | null, [string | undefined]>(
             'runtime:repair',
@@ -42,13 +57,14 @@ export function registerRuntimeIpc(runtimeBootstrapService: RuntimeBootstrapServ
         )
     );
 
-    ipcMain.handle(
+    safeHandle(
         'runtime:run-component-action',
         createSafeIpcHandler<{ success: boolean; message: string }, [string]>(
             'runtime:run-component-action',
             async (_event, componentId) =>
                 runtimeBootstrapService.runComponentAction(componentId),
-            { success: false, message: 'Runtime action failed' }
+            { success: false, message: t('auto.runtimeActionFailed') }
         )
     );
 }
+

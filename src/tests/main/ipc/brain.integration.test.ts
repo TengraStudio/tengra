@@ -9,7 +9,7 @@
  */
 
 /**
- * Integration tests for Brain IPC handlers
+ * Integration tests for IconBrain IPC handlers
  */
 import { ipcMain } from 'electron';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -21,7 +21,7 @@ vi.mock('electron', () => ({
     }
 }));
 
-describe('Brain IPC Handlers', () => {
+describe('IconBrain IPC Handlers', () => {
     let registeredHandlers: Map<string, TestValue>;
 
     beforeEach(() => {

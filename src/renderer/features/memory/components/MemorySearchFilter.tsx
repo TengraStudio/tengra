@@ -10,7 +10,7 @@
 
 import { MemoryCategory } from '@shared/types/advanced-memory';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { Filter, Search } from 'lucide-react';
+import { IconFilter, IconSearch } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -105,7 +105,7 @@ export const MemorySearchFilter: React.FC<MemorySearchFilterProps> = ({
             <div className="flex gap-4 items-center">
                 <form onSubmit={handleSubmit} className="flex gap-2 items-center flex-1">
                     <div className="relative flex-1 max-w-md">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
+                        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
                         <Input
                             list="memory-search-suggestions"
                             placeholder={t('memory.searchPlaceholder')}
@@ -124,7 +124,7 @@ export const MemorySearchFilter: React.FC<MemorySearchFilterProps> = ({
                 </form>
 
                 <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-muted-foreground" />
+                    <IconFilter className="w-4 h-4 text-muted-foreground" />
                     <Select value={categoryFilter} onValueChange={(v) => onCategoryChange(v as MemoryCategory | 'all')}>
                         <SelectTrigger className="w-44 bg-muted/30 border-border/40">
                             <SelectValue placeholder={t('memory.allCategories')} />

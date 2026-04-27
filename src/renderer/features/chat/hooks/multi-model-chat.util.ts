@@ -55,7 +55,6 @@ interface GenerateMultiModelResponseParams {
     chats: Chat[];
     appSettings: AppSettings | undefined;
     language: string;
-    selectedPersona: { id: string; name: string; description: string; prompt: string } | null | undefined;
     activeWorkspacePath: string | undefined;
     workspaceId: string | undefined;
     autoReadEnabled: boolean;
@@ -74,7 +73,6 @@ interface GenerateMultiModelResponseParams {
         selectedModel: string;
         selectedProvider: string;
         language: string;
-        selectedPersona?: { id: string; name: string; description: string; prompt: string } | null | undefined;
         activeWorkspacePath?: string | undefined;
         systemMode: 'thinking' | 'agent' | 'fast';
     }) => PrepareMessagesResult;
@@ -113,7 +111,6 @@ export async function generateMultiModelResponse(params: GenerateMultiModelRespo
         chats,
         appSettings,
         language,
-        selectedPersona,
         activeWorkspacePath,
         workspaceId,
         autoReadEnabled,
@@ -139,7 +136,6 @@ export async function generateMultiModelResponse(params: GenerateMultiModelRespo
                 selectedModel: modelInfo.model,
                 selectedProvider: modelInfo.provider,
                 language,
-                selectedPersona,
                 activeWorkspacePath,
                 systemMode,
             });

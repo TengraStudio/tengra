@@ -17,6 +17,7 @@ import { HuggingFaceService } from '@main/services/llm/huggingface.service';
 import { LlamaService } from '@main/services/llm/llama.service';
 import { OllamaService } from '@main/services/llm/ollama.service';
 import { getDataFilePath } from '@main/services/system/app-layout-paths.util';
+import { t } from '@main/utils/i18n.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 
 export type DownloadProvider = 'ollama' | 'huggingface';
@@ -223,7 +224,7 @@ export class ModelDownloaderService extends BaseService {
             provider: task.provider,
             status: 'queued',
             modelRef: task.modelRef,
-            message: 'Download queued',
+            message: t('auto.downloadQueued'),
         });
         void this.persistQueue();
         this.scheduleDownloads();
@@ -251,7 +252,7 @@ export class ModelDownloaderService extends BaseService {
                 status: 'paused',
                 modelRef: task.modelRef,
                 outputPath: task.outputPath,
-                message: 'Queued download paused',
+                message: t('auto.queuedDownloadPaused'),
             });
             void this.persistQueue();
             return true;
@@ -274,7 +275,7 @@ export class ModelDownloaderService extends BaseService {
             status: 'paused',
             modelRef: task.modelRef,
             outputPath: task.outputPath,
-            message: 'Download paused',
+            message: t('auto.downloadPaused'),
         });
         void this.persistQueue();
         return true;
@@ -297,7 +298,7 @@ export class ModelDownloaderService extends BaseService {
                 status: 'cancelled',
                 modelRef: task.modelRef,
                 outputPath: task.outputPath,
-                message: 'Download cancelled',
+                message: t('auto.downloadCancelled'),
             });
             this.cleanupTask(task);
             void this.persistQueue();
@@ -316,7 +317,7 @@ export class ModelDownloaderService extends BaseService {
             status: 'cancelled',
             modelRef: task.modelRef,
             outputPath: task.outputPath,
-            message: 'Download cancelled',
+            message: t('auto.downloadCancelled'),
         });
         void this.persistQueue();
         return true;
@@ -340,7 +341,7 @@ export class ModelDownloaderService extends BaseService {
             status: 'queued',
             modelRef: task.modelRef,
             outputPath: task.outputPath,
-            message: 'Download resumed and queued',
+            message: t('auto.downloadResumedAndQueued'),
         });
         void this.persistQueue();
         this.scheduleDownloads();
@@ -796,7 +797,7 @@ export class ModelDownloaderService extends BaseService {
                 provider: 'ollama',
                 status: 'starting',
                 modelRef,
-                message: 'Starting Ollama pull',
+                message: t('auto.startingOllamaPull'),
             });
 
             const result = await this.deps.ollamaService.pullModel(modelRef, (progress) => {
@@ -859,7 +860,7 @@ export class ModelDownloaderService extends BaseService {
                 status: 'starting',
                 modelRef,
                 outputPath,
-                message: 'Starting HuggingFace download',
+                message: t('auto.startingHuggingfaceDownload'),
             });
 
             // AUD-SEC-038: Enforce mandatory checksum verification
@@ -914,7 +915,7 @@ export class ModelDownloaderService extends BaseService {
                 status: 'installing',
                 modelRef,
                 outputPath,
-                message: 'Registering installed model',
+                message: t('auto.registeringInstalledModel'),
             });
 
             await this.deps.huggingFaceService.registerModelVersion(

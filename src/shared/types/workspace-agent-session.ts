@@ -10,7 +10,7 @@
 
 import type { JsonObject } from './common';
 
-export const WORKSPACE_AGENT_CHAT_TYPE = 'workspace-agent';
+export const WORKSPACE_AGENT_CHAT_TYPE = 'agent';
 
 export const WORKSPACE_AGENT_SESSION_STATUSES = [
     'idle',

@@ -8,8 +8,9 @@
  * (at your option) any later version.
  */
 
-import { resolveBreakpoint } from '@renderer/lib/responsive';
 import { describe, expect, it } from 'vitest';
+
+import { resolveBreakpoint } from '@/lib/responsive';
 
 describe('responsive helpers', () => {
     it('resolves breakpoints using expected width thresholds', () => {

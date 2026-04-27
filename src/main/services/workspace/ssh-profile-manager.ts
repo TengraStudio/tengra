@@ -14,6 +14,7 @@ import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import type { SSHConnection } from '@main/services/workspace/ssh.service';
+import { t } from '@main/utils/i18n.util';
 import {
     SSHProfileTemplate,
     SSHProfileTestResult,
@@ -345,7 +346,7 @@ export class SSHProfileManager {
                 success: false,
                 latencyMs: 0,
                 authMethod: profile.privateKey ? 'key' : 'password',
-                message: 'Profile validation failed',
+                message: t('auto.profileValidationFailed'),
                 error: validation.errors.join('; '),
             };
         }
@@ -364,7 +365,7 @@ export class SSHProfileManager {
                         success: false,
                         latencyMs: Date.now() - startedAt,
                         authMethod: 'key',
-                        message: 'Private key could not be loaded',
+                        message: t('auto.privateKeyCouldNotBeLoaded'),
                         error: getErrorMessage(error as Error),
                     };
                 }
@@ -399,7 +400,7 @@ export class SSHProfileManager {
                     success: false,
                     latencyMs: Date.now() - startedAt,
                     authMethod,
-                    message: 'SSH profile test timed out',
+                    message: t('auto.sshProfileTestTimedOut'),
                     error: 'Connection timed out',
                 });
             }, 10000);
@@ -412,7 +413,7 @@ export class SSHProfileManager {
                                 success: false,
                                 latencyMs: Date.now() - startedAt,
                                 authMethod,
-                                message: 'Connected but command test failed',
+                                message: t('auto.connectedButCommandTestFailed'),
                                 error: error.message,
                             });
                             return;
@@ -423,7 +424,7 @@ export class SSHProfileManager {
                                 success: true,
                                 latencyMs: Date.now() - startedAt,
                                 authMethod,
-                                message: 'SSH profile test passed',
+                                message: t('auto.sshProfileTestPassed'),
                             });
                         });
                     });
@@ -433,7 +434,7 @@ export class SSHProfileManager {
                         success: false,
                         latencyMs: Date.now() - startedAt,
                         authMethod,
-                        message: 'SSH profile test failed',
+                        message: t('auto.sshProfileTestFailed'),
                         error: error.message,
                     });
                 });
@@ -453,7 +454,7 @@ export class SSHProfileManager {
                     success: false,
                     latencyMs: Date.now() - startedAt,
                     authMethod,
-                    message: 'SSH profile test failed',
+                    message: t('auto.sshProfileTestFailed'),
                     error: getErrorMessage(error as Error),
                 });
             }

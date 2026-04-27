@@ -9,7 +9,7 @@
  */
 
 import { MemoryCategory } from '@shared/types/advanced-memory';
-import { Edit3 } from 'lucide-react';
+import { IconEdit } from '@tabler/icons-react';
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -65,7 +65,7 @@ export const EditMemoryModal: React.FC<EditMemoryModalProps> = ({
         <div className={C_EDITMEMORYMODAL_1}>
             <Card className="w-full max-w-lg p-6 bg-popover/90 backdrop-blur-2xl border-border/50 shadow-2xl space-y-4">
                 <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Edit3 className="w-5 h-5 text-primary" />
+                    <IconEdit className="w-5 h-5 text-primary" />
                     {t('memory.editTitle')}
                 </h2>
 

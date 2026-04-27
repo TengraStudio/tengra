@@ -8,24 +8,16 @@
  * (at your option) any later version.
  */
 
-import { SearchResults } from '@renderer/features/workspace/components/SearchResults';
 import { FileSearchResult } from '@shared/types/common';
-import {
-    CaseSensitive,
-    ChevronDown,
-    ChevronRight,
-    Regex,
-    Search,
-    WholeWord,
-    X,
-} from 'lucide-react';
+import { IconAB, IconBlockquote, IconChevronDown, IconChevronRight, IconRegex, IconSearch, IconX } from '@tabler/icons-react';
 import { useCallback, useDeferredValue, useMemo, useState } from 'react';
 
+import { SearchResults } from '@/features/workspace/components/SearchResults';
 import { cn } from '@/lib/utils';
 
 /* Batch-02: Extracted Long Classes */
 const C_WORKSPACESEARCHTAB_1 = "flex flex-1 items-center gap-2 rounded-sm border border-border/60 bg-input/30 px-2 py-1 transition-colors focus-within:border-info/50";
-const C_WORKSPACESEARCHTAB_2 = "flex items-center gap-1 self-start rounded-sm px-1 py-0.5 text-xxs text-muted-foreground transition-colors hover:text-foreground";
+const C_WORKSPACESEARCHTAB_2 = "flex items-center gap-1 self-start rounded-sm px-1 py-0.5 text-sm text-muted-foreground transition-colors hover:text-foreground";
 const C_WORKSPACESEARCHTAB_3 = "rounded-sm border border-border/40 bg-input/30 px-2 py-0.5 typo-caption text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-info/40";
 
 
@@ -111,7 +103,7 @@ export const WorkspaceSearchTab = ({
                 {/* Primary search row */}
                 <div className="flex items-center gap-1">
                     <div className={C_WORKSPACESEARCHTAB_1}>
-                        <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        <IconSearch className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                         <input
                             type="text"
                             placeholder={t('workspaceDashboard.searchInWorkspace')}
@@ -128,15 +120,15 @@ export const WorkspaceSearchTab = ({
                                 className="rounded-sm p-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                                 title={t('common.clear')}
                             >
-                                <X className="h-3.5 w-3.5" />
+                                <IconX className="h-3.5 w-3.5" />
                             </button>
                         )}
                     </div>
                     {/* Toggle buttons (decorative — VS Code-style) */}
                     <div className="flex items-center gap-0.5">
-                        <SearchToggleButton icon={<CaseSensitive className="h-4 w-4" />} title={t('workspaceDashboard.searchMatchCaseTitle')} />
-                        <SearchToggleButton icon={<WholeWord className="h-4 w-4" />} title={t('workspaceDashboard.searchMatchWholeWordTitle')} />
-                        <SearchToggleButton icon={<Regex className="h-4 w-4" />} title={t('workspaceDashboard.searchUseRegexTitle')} />
+                        <SearchToggleButton icon={<IconAB className="h-4 w-4" />} title={t('workspaceDashboard.searchMatchCaseTitle')} />
+                        <SearchToggleButton icon={<IconBlockquote className="h-4 w-4" />} title={t('workspaceDashboard.searchMatchWholeWordTitle')} />
+                        <SearchToggleButton icon={<IconRegex className="h-4 w-4" />} title={t('workspaceDashboard.searchUseRegexTitle')} />
                     </div>
                 </div>
 
@@ -147,8 +139,8 @@ export const WorkspaceSearchTab = ({
                     className={C_WORKSPACESEARCHTAB_2}
                 >
                     {filtersExpanded
-                        ? <ChevronDown className="h-3 w-3" />
-                        : <ChevronRight className="h-3 w-3" />
+                        ? <IconChevronDown className="h-3 w-3" />
+                        : <IconChevronRight className="h-3 w-3" />
                     }
                     {t('workspaceDashboard.files')}
                 </button>
@@ -173,11 +165,11 @@ export const WorkspaceSearchTab = ({
             {trimmedQuery.length >= 2 && (
                 <div className="flex items-center gap-2 border-b border-border/30 px-3 py-1.5">
                     {isSearching ? (
-                        <span className="text-xxs text-muted-foreground">
+                        <span className="text-sm text-muted-foreground">
                             {t('common.searching')}
                         </span>
                     ) : (
-                        <span className="text-xxs text-muted-foreground">
+                        <span className="text-sm text-muted-foreground">
                             {filteredResults.length} {t('semanticSearch.results').toLowerCase()} — {groupedFileCount} {t('workspaceDashboard.files').toLowerCase()}
                         </span>
                     )}
@@ -188,7 +180,7 @@ export const WorkspaceSearchTab = ({
             <div className="min-h-0 flex-1 overflow-hidden">
                 {trimmedQuery.length < 2 && !isSearching ? (
                     <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-                        <Search className="mb-3 h-8 w-8 text-muted-foreground/30" />
+                        <IconSearch className="mb-3 h-8 w-8 text-muted-foreground/30" />
                         <p className="typo-caption text-muted-foreground/60">
                             {t('workspaceDashboard.searchInWorkspace')}
                         </p>

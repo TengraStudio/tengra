@@ -8,19 +8,19 @@
  * (at your option) any later version.
  */
 
+import { classifyAiIntent, getAiToolLoopBudget } from '@shared/utils/ai-runtime.util';
+import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
+
 import {
     buildAssistantPresentationMetadata,
     buildStoredToolResults,
     readToolResultImages,
-} from '@renderer/features/chat/hooks/ai-runtime-chat.util';
-import { createModelToolList } from '@renderer/features/chat/hooks/chat-runtime-policy.util';
-import { executeBatchToolCalls } from '@renderer/features/chat/hooks/tool-batch-execution.util';
-import { executeToolCall } from '@renderer/features/chat/hooks/tool-call-execution.util';
-import { buildModelConversation } from '@renderer/features/chat/hooks/tool-loop.util';
-import { mergeToolCalls as mergeChatToolCalls } from '@renderer/features/chat/hooks/utils';
-import { classifyAiIntent, getAiToolLoopBudget } from '@shared/utils/ai-runtime.util';
-import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
-
+} from '@/features/chat/hooks/ai-runtime-chat.util';
+import { createModelToolList } from '@/features/chat/hooks/chat-runtime-policy.util';
+import { executeBatchToolCalls } from '@/features/chat/hooks/tool-batch-execution.util';
+import { executeToolCall } from '@/features/chat/hooks/tool-call-execution.util';
+import { buildModelConversation } from '@/features/chat/hooks/tool-loop.util';
+import { mergeToolCalls as mergeChatToolCalls } from '@/features/chat/hooks/utils';
 import { chatStream } from '@/lib/chat-stream';
 import { ChatError, Message } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';

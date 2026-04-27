@@ -14,6 +14,7 @@ import type {
     InlineSuggestionResponse,
     InlineSuggestionTelemetry,
 } from '@shared/schemas/inline-suggestions.schema';
+import { OllamaBridge } from './main/preload/domains/ollama.preload';
 import type { IpcRendererEvent } from 'electron';
 
 import {
@@ -159,9 +160,9 @@ export interface TokenData {
  * await window.electron.session.conversation.stream({ messages, model, tools, provider, options, chatId })
  * ```
  */
-import type { ElectronApiIntegrationsDomain } from '@renderer/electron-api/electron-api-integrations';
-import type { ElectronApiModelsMemoryDomain } from '@renderer/electron-api/electron-api-models-memory';
-import type { ElectronApiWorkspaceSystemDomain } from '@renderer/electron-api/electron-api-workspace-system';
+import type { ElectronApiIntegrationsDomain } from '@/electron-api/electron-api-integrations';
+import type { ElectronApiModelsMemoryDomain } from '@/electron-api/electron-api-models-memory';
+import type { ElectronApiWorkspaceSystemDomain } from '@/electron-api/electron-api-workspace-system';
 
 
 export interface ElectronAPI {
@@ -729,6 +730,7 @@ export interface ElectronAPI {
         runComponentAction: (componentId: string) => Promise<{ success: boolean; message: string }>;
     };
     userCollaboration: ElectronApiIntegrationsDomain['userCollaboration'];
+    ollama: OllamaBridge;
     liveCollaboration: ElectronApiIntegrationsDomain['liveCollaboration'];
 }
 

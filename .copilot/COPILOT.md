@@ -1,30 +1,26 @@
-# TENGRA AGENT COMMANDMENTS (COPILOT EDITION)
+# TENGRA AGENT COMMANDMENTS
 
-STRICT ADHERENCE REQUIRED. Failure to follow rules results in termination of the session.
+STRICT ADHERENCE MANDATORY. Failure results in immediate session termination.
 
-## MANDATORY: Read Documentation First
+## 1. ULTIMATE TRUTH
+Read these files BEFORE any action:
+1. [AI_RULES.md](../../docs/AI_RULES.md) - Global standards.
+2. [MASTER_COMMANDMENTS.md](../../docs/MASTER_COMMANDMENTS.md) - Technical law.
+3. [TODO.md](../../docs/TODO.md) - Current mission.
 
-1. Read [AGENTS.md](../../AGENTS.md) - Complete project guide
-2. Read [AI_RULES.md](../../AI_RULES.md) - Comprehensive coding standards
-3. Check [TODO.md](../../TODO.md) - Current tasks and priorities
+## 2. COMMANDS
+- `npm run build` - Mandatory after changes.
+- `npm run dev` - Start development server.
+- `npm run lint` - Mandatory before commit.
+- `npm run type-check` - Mandatory for TS safety.
+- `npm run test` - Verify logic.
 
-## Quick Reference
-
-### Build Commands
-```bash
-npm run build        # Build the application
-npm run dev          # Start development server
-npm run lint         # Check for lint errors
-npm run type-check   # TypeScript validation
-npm run test         # Run tests
-```
-
-### Workflow
-1. Read AI_RULES.md
-2. Make changes
-3. npm run build && npm run lint
-4. Update TODO.md (mark [x], don't delete)
-5. Commit and push
+## 3. ABSOLUTE PROHIBITIONS
+- **NO `any`** - FORBIDDEN.
+- **NO `console.log`** - Use `appLogger`.
+- **NO `@ts-ignore` / `eslint-disable`** - NEVER.
+- **NO Ad-hoc Typography** - `text-[10px]`, `italic`, `font-black` are BANNED. Use tokens.
+- **NO Hardcoded i18n** - Use `t('key')`.
 
 ## Forbidden Actions
 

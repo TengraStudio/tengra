@@ -8,10 +8,10 @@
  * (at your option) any later version.
  */
 
-import { SidebarMenuItem, SidebarSection } from '@renderer/components/layout/sidebar-components';
-import { Book, Folder as FolderIcon, MessageSquare, Rocket } from 'lucide-react';
+import { IconBook, IconFolder as FolderIcon, IconMessage, IconRocket } from '@tabler/icons-react';
 import React from 'react';
 
+import { SidebarMenuItem, SidebarSection } from '@/components/layout/sidebar-components';
 import { Button } from '@/components/ui/button';
 import { AppView } from '@/hooks/useAppState';
 import { Language, useTranslation } from '@/i18n';
@@ -53,7 +53,7 @@ const CollapsedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) =>
             className={cn('nav-item justify-center', currentView === 'chat' && 'nav-item-active')}
             title={t('sidebar.chats')}
         >
-            <MessageSquare className="w-4 h-4 shrink-0" />
+            <IconMessage className="w-4 h-4 shrink-0" />
         </Button>
         <Button
             variant="ghost"
@@ -64,7 +64,7 @@ const CollapsedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) =>
             )}
             title={t('sidebar.workspace')}
         >
-            <Rocket className="w-4 h-4 shrink-0" />
+            <IconRocket className="w-4 h-4 shrink-0" />
         </Button>
     </div>
 );
@@ -87,7 +87,7 @@ const ExpandedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) => 
     >
         <SidebarMenuItem
             id="chats"
-            icon={<MessageSquare className="w-4 h-4" />}
+            icon={<IconMessage className="w-4 h-4" />}
             label={t('sidebar.chats')}
             onClick={() => onChangeView('chat')}
             isActive={currentView === 'chat'}
@@ -95,7 +95,7 @@ const ExpandedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) => 
         />
         <SidebarMenuItem
             id="workspace"
-            icon={<Rocket className="w-4 h-4" />}
+            icon={<IconRocket className="w-4 h-4" />}
             label={t('sidebar.workspace')}
             onClick={() => onChangeView('workspace')}
             isActive={currentView === 'workspace'}
@@ -104,7 +104,7 @@ const ExpandedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) => 
         />
         <SidebarMenuItem
             id="prompts"
-            icon={<Book className="w-4 h-4" />}
+            icon={<IconBook className="w-4 h-4" />}
             label={t('sidebar.prompts')}
             onClick={() => setShowPrompts(true)}
             badge={promptsCount}

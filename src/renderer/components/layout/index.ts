@@ -21,7 +21,7 @@ export {
     PanelLayoutProvider,
     type PanelPosition,
     type PanelSize,
-    usePanelLayout} from '@renderer/components/layout/PanelLayout';
+    usePanelLayout} from '@/components/layout/PanelLayout';
 
 // Activity Bar
 export {
@@ -29,7 +29,7 @@ export {
     ActivityBarLayout,
     ActivityBarProvider,
     type ActivityItem,
-    useActivityBar} from '@renderer/components/layout/ActivityBar';
+    useActivityBar} from '@/components/layout/ActivityBar';
 
 // Status Bar
 export {
@@ -43,10 +43,10 @@ export {
     type StatusBarItem,
     StatusBarProvider,
     useStatusBar,
-    WarningStatus} from '@renderer/components/layout/StatusBar';
+    WarningStatus} from '@/components/layout/StatusBar';
 
 // Existing components
-export { AppHeader } from '@renderer/components/layout/AppHeader';
-export { LayoutManager } from '@renderer/components/layout/LayoutManager';
-export { Sidebar } from '@renderer/components/layout/Sidebar';
-export * from '@renderer/components/layout/SimpleResizable';
+export { AppHeader } from '@/components/layout/AppHeader';
+export { LayoutManager } from '@/components/layout/LayoutManager';
+export { Sidebar } from '@/components/layout/Sidebar';
+export * from '@/components/layout/SimpleResizable';

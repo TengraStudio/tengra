@@ -8,11 +8,11 @@
  * (at your option) any later version.
  */
 
-import { CommonBatches } from '@renderer/utils/ipc-batch.util';
 import type { Dispatch, SetStateAction } from 'react';
 
 import { generateId } from '@/lib/utils';
 import { Chat, Message } from '@/types';
+import { CommonBatches } from '@/utils/ipc-batch.util';
 import { appLogger } from '@/utils/renderer-logger';
 
 interface UseChatCRUDProps {

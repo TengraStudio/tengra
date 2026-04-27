@@ -8,19 +8,19 @@
  * (at your option) any later version.
  */
 
-import { Button } from '@renderer/components/ui/button';
+import { IconShield, IconShieldCheck, IconShieldExclamation, IconTrash } from '@tabler/icons-react';
+import React, { useMemo, useState } from 'react';
+
+import { Button } from '@/components/ui/button';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@renderer/components/ui/select';
-import { Switch } from '@renderer/components/ui/switch';
-import { cn } from '@renderer/lib/utils';
-import { Shield, ShieldAlert, ShieldCheck, Trash2 } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
-
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
 import { AppSettings, ModelGovernanceSettings } from '@/types/settings';
 
 /* Batch-02: Extracted Long Classes */
@@ -120,7 +120,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
             <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
                 <div className="flex items-center gap-4">
                     <div className="rounded-2xl bg-primary/10 p-3 text-primary">
-                        <Shield className="w-6 h-6" />
+                        <IconShield className="w-6 h-6" />
                     </div>
                     <div>
                         <h3 className="text-lg font-semibold text-foreground">
@@ -148,9 +148,9 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                             )}
                         >
                             {isAllowlistMode ? (
-                                <ShieldCheck className="w-4 h-4" />
+                                <IconShieldCheck className="w-4 h-4" />
                             ) : (
-                                <ShieldAlert className="w-4 h-4" />
+                                <IconShieldExclamation className="w-4 h-4" />
                             )}
                         </div>
                         <div>
@@ -190,7 +190,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                             disabled={!selectedModel}
                             className={C_MODELGOVERNANCEPANEL_1}
                         >
-                            <ShieldCheck className="w-3.5 h-3.5 mr-2" />
+                            <IconShieldCheck className="w-3.5 h-3.5 mr-2" />
                             {t('workspaces.addToAllowlist')}
                         </Button>
                         <Button
@@ -200,7 +200,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                             disabled={!selectedModel}
                             className={C_MODELGOVERNANCEPANEL_2}
                         >
-                            <ShieldAlert className="w-3.5 h-3.5 mr-2" />
+                            <IconShieldExclamation className="w-3.5 h-3.5 mr-2" />
                             {t('workspaces.addToBlocklist')}
                         </Button>
                     </div>
@@ -218,7 +218,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                     <div className="space-y-3 min-h-120 max-h-400 overflow-y-auto pr-3 custom-scrollbar">
                         {governance.allowedModels.length === 0 ? (
                             <div className={C_MODELGOVERNANCEPANEL_3}>
-                                <ShieldCheck className="w-6 h-6 mb-3 text-muted-foreground" />
+                                <IconShieldCheck className="w-6 h-6 mb-3 text-muted-foreground" />
                                 <p className="px-6 typo-body font-medium text-muted-foreground">
                                     {t('workspaces.noAllowedModels')}
                                 </p>
@@ -241,7 +241,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                                         onClick={() => removeFromAllowlist(modelId)}
                                         className="h-8 w-8 rounded-xl text-muted-foreground/50 hover:bg-destructive/10 hover:text-destructive"
                                     >
-                                        <Trash2 className="w-4 h-4" />
+                                        <IconTrash className="w-4 h-4" />
                                     </Button>
                                 </div>
                             ))
@@ -259,7 +259,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                     <div className="space-y-3 min-h-120 max-h-400 overflow-y-auto pr-3 custom-scrollbar">
                         {governance.blockedModels.length === 0 ? (
                             <div className={C_MODELGOVERNANCEPANEL_5}>
-                                <ShieldAlert className="w-6 h-6 mb-3 text-muted-foreground" />
+                                <IconShieldExclamation className="w-6 h-6 mb-3 text-muted-foreground" />
                                 <p className="px-6 typo-body font-medium text-muted-foreground">
                                     {t('workspaces.noBlockedModels')}
                                 </p>
@@ -282,7 +282,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                                         onClick={() => removeFromBlocklist(modelId)}
                                         className="h-8 w-8 rounded-xl text-muted-foreground/50 hover:bg-destructive/10 hover:text-destructive"
                                     >
-                                        <Trash2 className="w-4 h-4" />
+                                        <IconTrash className="w-4 h-4" />
                                     </Button>
                                 </div>
                             ))

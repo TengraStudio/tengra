@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Download, Globe } from 'lucide-react';
+import { IconDownload, IconGlobe } from '@tabler/icons-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
 import type { Language } from '@/i18n';
@@ -158,7 +158,7 @@ export const TranslationExport: React.FC = () => {
     return (
         <div className="space-y-4">
             <div className="flex items-center gap-2">
-                <Globe className="w-5 h-5 text-primary" />
+                <IconGlobe className="w-5 h-5 text-primary" />
                 <h3 className="text-sm font-semibold">{t('settings.translationExport.title')}</h3>
             </div>
 
@@ -177,7 +177,7 @@ export const TranslationExport: React.FC = () => {
                         >
                             {info.percent}%
                         </div>
-                        <div className="text-xxs text-muted-foreground">
+                        <div className="text-sm text-muted-foreground">
                             {info.translated}/{info.total}
                         </div>
                     </div>
@@ -189,14 +189,14 @@ export const TranslationExport: React.FC = () => {
                     onClick={handleExportJSON}
                     className={C_TRANSLATIONEXPORT_1}
                 >
-                    <Download className="w-3.5 h-3.5" />
+                    <IconDownload className="w-3.5 h-3.5" />
                     {t('settings.translationExport.exportJSON')}
                 </button>
                 <button
                     onClick={handleExportCSV}
                     className={C_TRANSLATIONEXPORT_2}
                 >
-                    <Download className="w-3.5 h-3.5" />
+                    <IconDownload className="w-3.5 h-3.5" />
                     {t('settings.translationExport.exportCSV')}
                 </button>
             </div>

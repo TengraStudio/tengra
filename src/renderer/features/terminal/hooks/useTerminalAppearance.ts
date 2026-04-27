@@ -92,11 +92,33 @@ export function useTerminalAppearance({
         loadTerminalAppearance(storageKey, defaultAppearance)
     );
 
+    // Sync from other tabs/windows
+    useEffect(() => {
+        const handleSync = () => {
+            setTerminalAppearance(loadTerminalAppearance(storageKey, defaultAppearance));
+        };
+
+        window.addEventListener('storage', handleSync);
+        window.addEventListener('terminal-appearance-sync', handleSync);
+
+        return () => {
+            window.removeEventListener('storage', handleSync);
+            window.removeEventListener('terminal-appearance-sync', handleSync);
+        };
+    }, [storageKey, defaultAppearance]);
+
+    // Persist and notify local components
     useEffect(() => {
         try {
-            window.localStorage.setItem(storageKey, JSON.stringify(terminalAppearance));
+            const current = window.localStorage.getItem(storageKey);
+            const next = JSON.stringify(terminalAppearance);
+            
+            if (current !== next) {
+                window.localStorage.setItem(storageKey, next);
+                window.dispatchEvent(new CustomEvent('terminal-appearance-sync'));
+            }
         } catch {
-            // Ignore localStorage failures in restricted environments.
+            // Ignore localStorage failures.
         }
     }, [storageKey, terminalAppearance]);
 

@@ -8,9 +8,10 @@
  * (at your option) any later version.
  */
 
-import { useTranslation } from '@renderer/i18n';
-import { WifiOff } from 'lucide-react';
+import { IconWifiOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
+
+import { useTranslation } from '@/i18n';
 
 
 /**
@@ -40,10 +41,10 @@ export function OfflineBanner(): JSX.Element | null {
 
     return (
         <div
-            className="sticky top-0 z-50 flex items-center justify-center gap-2 bg-warning/90 px-3 py-1.5 text-xs font-semibold text-warning-foreground"
+            className="sticky top-0 z-50 flex items-center justify-center gap-2 bg-warning/90 px-3 py-1.5 text-sm font-semibold text-warning-foreground"
             role="alert"
         >
-            <WifiOff className="h-3.5 w-3.5" />
+            <IconWifiOff className="h-3.5 w-3.5" />
             <span>{t('common.offlineBanner')}</span>
         </div>
     );

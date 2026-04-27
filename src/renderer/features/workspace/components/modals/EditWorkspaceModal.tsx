@@ -90,7 +90,7 @@ export const EditWorkspaceModal: React.FC<EditWorkspaceModalProps> = ({
                                 placeholder={t('workspaces.namePlaceholder')}
                             />
                             {!hasValidTitle && (
-                                <p className="text-xxs text-destructive">{t('common.invalidInput')}</p>
+                                <p className="text-sm text-destructive">{t('common.invalidInput')}</p>
                             )}
                         </div>
                         <div className="space-y-2">
@@ -110,7 +110,7 @@ export const EditWorkspaceModal: React.FC<EditWorkspaceModalProps> = ({
                                 placeholder={t('workspaces.workspaceDescPlaceholder')}
                             />
                             {!hasValidDescription && (
-                                <p className="text-xxs text-destructive">{t('common.invalidInput')}</p>
+                                <p className="text-sm text-destructive">{t('common.invalidInput')}</p>
                             )}
                         </div>
                         <div className="flex justify-end gap-2 pt-2">

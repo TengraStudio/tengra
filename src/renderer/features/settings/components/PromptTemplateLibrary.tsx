@@ -8,22 +8,22 @@
  * (at your option) any later version.
  */
 
-import { Badge } from '@renderer/components/ui/badge';
-import { Button } from '@renderer/components/ui/button';
-import { Input } from '@renderer/components/ui/input';
+import { PromptTemplate } from '@shared/types/templates';
+import { IconBook, IconEdit, IconPlus, IconSearch, IconTag, IconTrash, IconX } from '@tabler/icons-react';
+import React, { useCallback, useEffect, useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@renderer/components/ui/select';
-import { Textarea } from '@renderer/components/ui/textarea';
-import { useTranslation } from '@renderer/i18n';
-import { PromptTemplate } from '@shared/types/templates';
-import { BookOpen, Edit3, Plus, Search, Tag, Trash2, X } from 'lucide-react';
-import React, { useCallback, useEffect, useState } from 'react';
-
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 /* Batch-02: Extracted Long Classes */
@@ -141,7 +141,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
                     <div className="flex items-center gap-4">
                         <div className="p-3 rounded-2xl bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20">
-                            <BookOpen className="w-6 h-6" />
+                            <IconBook className="w-6 h-6" />
                         </div>
                         <div>
                             <h3 className="text-xl font-bold text-foreground">
@@ -156,12 +156,12 @@ export const PromptTemplateLibrary: React.FC = () => {
                         onClick={startCreate}
                         className={C_PROMPTTEMPLATELIBRARY_1}
                     >
-                        <Plus className="w-4 h-4 mr-2" /> {t('prompts.library.newPrompt')}
+                        <IconPlus className="w-4 h-4 mr-2" /> {t('prompts.library.newPrompt')}
                     </Button>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 relative z-10">
                     <div className="relative group flex-1">
-                        <Search className={C_PROMPTTEMPLATELIBRARY_2} />
+                        <IconSearch className={C_PROMPTTEMPLATELIBRARY_2} />
                         <Input
                             type="text"
                             placeholder={t('prompts.library.searchPlaceholder')}
@@ -282,7 +282,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                             }}
                             className={C_PROMPTTEMPLATELIBRARY_7}
                         >
-                            <X className="w-4 h-4 mr-2" />
+                            <IconX className="w-4 h-4 mr-2" />
                             {t('common.cancel')}
                         </Button>
                     </div>
@@ -312,7 +312,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                                             variant="secondary"
                                             className="px-2 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/10 typo-body font-bold whitespace-nowrap"
                                         >
-                                            <Tag className="w-2 h-2 mr-1" />
+                                            <IconTag className="w-2 h-2 mr-1" />
                                             {tp.category}
                                         </Badge>
                                     )}
@@ -331,7 +331,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                                     }}
                                     className={C_PROMPTTEMPLATELIBRARY_8}
                                 >
-                                    <Edit3 className="w-4 h-4" />
+                                    <IconEdit className="w-4 h-4" />
                                 </Button>
                                 <Button
                                     variant="ghost"
@@ -342,7 +342,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                                     }}
                                     className={C_PROMPTTEMPLATELIBRARY_9}
                                 >
-                                    <Trash2 className="w-4 h-4" />
+                                    <IconTrash className="w-4 h-4" />
                                 </Button>
                             </div>
                         </div>
@@ -365,12 +365,12 @@ export const PromptTemplateLibrary: React.FC = () => {
 
                 {filtered.length === 0 && (
                     <div className={C_PROMPTTEMPLATELIBRARY_11}>
-                        <BookOpen className="w-12 h-12 text-muted-foreground" />
+                        <IconBook className="w-12 h-12 text-muted-foreground" />
                         <div>
                             <p className="text-sm font-bold text-muted-foreground">
                                 {t('prompts.library.empty')}
                             </p>
-                            <p className="text-xxs font-medium mt-1">
+                            <p className="text-sm font-medium mt-1">
                                 {t('prompts.library.emptyHint')}
                             </p>
                         </div>

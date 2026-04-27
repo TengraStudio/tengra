@@ -9,7 +9,6 @@
  */
 
 import { registerDbIpc } from '@main/ipc/db';
-import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { BrowserWindow, ipcMain } from 'electron';
@@ -47,15 +46,10 @@ interface MockEmbeddingService extends Partial<EmbeddingService> {
     generateEmbedding: Mock;
 }
 
-interface MockAuditLogService extends Partial<AuditLogService> {
-    log: Mock;
-}
-
 describe('Database IPC Handlers', () => {
     let mockDatabaseService: Record<string, ReturnType<typeof vi.fn>>;
 
     let mockEmbeddingService: MockEmbeddingService;
-    let mockAuditLogService: MockAuditLogService;
     let registeredHandlers: Map<string, (...args: TestValue[]) => Promise<TestValue>>;
     const mockEvent = { sender: { id: 1, send: vi.fn() } } as never;
     const createdWorkspace = {
@@ -124,15 +118,10 @@ describe('Database IPC Handlers', () => {
             generateEmbedding: vi.fn().mockResolvedValue(new Array(1536).fill(0.1))
         };
 
-        mockAuditLogService = {
-            log: vi.fn().mockResolvedValue(undefined)
-        };
-
         registerDbIpc(
             () => mockWindow,
             mockDatabaseService as never as DatabaseService,
-            mockEmbeddingService as never as EmbeddingService,
-            mockAuditLogService as never as AuditLogService
+            mockEmbeddingService as never as EmbeddingService
         );
     });
 

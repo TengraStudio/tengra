@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { t } from '@main/utils/i18n.util';
 import { ToolDefinition } from '@shared/types/chat';
 
 export const toolDefinitions: ToolDefinition[] = [
@@ -15,11 +16,11 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__filesystem__read',
-            description: 'Read a text file from disk.',
+            description: t('auto.readATextFileFromDisk'),
             parameters: {
                 type: 'object',
                 properties: {
-                    path: { type: 'string', description: 'Absolute or relative file path.' }
+                    path: { type: 'string', description: t('auto.absoluteOrRelativeFilePath') }
                 },
                 required: ['path']
             }
@@ -29,12 +30,12 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__filesystem__write',
-            description: 'Write or overwrite a file. Creates parent folders when needed.',
+            description: t('auto.writeOrOverwriteAFileCreatesParentFolder'),
             parameters: {
                 type: 'object',
                 properties: {
-                    path: { type: 'string', description: 'Target file path.' },
-                    content: { type: 'string', description: 'File content to write.' }
+                    path: { type: 'string', description: t('auto.targetFilePath') },
+                    content: { type: 'string', description: t('auto.fileContentToWrite') }
                 },
                 required: ['path', 'content']
             }
@@ -44,11 +45,11 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__filesystem__list',
-            description: 'List files and folders in a directory.',
+            description: t('auto.listFilesAndFoldersInADirectory'),
             parameters: {
                 type: 'object',
                 properties: {
-                    path: { type: 'string', description: 'Directory path to list.' }
+                    path: { type: 'string', description: t('auto.directoryPathToList') }
                 },
                 required: ['path']
             }
@@ -58,12 +59,12 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__filesystem__extract_strings',
-            description: 'Extract printable strings from a file (useful for logs, binaries, dumps).',
+            description: t('auto.extractPrintableStringsFromAFileUsefulFo'),
             parameters: {
                 type: 'object',
                 properties: {
-                    path: { type: 'string', description: 'File path to inspect.' },
-                    minLength: { type: 'number', description: 'Minimum string length. Default: 4.' }
+                    path: { type: 'string', description: t('auto.filePathToInspect') },
+                    minLength: { type: 'number', description: t('auto.minimumStringLengthDefault4') }
                 },
                 required: ['path']
             }
@@ -73,12 +74,12 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__filesystem__unzip',
-            description: 'Extract a zip archive into a destination folder.',
+            description: t('auto.extractAZipArchiveIntoADestinationFolder'),
             parameters: {
                 type: 'object',
                 properties: {
-                    zipPath: { type: 'string', description: 'Path to the .zip file.' },
-                    destPath: { type: 'string', description: 'Destination directory for extracted files.' }
+                    zipPath: { type: 'string', description: t('auto.pathToTheZipFile') },
+                    destPath: { type: 'string', description: t('auto.destinationDirectoryForExtractedFiles') }
                 },
                 required: ['zipPath', 'destPath']
             }
@@ -88,12 +89,12 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__filesystem__download',
-            description: 'Download a file from a URL and save it locally.',
+            description: t('auto.downloadAFileFromAUrlAndSaveItLocally'),
             parameters: {
                 type: 'object',
                 properties: {
-                    url: { type: 'string', description: 'Source URL.' },
-                    destPath: { type: 'string', description: 'Local target file path.' }
+                    url: { type: 'string', description: t('auto.sourceUrl') },
+                    destPath: { type: 'string', description: t('auto.localTargetFilePath') }
                 },
                 required: ['url', 'destPath']
             }
@@ -103,13 +104,13 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__terminal__run_command',
-            description: 'Run a shell command in a persistent terminal session (works across Windows/macOS/Linux).',
+            description: t('auto.runAShellCommandInAPersistentTerminalSes'),
             parameters: {
                 type: 'object',
                 properties: {
-                    command: { type: 'string', description: 'Command to execute.' },
-                    cwd: { type: 'string', description: 'Optional working directory.' },
-                    session_id: { type: 'string', description: 'Optional existing session id.' }
+                    command: { type: 'string', description: t('auto.commandToExecute') },
+                    cwd: { type: 'string', description: t('auto.optionalWorkingDirectory') },
+                    session_id: { type: 'string', description: t('auto.optionalExistingSessionId') }
                 },
                 required: ['command']
             }
@@ -119,7 +120,7 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__terminal__list_sessions',
-            description: 'List active terminal sessions.',
+            description: t('auto.listActiveTerminalSessions1'),
             parameters: { type: 'object', properties: {}, required: [] }
         }
     },
@@ -127,13 +128,13 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__terminal__resize',
-            description: 'Resize an existing terminal session.',
+            description: t('auto.resizeAnExistingTerminalSession'),
             parameters: {
                 type: 'object',
                 properties: {
-                    session_id: { type: 'string', description: 'Terminal session id.' },
-                    rows: { type: 'number', description: 'Terminal rows.' },
-                    cols: { type: 'number', description: 'Terminal columns.' }
+                    session_id: { type: 'string', description: t('auto.terminalSessionId') },
+                    rows: { type: 'number', description: t('auto.terminalRows') },
+                    cols: { type: 'number', description: t('auto.terminalColumns') }
                 },
                 required: ['session_id']
             }
@@ -143,11 +144,11 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__terminal__kill_session',
-            description: 'Terminate a terminal session.',
+            description: t('auto.terminateATerminalSession1'),
             parameters: {
                 type: 'object',
                 properties: {
-                    session_id: { type: 'string', description: 'Terminal session id.' }
+                    session_id: { type: 'string', description: t('auto.terminalSessionId') }
                 },
                 required: ['session_id']
             }
@@ -157,12 +158,12 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__git__status',
-            description: 'Show repository file status.',
+            description: t('auto.showRepositoryFileStatus'),
             parameters: {
                 type: 'object',
                 properties: {
-                    cwd: { type: 'string', description: 'Repository directory (optional if path is given).' },
-                    path: { type: 'string', description: 'Repository directory (optional alias of cwd).' }
+                    cwd: { type: 'string', description: t('auto.repositoryDirectoryOptionalIfPathIsGiven') },
+                    path: { type: 'string', description: t('auto.repositoryDirectoryOptionalAliasOfCwd') }
                 },
                 required: []
             }
@@ -172,13 +173,13 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__git__diff',
-            description: 'Show patch diff for the repository or a single file.',
+            description: t('auto.showPatchDiffForTheRepositoryOrASingleFi'),
             parameters: {
                 type: 'object',
                 properties: {
-                    cwd: { type: 'string', description: 'Repository directory (optional if path is given).' },
-                    path: { type: 'string', description: 'Repository directory (optional alias of cwd).' },
-                    file: { type: 'string', description: 'Optional file path filter.' }
+                    cwd: { type: 'string', description: t('auto.repositoryDirectoryOptionalIfPathIsGiven') },
+                    path: { type: 'string', description: t('auto.repositoryDirectoryOptionalAliasOfCwd') },
+                    file: { type: 'string', description: t('auto.optionalFilePathFilter') }
                 },
                 required: []
             }
@@ -188,13 +189,13 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__git__blame',
-            description: 'Show who last changed each line in a file.',
+            description: t('auto.showWhoLastChangedEachLineInAFile'),
             parameters: {
                 type: 'object',
                 properties: {
-                    file: { type: 'string', description: 'File path relative to repository root.' },
-                    cwd: { type: 'string', description: 'Repository directory (optional).' },
-                    repo_path: { type: 'string', description: 'Repository directory (optional alias of cwd).' }
+                    file: { type: 'string', description: t('auto.filePathRelativeToRepositoryRoot') },
+                    cwd: { type: 'string', description: t('auto.repositoryDirectoryOptional') },
+                    repo_path: { type: 'string', description: t('auto.repositoryDirectoryOptionalAliasOfCwd') }
                 },
                 required: ['file']
             }
@@ -204,13 +205,13 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__git__log',
-            description: 'List recent commits.',
+            description: t('auto.listRecentCommits'),
             parameters: {
                 type: 'object',
                 properties: {
-                    cwd: { type: 'string', description: 'Repository directory.' },
-                    path: { type: 'string', description: 'Repository directory (optional alias of cwd).' },
-                    count: { type: 'number', description: 'Number of commits to return. Default: 10.' }
+                    cwd: { type: 'string', description: t('auto.repositoryDirectory') },
+                    path: { type: 'string', description: t('auto.repositoryDirectoryOptionalAliasOfCwd') },
+                    count: { type: 'number', description: t('auto.numberOfCommitsToReturnDefault10') }
                 },
                 required: ['cwd']
             }
@@ -220,11 +221,11 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__git__add',
-            description: 'Stage files for commit.',
+            description: t('auto.stageFilesForCommit'),
             parameters: {
                 type: 'object',
                 properties: {
-                    cwd: { type: 'string', description: 'Repository directory.' },
+                    cwd: { type: 'string', description: t('auto.repositoryDirectory') },
                     files: { type: 'string', description: 'File path to stage. Use "." to stage all.' }
                 },
                 required: ['cwd']
@@ -235,12 +236,12 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__git__commit',
-            description: 'Create a commit with a message.',
+            description: t('auto.createACommitWithAMessage'),
             parameters: {
                 type: 'object',
                 properties: {
-                    cwd: { type: 'string', description: 'Repository directory.' },
-                    message: { type: 'string', description: 'Commit message.' }
+                    cwd: { type: 'string', description: t('auto.repositoryDirectory') },
+                    message: { type: 'string', description: t('auto.commitMessage') }
                 },
                 required: ['cwd', 'message']
             }
@@ -254,7 +255,7 @@ export const toolDefinitions: ToolDefinition[] = [
             parameters: {
                 type: 'object',
                 properties: {
-                    cwd: { type: 'string', description: 'Repository directory.' }
+                    cwd: { type: 'string', description: t('auto.repositoryDirectory') }
                 },
                 required: ['cwd']
             }
@@ -268,7 +269,7 @@ export const toolDefinitions: ToolDefinition[] = [
             parameters: {
                 type: 'object',
                 properties: {
-                    cwd: { type: 'string', description: 'Repository directory.' }
+                    cwd: { type: 'string', description: t('auto.repositoryDirectory') }
                 },
                 required: ['cwd']
             }
@@ -278,12 +279,12 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__git__checkout',
-            description: 'Switch to a branch or commit ref.',
+            description: t('auto.switchToABranchOrCommitRef'),
             parameters: {
                 type: 'object',
                 properties: {
-                    cwd: { type: 'string', description: 'Repository directory.' },
-                    branch: { type: 'string', description: 'Branch or ref name.' }
+                    cwd: { type: 'string', description: t('auto.repositoryDirectory') },
+                    branch: { type: 'string', description: t('auto.branchOrRefName') }
                 },
                 required: ['cwd', 'branch']
             }
@@ -293,11 +294,11 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__git__branches',
-            description: 'List local branches.',
+            description: t('auto.listLocalBranches1'),
             parameters: {
                 type: 'object',
                 properties: {
-                    cwd: { type: 'string', description: 'Repository directory.' }
+                    cwd: { type: 'string', description: t('auto.repositoryDirectory') }
                 },
                 required: ['cwd']
             }
@@ -315,7 +316,7 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__system__env_vars',
-            description: 'List environment variables.',
+            description: t('auto.listEnvironmentVariables'),
             parameters: { type: 'object', properties: {}, required: [] }
         }
     },
@@ -323,11 +324,11 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__system__process_list',
-            description: 'List running processes with resource usage.',
+            description: t('auto.listRunningProcessesWithResourceUsage1'),
             parameters: {
                 type: 'object',
                 properties: {
-                    limit: { type: 'number', description: 'Maximum number of processes. Default: 50.' }
+                    limit: { type: 'number', description: t('auto.maximumNumberOfProcessesDefault50') }
                 },
                 required: []
             }
@@ -337,11 +338,11 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__system__kill_process',
-            description: 'Terminate a process by PID.',
+            description: t('auto.terminateAProcessByPid'),
             parameters: {
                 type: 'object',
                 properties: {
-                    pid: { type: 'number', description: 'Process id.' }
+                    pid: { type: 'number', description: t('auto.processId') }
                 },
                 required: ['pid']
             }
@@ -351,7 +352,7 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__system__disk_space',
-            description: 'Get disk usage and available space.',
+            description: t('auto.getDiskUsageAndAvailableSpace'),
             parameters: { type: 'object', properties: {}, required: [] }
         }
     },
@@ -367,12 +368,12 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__web__search',
-            description: 'Search the web and return ranked results.',
+            description: t('auto.searchTheWebAndReturnRankedResults'),
             parameters: {
                 type: 'object',
                 properties: {
-                    query: { type: 'string', description: 'Search query.' },
-                    count: { type: 'number', description: 'Maximum result count. Default: 5.' }
+                    query: { type: 'string', description: t('auto.searchQuery') },
+                    count: { type: 'number', description: t('auto.maximumResultCountDefault5') }
                 },
                 required: ['query']
             }
@@ -382,11 +383,11 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__web__read_page',
-            description: 'Fetch a web page and return its content.',
+            description: t('auto.fetchAWebPageAndReturnItsContent'),
             parameters: {
                 type: 'object',
                 properties: {
-                    url: { type: 'string', description: 'HTTP/HTTPS URL.' }
+                    url: { type: 'string', description: t('auto.httphttpsUrl') }
                 },
                 required: ['url']
             }
@@ -396,11 +397,11 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__web__fetch_view',
-            description: 'Alias for reading a web page.',
+            description: t('auto.aliasForReadingAWebPage'),
             parameters: {
                 type: 'object',
                 properties: {
-                    url: { type: 'string', description: 'HTTP/HTTPS URL.' }
+                    url: { type: 'string', description: t('auto.httphttpsUrl') }
                 },
                 required: ['url']
             }
@@ -410,11 +411,11 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__web__fetch_json',
-            description: 'Fetch JSON response from a URL.',
+            description: t('auto.fetchJsonResponseFromAUrl'),
             parameters: {
                 type: 'object',
                 properties: {
-                    url: { type: 'string', description: 'HTTP/HTTPS URL.' }
+                    url: { type: 'string', description: t('auto.httphttpsUrl') }
                 },
                 required: ['url']
             }
@@ -424,7 +425,7 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__network__interfaces',
-            description: 'Show network interfaces and addresses.',
+            description: t('auto.showNetworkInterfacesAndAddresses'),
             parameters: { type: 'object', properties: {}, required: [] }
         }
     },
@@ -432,7 +433,7 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__network__ports',
-            description: 'Show active/listening ports.',
+            description: t('auto.showActivelisteningPorts'),
             parameters: { type: 'object', properties: {}, required: [] }
         }
     },
@@ -440,11 +441,11 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__network__ping',
-            description: 'Ping a host.',
+            description: t('auto.pingAHost'),
             parameters: {
                 type: 'object',
                 properties: {
-                    host: { type: 'string', description: 'Host or IP address.' }
+                    host: { type: 'string', description: t('auto.hostOrIpAddress') }
                 },
                 required: ['host']
             }
@@ -454,11 +455,11 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__network__traceroute',
-            description: 'Trace route to a host.',
+            description: t('auto.traceRouteToAHost'),
             parameters: {
                 type: 'object',
                 properties: {
-                    host: { type: 'string', description: 'Host or IP address.' }
+                    host: { type: 'string', description: t('auto.hostOrIpAddress') }
                 },
                 required: ['host']
             }
@@ -468,12 +469,12 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__network__whois',
-            description: 'Lookup domain/host registration metadata.',
+            description: t('auto.lookupDomainhostRegistrationMetadata'),
             parameters: {
                 type: 'object',
                 properties: {
-                    domain: { type: 'string', description: 'Domain name.' },
-                    host: { type: 'string', description: 'Optional alias of domain.' }
+                    domain: { type: 'string', description: t('auto.domainName') },
+                    host: { type: 'string', description: t('auto.optionalAliasOfDomain') }
                 },
                 required: []
             }
@@ -483,11 +484,11 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__internet__weather',
-            description: 'Get weather data for a location.',
+            description: t('auto.getWeatherDataForALocation'),
             parameters: {
                 type: 'object',
                 properties: {
-                    location: { type: 'string', description: 'Location (city, region, etc.). Optional.' }
+                    location: { type: 'string', description: t('auto.locationCityRegionEtcOptional') }
                 },
                 required: []
             }
@@ -497,7 +498,7 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__workspace__listContainers',
-            description: 'List Docker containers.',
+            description: t('auto.listDockerContainers1'),
             parameters: { type: 'object', properties: {}, required: [] }
         }
     },
@@ -505,7 +506,7 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__workspace__stats',
-            description: 'Show Docker container resource usage.',
+            description: t('auto.showDockerContainerResourceUsage'),
             parameters: { type: 'object', properties: {}, required: [] }
         }
     },
@@ -513,7 +514,7 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__workspace__listImages',
-            description: 'List Docker images.',
+            description: t('auto.listDockerImages1'),
             parameters: { type: 'object', properties: {}, required: [] }
         }
     },
@@ -521,7 +522,7 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__llm__listModels',
-            description: 'List local LLM models from Ollama.',
+            description: t('auto.listLocalLlmModelsFromOllama'),
             parameters: { type: 'object', properties: {}, required: [] }
         }
     },
@@ -529,7 +530,7 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'mcp__llm__ps',
-            description: 'List currently running local LLM model processes.',
+            description: t('auto.listCurrentlyRunningLocalLlmModelProcess'),
             parameters: { type: 'object', properties: {}, required: [] }
         }
     },
@@ -537,17 +538,17 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'generate_image',
-            description: 'Generate one or more images from a prompt. Use only when the user explicitly asks for image creation.',
+            description: t('auto.generateOneOrMoreImagesFromAPromptUseOnl'),
             parameters: {
                 type: 'object',
                 properties: {
                     prompt: {
                         type: 'string',
-                        description: 'Image prompt text.'
+                        description: t('auto.imagePromptText')
                     },
                     count: {
                         type: 'number',
-                        description: 'Number of images to generate. Default: 1, max: 5.'
+                        description: t('auto.numberOfImagesToGenerateDefault1Max5')
                     }
                 },
                 required: ['prompt']
@@ -558,7 +559,7 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'update_plan_step',
-            description: 'Update the status of one plan step during execution.',
+            description: t('auto.updateTheStatusOfOnePlanStepDuringExecut'),
             parameters: {
                 type: 'object',
                 properties: {
@@ -569,11 +570,11 @@ export const toolDefinitions: ToolDefinition[] = [
                     status: {
                         type: 'string',
                         enum: ['pending', 'running', 'completed', 'failed'],
-                        description: 'New step status.'
+                        description: t('auto.newStepStatus')
                     },
                     message: {
                         type: 'string',
-                        description: 'Optional progress note.'
+                        description: t('auto.optionalProgressNote')
                     }
                 },
                 required: ['index', 'status']
@@ -584,7 +585,7 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'propose_plan',
-            description: 'Submit a structured execution plan.',
+            description: t('auto.submitAStructuredExecutionPlan'),
             parameters: {
                 type: 'object',
                 properties: {
@@ -627,14 +628,14 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'revise_plan',
-            description: 'Modify an existing execution plan while work is in progress.',
+            description: t('auto.modifyAnExistingExecutionPlanWhileWorkIs'),
             parameters: {
                 type: 'object',
                 properties: {
                     action: {
                         type: 'string',
                         enum: ['add', 'remove', 'modify', 'insert'],
-                        description: 'Revision type.'
+                        description: t('auto.revisionType')
                     },
                     index: {
                         type: 'number',
@@ -642,11 +643,11 @@ export const toolDefinitions: ToolDefinition[] = [
                     },
                     step_text: {
                         type: 'string',
-                        description: 'Step text. Required for add/modify/insert.'
+                        description: t('auto.stepTextRequiredForAddmodifyinsert')
                     },
                     reason: {
                         type: 'string',
-                        description: 'Why the revision is needed.'
+                        description: t('auto.whyTheRevisionIsNeeded')
                     }
                 },
                 required: ['action', 'reason']

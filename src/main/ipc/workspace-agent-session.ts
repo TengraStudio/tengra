@@ -464,7 +464,7 @@ export function registerWorkspaceAgentSessionIpc(
                     chatId,
                     payload.workspaceId,
                     `Workspace agent session created. title=${payload.title}; strategy=${payload.strategy ?? 'reasoning-first'}`,
-                    ['workspace-agent', 'session-create']
+                    ['agent', 'session-create']
                 );
 
                 const currentPersistence = getWorkspacePersistence(workspace.metadata);
@@ -510,7 +510,7 @@ export function registerWorkspaceAgentSessionIpc(
                     chat.id,
                     chat.workspaceId,
                     `Workspace agent session renamed. newTitle=${payload.title}`,
-                    ['workspace-agent', 'session-rename']
+                    ['agent', 'session-rename']
                 );
 
                 return toWorkspaceAgentSession(
@@ -558,7 +558,7 @@ export function registerWorkspaceAgentSessionIpc(
                         payload.sessionId,
                         payload.workspaceId,
                         `Workspace agent active session selected. sessionId=${payload.sessionId}`,
-                        ['workspace-agent', 'session-select']
+                        ['agent', 'session-select']
                     );
                 }
                 return nextPersistence;
@@ -642,7 +642,7 @@ export function registerWorkspaceAgentSessionIpc(
                     chat.id,
                     chat.workspaceId,
                     `Workspace agent modes updated. ask=${String(modes.ask)}; plan=${String(modes.plan)}; agent=${String(modes.agent)}; council=${String(modes.council)}`,
-                    ['workspace-agent', 'modes-update']
+                    ['agent', 'modes-update']
                 );
 
                 return toWorkspaceAgentSession(
@@ -682,7 +682,7 @@ export function registerWorkspaceAgentSessionIpc(
                     chat.id,
                     chat.workspaceId,
                     `Workspace agent permissions updated. commandPolicy=${payload.permissionPolicy.commandPolicy}; pathPolicy=${payload.permissionPolicy.pathPolicy}`,
-                    ['workspace-agent', 'permissions-update']
+                    ['agent', 'permissions-update']
                 );
                 return toWorkspaceAgentSession(
                     await requireChat(chat.id, databaseService),
@@ -725,7 +725,7 @@ export function registerWorkspaceAgentSessionIpc(
                     chat.id,
                     chat.workspaceId,
                     `Workspace agent strategy updated. strategy=${payload.strategy}`,
-                    ['workspace-agent', 'strategy-update']
+                    ['agent', 'strategy-update']
                 );
                 return toWorkspaceAgentSession(
                     await requireChat(chat.id, databaseService),
@@ -781,7 +781,7 @@ export function registerWorkspaceAgentSessionIpc(
                     chat.id,
                     chat.workspaceId,
                     `Workspace agent archive state changed. archived=${String(payload.archived)}`,
-                    ['workspace-agent', 'archive-state']
+                    ['agent', 'archive-state']
                 );
                 return toWorkspaceAgentSession(
                     await requireChat(chat.id, databaseService),
@@ -840,7 +840,7 @@ export function registerWorkspaceAgentSessionIpc(
                         payload.activeSessionId,
                         payload.workspaceId,
                         `Workspace agent resumed background state. activeSessionId=${payload.activeSessionId}`,
-                        ['workspace-agent', 'session-resume']
+                        ['agent', 'session-resume']
                     );
                 }
                 return nextPersistence;

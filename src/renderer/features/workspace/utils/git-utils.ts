@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { CommonBatches } from '@renderer/utils/ipc-batch.util';
+import { CommonBatches } from '@/utils/ipc-batch.util';
 
 import { DiffStats, GitData, Remote, TrackingInfo } from '../components/git/types';
 

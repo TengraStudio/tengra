@@ -8,13 +8,13 @@
  * (at your option) any later version.
  */
 
-import { compactToolCallsForDisplay } from '@renderer/features/chat/components/message/tool-call-display.util';
 import { JsonValue } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { ChevronDown, Copy } from 'lucide-react';
+import { IconChevronDown, IconCopy } from '@tabler/icons-react';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { UI_PRIMITIVES } from '@/constants/ui-primitives';
+import { compactToolCallsForDisplay } from '@/features/chat/components/message/tool-call-display.util';
 import { navigateToWorkspace } from '@/features/workspace/utils/workspace-navigation';
 import { Language } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -367,12 +367,12 @@ const TerminalToolCard = memo(({
                         className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted/20"
                         aria-label="Copy command"
                     >
-                        <Copy className="h-3.5 w-3.5" />
+                        <IconCopy className="h-3.5 w-3.5" />
                     </button>
                 </div>
             </div>
 
-            <div className="mt-2 rounded-lg border border-border/20 bg-background/40 px-3 py-2 font-mono text-xs text-foreground/85">
+            <div className="mt-2 rounded-lg border border-border/20 bg-background/40 px-3 py-2 font-mono text-sm text-foreground/85">
                 <div className="break-words">
                     <span className="text-muted-foreground">{data.cwd}</span>
                     <span className="text-muted-foreground"> &gt; </span>
@@ -956,13 +956,13 @@ const ThoughtTimeline = memo(({
                                 <span className={cn('h-2 w-2 rounded-full', statusDot)} />
                                 <div className="truncate text-sm font-medium text-foreground/90">{header}</div>
                             </div>
-                            <ChevronDown className={cn('h-4 w-4 text-muted-foreground/60 transition-transform', expanded && 'rotate-180')} />
+                            <IconChevronDown className={cn('h-4 w-4 text-muted-foreground/60 transition-transform', expanded && 'rotate-180')} />
                         </button>
 
                         {expanded && (
                             <div className="px-3 pb-2 pt-2 space-y-2">
                                 {thoughtText.trim().length > 0 && (
-                                    <div className="text-xs leading-relaxed text-foreground/85">
+                                    <div className="text-sm leading-relaxed text-foreground/85">
                                         <MarkdownContent content={thoughtText} t={t} />
                                     </div>
                                 )}
@@ -1065,7 +1065,7 @@ const FileChangesCard = memo(({
     return (
         <div className="mt-3 rounded-xl border border-border/30 bg-muted/10 px-3 py-2">
             <div className="flex items-center justify-between gap-3">
-                <div className="text-xs text-muted-foreground">
+                <div className="text-sm text-muted-foreground">
                     <span className="font-medium text-foreground/90">
                         {changes.length} {changes.length === 1 ? 'file changed' : 'files changed'}
                     </span>
@@ -1078,7 +1078,7 @@ const FileChangesCard = memo(({
                         onClick={onUndo}
                         disabled={!canUndo}
                         className={cn(
-                            'text-xs font-medium',
+                            'text-sm font-medium',
                             canUndo ? 'text-muted-foreground hover:text-foreground' : 'text-muted-foreground/40 cursor-not-allowed'
                         )}
                         aria-label={t('chat.undo')}
@@ -1088,7 +1088,7 @@ const FileChangesCard = memo(({
                     <button
                         type="button"
                         onClick={onReview}
-                        className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                        className="text-sm font-medium text-muted-foreground hover:text-foreground"
                         aria-label={t('chat.review')}
                     >
                         Review
@@ -1102,7 +1102,7 @@ const FileChangesCard = memo(({
                         key={`${c.path}:${c.diffId ?? ''}:${idx}`}
                         type="button"
                         onClick={() => navigateToWorkspace({ type: 'open_diff', path: c.path })}
-                        className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-1 text-left text-xs text-foreground/80 hover:bg-muted/20"
+                        className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-1 text-left text-sm text-foreground/80 hover:bg-muted/20"
                     >
                         <span className="min-w-0 break-words">{c.displayPath}</span>
                         <span className="flex-shrink-0 tabular-nums">

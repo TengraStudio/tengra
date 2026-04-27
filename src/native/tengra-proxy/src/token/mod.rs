@@ -1,4 +1,4 @@
-/**
+/*
  * Tengra - Your Personal AI Assistant
  * Copyright (c) 2026 TengraStudio
  *
@@ -217,11 +217,11 @@ fn build_refresh_candidate_with_master_key(
         });
 
     auth_token.access_token =
-        decrypt_refresh_token_field(auth_token.access_token, master_key.as_deref());
+        decrypt_refresh_token_field(auth_token.access_token, master_key);
     auth_token.refresh_token =
-        decrypt_refresh_token_field(auth_token.refresh_token, master_key.as_deref());
+        decrypt_refresh_token_field(auth_token.refresh_token, master_key);
     auth_token.session_token =
-        decrypt_refresh_token_field(auth_token.session_token, master_key.as_deref());
+        decrypt_refresh_token_field(auth_token.session_token, master_key);
 
     if auth_token.expires_at.is_none() {
         auth_token.expires_at = extract_expiry(account);
@@ -232,7 +232,7 @@ fn build_refresh_candidate_with_master_key(
             .get("access_token")
             .and_then(|value| value.as_str())
             .map(ToOwned::to_owned)
-            .and_then(|value| decrypt_refresh_token_field(Some(value), master_key.as_deref()));
+            .and_then(|value| decrypt_refresh_token_field(Some(value), master_key));
     }
 
     if auth_token.refresh_token.is_none() {
@@ -240,7 +240,7 @@ fn build_refresh_candidate_with_master_key(
             .get("refresh_token")
             .and_then(|value| value.as_str())
             .map(ToOwned::to_owned)
-            .and_then(|value| decrypt_refresh_token_field(Some(value), master_key.as_deref()));
+            .and_then(|value| decrypt_refresh_token_field(Some(value), master_key));
     }
 
     if auth_token.session_token.is_none() {
@@ -248,7 +248,7 @@ fn build_refresh_candidate_with_master_key(
             .get("session_token")
             .and_then(|value| value.as_str())
             .map(ToOwned::to_owned)
-            .and_then(|value| decrypt_refresh_token_field(Some(value), master_key.as_deref()));
+            .and_then(|value| decrypt_refresh_token_field(Some(value), master_key));
     }
 
     auth_token.id = id.to_string();

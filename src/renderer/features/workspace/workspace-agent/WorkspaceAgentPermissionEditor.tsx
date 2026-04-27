@@ -9,7 +9,7 @@
  */
 
 import type { WorkspaceAgentPermissionPolicy } from '@shared/types/workspace-agent-session';
-import { Plus, X } from 'lucide-react';
+import { IconPlus, IconX } from '@tabler/icons-react';
 import React from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -60,7 +60,7 @@ function AllowlistSection({
 }): JSX.Element {
     return (
         <div className="rounded-2xl border border-border/40 bg-background/40 p-4">
-            <div className="flex items-center gap-2 typo-overline font-bold tracking-20 text-muted-foreground/30">
+            <div className="flex items-center gap-2 typo-overline font-bold text-muted-foreground/30">
                 {icon}
                 <span>{label}</span>
             </div>
@@ -72,7 +72,7 @@ function AllowlistSection({
                     className="h-9 rounded-xl border border-border/40 bg-background/50 typo-caption focus:ring-0 focus:border-border/60 transition-all"
                 />
                 <Button variant="secondary" onClick={onAddEntry} className={C_WORKSPACEAGENTPERMISSIONEDITOR_1}>
-                    <Plus className="mr-1.5 h-3.5 w-3.5" />
+                    <IconPlus className="mr-1.5 h-3.5 w-3.5" />
                     {addLabel}
                 </Button>
             </div>
@@ -91,7 +91,7 @@ function AllowlistSection({
                                 onClick={() => onRemoveEntry(entry)}
                                 aria-label={`${t('common.delete')} ${entry}`}
                             >
-                                <X className="h-3 w-3" />
+                                <IconX className="h-3 w-3" />
                             </button>
                         </Badge>
                     ))
@@ -178,7 +178,7 @@ export const WorkspaceAgentPermissionEditor: React.FC<
             {permissionPolicy.commandPolicy === 'allowlist' && (
                 <AllowlistSection
                     entries={permissionPolicy.allowedCommands}
-                    icon={<Plus className="h-3.5 w-3.5" />}
+                    icon={<IconPlus className="h-3.5 w-3.5" />}
                     inputValue={commandInput}
                     label={t('workspaceAgent.permissions.allowedCommands')}
                     onAddEntry={addCommand}
@@ -192,7 +192,7 @@ export const WorkspaceAgentPermissionEditor: React.FC<
             {permissionPolicy.pathPolicy === 'allowlist' && (
                 <AllowlistSection
                     entries={permissionPolicy.allowedPaths}
-                    icon={<Plus className="h-3.5 w-3.5" />}
+                    icon={<IconPlus className="h-3.5 w-3.5" />}
                     inputValue={pathInput}
                     label={t('workspaceAgent.permissions.allowedPaths')}
                     onAddEntry={addPath}

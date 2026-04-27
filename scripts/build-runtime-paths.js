@@ -55,6 +55,10 @@ function getManagedRuntimeTempDir() {
     return ensureDirectory(path.join(getManagedRuntimeCacheRoot(), 'temp'));
 }
 
+function getBuildBinDir() {
+    return ensureDirectory(path.join(__dirname, '../bin', process.platform));
+}
+
 function getExecutableName(baseName) {
     return process.platform === 'win32' ? `${baseName}.exe` : baseName;
 }
@@ -65,4 +69,5 @@ module.exports = {
     getManagedRuntimeModelsDir,
     getManagedRuntimeRoot,
     getManagedRuntimeTempDir,
+    getBuildBinDir,
 };

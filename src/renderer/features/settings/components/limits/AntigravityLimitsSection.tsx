@@ -8,11 +8,11 @@
  * (at your option) any later version.
  */
 
-import { Input } from '@renderer/components/ui/input';
-import { Switch } from '@renderer/components/ui/switch';
-import { Percent } from 'lucide-react';
+import { IconPercentage } from '@tabler/icons-react';
 import React from 'react';
 
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { useTranslation } from '@/i18n';
 import type { ModelInfo } from '@/types';
 
@@ -32,7 +32,7 @@ export const AntigravityLimitsSection: React.FC<AntigravityLimitsSectionProps> =
         <div className="rounded-2xl bg-card border border-border/50 p-6 shadow-sm overflow-hidden">
             <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                    <Percent className="w-5 h-5" />
+                    <IconPercentage className="w-5 h-5" />
                 </div>
                 <div>
                     <h3 className="text-sm font-bold text-foreground">
@@ -62,7 +62,7 @@ export const AntigravityLimitsSection: React.FC<AntigravityLimitsSectionProps> =
                                     <div className="text-sm font-bold text-foreground truncate">
                                         {model.name ?? modelId}
                                     </div>
-                                    <div className="text-xxs text-muted-foreground mt-0.5 font-medium opacity-60">
+                                    <div className="text-sm text-muted-foreground mt-0.5 font-medium opacity-60">
                                         ID: {modelId}
                                     </div>
                                 </div>
@@ -83,7 +83,7 @@ export const AntigravityLimitsSection: React.FC<AntigravityLimitsSectionProps> =
 
                             {modelLimit.enabled && (
                                 <div className="mt-4 pt-4 border-t border-border/40 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                                    <label className="text-xxs font-bold text-muted-foreground/70 ml-1">
+                                    <label className="text-sm font-bold text-muted-foreground/70 ml-1">
                                         {t('settings.usageLimits.maxPercentQuota')}
                                     </label>
                                     <div className="relative group">

@@ -9,18 +9,7 @@
  */
 
 import { FEEDBACK_TIMEOUTS } from '@shared/constants';
-import {
-    Bookmark,
-    Check,
-    Code2,
-    Copy,
-    RotateCcw,
-    Smile,
-    ThumbsDown,
-    ThumbsUp,
-    Volume2,
-    VolumeX,
-} from 'lucide-react';
+import { IconBookmark, IconCheck, IconCode, IconCopy, IconMoodSmile, IconRotate, IconThumbDown, IconThumbUp, IconVolume, IconVolumeOff } from '@tabler/icons-react';
 import React, { useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -74,9 +63,9 @@ export const CopyButton = React.memo(({ text }: { text: string }) => {
     return (
         <ActionButton label={t('messageBubble.copy')} onClick={() => void handleCopy()}>
             {copied ? (
-                <Check className="w-3.5 h-3.5 text-success" aria-hidden="true" />
+                <IconCheck className="w-3.5 h-3.5 text-success" aria-hidden="true" />
             ) : (
-                <Copy className="w-3.5 h-3.5" aria-hidden="true" />
+                <IconCopy className="w-3.5 h-3.5" aria-hidden="true" />
             )}
         </ActionButton>
     );
@@ -91,7 +80,7 @@ export const BookmarkButton = React.memo(({ active, onClick }: { active: boolean
             active={active}
             activeClassName="text-warning bg-warning/10 border-warning/20 glow-warning"
         >
-            <Bookmark className={cn('w-3.5 h-3.5', active && 'fill-current')} aria-hidden="true" />
+            <IconBookmark className={cn('w-3.5 h-3.5', active && 'fill-current')} aria-hidden="true" />
         </ActionButton>
     );
 });
@@ -123,7 +112,7 @@ export const RatingButtons = React.memo(({
                 aria-label={t('messageBubble.goodAnswer')}
                 aria-pressed={rating === 1}
             >
-                <ThumbsUp
+                <IconThumbUp
                     className={cn('w-3.5 h-3.5', rating === 1 && 'fill-current')}
                     aria-hidden="true"
                 />
@@ -141,7 +130,7 @@ export const RatingButtons = React.memo(({
                 aria-label={t('messageBubble.badAnswer')}
                 aria-pressed={rating === -1}
             >
-                <ThumbsDown
+                <IconThumbDown
                     className={cn('w-3.5 h-3.5', rating === -1 && 'fill-current')}
                     aria-hidden="true"
                 />
@@ -163,9 +152,9 @@ export const CopyMarkdownButton = React.memo(({ text, role }: { text: string; ro
     return (
         <ActionButton label={t('messageBubble.copyAsMarkdown')} onClick={() => void handleCopy()}>
             {copied ? (
-                <Check className="w-3.5 h-3.5 text-success" aria-hidden="true" />
+                <IconCheck className="w-3.5 h-3.5 text-success" aria-hidden="true" />
             ) : (
-                <Code2 className="w-3.5 h-3.5" aria-hidden="true" />
+                <IconCode className="w-3.5 h-3.5" aria-hidden="true" />
             )}
         </ActionButton>
     );
@@ -220,9 +209,9 @@ export const MessageActionsGroup = React.memo(({
                 active={isSpeaking}
             >
                 {isSpeaking ? (
-                    <VolumeX className="w-3.5 h-3.5" aria-hidden="true" />
+                    <IconVolumeOff className="w-3.5 h-3.5" aria-hidden="true" />
                 ) : (
-                    <Volume2 className="w-3.5 h-3.5" aria-hidden="true" />
+                    <IconVolume className="w-3.5 h-3.5" aria-hidden="true" />
                 )}
             </ActionButton>
 
@@ -232,7 +221,7 @@ export const MessageActionsGroup = React.memo(({
 
             <div className="relative group/react">
                 <ActionButton label={t('messageBubble.react')} onClick={() => {}}>
-                    <Smile className="w-3.5 h-3.5" aria-hidden="true" />
+                    <IconMoodSmile className="w-3.5 h-3.5" aria-hidden="true" />
                 </ActionButton>
                 <div
                     className={C_MESSAGEACTIONS_1}
@@ -263,7 +252,7 @@ export const MessageActionsGroup = React.memo(({
                     label={t('messageBubble.regenerate')}
                     onClick={() => onRegenerate?.()}
                 >
-                    <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                    <IconRotate className="w-3.5 h-3.5" aria-hidden="true" />
                 </ActionButton>
             )}
 

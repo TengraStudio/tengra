@@ -8,12 +8,12 @@
  * (at your option) any later version.
  */
 
-import { useFocusTrap } from '@renderer/utils/accessibility';
-import { AlertTriangle, X } from 'lucide-react';
+import { IconAlertTriangle, IconX } from '@tabler/icons-react';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { useFocusTrap } from '@/utils/accessibility';
 
 
 interface ConfirmationModalProps {
@@ -82,7 +82,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                 <div className="p-6">
                     <div className="flex items-start gap-4">
                         <div className={cn("p-3 rounded-xl border", getIconStyles(variant))}>
-                            <AlertTriangle className="w-6 h-6" />
+                            <IconAlertTriangle className="w-6 h-6" />
                         </div>
                         <div className="flex-1">
                             <h3 id="confirmation-modal-title" className="text-xl font-bold text-foreground leading-none mb-2">
@@ -128,7 +128,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                     aria-label={t('common.close')}
                     className="absolute top-4 right-4 p-2 text-muted-foreground/40 bg-transparent border-none rounded-lg cursor-pointer transition-colors hover:text-foreground disabled:cursor-not-allowed"
                 >
-                    <X className="w-4 h-4" />
+                    <IconX className="w-4 h-4" />
                 </button>
             </div>
         </div>

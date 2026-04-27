@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Check, ListTodo } from 'lucide-react';
+import { IconCheck, IconListCheck } from '@tabler/icons-react';
 import { lazy, memo, Suspense } from 'react';
 import remarkGfm from 'remark-gfm';
 
@@ -49,11 +49,11 @@ export const PlanSection = memo(
         return (
             <div className={C_PLANSECTION_1}>
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/plan:opacity-20 transition-opacity">
-                    <ListTodo className="w-12 h-12" />
+                    <IconListCheck className="w-12 h-12" />
                 </div>
                 <div className="flex items-center gap-3 mb-3 pb-3 border-b border-primary/10">
                     <div className="p-1.5 rounded-lg bg-primary/20">
-                        <ListTodo className="w-4 h-4 text-primary" />
+                        <IconListCheck className="w-4 h-4 text-primary" />
                     </div>
                     <span className="typo-caption font-bold text-primary">
                         {t('chat.plan')}
@@ -83,7 +83,7 @@ export const PlanSection = memo(
                             onClick={onApprovePlan}
                             className={C_PLANSECTION_2}
                         >
-                            <Check className="w-3.5 h-3.5" />
+                            <IconCheck className="w-3.5 h-3.5" />
                             {t('messageBubble.approvePlan')}
                         </button>
                     </div>

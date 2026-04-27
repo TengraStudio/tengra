@@ -8,19 +8,20 @@
  * (at your option) any later version.
  */
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@renderer/components/ui/card';
-import { Input } from '@renderer/components/ui/input';
-import { Label } from '@renderer/components/ui/label';
-import { Code, Search, Settings2,Shield } from 'lucide-react';
+import { IconCode, IconSearch, IconSettings2, IconShield } from '@tabler/icons-react';
 import React from 'react';
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 import { SettingsSectionProps } from './types';
 
 export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setFormData, t }) => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="flex flex-col gap-1.5">
-            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                <Code className="w-6 h-6 text-primary" />
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+                <IconCode className="w-6 h-6 text-primary" />
                 {t('workspaces.build')}
             </h2>
             <p className="text-muted-foreground">{t('workspaces.buildDesc')}</p>
@@ -29,7 +30,7 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
         <Card className="border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden border-2 shadow-xl shadow-primary/5">
             <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
                 <div className="flex items-center gap-2">
-                    <Settings2 className="w-4 h-4 text-primary" />
+                    <IconSettings2 className="w-4 h-4 text-primary" />
                     <CardTitle className="text-base font-semibold">{t('workspaces.buildPipelines')}</CardTitle>
                 </div>
                 <CardDescription>{t('workspaces.buildPipelinesDesc')}</CardDescription>
@@ -38,7 +39,7 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
                 <div className="space-y-2">
                     <Label className="text-sm font-medium">{t('workspaces.buildCommand')}</Label>
                     <div className="relative">
-                        <Code className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+                        <IconCode className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
                         <Input
                             type="text"
                             value={formData.buildCommand}
@@ -55,7 +56,7 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
                     <div className="space-y-2">
                         <Label className="text-sm font-medium">{t('workspaces.testCommand')}</Label>
                         <div className="relative">
-                            <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+                            <IconShield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
                             <Input
                                 type="text"
                                 value={formData.testCommand}
@@ -71,7 +72,7 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
                     <div className="space-y-2">
                         <Label className="text-sm font-medium">{t('workspaces.lintCommand')}</Label>
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+                            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
                             <Input
                                 type="text"
                                 value={formData.lintCommand}

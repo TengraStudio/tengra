@@ -8,9 +8,12 @@
  * (at your option) any later version.
  */
 
-import { Loader2, Minus, Puzzle, Square, X } from 'lucide-react';
+import logoBlack from '@assets/tengra_black.png';
+import logoWhite from '@assets/tengra_white.png';
+import { IconLoader2, IconMinus, IconPuzzle, IconSquare, IconX } from '@tabler/icons-react';
 import { type CSSProperties, type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +28,7 @@ interface TitleBarProps {
 
 export function TitleBar({ children, leftContent, className, onExtensionClick }: TitleBarProps) {
     const { t } = useTranslation();
+    const { isLight } = useTheme();
     const [lazyStatus, setLazyStatus] = useState<{ loaded: number; registered: number; loading: number }>({
         loaded: 0,
         registered: 0,
@@ -37,6 +41,8 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
     const handleMinimize = useCallback(() => window.electron.minimize(), []);
     const handleMaximize = useCallback(() => window.electron.maximize(), []);
     const handleClose = useCallback(() => window.electron.close(), []);
+
+    const logo = useMemo(() => (isLight ? logoBlack : logoWhite), [isLight]);
 
     useEffect(() => {
         let mounted = true;
@@ -77,11 +83,11 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                 <div className="flex items-center gap-4" style={noDragStyle}>
                     <div className="flex items-center gap-2">
                         <img
-                            src="@renderer/assets/logo.png"
+                            src={logo}
                             alt={t('app.name')}
                             className="h-8 w-8 object-contain"
                         />
-                        <span className="text-xs font-bold text-foreground/80">
+                        <span className="text-sm font-bold text-foreground/80">
                             {t('app.name')}
                         </span>
                     </div>
@@ -100,7 +106,7 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                                 registered: lazyStatus.registered
                             })}
                         >
-                            {lazyStatus.loading > 0 && <Loader2 className="h-3 w-3 animate-spin" />}
+                            {lazyStatus.loading > 0 && <IconLoader2 className="h-3 w-3 animate-spin" />}
                             <span>{lazyStatus.loaded}/{lazyStatus.registered}</span>
                         </div>
                         {onExtensionClick && (
@@ -110,7 +116,7 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                                 title={t('titleBar.extension')}
                                 aria-label={t('titleBar.extension')}
                             >
-                                <Puzzle className="h-4 w-4" />
+                                <IconPuzzle className="h-4 w-4" />
                             </button>
                         )}
                         <button
@@ -119,7 +125,7 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                             title={t('titleBar.minimize')}
                             aria-label={t('titleBar.minimize')}
                         >
-                            <Minus className="h-4 w-4" />
+                            <IconMinus className="h-4 w-4" />
                         </button>
                         <button
                             onClick={handleMaximize}
@@ -127,7 +133,7 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                             title={t('titleBar.maximize')}
                             aria-label={t('titleBar.maximize')}
                         >
-                            <Square className="h-3.5 w-3.5" />
+                            <IconSquare className="h-3.5 w-3.5" />
                         </button>
                         <button
                             onClick={handleClose}
@@ -135,7 +141,7 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                             title={t('titleBar.close')}
                             aria-label={t('titleBar.close')}
                         >
-                            <X className="h-4 w-4" />
+                            <IconX className="h-4 w-4" />
                         </button>
                     </div>
                 </div>

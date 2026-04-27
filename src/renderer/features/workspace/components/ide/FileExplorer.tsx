@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -223,7 +223,7 @@ const FileTreeItem = ({
             >
                 <span className="opacity-70 w-4 flex justify-center">
                     {node.isDirectory &&
-                        (isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />)}
+                        (isOpen ? <IconChevronDown size={12} /> : <IconChevronRight size={12} />)}
                 </span>
                 {icon}
                 <span className="truncate">{node.name}</span>

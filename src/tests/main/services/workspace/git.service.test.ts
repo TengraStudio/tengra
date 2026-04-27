@@ -255,7 +255,7 @@ describe('GitService', () => {
 
     describe('getCommitDiff', () => {
         it('should return commit diff', async () => {
-            setupExecFile('commit abc\nAuthor: X\ndiff content');
+            setupExecFile('commit abc\nAuthor: IconX\ndiff content');
             const result = await service.getCommitDiff('/repo', 'abc');
             expect(result.success).toBe(true);
             expect(result.diff).toContain('diff content');

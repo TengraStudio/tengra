@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Check, Plus, RefreshCw, User, Users } from 'lucide-react';
+import { IconCheck, IconPlus, IconRefresh, IconUser, IconUsers } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -80,11 +80,11 @@ export const AccountManager: React.FC = () => {
             <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <Users className="w-5 h-5" />
+                        <IconUsers className="w-5 h-5" />
                         {t('accounts.management')}
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => { void loadAccounts(); }} title={t('accounts.refreshAccounts')}>
-                        <RefreshCw className="w-4 h-4" />
+                        <IconRefresh className="w-4 h-4" />
                     </Button>
                 </CardTitle>
             </CardHeader>
@@ -114,7 +114,7 @@ export const AccountManager: React.FC = () => {
                                         {account.avatarUrl ? (
                                             <img src={account.avatarUrl} alt={account.displayName ?? account.id} className="w-full h-full object-cover" />
                                         ) : (
-                                            <User className="w-4 h-4 text-muted-foreground" />
+                                            <IconUser className="w-4 h-4 text-muted-foreground" />
                                         )}
                                     </div>
                                     <div>
@@ -124,7 +124,7 @@ export const AccountManager: React.FC = () => {
                                 </div>
                                 {activeAccountId === account.id ? (
                                     <div className="flex items-center gap-2 text-primary text-sm font-bold bg-primary/10 px-3 py-1 rounded-full">
-                                        <Check className="w-3 h-3" />
+                                        <IconCheck className="w-3 h-3" />
                                         {t('accounts.active')}
                                     </div>
                                 ) : (
@@ -147,7 +147,7 @@ export const AccountManager: React.FC = () => {
                             className="bg-background"
                         />
                         <Button onClick={() => { void handleCreateAccount(); }} disabled={isCreating || !newAccountName.trim()}>
-                            <Plus className="w-4 h-4 mr-2" />
+                            <IconPlus className="w-4 h-4 mr-2" />
                             {t('accounts.create')}
                         </Button>
                     </div>

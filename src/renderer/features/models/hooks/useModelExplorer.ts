@@ -8,10 +8,10 @@
  * (at your option) any later version.
  */
 
-import { HFFile, HFModel, OllamaLibraryModel, UnifiedModel } from '@renderer/features/models/types';
-import { parsePulls } from '@renderer/features/models/utils/explorer-utils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { HFFile, HFModel, OllamaLibraryModel, UnifiedModel } from '@/features/models/types';
+import { parsePulls } from '@/features/models/utils/explorer-utils';
 import type { ModelInfo } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 

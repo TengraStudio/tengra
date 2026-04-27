@@ -8,13 +8,13 @@
  * (at your option) any later version.
  */
 
-import { useTranslation } from '@renderer/i18n';
+import { IconMinimize, IconX } from '@tabler/icons-react';
 import { FitAddon } from '@xterm/addon-fit';
 import { Terminal as XTerm } from '@xterm/xterm';
-import { Minimize2, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useTheme } from '@/hooks/useTheme';
+import { useTranslation } from '@/i18n';
 import { invokeTypedIpc } from '@/lib/ipc-client';
 import { getTerminalTheme } from '@/lib/terminal-theme';
 import { appLogger } from '@/utils/renderer-logger';
@@ -188,14 +188,14 @@ export function DetachedTerminalWindow() {
                         className="p-1 text-muted-foreground hover:text-foreground transition-colors"
                         aria-label={t('titleBar.minimize')}
                     >
-                        <Minimize2 className="w-3.5 h-3.5" />
+                        <IconMinimize className="w-3.5 h-3.5" />
                     </button>
                     <button
                         onClick={() => { window.electron.close(); }}
                         className="p-1 text-muted-foreground hover:text-destructive transition-colors"
                         aria-label={t('titleBar.close')}
                     >
-                        <X className="w-3.5 h-3.5" />
+                        <IconX className="w-3.5 h-3.5" />
                     </button>
                 </div>
             </div>

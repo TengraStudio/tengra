@@ -8,11 +8,12 @@
  * (at your option) any later version.
  */
 
+import { describe, expect, it } from 'vitest';
+
 import {
     sanitizeBackendId,
     sanitizeShellId,
-} from '@renderer/features/terminal/utils/terminal-toolbar-validation';
-import { describe, expect, it } from 'vitest';
+} from '@/features/terminal/utils/terminal-toolbar-validation';
 
 describe('terminal toolbar validation', () => {
     it('sanitizes shell ids and backend ids', () => {

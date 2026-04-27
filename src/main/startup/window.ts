@@ -13,6 +13,7 @@ import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { SettingsService } from '@main/services/system/settings.service';
+import { t } from '@main/utils/i18n.util';
 import { app, BrowserWindow, Menu, nativeImage, Tray } from 'electron';
 
 let mainWindow: BrowserWindow | null = null;
@@ -31,6 +32,10 @@ export function getTray(): Tray | null {
 }
 
 export function createWindow(settingsService?: SettingsService): BrowserWindow {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        return mainWindow;
+    }
+
     const { width, height, x, y, zoomFactor } = getWindowInitialSettings(settingsService);
     const iconPath = getWindowIconPath();
 
@@ -41,7 +46,7 @@ export function createWindow(settingsService?: SettingsService): BrowserWindow {
         y,
         show: false,
         frame: false,
-        backgroundColor: '#000000',
+        backgroundColor: '#f5f5f5', // Matches splash screen background
         autoHideMenuBar: true,
         icon: nativeImage.createFromPath(iconPath),
         webPreferences: {
@@ -51,6 +56,7 @@ export function createWindow(settingsService?: SettingsService): BrowserWindow {
             nodeIntegration: false,
         },
     });
+    mainWindow = win;
 
     // Setup Security & Event Handlers
     setupWebContentsSecurity(win);
@@ -72,13 +78,17 @@ export function createWindow(settingsService?: SettingsService): BrowserWindow {
     const devServerUrl = process.env['VITE_DEV_SERVER_URL'] || process.env['ELECTRON_RENDERER_URL'];
 
     if (!app.isPackaged && devServerUrl) {
+        appLogger.info('Window', `Loading development URL: ${devServerUrl}`);
         void win.loadURL(devServerUrl);
     } else {
-        void win.loadFile(path.join(__dirname, '../renderer/index.html'));
+        const indexPath = path.join(__dirname, '../renderer/index.html');
+        appLogger.info('Window', `Loading production file: ${indexPath}`);
+        void win.loadFile(indexPath).catch(err => {
+            appLogger.error('Window', `Failed to load index.html: ${err.message}`);
+        });
     }
 
 
-    mainWindow = win;
     return win;
 }
 
@@ -87,8 +97,8 @@ export function createWindow(settingsService?: SettingsService): BrowserWindow {
  */
 function getWindowIconPath(): string {
     return app.isPackaged
-        ? path.join(process.resourcesPath, 'icon.ico')
-        : path.join(__dirname, '../../resources/icon.ico');
+        ? path.join(process.resourcesPath, 'assets/icon.ico')
+        : path.join(__dirname, '../../assets/icon.ico');
 }
 
 /**
@@ -211,9 +221,9 @@ function setupWebContentsSecurity(win: BrowserWindow) {
             responseHeaders: {
                 ...details.responseHeaders,
                 'Content-Security-Policy': [csp],
-                'X-Content-Type-Options': ['nosniff'],
-                'X-Frame-Options': ['DENY'],
-                'X-XSS-Protection': ['1; mode=block'],
+                'IconX-Content-Type-Options': ['nosniff'],
+                'IconX-Frame-Options': ['DENY'],
+                'IconX-XSS-Protection': ['1; mode=block'],
                 'Referrer-Policy': ['no-referrer-when-downgrade'],
                 ...(app.isPackaged ? { 'Strict-Transport-Security': ['max-age=31536000; includeSubDomains'] } : {}),
             },
@@ -244,9 +254,6 @@ function setupConsoleRedirect(win: BrowserWindow) {
             error: 'error',
         };
         const lvl = levelMap[level] ?? 'info';
-        if (app.isPackaged && (lvl === 'warn' || lvl === 'error')) {
-            return;
-        }
         const context = `renderer:${path.basename(sourceId)}:${lineNumber} `;
         appLogger[lvl](context, message);
     });
@@ -317,7 +324,7 @@ export function setupTray(settingsService?: SettingsService) {
 
         const contextMenu = Menu.buildFromTemplate([
             {
-                label: 'Show Tengra',
+                label: t('auto.showTengra'),
                 click: () => {
                     if (mainWindow && !mainWindow.isDestroyed()) {
                         mainWindow.show();

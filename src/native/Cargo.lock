@@ -2669,7 +2669,7 @@ dependencies = [
 
 [[package]]
 name = "tengra-db-service"
-version = "0.1.0"
+version = "1.0.46"
 dependencies = [
  "anyhow",
  "axum",
@@ -2692,7 +2692,7 @@ dependencies = [
 
 [[package]]
 name = "tengra-memory-service"
-version = "0.1.0"
+version = "1.0.46"
 dependencies = [
  "anyhow",
  "axum",
@@ -2710,7 +2710,7 @@ dependencies = [
 
 [[package]]
 name = "tengra-proxy"
-version = "0.1.0"
+version = "1.0.46"
 dependencies = [
  "aes-gcm",
  "anyhow",

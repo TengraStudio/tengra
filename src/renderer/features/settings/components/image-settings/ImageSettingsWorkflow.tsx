@@ -8,10 +8,11 @@
  * (at your option) any later version.
  */
 
-import { Button } from '@renderer/components/ui/button';
-import { Input } from '@renderer/components/ui/input';
-import { Download, Plus, Share2, Trash2, Workflow, Zap } from 'lucide-react';
+import { IconBolt,IconDownload, IconHierarchy, IconPlus, IconShare2, IconTrash } from '@tabler/icons-react';
 import React from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 import { ImageWorkflowTemplateEntry } from '../../types';
 
@@ -62,7 +63,7 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1 relative z-10">
                 <div className="flex items-center gap-4">
                     <div className={C_IMAGESETTINGSWORKFLOW_2}>
-                        <Workflow className="w-6 h-6" />
+                        <IconHierarchy className="w-6 h-6" />
                     </div>
                     <div>
                         <h3 className="text-lg font-bold text-foreground group-hover/workflow:text-primary transition-colors">
@@ -98,7 +99,7 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
                     onClick={() => { void handleSaveWorkflowTemplate(); }}
                     className={C_IMAGESETTINGSWORKFLOW_5}
                 >
-                    <Plus className="w-4 h-4" />
+                    <IconPlus className="w-4 h-4" />
                     {t('settings.images.saveWorkflowTemplate')}
                 </Button>
             </div>
@@ -131,7 +132,7 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
                                         onClick={() => { void handleExportWorkflowTemplateShare(template.id); }}
                                         className="h-8 w-8 text-muted-foreground/40 hover:text-primary hover:bg-primary/10 rounded-xl transition-all hover:scale-110"
                                     >
-                                        <Share2 className="w-3.5 h-3.5" />
+                                        <IconShare2 className="w-3.5 h-3.5" />
                                     </Button>
                                     <Button
                                         variant="ghost"
@@ -139,7 +140,7 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
                                         onClick={() => { void handleDeleteWorkflowTemplate(template.id); }}
                                         className={C_IMAGESETTINGSWORKFLOW_8}
                                     >
-                                        <Trash2 className="w-3.5 h-3.5" />
+                                        <IconTrash className="w-3.5 h-3.5" />
                                     </Button>
                                 </div>
                             </div>
@@ -150,7 +151,7 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
 
             <div className="bg-muted/20 border border-border/20 rounded-3xl p-6 space-y-4 relative z-10 group/share">
                 <div className="flex items-center gap-3 px-1">
-                    <Zap className="w-3.5 h-3.5 text-primary" />
+                    <IconBolt className="w-3.5 h-3.5 text-primary" />
                     <div className="typo-body font-bold text-muted-foreground/40">{t('settings.images.workflowShareCode')}</div>
                 </div>
                 <textarea
@@ -163,7 +164,7 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
                     onClick={() => { void handleImportWorkflowTemplateShare(); }}
                     className={C_IMAGESETTINGSWORKFLOW_10}
                 >
-                    <Download className="w-3.5 h-3.5" />
+                    <IconDownload className="w-3.5 h-3.5" />
                     {t('settings.images.importWorkflowTemplateShare')}
                 </Button>
             </div>

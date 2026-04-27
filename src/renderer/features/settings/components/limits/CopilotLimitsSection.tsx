@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { TrendingUp } from 'lucide-react';
+import { IconTrendingUp } from '@tabler/icons-react';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -38,7 +38,7 @@ export const CopilotLimitsSection: React.FC<CopilotLimitsSectionProps> = ({
         <div className="rounded-2xl bg-card border border-border/50 p-6 shadow-sm overflow-hidden">
             <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                    <TrendingUp className="w-5 h-5" />
+                    <IconTrendingUp className="w-5 h-5" />
                 </div>
                 <div>
                     <h3 className="text-sm font-bold text-foreground">

@@ -11,9 +11,10 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { cn } from "@renderer/lib/utils";
-import { X } from "lucide-react";
+import { IconX } from "@tabler/icons-react";
 import * as React from "react";
+
+import { cn } from "@/lib/utils";
 
 /* Batch-02: Extracted Long Classes */
 const C_DIALOG_1 = "absolute right-3 top-3 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground";
@@ -58,7 +59,7 @@ const DialogContent = React.forwardRef<
     >
       {children}
       <DialogPrimitive.Close className={C_DIALOG_1}>
-        <X className="h-4 w-4" />
+        <IconX className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>

@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Download, FileText, X } from 'lucide-react';
+import { IconDownload, IconFileText, IconX } from '@tabler/icons-react';
 import React, { useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -78,7 +78,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, chat,
             <div className="bg-background border border-border rounded-lg shadow-lg w-96 p-4">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-lg font-semibold">{t('export.title')}</h2>
-                    <button onClick={onClose}><X className="w-4 h-4" /></button>
+                    <button onClick={onClose}><IconX className="w-4 h-4" /></button>
                 </div>
 
                 <div className="space-y-4">
@@ -90,7 +90,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, chat,
                                 format === 'markdown' ? 'border-primary bg-primary/5' : 'border-border'
                             )}
                         >
-                            <FileText className="w-6 h-6" />
+                            <IconFileText className="w-6 h-6" />
                             <span className="text-sm">{t('export.formatMarkdown')}</span>
                         </button>
                         <button
@@ -100,7 +100,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, chat,
                                 format === 'pdf' ? 'border-primary bg-primary/5' : 'border-border'
                             )}
                         >
-                            <Download className="w-6 h-6" />
+                            <IconDownload className="w-6 h-6" />
                             <span className="text-sm">{t('export.formatPdf')}</span>
                         </button>
                     </div>

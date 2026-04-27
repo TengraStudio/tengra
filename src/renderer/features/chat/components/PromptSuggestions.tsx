@@ -8,17 +8,7 @@
  * (at your option) any later version.
  */
 
-import {
-    AlertTriangle,
-    CheckCircle,
-    ChevronDown,
-    ChevronUp,
-    Info,
-    Lightbulb,
-    Sparkles,
-    X,
-    Zap,
-} from 'lucide-react';
+import { IconAlertTriangle, IconBolt,IconBulb, IconChevronDown, IconChevronUp, IconCircleCheck, IconInfoCircle, IconSparkles, IconX } from '@tabler/icons-react';
 import React, { useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -34,12 +24,12 @@ interface PromptSuggestionsProps {
 }
 
 const TYPE_ICONS: Record<PromptSuggestionType, React.ReactNode> = {
-    clarity: <Lightbulb className="w-3.5 h-3.5" />,
-    specificity: <Zap className="w-3.5 h-3.5" />,
-    structure: <Info className="w-3.5 h-3.5" />,
-    context: <Sparkles className="w-3.5 h-3.5" />,
-    constraint: <AlertTriangle className="w-3.5 h-3.5" />,
-    format: <CheckCircle className="w-3.5 h-3.5" />,
+    clarity: <IconBulb className="w-3.5 h-3.5" />,
+    specificity: <IconBolt className="w-3.5 h-3.5" />,
+    structure: <IconInfoCircle className="w-3.5 h-3.5" />,
+    context: <IconSparkles className="w-3.5 h-3.5" />,
+    constraint: <IconAlertTriangle className="w-3.5 h-3.5" />,
+    format: <IconCircleCheck className="w-3.5 h-3.5" />,
 };
 
 const SEVERITY_STYLES: Record<string, string> = {
@@ -74,7 +64,7 @@ const SuggestionItem: React.FC<{
             {suggestion.suggestedText && (
                 <button
                     onClick={() => onApply(suggestion.suggestedText as string)}
-                    className="text-xxxs px-1.5 py-0.5 rounded bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
+                    className="text-sm px-1.5 py-0.5 rounded bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
                 >
                     {t('promptOptimizer.apply')}
                 </button>
@@ -84,7 +74,7 @@ const SuggestionItem: React.FC<{
                 className="rounded p-0.5 text-muted-foreground transition-colors hover:bg-accent"
                 aria-label={t('promptOptimizer.dismiss')}
             >
-                <X className="w-3 h-3" />
+                <IconX className="w-3 h-3" />
             </button>
         </div>
     </div>
@@ -123,7 +113,7 @@ export const PromptSuggestions: React.FC<PromptSuggestionsProps> = React.memo(({
                 onClick={() => setIsExpanded(prev => !prev)}
                 className="flex w-full items-center gap-2 px-3 py-1.5 typo-caption transition-colors hover:bg-accent/50"
             >
-                <span className={cn('px-1.5 py-0.5 rounded text-xxxs font-semibold', getScoreColor(analysis.score))}>
+                <span className={cn('px-1.5 py-0.5 rounded text-sm font-semibold', getScoreColor(analysis.score))}>
                     {analysis.score}
                 </span>
                 <span className="text-muted-foreground font-medium">
@@ -135,8 +125,8 @@ export const PromptSuggestions: React.FC<PromptSuggestionsProps> = React.memo(({
                         : t('promptOptimizer.noSuggestions')}
                 </span>
                 {isExpanded
-                    ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground/50" />
-                    : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/50" />}
+                    ? <IconChevronUp className="w-3.5 h-3.5 text-muted-foreground/50" />
+                    : <IconChevronDown className="w-3.5 h-3.5 text-muted-foreground/50" />}
             </button>
 
             {isExpanded && hasSuggestions && (

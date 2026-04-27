@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Bot, Brain, ChevronDown, ImageIcon, Zap } from 'lucide-react';
+import { IconBolt,IconBrain, IconChevronDown, IconPhotoScan, IconRobot } from '@tabler/icons-react';
 import React from 'react';
 
 import { cn } from '@/lib/utils';
@@ -85,16 +85,16 @@ const ModelLabelInfo: React.FC<ModelLabelInfoProps> = ({
 }) => (
     <div className="flex flex-col items-start leading-none overflow-hidden flex-1 text-left">
         <div className="flex items-center justify-between w-full pr-1">
-            <span className="text-xxs text-muted-foreground font-bold truncate">
+            <span className="text-sm text-muted-foreground font-bold truncate">
                 {currentCatName}
                 {shouldRenderExtraModelCount(selectedModelsCount) && (
-                    <span className="ml-1.5 text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xxxs">+{selectedModelsCount - 1}</span>
+                    <span className="ml-1.5 text-primary bg-primary/10 px-1.5 py-0.5 rounded text-sm">+{selectedModelsCount - 1}</span>
                 )}
             </span>
         </div>
         <div className="flex items-center gap-1.5 font-bold text-sm text-foreground truncate w-full mt-1">
             <span className="truncate">{modelLabel}</span>
-            {shouldRenderImageTypeIcon(modelType) && <ImageIcon className="w-2.5 h-2.5 text-success" />}
+            {shouldRenderImageTypeIcon(modelType) && <IconPhotoScan className="w-2.5 h-2.5 text-success" />}
         </div>
         {shouldRenderContextBar(contextTokens) && (
             <div className="w-full h-0.5 bg-border/30 rounded-full mt-1.5 overflow-hidden">
@@ -158,7 +158,7 @@ const TriggerContent: React.FC<TriggerContentProps> = ({
     isOpen,
     chatMode = 'instant'
 }) => {
-    const ModeIcon = chatMode === 'thinking' ? Brain : chatMode === 'agent' ? Bot : Zap;
+    const ModeIcon = chatMode === 'thinking' ? IconBrain : chatMode === 'agent' ? IconRobot : IconBolt;
 
     return (
         <>
@@ -198,7 +198,7 @@ const TriggerContent: React.FC<TriggerContentProps> = ({
                 )}
             </div>
             {shouldRenderChevron(isIconOnly ?? false) && (
-                <ChevronDown className={getChevronClasses(isOpen)} />
+                <IconChevronDown className={getChevronClasses(isOpen)} />
             )}
         </>
     );

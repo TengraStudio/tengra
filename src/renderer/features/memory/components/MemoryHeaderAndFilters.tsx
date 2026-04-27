@@ -9,7 +9,7 @@
  */
 
 import { MemoryCategory } from '@shared/types/advanced-memory';
-import { Plus, RefreshCw, Search, TrendingDown } from 'lucide-react';
+import { IconPlus, IconRefresh, IconSearch, IconTrendingDown } from '@tabler/icons-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,15 +47,15 @@ export const MemoryHeader = ({
             </div>
             <div className="flex items-center gap-3">
                 <Button variant="outline" size="sm" onClick={onRefresh} className="gap-2">
-                    <RefreshCw className={cn('w-4 h-4', isLoading && 'animate-spin')} />
+                    <IconRefresh className={cn('w-4 h-4', isLoading && 'animate-spin')} />
                     {t('common.refresh')}
                 </Button>
                 <Button variant="outline" size="sm" onClick={onRunDecay} className="gap-2">
-                    <TrendingDown className="w-4 h-4" />
+                    <IconTrendingDown className="w-4 h-4" />
                     {t('memory.runDecay')}
                 </Button>
                 <Button size="sm" onClick={onAddMemory} className="gap-2">
-                    <Plus className="w-4 h-4" />
+                    <IconPlus className="w-4 h-4" />
                     {t('memory.addAction')}
                 </Button>
             </div>
@@ -89,7 +89,7 @@ export const MemoryFilters = ({
                 className="flex gap-2 items-center flex-1"
             >
                 <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
+                    <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
                     <Input
                         placeholder={t('memory.searchPlaceholder')}
                         value={searchQuery}

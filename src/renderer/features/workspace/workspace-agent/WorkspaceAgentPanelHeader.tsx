@@ -9,18 +9,7 @@
  */
 
 import type { WorkspaceAgentSessionSummary } from '@shared/types/workspace-agent-session';
-import {
-    Archive,
-    ArrowLeft,
-    Clock3,
-    ListTodo,
-    MoreHorizontal,
-    Play,
-    Plus,
-    Shield,
-    Sparkles,
-    Users,
-} from 'lucide-react';
+import { IconArchive, IconArrowLeft, IconClock, IconDots, IconListCheck, IconPlayerPlay, IconPlus, IconShield, IconSparkles, IconUsers } from '@tabler/icons-react';
 import React from 'react';
 
 import { AnimatedProgressBar } from '@/components/ui/AnimatedProgressBar';
@@ -123,8 +112,8 @@ function SessionCard({
                     </div>
                 </button>
             </div>
-            <div className="flex items-center gap-2 text-xxs text-muted-foreground">
-                <Clock3 className="h-3.5 w-3.5" />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <IconClock className="h-3.5 w-3.5" />
                 <span>{new Date(session.updatedAt).toLocaleString()}</span>
             </div>
             <Button
@@ -134,7 +123,7 @@ function SessionCard({
                 onClick={onArchive}
                 title={archiveTitle}
             >
-                <Archive className="h-4 w-4" />
+                <IconArchive className="h-4 w-4" />
             </Button>
         </div>
     );
@@ -149,7 +138,7 @@ function SessionArchiveAction({
 }): JSX.Element {
     return (
         <Button variant="ghost" size="icon" onClick={onArchive} title={title}>
-            <Archive className="h-4 w-4" />
+            <IconArchive className="h-4 w-4" />
         </Button>
     );
 }
@@ -169,10 +158,10 @@ export const WorkspaceAgentPanelHeader: React.FC<WorkspaceAgentPanelHeaderProps>
                 <div className="flex items-center justify-end gap-1.5">
                     <div className="flex items-center gap-1.5">
                         <Button variant="ghost" size="icon" onClick={onCreateSession} title={t('common.add')}>
-                            <Plus className="h-4 w-4" />
+                            <IconPlus className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="icon" onClick={onOpenSessionPicker} title={t('common.more')}>
-                            <MoreHorizontal className="h-4 w-4" />
+                            <IconDots className="h-4 w-4" />
                         </Button>
                     </div>
                 </div>
@@ -203,20 +192,20 @@ export const WorkspaceAgentPanelHeader: React.FC<WorkspaceAgentPanelHeaderProps>
                     <div className="flex items-center gap-2">
                         <div className="rounded-2xl border border-border/60 bg-accent/40 p-2 text-info">
                             {currentSession.modes.council ? (
-                                <Users className="h-4 w-4" />
+                                <IconUsers className="h-4 w-4" />
                             ) : currentSession.modes.agent ? (
-                                <Play className="h-4 w-4" />
+                                <IconPlayerPlay className="h-4 w-4" />
                             ) : currentSession.modes.plan ? (
-                                <ListTodo className="h-4 w-4" />
+                                <IconListCheck className="h-4 w-4" />
                             ) : (
-                                <Sparkles className="h-4 w-4" />
+                                <IconSparkles className="h-4 w-4" />
                             )}
                         </div>
                         <div className="min-w-0">
                             <div className="truncate text-base font-semibold text-foreground">
                                 {currentSession.title}
                             </div>
-                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xxs text-muted-foreground">
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                                 <span>{telemetry?.provider ?? 'workspace'}</span>
                                 <span>{telemetry?.model ?? 'session'}</span>
                             </div>
@@ -229,10 +218,10 @@ export const WorkspaceAgentPanelHeader: React.FC<WorkspaceAgentPanelHeaderProps>
                         title={t('memory.archive')}
                     />
                     <Button variant="ghost" size="icon" onClick={() => onSelectSession(null)} title={t('common.back')}>
-                        <ArrowLeft className="h-4 w-4" />
+                        <IconArrowLeft className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={onOpenSessionPicker} title={t('common.more')}>
-                        <MoreHorizontal className="h-4 w-4" />
+                        <IconDots className="h-4 w-4" />
                     </Button>
                 </div>
             </div>
@@ -251,15 +240,15 @@ export const WorkspaceAgentPanelHeader: React.FC<WorkspaceAgentPanelHeaderProps>
                 />
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                     <SessionModes councilLabel={t('agents.council')} session={currentSession} t={t} />
-                    <Badge variant="outline" className={cn('rounded-full border px-2 py-1 text-xxs', getPermissionTone(currentSession))}>
-                        <Shield className="mr-1 h-3 w-3" />
+                    <Badge variant="outline" className={cn('rounded-full border px-2 py-1 text-sm', getPermissionTone(currentSession))}>
+                        <IconShield className="mr-1 h-3 w-3" />
                         {t(`workspaceAgent.permissions.policy.${currentSession.permissionPolicy.commandPolicy}`)}
                     </Badge>
                     {telemetry && (
                         <Badge
                             variant="outline"
                             className={cn(
-                                'rounded-full border px-2 py-1 text-xxs',
+                                'rounded-full border px-2 py-1 text-sm',
                                 telemetry.pressureState === 'high'
                                     ? 'border-destructive/25 bg-destructive/10 text-destructive'
                                     : telemetry.pressureState === 'medium'
@@ -271,13 +260,13 @@ export const WorkspaceAgentPanelHeader: React.FC<WorkspaceAgentPanelHeaderProps>
                         </Badge>
                     )}
                     {telemetry?.handoffCount ? (
-                        <Badge variant="outline" className="rounded-full border-info/20 bg-info/10 px-2 py-1 text-xxs text-info">
+                        <Badge variant="outline" className="rounded-full border-info/20 bg-info/10 px-2 py-1 text-sm text-info">
                             {telemetry.handoffCount}x · {telemetry.lastHandoffLabel ?? telemetry.model}
                             {handoffTime ? ` · ${handoffTime}` : ''}
                         </Badge>
                     ) : null}
                     {currentSession.background && (
-                        <Badge variant="outline" className="rounded-full border-warning/20 bg-warning/10 px-2 py-1 text-xxs text-warning">
+                        <Badge variant="outline" className="rounded-full border-warning/20 bg-warning/10 px-2 py-1 text-sm text-warning">
                             {t('common.pending')}
                         </Badge>
                     )}

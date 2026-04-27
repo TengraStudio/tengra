@@ -8,19 +8,19 @@
  * (at your option) any later version.
  */
 
-import { Button } from '@renderer/components/ui/button';
+import { IconCheck, IconKey, IconTrash, IconUser } from '@tabler/icons-react';
+import React from 'react';
+
+import { Button } from '@/components/ui/button';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@renderer/components/ui/select';
-import { LinkedAccountInfo } from '@renderer/electron.d';
-import { cn } from '@renderer/lib/utils';
-import { Check, Key, Trash2, User } from 'lucide-react';
-import React from 'react';
-
+} from '@/components/ui/select';
+import { LinkedAccountInfo } from '@/electron.d';
+import { cn } from '@/lib/utils';
 import type { AntigravityCreditUsageMode } from '@/types/settings';
 
 /* Batch-02: Extracted Long Classes */
@@ -76,7 +76,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({
                     {account.avatarUrl ? (
                         <img src={account.avatarUrl} alt="" className="h-full w-full object-cover" />
                     ) : (
-                        <User className="h-4 w-4 text-muted-foreground/70" />
+                        <IconUser className="h-4 w-4 text-muted-foreground/70" />
                     )}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -123,7 +123,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({
                 )}
                 {account.isActive ? (
                     <span className={C_ACCOUNTROW_1}>
-                        <Check className="h-3 w-3" />
+                        <IconCheck className="h-3 w-3" />
                         {t('accounts.active')}
                     </span>
                 ) : (
@@ -154,7 +154,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({
                         className="h-8 w-8 rounded-lg text-muted-foreground transition-colors hover:text-primary hover:bg-primary/10"
                         title={t('auth.sessionKeyLabel')}
                     >
-                        <Key className="h-3.5 w-3.5" />
+                        <IconKey className="h-3.5 w-3.5" />
                     </Button>
                 )}
                 <Button
@@ -169,7 +169,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({
                     className="h-8 w-8 rounded-lg text-muted-foreground transition-colors hover:text-destructive hover:bg-destructive/10"
                     title={t('accounts.removeAccount')}
                 >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <IconTrash className="h-3.5 w-3.5" />
                 </Button>
             </div>
         </div>

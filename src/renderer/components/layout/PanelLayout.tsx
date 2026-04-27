@@ -13,7 +13,7 @@
  * Supports draggable, resizable panels with docking zones.
  */
 
-import { ChevronDown, ChevronRight, Maximize2, X } from 'lucide-react';
+import { IconChevronDown, IconChevronRight, IconMaximize, IconX } from '@tabler/icons-react';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -97,7 +97,7 @@ const PanelTab: React.FC<{
     <div
         onClick={onClick}
         className={cn(
-            'flex cursor-pointer items-center gap-1.5 border-b-2 border-transparent px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground',
+            'flex cursor-pointer items-center gap-1.5 border-b-2 border-transparent px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground',
             isActive && 'border-primary bg-muted/50 text-foreground'
         )}
     >
@@ -108,7 +108,7 @@ const PanelTab: React.FC<{
                 onClick={(e) => { e.stopPropagation(); onClose(); }}
                 className="ml-1 rounded p-0.5 hover:bg-muted"
             >
-                <X className="w-3 h-3" />
+                <IconX className="w-3 h-3" />
             </button>
         )}
     </div>
@@ -145,7 +145,7 @@ const PanelHeader: React.FC<{
                         className="rounded p-1 text-muted-foreground hover:bg-muted"
                         title={group.collapsed ? t('panelLayout.expand') : t('panelLayout.collapse')}
                     >
-                        {group.collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        {group.collapsed ? <IconChevronRight className="w-4 h-4" /> : <IconChevronDown className="w-4 h-4" />}
                     </button>
                 )}
                 {onMaximize && (
@@ -154,7 +154,7 @@ const PanelHeader: React.FC<{
                         className="rounded p-1 text-muted-foreground hover:bg-muted"
                         title={t('panelLayout.maximize')}
                     >
-                        <Maximize2 className="w-3.5 h-3.5" />
+                        <IconMaximize className="w-3.5 h-3.5" />
                     </button>
                 )}
             </div>

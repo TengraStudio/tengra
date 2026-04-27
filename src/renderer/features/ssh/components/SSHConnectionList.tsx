@@ -81,7 +81,7 @@ const ConnectionCard = memo(({
         <div className={C_SSHCONNECTIONLIST_2}>{conn.username}@{conn.host}</div>
         <div className={C_SSHCONNECTIONLIST_3}>
             <span className={cn(
-                "text-xxs font-bold  ",
+                "text-sm font-bold ",
                 conn.status === 'connected' ? "text-primary" :
                     conn.status === 'connecting' ? "text-warning" : "text-muted-foreground"
             )}>

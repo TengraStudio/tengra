@@ -8,12 +8,13 @@
  * (at your option) any later version.
  */
 
+import type { Chat } from '@shared/types/chat';
+import { describe, expect, it } from 'vitest';
+
 import {
     buildSessionSummary,
     mergeWorkspaceChats,
-} from '@renderer/features/workspace/utils/workspace-agent-session-utils';
-import type { Chat } from '@shared/types/chat';
-import { describe, expect, it } from 'vitest';
+} from '@/features/workspace/utils/workspace-agent-session-utils';
 
 function createChat(
     overrides?: Partial<Chat>

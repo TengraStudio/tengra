@@ -1,4 +1,4 @@
-/**
+/*
  * Tengra - Your Personal AI Assistant
  * Copyright (c) 2026 TengraStudio
  *
@@ -435,7 +435,7 @@ fn value_u64(item: &Value, keys: &[&str]) -> Option<u64> {
     None
 }
 
-fn find_model_items<'a>(value: &'a Value, max_depth: u8) -> Option<&'a Vec<Value>> {
+fn find_model_items(value: &Value, max_depth: u8) -> Option<&Vec<Value>> {
     if max_depth == 0 {
         return None;
     }

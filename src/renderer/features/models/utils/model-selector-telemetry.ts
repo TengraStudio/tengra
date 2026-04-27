@@ -9,7 +9,7 @@
  */
 
 /**
- * @fileoverview Telemetry events and health monitoring for Model Selector Modal
+ * @fileoverview Telemetry events and health monitoring for Model Selector Popover
  * @description Provides metrics collection, health dashboards, and observability
  */
 
@@ -33,11 +33,11 @@ export const TelemetryEvents = {
     REASONING_LEVEL_SELECTED: 'model_selector:reasoning_level_selected',
     REASONING_TAB_OPENED: 'model_selector:reasoning_tab_opened',
 
-    // Modal events
-    MODAL_OPENED: 'model_selector:modal_opened',
-    MODAL_CLOSED: 'model_selector:modal_closed',
-    MODAL_ESCAPE_PRESSED: 'model_selector:modal_escape_pressed',
-    MODAL_BACKDROP_CLICKED: 'model_selector:modal_backdrop_clicked',
+    // Popover events
+    POPOVER_OPENED: 'model_selector:popover_opened',
+    POPOVER_CLOSED: 'model_selector:popover_closed',
+    POPOVER_ESCAPE_PRESSED: 'model_selector:popover_escape_pressed',
+    POPOVER_BACKDROP_CLICKED: 'model_selector:popover_backdrop_clicked',
 
     // Error events
     SELECTION_ERROR: 'model_selector:selection_error',
@@ -77,7 +77,7 @@ export interface ReasoningLevelSelectedPayload {
     level: string;
 }
 
-export interface ModalOpenedPayload {
+export interface PopoverOpenedPayload {
     previousModel: string;
     categoryCount: number;
     modelCount: number;
@@ -102,7 +102,7 @@ export type TelemetryPayload =
     | ModelSelectedPayload
     | SearchPerformedPayload
     | ReasoningLevelSelectedPayload
-    | ModalOpenedPayload
+    | PopoverOpenedPayload
     | ErrorPayload
     | PerformancePayload
     | Record<string, RendererDataValue>;

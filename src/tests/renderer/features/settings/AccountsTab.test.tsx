@@ -12,7 +12,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('@renderer/components/ui/select', async () => {
+vi.mock('@/components/ui/select', async () => {
     const ReactModule = await import('react');
     const SelectContext = ReactModule.createContext<{
         value?: string;
@@ -72,8 +72,7 @@ vi.mock('@renderer/components/ui/select', async () => {
     };
 });
 
-import type { LinkedAccountInfo } from '@renderer/electron.d';
-
+import type { LinkedAccountInfo } from '@/electron.d';
 import { AccountRow } from '@/features/settings/components/accounts/AccountRow';
 import {
     buildAntigravityCreditModeSettings,

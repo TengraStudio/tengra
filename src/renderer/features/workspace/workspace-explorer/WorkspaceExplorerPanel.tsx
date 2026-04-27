@@ -9,15 +9,15 @@
  */
 
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import type { GitFileHistoryItem } from '@renderer/features/workspace/components/git/types';
-import type { ContextMenuAction } from '@renderer/features/workspace/workspace-explorer/types';
-import { WorkspaceExplorer } from '@renderer/features/workspace/workspace-explorer/WorkspaceExplorer';
-import { WorkspaceExplorerGitHistory } from '@renderer/features/workspace/workspace-explorer/WorkspaceExplorerGitHistory';
 import React from 'react';
 
+import type { GitFileHistoryItem } from '@/features/workspace/components/git/types';
 import { WORKSPACE_EXPLORER_WIDTH_PX } from '@/features/workspace/hooks/useTerminalLayout';
 import { useWorkspaceManager } from '@/features/workspace/hooks/useWorkspaceManager';
 import { useWorkspaceState } from '@/features/workspace/hooks/useWorkspaceState';
+import type { ContextMenuAction } from '@/features/workspace/workspace-explorer/types';
+import { WorkspaceExplorer } from '@/features/workspace/workspace-explorer/WorkspaceExplorer';
+import { WorkspaceExplorerGitHistory } from '@/features/workspace/workspace-explorer/WorkspaceExplorerGitHistory';
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import {

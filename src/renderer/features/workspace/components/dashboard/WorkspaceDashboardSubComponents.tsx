@@ -9,7 +9,7 @@
  */
 
 import { FileSearchResult } from '@shared/types/common';
-import { Trash2 } from 'lucide-react';
+import { IconTrash } from '@tabler/icons-react';
 import { Virtuoso } from 'react-virtuoso';
 
 /* Batch-02: Extracted Long Classes */
@@ -81,7 +81,7 @@ export function SearchResults({ results, workspaceRoot, searchQuery, onSelect, t
                             {res.file.replace(workspaceRoot, '')}:{res.line}
                         </span>
                         {res.type && (
-                            <span className="px-1.5 py-0.5 bg-primary/10 rounded-full text-xxs">
+                            <span className="px-1.5 py-0.5 bg-primary/10 rounded-full text-sm">
                                 {res.type}
                             </span>
                         )}
@@ -104,7 +104,7 @@ export function DangerZone({ onDelete, t }: DangerZoneProps) {
     return (
         <div className="mt-12 pt-8 border-t border-destructive/20">
             <h3 className="text-lg font-bold text-destructive mb-4 flex items-center gap-2">
-                <Trash2 className="w-5 h-5" />
+                <IconTrash className="w-5 h-5" />
                 {t('workspace.dangerZone')}
             </h3>
             <div className="bg-destructive/5 border border-destructive/10 rounded-xl p-6 flex items-center justify-between">

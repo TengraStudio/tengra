@@ -21,7 +21,6 @@ import { AppSettings } from '@/types';
 
 import { useLinkedAccounts } from './useLinkedAccounts';
 import { useSettingsAuth } from './useSettingsAuth';
-import { useSettingsPersonas } from './useSettingsPersonas';
 import { useSettingsStats } from './useSettingsStats';
 
 type SettingsLogicUiState = 'ready' | 'failure';
@@ -84,7 +83,6 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
         }
     }), [cancelBrowserAuthForAccount, linkedAccountsBase]);
     const stats = useSettingsStats();
-    const personas = useSettingsPersonas(settings, updateSettings);
 
     // Handlers
     const handleSave = useCallback(async (newSettings?: AppSettings) => {
@@ -397,13 +395,10 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
         isBenchmarking,
         handleRunBenchmark,
 
-        // Personas
-        ...personas,
-
         isDirty: false
     }), [
         settings, setSettings, isSettingsLoading, isSaving, exposedStatusMessage, auth,
         linkedAccounts, updateGeneral, updateEditor, updateSpeech, updateRemoteAccounts, updateWindow, handleSave, reloadSettings, settingsUiState, lastErrorCode,
-        stats, benchmarkResult, isBenchmarking, handleRunBenchmark, personas
+        stats, benchmarkResult, isBenchmarking, handleRunBenchmark
     ]);
 }

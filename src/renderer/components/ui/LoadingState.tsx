@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Loader2, X } from 'lucide-react';
+import { IconLoader2, IconX } from '@tabler/icons-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -211,7 +211,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
 
     if (inline) {
         return (
-            <Loader2 className={cn('animate-spin text-primary', sizeClasses[size], className)} aria-hidden="true" aria-label={statusLabel} />
+            <IconLoader2 className={cn('animate-spin text-primary', sizeClasses[size], className)} aria-hidden="true" aria-label={statusLabel} />
         );
     }
 
@@ -219,7 +219,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
         return (
             <div className={cn('fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm', className)} role="status" aria-live="polite" aria-label={statusLabel}>
                 <div className="flex flex-col items-center gap-3 text-muted-foreground min-w-64">
-                    <Loader2 className={cn('animate-spin text-primary', sizeClasses[size])} aria-hidden="true" />
+                    <IconLoader2 className={cn('animate-spin text-primary', sizeClasses[size])} aria-hidden="true" />
                     {message && (
                         <span className={cn('font-medium', textSizeClasses[size])}>{message}</span>
                     )}
@@ -264,7 +264,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
             aria-live="polite"
             aria-label={statusLabel}
         >
-            <Loader2 className={cn('animate-spin text-primary', sizeClasses[size])} aria-hidden="true" />
+            <IconLoader2 className={cn('animate-spin text-primary', sizeClasses[size])} aria-hidden="true" />
             {message && <span className={cn('font-medium', textSizeClasses[size])}>{message}</span>}
             {stage && <span className="typo-caption text-muted-foreground">{stage}</span>}
             {clampedProgress !== undefined && (
@@ -286,7 +286,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
                     }}
                     className={C_LOADINGSTATE_1}
                 >
-                    <X className="w-3 h-3" />
+                    <IconX className="w-3 h-3" />
                     {resolvedCancelLabel}
                 </button>
             )}

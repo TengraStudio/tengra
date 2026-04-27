@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { CheckSquare, RotateCcw, RotateCw, Square } from 'lucide-react';
+import { IconRotate, IconSquare,IconSquareCheck } from '@tabler/icons-react';
 
 import { cn } from '@/lib/utils';
 
@@ -35,9 +35,9 @@ export const TodoItemCard = ({ todo, onToggle, t, onUndo, onRedo, canUndo, canRe
         onClick={() => onToggle(todo)}
     >
         {todo.completed ? (
-            <CheckSquare className="w-5 h-5 text-success shrink-0 mt-0.5" />
+            <IconSquareCheck className="w-5 h-5 text-success shrink-0 mt-0.5" />
         ) : (
-            <Square className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors shrink-0 mt-0.5" />
+            <IconSquare className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors shrink-0 mt-0.5" />
         )}
 
         <div className="flex-1 min-w-0">
@@ -48,7 +48,7 @@ export const TodoItemCard = ({ todo, onToggle, t, onUndo, onRedo, canUndo, canRe
                 {todo.text}
             </p>
             <div className="flex items-center gap-2 mt-1.5">
-                <span className="text-xxs font-mono text-muted-foreground/40 text-primary/40">
+                <span className="text-sm font-mono text-muted-foreground/40 text-primary/40">
                     {t('workspace.todoLinePrefix')} {todo.line}
                 </span>
                 {(onUndo || onRedo) && (
@@ -64,7 +64,7 @@ export const TodoItemCard = ({ todo, onToggle, t, onUndo, onRedo, canUndo, canRe
                                 className="p-1 rounded hover:bg-muted/40 disabled:opacity-30"
                                 title={t('workspace.todoUndoTitle')}
                             >
-                                <RotateCcw className="w-3 h-3" />
+                                <IconRotate className="w-3 h-3" />
                             </button>
                         )}
                         {onRedo && (
@@ -78,7 +78,7 @@ export const TodoItemCard = ({ todo, onToggle, t, onUndo, onRedo, canUndo, canRe
                                 className="p-1 rounded hover:bg-muted/40 disabled:opacity-30"
                                 title={t('workspace.todoRedoTitle')}
                             >
-                                <RotateCw className="w-3 h-3" />
+                                <IconRotate className="w-3 h-3" />
                             </button>
                         )}
                     </div>

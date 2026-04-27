@@ -8,17 +8,17 @@
  * (at your option) any later version.
  */
 
-import { sanitizeMcpSettingsView } from '@renderer/features/settings/utils/mcp-settings-validation';
+import { lazy, Suspense, useEffect, useMemo } from 'react';
+
+import { sanitizeMcpSettingsView } from '@/features/settings/utils/mcp-settings-validation';
+import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 import {
     recordMcpSettingsFailure,
     recordMcpSettingsSuccess,
     setMcpSettingsUiState,
     useMcpSettingsHealth,
-} from '@renderer/store/mcp-settings-health.store';
-import { lazy, Suspense, useEffect, useMemo } from 'react';
-
-import { useTranslation } from '@/i18n';
-import { cn } from '@/lib/utils';
+} from '@/store/mcp-settings-health.store';
 
 const MCPServersTab = lazy(async () => import('./MCPServersTab').then(module => ({ default: module.MCPServersTab })));
 
@@ -55,7 +55,7 @@ export const MCPSettingsTab = () => {
             <div className="px-6 py-4 border-b border-border/40">
                 <h1 className="text-xl font-bold">{t('settings.mcp.title')}</h1>
                 <p className="text-sm text-muted-foreground">{t('settings.mcp.subtitle')}</p>
-                <p className={cn('mt-2 text-xxxs', statusTone)}>
+                <p className={cn('mt-2 text-sm', statusTone)}>
                     {t('settings.mcp.healthSummary', {
                         title: t('settings.mcp.title'),
                         state: healthSummary.uiState,

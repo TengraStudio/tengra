@@ -8,29 +8,25 @@
  * (at your option) any later version.
  */
 
-import { useSettings } from '@renderer/context/SettingsContext';
-import { useWorkspaceSettingsForm } from '@renderer/features/workspace/hooks/useWorkspaceSettingsForm';
 import React, { useCallback,useState } from 'react';
 
+import { useSettings } from '@/context/SettingsContext';
 import { useModelManager } from '@/features/models/hooks/useModelManager';
+import { useWorkspaceSettingsForm } from '@/features/workspace/hooks/useWorkspaceSettingsForm';
 import { Language, useTranslation } from '@/i18n';
 import { AppSettings, Workspace } from '@/types';
 
 import {
-    AdvancedSection,
-    BuildSection,
     CouncilSection,
-    DevServerSection,
     GeneralSection,
     GitSection,
     IntelligenceSection,
+    PipelinesSection,
     SettingsHeader,
     SettingsSidebar,
     WorkspaceSection
 } from '../components/settings';
 import { WorkspaceSettingsSection } from '../components/settings/types';
-
-import { WorkspaceEnvironmentTab } from './WorkspaceEnvironmentTab';
 
 interface WorkspaceSettingsPanelProps {
     workspace: Workspace
@@ -51,7 +47,7 @@ const WorkspaceSettingsPanelBase: React.FC<WorkspaceSettingsPanelProps> = ({
     const { t } = useTranslation(language);
     const { settings, updateSettings } = useSettings();
     const onSettingsUpdate = useCallback((s: AppSettings) => void updateSettings(s), [updateSettings]);
-    const { models: allModels } = useModelManager(settings, onSettingsUpdate);
+    const { models: allModels, groupedModels } = useModelManager(settings, onSettingsUpdate);
 
     // Deduplicate models by ID to prevent duplicate keys in multiple sections
     const models = React.useMemo(() => {
@@ -78,7 +74,7 @@ const WorkspaceSettingsPanelBase: React.FC<WorkspaceSettingsPanelProps> = ({
     return (
         <section
             aria-label={t('aria.workspaceSettingsPanel')}
-            className="h-full flex flex-col bg-background/50 backdrop-blur-md overflow-hidden"
+            className="h-full flex flex-col bg-background/5 overflow-hidden"
         >
             <SettingsHeader
                 t={t}
@@ -95,14 +91,14 @@ const WorkspaceSettingsPanelBase: React.FC<WorkspaceSettingsPanelProps> = ({
                     t={t}
                 />
 
-                <main className="flex-1 overflow-y-auto custom-scrollbar p-8" aria-label={t('aria.workspaceSettingsContent')}>
-                    <div className="max-w-3xl mx-auto space-y-10">
+                <main className="flex-1 overflow-y-auto custom-scrollbar p-12" aria-label={t('aria.workspaceSettingsContent')}>
+                    <div className="max-w-2xl mx-auto">
                         {activeSection === 'general' && (
-                            <GeneralSection formData={formData} setFormData={setFormData} t={t} models={models} />
+                            <GeneralSection formData={formData} setFormData={setFormData} t={t} models={models} settings={settings ?? undefined} groupedModels={groupedModels} />
                         )}
 
                         {activeSection === 'intelligence' && (
-                            <IntelligenceSection formData={formData} setFormData={setFormData} t={t} models={models} />
+                            <IntelligenceSection formData={formData} setFormData={setFormData} t={t} models={models} settings={settings ?? undefined} groupedModels={groupedModels} />
                         )}
 
                         {activeSection === 'council' && (
@@ -118,11 +114,13 @@ const WorkspaceSettingsPanelBase: React.FC<WorkspaceSettingsPanelProps> = ({
                                 toggleMember={toggleMember}
                                 t={t}
                                 models={models}
+                                settings={settings ?? undefined}
+                                groupedModels={groupedModels}
                             />
                         )}
 
                         {activeSection === 'git' && (
-                            <GitSection formData={formData} setFormData={setFormData} t={t} models={models} />
+                            <GitSection formData={formData} setFormData={setFormData} t={t} models={models} settings={settings ?? undefined} groupedModels={groupedModels} />
                         )}
 
                         {activeSection === 'workspace' && (
@@ -135,36 +133,8 @@ const WorkspaceSettingsPanelBase: React.FC<WorkspaceSettingsPanelProps> = ({
                             />
                         )}
 
-                        {activeSection === 'build' && (
-                            <BuildSection formData={formData} setFormData={setFormData} t={t} models={models} />
-                        )}
-
-                        {activeSection === 'dev' && (
-                            <DevServerSection formData={formData} setFormData={setFormData} t={t} models={models} />
-                        )}
-
-
-                        {activeSection === 'advanced' && (
-                            <AdvancedSection formData={formData} setFormData={setFormData} t={t} models={models} />
-                        )}
-
-                        {activeSection === 'environment' && (
-                            <div className="space-y-6">
-                                <div className="flex flex-col gap-1">
-                                    <h2 className="text-xl font-semibold text-foreground tracking-tight">
-                                        {t('workspaceDashboard.tabs.environment')}
-                                    </h2>
-                                    <p className="text-sm text-muted-foreground">
-                                        {t('workspace.envDescription')}
-                                    </p>
-                                </div>
-                                <div className="h-600 border border-border/40 rounded-xl overflow-hidden bg-background/30 backdrop-blur-sm">
-                                    <WorkspaceEnvironmentTab
-                                        workspacePath={workspace.path}
-                                        language={language}
-                                    />
-                                </div>
-                            </div>
+                        {activeSection === 'pipelines' && (
+                            <PipelinesSection formData={formData} setFormData={setFormData} t={t} models={models} settings={settings ?? undefined} groupedModels={groupedModels} />
                         )}
                     </div>
                 </main>

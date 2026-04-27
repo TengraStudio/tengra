@@ -8,10 +8,10 @@
  * (at your option) any later version.
  */
 
-import { Button } from '@renderer/components/ui/button';
-import { ArrowRight } from 'lucide-react';
+import { IconArrowRight } from '@tabler/icons-react';
 import React from 'react';
 
+import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -73,7 +73,7 @@ export const WizardOptionCard: React.FC<WizardOptionCardProps> = ({
             <div className="opacity-80">
                 <div className={cn('flex items-center gap-2 font-semibold text-sm group-hover:translate-x-1 transition-transform', option.accentColor)}>
                     <span>{t('common.next')}</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <IconArrowRight className="w-4 h-4" />
                 </div>
             </div>
         </Button>

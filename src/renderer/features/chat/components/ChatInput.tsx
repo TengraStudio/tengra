@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { X } from 'lucide-react';
+import { IconX } from '@tabler/icons-react';
 import React, { memo, useEffect, useRef } from 'react';
 
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
@@ -144,7 +144,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                 {ctrl.lastError && (
                     <div role="status" aria-live="polite" className={C_CHATINPUT_1}>
                         <span>{ctrl.t(ctrl.lastError.messageKey)}</span>
-                        <button type="button" onClick={ctrl.clearLastError} className="p-1 rounded-md hover:bg-destructive/10 transition-colors" aria-label={ctrl.t('common.close')}><X size={12} aria-hidden="true" /></button>
+                        <button type="button" onClick={ctrl.clearLastError} className="p-1 rounded-md hover:bg-destructive/10 transition-colors" aria-label={ctrl.t('common.close')}><IconX size={12} aria-hidden="true" /></button>
                     </div>
                 )}
 

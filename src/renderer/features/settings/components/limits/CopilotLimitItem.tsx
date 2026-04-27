@@ -8,12 +8,12 @@
  * (at your option) any later version.
  */
 
-import { Button } from '@renderer/components/ui/button';
-import { Input } from '@renderer/components/ui/input';
-import { Switch } from '@renderer/components/ui/switch';
-import { Calendar, Clock, Hash, Percent, TrendingUp } from 'lucide-react';
+import { IconCalendar, IconClock, IconHash, IconPercentage, IconTrendingUp } from '@tabler/icons-react';
 import React from 'react';
 
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -36,7 +36,7 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
 }) => {
     const { t } = useTranslation();
     const periodLabel = t(`settings.usageLimits.periods.${period}`);
-    const Icon = period === 'hourly' ? Clock : period === 'daily' ? Calendar : TrendingUp;
+    const Icon = period === 'hourly' ? IconClock : period === 'daily' ? IconCalendar : IconTrendingUp;
 
     return (
         <div
@@ -52,7 +52,7 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
                         <div className="text-sm font-bold text-foreground">
                             {t('settings.usageLimits.limitLabel', { period: periodLabel })}
                         </div>
-                        <div className="text-xxs text-muted-foreground mt-0.5 font-medium opacity-60">
+                        <div className="text-sm text-muted-foreground mt-0.5 font-medium opacity-60">
                             {period} interval
                         </div>
                     </div>
@@ -72,7 +72,7 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
             {periodLimit.enabled && (
                 <div className="space-y-4 mt-4 pt-4 border-t border-border/40 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="space-y-2">
-                        <label className="text-xxs font-bold text-muted-foreground/70 ml-1">
+                        <label className="text-sm font-bold text-muted-foreground/70 ml-1">
                             {t('settings.usageLimits.typeLabel')}
                         </label>
                         <div className="flex gap-2 p-1 rounded-lg bg-muted/30 border border-border/20 w-fit">
@@ -87,7 +87,7 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
                                         : 'text-muted-foreground hover:text-foreground'
                                 )}
                             >
-                                <Hash className="w-3 h-3 mr-1.5" />
+                                <IconHash className="w-3 h-3 mr-1.5" />
                                 {t('settings.usageLimits.types.requests')}
                             </Button>
                             <Button
@@ -101,14 +101,14 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
                                         : 'text-muted-foreground hover:text-foreground'
                                 )}
                             >
-                                <Percent className="w-3 h-3 mr-1.5" />
+                                <IconPercentage className="w-3 h-3 mr-1.5" />
                                 {t('settings.usageLimits.types.percentage')}
                             </Button>
                         </div>
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-xxs font-bold text-muted-foreground/70 ml-1">
+                        <label className="text-sm font-bold text-muted-foreground/70 ml-1">
                             {periodLimit.type === 'requests'
                                 ? t('settings.usageLimits.maxRequests')
                                 : t('settings.usageLimits.maxPercentage')}

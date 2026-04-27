@@ -80,9 +80,9 @@ describe('PluginChannel', () => {
         });
 
         it('should report correct queue depth', () => {
-            expect(channel.getQueueDepth('X')).toBe(0);
-            channel.send({ from: 'A', to: 'X', type: 'ping', payload: {} });
-            expect(channel.getQueueDepth('X')).toBe(1);
+            expect(channel.getQueueDepth('IconX')).toBe(0);
+            channel.send({ from: 'A', to: 'IconX', type: 'ping', payload: {} });
+            expect(channel.getQueueDepth('IconX')).toBe(1);
         });
     });
 
@@ -144,7 +144,7 @@ describe('PluginChannel', () => {
     describe('clear', () => {
         it('should remove all subscriptions, queues, and capabilities', () => {
             channel.subscribe('A', 'test', vi.fn());
-            channel.send({ from: 'X', to: 'A', type: 'test', payload: {} });
+            channel.send({ from: 'IconX', to: 'A', type: 'test', payload: {} });
             channel.advertiseCapabilities('A', ['test']);
 
             channel.clear();

@@ -9,7 +9,7 @@
  */
 
 /**
- * @fileoverview Input validation and schema guards for Model Selector Modal
+ * @fileoverview Input validation and schema guards for Model Selector Popover
  * @description Provides Zod schemas and validation utilities for type-safe model selection
  */
 
@@ -84,10 +84,10 @@ export const SelectedModelSchema = z.object({
 });
 
 /**
- * Schema for validating the modal props
+ * Schema for validating the popover props
  * Note: Function types are simplified for runtime validation
  */
-export const ModelSelectorModalPropsSchema = z.object({
+export const ModelSelectorPopoverPropsSchema = z.object({
     isOpen: z.boolean(),
     onClose: z.function(),
     categories: z.array(ModelCategorySchema),

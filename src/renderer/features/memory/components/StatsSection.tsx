@@ -9,7 +9,7 @@
  */
 
 import { MemoryStatistics } from '@shared/types/advanced-memory';
-import { Archive, CheckCircle, Clock, Gauge, X } from 'lucide-react';
+import { IconArchive, IconCircleCheck, IconClock, IconGauge, IconX } from '@tabler/icons-react';
 
 import { useTranslation } from '@/i18n';
 
@@ -25,32 +25,32 @@ export const StatsSection = ({ stats }: { stats: MemoryStatistics | null }) => {
             <StatCard
                 label={t('memory.stats.pending')}
                 value={stats.pendingValidation}
-                icon={Clock}
+                icon={IconClock}
                 color="text-warning"
                 highlight={stats.pendingValidation > 0}
             />
             <StatCard
                 label={t('memory.stats.confirmed')}
                 value={stats.byStatus.confirmed}
-                icon={CheckCircle}
+                icon={IconCircleCheck}
                 color="text-success"
             />
             <StatCard
                 label={t('memory.stats.archived')}
                 value={stats.byStatus.archived}
-                icon={Archive}
+                icon={IconArchive}
                 color="text-muted-foreground"
             />
             <StatCard
                 label={t('memory.stats.avgConfidence')}
                 value={`${(stats.averageConfidence * 100).toFixed(0)}%`}
-                icon={Gauge}
+                icon={IconGauge}
                 color="text-primary"
             />
             <StatCard
                 label={t('memory.stats.contradictions')}
                 value={stats.contradictions}
-                icon={X}
+                icon={IconX}
                 color="text-warning"
                 highlight={stats.contradictions > 0}
             />

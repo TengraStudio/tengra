@@ -8,10 +8,10 @@
  * (at your option) any later version.
  */
 
-import { ChatListItem } from '@renderer/components/layout/sidebar/ChatListItem';
-import { Edit2, FolderIcon, FolderOpen, Trash2 } from 'lucide-react';
+import { IconEdit, IconFolder, IconFolderOpen, IconTrash } from '@tabler/icons-react';
 import React, { useState } from 'react';
 
+import { ChatListItem } from '@/components/layout/sidebar/ChatListItem';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 import { Chat, Folder } from '@/types';
@@ -68,9 +68,9 @@ export const FolderItem: React.FC<FolderItemProps> = ({
             >
                 <div className="flex items-center gap-2 min-w-0">
                     {expanded ? (
-                        <FolderOpen className="w-3.5 h-3.5 text-primary/70" />
+                        <IconFolderOpen className="w-3.5 h-3.5 text-primary/70" />
                     ) : (
-                        <FolderIcon className="w-3.5 h-3.5" />
+                        <IconFolder className="w-3.5 h-3.5" />
                     )}
                     {isEditing ? (
                         <input
@@ -84,17 +84,17 @@ export const FolderItem: React.FC<FolderItemProps> = ({
                     ) : (
                         <span className="typo-caption font-medium truncate">{folder.name}</span>
                     )}
-                    <span className="text-xxs text-muted-foreground/40">{chats.length}</span>
+                    <span className="text-sm text-muted-foreground/40">{chats.length}</span>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Edit2
+                    <IconEdit
                         className="w-3 h-3 hover:text-primary"
                         onClick={e => {
                             e.stopPropagation();
                             setIsEditing(true);
                         }}
                     />
-                    <Trash2
+                    <IconTrash
                         className="w-3 h-3 hover:text-destructive"
                         onClick={e => {
                             e.stopPropagation();

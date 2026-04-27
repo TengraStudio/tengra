@@ -1,16 +1,7 @@
-/**
- * Tengra - Your Personal AI Assistant
- * Copyright (c) 2026 TengraStudio
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- */
+import { IconFiles, IconFolder } from '@tabler/icons-react';
 
-import { WorkspaceDashboardHeader } from '@renderer/features/workspace/components/WorkspaceDashboardHeader';
-import { WorkspaceStatsCards } from '@renderer/features/workspace/components/WorkspaceStatsCards';
-
+import { WorkspaceDashboardHeader } from '@/features/workspace/components/WorkspaceDashboardHeader';
+import { WorkspaceStatsCards } from '@/features/workspace/components/WorkspaceStatsCards';
 import type { Workspace, WorkspaceAnalysis, WorkspaceStats } from '@/types';
 
 function formatLanguagePercentage(count: number, totalLanguageWeight: number): string {
@@ -22,8 +13,16 @@ function formatLanguagePercentage(count: number, totalLanguageWeight: number): s
     if (rawPercentage >= 1) {
         return `${rawPercentage.toFixed(1)}%`;
     }
-    return `${rawPercentage}%`;
+    return `${rawPercentage.toFixed(2)}%`;
 }
+
+const formatBytes = (bytes: number) => {
+    if (bytes === 0) { return '0 B'; }
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+};
 
 interface WorkspaceOverviewTabProps {
     workspace: Workspace;
@@ -76,13 +75,16 @@ export const WorkspaceOverviewTab = ({
         0
     );
 
+    const largestDirectories = stats?.largestDirectories ?? [];
+    const topFilesByLoc = stats?.topFilesByLoc ?? [];
+
     return (
-        <div className="space-y-8 overflow-y-auto pr-2 pb-12 animate-in fade-in duration-500">
+        <div className="space-y-12 overflow-y-auto pr-2 pb-12 animate-in fade-in duration-700">
+            {/* Header with Title and Description */}
             <WorkspaceDashboardHeader
                 workspace={workspace}
                 workspaceRoot={workspaceRoot}
                 type={analysis.type}
-                loading={loading}
                 isEditingName={isEditingName}
                 setIsEditingName={setIsEditingName}
                 editName={editName}
@@ -94,87 +96,138 @@ export const WorkspaceOverviewTab = ({
                 setEditDesc={setEditDesc}
                 handleSaveDesc={handleSaveDesc}
                 onUploadLogo={onUploadLogo}
-                analyzeWorkspace={analyzeWorkspace}
             />
 
+            {/* Core Stats Row */}
             <WorkspaceStatsCards
                 stats={stats}
                 type={analysis.type}
                 moduleCount={analysis.monorepo?.packages.length ?? Object.keys(analysis.dependencies).length}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-card/40 rounded-2xl border border-border p-5 space-y-4">
-                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                        {t('workspaceDashboard.techStack')}
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                        <span className="px-3 py-1 rounded-full border border-primary/20 bg-primary/5 typo-overline font-semibold text-primary">
-                            {analysis.type}
-                        </span>
-                        {analysis.monorepo && (
-                            <span className="px-3 py-1 rounded-full border border-border/60 bg-muted/20 typo-overline font-semibold text-foreground/80">
-                                {analysis.monorepo.type}
-                            </span>
-                        )}
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 pt-4">
+                {/* Structure Section (Folders & Files) */}
+                <div className="space-y-12">
+                    {/* Largest Directories */}
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3 px-1">
+                            <IconFolder className="w-4 h-4 text-primary/40" />
+                            <h3 className="text-[13px] font-bold text-muted-foreground/40 tracking-wide">
+                                largest directories
+                            </h3>
+                        </div>
+                        <div className="space-y-2">
+                            {largestDirectories.slice(0, 5).map((dir) => (
+                                <div key={dir.path} className="flex items-center justify-between gap-4 p-3 rounded-xl border border-border/5 bg-muted/5 group hover:bg-muted/10 transition-all">
+                                    <div className="min-w-0 flex items-center gap-3">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-primary/20 group-hover:bg-primary/60 transition-colors" />
+                                        <span className="truncate font-mono text-[11px] text-muted-foreground/60 group-hover:text-foreground/80 transition-colors">
+                                            {dir.path}
+                                        </span>
+                                    </div>
+                                    <div className="shrink-0 flex items-center gap-4">
+                                        <span className="text-[10px] text-muted-foreground/30">{dir.fileCount} files</span>
+                                        <span className="text-[11px] font-bold text-primary/60">{formatBytes(dir.size)}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                        {analysis.frameworks.map((fw: string) => (
-                            <span key={fw} className="px-3 py-1 bg-muted/30 border border-border rounded-full typo-caption text-primary font-medium">
-                                {fw}
-                            </span>
-                        ))}
-                        {analysis.frameworks.length === 0 && <span className="typo-caption text-muted-foreground">{t('workspaceDashboard.noFrameworks')}</span>}
+
+                    {/* Top Files by LOC */}
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3 px-1">
+                            <IconFiles className="w-4 h-4 text-success/40" />
+                            <h3 className="text-[13px] font-bold text-muted-foreground/40 tracking-wide">
+                                most complex files
+                            </h3>
+                        </div>
+                        <div className="space-y-2">
+                            {topFilesByLoc.slice(0, 5).map((file) => (
+                                <div key={file.path} className="flex items-center justify-between gap-4 p-3 rounded-xl border border-border/5 bg-muted/5 group hover:bg-muted/10 transition-all">
+                                    <div className="min-w-0 flex items-center gap-3">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-success/20 group-hover:bg-success/60 transition-colors" />
+                                        <span className="truncate font-mono text-[11px] text-muted-foreground/60 group-hover:text-foreground/80 transition-colors">
+                                            {file.path}
+                                        </span>
+                                    </div>
+                                    <div className="shrink-0">
+                                        <span className="text-[11px] font-bold text-success/60">{file.loc.toLocaleString()} lines</span>
+                                    </div>
+                                </div>
+                            ))}
+                            {topFilesByLoc.length === 0 && (
+                                <div className="p-8 text-center border border-dashed border-border/10 rounded-2xl">
+                                    <span className="text-xs text-muted-foreground/20 italic">No file data available</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                <div className="bg-card/40 rounded-2xl border border-border p-5 space-y-4">
-                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-success" />
-                        {t('workspaceDashboard.langDist')}
-                    </h3>
-                    <div className="space-y-3 max-h-250 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20">
-                        {Object.entries(analysis.languages)
-                            .sort(([, a], [, b]) => (b as number) - (a as number))
-                            .slice(0, 15)
-                            .map(([lang, count]) => {
-                                const percentage =
-                                    totalLanguageWeight > 0
-                                        ? ((count as number) / totalLanguageWeight) * 100
-                                        : 0;
-                                return (
-                                    <div key={lang} className="space-y-1">
-                                        <div className="flex justify-between text-xxs font-bold">
-                                            <span className="text-foreground/80">{lang}</span>
-                                            <span className="text-muted-foreground">{formatLanguagePercentage(count as number, totalLanguageWeight)}</span>
+                {/* Composition Section (Tech & Languages) */}
+                <div className="space-y-12">
+                    {/* Technology Stack */}
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3 px-1">
+                            <div className="w-1 h-1 rounded-full bg-primary/40" />
+                            <h3 className="text-[13px] font-bold text-muted-foreground/40 tracking-wide">
+                                technology stack
+                            </h3>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <span className="px-4 py-1.5 rounded-xl border border-primary/10 bg-primary/5 text-[11px] font-bold text-primary">
+                                {analysis.type}
+                            </span>
+                            {analysis.monorepo && (
+                                <span className="px-4 py-1.5 rounded-xl border border-border/5 bg-muted/5 text-[11px] font-bold text-muted-foreground/60">
+                                    {analysis.monorepo.type}
+                                </span>
+                            )}
+                            {analysis.frameworks.map((fw: string) => (
+                                <span key={fw} className="px-4 py-1.5 bg-muted/5 border border-border/5 rounded-xl text-[11px] text-muted-foreground/50 font-semibold hover:bg-muted/10 transition-colors">
+                                    {fw}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Language Distribution */}
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3 px-1">
+                            <div className="w-1 h-1 rounded-full bg-success/40" />
+                            <h3 className="text-[13px] font-bold text-muted-foreground/40 tracking-wide">
+                                language distribution
+                            </h3>
+                        </div>
+                        <div className="grid grid-cols-1 gap-5">
+                            {Object.entries(analysis.languages)
+                                .sort(([, a], [, b]) => (b as number) - (a as number))
+                                .slice(0, 6)
+                                .map(([lang, count]) => {
+                                    const percentage = totalLanguageWeight > 0 ? ((count as number) / totalLanguageWeight) * 100 : 0;
+                                    return (
+                                        <div key={lang} className="group space-y-2">
+                                            <div className="flex justify-between text-[11px] font-bold tracking-tight px-0.5">
+                                                <span className="text-muted-foreground/60 group-hover:text-foreground/80 transition-colors">{lang}</span>
+                                                <span className="text-muted-foreground/30 tabular-nums">
+                                                    {formatLanguagePercentage(count as number, totalLanguageWeight)}
+                                                </span>
+                                            </div>
+                                            <div className="h-1 w-full bg-muted/5 rounded-full overflow-hidden">
+                                                <div 
+                                                    className="h-full bg-success/20 rounded-full group-hover:bg-success/40 transition-all duration-700 ease-out" 
+                                                    style={{ width: `${percentage}%` }} 
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="h-1 w-full bg-muted/20 rounded-full overflow-hidden">
-                                            <div className="h-full bg-success/50 rounded-full" style={{ width: `${percentage}%` }} />
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
+                        </div>
                     </div>
                 </div>
             </div>
-
-            {analysis.todos.length > 0 && (
-                <div className="bg-card/40 rounded-2xl border border-border/50 p-5 space-y-4">
-                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-warning" />
-                        {t('workspaceDashboard.todoList')}
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {analysis.todos.map((todo: string, i: number) => (
-                            <div key={i} className="flex items-start gap-3 p-3 bg-muted/10 rounded-xl border border-border/50 hover:bg-muted/20 transition-colors">
-                                <div className="w-4 h-4 rounded border border-border/50 mt-0.5 flex-shrink-0" />
-                                <span className="typo-caption text-foreground/80 line-clamp-2">{todo}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

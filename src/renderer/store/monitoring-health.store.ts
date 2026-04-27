@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { createComponentHealthStore } from '@renderer/store/component-health.store';
+import { createComponentHealthStore } from '@/store/component-health.store';
 
 /**
  * Monitoring Health Store (BACKLOG-0457)

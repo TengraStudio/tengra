@@ -8,11 +8,6 @@
  * (at your option) any later version.
  */
 
-import { useAuth } from '@renderer/context/AuthContext';
-import { useModel } from '@renderer/context/ModelContext';
-import { useChatGenerator } from '@renderer/features/chat/hooks/useChatGenerator';
-import type { Language } from '@renderer/i18n';
-import { useTranslation } from '@renderer/i18n';
 import type { CatchError } from '@shared/types/common';
 import type {
     CouncilRunConfig,
@@ -21,6 +16,11 @@ import type {
 } from '@shared/types/workspace-agent-session';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useAuth } from '@/context/AuthContext';
+import { useModel } from '@/context/ModelContext';
+import { useChatGenerator } from '@/features/chat/hooks/useChatGenerator';
+import type { Language } from '@/i18n';
+import { useTranslation } from '@/i18n';
 import type { Chat, Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 

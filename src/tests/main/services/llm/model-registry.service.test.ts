@@ -314,13 +314,13 @@ describe('ModelRegistryService', () => {
                         fontSize: 14,
 
                     },
-                    nvidia: { apiKey: 'nvapi-test', model: 'nvidia/llama3-chatqa-1.5-70b' }
+                    nvidia: { model: 'nvidia/llama3-chatqa-1.5-70b' }
                 });
                 // Bypass cold-start skip
                 Object.assign(service, { lastUpdate: Date.now() });
 
                 vi.mocked(mockAuthService.getActiveToken!).mockImplementation(async (provider) => {
-                    if (provider === 'nvidia') return 'nv-token';
+                    if (provider === 'nvidia') {return 'nv-token';}
                     return undefined;
                 });
                 vi.mocked(mockProxyService.getRawModelCatalog!)

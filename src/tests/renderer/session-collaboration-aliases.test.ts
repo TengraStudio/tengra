@@ -8,8 +8,9 @@
  * (at your option) any later version.
  */
 
-import webElectronMock from '@renderer/web-bridge';
 import { describe, expect, it } from 'vitest';
+
+import webElectronMock from '@/web-bridge';
 
 describe('session collaboration aliases', () => {
     it('exposes canonical model collaboration alongside the legacy alias', () => {

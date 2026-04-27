@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Bookmark, Check, Copy, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { IconBookmark, IconCheck, IconCopy, IconThumbDown, IconThumbUp } from '@tabler/icons-react';
 import { memo, useState } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -33,9 +33,9 @@ export const CopyButton = memo(({ text, t }: { text: string; t: TranslationFn })
             aria-label={t('messageBubble.copy')}
         >
             {copied ? (
-                <Check className="w-3.5 h-3.5 text-success" />
+                <IconCheck className="w-3.5 h-3.5 text-success" />
             ) : (
-                <Copy className="w-3.5 h-3.5" />
+                <IconCopy className="w-3.5 h-3.5" />
             )}
         </button>
     );
@@ -57,7 +57,7 @@ export const BookmarkButton = memo(
             aria-label={active ? t('messageBubble.removeBookmark') : t('messageBubble.addBookmark')}
             aria-pressed={active}
         >
-            <Bookmark className={cn('w-3.5 h-3.5', active && 'fill-current')} />
+            <IconBookmark className={cn('w-3.5 h-3.5', active && 'fill-current')} />
         </button>
     )
 );
@@ -87,7 +87,7 @@ export const RatingButtons = memo(
                 aria-label={t('messageBubble.goodAnswer')}
                 aria-pressed={rating === 1}
             >
-                <ThumbsUp className={cn('w-3.5 h-3.5', rating === 1 && 'fill-current')} />
+                <IconThumbUp className={cn('w-3.5 h-3.5', rating === 1 && 'fill-current')} />
             </button>
             <button
                 type="button"
@@ -102,7 +102,7 @@ export const RatingButtons = memo(
                 aria-label={t('messageBubble.badAnswer')}
                 aria-pressed={rating === -1}
             >
-                <ThumbsDown className={cn('w-3.5 h-3.5', rating === -1 && 'fill-current')} />
+                <IconThumbDown className={cn('w-3.5 h-3.5', rating === -1 && 'fill-current')} />
             </button>
         </div>
     )

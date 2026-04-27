@@ -8,16 +8,16 @@
  * (at your option) any later version.
  */
 
-import { FileNode } from '@renderer/features/workspace/components/WorkspaceTreeItem';
-import { applyGitTreeStatus } from '@renderer/features/workspace/utils/gitTreeStatus';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+import { FileNode } from '@/features/workspace/components/WorkspaceTreeItem';
+import { applyGitTreeStatus } from '@/features/workspace/utils/gitTreeStatus';
 import {
     joinPath,
     loadExpandedMountState,
     saveExpandedMountState,
     sortNodes,
-} from '@renderer/features/workspace/utils/workspaceUtils';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-
+} from '@/features/workspace/utils/workspaceUtils';
 import { WorkspaceEntry, WorkspaceMount } from '@/types';
 import { performanceMonitor } from '@/utils/performance';
 import { appLogger } from '@/utils/renderer-logger';

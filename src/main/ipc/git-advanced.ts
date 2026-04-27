@@ -18,6 +18,7 @@ import { appLogger } from '@main/logging/logger';
 import { BrainService } from '@main/services/llm/brain.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { GitService } from '@main/services/workspace/git.service';
+import { t } from '@main/utils/i18n.util';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withOperationGuard } from '@main/utils/operation-wrapper.util';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -44,7 +45,7 @@ const MAX_BRANCH_LENGTH = 255;
 const PathSchema = z.string().min(1).max(MAX_PATH_LENGTH).trim();
 const BranchSchema = z.string().min(1).max(MAX_BRANCH_LENGTH).regex(/^[^\s~^:?*\\[\]]+$/).trim();
 const FilePathArgSchema = z.string().min(1).max(MAX_PATH_LENGTH).refine(v => !v.includes('\0') && !/[\r\n`]/.test(v), {
-    message: 'Invalid file path characters'
+    message: t('auto.invalidFilePathCharacters')
 });
 const SimpleArgSchema = z.string().min(1).max(256).regex(/^[a-zA-Z0-9._/@:+-]+$/).trim();
 const StashRefSchema = z.string().regex(/^stash@\{\d+\}$/);

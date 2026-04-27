@@ -759,7 +759,7 @@ ${context}`;
         const enhancedPrompt = `Design a professional app icon for a workspace. 
         Core Concept: ${prompt}
         Visual Style: ${styleKeywords}
-        Constraints: Square aspect ratio, centered composition, high quality vector style, solid background, avoid text, avoid complex details, minimalist aesthetic, sharp edges.`;
+        Constraints: IconSquare aspect ratio, centered composition, high quality vector style, solid background, avoid text, avoid complex details, minimalist aesthetic, sharp edges.`;
 
         const results: string[] = [];
         const errors: Error[] = [];

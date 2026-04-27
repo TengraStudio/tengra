@@ -152,7 +152,7 @@ export async function getRouteConfig(
 
     if (p.includes('ollama')) {
         const settings = deps.settingsService.getSettings();
-        const ollamaUrl = (settings['ollama'] as JsonObject | undefined)?.url ?? 'http://localhost:11434';
+        const ollamaUrl = (settings['ollama'] as JsonObject | undefined)?.url ?? 'http://127.0.0.1:11434';
         const ollamaBaseUrl = `${(ollamaUrl as string).replace(/\/$/, '')}/v1`;
         return { model, tools, baseUrl: ollamaBaseUrl, apiKey: 'ollama', provider, temperature: temp, workspaceRoot };
     }
@@ -196,5 +196,5 @@ export async function getRouteConfig(
 function buildProxyBaseUrl(proxyService: ProxyService): string {
     const proxyStatus = proxyService.getEmbeddedProxyStatus();
     const port = proxyStatus.port ?? 8317;
-    return `http://localhost:${port}/v1`;
+    return `http://127.0.0.1:${port}/v1`;
 }

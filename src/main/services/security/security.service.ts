@@ -16,6 +16,7 @@ import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
 import { ISecurityService } from '@main/types/services';
+import { t } from '@main/utils/i18n.util';
 import { ServiceResponse } from '@shared/types';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeStorage } from 'electron';
@@ -191,7 +192,7 @@ export class SecurityService extends BaseService implements ISecurityService {
      */
     checkPasswordStrength(password: string): ServiceResponse<{ score: number; label: string }> {
         if (!password) {
-            return { success: true, result: { score: 0, label: "Very Weak" } };
+            return { success: true, result: { score: 0, label: t('auto.veryWeak') } };
         }
 
         let score = 0;
@@ -441,7 +442,12 @@ export class SecurityService extends BaseService implements ISecurityService {
             decrypted += decipher.final('utf8');
             return decrypted;
         } catch (error) {
-            appLogger.error('SecurityService', `Tengra decryption failed: ${getErrorMessage(error as Error)}`);
+            const message = getErrorMessage(error as Error);
+            if (message.includes('Unsupported state') || message.includes('auth tag')) {
+                appLogger.warn('SecurityService', 'Tengra decryption failed (Auth Tag mismatch). Encrypted data is likely from a different session/environment. Re-authentication required.');
+            } else {
+                appLogger.error('SecurityService', `Tengra decryption failed: ${message}`);
+            }
             return null;
         }
     }

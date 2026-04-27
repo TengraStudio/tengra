@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { AlertTriangle, X } from 'lucide-react';
+import { IconAlertTriangle, IconX } from '@tabler/icons-react';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -42,7 +42,7 @@ export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-border">
                     <div className="flex items-center gap-2 text-warning">
-                        <AlertTriangle className="h-5 w-5" />
+                        <IconAlertTriangle className="h-5 w-5" />
                         <h3 className="font-bold text-foreground">
                             {t('settings.browserClosure.title')}
                         </h3>
@@ -51,7 +51,7 @@ export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({
                         onClick={onClose}
                         className="p-1 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                     >
-                        <X className="h-4 w-4" />
+                        <IconX className="h-4 w-4" />
                     </button>
                 </div>
 

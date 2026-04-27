@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import type { ModelInfo,Workspace } from '@/types';
+import type { AppSettings, GroupedModels, ModelInfo, Workspace } from '@/types';
 
 export interface WorkspaceSettingsFormData {
     title: string
@@ -52,14 +52,13 @@ export type WorkspaceSettingsSection =
     | 'council'
     | 'git'
     | 'workspace'
-    | 'build'
-    | 'dev'
-    | 'advanced'
-    | 'environment'
+    | 'pipelines';
 
 export interface SettingsSectionProps {
     formData: WorkspaceSettingsFormData
     setFormData: React.Dispatch<React.SetStateAction<WorkspaceSettingsFormData>>
     t: (key: string, options?: Record<string, unknown>) => string
     models: ModelInfo[]
+    settings?: AppSettings
+    groupedModels?: GroupedModels | null
 }

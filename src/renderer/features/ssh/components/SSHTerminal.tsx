@@ -12,7 +12,7 @@
 import React from 'react';
 
 /* Batch-02: Extracted Long Classes */
-const C_SSHTERMINAL_1 = "flex-1 bg-background rounded-lg p-3 font-mono text-xxs overflow-y-auto whitespace-pre-wrap mb-3 border border-border/30 text-success";
+const C_SSHTERMINAL_1 = "flex-1 bg-background rounded-lg p-3 font-mono text-sm overflow-y-auto whitespace-pre-wrap mb-3 border border-border/30 text-success";
 
 
 interface SSHTerminalProps {

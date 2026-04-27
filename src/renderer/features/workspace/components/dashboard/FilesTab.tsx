@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { FileText, X } from 'lucide-react';
+import { IconFileText, IconX } from '@tabler/icons-react';
 import React from 'react';
 
 import { CodeEditor } from '@/components/ui/CodeEditor';
@@ -75,7 +75,7 @@ export const FilesTab: React.FC<FilesTabProps> = ({
                                 )}
                             />
                             <span className={cn(
-                                "truncate flex-1 text-left typo-overline tracking-tight",
+                                "truncate flex-1 text-left typo-overline ",
                                 activeFile === file.path ? "font-bold" : "font-medium"
                             )}>
                                 {file.name}
@@ -85,7 +85,7 @@ export const FilesTab: React.FC<FilesTabProps> = ({
                                 {file.isDirty ? (
                                     <div className="w-2 h-2 rounded-full bg-primary/80 shrink-0" />
                                 ) : (
-                                    <X
+                                    <IconX
                                         className={C_FILESTAB_1}
                                         onClick={e => {
                                             e.stopPropagation();
@@ -126,7 +126,7 @@ export const FilesTab: React.FC<FilesTabProps> = ({
                     ) : (
                         <div className={C_FILESTAB_2}>
                             <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-6 shadow-2xl">
-                                <FileText className="w-8 h-8 text-primary/40" />
+                                <IconFileText className="w-8 h-8 text-primary/40" />
                             </div>
                             <h3 className="text-lg font-semibold text-foreground mb-2">
                                 {t('workspaceDashboard.filesTab.noFileSelected')}
@@ -137,7 +137,7 @@ export const FilesTab: React.FC<FilesTabProps> = ({
 
                             <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
                                 <div className="p-3 rounded-lg bg-zinc-900/40 border border-zinc-800/50 flex flex-col items-center gap-2 shadow-sm">
-                                    <span className="typo-overline font-black uppercase tracking-tight text-muted-foreground/40">
+                                    <span className="typo-overline font-bold uppercase text-muted-foreground/40">
                                         {t('workspaceDashboard.filesTab.shortcuts')}
                                     </span>
                                     <div className="flex items-center gap-2">
@@ -154,7 +154,7 @@ export const FilesTab: React.FC<FilesTabProps> = ({
                                     </span>
                                 </div>
                                 <div className="p-3 rounded-lg bg-zinc-900/40 border border-zinc-800/50 flex flex-col items-center gap-2 shadow-sm">
-                                    <span className="typo-overline font-black uppercase tracking-tight text-muted-foreground/40">
+                                    <span className="typo-overline font-bold uppercase text-muted-foreground/40">
                                         {t('workspaceDashboard.filesTab.navigation')}
                                     </span>
                                     <div className="flex items-center gap-2">

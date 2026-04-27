@@ -13,7 +13,7 @@
  * Allows users to select models, enter a prompt, and view comparison results.
  */
 
-import { AlertTriangle, GitCompareArrows, Loader2, Plus, X } from 'lucide-react';
+import { IconAlertTriangle, IconGitCompare, IconLoader2, IconPlus, IconX } from '@tabler/icons-react';
 import React, { useCallback } from 'react';
 
 import { ResponsiveContainer } from '@/components/responsive/ResponsiveContainer';
@@ -58,7 +58,7 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({ availableModel
             <Card className="p-4 space-y-4">
                 {/* Title */}
                 <div className="flex items-center gap-2">
-                    <GitCompareArrows className="w-5 h-5 text-primary" />
+                    <IconGitCompare className="w-5 h-5 text-primary" />
                     <h3 className="text-lg font-semibold">{t('modelComparison.title')}</h3>
                 </div>
 
@@ -82,7 +82,7 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({ availableModel
                                 onClick={() => { removeModel(index); }}
                                 disabled={isComparing}
                             >
-                                <X className="w-3.5 h-3.5" />
+                                <IconX className="w-3.5 h-3.5" />
                             </Button>
                         </div>
                     ))}
@@ -91,7 +91,7 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({ availableModel
                         onClick={handleAddModel}
                         disabled={isComparing || availableModels.length === 0}
                     >
-                        <Plus className="w-3.5 h-3.5 mr-1" />
+                        <IconPlus className="w-3.5 h-3.5 mr-1" />
                         {t('modelComparison.addModel')}
                     </Button>
                 </div>
@@ -103,16 +103,16 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({ availableModel
                     className="w-full"
                 >
                     {isComparing ? (
-                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('modelComparison.comparing')}</>
+                        <><IconLoader2 className="w-4 h-4 mr-2 animate-spin" />{t('modelComparison.comparing')}</>
                     ) : (
-                        <><GitCompareArrows className="w-4 h-4 mr-2" />{t('modelComparison.compare')}</>
+                        <><IconGitCompare className="w-4 h-4 mr-2" />{t('modelComparison.compare')}</>
                     )}
                 </Button>
 
                 {/* Error display */}
                 {error && (
                     <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                        <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+                        <IconAlertTriangle className="w-4 h-4 text-destructive shrink-0" />
                         <span className="text-sm text-destructive">{error}</span>
                     </div>
                 )}

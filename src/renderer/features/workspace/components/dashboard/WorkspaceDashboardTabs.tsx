@@ -8,14 +8,14 @@
  * (at your option) any later version.
  */
 
-import { TerminalComponent } from '@renderer/features/workspace/components/ide/Terminal';
-import { WorkspaceEnvironmentTab } from '@renderer/features/workspace/components/WorkspaceEnvironmentTab';
-import { WorkspaceGitTab } from '@renderer/features/workspace/components/WorkspaceGitTab';
-import { WorkspaceSettingsPanel } from '@renderer/features/workspace/components/WorkspaceSettingsPanel';
-import { WorkspaceTodoTab } from '@renderer/features/workspace/components/WorkspaceTodoTab';
 import { FileSearchResult } from '@shared/types/common';
 import React from 'react';
 
+import { TerminalComponent } from '@/features/workspace/components/ide/Terminal';
+import { WorkspaceEnvironmentTab } from '@/features/workspace/components/WorkspaceEnvironmentTab';
+import { WorkspaceGitTab } from '@/features/workspace/components/WorkspaceGitTab';
+import { WorkspaceSettingsPanel } from '@/features/workspace/components/WorkspaceSettingsPanel';
+import { WorkspaceTodoTab } from '@/features/workspace/components/WorkspaceTodoTab';
 import { Language } from '@/i18n';
 import { Workspace, WorkspaceAnalysis, WorkspaceDashboardTab, WorkspaceStats } from '@/types';
 

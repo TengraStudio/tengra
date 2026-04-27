@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { AlertTriangle, ArrowRightLeft, Clock, RefreshCw, WifiOff, X } from 'lucide-react';
+import { IconAlertTriangle, IconArrowsRightLeft, IconClock, IconRefresh, IconWifiOff, IconX } from '@tabler/icons-react';
 import React, { useMemo } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -65,15 +65,15 @@ const ERROR_ACTION_KEYS: Record<ChatErrorKind, string> = {
 const ErrorIcon: React.FC<{ kind: ChatErrorKind; className?: string }> = ({ kind, className }) => {
     const iconClass = cn('w-5 h-5', className);
     if (kind === 'provider_unavailable') {
-        return <WifiOff className={iconClass} />;
+        return <IconWifiOff className={iconClass} />;
     }
     if (kind === 'timeout') {
-        return <Clock className={iconClass} />;
+        return <IconClock className={iconClass} />;
     }
     if (kind === 'capacity_exhausted' || kind === 'rate_limited') {
-        return <Clock className={iconClass} />;
+        return <IconClock className={iconClass} />;
     }
-    return <AlertTriangle className={iconClass} />;
+    return <IconAlertTriangle className={iconClass} />;
 };
 
 /**
@@ -127,7 +127,7 @@ export const ChatErrorState: React.FC<ChatErrorStateProps> = React.memo(({
 
                     {resetTimeLabel && (
                         <div className="flex items-center gap-1.5 typo-caption text-muted-foreground">
-                            <Clock className="w-3 h-3" />
+                            <IconClock className="w-3 h-3" />
                             <span>{resetTimeLabel}</span>
                         </div>
                     )}
@@ -138,7 +138,7 @@ export const ChatErrorState: React.FC<ChatErrorStateProps> = React.memo(({
                             disabled={error.retryable === false}
                             className={C_CHATERRORSTATE_1}
                         >
-                            <RefreshCw className="w-3.5 h-3.5" />
+                            <IconRefresh className="w-3.5 h-3.5" />
                             {t(ERROR_ACTION_KEYS[error.kind])}
                         </button>
 
@@ -147,7 +147,7 @@ export const ChatErrorState: React.FC<ChatErrorStateProps> = React.memo(({
                                 onClick={onSwitchModel}
                                 className={C_CHATERRORSTATE_2}
                             >
-                                <ArrowRightLeft className="w-3.5 h-3.5" />
+                                <IconArrowsRightLeft className="w-3.5 h-3.5" />
                                 {t('chat.errorSwitchModel')}
                             </button>
                         )}
@@ -159,7 +159,7 @@ export const ChatErrorState: React.FC<ChatErrorStateProps> = React.memo(({
                     className="shrink-0 text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-accent/50"
                     aria-label={t('chat.errorDismiss')}
                 >
-                    <X className="w-4 h-4" />
+                    <IconX className="w-4 h-4" />
                 </button>
             </div>
         </div>

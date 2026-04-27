@@ -73,6 +73,7 @@ export interface EditorTab {
     savedContent: string;
     isDirty: boolean;
     isPinned?: boolean;
+    isLoaded?: boolean;
     type: 'code' | 'image';
     initialLine?: number;
     readOnly?: boolean;
@@ -231,6 +232,10 @@ export interface WorkspaceStats {
         path: string;
         size: number;
         fileCount: number;
+    }>;
+    topFilesByLoc?: Array<{
+        path: string;
+        loc: number;
     }>;
 }
 

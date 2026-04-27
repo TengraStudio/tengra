@@ -8,10 +8,10 @@
  * (at your option) any later version.
  */
 
-import { SidebarItem } from '@renderer/components/layout/sidebar/SidebarItem';
-import { Folder as FolderIcon, FolderOpen, Trash2 } from 'lucide-react';
+import { IconFolder as FolderIcon, IconFolderOpen, IconTrash } from '@tabler/icons-react';
 import React from 'react';
 
+import { SidebarItem } from '@/components/layout/sidebar/SidebarItem';
 import { useTranslation } from '@/i18n';
 import { Chat, Folder } from '@/types';
 
@@ -39,7 +39,7 @@ export const SidebarFolderSection = React.memo(({
     return (
         <div>
             <SidebarItem
-                icon={isExpanded ? FolderOpen : FolderIcon}
+                icon={isExpanded ? IconFolderOpen : FolderIcon}
                 label={folder.name}
                 onClick={() => toggleFolder(folder.id)}
                 badge={folderChats.length}
@@ -50,7 +50,7 @@ export const SidebarFolderSection = React.memo(({
                         onClick={e => { e.stopPropagation(); deleteFolder(folder.id); }}
                         className="p-1 hover:bg-destructive/10 hover:text-destructive rounded text-muted-foreground"
                     >
-                        <Trash2 className="w-3 h-3" />
+                        <IconTrash className="w-3 h-3" />
                     </button>
                 )}
             />
@@ -63,7 +63,7 @@ export const SidebarFolderSection = React.memo(({
                         </div>
                     ))}
                     {folderChats.length === 0 && (
-                        <p className="text-xxs text-muted-foreground/50 py-1 px-2">{t('sidebar.emptyFolder')}</p>
+                        <p className="text-sm text-muted-foreground/50 py-1 px-2">{t('sidebar.emptyFolder')}</p>
                     )}
                 </div>
             )}

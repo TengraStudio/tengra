@@ -8,8 +8,9 @@
  * (at your option) any later version.
  */
 
-import { cn } from "@renderer/lib/utils";
 import * as React from "react";
+
+import { cn } from "@/lib/utils";
 
 
 const ScrollArea = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, children, ...props }, ref) => (

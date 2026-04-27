@@ -126,9 +126,6 @@ describe('SettingsService - Initialization', () => {
                     enabled: true,
                     url: 'http://127.0.0.1:8317/v1',
                     key: 'legacy-proxy-key',
-                    apiKey: 'runtime-proxy-api-key',
-                    managementPassword: 'runtime-management-password',
-                    authStoreKey: 'runtime-auth-store-key',
                     port: 8317,
                 },
             })
@@ -141,9 +138,6 @@ describe('SettingsService - Initialization', () => {
             enabled: true,
             url: 'http://127.0.0.1:8317/v1',
             key: 'legacy-proxy-key',
-            apiKey: 'runtime-proxy-api-key',
-            managementPassword: 'runtime-management-password',
-            authStoreKey: 'runtime-auth-store-key',
             port: 8317,
         });
     });
@@ -156,7 +150,6 @@ describe('SettingsService - Initialization', () => {
                 data: {
                     general: { language: 'tr' },
                     nvidia: {
-                        apiKey: 'nvapi-live-key',
                         model: 'nvidia/llama-3.1-70b-instruct'
                     }
                 }
@@ -167,7 +160,7 @@ describe('SettingsService - Initialization', () => {
         await service.initialize();
 
         expect(service.getSettings().general.language).toBe('tr');
-        expect(service.getSettings().nvidia?.apiKey).toBe('nvapi-live-key');
+        expect(service.getSettings().nvidia?.model).toBe('nvidia/llama-3.1-70b-instruct');
     });
 });
 

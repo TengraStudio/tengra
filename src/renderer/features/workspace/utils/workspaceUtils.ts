@@ -8,8 +8,7 @@
  * (at your option) any later version.
  */
 
-import { FileNode } from '@renderer/features/workspace/components/WorkspaceTreeItem';
-
+import { FileNode } from '@/features/workspace/components/WorkspaceTreeItem';
 import { WorkspaceMount } from '@/types';
 
 export const joinPath = (base: string, name: string, type: WorkspaceMount['type']) => {

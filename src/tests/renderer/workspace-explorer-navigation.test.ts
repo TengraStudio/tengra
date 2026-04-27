@@ -8,14 +8,15 @@
  * (at your option) any later version.
  */
 
-import { WorkspaceEntryRow } from '@renderer/features/workspace/hooks/useWorkspaceExplorerTree';
+import { WorkspaceEntry, WorkspaceMount } from '@shared/types/workspace';
+import { describe, expect, it } from 'vitest';
+
+import { WorkspaceEntryRow } from '@/features/workspace/hooks/useWorkspaceExplorerTree';
 import {
     findTypeToSelectMatch,
     getWorkspaceEntryRange,
     toggleWorkspaceEntrySelection,
-} from '@renderer/features/workspace/utils/workspace-explorer-navigation';
-import { WorkspaceEntry, WorkspaceMount } from '@shared/types/workspace';
-import { describe, expect, it } from 'vitest';
+} from '@/features/workspace/utils/workspace-explorer-navigation';
 
 const mount: WorkspaceMount = {
     id: 'mount-1',

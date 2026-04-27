@@ -8,20 +8,20 @@
  * (at your option) any later version.
  */
 
-import { sanitizeBackendId, sanitizeShellId } from '@renderer/features/terminal/utils/terminal-toolbar-validation';
-import {
-    recordTerminalToolbarFailure,
-    recordTerminalToolbarFallback,
-    recordTerminalToolbarSuccess,
-    setTerminalToolbarUiState,
-} from '@renderer/store/terminal-toolbar-health.store';
-import { AlertTriangle, Check, ChevronDown, Maximize2, Minimize2, Plus, TerminalSquare } from 'lucide-react';
+import { IconAlertTriangle, IconCheck, IconChevronDown, IconMaximize, IconMinimize, IconPlus, IconTerminal } from '@tabler/icons-react';
 import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'; 
 import { UI_PRIMITIVES } from '@/constants/ui-primitives';
+import { sanitizeBackendId, sanitizeShellId } from '@/features/terminal/utils/terminal-toolbar-validation';
 import { cn } from '@/lib/utils';
+import {
+    recordTerminalToolbarFailure,
+    recordTerminalToolbarFallback,
+    recordTerminalToolbarSuccess,
+    setTerminalToolbarUiState,
+} from '@/store/terminal-toolbar-health.store';
 import { TerminalTab } from '@/types';
 
 import { TERMINAL_WORKSPACE_ISSUES_TAB_ID } from '../constants/terminal-panel-constants';
@@ -159,7 +159,7 @@ export function TerminalToolbar({
     resetSplitAnalytics,
     toggleSynchronizedInput,
     toggleSplitOrientation,
-    closeSplitView,  
+    closeSplitView, 
     handleSplitDown,
     handleSplitUp,
     toggleRecording,
@@ -218,7 +218,7 @@ export function TerminalToolbar({
                                 : 'text-muted-foreground hover:bg-accent/40 hover:text-foreground'
                         )}
                     >
-                        <AlertTriangle className="h-3.5 w-3.5" />
+                        <IconAlertTriangle className="h-3.5 w-3.5" />
                     </button>
                 )}
                 <button
@@ -233,14 +233,14 @@ export function TerminalToolbar({
                             : 'text-muted-foreground hover:bg-accent/40 hover:text-foreground'
                     )}
                 >
-                    <TerminalSquare className="h-3.5 w-3.5" />
+                    <IconTerminal className="h-3.5 w-3.5" />
                 </button>
             </div>
             <div className="flex items-center gap-1 border-l border-border/50 pl-2 pr-1 shrink-0">
                 <Popover open={isNewTerminalMenuOpen} onOpenChange={setIsNewTerminalMenuOpen}>
                     <PopoverTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground">
-                            <Plus className="w-3.5 h-3.5" />
+                            <IconPlus className="w-3.5 h-3.5" />
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent
@@ -257,7 +257,7 @@ export function TerminalToolbar({
                             <>
                                 {selectableBackends.length > 0 && (
                                     <div className="px-2 pt-1 pb-1">
-                                        <div className="text-xxxs text-muted-foreground">
+                                        <div className="text-sm text-muted-foreground">
                                             {t('terminal.defaultBackend')}: {defaultBackendName}
                                         </div>
                                         <div className="mt-1 space-y-0.5">
@@ -267,11 +267,11 @@ export function TerminalToolbar({
                                                     onClick={() => {
                                                         void persistPreferredBackendId(backend.id);
                                                     }}
-                                                    className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "text-xxxs px-2 py-1 justify-between gap-2")}
+                                                    className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "text-sm px-2 py-1 justify-between gap-2")}
                                                 >
                                                     <span className="truncate">{backend.name}</span>
                                                     {resolvedDefaultBackendId === backend.id && (
-                                                        <Check className="w-3 h-3 text-primary shrink-0" />
+                                                        <IconCheck className="w-3 h-3 text-primary shrink-0" />
                                                     )}
                                                 </button>
                                             ))}
@@ -281,7 +281,7 @@ export function TerminalToolbar({
                                 {integratedBackend && (
                                     <>
                                         <div className="h-px bg-border/70 my-1" />
-                                        <div className="px-2 py-1 text-xxxs text-muted-foreground">
+                                        <div className="px-2 py-1 text-sm text-muted-foreground">
                                             {t('terminal.integratedSessions')}
                                         </div>
                                         {availableShells.map(s => (
@@ -309,7 +309,7 @@ export function TerminalToolbar({
                                 {launchableExternalBackends.length > 0 && (
                                     <>
                                         <div className="h-px bg-border/70 my-1" />
-                                        <div className="px-2 py-1 text-xxxs text-muted-foreground">
+                                        <div className="px-2 py-1 text-sm text-muted-foreground">
                                             {t('terminal.externalTerminals')}
                                         </div>
                                         {launchableExternalBackends.map(backend => (
@@ -328,18 +328,18 @@ export function TerminalToolbar({
                                                 className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "justify-between")}
                                             >
                                                 <span className="flex items-center gap-2">
-                                                    <TerminalSquare className="w-3 h-3 opacity-60" />
+                                                    <IconTerminal className="w-3 h-3 opacity-60" />
                                                     {backend.name}
                                                 </span>
                                                 {resolvedDefaultBackendId === backend.id && (
-                                                    <Check className="w-3 h-3 text-primary shrink-0" />
+                                                    <IconCheck className="w-3 h-3 text-primary shrink-0" />
                                                 )}
                                             </button>
                                         ))}
                                     </>
                                 )}
                                 <div className="h-px bg-border/70 my-1" />
-                                <div className="px-2 py-1 text-xxxs text-muted-foreground">
+                                <div className="px-2 py-1 text-sm text-muted-foreground">
                                     {t('terminal.select_connection')}
                                 </div>
                                 {isLoadingRemoteConnections && (
@@ -358,7 +358,7 @@ export function TerminalToolbar({
                                             title={`${profile.username}@${profile.host}:${profile.port}`}
                                         >
                                             <span className="truncate">{t('terminal.sshPrefix')}: {profile.name}</span>
-                                            <span className="text-xxxs text-muted-foreground">
+                                            <span className="text-sm text-muted-foreground">
                                                 {profile.host}
                                             </span>
                                         </button>
@@ -374,7 +374,7 @@ export function TerminalToolbar({
                                             title={container.id}
                                         >
                                             <span className="truncate">{t('terminal.dockerPrefix')}: {container.name}</span>
-                                            <span className="text-xxxs text-muted-foreground truncate max-w-24">
+                                            <span className="text-sm text-muted-foreground truncate max-w-24">
                                                 {container.status}
                                             </span>
                                         </button>
@@ -425,16 +425,16 @@ export function TerminalToolbar({
                         className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
                     >
                         {isMaximized ? (
-                            <Minimize2 className="w-3.5 h-3.5" />
+                            <IconMinimize className="w-3.5 h-3.5" />
                         ) : (
-                            <Maximize2 className="w-3.5 h-3.5" />
+                            <IconMaximize className="w-3.5 h-3.5" />
                         )}
                     </button>
                     <button
                         onClick={onToggle}
                         className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
                     >
-                        <ChevronDown className="w-3.5 h-3.5" />
+                        <IconChevronDown className="w-3.5 h-3.5" />
                     </button>
                 </div> 
             </div>

@@ -8,16 +8,13 @@
  * (at your option) any later version.
  */
 
-import { Button } from '@renderer/components/ui/button';
-import { ConfirmationModal } from '@renderer/components/ui/ConfirmationModal';
-import { Input } from '@renderer/components/ui/input';
-import { useTranslation } from '@renderer/i18n';
-import {
-    Plus,
-    RefreshCw,
-    Trash2,
-} from 'lucide-react';
+import { IconPlus, IconRefresh, IconTrash } from '@tabler/icons-react';
 import React, { useState } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
+import { Input } from '@/components/ui/input';
+import { useTranslation } from '@/i18n';
 
 import { useGitAdvanced } from '../../hooks/useGitAdvanced';
 
@@ -55,14 +52,14 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ workspacePat
     return (
         <div className="space-y-6">
             <div className="space-y-3">
-                <span className="typo-overline font-semibold text-muted-foreground uppercase tracking-wider px-1">{t('git.advanced.branchManagement')}</span>
+                <span className="typo-overline font-semibold text-muted-foreground uppercase px-1">{t('git.advanced.branchManagement')}</span>
                 <div className="p-4 rounded-lg bg-card border border-border/40 space-y-4">
                     <div className="flex gap-2">
                         <Input
                             value={newBranchName}
                             onChange={e => setNewBranchName(e.target.value)}
                             placeholder={t('git.advanced.enterNewBranchName')}
-                            className="h-8 text-xs bg-background/50 border-border/20"
+                            className="h-8 text-sm bg-background/50 border-border/20"
                         />
                         <Button
                             disabled={!newBranchName.trim()}
@@ -70,15 +67,15 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ workspacePat
                             size="sm"
                             className="h-8 px-3 typo-overline font-bold"
                         >
-                            <Plus className="w-3 h-3" />
+                            <IconPlus className="w-3 h-3" />
                         </Button>
                     </div>
 
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-foreground/70 truncate mr-4">{git.currentBranch}</span>
+                        <span className="text-sm font-medium text-foreground/70 truncate mr-4">{git.currentBranch}</span>
                         <div className="flex gap-1">
                             <Button variant="ghost" size="sm" onClick={handleDeleteBranch} className="h-7 w-7 p-0 text-destructive/40 hover:text-destructive hover:bg-destructive/10">
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <IconTrash className="w-3.5 h-3.5" />
                             </Button>
                         </div>
                     </div>
@@ -86,10 +83,10 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ workspacePat
             </div>
 
             <div className="space-y-3">
-                <span className="typo-overline font-semibold text-muted-foreground uppercase tracking-wider px-1">{t('git.advanced.maintenance')}</span>
+                <span className="typo-overline font-semibold text-muted-foreground uppercase px-1">{t('git.advanced.maintenance')}</span>
                 <div className="flex flex-col gap-2">
-                    <Button variant="outline" className="justify-start h-9 text-xs font-medium border-border/20 hover:bg-muted/40 transition-colors" onClick={() => git.refreshAll()}>
-                        <RefreshCw className="w-3.5 h-3.5 mr-2 text-muted-foreground/40" />
+                    <Button variant="outline" className="justify-start h-9 text-sm font-medium border-border/20 hover:bg-muted/40 transition-colors" onClick={() => git.refreshAll()}>
+                        <IconRefresh className="w-3.5 h-3.5 mr-2 text-muted-foreground/40" />
                         {t('git.advanced.pruneAndRefresh')}
                     </Button>
                 </div>

@@ -8,14 +8,14 @@
  * (at your option) any later version.
  */
 
-import { Brain, Sparkles } from 'lucide-react';
+import { IconBrain, IconSparkles } from '@tabler/icons-react';
 import { memo, useEffect, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import { appLogger } from '@/utils/renderer-logger';
 
 /* Batch-02: Extracted Long Classes */
-const C_THOUGHTSECTION_1 = "whitespace-pre-wrap font-mono text-xxs leading-relaxed text-muted-foreground/80 selection:bg-primary/20 drop-shadow-sm max-h-72 overflow-y-auto pe-2";
+const C_THOUGHTSECTION_1 = "whitespace-pre-wrap font-mono text-sm leading-relaxed text-muted-foreground/80 selection:bg-primary/20 drop-shadow-sm max-h-72 overflow-y-auto pe-2";
 
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
@@ -101,15 +101,15 @@ export const ThoughtSection = memo(
                                 isThoughtExpanded ? 'bg-primary/20' : 'bg-accent/30'
                             )}
                         >
-                            <Brain
+                            <IconBrain
                                 className={cn(
                                     'w-3.5 h-3.5',
                                     isThoughtExpanded ? 'animate-pulse' : ''
                                 )}
                             />
                         </div>
-                        <span className="text-xxs font-bold">{title}</span>
-                        <Sparkles
+                        <span className="text-sm font-bold">{title}</span>
+                        <IconSparkles
                             className={cn(
                                 'w-3 h-3 transition-opacity duration-300',
                                 isStreaming || isThoughtExpanded ? 'opacity-100' : 'opacity-0'
@@ -117,7 +117,7 @@ export const ThoughtSection = memo(
                         />
                         <span
                             className={cn(
-                                'text-xxxs transition-transform duration-300 ms-1',
+                                'text-sm transition-transform duration-300 ms-1',
                                 isThoughtExpanded ? 'rotate-180' : 'rotate-0'
                             )}
                         >

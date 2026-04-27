@@ -8,14 +8,14 @@
  * (at your option) any later version.
  */
 
-import { useSettingsLogic } from '@renderer/features/settings/hooks/useSettingsLogic';
-import { SettingsCategory, SettingsSharedProps } from '@renderer/features/settings/types';
-import { ChevronRight } from 'lucide-react';
+import { IconChevronRight } from '@tabler/icons-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 
 // Tab Components
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { SettingsTabContent } from '@/features/settings/components';
+import { useSettingsLogic } from '@/features/settings/hooks/useSettingsLogic';
+import { SettingsCategory, SettingsSharedProps } from '@/features/settings/types';
 import {
     normalizeSettingsSearchQuery,
     settingsPageErrorCodes,
@@ -88,7 +88,6 @@ export function SettingsPage({
         connectGitHubProfile, connectCopilot, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
         statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, setReloadTrigger,
         benchmarkResult, isBenchmarking, handleRunBenchmark,
-        editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,
         linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
         manualSessionModal, setManualSessionModal, handleSaveClaudeSession, reloadSettings, updateWindow
     } = useSettingsLogic(onRefreshModels);
@@ -187,9 +186,6 @@ export function SettingsPage({
         statsData, quotaData, copilotQuota, codexUsage, claudeQuota,
         setReloadTrigger: (trigger: number | ((prev: number) => number)) => { setReloadTrigger(trigger); },
         benchmarkResult, isBenchmarking, handleRunBenchmark,
-        editingPersonaId,
-        setEditingPersonaId: (id: string | null) => { setEditingPersonaId(id); },
-        personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,
         linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
         manualSessionModal,
         setManualSessionModal: (m: ManualSessionModalState) => { setManualSessionModal(m); },
@@ -204,7 +200,6 @@ export function SettingsPage({
         connectGitHubProfile, connectCopilot, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
         statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, setReloadTrigger,
         benchmarkResult, isBenchmarking, handleRunBenchmark,
-        editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,
         linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
         manualSessionModal, setManualSessionModal, handleSaveClaudeSession,
         t, onRefreshModels, reloadSettings, handleFactoryReset
@@ -230,7 +225,7 @@ export function SettingsPage({
                 <aside className="settings-rail flex h-full w-full shrink-0 flex-col lg:w-72">
                     <div className="settings-shell-card flex min-h-0 flex-1 flex-col overflow-hidden bg-card/50 p-3 backdrop-blur-sm">
                         {searchQuery && (
-                            <div className="settings-shell-note mb-4 px-3 py-2 text-xs font-medium text-primary/70">
+                            <div className="settings-shell-note mb-4 px-3 py-2 text-sm font-medium text-primary/70">
                                 {filteredTabs.length > 0
                                     ? t('settings.searchResults', { count: filteredTabs.length })
                                     : t('settings.noResults')}
@@ -240,7 +235,7 @@ export function SettingsPage({
                         <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pr-1" role="tablist" aria-orientation="vertical">
                             {groupedTabs.length > 0 ? groupedTabs.map(group => (
                                 <div key={group.label} className="space-y-3">
-                                    <p className="px-3 typo-overline font-bold uppercase tracking-widest text-muted-foreground/50">
+                                    <p className="px-3 typo-overline font-bold uppercase text-muted-foreground/50">
                                         {group.label}
                                     </p>
                                     <div className="space-y-1">
@@ -280,7 +275,7 @@ export function SettingsPage({
                                                             {item.label}
                                                         </span>
                                                     </span>
-                                                    <ChevronRight className={cn(
+                                                    <IconChevronRight className={cn(
                                                         'h-3.5 w-3.5 shrink-0 transition-transform duration-300',
                                                         isActive ? 'translate-x-0 opacity-100' : '-translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-40'
                                                     )} />
@@ -303,7 +298,7 @@ export function SettingsPage({
                         <section className="settings-shell-card bg-card/30 p-6 lg:p-8">
                             <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                                 <div className="space-y-2">
-                                    <h2 className="text-3xl font-bold tracking-tight text-foreground">
+                                    <h2 className="text-3xl font-bold text-foreground">
                                         {activeNavigationItem?.label ?? t('settings.title')}
                                     </h2>
                                     <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground/70">

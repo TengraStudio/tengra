@@ -1,4 +1,4 @@
-/**
+/*
  * Tengra - Your Personal AI Assistant
  * Copyright (c) 2026 TengraStudio
  *
@@ -25,6 +25,7 @@ pub struct AntigravityClient {
 pub struct AntigravityProjectContext {
     pub project_id: String,
     pub tier_id: String,
+    #[allow(dead_code)]
     pub ai_credits: Option<AntigravityPaidTier>,
 }
 
@@ -202,6 +203,7 @@ impl AntigravityClient {
     }
 
     /// Fetches the user identity and permissions from the backend.
+    #[allow(dead_code)]
     pub async fn fetch_user(&self, access_token: &str) -> Result<Value> {
         let res = self
             .client
@@ -233,6 +235,7 @@ impl AntigravityClient {
     }
 
     /// Sets the user settings for the AI Companion.
+    #[allow(dead_code)]
     pub async fn set_user_settings(&self, access_token: &str, settings: Value) -> Result<()> {
         let res = self
             .client

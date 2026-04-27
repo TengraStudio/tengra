@@ -8,11 +8,12 @@
  * (at your option) any later version.
  */
 
-import { Button } from '@renderer/components/ui/button';
-import { Textarea } from '@renderer/components/ui/textarea';
-import { Tooltip } from '@renderer/components/ui/tooltip';
-import { Loader2, Send, Sparkles } from 'lucide-react';
+import { IconLoader2, IconSend, IconSparkles } from '@tabler/icons-react';
 import React from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Tooltip } from '@/components/ui/tooltip';
 
 import { useAICommitGenerator } from '../../hooks/useAICommitGenerator';
 
@@ -44,8 +45,8 @@ export const GitCommitSection: React.FC<CommitSectionProps> = ({
     return (
         <div className="space-y-3 mb-8">
             <div className="flex items-center justify-between px-1">
-                <span className="typo-overline font-bold text-muted-foreground/40 uppercase tracking-widest">{t('git.commitSection.sourceControl')}</span>
-                <span className="typo-overline text-muted-foreground/20 font-bold uppercase tracking-tighter">{t('git.commitSection.readyToStage')}</span>
+                <span className="typo-overline font-bold text-muted-foreground/40 uppercase ">{t('git.commitSection.sourceControl')}</span>
+                <span className="typo-overline text-muted-foreground/20 font-bold uppercase ">{t('git.commitSection.readyToStage')}</span>
             </div>
 
             <div className="border border-border/40 rounded-xl overflow-hidden bg-muted/10 focus-within:border-primary/30 focus-within:ring-1 focus-within:ring-primary/20 transition-all shadow-sm">
@@ -71,29 +72,29 @@ export const GitCommitSection: React.FC<CommitSectionProps> = ({
                             onClick={() => void onAIButtonClick()}
                         >
                             {isGenerating ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" />
+                                <IconLoader2 className="w-3.5 h-3.5 animate-spin mr-2" />
                             ) : (
-                                <Sparkles className="w-3.5 h-3.5 mr-2 group-hover:animate-pulse" />
+                                <IconSparkles className="w-3.5 h-3.5 mr-2 group-hover:animate-pulse" />
                             )}
-                            <span className="typo-overline font-bold uppercase tracking-tight">
+                            <span className="typo-overline font-bold uppercase ">
                                 {isGenerating ? t('git.commitSection.thinking') : t('git.commitSection.aiGenerate')}
                             </span>
                         </Button>
                     </Tooltip>
 
                     <div className="flex items-center gap-2">
-                        <span className="typo-overline text-muted-foreground/30 font-bold uppercase tracking-tight mr-2 hidden sm:inline">
+                        <span className="typo-overline text-muted-foreground/30 font-bold uppercase mr-2 hidden sm:inline">
                             Ctrl + Enter
                         </span>
                         <Button
                             onClick={() => void handleCommit()}
                             disabled={isCommitting || !commitMessage.trim()}
-                            className="h-8 px-5 typo-overline font-black uppercase tracking-widest bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg shadow-lg shadow-primary/10 transition-all active:scale-95"
+                            className="h-8 px-5 typo-overline font-bold uppercase bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg shadow-lg shadow-primary/10 transition-all active:scale-95"
                         >
                             {isCommitting ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" />
+                                <IconLoader2 className="w-3.5 h-3.5 animate-spin mr-2" />
                             ) : (
-                                <Send className="w-3 h-3 mr-2" />
+                                <IconSend className="w-3 h-3 mr-2" />
                             )}
                             {t('git.commitSection.commitChanges')}
                         </Button>

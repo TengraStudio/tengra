@@ -75,7 +75,7 @@ export function WorkspaceLanguageDistribution({ languages, t }: WorkspaceLanguag
                                 : 0;
                         return (
                             <div key={lang} className="space-y-1">
-                                <div className="flex justify-between text-xxs font-bold">
+                                <div className="flex justify-between text-sm font-bold">
                                     <span className="text-foreground/80">{lang}</span>
                                     <span className="text-muted-foreground">{formatLanguagePercentage(count as number, totalLanguageWeight)}</span>
                                 </div>

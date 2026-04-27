@@ -8,7 +8,6 @@
  * (at your option) any later version.
  */
 
-import { cn } from '@renderer/lib/utils';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { FitAddon } from '@xterm/addon-fit';
 import { Terminal } from '@xterm/xterm';
@@ -16,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { getTerminalTheme } from '@/lib/terminal-theme';
+import { cn } from '@/lib/utils';
 import { performanceMonitor } from '@/utils/performance';
 import { appLogger } from '@/utils/renderer-logger';
 

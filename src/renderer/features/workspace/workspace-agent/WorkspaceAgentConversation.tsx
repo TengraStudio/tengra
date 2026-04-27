@@ -8,7 +8,6 @@
  * (at your option) any later version.
  */
 
-import { MessageBubble } from '@renderer/features/chat/components/MessageBubble';
 import type { AgentEventRecord } from '@shared/types/agent-state';
 import type { WorkspaceStep } from '@shared/types/council';
 import type {
@@ -16,12 +15,13 @@ import type {
     WorkspaceAgentSessionModes,
     WorkspaceAgentSessionSummary,
 } from '@shared/types/workspace-agent-session';
-import { ClipboardCheck, Sparkles, Workflow } from 'lucide-react';
+import { IconClipboardCheck, IconHierarchy,IconSparkles } from '@tabler/icons-react';
 import React from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { MessageBubble } from '@/features/chat/components/MessageBubble';
 import { Language } from '@/i18n';
 import type { ChatError, Message } from '@/types';
 
@@ -57,7 +57,7 @@ function TelemetryCard({
                 <div className="typo-caption font-semibold text-info">
                     {telemetry.provider} · {telemetry.model}
                 </div>
-                <div className="text-xxs text-muted-foreground">
+                <div className="text-sm text-muted-foreground">
                     {Math.round(telemetry.usagePercent)}%
                 </div>
             </div>
@@ -87,7 +87,7 @@ function PlanCard({
                     <div className="text-sm font-semibold text-foreground">
                         {index + 1}. {step.text}
                     </div>
-                    <div className="rounded-full border border-border/60 bg-muted/30 px-2 py-1 text-xxs text-muted-foreground">
+                    <div className="rounded-full border border-border/60 bg-muted/30 px-2 py-1 text-sm text-muted-foreground">
                         {step.status}
                     </div>
                 </div>
@@ -103,7 +103,7 @@ function TimelineCard({ event }: { event: AgentEventRecord }): JSX.Element {
                 <div className="typo-caption font-semibold text-info">
                     {event.type}
                 </div>
-                <div className="text-xxs text-muted-foreground">
+                <div className="text-sm text-muted-foreground">
                     {event.timestamp.toLocaleTimeString()}
                 </div>
             </div>
@@ -183,7 +183,7 @@ export const WorkspaceAgentConversation: React.FC<WorkspaceAgentConversationProp
                 {messages.length === 0 ? (
                     <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
                         <div className="rounded-full border border-info/20 bg-info/10 p-4 text-info">
-                            <Sparkles className="h-5 w-5" />
+                            <IconSparkles className="h-5 w-5" />
                         </div>
                         <div className="max-w-xs text-sm text-muted-foreground">
                             {t('agents.welcomeMessage')}
@@ -208,11 +208,11 @@ export const WorkspaceAgentConversation: React.FC<WorkspaceAgentConversationProp
                             <div className="space-y-3 rounded-3xl border border-border/50 bg-card/70 p-4">
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                        <Workflow className="h-4 w-4 text-info" />
+                                        <IconHierarchy className="h-4 w-4 text-info" />
                                         {t('agents.plan')}
                                     </div>
                                     <Button variant="secondary" size="sm" onClick={onApprovePlan}>
-                                        <ClipboardCheck className="mr-1.5 h-4 w-4" />
+                                        <IconClipboardCheck className="mr-1.5 h-4 w-4" />
                                         {t('common.confirm')}
                                     </Button>
                                 </div>

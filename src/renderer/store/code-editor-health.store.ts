@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { createComponentHealthStore } from '@renderer/store/component-health.store';
+import { createComponentHealthStore } from '@/store/component-health.store';
 
 const codeEditorHealthStore = createComponentHealthStore('renderer-code-editor', 900);
 

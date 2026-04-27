@@ -209,7 +209,7 @@ export function Tooltip({
                     <div
                         ref={tooltipRef}
                         className={cn(
-                            'absolute z-50 py-2 px-3 text-xs text-foreground bg-popover/95 backdrop-blur-16 border border-border/60 rounded-lg shadow-2xl pointer-events-none',
+                            'absolute z-50 py-2 px-3 text-sm text-foreground bg-popover/95 backdrop-blur-16 border border-border/60 rounded-lg shadow-2xl pointer-events-none',
                             maxWidthClassName,
                             className
                         )}
@@ -222,7 +222,7 @@ export function Tooltip({
                         aria-live="polite"
                     >
                         <div className="flex flex-col gap-1">
-                            {title && <div className="text-xs font-semibold text-foreground">{title}</div>}
+                            {title && <div className="text-sm font-semibold text-foreground">{title}</div>}
                             {typeof content === 'string' ? (
                                 <div className="text-muted-foreground">{content}</div>
                             ) : (
@@ -233,7 +233,7 @@ export function Tooltip({
                             )}
                             {shortcut && (
                                 <div className="pt-1">
-                                    <kbd className="inline-block px-1.5 py-0.5 font-mono typo-overline tracking-50 text-foreground bg-background/70 border border-border/60 rounded">
+                                    <kbd className="inline-block px-1.5 py-0.5 font-mono typo-overline text-foreground bg-background/70 border border-border/60 rounded">
                                         {shortcut}
                                     </kbd>
                                 </div>

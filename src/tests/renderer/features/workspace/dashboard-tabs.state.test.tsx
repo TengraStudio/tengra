@@ -11,7 +11,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { DashboardTabs } from '@/features/workspace/components/workspace/DashboardTabs';
+import { DashboardTabs } from '@/features/workspace/workspace-layout/DashboardTabs';
 import { WorkspaceDashboardTab } from '@/types';
 
 const renderDashboardTabs = (

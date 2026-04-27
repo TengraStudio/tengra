@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { AlertTriangle } from 'lucide-react';
+import { IconAlertTriangle } from '@tabler/icons-react';
 
 import { useTranslation } from '@/i18n';
 
@@ -40,7 +40,7 @@ const FailoverIndicator: React.FC<FailoverIndicatorProps> = ({
 
   return (
     <div className="flex items-center gap-2 py-1.5 px-3 rounded-md bg-warning/15 text-warning font-medium text-sm border border-warning/20 animate-in fade-in slide-in-from-top-1 duration-300">
-      <AlertTriangle className="w-4 h-4 shrink-0" />
+      <IconAlertTriangle className="w-4 h-4 shrink-0" />
       <span>
         {t('common.failoverModelUsed', { fallback: fallbackModel, original: originalModel })}
       </span>

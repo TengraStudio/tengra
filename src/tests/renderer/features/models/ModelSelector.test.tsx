@@ -21,13 +21,13 @@ vi.mock('@/i18n', () => ({
     })
 }));
 
-vi.mock('@renderer/features/models/hooks/useModelSelectorLogic', () => ({
+vi.mock('@/features/models/hooks/useModelSelectorLogic', () => ({
     useModelSelectorLogic: () => ({
         isModelDisabled: () => false
     })
 }));
 
-vi.mock('@renderer/features/models/hooks/useModelCategories', () => ({
+vi.mock('@/features/models/hooks/useModelCategories', () => ({
     useModelCategories: () => ([
         {
             id: 'openai',
@@ -46,7 +46,7 @@ vi.mock('@renderer/features/models/hooks/useModelCategories', () => ({
     ])
 }));
 
-vi.mock('@renderer/features/models/components/ModelSelectorTrigger', () => ({
+vi.mock('@/features/models/components/ModelSelectorTrigger', () => ({
     ModelSelectorTrigger: ({
         isOpen,
         setIsOpen
@@ -64,13 +64,13 @@ vi.mock('@renderer/features/models/components/ModelSelectorTrigger', () => ({
     )
 }));
 
-vi.mock('@renderer/features/models/components/ModelSelectorModal', () => ({
-    ModelSelectorModal: ({ isOpen }: { isOpen: boolean }) => (
-        <div data-testid="model-selector-modal">{isOpen ? 'open' : 'closed'}</div>
+vi.mock('@/features/models/components/ModelSelectorPopover', () => ({
+    ModelSelectorPopover: ({ isOpen }: { isOpen: boolean }) => (
+        <div data-testid="model-selector-popover">{isOpen ? 'open' : 'closed'}</div>
     )
 }));
 
-import { ModelSelector } from '@renderer/features/models/components/ModelSelector';
+import { ModelSelector } from '@/features/models/components/ModelSelector';
 
 describe('ModelSelector', () => {
     beforeEach(() => {

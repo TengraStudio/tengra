@@ -9,6 +9,7 @@
  */
 
 import { AdvancedSemanticFragment, coerceMemoryCategory, MemoryCategory } from '@shared/types/advanced-memory';
+import { IconNetwork, IconRotate } from '@tabler/icons-react';
 import {
     Background,
     Controls,
@@ -21,11 +22,9 @@ import {
     useEdgesState,
     useNodesState,
 } from '@xyflow/react';
-import { Network, RotateCcw } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Input } from '@/components/ui/input';
-import { useTheme } from '@/hooks/useTheme';
 import {
     Select,
     SelectContent,
@@ -33,6 +32,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
+import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/i18n';
 import { resolveCssColorVariable } from '@/lib/theme-css';
 import { cn } from '@/lib/utils';
@@ -262,7 +262,7 @@ export const MemoryGraphView: React.FC = () => {
                     <Panel position="top-left" className="m-4">
                         <div className="flex items-center gap-3 bg-background/80 backdrop-blur-xl p-2 rounded-2xl border border-border/40 shadow-xl">
                             <div className="p-2 bg-primary/20 rounded-xl text-primary">
-                                <Network className="w-5 h-5" />
+                                <IconNetwork className="w-5 h-5" />
                             </div>
                             <div>
                                 <h2 className="text-sm font-bold">{t('memory.graphView')}</h2>
@@ -280,7 +280,7 @@ export const MemoryGraphView: React.FC = () => {
                                 className={C_MEMORYGRAPHVIEW_1}
                                 title={t('memory.refreshTitle')}
                             >
-                                <RotateCcw className="w-4 h-4" />
+                                <IconRotate className="w-4 h-4" />
                             </button>
                         </div>
                     </Panel>

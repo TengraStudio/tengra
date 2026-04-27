@@ -13,7 +13,7 @@
  * VSCode-like status bar with left/right sections and interactive items.
  */
 
-import { AlertCircle, Bell, GitBranch, Loader2, Wifi, WifiOff, Zap } from 'lucide-react';
+import { IconAlertCircle, IconBell, IconBolt,IconGitBranch, IconLoader2, IconWifi, IconWifiOff } from '@tabler/icons-react';
 import React, { createContext, useCallback, useContext, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -164,7 +164,7 @@ export const GitBranchStatus: React.FC<{
             onClick && 'cursor-pointer hover:bg-foreground/10'
         )}
     >
-        <GitBranch className="h-3.5 w-3.5" />
+        <IconGitBranch className="h-3.5 w-3.5" />
         <span>{branch}</span>
         {modified > 0 && <span className="opacity-70">+{modified}</span>}
     </div>
@@ -183,9 +183,9 @@ export const ConnectionStatus: React.FC<{
         )}
     >
         {connected ? (
-            <Wifi className="h-3.5 w-3.5" />
+            <IconWifi className="h-3.5 w-3.5" />
         ) : (
-            <WifiOff className="h-3.5 w-3.5 text-destructive" />
+            <IconWifiOff className="h-3.5 w-3.5 text-destructive" />
         )}
         {label && <span>{label}</span>}
     </div>
@@ -202,7 +202,7 @@ export const NotificationBell: React.FC<{
             onClick && 'cursor-pointer hover:bg-foreground/10'
         )}
     >
-        <Bell className="h-3.5 w-3.5" />
+        <IconBell className="h-3.5 w-3.5" />
         {count > 0 && (
             <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-destructive px-1 typo-overline font-bold">
                 {count > 99 ? '99+' : count}
@@ -221,7 +221,7 @@ export const LoadingStatus: React.FC<{
 
     return (
         <div className="flex items-center gap-1 px-2 py-0.5 typo-overline">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
             {label && <span>{label}</span>}
         </div>
     );
@@ -245,7 +245,7 @@ export const ErrorStatus: React.FC<{
                 onClick && 'cursor-pointer hover:bg-destructive/70'
             )}
         >
-            <AlertCircle className="h-3.5 w-3.5" />
+            <IconAlertCircle className="h-3.5 w-3.5" />
             <span>
                 {count} {label}
             </span>
@@ -271,7 +271,7 @@ export const WarningStatus: React.FC<{
                 onClick && 'cursor-pointer hover:bg-warning/70'
             )}
         >
-            <AlertCircle className="h-3.5 w-3.5" />
+            <IconAlertCircle className="h-3.5 w-3.5" />
             <span>
                 {count} {label}
             </span>
@@ -290,7 +290,7 @@ export const ModelStatus: React.FC<{
             onClick && 'cursor-pointer hover:bg-foreground/10'
         )}
     >
-        <Zap className="h-3.5 w-3.5" />
+        <IconBolt className="h-3.5 w-3.5" />
         <span>{model}</span>
     </div>
 );

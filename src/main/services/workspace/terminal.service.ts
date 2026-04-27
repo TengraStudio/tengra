@@ -14,10 +14,10 @@ import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
+import { AuthService } from '@main/services/security/auth.service';
 import { getDataFilePath, getDataSubPath } from '@main/services/system/app-layout-paths.util';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
-import { AuthService } from '@main/services/security/auth.service';
 import { AlacrittyBackend } from '@main/services/terminal/backends/alacritty.backend';
 import { pathExists } from '@main/services/terminal/backends/backend-discovery.util';
 import { DockerBackend } from '@main/services/terminal/backends/docker.backend';

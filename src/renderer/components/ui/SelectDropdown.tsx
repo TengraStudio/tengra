@@ -16,7 +16,7 @@ import {
     shift,
     useFloating,
 } from '@floating-ui/react';
-import { Check,ChevronDown } from 'lucide-react';
+import { IconCheck, IconChevronDown } from '@tabler/icons-react';
 import React, { useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -53,7 +53,7 @@ const OptionButton: React.FC<OptionButtonProps> = ({ option, isSelected, onSelec
         )}
     >
         <span className="truncate overflow-hidden whitespace-nowrap text-ellipsis">{option.label}</span>
-        {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
+        {isSelected && <IconCheck className="w-3.5 h-3.5 shrink-0" />}
     </button>
 );
 
@@ -73,7 +73,7 @@ const TriggerButton: React.FC<TriggerButtonProps> = ({ label, isOpen, onToggle }
         )}
     >
         <span className="truncate overflow-hidden whitespace-nowrap text-ellipsis">{label}</span>
-        <ChevronDown className={cn("w-4 h-4 text-muted-foreground ml-2 shrink-0 transition-transform duration-150 group-hover:text-primary/70", isOpen && "rotate-180")} />
+        <IconChevronDown className={cn("w-4 h-4 text-muted-foreground ml-2 shrink-0 transition-transform duration-150 group-hover:text-primary/70", isOpen && "rotate-180")} />
     </button>
 );
 

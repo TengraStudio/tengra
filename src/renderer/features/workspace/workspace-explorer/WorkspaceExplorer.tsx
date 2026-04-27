@@ -8,31 +8,31 @@
  * (at your option) any later version.
  */
 
-import { useWorkspaceExplorerDiagnostics } from '@renderer/features/workspace/hooks/useWorkspaceExplorerDiagnostics';
+import { IconFilePlus, IconFolder, IconFolderPlus, IconMinimize, IconRefresh, IconSearch } from '@tabler/icons-react';
+import React from 'react';
+import { List, RowComponentProps } from 'react-window';
+
+import { useWorkspaceExplorerDiagnostics } from '@/features/workspace/hooks/useWorkspaceExplorerDiagnostics';
 import {
     useWorkspaceExplorerTree,
     WorkspaceEntryRow,
     WorkspaceExplorerRow,
     WorkspaceMountRow,
-} from '@renderer/features/workspace/hooks/useWorkspaceExplorerTree';
-import { canUseSharedTargetDirectory } from '@renderer/features/workspace/utils/workspace-bulk-actions';
-import { normalizeWorkspaceExplorerDiagnosticPath } from '@renderer/features/workspace/utils/workspace-explorer-diagnostics';
+} from '@/features/workspace/hooks/useWorkspaceExplorerTree';
+import { canUseSharedTargetDirectory } from '@/features/workspace/utils/workspace-bulk-actions';
+import { normalizeWorkspaceExplorerDiagnosticPath } from '@/features/workspace/utils/workspace-explorer-diagnostics';
 import {
     findTypeToSelectMatch,
     getWorkspaceEntryKey,
     getWorkspaceEntryRange,
     toggleWorkspaceEntrySelection,
-} from '@renderer/features/workspace/utils/workspace-explorer-navigation';
-import { getWorkspaceExplorerStorageKey } from '@renderer/features/workspace/utils/workspaceUtils';
-import { ContextMenuAction } from '@renderer/features/workspace/workspace-explorer/types';
-import { WorkspaceContextMenu } from '@renderer/features/workspace/workspace-explorer/WorkspaceContextMenu';
-import { WorkspaceExplorerBulkActions } from '@renderer/features/workspace/workspace-explorer/WorkspaceExplorerBulkActions';
-import { WorkspaceExplorerInlineRow } from '@renderer/features/workspace/workspace-explorer/WorkspaceExplorerInlineRow';
-import { WorkspaceExplorerRowView } from '@renderer/features/workspace/workspace-explorer/WorkspaceExplorerRow';
-import { FilePlus, Folder, FolderPlus, Minimize2, RefreshCw, Search } from 'lucide-react';
-import React from 'react';
-import { List, RowComponentProps } from 'react-window';
-
+} from '@/features/workspace/utils/workspace-explorer-navigation';
+import { getWorkspaceExplorerStorageKey } from '@/features/workspace/utils/workspaceUtils';
+import { ContextMenuAction } from '@/features/workspace/workspace-explorer/types';
+import { WorkspaceContextMenu } from '@/features/workspace/workspace-explorer/WorkspaceContextMenu';
+import { WorkspaceExplorerBulkActions } from '@/features/workspace/workspace-explorer/WorkspaceExplorerBulkActions';
+import { WorkspaceExplorerInlineRow } from '@/features/workspace/workspace-explorer/WorkspaceExplorerInlineRow';
+import { WorkspaceExplorerRowView } from '@/features/workspace/workspace-explorer/WorkspaceExplorerRow';
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import {
@@ -123,7 +123,7 @@ type ExplorerListRef = {
 function WorkspaceExplorerEmptyState({ label }: { label: string }): React.ReactElement {
     return (
         <div className="flex-1 flex flex-col items-center justify-center text-sm text-muted-foreground gap-2 opacity-60">
-            <Folder className="w-8 h-8 opacity-20" />
+            <IconFolder className="w-8 h-8 opacity-20" />
             <span className="typo-caption font-medium">{label}</span>
         </div>
     );
@@ -1030,7 +1030,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                 )}
             >
                 <div className="flex items-center gap-2 overflow-hidden">
-                    <span className="typo-overline font-black uppercase tracking-wider text-muted-foreground/50 truncate pl-1">
+                    <span className="typo-overline font-bold uppercase text-muted-foreground/50 truncate pl-1">
                         {t('workspace.files')}
                     </span>
                 </div>
@@ -1042,7 +1042,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                         className="p-1 hover:bg-muted/40 rounded transition-colors"
                         title={t('workspace.explorer.newFile')}
                     >
-                        <FilePlus className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-foreground" />
+                        <IconFilePlus className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-foreground" />
                     </button>
                     <button
                         onClick={() => {
@@ -1051,7 +1051,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                         className="p-1 hover:bg-muted/40 rounded transition-colors"
                         title={t('workspace.explorer.newFolder')}
                     >
-                        <FolderPlus className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-foreground" />
+                        <IconFolderPlus className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-foreground" />
                     </button>
                     <button
                         onClick={() => {
@@ -1060,20 +1060,20 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                         className="p-1 hover:bg-muted/40 rounded transition-colors"
                         title={t('common.refresh')}
                     >
-                        <RefreshCw className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-foreground" />
+                        <IconRefresh className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-foreground" />
                     </button>
                     <button
                         onClick={collapseAll}
                         className="p-1 hover:bg-muted/40 rounded transition-colors"
                         title={t('workspace.explorer.collapseAll')}
                     >
-                        <Minimize2 className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-foreground" />
+                        <IconMinimize className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-foreground" />
                     </button>
                 </div>
             </div>
             <div className="px-2 pb-2">
                 <label className="relative flex items-center">
-                    <Search className="pointer-events-none absolute left-2 h-3 w-3 text-muted-foreground/30" />
+                    <IconSearch className="pointer-events-none absolute left-2 h-3 w-3 text-muted-foreground/30" />
                     <input
                         type="text"
                         value={filterQuery}

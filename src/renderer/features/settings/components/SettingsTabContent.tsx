@@ -8,9 +8,9 @@
  * (at your option) any later version.
  */
 
-import { ErrorBoundary } from '@renderer/components/shared/ErrorBoundary';
 import React, { Suspense } from 'react';
 
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { SettingsCategory } from '@/features/settings/types';
 import type { GroupedModels, ModelInfo } from '@/types';
 
@@ -28,7 +28,6 @@ const ModelsTab = React.lazy(() => import('@/features/settings/components/Models
 const MemoryInspector = React.lazy(() => import('@/features/memory/components/MemoryInspector').then(m => ({ default: m.MemoryInspector })));
 const ModelUsageLimitsTab = React.lazy(() => import('@/features/settings/components/ModelUsageLimitsTab').then(m => ({ default: m.ModelUsageLimitsTab })));
 const QuotasTab = React.lazy(() => import('@/features/settings/components/QuotasTab').then(m => ({ default: m.QuotasTab })));
-const PersonasTab = React.lazy(() => import('@/features/settings/components/PersonasTab').then(m => ({ default: m.PersonasTab })));
 const SpeechTab = React.lazy(() => import('@/features/settings/components/SpeechTab').then(m => ({ default: m.SpeechTab })));
 const StatisticsTab = React.lazy(() => import('@/features/settings/components/StatisticsTab').then(m => ({ default: m.StatisticsTab })));
 const SystemTab = React.lazy(() => import('@/features/settings/components/SystemTab').then(m => ({ default: m.SystemTab })));
@@ -70,7 +69,6 @@ const SettingsTabRenderer: React.FC<SettingsTabContentProps> = ({
         case 'memory': return <MemoryInspector />;
         case 'quotas': return <QuotasTab {...sharedProps} />;
         case 'statistics': return <StatisticsTab {...sharedProps} />;
-        case 'personas': return <PersonasTab {...sharedProps} />;
         case 'speech': return <SpeechTab {...sharedProps} />;
 
 

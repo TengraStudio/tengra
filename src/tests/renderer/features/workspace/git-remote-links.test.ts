@@ -8,8 +8,9 @@
  * (at your option) any later version.
  */
 
-import { buildGitRemoteLinks } from '@renderer/features/workspace/utils/git-remote-links';
 import { describe, expect, it } from 'vitest';
+
+import { buildGitRemoteLinks } from '@/features/workspace/utils/git-remote-links';
 
 describe('buildGitRemoteLinks', () => {
     it('builds GitHub issue and pull request links from ssh remotes', () => {

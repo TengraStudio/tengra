@@ -8,14 +8,14 @@
  * (at your option) any later version.
  */
 
-import { WorkspaceAgentConversation } from '@renderer/features/workspace/components/workspace/WorkspaceAgentConversation';
 import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
+import { WorkspaceAgentConversation } from '@/features/workspace/components/workspace/WorkspaceAgentConversation';
 import type { Message } from '@/types';
 
-vi.mock('@renderer/features/chat/components/MessageBubble', () => ({
+vi.mock('@/features/chat/components/MessageBubble', () => ({
     MessageBubble: ({
         message,
     }: {

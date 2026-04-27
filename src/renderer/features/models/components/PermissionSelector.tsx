@@ -9,12 +9,7 @@
  */
 
 import { WorkspaceAgentPermissionPolicy } from '@shared/types/workspace-agent-session';
-import {
-    Settings2,
-    Shield,
-    ShieldAlert,
-    ShieldCheck,
-} from 'lucide-react';
+import { IconSettings2, IconShield, IconShieldCheck,IconShieldExclamation } from '@tabler/icons-react';
 import React from 'react';
 
 import {
@@ -89,12 +84,12 @@ function PresetIcon({
     preset: 'high' | 'standard' | 'full';
 }): React.JSX.Element {
     if (preset === 'high') {
-        return <ShieldCheck className="h-3.5 w-3.5 text-primary" />;
+        return <IconShieldCheck className="h-3.5 w-3.5 text-primary" />;
     }
     if (preset === 'full') {
-        return <ShieldAlert className="h-3.5 w-3.5 text-destructive" />;
+        return <IconShieldExclamation className="h-3.5 w-3.5 text-destructive" />;
     }
-    return <Shield className="h-3.5 w-3.5 text-warning" />;
+    return <IconShield className="h-3.5 w-3.5 text-warning" />;
 }
 
 function getPresetLabel(
@@ -147,7 +142,7 @@ export const PermissionSelector: React.FC<PermissionSelectorProps> = ({
                         >
                             <SelectItem value="high" className="py-2 typo-body font-bold">
                                 <div className="flex items-center gap-2">
-                                    <ShieldCheck className="h-3 w-3 text-primary" />
+                                    <IconShieldCheck className="h-3 w-3 text-primary" />
                                     {t('workspaceAgent.permissions.policy.blocked')}
                                 </div>
                             </SelectItem>
@@ -156,13 +151,13 @@ export const PermissionSelector: React.FC<PermissionSelectorProps> = ({
                                 className="py-2 typo-body font-bold"
                             >
                                 <div className="flex items-center gap-2">
-                                    <Shield className="h-3 w-3 text-warning" />
+                                    <IconShield className="h-3 w-3 text-warning" />
                                     {t('workspaceAgent.permissions.policy.ask-every-time')}
                                 </div>
                             </SelectItem>
                             <SelectItem value="full" className="py-2 typo-body font-bold">
                                 <div className="flex items-center gap-2 text-destructive">
-                                    <ShieldAlert className="h-3 w-3" />
+                                    <IconShieldExclamation className="h-3 w-3" />
                                     {t('workspaceAgent.permissions.policy.full-access')}
                                 </div>
                             </SelectItem>
@@ -179,7 +174,7 @@ export const PermissionSelector: React.FC<PermissionSelectorProps> = ({
                             onClick={onOpenSettings}
                             className={C_PERMISSIONSELECTOR_1}
                         >
-                            <Settings2 className="h-3.5 w-3.5" />
+                            <IconSettings2 className="h-3.5 w-3.5" />
                         </button>
                     </span>
                 </Tooltip>

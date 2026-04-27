@@ -8,10 +8,10 @@
  * (at your option) any later version.
  */
 
-import type { GitFileHistoryItem } from '@renderer/features/workspace/components/git/types';
-import { History, Loader2, X } from 'lucide-react';
+import { IconHistory, IconLoader2, IconX } from '@tabler/icons-react';
 import React from 'react';
 
+import type { GitFileHistoryItem } from '@/features/workspace/components/git/types';
 import { cn } from '@/lib/utils';
 
 /* Batch-02: Extracted Long Classes */
@@ -41,8 +41,8 @@ export function WorkspaceExplorerGitHistory({
         <div className="border-b border-border/40 px-4 py-3">
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 typo-overline font-bold tracking-24 text-muted-foreground/50">
-                        <History className="h-3 w-3" />
+                    <div className="flex items-center gap-1.5 typo-overline font-bold text-muted-foreground/50">
+                        <IconHistory className="h-3 w-3" />
                         <span>{t('agent.history')}</span>
                     </div>
                     <div className="mt-1 truncate typo-caption font-semibold text-foreground">
@@ -55,14 +55,14 @@ export function WorkspaceExplorerGitHistory({
                     className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground"
                     title={t('common.close')}
                 >
-                    <X className="h-3.5 w-3.5" />
+                    <IconX className="h-3.5 w-3.5" />
                 </button>
             </div>
 
             <div className="mt-3 max-h-64 space-y-1.5 overflow-y-auto pr-1">
                 {loading ? (
                     <div className={C_WORKSPACEEXPLORERGITHISTORY_1}>
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <IconLoader2 className="h-3.5 w-3.5 animate-spin" />
                         <span>{t('common.loading')}</span>
                     </div>
                 ) : (
@@ -73,7 +73,7 @@ export function WorkspaceExplorerGitHistory({
                         >
                             <div className="flex items-center justify-between gap-3">
                                 <span className="font-mono typo-overline text-primary">{commit.hash}</span>
-                                <span className="typo-overline tracking-16 text-muted-foreground/60">
+                                <span className="typo-overline text-muted-foreground/60">
                                     {commit.relativeTime}
                                 </span>
                             </div>

@@ -25,6 +25,7 @@ import {
     getWorkspaceIgnoreMatcher,
     type WorkspaceIgnoreMatcher
 } from '@main/services/workspace/workspace-ignore.util';
+import { t } from '@main/utils/i18n.util';
 import { WORKSPACE_COMPAT_FILE_VALUES } from '@shared/constants';
 import {
     WorkspaceEnvKeySchema,
@@ -1149,7 +1150,7 @@ export class WorkspaceService extends BaseService {
             sources.push({
                 source: 'tsc',
                 status: 'skipped',
-                message: 'No TypeScript/JavaScript project config detected.',
+                message: t('auto.noTypescriptjavascriptProjectConfigDetec'),
             });
         }
 
@@ -2449,6 +2450,7 @@ export class WorkspaceService extends BaseService {
         // Simple LOC estimation based on file size (very rough)
         // 100 bytes approx 1 line of code including whitespace
         let totalBytes = 0;
+        const topFilesBySize: Array<{ path: string; size: number }> = [];
 
         for (const file of files) {
             try {
@@ -2459,9 +2461,34 @@ export class WorkspaceService extends BaseService {
                     lastModified = modifiedAt;
                 }
                 this.trackDirectorySize(directorySizes, rootPath, file, stat.size);
+                
+                // Track top 20 files by size to find top LOC candidates
+                if (stat.isFile()) {
+                    topFilesBySize.push({ path: file, size: stat.size });
+                    if (topFilesBySize.length > 50) {
+                        topFilesBySize.sort((a, b) => b.size - a.size);
+                        topFilesBySize.length = 30;
+                    }
+                }
             } catch (error) {
                 // Ignore missing file errors during scan
                 appLogger.debug(LOG_CONTEXT, `Failed to stat file ${file}:`, getErrorMessage(error as Error));
+            }
+        }
+
+        // Calculate exact LOC for top files
+        const topFilesByLoc: Array<{ path: string; loc: number }> = [];
+        topFilesBySize.sort((a, b) => b.size - a.size);
+        for (const file of topFilesBySize.slice(0, 10)) {
+            try {
+                const content = await fs.readFile(file.path, 'utf-8');
+                const lines = content.split('\n').length;
+                topFilesByLoc.push({ 
+                    path: path.relative(rootPath, file.path), 
+                    loc: lines 
+                });
+            } catch {
+                // Ignore read errors
             }
         }
 
@@ -2487,6 +2514,7 @@ export class WorkspaceService extends BaseService {
             largestDirectories: Array.from(directorySizes.values())
                 .sort((left, right) => right.size - left.size)
                 .slice(0, 8),
+            topFilesByLoc: topFilesByLoc.sort((a, b) => b.loc - a.loc).slice(0, 8),
         };
     }
 

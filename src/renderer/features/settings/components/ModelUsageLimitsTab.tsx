@@ -8,10 +8,10 @@
  * (at your option) any later version.
  */
 
-import { Badge } from '@renderer/components/ui/badge';
-import { Activity, Lock, Shield, Zap } from 'lucide-react';
+import { IconActivity, IconBolt,IconLock, IconShield } from '@tabler/icons-react';
 import React, { useMemo } from 'react';
 
+import { Badge } from '@/components/ui/badge';
 import type { GroupedModels } from '@/types';
 import { AppSettings } from '@/types/settings';
 
@@ -149,7 +149,7 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
             <div className="relative group px-1">
                 <div className="flex items-center gap-4 mb-3">
                     <div className={C_MODELUSAGELIMITSTAB_1}>
-                        <Shield className="w-7 h-7" />
+                        <IconShield className="w-7 h-7" />
                     </div>
                     <div>
                         <h3 className="text-2xl font-bold text-foreground leading-none">
@@ -174,7 +174,7 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
                 <div className={C_MODELUSAGELIMITSTAB_2}>
                     <div className="flex items-center justify-between px-1 mb-8 relative z-10">
                         <div className="flex items-center gap-3">
-                            <Zap className="w-4 h-4 text-primary" />
+                            <IconBolt className="w-4 h-4 text-primary" />
                             <h4 className="typo-body font-bold text-muted-foreground/40">{t('settings.usageLimits.copilotProtocol')}</h4>
                         </div>
                         <Badge variant="outline" className="h-5 typo-body px-2 font-bold border-primary/20 text-primary">{t('settings.usageLimits.activePolicy')}</Badge>
@@ -194,7 +194,7 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
                 <div className={C_MODELUSAGELIMITSTAB_3}>
                     <div className="flex items-center justify-between px-1 mb-8 relative z-10">
                         <div className="flex items-center gap-3">
-                            <Activity className="w-4 h-4 text-primary" />
+                            <IconActivity className="w-4 h-4 text-primary" />
                             <h4 className="typo-body font-bold text-muted-foreground/40">{t('settings.usageLimits.coreAllocation')}</h4>
                         </div>
                         <Badge variant="outline" className="h-5 typo-body px-2 font-bold border-primary/20 text-primary">{t('settings.usageLimits.customQuotas')}</Badge>
@@ -213,7 +213,7 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
                 <div className={C_MODELUSAGELIMITSTAB_4}>
                     <div className="flex items-center justify-between px-1 mb-8 relative z-10">
                         <div className="flex items-center gap-3">
-                            <Lock className="w-4 h-4 text-primary" />
+                            <IconLock className="w-4 h-4 text-primary" />
                             <h4 className="typo-body font-bold text-muted-foreground/40">{t('settings.usageLimits.legacyThresholds')}</h4>
                         </div>
                         <Badge variant="outline" className="h-5 typo-body px-2 font-bold border-primary/20 text-primary">{t('settings.usageLimits.restrictive')}</Badge>

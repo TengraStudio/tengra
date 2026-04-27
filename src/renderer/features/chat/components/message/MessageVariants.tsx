@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Check, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { IconCheck, IconChevronLeft, IconChevronRight, IconSparkles } from '@tabler/icons-react';
 import { memo, useState } from 'react';
 
 import { Language } from '@/i18n';
@@ -81,20 +81,20 @@ const MessageVariantCard = memo(
                             <span className="typo-caption font-bold text-foreground/90">
                                 {variant.model ?? t('messageBubble.unknownModel')}
                             </span>
-                            <span className="text-xxs text-muted-foreground">
+                            <span className="text-sm text-muted-foreground">
                                 {variant.provider}
                             </span>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
                         {variantInterrupted && (
-                            <span className="rounded-full bg-destructive/10 px-2 py-1 text-xxs font-semibold text-destructive">
+                            <span className="rounded-full bg-destructive/10 px-2 py-1 text-sm font-semibold text-destructive">
                                 {t('tools.failed')}
                             </span>
                         )}
                         {isSelected && (
                             <div className="bg-primary/10 text-primary p-1 rounded-full">
-                                <Check className="w-3 h-3" />
+                                <IconCheck className="w-3 h-3" />
                             </div>
                         )}
                     </div>
@@ -241,7 +241,7 @@ export const VariantsView = memo(
             <div className={cn('w-full animate-fade-in py-2 group')}>
                 <div className="flex items-center gap-2 mb-3 px-1">
                     <div className="bg-primary/10 p-1.5 rounded-lg">
-                        <Sparkles className="w-4 h-4 text-primary" />
+                        <IconSparkles className="w-4 h-4 text-primary" />
                     </div>
                     <span className="typo-caption font-bold text-muted-foreground">
                         {t('chat.modelComparison')}
@@ -288,7 +288,7 @@ export const MessageVariants = memo(
                         key={idx}
                         onClick={() => setVariantIndex(idx)}
                         className={cn(
-                            'px-2.5 py-1 rounded-md text-xxs font-bold transition-all flex items-center gap-2 border',
+                            'px-2.5 py-1 rounded-md text-sm font-bold transition-all flex items-center gap-2 border',
                             idx === variantIndex
                                 ? 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-102'
                                 : 'hover:bg-accent/50 text-muted-foreground border-transparent'
@@ -299,7 +299,7 @@ export const MessageVariants = memo(
                             v.model ??
                             t('messageBubble.responseShort', { index: idx + 1 })
                         ).slice(0, 20)}{' '}
-                        {idx === variantIndex && <Check className="w-2.5 h-2.5" />}
+                        {idx === variantIndex && <IconCheck className="w-2.5 h-2.5" />}
                     </button>
                 ))}
             </div>
@@ -309,9 +309,9 @@ export const MessageVariants = memo(
                     onClick={() => setVariantIndex(variantIndex - 1)}
                     className="p-1 px-1.5 rounded bg-accent/30 hover:bg-accent/50 disabled:opacity-30 transition-colors"
                 >
-                    <ChevronLeft className="w-3 h-3" />
+                    <IconChevronLeft className="w-3 h-3" />
                 </button>
-                <span className="text-xxs text-muted-foreground/60 font-bold">
+                <span className="text-sm text-muted-foreground/60 font-bold">
                     {variantIndex + 1} / {variants.length}
                 </span>
                 <button
@@ -319,7 +319,7 @@ export const MessageVariants = memo(
                     onClick={() => setVariantIndex(variantIndex + 1)}
                     className="p-1 px-1.5 rounded bg-accent/30 hover:bg-accent/50 disabled:opacity-30 transition-colors"
                 >
-                    <ChevronRight className="w-3 h-3" />
+                    <IconChevronRight className="w-3 h-3" />
                 </button>
             </div>
         </div>

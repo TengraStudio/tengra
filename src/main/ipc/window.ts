@@ -14,7 +14,7 @@ import * as path from 'path';
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { SettingsService } from '@main/services/system/settings.service';
-import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { createValidatedIpcHandler, safeHandle } from '@main/utils/ipc-wrapper.util';
 import { createWindowsSpawnCommand } from '@main/utils/windows-command.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { BrowserWindow, ipcMain, shell } from 'electron';
@@ -207,6 +207,19 @@ function registerWindowControlHandlers(
         }
     });
 
+    ipcMain.on('window:toggle-fullscreen', event => {
+        try {
+            const win = getMainWindow();
+            validateSender(event);
+            if (!win) {
+                return;
+            }
+            win.setFullScreen(!win.isFullScreen());
+        } catch {
+            /* ignore */
+        }
+    });
+
     ipcMain.on('window:close', event => {
         try {
             const win = getMainWindow();
@@ -254,7 +267,7 @@ function registerWindowControlHandlers(
 
     const zoomResponseSchema = z.object({ zoomFactor: z.number().min(WINDOW_ZOOM_MIN).max(WINDOW_ZOOM_MAX) });
 
-    ipcMain.handle(
+    safeHandle(
         'window:get-zoom-factor',
         createValidatedIpcHandler('window:get-zoom-factor', async event => {
             validateSender(event);
@@ -266,7 +279,7 @@ function registerWindowControlHandlers(
         })
     );
 
-    ipcMain.handle(
+    safeHandle(
         'window:set-zoom-factor',
         createValidatedIpcHandler('window:set-zoom-factor', async (event, zoomFactor: number) => {
             validateSender(event);
@@ -281,7 +294,7 @@ function registerWindowControlHandlers(
         })
     );
 
-    ipcMain.handle(
+    safeHandle(
         'window:step-zoom-factor',
         createValidatedIpcHandler('window:step-zoom-factor', async (event, direction: number) => {
             validateSender(event);
@@ -297,7 +310,7 @@ function registerWindowControlHandlers(
         })
     );
 
-    ipcMain.handle(
+    safeHandle(
         'window:reset-zoom-factor',
         createValidatedIpcHandler('window:reset-zoom-factor', async event => {
             validateSender(event);
@@ -310,6 +323,7 @@ function registerWindowControlHandlers(
             responseSchema: zoomResponseSchema,
         })
     );
+
 
 }
 
@@ -359,7 +373,7 @@ function createRunCommandFailure(
  */
 function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowedRoots: Set<string>) {
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'window operation');
-    ipcMain.handle('shell:openExternal', createValidatedIpcHandler('shell:openExternal', async (event, url: string) => {
+    safeHandle('shell:openExternal', createValidatedIpcHandler('shell:openExternal', async (event, url: string) => {
         validateSender(event);
         appLogger.info('WindowIPC', `shell:openExternal handle called with URL: ${redactUrlForLogs(url)}`);
 
@@ -423,7 +437,7 @@ function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowe
     }));
 
 
-    ipcMain.handle('shell:runCommand', createValidatedIpcHandler<RunCommandResult, [string, string[], string | undefined]>('shell:runCommand', async (event, command: string, args: string[], cwd?: string) => {
+    safeHandle('shell:runCommand', createValidatedIpcHandler<RunCommandResult, [string, string[], string | undefined]>('shell:runCommand', async (event, command: string, args: string[], cwd?: string) => {
         validateSender(event);
 
         // AUD-SEC-037: Hardened command validation
@@ -522,6 +536,7 @@ function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowe
             messageKey: WINDOW_MESSAGE_KEY.SHELL_RUN_COMMAND_VALIDATION_FAILED
         }
     }));
+
 }
 
 /**

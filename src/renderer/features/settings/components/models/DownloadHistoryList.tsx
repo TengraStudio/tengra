@@ -8,15 +8,16 @@
  * (at your option) any later version.
  */
 
-import { Badge } from '@renderer/components/ui/badge';
-import { Button } from '@renderer/components/ui/button';
-import { cn } from '@renderer/lib/utils';
-import { CheckCircle2, CloudDownload, History, Trash2, XCircle } from 'lucide-react';
+import { IconCircleCheck, IconCircleX,IconCloudDownload, IconHistory, IconTrash } from '@tabler/icons-react';
 import React from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 /* Batch-02: Extracted Long Classes */
 const C_DOWNLOADHISTORYLIST_1 = "flex flex-col items-center justify-center py-20 text-center border border-dashed border-border/30 rounded-2xl bg-muted/5 animate-in fade-in duration-500 sm:flex-row";
-const C_DOWNLOADHISTORYLIST_2 = "h-5 rounded-md border-border/20 px-2 py-0 typo-body font-bold typo-body uppercase tracking-wider text-muted-foreground/60";
+const C_DOWNLOADHISTORYLIST_2 = "h-5 rounded-md border-border/20 px-2 py-0 typo-body font-bold typo-body uppercase text-muted-foreground/60";
 const C_DOWNLOADHISTORYLIST_3 = "h-8 w-8 rounded-lg text-muted-foreground/40 hover:bg-destructive/10 hover:text-destructive opacity-0 group-hover:opacity-100 transition-all p-0";
 
 
@@ -63,7 +64,7 @@ export const DownloadHistoryList: React.FC<DownloadHistoryListProps> = ({
     if (history.length === 0) {
         return (
             <div className={C_DOWNLOADHISTORYLIST_1}>
-                <History className="w-12 h-12 text-muted-foreground/20 mb-4" />
+                <IconHistory className="w-12 h-12 text-muted-foreground/20 mb-4" />
                 <h3 className="text-sm font-semibold text-foreground/70">{t('modelsPage.noDownloadHistory')}</h3>
                 <p className="typo-caption text-muted-foreground/50 mt-1 max-w-240">
                     {t('modelsPage.noDownloadHistoryDescription')}
@@ -77,7 +78,7 @@ export const DownloadHistoryList: React.FC<DownloadHistoryListProps> = ({
             <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
-                        <History className="w-5 h-5" />
+                        <IconHistory className="w-5 h-5" />
                     </div>
                     <div>
                         <h3 className="text-sm font-bold text-foreground">{t('modelsPage.downloadHistory')}</h3>
@@ -93,7 +94,7 @@ export const DownloadHistoryList: React.FC<DownloadHistoryListProps> = ({
                         onClick={onClear}
                         className="h-9 rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive px-4 typo-caption font-bold"
                     >
-                        <Trash2 className="w-3.5 h-3.5 mr-2" />
+                        <IconTrash className="w-3.5 h-3.5 mr-2" />
                         {t('common.clear')}
                     </Button>
                 )}
@@ -120,9 +121,9 @@ export const DownloadHistoryList: React.FC<DownloadHistoryListProps> = ({
                                         isFailed ? "border-destructive/20 bg-destructive/5 text-destructive" :
                                             "border-muted-foreground/20 bg-muted/20 text-muted-foreground"
                                 )}>
-                                    {isSuccess ? <CheckCircle2 className="w-5 h-5" /> :
-                                        isFailed ? <XCircle className="w-5 h-5" /> :
-                                            <CloudDownload className="w-5 h-5" />}
+                                    {isSuccess ? <IconCircleCheck className="w-5 h-5" /> :
+                                        isFailed ? <IconCircleX className="w-5 h-5" /> :
+                                            <IconCloudDownload className="w-5 h-5" />}
                                 </div>
                                 <div className="min-w-0">
                                     <div className="flex items-center gap-2 mb-0.5">
@@ -160,7 +161,7 @@ export const DownloadHistoryList: React.FC<DownloadHistoryListProps> = ({
                                     onClick={() => onDelete(item.id || '')}
                                     className={C_DOWNLOADHISTORYLIST_3}
                                 >
-                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <IconTrash className="w-3.5 h-3.5" />
                                 </Button>
                             )}
                         </div>

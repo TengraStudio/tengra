@@ -13,7 +13,7 @@ import type {
     CouncilRunConfig,
     WorkspaceAgentSession,
 } from '@shared/types/workspace-agent-session';
-import { Bot, Sparkles, Waypoints } from 'lucide-react';
+import { IconRobot, IconSparkles, IconTimeline } from '@tabler/icons-react';
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,7 @@ import {
 
 
 /* Batch-02: Extracted Long Classes */
-const C_WORKSPACEAGENTCOUNCILSETUP_1 = "rounded-2xl px-8 h-12 bg-primary hover:bg-primary/90 text-primary-foreground typo-caption font-bold tracking-20 shadow-primary-medium hover:shadow-primary-glow transition-all";
+const C_WORKSPACEAGENTCOUNCILSETUP_1 = "rounded-2xl px-8 h-12 bg-primary hover:bg-primary/90 text-primary-foreground typo-caption font-bold shadow-primary-medium hover:shadow-primary-glow transition-all";
 
 interface WorkspaceAgentCouncilSetupProps {
     councilSetup: CouncilRunConfig;
@@ -102,8 +102,8 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
 
             <div className="grid gap-4 md:grid-cols-3">
                 <div className="rounded-2xl border border-border/30 bg-muted/40 p-4 transition-all hover:bg-muted/50">
-                    <div className="flex items-center gap-2 typo-overline font-bold tracking-25 text-muted-foreground/30 mb-3">
-                        <Bot className="h-3.5 w-3.5" />
+                    <div className="flex items-center gap-2 typo-overline font-bold text-muted-foreground/30 mb-3">
+                        <IconRobot className="h-3.5 w-3.5" />
                         <span>{t('council.chairman')}</span>
                     </div>
                     <div className="text-lg font-bold text-foreground/90">
@@ -118,8 +118,8 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                     </div>
                 </div>
                 <div className="rounded-2xl border border-border/30 bg-muted/40 p-4 transition-all hover:bg-muted/50">
-                    <div className="flex items-center gap-2 typo-overline font-bold tracking-25 text-muted-foreground/30 mb-3">
-                        <Sparkles className="h-3.5 w-3.5" />
+                    <div className="flex items-center gap-2 typo-overline font-bold text-muted-foreground/30 mb-3">
+                        <IconSparkles className="h-3.5 w-3.5" />
                         <span>{t('agents.strategy')}</span>
                     </div>
                     <div className="text-lg font-bold text-foreground/90">
@@ -130,8 +130,8 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                     </div>
                 </div>
                 <div className="rounded-2xl border border-border/30 bg-muted/40 p-4 transition-all hover:bg-muted/50">
-                    <div className="flex items-center gap-2 typo-overline font-bold tracking-25 text-muted-foreground/30 mb-3">
-                        <Waypoints className="h-3.5 w-3.5" />
+                    <div className="flex items-center gap-2 typo-overline font-bold text-muted-foreground/30 mb-3">
+                        <IconTimeline className="h-3.5 w-3.5" />
                         <span>{t('council.requestedSubagents')}</span>
                     </div>
                     <div className="text-lg font-bold text-foreground/90">
@@ -314,7 +314,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                     onClick={onApplyCouncilSetup}
                     className={C_WORKSPACEAGENTCOUNCILSETUP_1}
                 >
-                    <Waypoints className="mr-2 h-4 w-4" />
+                    <IconTimeline className="mr-2 h-4 w-4" />
                     {t('council.runCouncil')}
                 </Button>
             </div>

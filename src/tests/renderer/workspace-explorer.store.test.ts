@@ -8,6 +8,9 @@
  * (at your option) any later version.
  */
 
+import { WorkspaceEntry } from '@shared/types/workspace';
+import { beforeEach, describe, expect, it } from 'vitest';
+
 import {
     __resetWorkspaceExplorerStoreForTests,
     clearWorkspaceInlineAction,
@@ -19,9 +22,7 @@ import {
     setWorkspaceInlineDraftName,
     startWorkspaceInlineCreate,
     startWorkspaceInlineRename,
-} from '@renderer/store/workspace-explorer.store';
-import { WorkspaceEntry } from '@shared/types/workspace';
-import { beforeEach, describe, expect, it } from 'vitest';
+} from '@/store/workspace-explorer.store';
 
 const WORKSPACE_ID = 'workspace-1';
 

@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Check, Plus } from 'lucide-react';
+import { IconCheck, IconPlus } from '@tabler/icons-react';
 import { useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
@@ -112,7 +112,7 @@ export function ParameterPresets({
                         >
                             <Icon size={12} />
                             {resolvePresetName(preset)}
-                            {isActive && <Check size={10} />}
+                            {isActive && <IconCheck size={10} />}
                         </button>
                     );
                 })}
@@ -128,7 +128,7 @@ export function ParameterPresets({
                     onClick={handleCreateCustom}
                     className={C_PARAMETERPRESETS_1}
                 >
-                    <Plus size={12} />
+                    <IconPlus size={12} />
                     {t('ssh.presets.custom')}
                 </button>
             </div>

@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { AlertCircle, RotateCcw } from 'lucide-react';
+import { IconAlertCircle, IconRotate } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -48,13 +48,13 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
             className={cn('flex flex-col items-center justify-center gap-3 p-6 text-center animate-in fade-in zoom-in-95 duration-300', className)}
         >
             <div className="p-3 rounded-xl bg-destructive/10 text-destructive">
-                {icon ?? <AlertCircle className="w-6 h-6" />}
+                {icon ?? <IconAlertCircle className="w-6 h-6" />}
             </div>
 
             <div className="flex flex-col gap-1">
                 <h3 className="text-sm font-semibold text-foreground">{title}</h3>
                 {message && (
-                    <p className="text-xs text-muted-foreground max-w-sm mx-auto">{message}</p>
+                    <p className="text-sm text-muted-foreground max-w-sm mx-auto">{message}</p>
                 )}
             </div>
 
@@ -62,9 +62,9 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
                 <button
                     type="button"
                     onClick={onRetry}
-                    className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 border-none rounded-lg cursor-pointer transition-colors"
+                    className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 border-none rounded-lg cursor-pointer transition-colors"
                 >
-                    <RotateCcw className="w-3 h-3" />
+                    <IconRotate className="w-3 h-3" />
                     {t('common.retry')}
                 </button>
             )}

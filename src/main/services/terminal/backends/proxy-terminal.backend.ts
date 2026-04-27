@@ -8,11 +8,10 @@
  * (at your option) any later version.
  */
 
-import axios from 'axios';
-import { WebSocket } from 'ws';
-
 import { appLogger } from '@main/logging/logger';
 import { AuthService } from '@main/services/security/auth.service';
+import axios from 'axios';
+import { WebSocket } from 'ws';
 
 import { ITerminalBackend, ITerminalProcess, TerminalCreateOptions } from './terminal-backend.interface';
 

@@ -60,7 +60,7 @@ export const ToolOutputVirtualizer: React.FC<ToolOutputVirtualizerProps> = ({
                 data={lines}
                 itemContent={(index, line) => (
                     <div className="flex w-full py-0.5 px-4 hover:bg-muted/50 transition-colors">
-                        <span className="shrink-0 w-10 min-w-10 text-right pr-4 text-xs tabular-nums text-muted-foreground/50 border-r border-border/10 select-none cursor-default font-medium">
+                        <span className="shrink-0 w-10 min-w-10 text-right pr-4 text-sm tabular-nums text-muted-foreground/50 border-r border-border/10 select-none cursor-default font-medium">
                             {index + 1}
                         </span>
                         <span className="flex-1 pl-4 break-all whitespace-pre-wrap break-words min-w-0">{line || ' '}</span>

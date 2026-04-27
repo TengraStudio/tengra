@@ -177,7 +177,7 @@ describe('ThemeService Input Validation', () => {
         });
 
         it('should reject name exceeding max length', async () => {
-            const input = validThemeInput('X'.repeat(101));
+            const input = validThemeInput('IconX'.repeat(101));
             expect(await service.addCustomTheme(input)).toBeNull();
         });
 
@@ -452,7 +452,7 @@ describe('ThemeService Export/Import/Persistence', () => {
     });
 
     it('should return null when duplicating non-existent theme', async () => {
-        expect(await service.duplicateTheme('nope', 'X')).toBeNull();
+        expect(await service.duplicateTheme('nope', 'IconX')).toBeNull();
     });
 
     it('should write to temp then rename (atomic save)', async () => {

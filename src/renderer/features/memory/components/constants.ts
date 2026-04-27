@@ -13,52 +13,43 @@
  */
 
 import { MemoryCategory } from '@shared/types/advanced-memory';
-import { LucideIcon } from 'lucide-react';
-import {
-  ArrowRight,
-  Brain,
-  GitMerge,
-  HelpCircle,
-  Lightbulb,
-  Settings,
-  Sparkles,
-  Zap,
-} from 'lucide-react';
+import type { Icon } from '@tabler/icons-react';
+import { IconArrowRight, IconBolt,IconBrain, IconBulb, IconGitMerge, IconHelpCircle, IconSettings, IconSparkles } from '@tabler/icons-react';
 
 export const CATEGORY_CONFIG: Record<
   MemoryCategory,
-  { labelKey: string; color: string; icon: LucideIcon }
+  { labelKey: string; color: string; icon: Icon }
 > = {
   preference: {
     labelKey: 'memory.categories.preference',
     color: 'bg-primary/10 text-primary',
-    icon: Settings,
+    icon: IconSettings,
   },
-  personal: { labelKey: 'memory.categories.personal', color: 'bg-accent/10 text-accent', icon: Brain },
+  personal: { labelKey: 'memory.categories.personal', color: 'bg-accent/10 text-accent', icon: IconBrain },
   workspace: {
     labelKey: 'memory.categories.workspace',
     color: 'bg-success/10 text-success',
-    icon: Lightbulb,
+    icon: IconBulb,
   },
-  technical: { labelKey: 'memory.categories.technical', color: 'bg-warning/10 text-warning', icon: Zap },
+  technical: { labelKey: 'memory.categories.technical', color: 'bg-warning/10 text-warning', icon: IconBolt },
   workflow: {
     labelKey: 'memory.categories.workflow',
     color: 'bg-accent/10 text-accent',
-    icon: ArrowRight,
+    icon: IconArrowRight,
   },
   relationship: {
     labelKey: 'memory.categories.relationship',
     color: 'bg-info/10 text-info',
-    icon: GitMerge,
+    icon: IconGitMerge,
   },
   fact: {
     labelKey: 'memory.categories.fact',
     color: 'bg-muted/10 text-muted-foreground',
-    icon: HelpCircle,
+    icon: IconHelpCircle,
   },
   instruction: {
     labelKey: 'memory.categories.instruction',
     color: 'bg-warning/10 text-warning',
-    icon: Sparkles,
+    icon: IconSparkles,
   },
 };

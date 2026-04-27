@@ -8,19 +8,20 @@
  * (at your option) any later version.
  */
 
-import type { SessionCouncilRuntime } from '@renderer/features/workspace/types/workspace-agent-session-local';
+import type {
+    CouncilSubagentRuntime,
+    CouncilSubagentWorkspaceDraft,
+} from '@shared/types/workspace-agent-session';
+import { describe, expect, it } from 'vitest';
+
+import type { SessionCouncilRuntime } from '@/features/workspace/types/workspace-agent-session-local';
 import {
     appendCouncilDiscussionMessage,
     applyCouncilReviewDecision,
     assignCouncilAssist,
     deriveCouncilRuntimeStatus,
     submitCouncilDraftForReview,
-} from '@renderer/features/workspace/utils/workspace-agent-council-runtime';
-import type {
-    CouncilSubagentRuntime,
-    CouncilSubagentWorkspaceDraft,
-} from '@shared/types/workspace-agent-session';
-import { describe, expect, it } from 'vitest';
+} from '@/features/workspace/utils/workspace-agent-council-runtime';
 
 function createAgent(
     overrides: Partial<CouncilSubagentRuntime> & Pick<CouncilSubagentRuntime, 'id' | 'name'>

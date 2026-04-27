@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { CornerUpRight, Folder as FolderIcon, MessageSquare, Pin, Trash2 } from 'lucide-react';
+import { IconCornerUpRight, IconFolder as FolderIcon, IconMessage, IconPin, IconTrash } from '@tabler/icons-react';
 import React, { memo, useCallback } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -59,7 +59,7 @@ export const ChatListItem = memo<ChatListItemProps>(({
                 )}
             >
                 <div className="relative">
-                    <MessageSquare className={cn("w-4 h-4 shrink-0", isActive ? "text-primary" : "opacity-50")} />
+                    <IconMessage className={cn("w-4 h-4 shrink-0", isActive ? "text-primary" : "opacity-50")} />
                     {isGenerating && (
                         <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full animate-pulse" />
                     )}
@@ -70,7 +70,7 @@ export const ChatListItem = memo<ChatListItemProps>(({
             <div className={C_CHATLISTITEM_1}>
                 {onMoveToFolder && folders && folders.length > 0 && (
                     <div className="relative group/folder pointer-events-auto">
-                        <div className="p-1 hover:text-primary rounded-md cursor-pointer"><CornerUpRight className="w-3 h-3" /></div>
+                        <div className="p-1 hover:text-primary rounded-md cursor-pointer"><IconCornerUpRight className="w-3 h-3" /></div>
                         <div className={C_CHATLISTITEM_2}>
                             {folders.map(f => (
                                 <div key={f.id} onClick={(e) => { e.stopPropagation(); onMoveToFolder(chat.id, f.id); }} className="px-2 py-1.5 hover:bg-primary/20 hover:text-primary cursor-pointer typo-caption truncate flex items-center gap-2">
@@ -81,10 +81,10 @@ export const ChatListItem = memo<ChatListItemProps>(({
                     </div>
                 )}
                 <div onClick={handleTogglePin} className="p-1 hover:text-primary rounded-md cursor-pointer pointer-events-auto">
-                    <Pin className={cn("w-3 h-3", chat.isPinned && "fill-current")} />
+                    <IconPin className={cn("w-3 h-3", chat.isPinned && "fill-current")} />
                 </div>
                 <div onClick={handleDelete} className="p-1 hover:text-destructive rounded-md cursor-pointer pointer-events-auto">
-                    <Trash2 className="w-3 h-3" />
+                    <IconTrash className="w-3 h-3" />
                 </div>
             </div>
         </div>

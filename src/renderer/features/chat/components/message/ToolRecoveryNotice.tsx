@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { AlertCircle, RotateCcw } from 'lucide-react';
+import { IconAlertCircle, IconRotate } from '@tabler/icons-react';
 import { memo } from 'react';
 
 /* Batch-02: Extracted Long Classes */
@@ -33,7 +33,7 @@ export const ToolRecoveryNotice = memo(
         return (
             <div className={C_TOOLRECOVERYNOTICE_1}>
                 <div className="flex min-w-0 items-center gap-2">
-                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                    <IconAlertCircle className="h-3.5 w-3.5 shrink-0" />
                     <span className="truncate">
                         {t('tools.failed')}: {interruptedToolNames.join(', ')}
                     </span>
@@ -46,7 +46,7 @@ export const ToolRecoveryNotice = memo(
                         aria-label={t('messageBubble.regenerate')}
                         title={t('messageBubble.regenerate')}
                     >
-                        <RotateCcw className="h-3 w-3" />
+                        <IconRotate className="h-3 w-3" />
                         <span>{t('messageBubble.regenerate')}</span>
                     </button>
                 )}

@@ -11,6 +11,7 @@
 import { localePackManifestSchema } from '@shared/schemas/locale.schema';
 import type {
     InstallRequest,
+    MarketplaceCodeLanguagePack,
     MarketplaceLanguage,
     MarketplaceRegistry,
     MarketplaceRuntimeProfile} from '@shared/types/marketplace';
@@ -36,6 +37,39 @@ export const marketplaceLanguageSchema = marketplaceItemBaseSchema.extend({
     coverage: z.number().min(0).max(100).optional(),
     schemaVersion: localePackManifestSchema.shape.schemaVersion,
 }) satisfies z.ZodType<MarketplaceLanguage>;
+
+const marketplaceCodeLanguageConfigurationSchema = z.object({
+    comments: z.object({
+        lineComment: z.string().min(1).max(32).optional(),
+        blockComment: z.tuple([z.string().min(1).max(32), z.string().min(1).max(32)]).optional(),
+    }).optional(),
+    brackets: z.array(z.tuple([z.string().min(1).max(16), z.string().min(1).max(16)])).max(32).optional(),
+    autoClosingPairs: z.array(z.object({
+        open: z.string().min(1).max(16),
+        close: z.string().min(1).max(16),
+        notIn: z.array(z.string().min(1).max(16)).max(8).optional(),
+    })).max(64).optional(),
+    surroundingPairs: z.array(z.object({
+        open: z.string().min(1).max(16),
+        close: z.string().min(1).max(16),
+    })).max(64).optional(),
+}).passthrough();
+
+export const marketplaceCodeLanguagePackSchema = marketplaceItemBaseSchema.extend({
+    itemType: z.literal('code-language-pack'),
+    category: z.string().min(1).max(64).optional(),
+    languages: z.array(z.object({
+        id: z.string().min(1).max(64),
+        displayName: z.string().min(1).max(128),
+        aliases: z.array(z.string().min(1).max(64)).max(32).optional(),
+        extensions: z.array(z.string().min(1).max(32)).max(64).optional(),
+        filenames: z.array(z.string().min(1).max(128)).max(32).optional(),
+        monacoLanguage: z.string().min(1).max(64).optional(),
+        textMateScope: z.string().min(1).max(128).optional(),
+        configuration: marketplaceCodeLanguageConfigurationSchema.optional(),
+        monarch: z.record(z.string(), z.unknown()).optional(),
+    })).min(1).max(32),
+}) satisfies z.ZodType<MarketplaceCodeLanguagePack>;
 
 const marketplaceThemeSchema = marketplaceItemBaseSchema.extend({
     itemType: z.literal('theme'),
@@ -65,10 +99,6 @@ const marketplaceMcpSchema = marketplaceItemBaseSchema.extend({
     capabilities: z.array(z.string().min(1).max(64)).optional(),
 });
 
-const marketplacePersonaSchema = marketplaceItemBaseSchema.extend({
-    itemType: z.literal('persona'),
-    context: z.string().min(1),
-});
 
 const marketplaceExtensionSchema = marketplaceItemBaseSchema.extend({
     itemType: z.literal('extension'),
@@ -170,17 +200,17 @@ export const marketplaceRegistrySchema = z.object({
     lastUpdated: z.string().datetime(),
     themes: z.array(marketplaceThemeSchema),
     mcp: z.array(marketplaceMcpSchema),
-    personas: z.array(marketplacePersonaSchema).optional(),
     models: z.array(marketplaceModelSchema).optional(),
     prompts: z.array(marketplacePromptSchema).optional(),
     languages: z.array(marketplaceLanguageSchema).optional(),
+    codeLanguagePacks: z.array(marketplaceCodeLanguagePackSchema).optional(),
     skills: z.array(marketplaceSkillSchema).optional(),
     extensions: z.array(marketplaceExtensionSchema).optional(),
     iconPacks: z.array(marketplaceIconPackSchema).optional(),
 }) satisfies z.ZodType<MarketplaceRegistry>;
 
 export const marketplaceInstallRequestSchema = z.object({
-    type: z.enum(['theme', 'mcp', 'persona', 'model', 'prompt', 'language', 'skill', 'extension', 'icon-pack']),
+    type: z.enum(['theme', 'mcp', 'model', 'prompt', 'language', 'code-language-pack', 'skill', 'extension', 'icon-pack']),
     id: z.string().min(1).max(128),
     downloadUrl: z.string().url(),
     provider: z.enum(['ollama', 'huggingface', 'custom']).optional(),

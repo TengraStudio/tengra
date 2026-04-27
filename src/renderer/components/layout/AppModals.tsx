@@ -8,19 +8,19 @@
  * (at your option) any later version.
  */
 
-import { KeyboardShortcutsModal } from '@renderer/components/shared/KeyboardShortcutsModal';
-import { Modal } from '@renderer/components/ui/modal';
-import { SettingsCategory } from '@renderer/features/settings/types';
-import { AppView } from '@renderer/hooks/useAppState';
-import { Language } from '@renderer/i18n';
 import React, { Suspense } from 'react';
 
+import { KeyboardShortcutsModal } from '@/components/shared/KeyboardShortcutsModal';
+import { Modal } from '@/components/ui/modal';
+import { SettingsCategory } from '@/features/settings/types';
+import { AppView } from '@/hooks/useAppState';
+import { Language } from '@/i18n';
 import { AnimatePresence } from '@/lib/framer-motion-compat';
 
 
 // Lazy load heavy components
-const SSHManager = React.lazy(() => import('@renderer/features/ssh/SSHManager').then(m => ({ default: m.SSHManager })));
-const AudioChatOverlay = React.lazy(() => import('@renderer/features/chat/components/AudioChatOverlay').then(m => ({ default: m.AudioChatOverlay })));
+const SSHManager = React.lazy(() => import('@/features/ssh/SSHManager').then(m => ({ default: m.SSHManager })));
+const AudioChatOverlay = React.lazy(() => import('@/features/chat/components/AudioChatOverlay').then(m => ({ default: m.AudioChatOverlay })));
 
 export interface AppModalsProps {
     isAuthModalOpen: boolean

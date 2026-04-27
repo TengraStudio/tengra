@@ -54,7 +54,7 @@ export const TodoAddForm = ({ isAdding, onAdd, t }: TodoAddFormProps) => {
                                 {t('common.add')}
                             </button>
                         </div>
-                        <div className="text-xxs text-muted-foreground mt-2 pl-1">
+                        <div className="text-sm text-muted-foreground mt-2 pl-1">
                             {t('workspaces.willActOn')} <span className="font-mono text-primary/70">/TODO.md</span>
                         </div>
                     </div>

@@ -13,11 +13,11 @@
  * UI-11: Voice-first interface option
  */
 
-import { cn } from '@renderer/lib/utils';
 import { VoiceCommand } from '@shared/types/voice';
 import { useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 import { appLogger } from '@/utils/renderer-logger';
 
 import { isSpeechRecognitionAvailable,useVoice } from '../hooks/useVoice';

@@ -11,7 +11,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { WorkspaceSettingsPanel as WorkspaceSettingsPanel } from '@/features/workspace/components/WorkspaceSettingsPanel';
+import { WorkspaceSettingsPanel as WorkspaceSettingsPanel } from '@/features/workspace/workspace-dashboard/WorkspaceSettingsPanel';
 import type { Workspace } from '@/types';
 
 vi.mock('@/i18n', () => ({

@@ -9,7 +9,7 @@
  */
 
 import type { FileSearchResult } from '@shared/types/common';
-import { X } from 'lucide-react';
+import { IconX } from '@tabler/icons-react';
 import * as React from 'react';
 import {
     useCallback,
@@ -62,7 +62,7 @@ const AUTO_SAVE_DELAY_MS = 700;
 
 
 /* ------------------------------------------------------------------ */
-/*  Workspace tools reducer – groups rename, test, settings  */
+/* Workspace tools reducer – groups rename, test, settings */
 /* ------------------------------------------------------------------ */
 
 interface WorkspaceToolsState {
@@ -117,7 +117,7 @@ const WORKSPACE_TOOLS_INITIAL: WorkspaceToolsState = {
 };
 
 /* ------------------------------------------------------------------ */
-/*  Small utility hooks                                                */
+/* Small utility hooks */
 /* ------------------------------------------------------------------ */
 
 /** Warns the user before closing the window when there are unsaved changes. */
@@ -287,7 +287,7 @@ function useEditorAutoSave(args: {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Workspace action callbacks (rename, semantic, test)      */
+/* Workspace action callbacks (rename, semantic, test) */
 /* ------------------------------------------------------------------ */
 
 interface WorkspaceActionDeps {
@@ -338,7 +338,7 @@ function useRefactorActions(deps: WorkspaceActionDeps) {
 
 
 /* ------------------------------------------------------------------ */
-/*  Main component                                                    */
+/* Main component */
 /* ------------------------------------------------------------------ */
 
 /**
@@ -558,7 +558,7 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
                             className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
                             aria-label={t('common.close')}
                         >
-                            <X className="h-3.5 w-3.5" />
+                            <IconX className="h-3.5 w-3.5" />
                         </button>
                     </div>
                     <div className="max-h-64 overflow-auto">

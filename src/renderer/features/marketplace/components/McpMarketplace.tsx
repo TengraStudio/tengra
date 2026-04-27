@@ -8,9 +8,8 @@
  * (at your option) any later version.
  */
 
-import { formatBytes } from '@renderer/utils/format.util';
 import type { InstallRequest, MarketplaceExtension, MarketplaceItem, MarketplaceLanguage, MarketplaceMcp, MarketplaceModel, MarketplaceRegistry, MarketplaceRuntimeProfile } from '@shared/types/marketplace';
-import { Package, RefreshCw } from 'lucide-react';
+import { IconPackage, IconRefresh } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useModel } from '@/context/ModelContext';
@@ -20,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { marketplaceStore } from '@/store/marketplace.store';
 import { pushNotification } from '@/store/notification-center.store';
 import type { ModelInfo } from '@/types';
+import { formatBytes } from '@/utils/format.util';
 import { appLogger } from '@/utils/renderer-logger';
 
 import { useMarketplaceItems } from '../hooks/useMarketplaceItems';
@@ -608,26 +608,7 @@ export function McpMarketplace({
     if (loading) { return <Loader t={t} />; }
 
     return (
-        <div className="space-y-6">
-            {mode === 'models' && (
-                <div className="flex items-center gap-2 mb-2">
-                    {(['ollama', 'huggingface', 'community'] as const).map(tab => (
-                        <button
-                            key={tab}
-                            onClick={() => onQueryChange(prev => ({ ...prev, modelTab: tab, page: 1, selectedItemId: null }))}
-                            className={cn(
-                                'px-4 py-1.5 rounded-lg text-xxxs font-black uppercase tracking-widest transition-all',
-                                query.modelTab === tab
-                                    ? 'bg-primary text-primary-foreground shadow-sm'
-                                    : 'text-muted-foreground/50 hover:text-foreground hover:bg-muted/20'
-                            )}
-                        >
-                            {t(`marketplace.tabs.${tab}`)}
-                        </button>
-                    ))}
-                </div>
-            )}
-
+        <div className="space-y-8">
             <MarketplaceToolbar
                 mode={mode}
                 query={query}
@@ -638,9 +619,14 @@ export function McpMarketplace({
                 mcpView={query.mcpView}
             />
 
-            <div className="flex flex-col xl:flex-row gap-8 transition-all duration-300">
-                <div className="flex-1 space-y-6">
-                    <div className="divide-y divide-muted/10 border-t border-muted/10">
+            <div className="flex flex-col xl:flex-row gap-10 transition-all duration-300">
+                <div className="flex-1 space-y-8">
+                    <div className={cn(
+                        'transition-all duration-300',
+                        query.viewMode === 'grid' 
+                            ? 'grid grid-cols-1 lg:grid-cols-2 gap-4' 
+                            : 'flex flex-col gap-4'
+                    )}>
                         {enrichedPagedItems.map(entry => {
                             const isSelected = selectedItemId === (entry.type === 'local' ? entry.plugin.id : entry.item.id);
                             return (
@@ -648,15 +634,10 @@ export function McpMarketplace({
                                     key={entry.key}
                                     onClick={() => setSelectedItemId(entry.type === 'local' ? entry.plugin.id : entry.item.id)}
                                     className={cn(
-                                        'group relative flex items-start cursor-pointer transition-colors duration-200',
-                                        isSelected ? 'bg-primary/[0.04]' : 'bg-transparent hover:bg-muted/30'
+                                        'group relative flex items-start cursor-pointer transition-all duration-200 rounded-2xl overflow-hidden',
+                                        isSelected ? 'bg-primary/[0.03] ring-1 ring-inset ring-primary/10 shadow-sm' : 'bg-transparent hover:bg-muted/30'
                                     )}
                                 >
-                                    {/* Selection indicator */}
-                                    {isSelected && (
-                                        <div className="absolute left-0 top-2 bottom-2 w-0.5 bg-primary rounded-r-full" />
-                                    )}
-
                                     <div className="flex-1">
                                         {entry.type === 'local' ? (
                                             <McpCard
@@ -697,7 +678,7 @@ export function McpMarketplace({
                 </div>
 
                 {selectedItem && (
-                    <div className="w-full xl:w-460 shrink-0">
+                    <div className="w-full xl:w-[480px] shrink-0">
                         <div className="sticky top-6">
                             <MarketplaceInfoPanel
                                 item={selectedItem}
@@ -739,7 +720,6 @@ function EmptyState({
         extensions: 'marketplace.tabs.extensions',
         skills: 'marketplace.tabs.skills',
         themes: 'marketplace.tabs.themes',
-        personas: 'marketplace.tabs.personas',
         models: 'marketplace.tabs.models',
         prompts: 'marketplace.tabs.prompts',
         languages: 'marketplace.tabs.languages',
@@ -747,8 +727,8 @@ function EmptyState({
     };
     return (
         <div className="py-32 flex flex-col items-center justify-center text-center">
-            <Package className="w-12 h-12 text-muted-foreground/10 mb-4" />
-            <p className="text-xs text-muted-foreground/40 font-black uppercase tracking-super-wide">
+            <IconPackage className="w-12 h-12 text-muted-foreground/10 mb-4" />
+            <p className="text-sm text-muted-foreground/40 font-semibold tracking-tight">
                 {t('marketplace.emptyState', { mode: t(modeKeyByMode[mode]) })}
             </p>
         </div>
@@ -759,19 +739,19 @@ function EmptyState({
 function Loader({ t }: { t: (key: string) => string }) {
     return (
         <div className="flex flex-col items-center justify-center py-32 space-y-5">
-            <RefreshCw className="w-8 h-8 text-primary animate-spin opacity-40" />
-            <p className="text-xxxs font-black uppercase tracking-widest text-muted-foreground/40 animate-pulse">
+            <IconRefresh className="w-8 h-8 text-primary/40 animate-spin" />
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/30 animate-pulse">
                 {t('marketplace.syncing')}
             </p>
         </div>
     );
 }
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 
 /* Batch-02: Extracted Long Classes */
-const C_MCPMARKETPLACE_1 = "p-2 rounded-full hover:bg-muted text-muted-foreground/40 hover:text-foreground transition-all active:scale-90 disabled:opacity-10";
-const C_MCPMARKETPLACE_2 = "p-2 rounded-full hover:bg-muted text-muted-foreground/40 hover:text-foreground transition-all active:scale-90 disabled:opacity-10";
+const C_MCPMARKETPLACE_1 = "p-2.5 rounded-xl hover:bg-muted text-muted-foreground/20 hover:text-foreground transition-all disabled:opacity-0";
+const C_MCPMARKETPLACE_2 = "p-2.5 rounded-xl hover:bg-muted text-muted-foreground/20 hover:text-foreground transition-all disabled:opacity-0";
 
 function Pagination({
     currentPage,
@@ -785,16 +765,16 @@ function Pagination({
     t: (key: string, options?: Record<string, string | number>) => string;
 }) {
     return (
-        <div className="flex items-center justify-center gap-6 pt-12">
+        <div className="flex items-center justify-center gap-8 pt-12">
             <button
                 type="button"
                 onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                 disabled={currentPage <= 1}
                 className={C_MCPMARKETPLACE_1}
             >
-                <ChevronLeft className="h-5 w-5" />
+                <IconChevronLeft className="h-5 w-5" />
             </button>
-            <span className="text-xxxs font-black uppercase tracking-super-wide text-muted-foreground/30">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/20">
                 {t('common.pageOf', { current: currentPage, total: totalPages })}
             </span>
             <button
@@ -803,7 +783,7 @@ function Pagination({
                 disabled={currentPage >= totalPages}
                 className={C_MCPMARKETPLACE_2}
             >
-                <ChevronRight className="h-5 w-5" />
+                <IconChevronRight className="h-5 w-5" />
             </button>
         </div>
     );

@@ -27,7 +27,7 @@ export const TENGRA_BRAND: BrandConfig = {
     description: 'A high-performance, intelligent OS Assistant with deep local system integration.'
 };
 
-export function getSystemPrompt(language: Language = 'en', _personaPrompt?: string, provider?: string, model?: string) {
+export function getSystemPrompt(language: Language = 'en', provider?: string, model?: string) {
     const localePack = localeRegistry.getLocalePack(language);
     return buildSystemPrompt({
         language,

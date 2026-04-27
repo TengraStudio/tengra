@@ -8,6 +8,8 @@
  * (at your option) any later version.
  */
 
+import { describe, expect, it } from 'vitest';
+
 import {
     createModelToolList,
     extractImageRequestCount,
@@ -16,9 +18,7 @@ import {
     isExplicitImageRequest,
     isImageOnlyModel,
     normalizeToolArgs,
-} from '@renderer/features/chat/hooks/chat-runtime-policy.util';
-import { describe, expect, it } from 'vitest';
-
+} from '@/features/chat/hooks/chat-runtime-policy.util';
 import { Message, ToolDefinition } from '@/types';
 
 describe('chat-runtime-policy.util', () => {

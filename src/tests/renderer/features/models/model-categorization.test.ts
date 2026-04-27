@@ -8,8 +8,9 @@
  * (at your option) any later version.
  */
 
-import { categorizeModel } from '@renderer/features/models/utils/model-categorization';
 import { describe, expect, it } from 'vitest';
+
+import { categorizeModel } from '@/features/models/utils/model-categorization';
 
 describe('categorizeModel', () => {
     it('maps nvidia_key provider hint to nvidia', () => {

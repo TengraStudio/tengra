@@ -77,6 +77,11 @@ export interface OllamaBridge {
     getGPUAlertThresholds: () => Promise<{ highMemoryPercent: number; highTemperatureC: number; lowMemoryMB: number }>;
     onGPUAlert: (callback: (alert: IpcValue) => void) => () => void;
     onGPUStatus: (callback: (status: IpcValue) => void) => () => void;
+
+    // Cloud Account Authentication
+    initiateConnect: () => Promise<IpcValue>;
+    pollConnectStatus: (code: string, privateKeyB64: string, publicKeyB64: string) => Promise<IpcValue>;
+    getOllamaAccounts: () => Promise<IpcValue[]>;
 }
 
 export function createOllamaBridge(ipc: IpcRenderer): OllamaBridge {
@@ -138,5 +143,11 @@ export function createOllamaBridge(ipc: IpcRenderer): OllamaBridge {
             ipc.on('ollama:gpu-status', listener);
             return () => ipc.removeListener('ollama:gpu-status', listener);
         },
+
+        // Cloud Account Authentication
+        initiateConnect: () => ipc.invoke('ollama:initiate-connect'),
+        pollConnectStatus: (code, privateKeyB64, publicKeyB64) =>
+            ipc.invoke('ollama:poll-connect-status', code, privateKeyB64, publicKeyB64),
+        getOllamaAccounts: () => ipc.invoke('ollama:get-ollama-accounts'),
     };
 }

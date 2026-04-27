@@ -8,8 +8,9 @@
  * (at your option) any later version.
  */
 
-import { createComponentHealthStore } from '@renderer/store/component-health.store';
 import { describe, expect, it } from 'vitest';
+
+import { createComponentHealthStore } from '@/store/component-health.store';
 
 describe('component health store', () => {
     it('tracks success, retry, fallback, and failure counters', () => {

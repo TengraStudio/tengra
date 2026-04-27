@@ -8,11 +8,11 @@
  * (at your option) any later version.
  */
 
-import { FileNode, WorkspaceTreeItem } from '@renderer/features/workspace/components/WorkspaceTreeItem';
-import { ChevronDown, ChevronRight, Folder, Server, X } from 'lucide-react';
+import { IconChevronDown, IconChevronRight, IconFolder, IconServer, IconX } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { List, RowComponentProps } from 'react-window';
 
+import { FileNode, WorkspaceTreeItem } from '@/features/workspace/components/WorkspaceTreeItem';
 import { cn } from '@/lib/utils';
 import { WorkspaceEntry, WorkspaceMount } from '@/types';
 
@@ -48,9 +48,9 @@ interface MountIconProps {
 
 const MountIcon: React.FC<MountIconProps> = ({ mountType }) => {
     return mountType === 'ssh' ? (
-        <Server className="w-3.5 h-3.5 text-primary" />
+        <IconServer className="w-3.5 h-3.5 text-primary" />
     ) : (
-        <Folder className="w-3.5 h-3.5 text-success" />
+        <IconFolder className="w-3.5 h-3.5 text-success" />
     );
 };
 
@@ -84,9 +84,9 @@ const MountHeader: React.FC<MountHeaderProps> = ({
         >
             <span className="opacity-50 group-hover/mount:opacity-100 transition-opacity">
                 {isExpanded ? (
-                    <ChevronDown className="w-3 h-3" />
+                    <IconChevronDown className="w-3 h-3" />
                 ) : (
-                    <ChevronRight className="w-3 h-3" />
+                    <IconChevronRight className="w-3 h-3" />
                 )}
             </span>
             <MountIcon mountType={mount.type} />
@@ -95,7 +95,7 @@ const MountHeader: React.FC<MountHeaderProps> = ({
                     {mount.name}
                 </div>
                 {mount.type === 'ssh' && (
-                    <span className="px-1 py-0.5 rounded-3px bg-primary/20 text-primary text-xxxs font-bold border border-primary/30">
+                    <span className="px-1 py-0.5 rounded-3px bg-primary/20 text-primary text-sm font-bold border border-primary/30">
                         {t('terminal.sshPrefix')}
                     </span>
                 )}
@@ -109,7 +109,7 @@ const MountHeader: React.FC<MountHeaderProps> = ({
                 className="p-1 rounded opacity-0 group-hover/mount:opacity-100 hover:text-destructive transition-all"
                 title={t('workspace.removeMount')}
             >
-                <X className="w-3 h-3" />
+                <IconX className="w-3 h-3" />
             </button>
         </div>
     );
@@ -312,7 +312,7 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
                         ))
                     )}
                     {rootNodes.length === 0 && !loading && (
-                        <div className="text-xxs text-muted-foreground/40 pl-4 py-2 flex items-center gap-2">
+                        <div className="text-sm text-muted-foreground/40 pl-4 py-2 flex items-center gap-2">
                             {t('workspace.emptyFolder')}
                         </div>
                     )}

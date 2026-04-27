@@ -8,12 +8,12 @@
  * (at your option) any later version.
  */
 
-import { UI_PRIMITIVES } from '@renderer/constants/ui-primitives';
+import type { Icon } from '@tabler/icons-react';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { LucideIcon } from 'lucide-react';
 import React from 'react';
 
 import { Tooltip } from '@/components/ui/tooltip';
+import { UI_PRIMITIVES } from '@/constants/ui-primitives';
 import { motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 
@@ -46,7 +46,7 @@ const sidebarItemVariants = cva(
 export interface SidebarItemProps
     extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof sidebarItemVariants> {
-    icon: LucideIcon;
+    icon: Icon;
     label: string;
     badge?: number | string;
     actions?: React.ReactNode;
@@ -117,7 +117,7 @@ export const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>
                             {badge !== undefined && (
                                 <span
                                     className={cn(
-                                        'text-xxs px-1.5 py-0.5 rounded-full font-bold',
+                                        'text-sm px-1.5 py-0.5 rounded-full font-bold',
                                         active
                                             ? 'bg-primary/20 text-primary'
                                             : 'bg-muted/50 text-muted-foreground'

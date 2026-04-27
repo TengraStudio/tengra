@@ -8,12 +8,13 @@
  * (at your option) any later version.
  */
 
-import { Badge } from '@renderer/components/ui/badge';
-import { Button } from '@renderer/components/ui/button';
-import { Input } from '@renderer/components/ui/input';
-import { cn } from '@renderer/lib/utils';
-import { Check, Download, History, RefreshCw, Search, Sparkles, Zap } from 'lucide-react';
+import { IconBolt,IconCheck, IconDownload, IconHistory, IconRefresh, IconSearch, IconSparkles } from '@tabler/icons-react';
 import React from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 import { ImageComparisonResult, ImageHistoryEntry } from '../../types';
 
@@ -84,7 +85,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1 relative z-10">
                 <div className="flex items-center gap-4">
                     <div className={C_IMAGESETTINGSHISTORY_1}>
-                        <History className="w-6 h-6" />
+                        <IconHistory className="w-6 h-6" />
                     </div>
                     <div>
                         <h3 className="text-lg font-bold text-foreground group-hover/history:text-primary transition-colors">
@@ -101,13 +102,13 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                     onClick={() => { void handleExportHistory(); }}
                     className={COMPONENT_CLASSES.buttonExport}
                 >
-                    <Download className="w-3.5 h-3.5" />
+                    <IconDownload className="w-3.5 h-3.5" />
                     {t('settings.images.exportHistory')}
                 </Button>
             </div>
 
             <div className="relative group max-w-md w-full relative z-10">
-                <Search className={C_IMAGESETTINGSHISTORY_2} />
+                <IconSearch className={C_IMAGESETTINGSHISTORY_2} />
                 <Input
                     value={historySearchQuery}
                     onChange={event => setHistorySearchQuery(event.target.value)}
@@ -118,7 +119,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
 
             {historyEntries.length === 0 ? (
                 <div className={COMPONENT_CLASSES.emptyState}>
-                    <History className="w-8 h-8 mb-4 text-muted-foreground" />
+                    <IconHistory className="w-8 h-8 mb-4 text-muted-foreground" />
                     <p className="typo-body font-bold text-muted-foreground px-6">
                         {t('settings.images.noHistory')}
                     </p>
@@ -150,7 +151,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                                     onClick={() => { void handleRegenerate(entry.id); }}
                                     className={COMPONENT_CLASSES.buttonRegenerate}
                                 >
-                                    <RefreshCw className="w-3 h-3 mr-2" />
+                                    <IconRefresh className="w-3 h-3 mr-2" />
                                     {t('settings.images.regenerate')}
                                 </Button>
                             </div>
@@ -162,10 +163,10 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                                             ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20"
                                             : "border-border/40 bg-muted/20 text-transparent group-hover/check:border-primary/40"
                                     )}>
-                                        <Check className="w-3.5 h-3.5" />
+                                        <IconCheck className="w-3.5 h-3.5" />
                                     </div>
                                     <span className={cn(
-                                        "typo-body font-bold   transition-colors",
+                                        "typo-body font-bold transition-colors",
                                         selectedCompareIds.includes(entry.id) ? "text-primary" : "text-muted-foreground"
                                     )}>
                                         {t('common.select')}
@@ -183,7 +184,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                     disabled={selectedCompareIds.length < 2}
                     className={COMPONENT_CLASSES.buttonRunCompare}
                 >
-                    <Zap className="w-4 h-4" />
+                    <IconBolt className="w-4 h-4" />
                     {t('settings.images.compareRun')}
                 </Button>
                 <div className="flex items-center gap-2">
@@ -217,7 +218,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
             <div className={COMPONENT_CLASSES.analyticsBox}>
                 <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-primary/10 text-primary group-hover/analytics:rotate-12 transition-transform">
-                        <Sparkles className="w-4 h-4" />
+                        <IconSparkles className="w-4 h-4" />
                     </div>
                     <div className="typo-body font-bold text-foreground">{t('settings.images.analyticsTitle')}</div>
                 </div>
@@ -246,7 +247,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="p-2 rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-                                <Zap className="w-4 h-4" />
+                                <IconBolt className="w-4 h-4" />
                             </div>
                             <div>
                                 <div className="typo-body font-bold text-foreground">{t('settings.images.compareTitle')}</div>

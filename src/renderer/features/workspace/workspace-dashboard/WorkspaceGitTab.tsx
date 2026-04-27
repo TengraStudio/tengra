@@ -8,19 +8,14 @@
  * (at your option) any later version.
  */
 
-import { Badge } from '@renderer/components/ui/badge';
-import { Button } from '@renderer/components/ui/button';
-import { ScrollArea } from '@renderer/components/ui/scroll-area';
-import { useGitData } from '@renderer/features/workspace/hooks/useGitData';
-import { cn } from '@renderer/lib/utils';
-import {
-    ArrowDown,
-    ArrowUp,
-    GitBranch,
-    RefreshCw
-} from 'lucide-react';
+import { IconArrowDown, IconArrowUp, IconGitBranch, IconRefresh } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useGitData } from '@/features/workspace/hooks/useGitData';
+import { cn } from '@/lib/utils';
 import type { Workspace } from '@/types';
 
 import {
@@ -106,7 +101,7 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
             handleGitFileSelect(null);
             return;
         }
-        if (selectedFile && selectedFile.path === file.path && selectedFile.staged === file.staged) {
+        if (selectedFile?.path === file.path && selectedFile.staged === file.staged) {
             handleGitFileSelect(null);
         } else {
             handleGitFileSelect(file);
@@ -118,7 +113,7 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
             <div className="flex flex-1 items-center justify-center p-12">
                 <div className="text-center space-y-4">
                     <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mx-auto mb-6">
-                        <GitBranch className="w-8 h-8 text-muted-foreground/30" />
+                        <IconGitBranch className="w-8 h-8 text-muted-foreground/30" />
                     </div>
                     <h3 className="text-lg font-medium">{t('workspaceDashboard.notAGitRepo')}</h3>
                     <Button variant="outline" className="rounded-lg px-8">
@@ -148,7 +143,7 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
                             variant="ghost"
                             size="sm"
                             className={cn(
-                                "h-8 px-3 text-xs font-semibold rounded-md",
+                                "h-8 px-3 text-sm font-semibold rounded-md",
                                 view === 'changes' ? "bg-muted text-foreground" : "text-muted-foreground"
                             )}
                             onClick={() => setView('changes')}
@@ -164,7 +159,7 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
                             variant="ghost"
                             size="sm"
                             className={cn(
-                                "h-8 px-3 text-xs font-semibold rounded-md",
+                                "h-8 px-3 text-sm font-semibold rounded-md",
                                 view === 'history' ? "bg-muted text-foreground" : "text-muted-foreground"
                             )}
                             onClick={() => setView('history')}
@@ -177,8 +172,8 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
                 <div className="flex items-center gap-2">
                     {trackingInfo && (
                         <div className="flex items-center gap-3 px-3 typo-overline font-medium text-muted-foreground border-r border-border/40 mr-2 h-6">
-                            <span className="flex items-center gap-1"><ArrowUp className="w-3 h-3 text-emerald-500/60" /> {trackingInfo.ahead}</span>
-                            <span className="flex items-center gap-1"><ArrowDown className="w-3 h-3 text-indigo-500/60" /> {trackingInfo.behind}</span>
+                            <span className="flex items-center gap-1"><IconArrowUp className="w-3 h-3 text-emerald-500/60" /> {trackingInfo.ahead}</span>
+                            <span className="flex items-center gap-1"><IconArrowDown className="w-3 h-3 text-indigo-500/60" /> {trackingInfo.behind}</span>
                         </div>
                     )}
                     <Button
@@ -187,15 +182,15 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
                         className="h-8 px-2 hover:bg-muted text-muted-foreground"
                         onClick={() => fetchGitData()}
                     >
-                        <RefreshCw className={cn("w-3.5 h-3.5", gitData.loading && "animate-spin")} />
+                        <IconRefresh className={cn("w-3.5 h-3.5", gitData.loading && "animate-spin")} />
                     </Button>
                     <Button
                         size="sm"
-                        className="h-8 px-4 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-md"
+                        className="h-8 px-4 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-md"
                         onClick={() => handlePull()}
                         disabled={isPulling}
                     >
-                        {isPulling ? <RefreshCw className="w-3.5 h-3.5 animate-spin mr-2" /> : "Sync Changes"}
+                        {isPulling ? <IconRefresh className="w-3.5 h-3.5 animate-spin mr-2" /> : "Sync Changes"}
                     </Button>
                 </div>
             </div>
@@ -206,7 +201,7 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
                     <ScrollArea className="flex-1">
                         <div className="p-6 pb-20 max-w-5xl">
                             {lastActionError && (
-                                <div className="mb-6 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-xs text-destructive flex items-center justify-between">
+                                <div className="mb-6 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-sm text-destructive flex items-center justify-between">
                                     <span>{lastActionError}</span>
                                     <Button variant="ghost" size="sm" className="h-6 px-2 hover:bg-destructive/10">Dismiss</Button>
                                 </div>

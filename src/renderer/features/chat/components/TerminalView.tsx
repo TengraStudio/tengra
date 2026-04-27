@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { ChevronDown, Loader2 } from 'lucide-react';
+import { IconChevronDown, IconLoader2 } from '@tabler/icons-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -194,26 +194,26 @@ export const TerminalView = React.memo(({
                             {summaryText}
                         </div>
                         {!expanded && (
-                            <div className="truncate text-xs text-muted-foreground/70">
+                            <div className="truncate text-sm text-muted-foreground/70">
                                 {previewText}
                             </div>
                         )}
                     </div>
                 </div>
-                <ChevronDown className={cn('h-4 w-4 text-muted-foreground/60 transition-transform', expanded && 'rotate-180')} />
+                <IconChevronDown className={cn('h-4 w-4 text-muted-foreground/60 transition-transform', expanded && 'rotate-180')} />
             </button>
 
             {expanded && (
                 <div className="px-3 pb-2 pt-2">
                     <div className="flex items-center justify-between gap-2">
-                        <div className="min-w-0 truncate font-mono text-xs text-muted-foreground/80">
+                        <div className="min-w-0 truncate font-mono text-sm text-muted-foreground/80">
                             {command || t('tools.commandUnknown')}
                             {typeof exitCode === 'number' && <span className="ml-2">{`(exit ${exitCode})`}</span>}
                         </div>
                         {hasOutput && (
                             <button
                                 type="button"
-                                className="text-xs text-muted-foreground/70 hover:text-foreground"
+                                className="text-sm text-muted-foreground/70 hover:text-foreground"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setShowFullOutput(prev => !prev);
@@ -225,12 +225,12 @@ export const TerminalView = React.memo(({
                     </div>
 
                     {isExecuting && (
-                        <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                            <Loader2 className="h-3 w-3 animate-spin" />
+                        <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                            <IconLoader2 className="h-3 w-3 animate-spin" />
                             <span>{t('tools.executingCommand')}</span>
                             <button
                                 type="button"
-                                className="ml-auto text-xs text-destructive hover:underline"
+                                className="ml-auto text-sm text-destructive hover:underline"
                                 onClick={(event) => {
                                     event.stopPropagation();
                                     void (async () => {

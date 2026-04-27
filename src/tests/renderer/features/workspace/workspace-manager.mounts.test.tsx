@@ -9,10 +9,11 @@
  */
 
 import { SSHProfileTestResult } from '@shared/types/ssh';
-import { fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import React, { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ElectronAPI } from '@/electron.d';
 import { useWorkspaceManager } from '@/features/workspace/hooks/useWorkspaceManager';
 import { Workspace } from '@/types';
 import { webElectronMock } from '@/web-bridge';
@@ -50,9 +51,10 @@ function mountElectronMock() {
         authMethod: 'password',
         message: 'ok',
     } satisfies SSHProfileTestResult);
-    const base = window.electron ?? webElectronMock;
+    const deleteFile = vi.fn().mockResolvedValue({ success: true });
+    const base = webElectronMock;
 
-    window.electron = {
+    const nextElectron: ElectronAPI = {
         ...base,
         db: {
             ...base.db,
@@ -64,6 +66,10 @@ function mountElectronMock() {
             saveProfile,
             testProfile,
         },
+        files: {
+            ...base.files,
+            deleteFile,
+        },
         log: {
             ...base.log,
             error: vi.fn() as typeof base.log.error,
@@ -71,10 +77,16 @@ function mountElectronMock() {
         },
     };
 
-    return { updateWorkspace, saveProfile, testProfile };
+    window.electron = nextElectron;
+
+    return { updateWorkspace, saveProfile, testProfile, deleteFile };
 }
 
 interface WorkspaceMountHarnessProps {
+    workspace: Workspace;
+}
+
+interface WorkspaceOpenFileHarnessProps {
     workspace: Workspace;
 }
 
@@ -143,6 +155,39 @@ const WorkspaceMountHarness: React.FC<WorkspaceMountHarnessProps> = ({ workspace
                 }}
             >
                 test-connection
+            </button>
+        </div>
+    );
+};
+
+const WorkspaceOpenFileHarness: React.FC<WorkspaceOpenFileHarnessProps> = ({ workspace }) => {
+    const t = React.useCallback(
+        (key: string) => (key === 'workspace.editorOpenFailed' ? 'Failed to open file' : key),
+        []
+    );
+    const manager = useWorkspaceManager({
+        workspace,
+        logActivity: () => undefined,
+        t,
+    });
+
+    return (
+        <div>
+            <div data-testid="open-tab-count">{manager.openTabs.length}</div>
+            <div data-testid="active-tab-name">{manager.activeTab?.name ?? ''}</div>
+            <div data-testid="active-tab-content">{manager.activeTab?.content ?? ''}</div>
+            <div data-testid="active-tab-readonly">{String(Boolean(manager.activeTab?.readOnly))}</div>
+            <button
+                onClick={() =>
+                    void manager.openFile({
+                        mountId: 'mount-local',
+                        path: 'C:\\workspaces\\demo-workspace\\huge.txt',
+                        name: 'huge.txt',
+                        isDirectory: false,
+                    })
+                }
+            >
+                open-large-file
             </button>
         </div>
     );
@@ -239,5 +284,57 @@ describe('useWorkspaceManager mount flows', () => {
         expect(errorOutput).not.toContain('Too many re-renders');
 
         consoleErrorSpy.mockRestore();
+    });
+
+    it('opens a visible read-only error tab when file reading fails', async () => {
+        mountElectronMock();
+        const base = webElectronMock;
+        const readFile = vi.fn().mockResolvedValue({
+            success: false,
+            error: 'File too large (max 50MB): C:\\workspaces\\demo-workspace\\huge.txt',
+        });
+        window.electron = {
+            ...base,
+            files: {
+                ...(base.files ?? {}),
+                readFile,
+                readImage: vi.fn(),
+            },
+        };
+
+        render(<WorkspaceOpenFileHarness workspace={workspaceFixture} />);
+        fireEvent.click(screen.getByRole('button', { name: 'open-large-file' }));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('open-tab-count').textContent).toBe('1');
+            expect(screen.getByTestId('active-tab-name').textContent).toBe('huge.txt');
+            expect(screen.getByTestId('active-tab-readonly').textContent).toBe('true');
+            expect(screen.getByTestId('active-tab-content').textContent).toContain('Failed to open file');
+            expect(screen.getByTestId('active-tab-content').textContent).toContain('File too large');
+        });
+    });
+
+    it('keeps local delete operations from forcing a full refresh', async () => {
+        const { deleteFile } = mountElectronMock();
+
+        const { result } = renderHook(() =>
+            useWorkspaceManager({
+                workspace: workspaceFixture,
+                logActivity: () => undefined,
+                t: key => key,
+            })
+        );
+
+        await act(async () => {
+            await result.current.deleteEntry({
+                mountId: 'mount-local',
+                path: 'C:\\workspaces\\demo-workspace\\delete-me.txt',
+                name: 'delete-me.txt',
+                isDirectory: false,
+            });
+        });
+
+        expect(deleteFile).toHaveBeenCalledWith('C:\\workspaces\\demo-workspace\\delete-me.txt');
+        expect(result.current.refreshSignal).toBe(0);
     });
 });

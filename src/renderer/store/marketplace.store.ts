@@ -8,9 +8,10 @@
  * (at your option) any later version.
  */
 
-import { appLogger } from '@renderer/utils/renderer-logger';
 import { MarketplaceRegistry } from '@shared/types/marketplace';
 import { useSyncExternalStore } from 'react';
+
+import { appLogger } from '@/utils/renderer-logger';
 
 import { pushNotification } from './notification-center.store';
 

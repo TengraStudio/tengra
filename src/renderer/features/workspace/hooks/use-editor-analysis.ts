@@ -8,6 +8,8 @@
  * (at your option) any later version.
  */
 
+import React from 'react';
+
 import {
     loadReviewRuleConfig,
     ReviewRuleConfig,
@@ -15,9 +17,7 @@ import {
     runCodeReviewAnalysis,
     runPerformanceSuggestionAnalysis,
     saveReviewRuleConfig,
-} from '@renderer/features/workspace/utils/dev-ai-assistant';
-import React from 'react';
-
+} from '@/features/workspace/utils/dev-ai-assistant';
 import { useTranslation } from '@/i18n';
 
 interface UseEditorAnalysisParams {

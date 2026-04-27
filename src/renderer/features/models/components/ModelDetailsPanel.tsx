@@ -8,14 +8,14 @@
  * (at your option) any later version.
  */
 
-import { UI_PRIMITIVES } from '@renderer/constants/ui-primitives';
-import { BadgeQ } from '@renderer/features/models/components/BadgeQ';
-import { HFFile, HFModel, OllamaLibraryModel, UnifiedModel } from '@renderer/features/models/types';
-import { formatSize } from '@renderer/features/models/utils/explorer-utils';
+import { IconDownload, IconLoader2, IconServer, IconX } from '@tabler/icons-react';
 import DOMPurify from 'dompurify';
-import { Download, Loader2, Server, X } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
+import { UI_PRIMITIVES } from '@/constants/ui-primitives';
+import { BadgeQ } from '@/features/models/components/BadgeQ';
+import { HFFile, HFModel, OllamaLibraryModel, UnifiedModel } from '@/features/models/types';
+import { formatSize } from '@/features/models/utils/explorer-utils';
 import { motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 
@@ -143,7 +143,7 @@ const HFFileCard: React.FC<{
 
             {isDownloading && progress.total > 0 && (
                 <div className="space-y-1">
-                    <div className="flex justify-between text-xxs font-bold text-primary">
+                    <div className="flex justify-between text-sm font-bold text-primary">
                         <span>{t('modelExplorer.downloading')}</span>
                         <span>{Math.round((progress.received / progress.total) * 100)}%</span>
                     </div>
@@ -154,7 +154,7 @@ const HFFileCard: React.FC<{
             )}
 
             {!isDownloading && showActiveTask && (
-                <div className="text-xxs px-3 py-2 rounded-lg border bg-primary/10 text-primary border-primary/20">
+                <div className="text-sm px-3 py-2 rounded-lg border bg-primary/10 text-primary border-primary/20">
                     {isQueued && (queuePosition ? `${t('common.pending')} #${queuePosition}` : t('common.pending'))}
                     {isStarting && `${t('common.processing')}...`}
                     {isInstalling && `${t('workspaceAgent.toolSummary.editing')}...`}
@@ -163,7 +163,7 @@ const HFFileCard: React.FC<{
             )}
 
             {isDownloaded && (
-                <div className="text-xxs px-3 py-2 rounded-lg border bg-success/10 text-success border-success/20">
+                <div className="text-sm px-3 py-2 rounded-lg border bg-success/10 text-success border-success/20">
                     {t('modelExplorer.installed')}
                 </div>
             )}
@@ -172,18 +172,18 @@ const HFFileCard: React.FC<{
                 <button
                     onClick={onDownload}
                     disabled={isDownloaded || showActiveTask}
-                    className="py-2 rounded-lg bg-foreground text-background text-xxs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="py-2 rounded-lg bg-foreground text-background text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    <span className="inline-flex items-center gap-2"><Download className="w-3 h-3" /> {t('modelExplorer.downloadPackage')}</span>
+                    <span className="inline-flex items-center gap-2"><IconDownload className="w-3 h-3" /> {t('modelExplorer.downloadPackage')}</span>
                 </button>
                 {showActiveTask && (isPaused ? (
-                    <button onClick={onResume} className="py-2 rounded-lg border border-border/40 text-xxs font-bold">{t('common.resume')}</button>
+                    <button onClick={onResume} className="py-2 rounded-lg border border-border/40 text-sm font-bold">{t('common.resume')}</button>
                 ) : (
-                    <button onClick={onPause} disabled={isStarting || isInstalling} className="py-2 rounded-lg border border-border/40 text-xxs font-bold disabled:opacity-50 disabled:cursor-not-allowed">{t('common.pause')}</button>
+                    <button onClick={onPause} disabled={isStarting || isInstalling} className="py-2 rounded-lg border border-border/40 text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed">{t('common.pause')}</button>
                 ))}
             </div>
             {showActiveTask && (
-                <button onClick={onCancel} className="w-full py-2 rounded-lg border border-destructive/40 text-destructive text-xxs font-bold">
+                <button onClick={onCancel} className="w-full py-2 rounded-lg border border-destructive/40 text-destructive text-sm font-bold">
                     {t('common.cancel')}
                 </button>
             )}
@@ -365,12 +365,12 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
             <div className={UI_PRIMITIVES.PANEL_HEADER}>
                 <h2 className="font-bold truncate pr-4 text-lg">{isHF ? hfModel?.name : ollamaModel?.name}</h2>
                 <button onClick={() => setSelectedModel(null)} className="p-2 hover:bg-muted/40 rounded-xl transition-all active:scale-90">
-                    <X className="w-5 h-5" />
+                    <IconX className="w-5 h-5" />
                 </button>
             </div>
 
             <div className={cn("space-y-3 px-6 py-6 border-b border-border/50 bg-muted/30")}>
-                <div className="text-xxs text-muted-foreground">{isHF ? t('modelExplorer.sourceHuggingFace') : t('modelExplorer.ollamaLibrary')}</div>
+                <div className="text-sm text-muted-foreground">{isHF ? t('modelExplorer.sourceHuggingFace') : t('modelExplorer.ollamaLibrary')}</div>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                     {selectedModel.description || t('modelExplorer.defaultDescription')}
                 </p>
@@ -413,7 +413,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                     <>
                         {isHF && (hfModel?.longDescriptionHtml || hfModel?.longDescriptionMarkdown) && (
                             <div className={UI_PRIMITIVES.DETAILS_CARD}>
-                                <h3 className="text-xxs font-bold text-muted-foreground mb-2">{t('common.details')}</h3>
+                                <h3 className="text-sm font-bold text-muted-foreground mb-2">{t('common.details')}</h3>
                                 {hfModel.longDescriptionHtml ? (
                                     <div
                                         className="text-sm rich-text overflow-hidden"
@@ -426,25 +426,25 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                         )}
 
                         <div className="space-y-3">
-                            <h3 className="text-xxs font-bold text-muted-foreground flex items-center gap-2">
-                                <Server className="w-4 h-4" /> {t('modelExplorer.pullVersion')}
+                            <h3 className="text-sm font-bold text-muted-foreground flex items-center gap-2">
+                                <IconServer className="w-4 h-4" /> {t('modelExplorer.pullVersion')}
                             </h3>
 
                             {loadingFiles ? (
                                 <div className="flex items-center justify-center py-12">
-                                    <Loader2 className="w-7 h-7 animate-spin text-primary" />
+                                    <IconLoader2 className="w-7 h-7 animate-spin text-primary" />
                                 </div>
                             ) : (
                                 <>
                                     {hfShardGroups.length > 0 && (
                                         <div className={cn("p-3", UI_PRIMITIVES.DETAILS_CARD)}>
-                                            <div className="text-xxs font-bold text-muted-foreground">{t('modelExplorer.shardedModelSets')}</div>
+                                            <div className="text-sm font-bold text-muted-foreground">{t('modelExplorer.shardedModelSets')}</div>
                                             {hfShardGroups.map((group) => {
                                                 const downloadedCount = group.files.filter((f) => downloadedFilePaths[f.path]).length;
                                                 const progressPct = Math.round((downloadedCount / group.totalParts) * 100);
                                                 return (
                                                     <div key={group.key} className="rounded-lg border border-border/40 bg-background/60 p-3 space-y-2">
-                                                        <div className="flex items-center justify-between text-xxs">
+                                                        <div className="flex items-center justify-between text-sm">
                                                             <div className="font-semibold truncate">{group.displayName}</div>
                                                             <div className="text-muted-foreground">{downloadedCount}/{group.totalParts}</div>
                                                         </div>
@@ -454,7 +454,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                                                         <button
                                                             onClick={() => void downloadFullShardSet(group.files)}
                                                             disabled={downloadedCount >= group.totalParts}
-                                                            className={cn('w-full py-2 rounded-lg text-xxs font-bold  ', downloadedCount >= group.totalParts ? 'bg-success/15 text-success border border-success/30' : 'bg-foreground text-background')}
+                                                            className={cn('w-full py-2 rounded-lg text-sm font-bold ', downloadedCount >= group.totalParts ? 'bg-success/15 text-success border border-success/30' : 'bg-foreground text-background')}
                                                         >
                                                             {downloadedCount >= group.totalParts ? t('modelExplorer.fullSetDownloaded') : t('modelExplorer.downloadMissingParts')}
                                                         </button>
@@ -498,14 +498,14 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                     <>
                         {sanitizedOllamaDescriptionHtml && (
                             <div className={UI_PRIMITIVES.DETAILS_CARD}>
-                                <h3 className="text-xxs font-bold text-muted-foreground mb-2">{t('common.details')}</h3>
+                                <h3 className="text-sm font-bold text-muted-foreground mb-2">{t('common.details')}</h3>
                                 <div className="prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: sanitizedOllamaDescriptionHtml }} />
                             </div>
                         )}
 
                         <div className="space-y-3">
-                            <h3 className="text-xxs font-bold text-muted-foreground flex items-center gap-2">
-                                <Server className="w-4 h-4" /> {t('modelExplorer.availableVersions')}
+                            <h3 className="text-sm font-bold text-muted-foreground flex items-center gap-2">
+                                <IconServer className="w-4 h-4" /> {t('modelExplorer.availableVersions')}
                             </h3>
 
                             <div className="rounded-xl border border-border/40 overflow-hidden">

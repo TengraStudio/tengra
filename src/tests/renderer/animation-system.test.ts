@@ -8,12 +8,13 @@
  * (at your option) any later version.
  */
 
+import { describe, expect, it } from 'vitest';
+
 import {
     ANIMATION_PRESETS,
     getAnimationDurationMs,
     resolveAnimationPreset,
-} from '@renderer/lib/animation-system';
-import { describe, expect, it } from 'vitest';
+} from '@/lib/animation-system';
 
 describe('animation system', () => {
     it('returns configured preset timing values', () => {

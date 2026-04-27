@@ -93,13 +93,13 @@ export class MarketplaceService extends BaseService {
     ];
     private readonly USER_THEMES_PATH = path.join(app.getPath('userData'), 'runtime', 'themes');
     private readonly USER_MCP_PATH = path.join(app.getPath('userData'), 'runtime', 'mcp');
-    private readonly USER_PERSONAS_PATH = path.join(app.getPath('userData'), 'runtime', 'personas');
     private readonly USER_MODELS_PATH = path.join(app.getPath('userData'), 'runtime', 'models');
     private readonly USER_PROMPTS_PATH = path.join(app.getPath('userData'), 'runtime', 'prompts');
     private readonly USER_LOCALES_PATH = path.join(app.getPath('userData'), 'runtime', 'locales');
     private readonly USER_SKILLS_PATH = path.join(app.getPath('userData'), 'runtime', 'skills');
     private readonly USER_ICON_PACKS_PATH = path.join(app.getPath('userData'), 'runtime', 'icon-packs');
     private readonly USER_EXTENSIONS_PATH = path.join(app.getPath('userData'), 'extensions');
+    private readonly USER_CODE_LANGUAGES_PATH = path.join(app.getPath('userData'), 'runtime', 'code-languages');
     private readonly liveUpdates = new Set<string>();
 
     private readonly localeService?: LocaleService;
@@ -131,13 +131,13 @@ export class MarketplaceService extends BaseService {
         this.logInfo('Initializing Marketplace...');
         await fs.ensureDir(this.USER_THEMES_PATH);
         await fs.ensureDir(this.USER_MCP_PATH);
-        await fs.ensureDir(this.USER_PERSONAS_PATH);
         await fs.ensureDir(this.USER_MODELS_PATH);
         await fs.ensureDir(this.USER_PROMPTS_PATH);
         await fs.ensureDir(this.USER_LOCALES_PATH);
         await fs.ensureDir(this.USER_SKILLS_PATH);
         await fs.ensureDir(this.USER_ICON_PACKS_PATH);
         await fs.ensureDir(this.USER_EXTENSIONS_PATH);
+        await fs.ensureDir(this.USER_CODE_LANGUAGES_PATH);
     }
 
     /**
@@ -180,9 +180,6 @@ export class MarketplaceService extends BaseService {
         });
         registry.models?.forEach(model => {
             if (model.updateAvailable) { count++; }
-        });
-        registry.personas?.forEach(item => {
-            if (item.updateAvailable) { count++; }
         });
         registry.skills?.forEach(item => {
             if (item.updateAvailable) { count++; }
@@ -233,7 +230,6 @@ export class MarketplaceService extends BaseService {
                 ...(registry.models || []),
                 ...(registry.themes || []),
                 ...(registry.mcp || []),
-                ...(registry.personas || []),
                 ...(registry.prompts || []),
                 ...(registry.languages || []),
                 ...(registry.skills || []),
@@ -312,11 +308,6 @@ export class MarketplaceService extends BaseService {
                 case 'mcp':
                     targetPath = this.USER_MCP_PATH;
                     fileName = `${sanitizedId}.mcp.json`;
-                    payload = (await axios.get(item.downloadUrl)).data as RuntimeValue;
-                    break;
-                case 'persona':
-                    targetPath = this.USER_PERSONAS_PATH;
-                    fileName = `${sanitizedId}.persona.json`;
                     payload = (await axios.get(item.downloadUrl)).data as RuntimeValue;
                     break;
                 case 'model':
@@ -481,13 +472,6 @@ export class MarketplaceService extends BaseService {
                     return { success: true };
                 }
 
-                case 'persona': {
-                    const personaPath = path.join(this.USER_PERSONAS_PATH, `${this.sanitizeFileNameStem(itemId)}.persona.json`);
-                    if (await fs.pathExists(personaPath)) {
-                        await fs.remove(personaPath);
-                    }
-                    return { success: true };
-                }
 
                 case 'prompt': {
                     const promptPath = path.join(this.USER_PROMPTS_PATH, `${this.sanitizeFileNameStem(itemId)}.prompt.json`);
@@ -1349,7 +1333,6 @@ export class MarketplaceService extends BaseService {
             ...registry,
             themes: this.annotateInstalledItems(registry.themes, installedVersions.theme),
             mcp: this.annotateInstalledItems(registry.mcp, installedVersions.mcp),
-            personas: this.annotateInstalledItems(registry.personas ?? [], installedVersions.persona),
             models: annotatedModels,
             prompts: this.annotateInstalledItems(registry.prompts ?? [], installedVersions.prompt),
             languages: this.annotateInstalledItems(registry.languages ?? [], installedVersions.language),
@@ -1405,13 +1388,13 @@ export class MarketplaceService extends BaseService {
         return {
             theme: await this.readVersionsFromDirectory(this.USER_THEMES_PATH, '.theme.json'),
             mcp: this.readInstalledMcpVersionsFromSettings(),
-            persona: await this.readVersionsFromDirectory(this.USER_PERSONAS_PATH, '.persona.json'),
             model: await this.readVersionsFromDirectory(this.USER_MODELS_PATH, '.model.json'),
             prompt: await this.readVersionsFromDirectory(this.USER_PROMPTS_PATH, '.prompt.json'),
             language: localeVersions,
             skill: await this.readVersionsFromDirectory(this.USER_SKILLS_PATH, '.skill.json'),
             'icon-pack': await this.readVersionsFromDirectory(this.USER_ICON_PACKS_PATH, '.icon-pack.json'),
             extension: await this.readInstalledExtensionVersions(),
+            'code-language-pack': await this.readVersionsFromDirectory(this.USER_CODE_LANGUAGES_PATH, '.language-pack.json'),
         };
     }
 
@@ -1728,7 +1711,8 @@ export class MarketplaceService extends BaseService {
             originalMessage.includes("Cannot find module '@main/")
             || originalMessage.includes("Cannot find module '@shared/")
             || originalMessage.includes("Cannot find module 'react'")
-            || originalMessage.includes("Cannot find module 'lucide-react'");
+            || originalMessage.includes("Cannot find module 'lucide-react'")
+            || originalMessage.includes("Cannot find module '@tabler/icons-react'");
         const hasJsxConfigurationFailure =
             originalMessage.includes("Cannot use JSX unless the '--jsx' flag is provided");
 

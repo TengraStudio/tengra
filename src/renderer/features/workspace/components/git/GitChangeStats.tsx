@@ -8,23 +8,13 @@
  * (at your option) any later version.
  */
 
-import { Badge } from '@renderer/components/ui/badge';
-import { Button } from '@renderer/components/ui/button';
-import { DiffViewer } from '@renderer/components/ui/DiffViewer';
-import { cn } from '@renderer/lib/utils';
-import {
-    Activity,
-    CheckSquare,
-    ChevronDown,
-    ChevronRight,
-    FileMinus,
-    FilePlus,
-    FileText,
-    Loader2,
-    Minus,
-    Plus
-} from 'lucide-react';
+import { IconActivity, IconChevronDown, IconChevronRight, IconFileMinus, IconFilePlus, IconFileText, IconLoader2, IconMinus, IconPlus,IconSquareCheck } from '@tabler/icons-react';
 import React from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { DiffViewer } from '@/components/ui/DiffViewer';
+import { cn } from '@/lib/utils';
 
 import { DiffStats, GitData, GitFile } from './types';
 
@@ -63,15 +53,15 @@ const FileRow = ({
     const getStatusInfo = (status: string) => {
         const s = status.toUpperCase();
         if (s.includes('A') || s.includes('??')) {
-            return { icon: FilePlus, color: 'text-emerald-500' };
+            return { icon: IconFilePlus, color: 'text-emerald-500' };
         }
         if (s.includes('D')) {
-            return { icon: FileMinus, color: 'text-rose-500' };
+            return { icon: IconFileMinus, color: 'text-rose-500' };
         }
         if (s.includes('M')) {
-            return { icon: Activity, color: 'text-amber-500' };
+            return { icon: IconActivity, color: 'text-amber-500' };
         }
-        return { icon: FileText, color: 'text-muted-foreground/60' };
+        return { icon: IconFileText, color: 'text-muted-foreground/60' };
     };
 
     const info = getStatusInfo(file.status);
@@ -85,7 +75,7 @@ const FileRow = ({
                     isSelected ? "bg-muted/40" : "hover:bg-muted/30"
                 )}
             >
-                {isSelected ? <ChevronDown className="w-3.5 h-3.5 text-primary" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-muted-foreground/60" />}
+                {isSelected ? <IconChevronDown className="w-3.5 h-3.5 text-primary" /> : <IconChevronRight className="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-muted-foreground/60" />}
 
                 <div className={cn("p-1.5 rounded bg-background/50 border border-border/5", info.color)}>
                     <info.icon className="w-3 h-3" />
@@ -111,7 +101,7 @@ const FileRow = ({
                         }}
                         className="h-6 w-6 p-0 hover:bg-muted/50"
                     >
-                        {isStaged ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                        {isStaged ? <IconMinus className="w-3.5 h-3.5" /> : <IconPlus className="w-3.5 h-3.5" />}
                     </Button>
                 </div>
             </div>
@@ -121,8 +111,8 @@ const FileRow = ({
                 <div className="px-6 pb-6 pt-2 h-450 animate-in fade-in slide-in-from-top-1 duration-200">
                     {loadingDiff ? (
                         <div className="h-full flex flex-col items-center justify-center bg-muted/5 rounded-lg border border-dashed border-border/20">
-                            <Loader2 className="w-5 h-5 animate-spin text-primary/40 mb-2" />
-                            <span className="typo-overline font-bold uppercase text-muted-foreground/40 tracking-widest">Diff Generation...</span>
+                            <IconLoader2 className="w-5 h-5 animate-spin text-primary/40 mb-2" />
+                            <span className="typo-overline font-bold uppercase text-muted-foreground/40 ">Diff Generation...</span>
                         </div>
                     ) : fileDiff ? (
                         <DiffViewer
@@ -132,7 +122,7 @@ const FileRow = ({
                             className="h-full shadow-lg border-border/20"
                         />
                     ) : (
-                        <div className="h-full flex items-center justify-center bg-muted/5 rounded-lg text-xs text-muted-foreground/40">
+                        <div className="h-full flex items-center justify-center bg-muted/5 rounded-lg text-sm text-muted-foreground/40">
                             Computing delta...
                         </div>
                     )}
@@ -157,7 +147,7 @@ export const GitChangeStats: React.FC<ChangeStatsProps> = ({
             {gitData.stagedFiles.length > 0 && (
                 <div className="space-y-2">
                     <div className="flex items-center justify-between px-1">
-                        <span className="typo-overline font-bold text-muted-foreground/40 uppercase tracking-widest">Staged Changes</span>
+                        <span className="typo-overline font-bold text-muted-foreground/40 uppercase ">Staged Changes</span>
                         <Badge variant="outline" className="h-4 px-1.5 border-emerald-500/20 bg-emerald-500/10 text-emerald-500 typo-overline font-bold">
                             {gitData.stagedFiles.length}
                         </Badge>
@@ -183,7 +173,7 @@ export const GitChangeStats: React.FC<ChangeStatsProps> = ({
             {gitData.unstagedFiles.length > 0 && (
                 <div className="space-y-2">
                     <div className="flex items-center justify-between px-1">
-                        <span className="typo-overline font-bold text-muted-foreground/40 uppercase tracking-widest">Untracked Changes</span>
+                        <span className="typo-overline font-bold text-muted-foreground/40 uppercase ">Untracked Changes</span>
                         <Badge variant="outline" className="h-4 px-1.5 border-amber-500/20 bg-amber-500/10 text-amber-500 typo-overline font-bold">
                             {gitData.unstagedFiles.length}
                         </Badge>
@@ -207,9 +197,9 @@ export const GitChangeStats: React.FC<ChangeStatsProps> = ({
 
             {gitData.changedFiles.length === 0 && (
                 <div className="py-20 flex flex-col items-center justify-center text-center opacity-40">
-                    <CheckSquare className="w-10 h-10 mb-4 text-emerald-500/40" />
-                    <p className="text-sm font-semibold tracking-tight text-foreground/80">Everything is committed</p>
-                    <p className="typo-overline uppercase font-bold tracking-widest text-muted-foreground mt-1">Workspace Clean</p>
+                    <IconSquareCheck className="w-10 h-10 mb-4 text-emerald-500/40" />
+                    <p className="text-sm font-semibold text-foreground/80">Everything is committed</p>
+                    <p className="typo-overline uppercase font-bold text-muted-foreground mt-1">Workspace Clean</p>
                 </div>
             )}
         </div>

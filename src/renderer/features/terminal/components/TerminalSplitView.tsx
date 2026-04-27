@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { X } from 'lucide-react';
+import { IconX } from '@tabler/icons-react';
 import { type MouseEventHandler, type ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -171,7 +171,7 @@ export function TerminalSplitView({
                                                     }}
                                                     className="p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                                                 >
-                                                    <X className="w-3 h-3" />
+                                                    <IconX className="w-3 h-3" />
                                                 </button>
                                             )}
                                         </div>
@@ -230,7 +230,7 @@ export function TerminalSplitView({
                                             handleTabSelect(tab.id);
                                         }}
                                         className={cn(
-                                            'w-full h-8 px-2 rounded-md flex items-center justify-between gap-2 text-xs transition-colors',
+                                            'w-full h-8 px-2 rounded-md flex items-center justify-between gap-2 text-sm transition-colors',
                                             isActive
                                                 ? 'bg-accent/70 text-foreground'
                                                 : 'text-muted-foreground hover:bg-accent/40 hover:text-foreground'
@@ -240,7 +240,7 @@ export function TerminalSplitView({
                                             {splitRole && (
                                                 <span
                                                     className={cn(
-                                                        'inline-flex h-4 min-w-4 items-center justify-center rounded border text-xxxs px-1',
+                                                        'inline-flex h-4 min-w-4 items-center justify-center rounded border text-sm px-1',
                                                         splitRole === 'primary'
                                                             ? 'border-primary/70 text-primary'
                                                             : 'border-warning/70 text-warning'
@@ -259,7 +259,7 @@ export function TerminalSplitView({
                                                 }}
                                                 className="inline-flex h-4 w-4 items-center justify-center rounded hover:bg-destructive/20 hover:text-destructive"
                                             >
-                                                <X className="w-3 h-3" />
+                                                <IconX className="w-3 h-3" />
                                             </span>
                                         )}
                                     </button>

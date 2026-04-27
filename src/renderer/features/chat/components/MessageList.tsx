@@ -8,12 +8,12 @@
  * (at your option) any later version.
  */
 
-import { compactToolCallsForDisplay } from '@renderer/features/chat/components/message/tool-call-display.util';
-import { MessageBubble } from '@renderer/features/chat/components/MessageBubble';
-import { MessageSkeleton } from '@renderer/features/chat/components/MessageSkeleton';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 
+import { compactToolCallsForDisplay } from '@/features/chat/components/message/tool-call-display.util';
+import { MessageBubble } from '@/features/chat/components/MessageBubble';
+import { MessageSkeleton } from '@/features/chat/components/MessageSkeleton';
 import { Language, useTranslation } from '@/i18n';
 import { Message } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';

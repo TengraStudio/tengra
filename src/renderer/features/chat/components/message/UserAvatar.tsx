@@ -1,0 +1,7 @@
+"use client"; /** * Tengra - Your Personal AI Assistant * Copyright (c) 2026 TengraStudio * * This program is free software: you can redistribute it and/or modify * it under the terms of the GNU General Public License as published by * the Free Software Foundation, either version 3 of the License, or * (at your option) any later version. */ import { IconUser } from'@tabler/icons-react';
+import { memo } from'react'; 
+
+import { motion } from'@/lib/framer-motion-compat';
+import { cn } from'@/lib/utils'; /** * UserAvatar component * * High-fidelity glassmorphic avatar for the user. * Features: * - aesthetics * - Primary atmospheric glow * - Premium micro-interactions */
+export const UserAvatar = memo(() => ( <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} whileHover={{ scale: 1.1, rotate: -5 }} className="relative flex h-10 w-10 shrink-0 mt-3 items-center justify-center rounded-2xl border border-primary/30 bg-primary/10 backdrop-blur-3xl shadow-[0_20px_50px_rgba(var(--primary-rgb),0.2)] group/avatar"> {/* Atmospheric background glow */} <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full opacity-40 group-hover/avatar:opacity-60"/> <IconUser size={20} className="relative z-10 text-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]"/> </motion.div>
+)); UserAvatar.displayName ='UserAvatar'; 

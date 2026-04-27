@@ -11,10 +11,10 @@
 /**
  * @fileoverview Editor breadcrumb navigation showing the file path hierarchy
  * @description Renders a clickable breadcrumb trail from the active editor tab's path,
- *   allowing quick navigation to parent directories via the file explorer.
+ * allowing quick navigation to parent directories via the file explorer.
  */
 
-import { ChevronRight, FileCode, FolderOpen } from 'lucide-react';
+import { IconChevronRight, IconFileCode, IconFolderOpen } from '@tabler/icons-react';
 import React, { useMemo } from 'react';
 
 import { EditorTab } from '@/types';
@@ -64,11 +64,11 @@ export const EditorBreadcrumb: React.FC<EditorBreadcrumbProps> = ({
                 return (
                     <React.Fragment key={pathUpToHere}>
                         {index > 0 && (
-                            <ChevronRight className="w-3 h-3 text-muted-foreground/40 flex-shrink-0" />
+                            <IconChevronRight className="w-3 h-3 text-muted-foreground/40 flex-shrink-0" />
                         )}
                         {isLast ? (
                             <span className="flex items-center gap-1 font-medium text-foreground truncate max-w-180">
-                                <FileCode className="w-3 h-3 flex-shrink-0" />
+                                <IconFileCode className="w-3 h-3 flex-shrink-0" />
                                 {segment}
                             </span>
                         ) : (
@@ -77,7 +77,7 @@ export const EditorBreadcrumb: React.FC<EditorBreadcrumbProps> = ({
                                 className="flex items-center gap-1 hover:text-foreground transition-colors truncate max-w-140"
                                 title={pathUpToHere}
                             >
-                                <FolderOpen className="w-3 h-3 flex-shrink-0" />
+                                <IconFolderOpen className="w-3 h-3 flex-shrink-0" />
                                 {segment}
                             </button>
                         )}

@@ -9,7 +9,7 @@
  */
 
 import { DiffEditor } from '@monaco-editor/react';
-import { Loader2 } from 'lucide-react';
+import { IconLoader2 } from '@tabler/icons-react';
 import type { editor } from 'monaco-editor';
 import React, { useEffect, useRef, useState } from 'react';
 
@@ -73,7 +73,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
                     onMount={handleEditorDidMount}
                     loading={
                         <div className="flex items-center justify-center h-full w-full bg-background/50 text-muted-foreground gap-2">
-                            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                            <IconLoader2 className="w-5 h-5 animate-spin text-primary" />
                             {t('diffViewer.loading')}
                         </div>
                     }
@@ -90,7 +90,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
                 />
             ) : (
                 <div className="flex items-center justify-center h-full w-full bg-background/50 text-muted-foreground gap-2">
-                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                    <IconLoader2 className="w-5 h-5 animate-spin text-primary" />
                     {t('diffViewer.loading')}
                 </div>
             )}

@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { X } from 'lucide-react';
+import { IconX } from '@tabler/icons-react';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -82,14 +82,14 @@ export const ImagePreviewBar: React.FC<ImagePreviewBarProps> = ({
                                 className={C_IMAGEPREVIEWBAR_1}
                                 aria-label={t('imageAttachment.remove')}
                             >
-                                <X size={12} aria-hidden="true" />
+                                <IconX size={12} aria-hidden="true" />
                             </button>
                         </div>
                         <div className="mt-0.5 max-w-16 text-center">
-                            <p className="text-xxs text-muted-foreground truncate">
+                            <p className="text-sm text-muted-foreground truncate">
                                 {img.name}
                             </p>
-                            <p className="text-xxs text-muted-foreground/60">
+                            <p className="text-sm text-muted-foreground/60">
                                 {formatFileSize(img.size)}
                             </p>
                         </div>

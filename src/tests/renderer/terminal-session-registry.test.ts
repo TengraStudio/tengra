@@ -8,14 +8,15 @@
  * (at your option) any later version.
  */
 
+import { describe, expect, it } from 'vitest';
+
 import {
     clearTerminalSessionFlags,
     isTerminalSessionInitialized,
     isTerminalSessionInitializing,
     markTerminalSessionInitialized,
     markTerminalSessionInitializing,
-} from '@renderer/features/terminal/utils/session-registry';
-import { describe, expect, it } from 'vitest';
+} from '@/features/terminal/utils/session-registry';
 
 describe('terminal session registry utils', () => {
     it('tracks initializing and initialized flags', () => {

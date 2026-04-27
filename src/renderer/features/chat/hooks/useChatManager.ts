@@ -8,14 +8,6 @@
  * (at your option) any later version.
  */
 
-import { deduplicateMessages } from '@renderer/features/chat/hooks/ai-runtime-chat.util';
-import { useAttachments } from '@renderer/features/chat/hooks/useAttachments';
-import { useChatCRUD } from '@renderer/features/chat/hooks/useChatCRUD';
-import { useChatGenerator } from '@renderer/features/chat/hooks/useChatGenerator';
-import { useFolderManager } from '@renderer/features/chat/hooks/useFolderManager';
-import { usePromptManager } from '@renderer/features/chat/hooks/usePromptManager';
-import { useSpeechRecognition } from '@renderer/features/chat/hooks/useSpeechRecognition';
-import { useSessionState } from '@renderer/hooks/useSessionState';
 import { WORKSPACE_AGENT_METADATA_KEY } from '@shared/constants/defaults';
 import { QuotaResponse } from '@shared/types/quota';
 import type { SessionConversationGenerationStatus } from '@shared/types/session-conversation';
@@ -25,6 +17,14 @@ import {
 } from '@shared/types/workspace-agent-session';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 
+import { deduplicateMessages } from '@/features/chat/hooks/ai-runtime-chat.util';
+import { useAttachments } from '@/features/chat/hooks/useAttachments';
+import { useChatCRUD } from '@/features/chat/hooks/useChatCRUD';
+import { useChatGenerator } from '@/features/chat/hooks/useChatGenerator';
+import { useFolderManager } from '@/features/chat/hooks/useFolderManager';
+import { usePromptManager } from '@/features/chat/hooks/usePromptManager';
+import { useSpeechRecognition } from '@/features/chat/hooks/useSpeechRecognition';
+import { useSessionState } from '@/hooks/useSessionState';
 import { generateId } from '@/lib/utils';
 import { 
     getChatSnapshot, 
@@ -49,7 +49,6 @@ interface UseChatManagerOptions {
     selectedProvider: string;
     selectedModels?: SelectedModelInfo[];
     language: string;
-    selectedPersona?: { id: string; name: string; description: string; prompt: string } | null | undefined;
     appSettings?: AppSettings | undefined;
     autoReadEnabled: boolean;
     handleSpeak: (id: string, text: string) => void;
@@ -59,7 +58,7 @@ interface UseChatManagerOptions {
     workspaceId?: string | undefined;
     models: import('@/types').ModelInfo[];
     quotas?: { accounts: QuotaResponse[] } | null | undefined;
-    linkedAccounts?: Array<import('@renderer/electron.d').LinkedAccountInfo> | undefined;
+    linkedAccounts?: Array<import('@/electron.d').LinkedAccountInfo> | undefined;
 }
 
 /**
@@ -279,7 +278,6 @@ export function useChatManager(options: UseChatManagerOptions) {
         selectedModel, 
         selectedProvider, 
         language, 
-        selectedPersona, 
         appSettings, 
         autoReadEnabled, 
         handleSpeak, 
@@ -345,7 +343,6 @@ export function useChatManager(options: UseChatManagerOptions) {
         selectedProvider, 
         selectedModels: options.selectedModels,
         language, 
-        selectedPersona, 
         activeWorkspacePath, 
         workspaceId, 
         quotas: options.quotas, 

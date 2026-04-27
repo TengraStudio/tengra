@@ -8,8 +8,8 @@
  * (at your option) any later version.
  */
 
-export { WorkspacesPage } from '@renderer/features/workspace/workspace-shell/WorkspacePage';
-export * from '@renderer/features/workspace/workspace-shell/WorkspacePage';
+export { WorkspacesPage } from '@/features/workspace/workspace-layout/WorkspacePage';
+export * from '@/features/workspace/workspace-layout/WorkspacePage';
 
 
 

@@ -9,31 +9,31 @@
  */
 
 import type { Monaco, OnChange } from '@monaco-editor/react';
-import { useCodeEditorDiagnostics } from '@renderer/components/ui/code-editor-diagnostics';
-import { useCodeEditorDirtyDecorations } from '@renderer/components/ui/code-editor-dirty-decorations';
-import {
-    CodeEditorNavigationTarget,
-    CodeEditorWorkspaceResultsPayload,
-    useWorkspaceEditorIntelligence,
-} from '@renderer/components/ui/code-editor-workspace-intelligence';
-import {
-    recordCodeEditorFailure,
-    recordCodeEditorSuccess,
-    setCodeEditorUiState,
-} from '@renderer/store/code-editor-health.store';
 import type {
     InlineSuggestionRequest,
     InlineSuggestionResponse,
     InlineSuggestionSource,
     InlineSuggestionTelemetry,
 } from '@shared/schemas/inline-suggestions.schema';
-import { Loader2 } from 'lucide-react';
+import { IconLoader2 } from '@tabler/icons-react';
 import type { editor } from 'monaco-editor';
 import React, { ComponentType,useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useCodeEditorDiagnostics } from '@/components/ui/code-editor-diagnostics';
+import { useCodeEditorDirtyDecorations } from '@/components/ui/code-editor-dirty-decorations';
+import {
+    CodeEditorNavigationTarget,
+    CodeEditorWorkspaceResultsPayload,
+    useWorkspaceEditorIntelligence,
+} from '@/components/ui/code-editor-workspace-intelligence';
 import { useTheme } from '@/hooks/useTheme';
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+import {
+    recordCodeEditorFailure,
+    recordCodeEditorSuccess,
+    setCodeEditorUiState,
+} from '@/store/code-editor-health.store';
 import { useSettingsStore } from '@/store/settings.store';
 import type { AppSettings } from '@/types/settings';
 import type { Workspace } from '@/types/workspace';
@@ -938,7 +938,7 @@ const LoadingOverlay = ({ className, t }: { className?: string; t: (k: string) =
         className={cn('relative w-full h-full overflow-hidden flex items-center justify-center', className)}
     >
         <div className="flex flex-col items-center gap-3 text-muted-foreground">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            <IconLoader2 className="w-6 h-6 animate-spin text-primary" />
             <span className="text-sm">{t('common.loading')}</span>
         </div>
     </div>
@@ -1192,7 +1192,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             }}
             loading={
                 <div className="flex items-center justify-center h-full text-muted-foreground">
-                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    <IconLoader2 className="w-5 h-5 animate-spin mr-2" />
                     {t('ssh.editor.initializing')}
                 </div>
             }

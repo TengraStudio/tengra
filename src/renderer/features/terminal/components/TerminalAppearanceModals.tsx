@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Palette } from 'lucide-react';
+import { IconPalette } from '@tabler/icons-react';
 import type { ChangeEventHandler, Ref } from 'react';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -134,7 +134,7 @@ export function TerminalAppearanceModals({
                         className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
                         title={title}
                     >
-                        <Palette className="w-3.5 h-3.5" />
+                        <IconPalette className="w-3.5 h-3.5" />
                     </button>
                 </PopoverTrigger>
                 <PopoverContent

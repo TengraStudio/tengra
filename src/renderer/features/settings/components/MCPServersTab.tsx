@@ -9,33 +9,20 @@
  */
 
 
-import { Button } from '@renderer/components/ui/button';
-import { Label } from '@renderer/components/ui/label';
-import { useTranslation } from '@renderer/i18n';
-import { cn } from '@renderer/lib/utils';
-import { useMarketplaceStore } from '@renderer/store/marketplace.store';
-import { pushNotification } from '@renderer/store/notification-center.store';
-import { appLogger } from '@renderer/utils/renderer-logger';
 import { MarketplaceMcp } from '@shared/types/marketplace';
 import { AppSettings, McpPermission, McpPermissionProfile } from '@shared/types/settings';
-import {
-    Check,
-    Edit2,
-    FileEdit,
-    FileText,
-    Globe,
-    Power,
-    RefreshCw,
-    Server,
-    ShieldCheck,
-    Terminal,
-    Trash,
-    Trash2,
-    X,
-} from 'lucide-react';
+import { IconCheck, IconEdit, IconFilePencil, IconFileText, IconGlobe, IconPower, IconRefresh, IconServer, IconShieldCheck, IconTerminal, IconTrash, IconX } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-const C_MCPSERVERSTAB_1 = "flex flex-col items-center justify-center rounded-xl border border-dashed border-border/50 py-12 text-muted-foreground/50 sm:flex-row";
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
+import { useMarketplaceStore } from '@/store/marketplace.store';
+import { pushNotification } from '@/store/notification-center.store';
+import { appLogger } from '@/utils/renderer-logger';
+
+const C_MCPSERVERSTAB_1 = "flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/40 py-16 text-muted-foreground/40 sm:flex-row";
 type McpActionPolicy = 'allow' | 'deny' | 'ask';
 
 interface MCPAction {
@@ -78,18 +65,18 @@ interface ServerItemProps {
     onSaveEdit: (draftPermissions: McpPermission[], draftActionPermissions: Record<string, McpActionPolicy>) => Promise<void>;
 }
 
-const ALL_PERMISSIONS: { id: McpPermission; icon: typeof FileText; label: string; color: string }[] = [
-    { id: 'read', icon: FileText, label: 'Read Access', color: 'text-blue-400' },
-    { id: 'write', icon: FileEdit, label: 'Write Access', color: 'text-emerald-400' },
-    { id: 'delete', icon: Trash, label: 'Delete / Destructive', color: 'text-rose-400' },
-    { id: 'network', icon: Globe, label: 'Network Access', color: 'text-sky-400' },
-    { id: 'execute', icon: Terminal, label: 'Execute / System', color: 'text-amber-400' },
+const ALL_PERMISSIONS: { id: McpPermission; icon: typeof IconFileText; label: string; color: string }[] = [
+    { id: 'read', icon: IconFileText, label: 'Read Access', color: 'text-primary' },
+    { id: 'write', icon: IconFilePencil, label: 'Write Access', color: 'text-primary' },
+    { id: 'delete', icon: IconTrash, label: 'Delete / Destructive', color: 'text-destructive' },
+    { id: 'network', icon: IconGlobe, label: 'Network Access', color: 'text-primary' },
+    { id: 'execute', icon: IconTerminal, label: 'Execute / System', color: 'text-primary' },
 ];
 
 const ACTION_POLICIES: { id: McpActionPolicy; label: string; className: string }[] = [
-    { id: 'allow', label: 'Allow', className: 'border-success/40 bg-success/10 text-success hover:bg-success/20' },
-    { id: 'ask', label: 'Ask', className: 'border-amber-400/40 bg-amber-400/10 text-amber-500 hover:bg-amber-400/20' },
-    { id: 'deny', label: 'Deny', className: 'border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20' },
+    { id: 'allow', label: 'Allow', className: 'border-primary/20 bg-primary/5 text-primary hover:bg-primary/10' },
+    { id: 'ask', label: 'Ask', className: 'border-border bg-muted/40 text-muted-foreground hover:bg-muted' },
+    { id: 'deny', label: 'Deny', className: 'border-destructive/20 bg-destructive/5 text-destructive hover:bg-destructive/10' },
 ];
 
 function getActionPermission(
@@ -164,48 +151,51 @@ function ServerItem({
     return (
         <div
             className={cn(
-                'group relative flex flex-col rounded-2xl border transition-all duration-300',
+                'group relative flex flex-col rounded-2xl border transition-all duration-200',
                 isActuallyActive
-                    ? 'border-primary/40 bg-card/10 shadow-glow-primary-ring ring-1 ring-primary/20'
-                    : 'border-border/30 bg-muted/20 hover:border-border/60',
-                isEditing && 'ring-2 ring-primary border-primary bg-card/40 shadow-glow-primary-rgb-soft'
+                    ? 'border-primary/20 bg-primary/02'
+                    : 'border-border/40 bg-transparent hover:border-border/60',
+                isEditing && 'border-primary/40 bg-primary/05 ring-1 ring-primary/10'
             )}
         >
-            <div className="flex items-center justify-between p-5">
-                <div className="flex flex-1 items-center gap-5">
+            <div className="flex items-center justify-between p-4 sm:p-5">
+                <div className="flex flex-1 items-center gap-4 sm:gap-5">
                     <div
                         className={cn(
-                            'rounded-xl p-3 transition-all duration-300 shadow-inner',
+                            'rounded-xl p-2.5 transition-colors',
                             isActuallyActive
-                                ? 'bg-primary/20 text-primary ring-1 ring-inset ring-primary/30 group-hover:scale-110'
-                                : 'bg-muted/40 text-muted-foreground/40 opacity-50'
+                                ? 'bg-primary/10 text-primary'
+                                : 'bg-muted/40 text-muted-foreground/30'
                         )}
                     >
-                        <Server className="h-6 w-6" />
+                        <IconServer className="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3">
-                            <h3 className="font-black tracking-tight text-foreground leading-none">{server.name}</h3>
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-base font-semibold text-foreground leading-tight">{server.name}</h3>
+                            {server.isOfficial && (
+                                <IconShieldCheck className="h-3.5 w-3.5 text-primary/60" title="Official MCP Server" />
+                            )}
                         </div>
-                        <p className="mt-1.5 text-xs font-medium text-muted-foreground/70 line-clamp-1">
+                        <p className="mt-1 text-sm text-muted-foreground/60 line-clamp-1">
                             {server.description ??
                                 `${server.command ?? ''} ${(server.args ?? []).join(' ')}`.trim()}
                         </p>
-                        <div className="mt-2.5 flex items-center gap-3">
+                        <div className="mt-2 flex items-center gap-3">
                             {!isInternal && (
-                                <span className="text-xxxs font-black uppercase tracking-widest text-muted-foreground/40">V{server.version || '1.0.0'}</span>
+                                <span className="text-[10px] font-bold tracking-wider uppercase text-muted-foreground/30">{server.version || '1.0.0'}</span>
                             )}
-                            <div className="flex items-center gap-1.5 ml-2">
+                            <div className="flex items-center gap-1">
                                 {ALL_PERMISSIONS.map(p => (
                                     <div
                                         key={p.id}
                                         className={cn(
-                                            "p-0.5 rounded-sm transition-opacity",
-                                            (draftPermissions.includes(p.id) || isInternal) ? "opacity-100" : "opacity-10 opacity-0 group-hover:opacity-10"
+                                            "p-0.5 transition-opacity",
+                                            (draftPermissions.includes(p.id) || isInternal) ? "opacity-100" : "opacity-0 group-hover:opacity-20"
                                         )}
                                         title={t(`settings.mcp.permissions.${p.id}`)}
                                     >
-                                        <p.icon className={cn("h-3 w-3", (draftPermissions.includes(p.id) || isInternal) ? p.color : "")} />
+                                        <p.icon className={cn("h-3 w-3", (draftPermissions.includes(p.id) || isInternal) ? p.color : "text-muted-foreground")} />
                                     </div>
                                 ))}
                             </div>
@@ -213,22 +203,22 @@ function ServerItem({
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                     <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         onClick={(e) => {
                             e.stopPropagation();
                             void onToggle(server.id ?? server.name, isEnabled, isInternal);
                         }}
                         className={cn(
-                            'flex items-center gap-2 rounded-full h-8 px-3 transition-all',
+                            'flex items-center gap-2 rounded-full h-8 px-4 text-xs font-semibold transition-all',
                             isEnabled
-                                ? 'border-success/30 bg-success/10 text-success hover:bg-success/20 shadow-glow-success-soft'
-                                : 'border-border/50 bg-muted/50 text-muted-foreground hover:bg-muted'
+                                ? 'bg-primary/10 text-primary hover:bg-primary/20'
+                                : 'bg-muted/50 text-muted-foreground hover:bg-muted'
                         )}
                     >
-                        <Power className={cn('h-3.5 w-3.5', isEnabled && 'fill-current')} />
+                        <div className={cn('h-1.5 w-1.5 rounded-full', isEnabled ? 'bg-primary animate-pulse' : 'bg-muted-foreground/40')} />
                         {isEnabled
                             ? t('settings.mcp.status.enabled')
                             : t('settings.mcp.status.disabled')}
@@ -240,36 +230,34 @@ function ServerItem({
                         onClick={() => (isEditing ? onCancelEdit() : onEdit(server))}
                         className={cn(
                             "rounded-lg h-8 w-8 transition-colors",
-                            isEditing ? "bg-primary/20 text-primary shadow-glow-primary-soft" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            isEditing ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                         )}
                         title={t('common.edit')}
                     >
-                        <Edit2 className="h-4 w-4" />
+                        <IconEdit className="h-4 w-4" />
                     </Button>
                     {!isInternal && (
-                        <div className="flex items-center gap-1 opacity-100 transition-opacity ml-2">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => { void onDelete(server.id ?? server.name, isInternal); }}
-                                className="rounded-lg h-8 w-8 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                                title={t('common.delete')}
-                            >
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </div>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => { void onDelete(server.id ?? server.name, isInternal); }}
+                            className="rounded-lg h-8 w-8 text-muted-foreground/40 transition-colors hover:bg-destructive/10 hover:text-destructive"
+                            title={t('common.delete')}
+                        >
+                            <IconTrash className="h-4 w-4" />
+                        </Button>
                     )}
                 </div>
             </div>
 
             {/* Inline Edit Panel */}
             {isEditing && (
-                <div className="border-t border-border/20 bg-muted/10 p-5 animate-in slide-in-from-top-2 duration-300">
-                    <div className="space-y-5">
+                <div className="border-t border-border/20 bg-muted/5 p-4 sm:p-5">
+                    <div className="space-y-6">
                         <div className="grid gap-3">
-                            <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 flex items-center gap-2">
-                                <ShieldCheck className="h-3 w-3" />
-                                {t('settings.mcp.permissions.title').toUpperCase()}
+                            <Label className="text-[11px] font-bold tracking-widest uppercase text-muted-foreground/40 flex items-center gap-2">
+                                <IconShieldCheck className="h-3 w-3" />
+                                {t('settings.mcp.permissions.title')}
                             </Label>
 
                             {isInternal ? (
@@ -277,29 +265,29 @@ function ServerItem({
                                     {(server.actions ?? []).map(action => (
                                         <div
                                             key={action.name}
-                                            className="flex flex-col gap-3 rounded-lg border border-border/40 bg-background/20 p-3 sm:flex-row sm:items-center sm:justify-between"
+                                            className="flex flex-col gap-3 rounded-xl border border-border/40 bg-background/40 p-3 sm:flex-row sm:items-center sm:justify-between"
                                         >
                                             <div className="min-w-0">
-                                                <div className="truncate text-xs font-bold text-foreground">{action.name}</div>
+                                                <div className="text-sm font-semibold text-foreground">{action.name}</div>
                                                 {action.description && (
-                                                    <div className="mt-0.5 line-clamp-1 typo-overline font-medium text-muted-foreground/60">
+                                                    <div className="mt-0.5 text-xs text-muted-foreground/50 line-clamp-1">
                                                         {action.description}
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="flex shrink-0 gap-1.5">
+                                            <div className="flex shrink-0 gap-1">
                                                 {ACTION_POLICIES.map(policy => (
                                                     <Button
                                                         key={policy.id}
                                                         type="button"
-                                                        variant="outline"
+                                                        variant="ghost"
                                                         size="sm"
                                                         onClick={() => setActionPolicy(action.name, policy.id)}
                                                         className={cn(
-                                                            "h-7 rounded-md px-2 typo-overline font-black uppercase tracking-wide",
+                                                            "h-7 rounded-lg px-3 text-[10px] font-bold uppercase tracking-tight",
                                                             draftActionPermissions[action.name] === policy.id
                                                                 ? policy.className
-                                                                : "border-border/40 bg-muted/20 text-muted-foreground hover:bg-muted"
+                                                                : "bg-transparent text-muted-foreground/40 hover:bg-muted/50 hover:text-muted-foreground"
                                                         )}
                                                     >
                                                         {policy.label}
@@ -309,13 +297,13 @@ function ServerItem({
                                         </div>
                                     ))}
                                     {(server.actions ?? []).length === 0 && (
-                                        <div className="rounded-lg border border-dashed border-border/40 p-4 text-xs font-medium text-muted-foreground/60">
-                                            No actions registered.
+                                        <div className="rounded-xl border border-dashed border-border/40 p-5 text-center text-sm text-muted-foreground/40">
+                                            No actions registered for this server.
                                         </div>
                                     )}
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                                     {ALL_PERMISSIONS.map((perm) => (
                                         <div
                                             key={perm.id}
@@ -328,27 +316,27 @@ function ServerItem({
                                                 }
                                             }}
                                             className={cn(
-                                                "flex items-center gap-3 p-3 rounded-6px cursor-pointer transition-all active:scale-98",
+                                                "flex items-center gap-3 p-2.5 rounded-xl transition-all border",
                                                 draftPermissions.includes(perm.id)
-                                                    ? "bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/20 shadow-glow-primary-soft"
-                                                    : "bg-background/20 border-border/40 text-muted-foreground opacity-70 hover:opacity-100 hover:border-border/60"
+                                                    ? "bg-primary/05 border-primary/20 text-foreground"
+                                                    : "bg-transparent border-border/40 text-muted-foreground/60 hover:border-border/60"
                                             )}
                                         >
                                             <div className={cn(
-                                                "rounded-md p-1.5",
-                                                draftPermissions.includes(perm.id) ? "bg-primary/20" : "bg-muted/40"
+                                                "rounded-lg p-1.5",
+                                                draftPermissions.includes(perm.id) ? "bg-primary/10" : "bg-muted/40"
                                             )}>
-                                                <perm.icon className={cn("h-4 w-4", draftPermissions.includes(perm.id) ? perm.color : "")} />
+                                                <perm.icon className={cn("h-4 w-4", draftPermissions.includes(perm.id) ? "text-primary" : "text-muted-foreground/40")} />
                                             </div>
-                                            <div className="flex-1 flex flex-col items-start text-left">
-                                                <span className="text-xs font-bold tracking-tight">{t(`settings.mcp.permissions.${perm.id}`)}</span>
-                                                <span className="typo-overline opacity-60 line-clamp-1">{t(`settings.mcp.permissions.${perm.id}_desc`)}</span>
+                                            <div className="flex-1 flex flex-col items-start text-left min-w-0">
+                                                <span className="text-xs font-semibold">{t(`settings.mcp.permissions.${perm.id}`)}</span>
+                                                <span className="text-[10px] text-muted-foreground/40 line-clamp-1">{t(`settings.mcp.permissions.${perm.id}_desc`)}</span>
                                             </div>
                                             <div className={cn(
-                                                "h-4 w-4 rounded-full border flex items-center justify-center transition-colors",
-                                                draftPermissions.includes(perm.id) ? "bg-primary border-primary" : "border-muted-foreground/30"
+                                                "h-3.5 w-3.5 rounded-full border flex items-center justify-center transition-all",
+                                                draftPermissions.includes(perm.id) ? "bg-primary border-primary" : "border-border/60"
                                             )}>
-                                                {draftPermissions.includes(perm.id) && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
+                                                {draftPermissions.includes(perm.id) && <IconCheck className="h-2 w-2 text-primary-foreground" />}
                                             </div>
                                         </div>
                                     ))}
@@ -356,22 +344,21 @@ function ServerItem({
                             )}
                         </div>
 
-                        <div className="flex justify-end gap-2 pt-2 border-t border-border/10">
+                        <div className="flex justify-end gap-2 pt-4 border-t border-border/10">
                             <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => onCancelEdit()}
-                                className="h-9 gap-2 px-4"
+                                className="h-8 px-4 text-xs font-medium"
                             >
-                                <X className="h-4 w-4" />
                                 {t('common.cancel')}
                             </Button>
                             <Button
                                 size="sm"
                                 onClick={() => { void onSaveEdit(draftPermissions, draftActionPermissions); }}
-                                className="h-9 bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow-primary-soft px-5 font-bold"
+                                className="h-8 bg-primary text-primary-foreground hover:bg-primary/90 px-5 text-xs font-semibold shadow-sm"
                             >
-                                <RefreshCw className="mr-2 h-4 w-4" />
+                                <IconRefresh className="mr-2 h-3.5 w-3.5" />
                                 {t('common.save')}
                             </Button>
                         </div>
@@ -528,30 +515,30 @@ export function MCPServersTab(): JSX.Element {
     }, [loadServers, servers, t]);
 
     return (
-        <div className="flex flex-col space-y-4 p-6 pb-20">
+        <div className="flex flex-col space-y-6 p-5 pb-20">
             <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="flex items-center gap-2 text-xl font-black tracking-tight">
-                        <Server className="h-6 w-6 text-primary" />
+                <div className="space-y-1">
+                    <h2 className="text-xl font-semibold tracking-tight text-foreground flex items-center gap-2.5">
+                        <IconServer className="h-5 w-5 text-primary" />
                         {t('settings.mcp.servers.title')}
                     </h2>
-                    <p className="text-xs font-medium text-muted-foreground/60">
+                    <p className="text-sm text-muted-foreground/50">
                         {t('settings.mcp.servers.subtitle')}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="rounded-full bg-success/10 px-4 py-1.5 text-xs font-black text-success ring-1 ring-success/20 shadow-glow-success-soft">
-                        {activeCount} / {servers.length} {t('settings.mcp.status.active').toUpperCase()}
+                    <div className="rounded-lg bg-muted/40 border border-border/40 px-3 py-1 text-[11px] font-bold tracking-wider text-muted-foreground/60 uppercase">
+                        {activeCount} / {servers.length} {t('settings.mcp.status.active')}
                     </div>
                 </div>
             </div>
 
             {loading && servers.length === 0 ? (
-                <div className="flex h-32 items-center justify-center">
-                    <RefreshCw className="h-6 w-6 animate-spin text-primary/40" />
+                <div className="flex h-40 items-center justify-center">
+                    <IconRefresh className="h-5 w-5 animate-spin text-muted-foreground/20" />
                 </div>
             ) : (
-                <div className="grid gap-3 pt-4">
+                <div className="grid gap-2.5">
                     {serversWithUpdates.map(server => (
                         <ServerItem
                             key={(server.id || server.name) + (editingServerId === (server.id || server.name) ? '-edit' : '')}
@@ -568,8 +555,8 @@ export function MCPServersTab(): JSX.Element {
 
                     {servers.length === 0 && !loading && (
                         <div className={C_MCPSERVERSTAB_1}>
-                            <Server className="mb-3 h-10 w-10 opacity-20" />
-                            <p className="mb-1">{t('settings.mcp.servers.empty')}</p>
+                            <IconServer className="mb-4 h-12 w-12 opacity-10" />
+                            <p className="text-sm font-medium">{t('settings.mcp.servers.empty')}</p>
                         </div>
                     )}
                 </div>
@@ -577,3 +564,4 @@ export function MCPServersTab(): JSX.Element {
         </div>
     );
 }
+

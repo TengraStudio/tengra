@@ -8,13 +8,13 @@
  * (at your option) any later version.
  */
 
-import { Badge } from '@renderer/components/ui/badge';
-import { Button } from '@renderer/components/ui/button';
-import { Input } from '@renderer/components/ui/input';
-import { cn } from '@renderer/lib/utils';
-import { Bot, Eye, EyeOff, Search, Star, Trash2 } from 'lucide-react';
+import { IconEye, IconEyeOff, IconRobot, IconSearch, IconStar, IconTrash } from '@tabler/icons-react';
 import React from 'react';
 
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 import type { ModelInfo } from '@/types';
 
 /* Batch-02: Extracted Long Classes */
@@ -64,7 +64,7 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
         <div className="space-y-6">
             <div className="flex flex-col items-stretch justify-between gap-4 px-1 lg:flex-row lg:items-center">
                 <div className="group relative w-full max-w-xl">
-                    <Search className={C_INSTALLEDMODELSLIST_1} />
+                    <IconSearch className={C_INSTALLEDMODELSLIST_1} />
                     <Input
                         type="text"
                         value={modelSearch}
@@ -81,12 +81,12 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                 >
                     {showHiddenModels ? (
                         <>
-                            <EyeOff className="w-3.5 h-3.5 text-primary" />
+                            <IconEyeOff className="w-3.5 h-3.5 text-primary" />
                             {t('workspaces.hideHidden')}
                         </>
                     ) : (
                         <>
-                            <Eye className="w-3.5 h-3.5" />
+                            <IconEye className="w-3.5 h-3.5" />
                             {t('workspaces.showHidden')}
                         </>
                     )}
@@ -117,7 +117,7 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                                                 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors',
                                                 isDefault ? 'border-primary/25 bg-primary/15 text-primary' : 'border-border/20 bg-muted/20 text-muted-foreground'
                                             )}>
-                                                <Bot className="w-5 h-5" />
+                                                <IconRobot className="w-5 h-5" />
                                             </div>
                                             <div className="min-w-0">
                                                 <div className="truncate text-sm font-semibold text-foreground">
@@ -139,7 +139,7 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                                     </div>
                                     {isDefault && (
                                         <Badge className="rounded-lg border-primary/20 bg-primary/10 px-2.5 py-0.5 typo-body font-medium text-primary">
-                                            <Star className="w-2.5 h-2.5 mr-1.5 fill-current" />
+                                            <IconStar className="w-2.5 h-2.5 mr-1.5 fill-current" />
                                             {t('workspaces.default')}
                                         </Badge>
                                     )}
@@ -192,12 +192,12 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                                         >
                                             {isHidden ? (
                                                 <>
-                                                    <Eye className="w-3.5 h-3.5" />
+                                                    <IconEye className="w-3.5 h-3.5" />
                                                     {t('workspaces.show')}
                                                 </>
                                             ) : (
                                                 <>
-                                                    <EyeOff className="w-3.5 h-3.5" />
+                                                    <IconEyeOff className="w-3.5 h-3.5" />
                                                     {t('workspaces.hide')}
                                                 </>
                                             )}
@@ -210,7 +210,7 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                                                 className={C_INSTALLEDMODELSLIST_5}
                                                 title={t('common.delete')}
                                             >
-                                                <Trash2 className="h-3.5 w-3.5" />
+                                                <IconTrash className="h-3.5 w-3.5" />
                                             </Button>
                                         )}
                                     </div>

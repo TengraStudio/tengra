@@ -8,9 +8,10 @@
  * (at your option) any later version.
  */
 
-import { Badge } from '@renderer/components/ui/badge';
-import { AlertCircle, ChevronRight, FileCode, Hash, Info, Loader2 } from 'lucide-react';
+import { IconAlertCircle, IconChevronRight, IconFileCode, IconHash, IconInfoCircle, IconLoader2 } from '@tabler/icons-react';
 import React, { useMemo } from 'react';
+
+import { Badge } from '@/components/ui/badge';
 
 import { GitDiffLine } from './GitDiffLine';
 import { GitCommitInfo } from './types';
@@ -83,8 +84,8 @@ export const GitCommitDiffView: React.FC<CommitDiffViewProps> = ({
     if (loadingDiff) {
         return (
             <div className="flex flex-col items-center justify-center p-20 bg-muted/5 rounded-3xl border border-dashed border-border/10">
-                <Loader2 className="w-8 h-8 animate-spin text-primary/40 mb-4" />
-                <span className="typo-overline font-black uppercase tracking-300 text-muted-foreground/30">Streaming Delta stream...</span>
+                <IconLoader2 className="w-8 h-8 animate-spin text-primary/40 mb-4" />
+                <span className="typo-overline font-bold uppercase text-muted-foreground/30">Streaming Delta stream...</span>
             </div>
         );
     }
@@ -92,8 +93,8 @@ export const GitCommitDiffView: React.FC<CommitDiffViewProps> = ({
     if (!selectedCommit || !commitDiff || parsedDiff.files.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center p-16 bg-muted/5 rounded-3xl border border-dashed border-border/10 opacity-30 grayscale">
-                <AlertCircle className="w-10 h-10 mb-6 text-muted-foreground/40" />
-                <span className="typo-overline font-black uppercase tracking-200">Detailed Analytics Unavailable</span>
+                <IconAlertCircle className="w-10 h-10 mb-6 text-muted-foreground/40" />
+                <span className="typo-overline font-bold uppercase ">Detailed Analytics Unavailable</span>
                 <p className="typo-overline mt-2 max-w-200 text-center leading-relaxed">The changeset for this specific commit could not be resolved or is empty.</p>
             </div>
         );
@@ -104,13 +105,13 @@ export const GitCommitDiffView: React.FC<CommitDiffViewProps> = ({
             {/* Meta Info Card */}
             <div className="rounded-2xl border border-border/40 bg-card/40 p-4 overflow-hidden relative shadow-lg">
                 <div className="absolute top-0 right-0 p-8 transform translate-x-1/4 -translate-y-1/4 opacity-03 rotate-12">
-                    <Info className="w-32 h-32" />
+                    <IconInfoCircle className="w-32 h-32" />
                 </div>
 
                 <div className="flex flex-col gap-3 relative z-10">
                     <div className="flex items-center gap-2 text-primary/60">
-                        <Info className="w-3.5 h-3.5" />
-                        <span className="typo-overline font-black uppercase tracking-widest">Commit Manifest</span>
+                        <IconInfoCircle className="w-3.5 h-3.5" />
+                        <span className="typo-overline font-bold uppercase ">Commit Manifest</span>
                     </div>
                     <div className="space-y-1 bg-muted/10 p-3 rounded-xl border border-border/10 font-mono typo-overline text-muted-foreground/80 leading-relaxed shadow-inner">
                         {parsedDiff.info.map((line, idx) => (
@@ -131,12 +132,12 @@ export const GitCommitDiffView: React.FC<CommitDiffViewProps> = ({
                         <div className="bg-git-gh-header px-5 py-3.5 border-b border-border/10 flex items-center justify-between group-hover:bg-git-gh-hover transition-colors">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 rounded-lg bg-primary/10 text-primary shadow-sm border border-primary/5">
-                                    <FileCode className="w-4 h-4" />
+                                    <IconFileCode className="w-4 h-4" />
                                 </div>
                                 <div className="flex flex-col">
-                                    <span className="typo-overline font-bold text-foreground/90 tracking-tight">{file.fileName}</span>
-                                    <div className="flex items-center gap-2 typo-overline font-black text-muted-foreground/30 uppercase tracking-widest mt-0.5">
-                                        <ChevronRight className="w-2.5 h-2.5" />
+                                    <span className="typo-overline font-bold text-foreground/90 ">{file.fileName}</span>
+                                    <div className="flex items-center gap-2 typo-overline font-bold text-muted-foreground/30 uppercase mt-0.5">
+                                        <IconChevronRight className="w-2.5 h-2.5" />
                                         <span>Full Path Resolution</span>
                                     </div>
                                 </div>
@@ -151,7 +152,7 @@ export const GitCommitDiffView: React.FC<CommitDiffViewProps> = ({
                         {/* Summary Header Section (git index, ---, +++) */}
                         <div className="bg-git-gh-header/50 px-5 py-2.5 border-b border-border/5 flex flex-col gap-1">
                             {file.header.map((hLine, hIdx) => (
-                                <div key={hIdx} className="font-mono typo-overline text-muted-foreground/40 italic">
+                                <div key={hIdx} className="font-mono typo-overline text-muted-foreground/40 ">
                                     {hLine}
                                 </div>
                             ))}
@@ -168,8 +169,8 @@ export const GitCommitDiffView: React.FC<CommitDiffViewProps> = ({
 
                         {/* File Footer */}
                         <div className="bg-git-gh-header px-5 py-2.5 border-t border-border/10 flex items-center justify-between opacity-60">
-                            <div className="flex items-center gap-2 typo-overline font-black text-muted-foreground/20 uppercase tracking-200">
-                                <Hash className="w-3 h-3" />
+                            <div className="flex items-center gap-2 typo-overline font-bold text-muted-foreground/20 uppercase ">
+                                <IconHash className="w-3 h-3" />
                                 <span>{t('git.commitDiff.endOfChangeset')}</span>
                             </div>
                             <div className="flex items-center gap-4">

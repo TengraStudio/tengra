@@ -8,13 +8,13 @@
  * (at your option) any later version.
  */
 
-import { ChatListItem } from '@renderer/components/layout/sidebar/ChatListItem';
-import { ChatSearch } from '@renderer/components/layout/sidebar/ChatSearch';
-import { FolderItem } from '@renderer/components/layout/sidebar/FolderItem';
-import { SidebarDivider } from '@renderer/components/layout/sidebar-components';
-import { History, Pin } from 'lucide-react';
+import { IconHistory, IconPin } from '@tabler/icons-react';
 import React, { useState } from 'react';
 
+import { ChatListItem } from '@/components/layout/sidebar/ChatListItem';
+import { ChatSearch } from '@/components/layout/sidebar/ChatSearch';
+import { FolderItem } from '@/components/layout/sidebar/FolderItem';
+import { SidebarDivider } from '@/components/layout/sidebar-components';
 import { AppView } from '@/hooks/useAppState';
 import { Chat, Folder } from '@/types';
 
@@ -90,12 +90,12 @@ export const ChatHistorySectionComponent: React.FC<ChatHistorySectionProps> = ({
         <div className="flex-1 flex flex-col min-h-0">
             <div className="px-4 py-2">
                 <div className="flex items-center gap-2 mb-2 px-1">
-                    <History className="w-3.5 h-3.5 text-muted-foreground/60" />
-                    <span className="text-xxs font-bold text-muted-foreground/60">
+                    <IconHistory className="w-3.5 h-3.5 text-muted-foreground/60" />
+                    <span className="text-sm font-bold text-muted-foreground/60">
                         {t('sidebar.history')}
                     </span>
                     {chats.length > 0 && (
-                        <span className="ml-auto text-xxs text-muted-foreground/40">
+                        <span className="ml-auto text-sm text-muted-foreground/40">
                             {chats.length}
                         </span>
                     )}
@@ -227,8 +227,8 @@ const ChatListContent: React.FC<{
                 <>
                     {pinnedChats.length > 0 && (
                         <div className="mb-4 space-y-1">
-                            <div className="px-2 text-xxs font-bold text-muted-foreground/30 flex items-center gap-2">
-                                <Pin className="w-3 h-3" />
+                            <div className="px-2 text-sm font-bold text-muted-foreground/30 flex items-center gap-2">
+                                <IconPin className="w-3 h-3" />
                                 <span>{t('sidebar.pinned')}</span>
                             </div>
                             {pinnedChats.map(chat => (
@@ -276,7 +276,7 @@ const ChatListContent: React.FC<{
                         ([category, categoryChats]) =>
                             categoryChats.length > 0 && (
                                 <div key={category} className="space-y-1 mt-2">
-                                    <div className="px-2 text-xxs font-bold text-muted-foreground/30 flex items-center justify-between">
+                                    <div className="px-2 text-sm font-bold text-muted-foreground/30 flex items-center justify-between">
                                         <span>{category}</span>
                                         <span className="text-muted-foreground/20">
                                             {categoryChats.length}

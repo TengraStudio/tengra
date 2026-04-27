@@ -10,16 +10,7 @@
 
 import type { MarketplaceRegistry, MarketplaceRuntimeProfile, MarketplaceSkill } from '@shared/types/marketplace';
 import type { ProxySkill } from '@shared/types/skill';
-import {
-    CheckCircle2,
-    Globe,
-    Image,
-    MessageSquare,
-    Package,
-    Palette,
-    Sparkles,
-    Zap,
-} from 'lucide-react';
+import { IconBolt,IconCircleCheck, IconGlobe, IconMessage, IconPackage, IconPalette, IconPhoto, IconSparkles } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuthLanguage } from '@/context/AuthContext';
@@ -79,22 +70,20 @@ export function MarketplaceView(): JSX.Element {
     const preloadInFlightRef = useRef<Promise<void> | null>(null);
 
     const tabs: Array<{ id: MarketplaceTab, icon: React.ElementType }> = [
-        { id: 'mcp', icon: Package },
-        { id: 'extensions', icon: Zap },
-        { id: 'skills', icon: Sparkles },
-        { id: 'themes', icon: Palette },
-        { id: 'personas', icon: Sparkles },
-        { id: 'models', icon: Zap },
-        { id: 'prompts', icon: MessageSquare },
-        { id: 'languages', icon: Globe },
-        { id: 'iconPacks', icon: Image },
+        { id: 'mcp', icon: IconPackage },
+        { id: 'extensions', icon: IconBolt },
+        { id: 'skills', icon: IconSparkles },
+        { id: 'themes', icon: IconPalette },
+        { id: 'models', icon: IconBolt },
+        { id: 'prompts', icon: IconMessage },
+        { id: 'languages', icon: IconGlobe },
+        { id: 'iconPacks', icon: IconPhoto },
     ];
     const tabLabels: Record<MarketplaceTab, string> = {
         mcp: t('marketplace.tabs.mcp'),
         extensions: t('marketplace.tabs.extensions'),
         skills: t('marketplace.tabs.skills'),
         themes: t('marketplace.tabs.themes'),
-        personas: t('marketplace.tabs.personas'),
         models: t('marketplace.tabs.models'),
         prompts: t('marketplace.tabs.prompts'),
         languages: t('marketplace.tabs.languages'),
@@ -105,7 +94,6 @@ export function MarketplaceView(): JSX.Element {
         lastUpdated: '',
         themes: [],
         mcp: [],
-        personas: [],
         models: [],
         prompts: [],
         languages: [],
@@ -114,7 +102,6 @@ export function MarketplaceView(): JSX.Element {
     };
     const totalInstalled = (registryItems.themes?.filter(item => item.installed).length ?? 0)
         + (registryItems.mcp?.filter(item => item.installed).length ?? 0)
-        + (registryItems.personas?.filter(item => item.installed).length ?? 0)
         + (registryItems.models?.filter(item => item.installed).length ?? 0)
         + (registryItems.prompts?.filter(item => item.installed).length ?? 0)
         + (registryItems.languages?.filter(item => item.installed).length ?? 0)
@@ -122,7 +109,6 @@ export function MarketplaceView(): JSX.Element {
         + installedSkills.length;
     const totalAvailable = (registryItems.themes?.length ?? 0)
         + (registryItems.mcp?.length ?? 0)
-        + (registryItems.personas?.length ?? 0)
         + (registryItems.models?.length ?? 0)
         + (registryItems.prompts?.length ?? 0)
         + (registryItems.languages?.length ?? 0)
@@ -253,10 +239,10 @@ export function MarketplaceView(): JSX.Element {
             <header className="shrink-0 px-8 pt-8 pb-4">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div className="space-y-1">
-                        <h1 className="text-3xl font-black tracking-tighter text-foreground">
+                        <h1 className="text-3xl font-bold text-foreground">
                             {t('marketplace.title')}
                         </h1>
-                        <p className="text-xs font-medium text-muted-foreground/50 uppercase tracking-super-wide">
+                        <p className="text-sm font-medium text-muted-foreground/50 uppercase ">
                             {t('marketplace.subtitle')}
                         </p>
                     </div>
@@ -270,7 +256,7 @@ export function MarketplaceView(): JSX.Element {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={cn(
-                                        'relative px-4 py-2 text-xs font-black uppercase tracking-widest transition-all',
+                                        'relative px-4 py-2 text-sm font-bold uppercase transition-all',
                                         isActive ? 'text-primary' : 'text-muted-foreground/40 hover:text-foreground/70'
                                     )}
                                 >
@@ -286,13 +272,13 @@ export function MarketplaceView(): JSX.Element {
 
                 {/* Status Bar - Refined Typography */}
                 <div className="mt-8 flex items-center gap-6 px-1 border-b border-muted/10 pb-4">
-                    <div className="flex items-center gap-2 text-xxxs font-black text-muted-foreground/40 uppercase tracking-ultra-wide">
-                        <Package className="w-3.5 h-3.5 opacity-30" />
+                    <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground/40 uppercase ">
+                        <IconPackage className="w-3.5 h-3.5 opacity-30" />
                         <span>{totalAvailable} {t('marketplace.results')}</span>
                     </div>
                     <div className="h-1 w-1 rounded-full bg-muted/20" />
-                    <div className="flex items-center gap-2 text-xxxs font-black text-primary/60 uppercase tracking-ultra-wide">
-                        <CheckCircle2 className="w-3.5 h-3.5 opacity-60" />
+                    <div className="flex items-center gap-2 text-sm font-bold text-primary/60 uppercase ">
+                        <IconCircleCheck className="w-3.5 h-3.5 opacity-60" />
                         <span>{totalInstalled} {t('modelExplorer.installed')}</span>
                     </div>
                 </div>

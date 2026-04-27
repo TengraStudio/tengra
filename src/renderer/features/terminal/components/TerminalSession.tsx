@@ -8,15 +8,15 @@
  * (at your option) any later version.
  */
 
-import { useTranslation } from '@renderer/i18n';
-import { getTerminalTheme } from '@renderer/lib/terminal-theme';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebglAddon } from '@xterm/addon-webgl';
 import { Terminal, type Terminal as XTerm } from '@xterm/xterm';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 
 import { useTheme } from '@/hooks/useTheme';
+import { useTranslation } from '@/i18n';
 import { invokeTypedIpc } from '@/lib/ipc-client';
+import { getTerminalTheme } from '@/lib/terminal-theme';
 import { cn } from '@/lib/utils';
 import { TerminalTab } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';

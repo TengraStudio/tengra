@@ -8,10 +8,8 @@
  * (at your option) any later version.
  */
 
-export * from './AdvancedSection';
-export * from './BuildSection';
+export * from './PipelinesSection';
 export * from './CouncilSection';
-export * from './DevServerSection';
 export * from './GeneralSection';
 export * from './GitSection';
 export * from './IntelligenceSection';

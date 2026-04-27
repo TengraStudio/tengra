@@ -8,6 +8,8 @@
  * (at your option) any later version.
  */
 
+import { describe, expect, it } from 'vitest';
+
 import {
     createCustomSplitPreset,
     DEFAULT_SPLIT_ANALYTICS,
@@ -16,8 +18,7 @@ import {
     sanitizeSplitLayout,
     sanitizeSplitPresets,
     serializeSplitPresets,
-} from '@renderer/features/terminal/utils/split-config';
-import { describe, expect, it } from 'vitest';
+} from '@/features/terminal/utils/split-config';
 
 describe('terminal split config utils', () => {
     it('sanitizes split presets and strips malformed rows', () => {

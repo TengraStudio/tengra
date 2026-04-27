@@ -8,9 +8,11 @@
  * (at your option) any later version.
  */
 
-import { useWorkspaceExplorerWatchers } from '@renderer/features/workspace/hooks/useWorkspaceExplorerWatchers';
-import { applyGitTreeStatus } from '@renderer/features/workspace/utils/gitTreeStatus';
-import type { WorkspaceExplorerDiagnosticCounts } from '@renderer/features/workspace/utils/workspace-explorer-diagnostics';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+import { useWorkspaceExplorerWatchers } from '@/features/workspace/hooks/useWorkspaceExplorerWatchers';
+import { applyGitTreeStatus } from '@/features/workspace/utils/gitTreeStatus';
+import type { WorkspaceExplorerDiagnosticCounts } from '@/features/workspace/utils/workspace-explorer-diagnostics';
 import {
     joinPath,
     loadExpandedMountState,
@@ -18,9 +20,7 @@ import {
     saveExpandedMountState,
     saveExpandedTreeState,
     sortNodes,
-} from '@renderer/features/workspace/utils/workspaceUtils';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-
+} from '@/features/workspace/utils/workspaceUtils';
 import { WorkspaceEntry, WorkspaceMount } from '@/types';
 import { performanceMonitor } from '@/utils/performance';
 import { appLogger } from '@/utils/renderer-logger';

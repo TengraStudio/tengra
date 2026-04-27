@@ -27,13 +27,36 @@ export const formatTime = (ms: number): string => {
     return `${seconds}s`;
 };
 
-export const formatReset = (value?: string, locale: string = 'en-US'): string => {
+export const formatReset = (value?: string | number, locale: string = 'en-US'): string => {
     if (!value || value === '-') { return '-'; }
     try {
-        const date = new Date(value);
+        // Handle numeric strings (timestamps)
+        let timestamp = value;
+        if (typeof value === 'string' && /^\d+$/.test(value)) {
+            timestamp = Number.parseInt(value, 10);
+        }
+
+        // If it's a number, check if it's seconds or milliseconds
+        if (typeof timestamp === 'number') {
+            // If less than 10^12, it's likely seconds (current date is ~1.7e12 ms)
+            if (timestamp < 10000000000) {
+                timestamp *= 1000;
+            }
+        }
+
+        const date = new Date(timestamp);
         if (Number.isNaN(date.getTime())) { return String(value); }
-        return date.toLocaleString(locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+        const formattedDate = date.toLocaleString(locale, {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        });
+
+        return formattedDate;
     } catch {
-        return value;
+        return String(value);
     }
 };

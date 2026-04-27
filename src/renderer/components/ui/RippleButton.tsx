@@ -34,7 +34,7 @@ interface Ripple {
  * @example
  * ```tsx
  * <RippleButton variant="primary" onClick={handleClick}>
- *   Click Me
+ * Click Me
  * </RippleButton>
  * ```
  */
@@ -87,7 +87,7 @@ export const RippleButton: React.FC<RippleButtonProps> = ({
                     'rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80': variant === 'secondary',
                     'rounded-lg bg-transparent hover:bg-muted text-foreground': variant === 'ghost',
                     'rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90': variant === 'destructive',
-                    'px-3 py-1.5 text-xs': size === 'sm',
+                    'px-3 py-1.5 text-sm': size === 'sm',
                     'px-5 py-2.5 text-sm font-medium': size === 'md',
                     'px-8 py-4 text-base font-bold': size === 'lg',
                 },

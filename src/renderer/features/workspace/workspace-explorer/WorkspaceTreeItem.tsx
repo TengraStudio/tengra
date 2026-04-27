@@ -9,11 +9,11 @@
  */
 
 import { useDraggable, useDroppable } from '@dnd-kit/core';
-import { applyGitTreeStatus } from '@renderer/features/workspace/utils/gitTreeStatus';
-import { joinPath, sortNodes } from '@renderer/features/workspace/utils/workspaceUtils';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
 
+import { applyGitTreeStatus } from '@/features/workspace/utils/gitTreeStatus';
+import { joinPath, sortNodes } from '@/features/workspace/utils/workspaceUtils';
 import { FileIcon, FolderIcon } from '@/lib/file-icons';
 import { cn } from '@/lib/utils';
 import { WorkspaceEntry, WorkspaceMount } from '@/types';
@@ -40,7 +40,7 @@ const DirectoryExpandIcon: React.FC<DirectoryExpandIconProps> = ({ loading, expa
             <div className="w-3 h-3 border border-border/50 border-t-foreground/60 rounded-full animate-spin" />
         );
     }
-    return expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />;
+    return expanded ? <IconChevronDown className="w-3 h-3" /> : <IconChevronRight className="w-3 h-3" />;
 };
 
 export interface WorkspaceTreeItemProps {
@@ -320,7 +320,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
                         />
                     ))}
                     {children.length === 0 && loaded && (
-                        <div className="text-xxs text-muted-foreground/40 pl-8 py-0.5">
+                        <div className="text-sm text-muted-foreground/40 pl-8 py-0.5">
                             {t('workspace.emptyFolder')}
                         </div>
                     )}

@@ -77,8 +77,8 @@ const PORT_FILE_CACHE_TTL_MS = 5_000;
 const WORKSPACE_LIST_CACHE_TTL_MS = 5_000;
 
 const SERVICE_NAME = 'db-service';
-const MAX_HEALTH_RETRIES = 60;
-const HEALTH_RETRY_DELAY_MS = 500;
+const MAX_HEALTH_RETRIES = 40; // Increased for slower startups under load
+const HEALTH_RETRY_DELAY_MS = 800;
 const WORKSPACE_COMPAT_PATH_FIELD = WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN;
 const DB_SERVICE_TOKEN_ENV = 'TENGRA_DB_SERVICE_TOKEN';
 const DB_SERVICE_TOKEN_FILE = 'db-service.token';
@@ -207,41 +207,52 @@ export class DatabaseClientService extends BaseService {
      * Discover existing service or start a new one
      */
     private async discoverOrStartService(): Promise<number | null> {
-        // Try to discover existing service
-        const existingPort = await this.discoverService();
-        if (existingPort) {
-            this.logInfo(`Discovered existing db-service on port ${existingPort}`);
-            return existingPort;
+        this.servicePort = 42000;
+        this.logInfo(`Using fixed db-service port: ${this.servicePort}`);
+
+        // Try to see if it's already running
+        const isOpen = await this.isPortOpen(this.servicePort);
+        if (isOpen) {
+            this.logInfo(`Port ${this.servicePort} is occupied. Checking health...`);
+            try {
+                const health = await this.getHealth();
+                if (health.success && health.data?.status === 'healthy') {
+                    this.logInfo('Existing db-service is healthy.');
+                    return this.servicePort;
+                }
+            } catch {
+                // Not responding or not our service
+            }
+            this.logWarn(`Existing process on port ${this.servicePort} is unhealthy or unknown. Killing it.`);
+            await this.processManager.killProcessOnPort(this.servicePort);
         }
 
         // Start new service
-        this.logInfo('Starting db-service...');
+        this.logInfo(`Ensuring port ${this.servicePort} and service processes are free...`);
+        await Promise.all([
+            this.processManager.killProcessByName('tengra-db-service'),
+            this.processManager.killProcessOnPort(this.servicePort)
+        ]);
+
+        this.logInfo(`Starting db-service on fixed port ${this.servicePort}...`);
         const dbDir = this.dataService.getPath('db');
         const dbPath = path.join(dbDir, 'Tengra.db');
 
         await this.processManager.startService({
             name: SERVICE_NAME,
             executable: 'tengra-db-service',
-            args: ['--console', '--db-path', dbPath], // Run in console mode with explicit data path
+            args: ['--console', '--db-path', dbPath, '--port', this.servicePort.toString()],
             persistent: true,
         });
 
-        // Wait for port file to appear
-        const maxAttempts = 50;
-        for (let i = 0; i < maxAttempts; i++) {
-            const port = await this.discoverService();
-            if (port) {
-                return port;
-            }
-            const managedPort = this.processManager.getServicePort(SERVICE_NAME);
-            if (managedPort) {
-                this.logInfo(`Using managed db-service port from process manager: ${managedPort}`);
-                return managedPort;
-            }
-            await delay(100);
+        // Wait for health check (max 10s)
+        try {
+            await this.waitForHealth();
+            return this.servicePort;
+        } catch (e) {
+            this.logError('Timed out waiting for db-service to become healthy on port 42000');
+            return null;
         }
-
-        return null;
     }
 
     /**
@@ -302,12 +313,16 @@ export class DatabaseClientService extends BaseService {
      * Get the port file path
      */
     private getPortFileCandidates(): string[] {
-        const appData = app.getPath('appData');
-        const roots = ['Tengra', 'tengra'];
-        return roots.map(root => path.join(appData, root, 'services', `${SERVICE_NAME}.port`));
+        const userDataServices = path.join(app.getPath('userData'), 'services', `${SERVICE_NAME}.port`);
+        const legacyRoots = ['Tengra', 'tengra'].map(root => path.join(app.getPath('appData'), root, 'services', `${SERVICE_NAME}.port`));
+        return [userDataServices, ...legacyRoots];
     }
 
     private getServiceTokenFilePath(): string {
+        return path.join(app.getPath('userData'), 'services', DB_SERVICE_TOKEN_FILE);
+    }
+
+    private getLegacyServiceTokenFilePath(): string {
         return path.join(app.getPath('appData'), 'Tengra', 'services', DB_SERVICE_TOKEN_FILE);
     }
 
@@ -325,7 +340,17 @@ export class DatabaseClientService extends BaseService {
                 return existingFileToken;
             }
         } catch {
-            // Token file will be created below.
+            try {
+                const legacyFileToken = (await fsPromises.readFile(this.getLegacyServiceTokenFilePath(), 'utf8')).trim();
+                if (legacyFileToken) {
+                    await fsPromises.mkdir(path.dirname(tokenFile), { recursive: true });
+                    await fsPromises.writeFile(tokenFile, legacyFileToken, { encoding: 'utf8', mode: 0o600 });
+                    process.env[DB_SERVICE_TOKEN_ENV] = legacyFileToken;
+                    return legacyFileToken;
+                }
+            } catch {
+                // Token file will be created below.
+            }
         }
 
         const token = crypto.randomBytes(32).toString('hex');
@@ -398,10 +423,8 @@ export class DatabaseClientService extends BaseService {
             // Try to discover port if missing
             this.servicePort = await this.discoverService();
             if (!this.servicePort) {
-                return {
-                    success: false,
-                    error: 'db-service not connected and port discovery failed'
-                };
+                // Fallback to fixed port for this project
+                this.servicePort = 42000;
             }
         }
 
@@ -442,7 +465,10 @@ export class DatabaseClientService extends BaseService {
                 );
                 
                 // Clear cached port and try to re-discover before retry
-                this.servicePort = await this.discoverService();
+                // Only re-discover if we are not on the fixed port
+                if (this.servicePort !== 42000) {
+                    this.servicePort = await this.discoverService();
+                }
                 await delay(backoff);
                 
                 return this.apiCall<T>(method, path, data, retryCount + 1);

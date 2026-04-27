@@ -51,14 +51,14 @@ describe('MemoryContextService', () => {
 
     it('caches resolution context by query and limit', async () => {
         mockAdvanced.findResolutionMemories.mockResolvedValueOnce([
-            { content: 'Fix with command X' },
+            { content: 'Fix with command IconX' },
         ]);
 
         const first = await service.getResolutionContext('npm run dev fails', { timeoutMs: 300, limit: 3 });
         const second = await service.getResolutionContext('npm run dev fails', { timeoutMs: 300, limit: 3 });
 
-        expect(first).toContain('Fix with command X');
-        expect(second).toContain('Fix with command X');
+        expect(first).toContain('Fix with command IconX');
+        expect(second).toContain('Fix with command IconX');
         expect(mockAdvanced.findResolutionMemories).toHaveBeenCalledTimes(1);
     });
 

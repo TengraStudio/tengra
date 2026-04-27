@@ -22,8 +22,7 @@ mod server;
 mod types;
 
 use anyhow::{Context, Result};
-use std::ffi::OsString;
-use std::fs;
+use std::ffi::OsString; 
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -52,43 +51,11 @@ fn get_db_path(override_path: Option<PathBuf>) -> PathBuf {
     if let Some(p) = override_path {
         return p;
     }
-    if let Ok(appdata) = std::env::var("APPDATA") {
-        PathBuf::from(appdata)
-            .join("Tengra")
-            .join("runtime")
-            .join("db")
-            .join("Tengra.db")
-    } else {
-        PathBuf::from("Tengra.db")
-    }
+    get_data_root().join("runtime").join("db").join("Tengra.db")
 }
-
-/// Get the services directory for port file
-fn get_services_dir() -> PathBuf {
-    if let Ok(appdata) = std::env::var("APPDATA") {
-        PathBuf::from(appdata).join("Tengra").join("services")
-    } else {
-        PathBuf::from(".")
-    }
-}
-
-/// Write the port file for service discovery
-fn write_port_file(port: u16) -> Result<()> {
-    let services_dir = get_services_dir();
-    fs::create_dir_all(&services_dir)?;
-    let port_file = services_dir.join("db-service.port");
-    fs::write(port_file, port.to_string())?;
-    Ok(())
-}
-
-/// Remove the port file on shutdown
-fn remove_port_file() {
-    let port_file = get_services_dir().join("db-service.port");
-    let _ = fs::remove_file(port_file);
-}
-
+ 
 /// Run the database server
-async fn run_server(db_path_override: Option<PathBuf>, shutdown_rx: Option<oneshot::Receiver<()>>) -> Result<()> {
+async fn run_server(db_path_override: Option<PathBuf>, port_override: Option<u16>, shutdown_rx: Option<oneshot::Receiver<()>>) -> Result<()> {
     // Initialize tracing with JSON output to stdout
     tracing_subscriber::fmt()
         .with_env_filter(
@@ -119,20 +86,13 @@ async fn run_server(db_path_override: Option<PathBuf>, shutdown_rx: Option<onesh
     // Create router
     let router = server::create_router(db, start_time);
 
-    // Bind to a random available port
-    let addr = SocketAddr::from(([127, 0, 0, 1], 0));
+    // Bind to the specified port or default to 42000
+    let port = port_override.unwrap_or(42000);
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
     let listener = TcpListener::bind(addr).await?;
     let local_addr = listener.local_addr()?;
-    let port = local_addr.port();
 
     tracing::info!("Database service listening on {}", local_addr);
-
-    // Write port file for discovery
-    write_port_file(port)?;
-    tracing::info!(
-        "Port file written: {}/db-service.port",
-        get_services_dir().display()
-    );
 
     // Run server with optional shutdown signal
     if let Some(shutdown_rx) = shutdown_rx {
@@ -146,23 +106,24 @@ async fn run_server(db_path_override: Option<PathBuf>, shutdown_rx: Option<onesh
         axum::serve(listener, router).await?;
     }
 
-    // Cleanup
-    remove_port_file();
+    // Cleanup 
     tracing::info!("Database service stopped");
 
     Ok(())
 }
 
-fn resolve_logs_dir() -> PathBuf {
-    if let Ok(path) = std::env::var("TENGRA_DB_SERVICE_LOG_DIR") {
-        return PathBuf::from(path);
+
+
+fn get_data_root() -> PathBuf {
+    if let Ok(root) = std::env::var("TENGRA_USER_DATA_ROOT") {
+        return PathBuf::from(root);
     }
 
     if let Ok(appdata) = std::env::var("APPDATA") {
-        return PathBuf::from(appdata).join("Tengra").join("logs");
+        return PathBuf::from(appdata).join("Tengra");
     }
 
-    PathBuf::from("logs")
+    PathBuf::from(".")
 }
 
 // ============================================================================
@@ -214,7 +175,7 @@ fn run_service() -> Result<()> {
 
     // Create runtime and run server
     let rt = tokio::runtime::Runtime::new()?;
-    let result = rt.block_on(run_server(None, Some(shutdown_rx)));
+    let result = rt.block_on(run_server(None, None, Some(shutdown_rx)));
 
     // Report stopped status
     status_handle.set_service_status(ServiceStatus {
@@ -249,8 +210,11 @@ fn main() -> Result<()> {
                 let db_path = args.iter().position(|a| a == "--db-path" || a == "-d")
                     .and_then(|i| args.get(i + 1))
                     .map(PathBuf::from);
+                let port = args.iter().position(|a| a == "--port" || a == "-p")
+                    .and_then(|i| args.get(i + 1))
+                    .and_then(|p| p.parse::<u16>().ok());
                 let rt = tokio::runtime::Runtime::new()?;
-                rt.block_on(run_server(db_path, None))?;
+                rt.block_on(run_server(db_path, port, None))?;
                 return Ok(());
             }
             "--install" | "-i" => {
@@ -285,6 +249,7 @@ fn main() -> Result<()> {
                 println!("Options:");
                 println!("  --console, -c          Run in console mode (foreground)");
                 println!("  --db-path, -d <PATH>   Path to the database file (.db)");
+                println!("  --port, -p <PORT>      Fixed port to listen on (default: 42000)");
                 println!("  --install, -i          Install as Windows Service");
                 println!("  --uninstall, -u        Uninstall Windows Service");
                 println!("  --help, -h             Show this help message");
@@ -312,7 +277,7 @@ fn main() -> Result<()> {
     {
         // On non-Windows, just run in console mode
         let rt = tokio::runtime::Runtime::new()?;
-        rt.block_on(run_server(None, None))?;
+        rt.block_on(run_server(None, None, None))?;
     }
 
     Ok(())
@@ -380,10 +345,7 @@ fn uninstall_service() -> Result<()> {
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         anyhow::bail!("Failed to delete service: {}", stderr);
-    }
-
-    // Remove port file
-    remove_port_file();
+    } 
 
     Ok(())
 }

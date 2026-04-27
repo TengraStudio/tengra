@@ -8,24 +8,7 @@
  * (at your option) any later version.
  */
 
-import {
-    BarChart,
-    Bot,
-    Database,
-    Image,
-    LayoutPanelLeft,
-    LucideIcon,
-    MonitorCog,
-    Palette,
-    Puzzle,
-    Rocket,
-    Settings,
-    Share2,
-    Sparkles,
-    TrendingUp,
-    User,
-    Users,
-} from 'lucide-react';
+import { type Icon,IconChartBar, IconColumns, IconDatabase, IconDeviceDesktopCog, IconPalette, IconPhoto, IconPuzzle, IconRobot, IconRocket, IconSettings, IconShare2, IconSparkles, IconTrendingUp, IconUser, IconUsers } from '@tabler/icons-react';
 
 import type { SettingsCategory } from '@/features/settings/types';
 
@@ -35,7 +18,7 @@ export interface SettingsNavigationItem {
     id: SettingsCategory
     label: string
     sectionLabel: string
-    icon: LucideIcon
+    icon: Icon
 }
 
 export interface SettingsNavigationGroup {
@@ -49,86 +32,80 @@ export function getSettingsNavigationItems(t: SettingsTranslationFn): SettingsNa
             id: 'general',
             label: t('settings.tabs.general'),
             sectionLabel: t('settings.categories.general'),
-            icon: Settings,
+            icon: IconSettings,
         },
 
         {
             id: 'editor',
             label: t('settings.tabs.editor'),
             sectionLabel: t('settings.categories.general'),
-            icon: LayoutPanelLeft,
+            icon: IconColumns,
         },
         {
             id: 'images',
             label: t('settings.tabs.images'),
             sectionLabel: t('settings.categories.visuals'),
-            icon: Image,
+            icon: IconPhoto,
         },
         {
             id: 'system',
             label: t('settings.tabs.system'),
             sectionLabel: t('settings.categories.app'),
-            icon: MonitorCog,
+            icon: IconDeviceDesktopCog,
         },
         {
             id: 'accounts',
             label: t('settings.tabs.accounts'),
-            sectionLabel: t('settings.categories.security'),
-            icon: User,
+            sectionLabel: t('settings.categories.ai'),
+            icon: IconUser,
         },
         {
             id: 'appearance',
             label: t('settings.tabs.appearance'),
             sectionLabel: t('settings.categories.visuals'),
-            icon: Palette,
+            icon: IconPalette,
         },
         {
             id: 'models',
             label: t('settings.tabs.models'),
             sectionLabel: t('settings.categories.ai'),
-            icon: Sparkles,
+            icon: IconSparkles,
         },
         {
             id: 'memory',
             label: t('settings.tabs.memory'),
             sectionLabel: t('settings.categories.ai'),
-            icon: Database,
+            icon: IconDatabase,
         },
         {
             id: 'quotas',
             label: t('statistics.connectedAppsUsage'),
             sectionLabel: t('settings.categories.ai'),
-            icon: TrendingUp,
+            icon: IconTrendingUp,
         },
         {
             id: 'usage-limits',
             label: t('settings.usage-limits'),
             sectionLabel: t('settings.categories.ai'),
-            icon: TrendingUp,
+            icon: IconTrendingUp,
         },
         {
             id: 'statistics',
             label: t('settings.tabs.statistics'),
             sectionLabel: t('settings.categories.insights'),
-            icon: BarChart,
-        },
-        {
-            id: 'personas',
-            label: t('settings.tabs.personas'),
-            sectionLabel: t('settings.categories.customization'),
-            icon: Users,
+            icon: IconChartBar,
         },
         {
             id: 'speech',
             label: t('settings.tabs.speech'),
             sectionLabel: t('settings.categories.interaction'),
-            icon: Bot,
+            icon: IconRobot,
         },
         {
             id: 'social-media',
             label: t('settings.tabs.socialMedia'),
             sectionLabel: t('settings.categories.interaction'),
-            icon: Share2,
+            icon: IconShare2,
         },
 
 
@@ -136,25 +113,25 @@ export function getSettingsNavigationItems(t: SettingsTranslationFn): SettingsNa
             id: 'about',
             label: t('settings.tabs.about'),
             sectionLabel: t('settings.categories.app'),
-            icon: Rocket,
+            icon: IconRocket,
         },
         {
             id: 'extensions-plugins',
             label: t('settings.tabs.plugins'),
             sectionLabel: t('settings.categories.extensions'),
-            icon: Puzzle,
+            icon: IconPuzzle,
         },
         {
             id: 'extensions-mcp',
             label: t('settings.tabs.mcpServers'),
             sectionLabel: t('settings.categories.extensions'),
-            icon: Rocket,
+            icon: IconRocket,
         },
         {
             id: 'extensions-skills',
             label: t('settings.tabs.skills'),
             sectionLabel: t('settings.categories.extensions'),
-            icon: Sparkles,
+            icon: IconSparkles,
         },
     ];
 }

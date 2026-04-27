@@ -43,7 +43,7 @@ export const PromptCommandMenu = memo(({ show, prompts, selectedIndex, onSelect,
                 id="chat-prompt-command-listbox"
             >
                 <div
-                    className="border-b border-border/10 bg-muted/5 px-3 py-2 typo-body uppercase tracking-wider font-bold text-muted-foreground/70"
+                    className="border-b border-border/10 bg-muted/5 px-3 py-2 typo-body uppercase font-bold text-muted-foreground/70"
                     role="heading"
                     aria-level={3}
                 >

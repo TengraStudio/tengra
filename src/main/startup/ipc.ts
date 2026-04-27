@@ -10,12 +10,11 @@
 
 import { registerAdvancedMemoryIpc } from '@main/ipc/advanced-memory';
 import { registerAgentIpc } from '@main/ipc/agent';
-import { registerAuditIpc } from '@main/ipc/audit';
 import { registerAuthIpc } from '@main/ipc/auth';
-import { registerBackupIpc } from '@main/ipc/backup';
 import { registerBrainIpcHandlers } from '@main/ipc/brain';
 import { registerClipboardIpc } from '@main/ipc/clipboard';
 import { registerCodeIntelligenceIpc } from '@main/ipc/code-intelligence';
+import { registerCodeLanguageIpc } from '@main/ipc/code-language';
 import { registerCodeSandboxIpc } from '@main/ipc/code-sandbox';
 import { registerCollaborationIpc } from '@main/ipc/collaboration';
 import { registerContractIpc } from '@main/ipc/contract';
@@ -67,24 +66,50 @@ import { registerWorkspaceAgentSessionIpc } from '@main/ipc/workspace-agent-sess
 import { appLogger } from '@main/logging/logger';
 import { McpDispatcher } from '@main/mcp/dispatcher';
 import { SharedPromptsService } from '@main/services/data/shared-prompts.service';
-import type { ExtensionService } from '@main/services/extension/extension.service';
-import type { LogoService } from '@main/services/external/logo.service';
-import type { DockerService } from '@main/services/workspace/docker.service';
+import { ExtensionService } from '@main/services/extension/extension.service';
+import { LogoService } from '@main/services/external/logo.service';
+import { CopilotService } from '@main/services/llm/copilot.service';
+import { LLMService } from '@main/services/llm/llm.service';
+import { SettingsService } from '@main/services/system/settings.service';
+import { DockerService } from '@main/services/workspace/docker.service';
 import { container, Services } from '@main/startup/services';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { registerBatchIpc } from '@main/utils/ipc-batch.util';
-import { setIpcEventBus } from '@main/utils/ipc-wrapper.util';
+import { safeHandle, setIpcEventBus } from '@main/utils/ipc-wrapper.util';
 import { createIpcHandler as baseCreateIpcHandler } from '@main/utils/ipc-wrapper.util';
-import type { ExtensionDevOptions, ExtensionPublishOptions, ExtensionTestOptions } from '@shared/types/extension';
-import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
+import { ExtensionDevOptions, ExtensionPublishOptions, ExtensionTestOptions } from '@shared/types/extension';
+import { BrowserWindow, IpcMainInvokeEvent } from 'electron';
+
+
+export function registerMinimalIpcHandlers(
+    settingsService: SettingsService,
+    getMainWindow: () => BrowserWindow | null,
+    allowedFileRoots: Set<string>
+): void {
+    registerWindowIpc(getMainWindow, allowedFileRoots, settingsService);
+    registerSettingsIpc({
+        getMainWindow,
+        settingsService,
+        llmService: null! as LLMService,
+        copilotService: null! as CopilotService,
+
+        updateOpenAIConnection: () => {},
+        updateOllamaConnection: async () => {},
+    });
+    registerLoggingIpc();
+    registerDialogIpc(getMainWindow);
+}
+
 
 export function registerIpcHandlers(
     services: Services,
     toolExecutor: ToolExecutor,
     getMainWindow: () => BrowserWindow | null,
     allowedFileRoots: Set<string>,
-    mcpDispatcher: McpDispatcher
+    mcpDispatcher: McpDispatcher,
+    getIsMainProcessReady?: () => boolean
 ): void {
+
     setIpcEventBus(services.eventBusService);
     const logoService = container.resolve<LogoService>('logoService');
     const dockerService = container.resolve<DockerService>('dockerService');
@@ -94,15 +119,17 @@ export function registerIpcHandlers(
     registerLazyServicesIpc();
     registerContractIpc();
     registerCodeSandboxIpc(getMainWindow);
+    registerCodeLanguageIpc(services.codeLanguageService);
     registerModelRegistryIpc(
         services.modelRegistryService,
         services.eventBusService,
         getMainWindow
     );
     registerModelDownloaderIpc(services.modelDownloaderService);
-    registerAuditIpc(services.auditLogService);
+
     registerPerformanceIpc(services.performanceService);
-    registerRuntimeIpc(services.runtimeBootstrapService);
+    registerRuntimeIpc(services.runtimeBootstrapService, getIsMainProcessReady);
+
     registerHealthIpc(services.healthCheckService);
     registerMigrationIpc(services.databaseService);
     registerSdCppIpc(
@@ -115,7 +142,7 @@ export function registerIpcHandlers(
         proxyService: services.proxyService,
         copilotService: services.copilotService,
         authService: services.authService,
-        auditLogService: services.auditLogService,
+
         getMainWindow,
         eventBus: services.eventBusService,
     });
@@ -151,6 +178,7 @@ export function registerIpcHandlers(
         ollamaService: services.ollamaService,
         ollamaHealthService: services.ollamaHealthService,
         proxyService: services.proxyService,
+        authService: services.authService,
     });
 
     registerWorkspaceIpc(getMainWindow, {
@@ -160,7 +188,7 @@ export function registerIpcHandlers(
         codeIntelligenceService: services.codeIntelligenceService,
         jobSchedulerService: services.jobSchedulerService,
         databaseService: services.databaseService,
-        auditLogService: services.auditLogService,
+
     }, allowedFileRoots);
     registerAgentIpc(getMainWindow, services.agentService);
     registerProcessIpc(getMainWindow, services.processService);
@@ -170,7 +198,7 @@ export function registerIpcHandlers(
     // Extension IPC registration (inlined to avoid ReferenceError)
     registerExtensionIpc(services.extensionService, getMainWindow);
 
-    registerDbIpc(getMainWindow, services.databaseService, services.embeddingService, undefined, allowedFileRoots);
+    registerDbIpc(getMainWindow, services.databaseService, services.embeddingService, allowedFileRoots);
     registerLlamaIpc(getMainWindow, services.llamaService);
     registerMemoryIpc(getMainWindow, services.memoryService);
     registerAdvancedMemoryIpc(services.advancedMemoryService);
@@ -182,12 +210,15 @@ export function registerIpcHandlers(
         settingsService: services.settingsService,
         llmService: services.llmService,
         copilotService: services.copilotService,
-        auditLogService: services.auditLogService,
+
         updateOpenAIConnection: () => {
             const mainWindow = getMainWindow();
             if (mainWindow) {
+                // OpenAI connection status update placeholder
+                appLogger.debug('IPC', 'OpenAI connection update requested');
             }
         },
+
         updateOllamaConnection: async () => {
             const mainWindow = getMainWindow();
             if (mainWindow) {
@@ -202,7 +233,7 @@ export function registerIpcHandlers(
         },
     });
 
-    registerFilesIpc(getMainWindow, services.fileSystemService, allowedFileRoots, services.auditLogService, services.fileChangeTracker);
+    registerFilesIpc(getMainWindow, services.fileSystemService, allowedFileRoots, services.fileChangeTracker);
     registerHFModelIpc(services.llmService, services.huggingFaceService);
     registerMultiModelIpc(services.multiModelComparisonService);
     registerCollaborationIpc(getMainWindow, services.modelCollaborationService);
@@ -229,7 +260,13 @@ export function registerIpcHandlers(
         services.advancedMemoryService
     );
     registerMcpIpc(mcpDispatcher, getMainWindow);
-    registerMarketplaceIpc(services.marketplaceService, services.themeService, services.localeService, getMainWindow);
+    registerMarketplaceIpc(
+        services.marketplaceService,
+        services.themeService,
+        services.localeService,
+        services.codeLanguageService,
+        getMainWindow
+    );
     registerLocaleIpc(services.localeService);
     registerUsageIpc(services.settingsService);
 
@@ -245,6 +282,7 @@ export function registerIpcHandlers(
     );
 
     registerDialogIpc(getMainWindow);
+    registerThemeIpc(services.themeService, getMainWindow);
 
     // Register Batch IPC
     registerBatchIpc();
@@ -268,70 +306,71 @@ function registerExtensionIpc(
         return await handler(event, ...args);
     });
 
-    ipcMain.handle('extension:get-all', createIpcHandler('extension:get-all',
+    safeHandle('extension:get-all', createIpcHandler('extension:get-all',
         () => extensionService.getAllExtensions()
     ));
 
-    ipcMain.handle('extension:get', createIpcHandler('extension:get',
+    safeHandle('extension:get', createIpcHandler('extension:get',
         (_event: IpcMainInvokeEvent, extensionId: string) => extensionService.getExtension(extensionId)
     ));
 
-    ipcMain.handle('extension:install', createIpcHandler('extension:install',
+    safeHandle('extension:install', createIpcHandler('extension:install',
         async (_event: IpcMainInvokeEvent, extensionPath: string) => await extensionService.handleInstall(_event, extensionPath)
     ));
 
-    ipcMain.handle('extension:uninstall', createIpcHandler('extension:uninstall',
+    safeHandle('extension:uninstall', createIpcHandler('extension:uninstall',
         async (_event: IpcMainInvokeEvent, extensionId: string) => await extensionService.handleUninstall(_event, extensionId)
     ));
 
-    ipcMain.handle('extension:activate', createIpcHandler('extension:activate',
+    safeHandle('extension:activate', createIpcHandler('extension:activate',
         async (_event: IpcMainInvokeEvent, extensionId: string) => await extensionService.handleActivate(_event, extensionId)
     ));
 
-    ipcMain.handle('extension:deactivate', createIpcHandler('extension:deactivate',
+    safeHandle('extension:deactivate', createIpcHandler('extension:deactivate',
         async (_event: IpcMainInvokeEvent, extensionId: string) => await extensionService.handleDeactivate(_event, extensionId)
     ));
 
-    ipcMain.handle('extension:dev-start', createIpcHandler('extension:dev-start',
+    safeHandle('extension:dev-start', createIpcHandler('extension:dev-start',
         async (_event: IpcMainInvokeEvent, options: ExtensionDevOptions) => await extensionService.handleDevStart(_event, options)
     ));
 
-    ipcMain.handle('extension:dev-stop', createIpcHandler('extension:dev-stop',
+    safeHandle('extension:dev-stop', createIpcHandler('extension:dev-stop',
         async (_event: IpcMainInvokeEvent, extensionId: string) => await extensionService.handleDevStop(_event, extensionId)
     ));
 
-    ipcMain.handle('extension:dev-reload', createIpcHandler('extension:dev-reload',
+    safeHandle('extension:dev-reload', createIpcHandler('extension:dev-reload',
         async (_event: IpcMainInvokeEvent, extensionId: string) => await extensionService.handleDevReload(_event, extensionId)
     ));
 
-    ipcMain.handle('extension:test', createIpcHandler('extension:test',
+    safeHandle('extension:test', createIpcHandler('extension:test',
         async (_event: IpcMainInvokeEvent, options: ExtensionTestOptions) => await extensionService.handleTest(_event, options)
     ));
 
-    ipcMain.handle('extension:publish', createIpcHandler('extension:publish',
+    safeHandle('extension:publish', createIpcHandler('extension:publish',
         async (_event: IpcMainInvokeEvent, options: ExtensionPublishOptions) => await extensionService.handlePublish(_event, options)
     ));
 
-    ipcMain.handle('extension:get-profile', createIpcHandler('extension:get-profile',
+    safeHandle('extension:get-profile', createIpcHandler('extension:get-profile',
         (_event: IpcMainInvokeEvent, extensionId: string) => extensionService.handleGetProfile(_event, extensionId)
     ));
 
-    ipcMain.handle('extension:validate', createIpcHandler('extension:validate',
+    safeHandle('extension:validate', createIpcHandler('extension:validate',
         (_event: IpcMainInvokeEvent, manifest: Record<string, unknown>) => extensionService.handleValidate(_event, manifest)
     ));
 
-    ipcMain.handle('extension:get-state', createIpcHandler('extension:get-state',
+    safeHandle('extension:get-state', createIpcHandler('extension:get-state',
         (_event: IpcMainInvokeEvent, extensionId: string) => extensionService.handleGetState(_event, extensionId)
     ));
 
-    ipcMain.handle('extension:get-config', createIpcHandler('extension:get-config',
+    safeHandle('extension:get-config', createIpcHandler('extension:get-config',
         (_event: IpcMainInvokeEvent, extensionId: string) => extensionService.handleGetConfig(_event, extensionId)
     ));
 
-    ipcMain.handle('extension:update-config', createIpcHandler('extension:update-config',
+    safeHandle('extension:update-config', createIpcHandler('extension:update-config',
         async (_event: IpcMainInvokeEvent, extensionId: string, config: Record<string, unknown>) => 
             await extensionService.handleUpdateConfig(_event, extensionId, config)
     ));
+
 }
 
 export function registerPostStartupIpcHandlers(
@@ -357,8 +396,6 @@ export function registerPostInteractiveIpcHandlers(
 ): void {
     registerTokenEstimationIpc();
     registerVoiceIpc();
-    registerBackupIpc(getMainWindow, services.backupService);
-    registerThemeIpc(services.themeService, getMainWindow);
 }
 
 export async function registerDeferredIpcHandlers(

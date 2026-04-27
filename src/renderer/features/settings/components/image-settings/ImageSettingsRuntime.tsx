@@ -8,11 +8,11 @@
  * (at your option) any later version.
  */
 
-import { Badge } from '@renderer/components/ui/badge';
-import { Button } from '@renderer/components/ui/button';
-import { AlertTriangle, CheckCircle2, Download, RotateCcw, Settings2 } from 'lucide-react';
+import { IconAlertTriangle, IconCircleCheck, IconDownload, IconRotate, IconSettings2 } from '@tabler/icons-react';
 import React, { useState } from 'react';
 
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { cn } from '@/lib/utils';
 import { appLogger } from '@/utils/renderer-logger';
@@ -72,7 +72,7 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                     "h-2 w-2 rounded-full animate-pulse",
                     sdCppStatus === 'ready' ? "bg-success" : "bg-warning"
                 )} />
-                <h4 className="text-xxs font-bold text-muted-foreground">
+                <h4 className="text-sm font-bold text-muted-foreground">
                     {t('settings.images.runtimeManagement')}
                 </h4>
             </div>
@@ -86,7 +86,7 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                                 ? "bg-success/10 border-success/20 text-success scale-110 shadow-success/10"
                                 : "bg-muted/30 border-border/10 text-muted-foreground"
                         )}>
-                            {sdCppStatus === 'ready' ? <CheckCircle2 className="w-8 h-8" /> : <Settings2 className="w-8 h-8" />}
+                            {sdCppStatus === 'ready' ? <IconCircleCheck className="w-8 h-8" /> : <IconSettings2 className="w-8 h-8" />}
                         </div>
                         <div>
                             <div className="flex items-center gap-3">
@@ -101,7 +101,7 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                             </div>
                             <div className="flex items-center gap-3 mt-1.5 px-0.5">
                                 <span className={cn(
-                                    "typo-body font-bold   px-2.5 py-0.5 rounded-md border",
+                                    "typo-body font-bold px-2.5 py-0.5 rounded-md border",
                                     sdCppStatus === 'ready' ? "bg-success/5 border-success/10 text-success" :
                                         sdCppStatus === 'installing' ? "bg-primary/5 border-primary/10 text-primary animate-pulse" : "bg-muted/10 border-border/10 text-muted-foreground/60"
                                 )}>
@@ -114,13 +114,13 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                         onClick={handleReinstallClick}
                         disabled={isReinstalling || sdCppStatus === 'installing'}
                         className={cn(
-                            "h-12 px-6 rounded-2xl typo-body font-bold   transition-all duration-500 flex items-center gap-3 shadow-lg active:scale-95 disabled:scale-100",
+                            "h-12 px-6 rounded-2xl typo-body font-bold transition-all duration-500 flex items-center gap-3 shadow-lg active:scale-95 disabled:scale-100",
                             (isReinstalling || sdCppStatus === 'installing')
                                 ? "bg-muted/40 text-muted-foreground/50 border border-border/20 cursor-not-allowed"
                                 : "bg-foreground text-background hover:bg-primary hover:text-primary-foreground shadow-black/10"
                         )}
                     >
-                        <RotateCcw className={cn("w-4 h-4", (isReinstalling || sdCppStatus === 'installing') && "animate-spin")} />
+                        <IconRotate className={cn("w-4 h-4", (isReinstalling || sdCppStatus === 'installing') && "animate-spin")} />
                         {t('settings.images.reinstall')}
                     </Button>
                 </div>
@@ -131,7 +131,7 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                         <div className="flex justify-between items-end gap-6">
                             <div className="space-y-2 min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
-                                    <Download className="w-3.5 h-3.5 text-primary animate-bounce" />
+                                    <IconDownload className="w-3.5 h-3.5 text-primary animate-bounce" />
                                     <p className="typo-body font-bold text-primary leading-none">
                                         {t('settings.images.downloading')}
                                     </p>
@@ -159,7 +159,7 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                 {/* Help/Support Text */}
                 <div className={C_IMAGESETTINGSRUNTIME_3}>
                     <div className="p-2 rounded-xl bg-warning/10 text-warning h-fit group-hover/help:scale-110 transition-transform">
-                        <AlertTriangle className="w-4 h-4" />
+                        <IconAlertTriangle className="w-4 h-4" />
                     </div>
                     <p className="typo-body leading-relaxed text-muted-foreground/60 font-bold pt-1 text-justify">
                         {t('settings.images.reinstallHelp')}

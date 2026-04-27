@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Check, Copy, ExternalLink, Loader2, X } from 'lucide-react';
+import { IconCheck, IconCopy, IconExternalLink, IconLoader2, IconX } from '@tabler/icons-react';
 import React, { useCallback, useState } from 'react';
 
 import { Modal } from '@/components/ui/modal';
@@ -103,9 +103,9 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
                         title={t('auth.copyCode')}
                     >
                         {copied ? (
-                            <Check className="w-4 h-4" />
+                            <IconCheck className="w-4 h-4" />
                         ) : (
-                            <Copy className="w-4 h-4" />
+                            <IconCopy className="w-4 h-4" />
                         )}
                     </button>
                 </div>
@@ -115,7 +115,7 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
                     onClick={handleOpenLink}
                     className={C_DEVICECODEMODAL_1}
                 >
-                    <ExternalLink className="w-4 h-4" />
+                    <IconExternalLink className="w-4 h-4" />
                     {t('auth.openGithubToEnter')}
                 </button>
 
@@ -123,19 +123,19 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
                 <div className="flex items-center justify-center gap-2 py-2">
                     {isPending && (
                         <>
-                            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                            <IconLoader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                             <span className="text-sm text-muted-foreground">{t('auth.waitingForLogin')}</span>
                         </>
                     )}
                     {isSuccess && (
                         <>
-                            <Check className="w-4 h-4 text-success" />
+                            <IconCheck className="w-4 h-4 text-success" />
                             <span className="text-sm text-success font-semibold">{t('auth.connectedSuccessfully')}</span>
                         </>
                     )}
                     {isError && (
                         <>
-                            <X className="w-4 h-4 text-destructive" />
+                            <IconX className="w-4 h-4 text-destructive" />
                             <span className="text-sm text-destructive">{errorMessage ?? t('auth.connectionFailedGeneric')}</span>
                         </>
                     )}

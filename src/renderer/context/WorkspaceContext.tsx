@@ -8,9 +8,9 @@
  * (at your option) any later version.
  */
 
-import { useWorkspaceListManager } from '@renderer/features/workspace/hooks/useWorkspaceListManager';
 import { createContext, ReactNode, useContext, useMemo } from 'react';
 
+import { useWorkspaceListManager } from '@/features/workspace/hooks/useWorkspaceListManager';
 import { translateErrorMessage } from '@/utils/error-handler.util';
 
 type WorkspaceContextType = ReturnType<typeof useWorkspaceListManager>

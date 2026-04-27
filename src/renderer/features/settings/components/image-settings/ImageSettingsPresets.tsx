@@ -8,10 +8,11 @@
  * (at your option) any later version.
  */
 
-import { Button } from '@renderer/components/ui/button';
-import { Input } from '@renderer/components/ui/input';
-import { Bookmark, Download, Plus, Share2, Trash2, Zap } from 'lucide-react';
+import { IconBolt,IconBookmark, IconDownload, IconPlus, IconShare2, IconTrash } from '@tabler/icons-react';
 import React from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 import { ImagePresetEntry } from '../../types';
 
@@ -62,7 +63,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1 relative z-10">
                 <div className="flex items-center gap-4">
                     <div className={C_IMAGESETTINGSPRESETS_2}>
-                        <Bookmark className="w-6 h-6" />
+                        <IconBookmark className="w-6 h-6" />
                     </div>
                     <div>
                         <h3 className="text-lg font-bold text-foreground group-hover/presets:text-primary transition-colors">
@@ -100,7 +101,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                     onClick={() => { void handleSavePreset(); }}
                     className={C_IMAGESETTINGSPRESETS_5}
                 >
-                    <Plus className="w-4 h-4" />
+                    <IconPlus className="w-4 h-4" />
                     {t('settings.images.savePreset')}
                 </Button>
             </div>
@@ -127,7 +128,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                                         onClick={() => { void handleExportPresetShare(preset.id); }}
                                         className="h-8 w-8 text-muted-foreground/40 hover:text-primary hover:bg-primary/10 rounded-xl transition-all hover:scale-110"
                                     >
-                                        <Share2 className="w-3.5 h-3.5" />
+                                        <IconShare2 className="w-3.5 h-3.5" />
                                     </Button>
                                     <Button
                                         variant="ghost"
@@ -135,7 +136,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                                         onClick={() => { void handleDeletePreset(preset.id); }}
                                         className={C_IMAGESETTINGSPRESETS_8}
                                     >
-                                        <Trash2 className="w-3.5 h-3.5" />
+                                        <IconTrash className="w-3.5 h-3.5" />
                                     </Button>
                                 </div>
                             </div>
@@ -146,7 +147,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
 
             <div className="bg-muted/20 border border-border/20 rounded-3xl p-6 space-y-4 relative z-10 group/share">
                 <div className="flex items-center gap-3 px-1">
-                    <Zap className="w-3.5 h-3.5 text-primary" />
+                    <IconBolt className="w-3.5 h-3.5 text-primary" />
                     <div className="typo-body font-bold text-muted-foreground/40">Import / Export Code</div>
                 </div>
                 <textarea
@@ -159,7 +160,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                     onClick={() => { void handleImportPresetShare(); }}
                     className={C_IMAGESETTINGSPRESETS_10}
                 >
-                    <Download className="w-3.5 h-3.5" />
+                    <IconDownload className="w-3.5 h-3.5" />
                     {t('settings.images.importPresetShare')}
                 </Button>
             </div>

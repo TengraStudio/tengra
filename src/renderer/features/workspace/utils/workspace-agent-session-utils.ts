@@ -8,7 +8,6 @@
  * (at your option) any later version.
  */
 
-import type { useModel } from '@renderer/context/ModelContext';
 import type { AgentEventRecord, AgentState } from '@shared/types/agent-state';
 import type { IpcValue, JsonObject, JsonValue } from '@shared/types/common';
 import type {
@@ -22,6 +21,7 @@ import type {
 } from '@shared/types/workspace-agent-session';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 
+import type { useModel } from '@/context/ModelContext';
 import { generateId } from '@/lib/utils';
 import type { Chat, Message } from '@/types';
 

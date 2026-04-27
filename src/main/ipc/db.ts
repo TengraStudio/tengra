@@ -11,7 +11,6 @@
 import path from 'path';
 
 import { appLogger } from '@main/logging/logger';
-import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import { Chat as DbChat, DatabaseService, Folder as DbFolder, Prompt as DbPrompt, SearchChatsOptions as DbSearchOptions } from '@main/services/data/database.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
@@ -110,7 +109,6 @@ export function registerDbIpc(
     getMainWindow: () => BrowserWindow | null,
     databaseService: DatabaseService,
     embeddingService: EmbeddingService,
-    auditLogService?: AuditLogService,
     allowedFileRoots?: Set<string>
 ) {
     const validateSender: SenderValidator = (event) => {
@@ -124,12 +122,12 @@ export function registerDbIpc(
     appLogger.debug('DatabaseIPC', 'Registering database IPC handlers');
 
     registerBatchHandlers(databaseService, validateSender);
-    registerChatHandlers(databaseService, validateSender, auditLogService);
+    registerChatHandlers(databaseService, validateSender);
     registerWorkspaceHandlers(databaseService, validateSender, allowedFileRoots);
     registerFolderHandlers(databaseService, validateSender);
     registerUsageHandlers(databaseService, validateSender);
     registerPromptHandlers(databaseService, validateSender);
-    registerStatsHandlers(databaseService, validateSender, auditLogService);
+    registerStatsHandlers(databaseService, validateSender);
 
     if (embeddingService) {
         registerVectorHandlers(databaseService, embeddingService, validateSender);
@@ -192,7 +190,7 @@ function registerBatchHandlers(databaseService: DatabaseService, validateSender:
 /**
  * Registers IPC handlers for chat CRUD operations.
  */
-function registerChatHandlers(databaseService: DatabaseService, validateSender: SenderValidator, _auditLogService?: AuditLogService) {
+function registerChatHandlers(databaseService: DatabaseService, validateSender: SenderValidator) {
     ipcMain.handle('db:createChat', createValidatedIpcHandler('db:createChat', async (event, chat: Chat) => {
         validateSender(event);
         return await withOperationGuard('db', () => databaseService.chats.createChat(validatedAs<DbChat>({ ...chat })));
@@ -511,7 +509,7 @@ function registerPromptHandlers(databaseService: DatabaseService, validateSender
 /**
  * Registers IPC handlers for statistics and analytics.
  */
-function registerStatsHandlers(databaseService: DatabaseService, validateSender: (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => void, _auditLogService?: AuditLogService) {
+function registerStatsHandlers(databaseService: DatabaseService, validateSender: (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => void) {
     ipcMain.handle('db:getDetailedStats', createValidatedIpcHandler('db:getDetailedStats', async (event, period?: string) => {
         validateSender(event);
         return await databaseService.system.getDetailedStats(period || 'daily');

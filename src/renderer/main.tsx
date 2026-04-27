@@ -8,18 +8,19 @@
  * (at your option) any later version.
  */
 
-import App from '@renderer/App';
-import { AppProviders } from '@renderer/context/AppProviders';
-import { registerExtensionComponent } from '@renderer/features/extensions/components/ExtensionViewHost';
-import { registerLocalExtensions } from '@renderer/features/extensions/extension-renderers';
-import { installRendererLogger } from '@renderer/logging';
-import { translateErrorMessage } from '@renderer/utils/error-handler.util';
-import { performanceMonitor } from '@renderer/utils/performance';
 import React from 'react';
 import * as ReactDOM from 'react-dom';
 import * as ReactDOMClient from 'react-dom/client';
 
-import '@renderer/styles/index.css';
+import App from '@/App';
+import { AppProviders } from '@/context/AppProviders';
+import { registerExtensionComponent } from '@/features/extensions/components/ExtensionViewHost';
+import { registerLocalExtensions } from '@/features/extensions/extension-renderers';
+import { installRendererLogger } from '@/logging';
+import { translateErrorMessage } from '@/utils/error-handler.util';
+import { performanceMonitor } from '@/utils/performance';
+
+import '@/styles/index.css';
 
 // Expose extension SDK to the global window object
 window.React = React;
@@ -37,7 +38,7 @@ const bootstrapWindow = window as Window & {
 };
 
 const loadWebBridge = () => {
-    void import('@renderer/web-bridge');
+    void import('@/web-bridge');
 };
 
 if (!window.electron) {

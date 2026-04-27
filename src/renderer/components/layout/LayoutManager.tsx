@@ -8,11 +8,11 @@
  * (at your option) any later version.
  */
 
-import { useLanguage } from '@renderer/i18n';
-import { useBreakpoint } from '@renderer/lib/responsive';
 import React, { useRef } from 'react';
 
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/i18n';
+import { useBreakpoint } from '@/lib/responsive';
 import { cn } from '@/lib/utils';
 
 

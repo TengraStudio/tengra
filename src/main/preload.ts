@@ -21,6 +21,7 @@ import { createAuthSessionBridge } from './preload/domains/auth-session.preload'
 import { createBatchBridge } from './preload/domains/batch.preload';
 import { createClipboardBridge } from './preload/domains/clipboard.preload';
 import { createCodeBridge } from './preload/domains/code.preload';
+import { createCodeLanguageBridge } from './preload/domains/code-language.preload';
 import { createCodeSandboxBridge } from './preload/domains/code-sandbox.preload';
 import { createModelCollaborationBridge } from './preload/domains/collaboration.preload';
 import { createDbBridge } from './preload/domains/db.preload';
@@ -66,6 +67,46 @@ import { createWorkspaceBridge } from './preload/domains/workspace.preload';
 
 // Increase max listeners for ipcRenderer to handle multiple terminal/process streams
 ipcRenderer.setMaxListeners(60);
+
+const BOOTSTRAP_IPC_MAX_ATTEMPTS = 60;
+const BOOTSTRAP_IPC_RETRY_DELAY_MS = 50;
+const originalInvoke = ipcRenderer.invoke.bind(ipcRenderer);
+
+function isNoHandlerRegisteredError(error: unknown): boolean {
+    if (!error) {return false;}
+    const msg = String(error instanceof Error ? error.message : error);
+    // Standard Electron error messages for missing handlers
+    return (
+        msg.includes('No handler registered for') || 
+        msg.includes('Error occurred in handler for') ||
+        msg.includes('IpcMain.handle() is not registered')
+    );
+}
+
+function waitForBootstrapRetry(): Promise<void> {
+    return new Promise(resolve => {
+        setTimeout(resolve, BOOTSTRAP_IPC_RETRY_DELAY_MS);
+    });
+}
+
+async function invokeWithBootstrapRetry(channel: string, ...args: IpcValue[]): Promise<unknown> {
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt < BOOTSTRAP_IPC_MAX_ATTEMPTS; attempt += 1) {
+        try {
+            return await originalInvoke(channel, ...args);
+        } catch (error) {
+            lastError = error;
+            if (!isNoHandlerRegisteredError(error) || attempt === BOOTSTRAP_IPC_MAX_ATTEMPTS - 1) {
+                throw error;
+            }
+            await waitForBootstrapRetry();
+        }
+    }
+    throw lastError instanceof Error ? lastError : new Error('IPC invoke failed during bootstrap');
+}
+
+ipcRenderer.invoke = ((channel: string, ...args: IpcValue[]) =>
+    invokeWithBootstrapRetry(channel, ...args)) as typeof ipcRenderer.invoke;
 
 const settingsBridge = createSettingsBridge(ipcRenderer);
 
@@ -144,6 +185,7 @@ const api = {
     saveSettings: (settings: AppSettings) => settingsBridge.saveSettings(settings),
 
     code: createCodeBridge(ipcRenderer),
+    codeLanguages: createCodeLanguageBridge(ipcRenderer),
     git: createGitBridge(ipcRenderer),
     ollama: createOllamaBridge(ipcRenderer),
     performance: createPerformanceBridge(ipcRenderer),

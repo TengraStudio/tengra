@@ -8,8 +8,8 @@
  * (at your option) any later version.
  */
 
-export { Button } from '@renderer/components/ui/button';
-export { Card } from '@renderer/components/ui/card';
+export { Button } from '@/components/ui/button';
+export { Card } from '@/components/ui/card';
 export {
     Dialog,
     DialogClose,
@@ -21,7 +21,7 @@ export {
     DialogPortal,
     DialogTitle,
     DialogTrigger,
-} from '@renderer/components/ui/dialog';
+} from '@/components/ui/dialog';
 export {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -38,12 +38,12 @@ export {
     DropdownMenuSubContent,
     DropdownMenuSubTrigger,
     DropdownMenuTrigger,
-} from '@renderer/components/ui/dropdown-menu';
-export { Input, inputVariants } from '@renderer/components/ui/input';
-export { Label } from '@renderer/components/ui/label';
-export { LoadingState } from '@renderer/components/ui/LoadingState';
-export { Modal } from '@renderer/components/ui/modal';
-export { Popover, PopoverContent, PopoverTrigger } from '@renderer/components/ui/popover';
+} from '@/components/ui/dropdown-menu';
+export { Input, inputVariants } from '@/components/ui/input';
+export { Label } from '@/components/ui/label';
+export { LoadingState } from '@/components/ui/LoadingState';
+export { Modal } from '@/components/ui/modal';
+export { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 export {
     Select,
     SelectContent,
@@ -55,19 +55,19 @@ export {
     SelectSeparator,
     SelectTrigger,
     SelectValue,
-} from '@renderer/components/ui/select';
-export { Skeleton, SkeletonCard, SkeletonText } from '@renderer/components/ui/skeleton';
-export { Slider } from '@renderer/components/ui/slider';
-export { Switch } from '@renderer/components/ui/switch';
-export { Textarea } from '@renderer/components/ui/textarea';
-export { Tooltip } from '@renderer/components/ui/tooltip';
+} from '@/components/ui/select';
+export { Skeleton, SkeletonCard, SkeletonText } from '@/components/ui/skeleton';
+export { Slider } from '@/components/ui/slider';
+export { Switch } from '@/components/ui/switch';
+export { Textarea } from '@/components/ui/textarea';
+export { Tooltip } from '@/components/ui/tooltip';
 
 // Animation Components
-export { AnimatedCard, GradientBorderCard } from '@renderer/components/ui/AnimatedCard';
-export { AnimatedProgressBar } from '@renderer/components/ui/AnimatedProgressBar';
-export { Confetti } from '@renderer/components/ui/Confetti';
-export { FloatingActionButton } from '@renderer/components/ui/FloatingActionButton';
-export { GlassModal } from '@renderer/components/ui/GlassModal';
-export { RippleButton } from '@renderer/components/ui/RippleButton';
-export { ScrollToBottomButton } from '@renderer/components/ui/ScrollToBottomButton';
-export { TypingIndicator } from '@renderer/components/ui/TypingIndicator';
+export { AnimatedCard, GradientBorderCard } from '@/components/ui/AnimatedCard';
+export { AnimatedProgressBar } from '@/components/ui/AnimatedProgressBar';
+export { Confetti } from '@/components/ui/Confetti';
+export { FloatingActionButton } from '@/components/ui/FloatingActionButton';
+export { GlassModal } from '@/components/ui/GlassModal';
+export { RippleButton } from '@/components/ui/RippleButton';
+export { ScrollToBottomButton } from '@/components/ui/ScrollToBottomButton';
+export { TypingIndicator } from '@/components/ui/TypingIndicator';

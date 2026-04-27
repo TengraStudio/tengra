@@ -13,13 +13,13 @@
  * Simplifies batching multiple IPC calls into a single request
  */
 
-import { LinkedAccountInfo } from '@renderer/electron.d';
 import { Folder } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
 import { ClaudeQuota, CodexUsage, CopilotQuota, QuotaResponse } from '@shared/types/quota';
 import { AppSettings } from '@shared/types/settings';
 import { sanitizeObject } from '@shared/utils/sanitize.util';
 
+import { LinkedAccountInfo } from '@/electron.d';
 import type { Chat, Message, Workspace } from '@/types';
 import { IpcValue } from '@/types/common';
 

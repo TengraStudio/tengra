@@ -190,11 +190,11 @@ describe('ApiServerService – AUD-2026-02-27-02 hardening', () => {
     });
 
     // ───────────────────────────────────────────────────────────
-    // 3. Non-local request simulation via X-Forwarded-For
+    // 3. Non-local request simulation via IconX-Forwarded-For
     // ───────────────────────────────────────────────────────────
 
     describe('local-only endpoint abuse attempts', () => {
-        it('should reject /api/auth/token/challenge when X-Forwarded-For is set', async () => {
+        it('should reject /api/auth/token/challenge when IconX-Forwarded-For is set', async () => {
             const res = await request(port, '/api/auth/token/challenge', {
                 headers: { 'x-forwarded-for': '203.0.113.50' },
             });
@@ -203,7 +203,7 @@ describe('ApiServerService – AUD-2026-02-27-02 hardening', () => {
             expect((res.body.message as string)).toContain('Local access required');
         });
 
-        it('should reject /api/auth/token when X-Forwarded-For is set', async () => {
+        it('should reject /api/auth/token when IconX-Forwarded-For is set', async () => {
             const res = await request(port, '/api/auth/token', {
                 headers: { 'x-forwarded-for': '203.0.113.50' },
             });

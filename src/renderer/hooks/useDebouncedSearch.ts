@@ -8,8 +8,9 @@
  * (at your option) any later version.
  */
 
-import { useDebounce } from '@renderer/hooks/useDebounce';
 import { useMemo,useState } from 'react';
+
+import { useDebounce } from '@/hooks/useDebounce';
 
 /**
  * Custom hook for debounced search with filtering

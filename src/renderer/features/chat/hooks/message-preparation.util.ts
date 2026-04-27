@@ -22,10 +22,6 @@ export interface PrepareMessagesOptions {
     selectedModel: string;
     selectedProvider: string;
     language: string;
-    selectedPersona?:
-    | { id: string; name: string; description: string; prompt: string }
-    | null
-    | undefined;
     activeWorkspacePath?: string | undefined;
     systemMode: 'thinking' | 'agent' | 'fast';
     toolingEnabled?: boolean | undefined;
@@ -43,7 +39,6 @@ export function prepareMessages(options: PrepareMessagesOptions): {
         selectedModel,
         selectedProvider,
         language,
-        selectedPersona,
         activeWorkspacePath,
         systemMode,
         toolingEnabled = systemMode === 'agent',
@@ -63,7 +58,6 @@ export function prepareMessages(options: PrepareMessagesOptions): {
         modelConfig.systemPrompt ??
         getSystemPrompt(
             language,
-            selectedPersona?.prompt,
             selectedProvider,
             selectedModel
         );

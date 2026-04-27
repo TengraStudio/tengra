@@ -8,11 +8,11 @@
  * (at your option) any later version.
  */
 
-import { useTranslation } from '@renderer/i18n';
 import { type Terminal as XTerm } from '@xterm/xterm';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { useTheme } from '@/hooks/useTheme';
+import { useTranslation } from '@/i18n';
 import type { TerminalTab } from '@/types';
 
 import type { TerminalPanelProps } from '../components/TerminalPanel';
@@ -116,9 +116,7 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
         defaultAppearance: DEFAULT_TERMINAL_APPEARANCE,
     });
 
-    useEffect(() => {
-        setTerminalAppearance(() => DEFAULT_TERMINAL_APPEARANCE);
-    }, [setTerminalAppearance]);
+
 
     const { pasteHistory, setPasteHistory } = useTerminalPasteHistory({
         storageKey: TERMINAL_PASTE_HISTORY_STORAGE_KEY,

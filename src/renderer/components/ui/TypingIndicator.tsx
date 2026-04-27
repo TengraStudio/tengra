@@ -58,7 +58,7 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = React.memo(({
                 )} style={{ animationDelay: '0.4s' }} />
             </div>
             {label && (
-                <span className="ml-2 text-xs text-muted-foreground">{label}</span>
+                <span className="ml-2 text-sm text-muted-foreground">{label}</span>
             )}
         </div>
     );

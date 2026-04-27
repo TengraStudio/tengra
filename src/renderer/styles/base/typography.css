@@ -15,10 +15,6 @@
         --font-sans: 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, blinkmacsystemfont, 'Ubuntu', 'Cantarell', 'Noto Sans', sans-serif;
         --font-display: 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, blinkmacsystemfont, 'Ubuntu', 'Cantarell', 'Noto Sans', sans-serif;
         --font-mono: 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, blinkmacsystemfont, 'Ubuntu', 'Cantarell', 'Noto Sans', sans-serif;
-        --text-10: 0.625rem;
-        --text-xxxs: clamp(0.5rem, 0.48rem + 0.1vw, 0.5625rem);
-        --text-xxs: clamp(0.5625rem, 0.54rem + 0.15vw, 0.625rem);
-        --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.8125rem);
         --text-sm: clamp(0.8125rem, 0.78rem + 0.3vw, 0.875rem);
         --text-base: clamp(0.9375rem, 0.9rem + 0.4vw, 1rem);
         --text-lg: clamp(1rem, 0.95rem + 0.5vw, 1.125rem);
@@ -70,7 +66,7 @@
 
 /* Legacy + helper utility classes */
 .micro-label {
-    font-size: var(--text-xxs);
+    font-size: var(--text-sm);
     font-weight: var(--font-semibold);
     line-height: var(--leading-none);
     letter-spacing: 0;
@@ -78,14 +74,14 @@
 }
 
 .status-text {
-    font-size: var(--text-xxs);
+    font-size: var(--text-sm);
     font-weight: var(--font-medium);
     line-height: var(--leading-none);
 }
 
 .mono-micro {
     font-family: var(--font-mono);
-    font-size: var(--text-xxxs);
+    font-size: var(--text-sm);
     letter-spacing: 0;
 }
 
@@ -164,7 +160,7 @@
 
 .typo-caption {
     font-family: var(--font-sans);
-    font-size: var(--text-xs);
+    font-size: var(--text-sm);
     font-weight: var(--font-medium);
     line-height: var(--leading-normal);
     letter-spacing: 0;
@@ -172,7 +168,7 @@
 
 .typo-overline {
     font-family: var(--font-sans);
-    font-size: var(--text-xxs);
+    font-size: var(--text-sm);
     font-weight: var(--font-semibold);
     line-height: var(--leading-none);
     letter-spacing: 0;
@@ -188,7 +184,7 @@
 
 .typo-code-inline {
     font-family: var(--font-mono);
-    font-size: var(--text-xs);
+    font-size: var(--text-sm);
     font-weight: var(--font-medium);
     line-height: var(--leading-normal);
     letter-spacing: 0;

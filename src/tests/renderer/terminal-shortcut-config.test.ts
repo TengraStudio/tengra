@@ -8,6 +8,8 @@
  * (at your option) any later version.
  */
 
+import { describe, expect, it } from 'vitest';
+
 import {
     createShortcutShareCode,
     isTypingElement,
@@ -18,8 +20,7 @@ import {
     sanitizeShortcutBindings,
     serializeShortcutStorage,
     TERMINAL_SHORTCUT_PRESETS,
-} from '@renderer/features/terminal/utils/shortcut-config';
-import { describe, expect, it } from 'vitest';
+} from '@/features/terminal/utils/shortcut-config';
 
 describe('terminal shortcut config utils', () => {
     it('normalizes shortcut bindings to a canonical format', () => {
@@ -64,7 +65,7 @@ describe('terminal shortcut config utils', () => {
         const result = sanitizeShortcutBindings({
             search: 'Ctrl+F',
             split: '   ',
-            nope: 'Ctrl+X',
+            nope: 'Ctrl+IconX',
             detach: 123,
         });
         expect(result).toEqual({ search: 'Ctrl+F' });

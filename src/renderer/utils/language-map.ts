@@ -360,3 +360,11 @@ export const getTextMateScope = (lang: string): string | undefined => {
     const lowerLang = lang.toLowerCase();
     return TEXTMATE_SCOPES[lowerLang];
 };
+
+export const clearRuntimeLanguageContributions = (): void => {
+    // Stub for now
+};
+
+export const registerRuntimeLanguageContributions = (packs: unknown[]): void => {
+    // Stub for now
+};

@@ -9,7 +9,7 @@
  */
 
 import { RuntimeBootstrapExecutionResult, RuntimeBootstrapExecutionStatus, RuntimeHealthEntry } from '@shared/types/runtime-manifest';
-import { AlertTriangle, CheckCircle2, Download, Play, RefreshCw, Wrench } from 'lucide-react';
+import { IconAlertTriangle, IconCircleCheck, IconDownload, IconPlayerPlay, IconRefresh, IconTools } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -186,7 +186,7 @@ export function ManagedRuntimeStatusPanel({
                 <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2 text-primary">
-                            <Wrench className="h-5 w-5" />
+                            <IconTools className="h-5 w-5" />
                             <h2 className="text-lg font-semibold">{title}</h2>
                         </div>
                         <p className="text-sm text-muted-foreground">{subtitle}</p>
@@ -197,7 +197,7 @@ export function ManagedRuntimeStatusPanel({
                             disabled={isLoading || isRepairing}
                             className={C_MANAGEDRUNTIMESTATUSPANEL_1}
                         >
-                            <RefreshCw className={cn('h-3.5 w-3.5', isLoading && 'animate-spin')} />
+                            <IconRefresh className={cn('h-3.5 w-3.5', isLoading && 'animate-spin')} />
                             {t('common.refresh')}
                         </button>
                         <button
@@ -205,7 +205,7 @@ export function ManagedRuntimeStatusPanel({
                             disabled={isLoading || isRepairing}
                             className={C_MANAGEDRUNTIMESTATUSPANEL_2}
                         >
-                            <Download className={cn('h-3.5 w-3.5', isRepairing && 'animate-bounce')} />
+                            <IconDownload className={cn('h-3.5 w-3.5', isRepairing && 'animate-bounce')} />
                             {t('runtime.repairAction')}
                         </button>
                     </div>
@@ -232,8 +232,8 @@ export function ManagedRuntimeStatusPanel({
                             <div className="flex items-start justify-between gap-4">
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-2">
-                                        {entry.statusTone === 'success' && <CheckCircle2 className="h-4 w-4 text-success" />}
-                                        {entry.statusTone !== 'success' && <AlertTriangle className="h-4 w-4 text-warning" />}
+                                        {entry.statusTone === 'success' && <IconCircleCheck className="h-4 w-4 text-success" />}
+                                        {entry.statusTone !== 'success' && <IconAlertTriangle className="h-4 w-4 text-warning" />}
                                         <div className="text-sm font-semibold text-foreground">{entry.displayName}</div>
                                     </div>
                                     {entry.detail && (
@@ -243,7 +243,7 @@ export function ManagedRuntimeStatusPanel({
                                 <div className="flex items-center gap-2">
                                     <span
                                         className={cn(
-                                            'rounded-full border px-2 py-1 text-xxxs font-semibold',
+                                            'rounded-full border px-2 py-1 text-sm font-semibold',
                                             entry.statusTone === 'success'
                                                 ? 'border-success/30 text-success'
                                                 : entry.statusTone === 'warning'
@@ -258,7 +258,7 @@ export function ManagedRuntimeStatusPanel({
                                             onClick={() => handleOpenInstallUrl(entry.installUrl ?? '')}
                                             className={C_MANAGEDRUNTIMESTATUSPANEL_3}
                                         >
-                                            <Download className="h-3.5 w-3.5" />
+                                            <IconDownload className="h-3.5 w-3.5" />
                                             {t('runtime.installAction')}
                                         </button>
                                     )}
@@ -270,7 +270,7 @@ export function ManagedRuntimeStatusPanel({
                                             disabled={startingComponentId === entry.componentId}
                                             className={C_MANAGEDRUNTIMESTATUSPANEL_4}
                                         >
-                                            <Play className="h-3.5 w-3.5" />
+                                            <IconPlayerPlay className="h-3.5 w-3.5" />
                                             {t('runtime.startAction')}
                                         </button>
                                     )}

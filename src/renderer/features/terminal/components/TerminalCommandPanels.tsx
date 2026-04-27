@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { History, TerminalSquare, X } from 'lucide-react';
+import { IconHistory, IconTerminal, IconX } from '@tabler/icons-react';
 
 import type { TaskRunnerEntry, TerminalHistoryEntry } from '../hooks/useTerminalCommandTools';
 
@@ -60,7 +60,7 @@ export function TerminalCommandPanels({
                 <div className={C_TERMINALCOMMANDPANELS_1}>
                     <div className="flex items-center justify-between gap-2 mb-2">
                         <div className="flex items-center gap-1 typo-caption font-medium text-foreground">
-                            <History className="w-3.5 h-3.5 text-muted-foreground" />
+                            <IconHistory className="w-3.5 h-3.5 text-muted-foreground" />
                             {t('terminal.commandHistory')}
                         </div>
                         <div className="flex items-center gap-1">
@@ -77,7 +77,7 @@ export function TerminalCommandPanels({
                                 className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
                                 aria-label={t('common.close')}
                             >
-                                <X className="w-3.5 h-3.5" />
+                                <IconX className="w-3.5 h-3.5" />
                             </button>
                         </div>
                     </div>
@@ -126,7 +126,7 @@ export function TerminalCommandPanels({
                 <div className={C_TERMINALCOMMANDPANELS_2}>
                     <div className="flex items-center justify-between gap-2 mb-2">
                         <div className="flex items-center gap-1 typo-caption font-medium text-foreground">
-                            <TerminalSquare className="w-3.5 h-3.5 text-muted-foreground" />
+                            <IconTerminal className="w-3.5 h-3.5 text-muted-foreground" />
                             {t('terminal.taskRunner')}
                         </div>
                         <button
@@ -134,7 +134,7 @@ export function TerminalCommandPanels({
                             className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
                             aria-label={t('common.close')}
                         >
-                            <X className="w-3.5 h-3.5" />
+                            <IconX className="w-3.5 h-3.5" />
                         </button>
                     </div>
                     <input

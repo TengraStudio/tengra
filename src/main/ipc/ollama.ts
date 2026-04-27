@@ -16,6 +16,7 @@ import { OllamaService } from '@main/services/llm/ollama.service';
 import { OllamaHealthService } from '@main/services/llm/ollama-health.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { t } from '@main/utils/i18n.util';
 import { createSafeIpcHandler, createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { SESSION_CONVERSATION_CHANNELS } from '@shared/constants/ipc-channels';
 import { JsonValue } from '@shared/types/common';
@@ -90,9 +91,10 @@ export function registerOllamaIpc(options: {
     ollamaService?: OllamaService
     ollamaHealthService?: OllamaHealthService
     proxyService?: ProxyService
+    authService?: import('@main/services/security/auth.service').AuthService
 }) {
     appLogger.info('OllamaIPC', 'Registering Ollama IPC handlers');
-    const { localAIService, ollamaService, ollamaHealthService } = options;
+    const { localAIService, ollamaService, ollamaHealthService, authService } = options;
     const validateSender = createMainWindowSenderValidator(options.getMainWindow, 'ollama operation');
 
     ipcMain.handle('ollama:tags', createSafeIpcHandler('ollama:tags',
@@ -280,7 +282,7 @@ export function registerOllamaIpc(options: {
             const win = BrowserWindow.getAllWindows()[0];
             const getWin = () => win as (BrowserWindow | null);
             return await startOllama(getWin, true);
-        }, { success: false, message: 'Service unavailable', messageKey: OLLAMA_MESSAGE_KEY.SERVICE_UNAVAILABLE }
+        }, { success: false, message: t('auto.serviceUnavailable'), messageKey: OLLAMA_MESSAGE_KEY.SERVICE_UNAVAILABLE }
     ));
 
     // ========================================
@@ -495,4 +497,104 @@ export function registerOllamaIpc(options: {
             return { success: false, error: 'Ollama service unavailable' };
         }, { success: false, error: 'delete failed' }
     ));
+
+    // ========================================
+    // OLLAMA-04: Cloud Account Authentication
+    // ========================================
+
+    /**
+     * Step 1 — Generates an Ed25519 keypair and initiates the ollama.com/connect
+     * handshake. Returns { code, expiresAt, privateKeyB64 } to the renderer.
+     * The renderer stores `privateKeyB64` temporarily (in memory only) until
+     * the poll succeeds; the main process then persists it encrypted in the DB.
+     */
+    ipcMain.handle('ollama:initiate-connect', createSafeIpcHandler('ollama:initiate-connect',
+        async (event) => {
+            validateSender(event);
+            if (!ollamaService) {
+                return { success: false, error: 'Ollama service unavailable' };
+            }
+            try {
+                const { publicKeyB64, privateKeyB64 } = ollamaService.generateEd25519KeyPair();
+                const { code, expiresAt } = await ollamaService.initiateOllamaConnect(publicKeyB64);
+                return {
+                    success: true,
+                    code,
+                    expiresAt,
+                    privateKeyB64,   // temp — must be passed back in poll call
+                    publicKeyB64,
+                    connectUrl: `https://ollama.com/connect?code=${encodeURIComponent(code)}`,
+                };
+            } catch (error) {
+                appLogger.error('OllamaIPC', 'ollama:initiate-connect failed', error as Error);
+                return { success: false, error: getErrorMessage(error as Error) };
+            }
+        }, { success: false, error: 'Service unavailable' }
+    ));
+
+    /**
+     * Step 2 — Polls until the user approves the request on ollama.com.
+     * On success the token is stored in `linked_accounts` via AuthService.
+     * Returns { success, account } so the renderer can refresh the accounts list.
+     */
+    ipcMain.handle('ollama:poll-connect-status', createSafeIpcHandler('ollama:poll-connect-status',
+        async (event: IpcMainInvokeEvent, codeRaw: RuntimeValue, privateKeyB64Raw: RuntimeValue, publicKeyB64Raw: RuntimeValue) => {
+            validateSender(event);
+            if (!ollamaService) {
+                return { success: false, error: 'Ollama service unavailable' };
+            }
+
+            const code = typeof codeRaw === 'string' ? codeRaw.trim() : '';
+            const privateKeyB64 = typeof privateKeyB64Raw === 'string' ? privateKeyB64Raw : '';
+            const publicKeyB64 = typeof publicKeyB64Raw === 'string' ? publicKeyB64Raw : '';
+
+            if (!code || !privateKeyB64) {
+                return { success: false, error: 'Missing code or private key' };
+            }
+
+            try {
+                const tokenResult = await ollamaService.pollOllamaConnectStatus(code, privateKeyB64);
+
+                // Persist to database via AuthService
+                if (authService) {
+                    const account = await authService.linkAccount('ollama', {
+                        accessToken: tokenResult.accessToken,
+                        email: tokenResult.email,
+                        displayName: tokenResult.displayName,
+                        metadata: {
+                            ...tokenResult.metadata,
+                            public_key_b64: publicKeyB64,
+                        },
+                    });
+                    return { success: true, account };
+                }
+
+                // AuthService not injected (should not happen in prod)
+                appLogger.warn('OllamaIPC', 'ollama:poll-connect-status: AuthService not injected — token not persisted');
+                return {
+                    success: true,
+                    account: null,
+                    warning: 'AuthService unavailable; token not saved',
+                };
+            } catch (error) {
+                appLogger.error('OllamaIPC', 'ollama:poll-connect-status failed', error as Error);
+                return { success: false, error: getErrorMessage(error as Error) };
+            }
+        }, { success: false, error: 'Service unavailable' }
+    ));
+
+    /**
+     * Returns all Ollama cloud accounts stored in the database.
+     * Used by AccountsTab to display connected Ollama accounts.
+     */
+    ipcMain.handle('ollama:get-ollama-accounts', createSafeIpcHandler('ollama:get-ollama-accounts',
+        async (event) => {
+            validateSender(event);
+            if (!authService) {
+                return [];
+            }
+            return await authService.getAccountsByProvider('ollama');
+        }, []
+    ));
 }
+

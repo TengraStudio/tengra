@@ -28,7 +28,7 @@ interface MenuItemButtonProps {
 const MenuItemButton: React.FC<MenuItemButtonProps> = ({ item, onClick }) => (
     <button
         onClick={onClick}
-        className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+        className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
     >
         <item.icon className="w-3.5 h-3.5" />
         <span>{item.label}</span>

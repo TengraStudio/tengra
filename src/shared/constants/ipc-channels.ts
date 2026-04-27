@@ -500,7 +500,7 @@ export const COLLABORATION_CHANNELS = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// Memory & Brain
+// Memory & IconBrain
 // ---------------------------------------------------------------------------
 
 /** Advanced memory system channels */
@@ -577,7 +577,7 @@ export const ADVANCED_MEMORY_CHANNELS = {
   SYNC_SHARED_NAMESPACE: 'advancedMemory:syncSharedNamespace',
 } as const;
 
-/** Brain (lightweight memory) channels */
+/** IconBrain (lightweight memory) channels */
 export const BRAIN_CHANNELS = {
   /** Extract knowledge from a message */
   EXTRACT_FROM_MESSAGE: 'brain:extractFromMessage',

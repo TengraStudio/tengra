@@ -9,6 +9,7 @@
  */
 
 // Ollama service using Node http module with forced IPv4
+import * as crypto from 'crypto';
 import { EventEmitter } from 'events';
 import * as http from 'http';
 
@@ -16,6 +17,7 @@ import { appLogger } from '@main/logging/logger';
 import { resolveContextWindowForModel } from '@main/services/llm/model-context-window.data.ts';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { t } from '@main/utils/i18n.util';
 import { withRetry } from '@main/utils/retry.util';
 import { SERVICE_DEFAULTS } from '@shared/constants/defaults';
 import { ToolCall } from '@shared/types/chat';
@@ -507,21 +509,21 @@ export class OllamaService {
             { name: 'llama3', description: 'Meta\'s Llama 3 model', tags: ['8b', '70b'] },
             { name: 'llama3.1', description: 'Meta\'s Llama 3.1 model', tags: ['8b', '70b', '405b'] },
             { name: 'llama3.2', description: 'Meta\'s Llama 3.2 - multimodal', tags: ['1b', '3b', '11b', '90b'] },
-            { name: 'mistral', description: 'Mistral 7B model', tags: ['7b'] },
-            { name: 'mixtral', description: 'Mixtral MoE model', tags: ['8x7b', '8x22b'] },
-            { name: 'codellama', description: 'Code generation model', tags: ['7b', '13b', '34b', '70b'] },
-            { name: 'deepseek-r1', description: 'DeepSeek R1 reasoning model', tags: ['1.5b', '7b', '8b', '14b', '32b', '70b', '671b'] },
-            { name: 'deepseek-coder', description: 'DeepSeek Coder', tags: ['1.3b', '6.7b', '33b'] },
-            { name: 'phi3', description: 'Microsoft Phi-3', tags: ['mini', 'medium'] },
+            { name: 'mistral', description: t('auto.mistral7bModel'), tags: ['7b'] },
+            { name: 'mixtral', description: t('auto.mixtralMoeModel'), tags: ['8x7b', '8x22b'] },
+            { name: 'codellama', description: t('auto.codeGenerationModel'), tags: ['7b', '13b', '34b', '70b'] },
+            { name: 'deepseek-r1', description: t('auto.deepseekR1ReasoningModel'), tags: ['1.5b', '7b', '8b', '14b', '32b', '70b', '671b'] },
+            { name: 'deepseek-coder', description: t('auto.deepseekCoder'), tags: ['1.3b', '6.7b', '33b'] },
+            { name: 'phi3', description: t('auto.microsoftPhi3'), tags: ['mini', 'medium'] },
             { name: 'gemma', description: 'Google Gemma', tags: ['2b', '7b'] },
             { name: 'gemma2', description: 'Google Gemma 2', tags: ['2b', '9b', '27b'] },
-            { name: 'qwen', description: 'Alibaba Qwen', tags: ['0.5b', '1.8b', '4b', '7b', '14b', '72b'] },
-            { name: 'qwen2.5', description: 'Alibaba Qwen 2.5', tags: ['0.5b', '1.5b', '3b', '7b', '14b', '32b', '72b'] },
-            { name: 'command-r', description: 'Cohere Command R', tags: ['35b'] },
-            { name: 'starcoder2', description: 'StarCoder 2', tags: ['3b', '7b', '15b'] },
-            { name: 'yi', description: 'Yi by 01.AI', tags: ['6b', '9b', '34b'] },
-            { name: 'orca-mini', description: 'Orca Mini', tags: ['3b', '7b', '13b'] },
-            { name: 'neural-chat', description: 'Intel Neural Chat', tags: ['7b'] },
+            { name: 'qwen', description: t('auto.alibabaQwen'), tags: ['0.5b', '1.8b', '4b', '7b', '14b', '72b'] },
+            { name: 'qwen2.5', description: t('auto.alibabaQwen25'), tags: ['0.5b', '1.5b', '3b', '7b', '14b', '32b', '72b'] },
+            { name: 'command-r', description: t('auto.cohereCommandR'), tags: ['35b'] },
+            { name: 'starcoder2', description: t('auto.starcoder2'), tags: ['3b', '7b', '15b'] },
+            { name: 'yi', description: t('auto.yiBy01ai'), tags: ['6b', '9b', '34b'] },
+            { name: 'orca-mini', description: t('auto.orcaMini'), tags: ['3b', '7b', '13b'] },
+            { name: 'neural-chat', description: t('auto.intelNeuralChat'), tags: ['7b'] },
             { name: 'vicuna', description: 'Vicuna', tags: ['7b', '13b', '33b'] }
         ];
 
@@ -1088,6 +1090,163 @@ export class OllamaService {
      */
     getGPUAlertThresholds(): typeof OllamaService.prototype.gpuAlertThresholds {
         return { ...this.gpuAlertThresholds };
+    }
+
+    // ========================================
+    // OLLAMA-04: Cloud Account Authentication (ollama.com/connect)
+    // ========================================
+
+    /**
+     * Generate a fresh Ed25519 keypair.
+     * The public key is sent to ollama.com to initiate the handshake.
+     * The private key is stored (encrypted) in `linked_accounts`.
+     *
+     * @returns Base64-encoded DER public and private keys.
+     */
+    generateEd25519KeyPair(): { publicKeyB64: string; privateKeyB64: string } {
+        const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519', {
+            publicKeyEncoding:  { type: 'spki',  format: 'der' },
+            privateKeyEncoding: { type: 'pkcs8', format: 'der' },
+        });
+        return {
+            publicKeyB64:  (publicKey  as unknown as Buffer).toString('base64'),
+            privateKeyB64: (privateKey as unknown as Buffer).toString('base64'),
+        };
+    }
+
+    /**
+     * Initiate the ollama.com/connect authentication handshake.
+     *
+     * Sends the Ed25519 public key to `https://ollama.com/api/connect` and
+     * returns a one-time `{ code, expiresAt }` pair the user must approve at
+     * `https://ollama.com/connect?code=<code>` in their browser.
+     *
+     * @param publicKeyB64 - Base64-encoded DER public key from `generateEd25519KeyPair()`.
+     */
+    async initiateOllamaConnect(publicKeyB64: string): Promise<{
+        code: string;
+        expiresAt: number;
+    }> {
+        try {
+            const response = await axios.post(
+                'https://ollama.com/api/connect',
+                { public_key: publicKeyB64 },
+                {
+                    timeout: 15_000,
+                    headers: { 'Content-Type': 'application/json' },
+                }
+            );
+
+            const data = response.data as { code?: string; expires_at?: number | string; nonce?: string };
+            const code = data.code ?? data.nonce;
+            const expiresAt = typeof data.expires_at === 'number'
+                ? data.expires_at
+                : typeof data.expires_at === 'string'
+                    ? new Date(data.expires_at).getTime()
+                    : Date.now() + 5 * 60 * 1000; // default 5 min
+
+            if (!code) {
+                throw new Error('ollama.com/api/connect returned no code');
+            }
+
+            appLogger.info('OllamaService', `Ollama connect initiated — code: ${code}`);
+            return { code, expiresAt };
+        } catch (error) {
+            appLogger.error('OllamaService', 'Failed to initiate Ollama connect', error as Error);
+            throw error;
+        }
+    }
+
+    /**
+     * Poll `https://ollama.com/api/connect/<code>` until the user approves the
+     * request or the session expires.
+     *
+     * On success returns the token data that should be stored in `linked_accounts`.
+     *
+     * @param code         - The one-time code returned by `initiateOllamaConnect`.
+     * @param privateKeyB64 - Base64-encoded DER private key (stored encrypted).
+     * @param timeoutMs    - Maximum polling duration (default 5 min).
+     * @param intervalMs   - Polling interval (default 3 s).
+     */
+    async pollOllamaConnectStatus(
+        code: string,
+        privateKeyB64: string,
+        timeoutMs = 5 * 60 * 1000,
+        intervalMs = 3_000
+    ): Promise<{
+        accessToken: string;
+        email?: string;
+        displayName?: string;
+        metadata: JsonObject;
+    }> {
+        const deadline = Date.now() + timeoutMs;
+
+        while (Date.now() < deadline) {
+            await new Promise<void>(resolve => setTimeout(resolve, intervalMs));
+
+            try {
+                const response = await axios.get(
+                    `https://ollama.com/api/connect/${encodeURIComponent(code)}`,
+                    { timeout: 10_000 }
+                );
+
+                const data = response.data as {
+                    status?: string;
+                    token?: string;
+                    access_token?: string;
+                    email?: string;
+                    username?: string;
+                    name?: string;
+                };
+
+                const status = data.status ?? 'pending';
+
+                if (status === 'pending' || status === 'waiting') {
+                    continue;
+                }
+
+                if (status === 'approved' || status === 'success' || status === 'authorized') {
+                    const accessToken = data.token ?? data.access_token ?? '';
+                    if (!accessToken) {
+                        throw new Error('Ollama connect approved but no token returned');
+                    }
+
+                    appLogger.info('OllamaService', `Ollama connect authorized for: ${data.email ?? data.username ?? 'unknown'}`);
+
+                    return {
+                        accessToken,
+                        email:       data.email,
+                        displayName: data.name ?? data.username,
+                        metadata: {
+                            auth_type:      'ollama_connect',
+                            type:           'ollama_connect',
+                            private_key_b64: privateKeyB64,
+                            public_key_b64:  '', // stored separately; caller should pass it
+                        },
+                    };
+                }
+
+                // Any other status (expired, denied, cancelled) → throw
+                throw new Error(`Ollama connect failed with status: ${status}`);
+            } catch (error) {
+                // 404 / 410 means expired
+                const axiosError = error as { response?: { status?: number }; message?: string };
+                const httpStatus = axiosError.response?.status;
+                if (httpStatus === 404 || httpStatus === 410) {
+                    throw new Error('Ollama connect session expired or cancelled');
+                }
+
+                // For non-HTTP errors keep retrying until deadline
+                if (!axiosError.response) {
+                    appLogger.warn('OllamaService', `Ollama connect poll network error: ${axiosError.message ?? 'unknown'}`);
+                    continue;
+                }
+
+                throw error;
+            }
+        }
+
+        throw new Error('Ollama connect timed out — the user did not approve within the allowed window');
     }
 
     /**

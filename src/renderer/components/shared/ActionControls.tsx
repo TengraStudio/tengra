@@ -11,10 +11,10 @@
 /**
  * @fileoverview Shared action controls for form/editor footers
  * @description Provides a standardized Save/Cancel action bar used across feature editors,
- *   modals, and form footers. Supports loading states, disabled conditions, and variant styling.
+ * modals, and form footers. Supports loading states, disabled conditions, and variant styling.
  */
 
-import { Loader2, Save } from 'lucide-react';
+import { IconDeviceFloppy,IconLoader2 } from '@tabler/icons-react';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -81,9 +81,9 @@ export const ActionControls: React.FC<ActionControlsProps> = ({
                 disabled={disabled || isLoading}
             >
                 {isLoading ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <IconLoader2 className="w-4 h-4 mr-2 animate-spin" />
                 ) : showIcon ? (
-                    <Save className="w-4 h-4 mr-2" />
+                    <IconDeviceFloppy className="w-4 h-4 mr-2" />
                 ) : null}
                 {resolvedSaveLabel}
             </Button>

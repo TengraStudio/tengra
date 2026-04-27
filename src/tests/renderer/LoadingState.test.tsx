@@ -8,13 +8,14 @@
  * (at your option) any later version.
  */
 
-import { LoadingState } from '@renderer/components/ui/LoadingState';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { LoadingState } from '@/components/ui/LoadingState';
 import {
     __resetLoadingAnalyticsForTests,
     getLoadingAnalyticsSnapshot,
-} from '@renderer/store/loading-analytics.store';
-import { fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+} from '@/store/loading-analytics.store';
 
 describe('LoadingState', () => {
     beforeEach(() => {

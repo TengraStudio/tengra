@@ -9,7 +9,7 @@
  */
 
 
-import { Layers, RefreshCw, Search } from 'lucide-react';
+import { IconLayersLinked, IconRefresh, IconSearch } from '@tabler/icons-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -72,7 +72,7 @@ export function PackageManager({ connectionId }: PackageManagerProps) {
                 </div>
 
                 <div className="flex-1 max-w-sm relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/40" size={14} />
+                    <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/40" size={14} />
                     <input
                         type="text"
                         value={search}
@@ -87,7 +87,7 @@ export function PackageManager({ connectionId }: PackageManagerProps) {
                     disabled={loading}
                     className="p-2 bg-muted/30 border border-border/50 rounded-lg text-muted-foreground/60 hover:text-foreground"
                 >
-                    <RefreshCw size={16} className={cn(loading && "animate-spin")} />
+                    <IconRefresh size={16} className={cn(loading && "animate-spin")} />
                 </button>
             </div>
 
@@ -103,7 +103,7 @@ export function PackageManager({ connectionId }: PackageManagerProps) {
                                 <div className="font-medium text-foreground/90 text-sm group-hover:text-primary transition-colors">{pkg.name}</div>
                                 <div className="typo-caption text-muted-foreground/40 mt-1 font-mono">{pkg.version}</div>
                             </div>
-                            <Layers size={14} className="text-muted-foreground/20 group-hover:text-primary/40 transition-colors" />
+                            <IconLayersLinked size={14} className="text-muted-foreground/20 group-hover:text-primary/40 transition-colors" />
                         </div>
                     ))}
                 </div>

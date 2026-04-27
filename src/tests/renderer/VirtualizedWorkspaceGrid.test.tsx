@@ -12,7 +12,7 @@ import { render, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { VirtualizedWorkspaceGrid } from '@/features/workspace/components/VirtualizedWorkspaceGrid';
+import { VirtualizedWorkspaceGrid } from '@/features/workspace/workspace-layout/VirtualizedWorkspaceGrid';
 import { Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 

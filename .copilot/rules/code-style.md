@@ -1,34 +1,29 @@
-# Code Style Rules for Copilot
+# Code Style Standard
 
-## TypeScript Standards
+STRICT ADHERENCE MANDATORY.
 
-### Type Safety
-- Never use the `any` type. If a type is truly unknown, use a discriminated union or a generic constraint.
-- Prefer `interface` for object shapes, `type` for unions and utility types.
-- Enable and respect `strictNullChecks`.
+## 1. Type Safety (STRICT)
+- **NO `any`**: Strictly forbidden. Use interfaces or generic constraints.
+- **Null Checks**: Mandatory. Respect `strictNullChecks`.
+- **Logic**: Prefer declarative patterns. Minimal nesting.
 
-### Compatibility
-- Default to cross-platform behavior. Code must not silently depend on Windows-only, macOS-only, or Linux-only behavior.
-- Use `path`/URL helpers instead of hand-built separators, and prefer portable shell/process abstractions.
-- When platform differences are unavoidable, gate them explicitly and provide safe fallbacks.
+## 2. Naming Conventions
+- **Files**: `kebab-case` with functional suffixes (e.g., `auth.service.ts`).
+- **Types**: `PascalCase`.
+- **Functions**: `camelCase`.
+- **Constants**: `SCREAMING_SNAKE_CASE`.
 
-### Naming Conventions
-- Files: `kebab-case` with suffixes (e.g., `my-feature.service.ts`, `user-profile.component.tsx`).
-- Classes/Interfaces: `PascalCase`.
-- Variables/Functions: `camelCase`.
-- Constants: `SCREAMING_SNAKE_CASE`.
+## 3. Platform Compatibility
+- **MANDATORY**: Code MUST be platform-agnostic.
+- **Paths**: Use Node `path` or `upath`. NO hardcoded separators.
+- **Shell**: Avoid OS-specific shell syntax.
 
-### Import Order
-1. Node.js built-ins (`fs`, `path`)
-2. External packages (`electron`, `react`)
-3. Internal path aliases (`@main/`, `@shared/`)
-4. Relative imports (same directory only)
+## 4. Import Discipline
+1. Built-ins (`path`, `fs`).
+2. Vendors (`react`, `electron`).
+3. Aliases (`@renderer/`, `@shared/`).
+4. Relatives.
 
-### Formatting
-- Use Prettier defaults.
-- Maximum line length: 100 characters.
-- Use template literals for string interpolation.
-
-### Theming Discipline
-- In renderer code, treat hardcoded visual literals as a bug unless they are theme preset data or explicitly allowlisted.
-- Route new visual tokens through shared CSS variables, theme manifests, and existing theme utilities.
+## 5. Theme Discipline
+- **Hardcoded Literals**: BANNED. Treat as bugs.
+- **Tokens**: Use `hsl(var(--...))`.

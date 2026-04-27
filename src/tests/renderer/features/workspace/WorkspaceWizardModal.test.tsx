@@ -8,11 +8,11 @@
  * (at your option) any later version.
  */
 
-import { WorkspaceWizardModal } from '@renderer/features/workspace/components/WorkspaceWizardModal';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { WorkspaceSetupModal } from '@/features/workspace/workspace-setup';
 import { webElectronMock } from '@/web-bridge';
 
 vi.mock('react-dom', async () => {
@@ -52,11 +52,11 @@ const mountElectronMock = (selectedPath: string) => {
     };
 };
 
-const renderWizard = (onWorkspaceCreated = vi.fn().mockResolvedValue(true)) => {
+const renderSetup = (onWorkspaceCreated = vi.fn().mockResolvedValue(true)) => {
     const onClose = vi.fn();
 
     render(
-        <WorkspaceWizardModal
+        <WorkspaceSetupModal
             isOpen={true}
             onClose={onClose}
             onWorkspaceCreated={onWorkspaceCreated}
@@ -67,15 +67,15 @@ const renderWizard = (onWorkspaceCreated = vi.fn().mockResolvedValue(true)) => {
     return { onClose, onWorkspaceCreated };
 };
 
-describe('WorkspaceWizardModal', () => {
+describe('WorkspaceSetupModal', () => {
     beforeEach(() => {
         mountElectronMock('C:\\workspaces\\Demo Workspace\\');
     });
 
     it('derives a workspace name from a Windows path with a trailing slash', async () => {
-        const { onClose, onWorkspaceCreated } = renderWizard();
+        const { onClose, onWorkspaceCreated } = renderSetup();
 
-        fireEvent.click(screen.getByText('workspaceWizard.alreadyExists'));
+        fireEvent.click(screen.getByText('workspaceSetup.alreadyExists'));
 
         await waitFor(() => {
             expect(screen.getByDisplayValue('Demo Workspace')).toBeInTheDocument();
@@ -104,9 +104,9 @@ describe('WorkspaceWizardModal', () => {
 
     it('derives a workspace name from a POSIX path with a trailing slash', async () => {
         mountElectronMock('/var/tmp/demo-workspace/');
-        const { onWorkspaceCreated } = renderWizard();
+        const { onWorkspaceCreated } = renderSetup();
 
-        fireEvent.click(screen.getByText('workspaceWizard.alreadyExists'));
+        fireEvent.click(screen.getByText('workspaceSetup.alreadyExists'));
 
         await waitFor(() => {
             expect(screen.getByDisplayValue('demo-workspace')).toBeInTheDocument();
@@ -135,9 +135,9 @@ describe('WorkspaceWizardModal', () => {
         const onWorkspaceCreated = vi.fn().mockRejectedValue(
             new Error('A workspace already exists for this local directory.')
         );
-        const { onClose } = renderWizard(onWorkspaceCreated);
+        const { onClose } = renderSetup(onWorkspaceCreated);
 
-        fireEvent.click(screen.getByText('workspaceWizard.alreadyExists'));
+        fireEvent.click(screen.getByText('workspaceSetup.alreadyExists'));
 
         await waitFor(() => {
             expect(screen.getByDisplayValue('Demo Workspace')).toBeInTheDocument();

@@ -54,6 +54,10 @@ export class CacheService extends BaseService {
     }
 
     private async ensureTableWithRetry(): Promise<void> {
+        if (!this.repository) {
+            this.logDebug('Cache repository not yet initialized, deferring table creation.');
+            return;
+        }
         try {
             await this.repository.ensureCacheTable();
             this.tableInitialized = true;

@@ -9,7 +9,7 @@
  */
 
 import { FileSearchResult } from '@shared/types/common';
-import { ChevronDown, ChevronRight, FileCode2 } from 'lucide-react';
+import { IconChevronDown, IconChevronRight, IconFileCode2 } from '@tabler/icons-react';
 import React from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
@@ -112,19 +112,19 @@ const FileGroup = React.memo(({
                 className="flex w-full items-center gap-1.5 px-2 py-1 text-left transition-colors hover:bg-accent/40"
             >
                 {collapsed
-                    ? <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
-                    : <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+                    ? <IconChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+                    : <IconChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
                 }
-                <FileCode2 className="h-3.5 w-3.5 shrink-0 text-info/70" />
+                <IconFileCode2 className="h-3.5 w-3.5 shrink-0 text-info/70" />
                 <span className="truncate typo-caption font-medium text-foreground">
                     {fileName}
                 </span>
                 {dirPath && (
-                    <span className="truncate text-xxs text-muted-foreground/60">
+                    <span className="truncate text-sm text-muted-foreground/60">
                         {dirPath}
                     </span>
                 )}
-                <span className="ml-auto shrink-0 rounded-full bg-muted/50 px-1.5 py-0.5 text-xxxs font-medium tabular-nums text-muted-foreground">
+                <span className="ml-auto shrink-0 rounded-full bg-muted/50 px-1.5 py-0.5 text-sm font-medium tabular-nums text-muted-foreground">
                     {group.items.length}
                 </span>
             </button>
@@ -139,10 +139,10 @@ const FileGroup = React.memo(({
                             onClick={() => onSelect(result.file, result.line)}
                             className="flex w-full items-start gap-2 py-0.5 pl-8 pr-2 text-left transition-colors hover:bg-accent/40"
                         >
-                            <span className="mt-px w-8 shrink-0 text-right font-mono text-xxs tabular-nums text-muted-foreground/50">
+                            <span className="mt-px w-8 shrink-0 text-right font-mono text-sm tabular-nums text-muted-foreground/50">
                                 {isFileResult(result) ? '' : result.line}
                             </span>
-                            <span className="mt-px shrink-0 rounded bg-muted/50 px-1.5 py-0.5 text-xxxs font-semibold text-muted-foreground/80">
+                            <span className="mt-px shrink-0 rounded bg-muted/50 px-1.5 py-0.5 text-sm font-semibold text-muted-foreground/80">
                                 {getSearchResultBadge(result)}
                             </span>
                             <span className="min-w-0 flex-1 truncate font-mono typo-caption leading-5 text-foreground/85">

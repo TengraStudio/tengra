@@ -9,9 +9,6 @@
  */
 
 import type {
-    ModelDefinition,
-} from '@renderer/electron.d';
-import type {
     IpcContractVersionInfo,
 } from '@shared/constants/ipc-contract';
 import type {
@@ -33,6 +30,9 @@ import type {
     IpcRendererEvent,
 } from 'electron';
 
+import type {
+    ModelDefinition,
+} from '@/electron.d';
 import type {
     AgentDefinition,
     Chat,

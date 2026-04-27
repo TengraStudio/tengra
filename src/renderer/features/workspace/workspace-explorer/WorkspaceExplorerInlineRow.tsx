@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { ChevronRight } from 'lucide-react';
+import { IconChevronRight } from '@tabler/icons-react';
 import React from 'react';
 
 import { FileIcon, FolderIcon } from '@/lib/file-icons';
@@ -63,7 +63,7 @@ export const WorkspaceExplorerInlineRow: React.FC<WorkspaceExplorerInlineRowProp
             style={{ paddingLeft: `${depth * 12 + 16}px` }}
         >
             <div className="mr-1 inline-flex items-center justify-center text-muted-foreground/70">
-                <ChevronRight className="h-3.5 w-3.5" />
+                <IconChevronRight className="h-3.5 w-3.5" />
             </div>
             <div className="mr-1.5 inline-flex items-center justify-center">
                 {actionType === 'createFolder' ? (

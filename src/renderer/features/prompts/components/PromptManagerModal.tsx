@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Edit2, Plus, Save, Trash2, X } from 'lucide-react';
+import { IconDeviceFloppy, IconEdit, IconPlus, IconTrash, IconX } from '@tabler/icons-react';
 import React, { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -91,10 +91,10 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
                         </div>
                         <div className="flex justify-end gap-2 pt-2">
                             <Button variant="ghost" size="sm" onClick={() => setIsEditing(null)}>
-                                <X className="w-4 h-4 mr-1" /> {t('common.cancel')}
+                                <IconX className="w-4 h-4 mr-1" /> {t('common.cancel')}
                             </Button>
                             <Button size="sm" onClick={handleSave} disabled={!editForm.title || !editForm.content}>
-                                <Save className="w-4 h-4 mr-1" /> {t('common.save')}
+                                <IconDeviceFloppy className="w-4 h-4 mr-1" /> {t('common.save')}
                             </Button>
                         </div>
                     </div>
@@ -102,7 +102,7 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
                     <>
                         <div className="flex justify-end mb-4">
                             <Button size="sm" onClick={() => handleStartEdit()}>
-                                <Plus className="w-4 h-4 mr-2" /> {t('ssh.promptManager.newPrompt')}
+                                <IconPlus className="w-4 h-4 mr-2" /> {t('ssh.promptManager.newPrompt')}
                             </Button>
                         </div>
 
@@ -131,7 +131,7 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
                                                     onClick={() => handleStartEdit(prompt)}
                                                     aria-label={t('common.edit')}
                                                 >
-                                                    <Edit2 className="w-3.5 h-3.5" />
+                                                    <IconEdit className="w-3.5 h-3.5" />
                                                 </Button>
                                                 <Button
                                                     variant="ghost"
@@ -140,7 +140,7 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
                                                     onClick={() => onDeletePrompt(prompt.id)}
                                                     aria-label={t('common.delete')}
                                                 >
-                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                    <IconTrash className="w-3.5 h-3.5" />
                                                 </Button>
                                             </div>
                                         </div>

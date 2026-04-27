@@ -8,28 +8,19 @@
  * (at your option) any later version.
  */
 
-import { Badge } from '@renderer/components/ui/badge';
-import { Button } from '@renderer/components/ui/button';
+import { IconBolt,IconHeadphones, IconMicrophone, IconMusic, IconPlayerPlay, IconRadio, IconRipple, IconVolume } from '@tabler/icons-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@renderer/components/ui/select';
-import { Slider } from '@renderer/components/ui/slider';
-import {
-    Headphones,
-    Mic,
-    Music,
-    Play,
-    Radio,
-    Volume2,
-    Waves,
-    Zap
-} from 'lucide-react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-
+} from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import { AppSettings } from '@/types/settings';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -69,7 +60,7 @@ function useSpeechDevices(t: (key: string) => string) {
                 await navigator.mediaDevices
                     .getUserMedia({ audio: true })
                     .catch((err: Error) =>
-                        appLogger.warn('SpeechTab', 'Mic permission denied:', err)
+                        appLogger.warn('SpeechTab', 'IconMicrophone permission denied:', err)
                     );
                 const d = await navigator.mediaDevices.enumerateDevices();
                 setDevices(d);
@@ -136,7 +127,7 @@ const VoiceSection: React.FC<VoiceSectionProps> = ({
     <div className="space-y-10">
         <div className="px-1">
             <label className="typo-body font-bold text-foreground flex items-center gap-2 mb-3">
-                <Music className="w-3 h-3 text-primary/60" />
+                <IconMusic className="w-3 h-3 text-primary/60" />
                 {t('speech.voiceSelection')}
             </label>
             <Select
@@ -159,7 +150,7 @@ const VoiceSection: React.FC<VoiceSectionProps> = ({
         <div className="px-1">
             <div className="flex justify-between items-center mb-4">
                 <label className="typo-body font-bold text-foreground flex items-center gap-2">
-                    <Zap className="w-3 h-3 text-primary/60" />
+                    <IconBolt className="w-3 h-3 text-primary/60" />
                     {t('speech.speed')}
                 </label>
                 <Badge variant="outline" className="h-5 typo-body px-2 font-bold border-primary/20 text-primary tabular-nums">
@@ -203,7 +194,7 @@ const DeviceSection: React.FC<DeviceSectionProps> = ({
     <div className="space-y-8">
         <div className="px-1">
             <label className="typo-body font-bold text-foreground flex items-center gap-2 mb-3">
-                <Mic className="w-3 h-3 text-primary/60" />
+                <IconMicrophone className="w-3 h-3 text-primary/60" />
                 {t('speech.microphone')}
             </label>
             <Select
@@ -225,7 +216,7 @@ const DeviceSection: React.FC<DeviceSectionProps> = ({
         </div>
         <div className="px-1">
             <label className="typo-body font-bold text-foreground flex items-center gap-2 mb-3">
-                <Headphones className="w-3 h-3 text-primary/60" />
+                <IconHeadphones className="w-3 h-3 text-primary/60" />
                 {t('speech.speakerSelection')}
             </label>
             <Select
@@ -271,7 +262,7 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({
             <div className="relative group px-1">
                 <div className="flex items-center gap-4 mb-3">
                     <div className={C_SPEECHTAB_1}>
-                        <Waves className="w-7 h-7" />
+                        <IconRipple className="w-7 h-7" />
                     </div>
                     <div>
                         <h3 className="text-2xl font-bold text-foreground leading-none">
@@ -293,7 +284,7 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({
             {/* Voice & Config Section */}
             <div className={C_SPEECHTAB_2}>
                 <div className="flex items-center gap-3 px-1 relative z-10">
-                    <Radio className="w-4 h-4 text-primary" />
+                    <IconRadio className="w-4 h-4 text-primary" />
                     <h4 className="typo-body font-bold text-muted-foreground/40">{t('speech.synthesizerMatrix')}</h4>
                 </div>
 
@@ -320,7 +311,7 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({
                             <div className={C_SPEECHTAB_4}>
                                 <div className="flex items-start gap-4">
                                     <div className="p-2 rounded-lg bg-primary/20 text-primary mt-1">
-                                        <Volume2 className="w-4 h-4" />
+                                        <IconVolume className="w-4 h-4" />
                                     </div>
                                     <div>
                                         <p className="typo-body font-bold text-muted-foreground/40 mb-2">{t('speech.auralPreview')}</p>
@@ -337,7 +328,7 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({
                             variant="outline"
                             className={C_SPEECHTAB_5}
                         >
-                            <Play className="w-3.5 h-3.5 mr-3 group-hover:scale-125 transition-transform" />
+                            <IconPlayerPlay className="w-3.5 h-3.5 mr-3 group-hover:scale-125 transition-transform" />
                             {t('speech.test')}
                         </Button>
                     </div>

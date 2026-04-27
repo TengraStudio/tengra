@@ -13,23 +13,13 @@
  * Provides UI for configuring accessibility options.
  */
 
-import { Badge } from '@renderer/components/ui/badge';
-import { Button } from '@renderer/components/ui/button';
-import { Switch } from '@renderer/components/ui/switch';
-import { useTranslation } from '@renderer/i18n';
-import {
-    Accessibility,
-    ArrowRight,
-    Command,
-    Contrast,
-    Eye,
-    Focus,
-    RotateCcw,
-    Shield,
-    Volume2,
-} from 'lucide-react';
+import { IconAccessible, IconArrowRight, IconCommand, IconContrast, IconEye, IconFocus, IconRotate, IconShield, IconVolume } from '@tabler/icons-react';
 import React from 'react';
 
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { useA11ySettings } from '@/utils/accessibility';
 
@@ -77,7 +67,7 @@ const SettingRow: React.FC<SettingRowProps> = ({
                 <h4 className="text-sm font-bold text-foreground">
                     {label}
                 </h4>
-                <p className="text-xxs text-muted-foreground mt-1 font-medium leading-relaxed opacity-80">
+                <p className="text-sm text-muted-foreground mt-1 font-medium leading-relaxed opacity-80">
                     {description}
                 </p>
             </div>
@@ -110,7 +100,7 @@ export const AccessibilitySettings: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-6">
                 <div className="flex items-center gap-4">
                     <div className="p-3 rounded-2xl bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20">
-                        <Accessibility className="w-6 h-6" />
+                        <IconAccessible className="w-6 h-6" />
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-foreground">
@@ -127,7 +117,7 @@ export const AccessibilitySettings: React.FC = () => {
                     onClick={handleReset}
                     className={C_ACCESSIBILITYSETTINGS_1}
                 >
-                    <RotateCcw className="w-3.5 h-3.5 mr-2" />
+                    <IconRotate className="w-3.5 h-3.5 mr-2" />
                     {t('common.reset')}
                 </Button>
             </div>
@@ -135,7 +125,7 @@ export const AccessibilitySettings: React.FC = () => {
             {/* Settings Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <SettingRow
-                    icon={<Contrast />}
+                    icon={<IconContrast />}
                     label={t('settings.accessibility.highContrast')}
                     description={t('settings.accessibility.highContrastDesc')}
                     checked={settings.highContrast}
@@ -143,7 +133,7 @@ export const AccessibilitySettings: React.FC = () => {
                 />
 
                 <SettingRow
-                    icon={<Eye />}
+                    icon={<IconEye />}
                     label={t('settings.accessibility.reducedMotion')}
                     description={t('settings.accessibility.reducedMotionDesc')}
                     checked={settings.reducedMotion}
@@ -151,7 +141,7 @@ export const AccessibilitySettings: React.FC = () => {
                 />
 
                 <SettingRow
-                    icon={<Focus />}
+                    icon={<IconFocus />}
                     label={t('settings.accessibility.enhancedFocus')}
                     description={t('settings.accessibility.enhancedFocusDesc')}
                     checked={settings.enhancedFocusIndicators}
@@ -159,7 +149,7 @@ export const AccessibilitySettings: React.FC = () => {
                 />
 
                 <SettingRow
-                    icon={<Volume2 />}
+                    icon={<IconVolume />}
                     label={t('settings.accessibility.screenReader')}
                     description={t('settings.accessibility.screenReaderDesc')}
                     checked={settings.screenReaderAnnouncements}
@@ -173,7 +163,7 @@ export const AccessibilitySettings: React.FC = () => {
                     <div className={C_ACCESSIBILITYSETTINGS_2} />
                     <div className="flex items-center gap-3 mb-4 relative z-10">
                         <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
-                            <Shield className="w-4 h-4" />
+                            <IconShield className="w-4 h-4" />
                         </div>
                         <h4 className="typo-body font-bold text-foreground">
                             {t('settings.accessibility.systemPrefs')}
@@ -188,7 +178,7 @@ export const AccessibilitySettings: React.FC = () => {
                 <div className="p-6 rounded-3xl bg-muted/20 border border-border/40 shadow-inner group transition-all hover:bg-muted/30">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="p-2 rounded-xl bg-muted/40 text-muted-foreground border border-border/40 group-hover:text-foreground">
-                            <Command className="w-4 h-4" />
+                            <IconCommand className="w-4 h-4" />
                         </div>
                         <h4 className="typo-body font-bold text-foreground">
                             {t('settings.accessibility.shortcuts')}
@@ -228,7 +218,7 @@ export const AccessibilitySettings: React.FC = () => {
                                     >
                                         {key}
                                     </Badge>
-                                    <ArrowRight className="w-2.5 h-2.5 text-muted-foreground/30 opacity-0 group-hover/row:opacity-100 transition-all" />
+                                    <IconArrowRight className="w-2.5 h-2.5 text-muted-foreground/30 opacity-0 group-hover/row:opacity-100 transition-all" />
                                 </div>
                                 <span className="typo-body text-muted-foreground font-bold opacity-60 group-hover/row:opacity-100 transition-opacity">
                                     {action}

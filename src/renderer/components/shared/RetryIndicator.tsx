@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Loader2 } from 'lucide-react';
+import { IconLoader2 } from '@tabler/icons-react';
 
 import { useTranslation } from '@/i18n';
 
@@ -38,7 +38,7 @@ const RetryIndicator: React.FC<RetryIndicatorProps> = ({ isRetrying, attempt, ma
 
   return (
     <div className="flex items-center gap-2 text-sm text-warning font-medium animate-in fade-in duration-300">
-      <Loader2 className="w-4 h-4 animate-spin" />
+      <IconLoader2 className="w-4 h-4 animate-spin" />
       <span>
         {showAttempts
           ? t('common.retryingWithAttempt', { attempt, maxAttempts })

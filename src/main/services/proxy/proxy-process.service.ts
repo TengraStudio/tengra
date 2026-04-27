@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import { app } from 'electron';
 import { ChildProcess, exec, spawn } from 'child_process';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
@@ -189,6 +190,7 @@ export class ProxyProcessManager {
                     ...process.env,
                     TENGRA_PROXY_PERSISTENT: persistent ? 'true' : 'false',
                     TENGRA_DB_SERVICE_TOKEN: process.env.TENGRA_DB_SERVICE_TOKEN || '',
+                    TENGRA_DB_PORT: '42000',
                     TENGRA_MASTER_KEY_HEX: this.authService.getRuntimeMasterKeyHex() ?? '',
                     // OS native encryption hint
                     TENGRA_USE_OS_SECURITY: 'true',
@@ -373,10 +375,20 @@ export class ProxyProcessManager {
     private async ensureBinary(): Promise<string> {
         const binaryPath = this.getBinaryPath();
         const binaryExists = await fs.promises.access(binaryPath, fs.constants.F_OK).then(() => true).catch(() => false);
-        const autoRebuildEnabled = process.env.TENGRA_PROXY_AUTO_REBUILD === '1';
+        
+        // Never attempt to rebuild in production (packaged) mode
+        const isPackaged = process.env.NODE_ENV === 'production' || (typeof app !== 'undefined' && app.isPackaged);
+        const autoRebuildEnabled = !isPackaged && process.env.TENGRA_PROXY_AUTO_REBUILD === '1';
+
         if (binaryExists && !autoRebuildEnabled) {
             return binaryPath;
         }
+        
+        if (isPackaged) {
+            if (binaryExists) return binaryPath;
+            throw new Error(`Critical component missing: tengra-proxy not found at ${binaryPath}`);
+        }
+
         if (binaryExists && autoRebuildEnabled && !await this.shouldRebuild(binaryPath)) {
             return binaryPath;
         }
@@ -647,7 +659,6 @@ export class ProxyProcessManager {
     }
 
     async generateConfig(port: number): Promise<ProxyRuntimeLaunchConfig> {
-        await this.syncProviderCredentialsForProxyStartup();
         const proxyApiKey = await this.ensureProxyApiKey();
         const managementPassword = await this.ensureManagementPassword();
 
@@ -670,14 +681,10 @@ export class ProxyProcessManager {
         const updatedProxy = {
             ...proxySettings,
             port,
-            apiKey: '',
-            managementPassword: ''
         };
         await this.settingsService.saveSettings({
-            ...settings,
-            // SAFETY: The settings schema for 'proxy' will be expanded to include port, apiKey, and managementPassword.
             proxy: updatedProxy
-        });
+        } as Partial<AppSettings>);
 
         return {
             port,
@@ -686,75 +693,7 @@ export class ProxyProcessManager {
         };
     }
 
-    private async syncProviderCredentialsForProxyStartup(): Promise<void> {
-        const settings = { ...this.settingsService.getSettings() };
-        let settingsChanged = false;
 
-        const providerDefinitions: Array<{ id: string; settingsPath: keyof AppSettings & string }> = [
-            { id: 'openai', settingsPath: 'openai' },
-            { id: 'claude', settingsPath: 'claude' },
-            { id: 'anthropic', settingsPath: 'anthropic' },
-            { id: 'gemini', settingsPath: 'gemini' },
-            { id: 'mistral', settingsPath: 'mistral' },
-            { id: 'groq', settingsPath: 'groq' },
-            { id: 'together', settingsPath: 'together' },
-            { id: 'perplexity', settingsPath: 'perplexity' },
-            { id: 'cohere', settingsPath: 'cohere' },
-            { id: 'xai', settingsPath: 'xai' },
-            { id: 'deepseek', settingsPath: 'deepseek' },
-            { id: 'openrouter', settingsPath: 'openrouter' },
-            { id: 'nvidia', settingsPath: 'nvidia' },
-        ];
-
-        for (const def of providerDefinitions) {
-            const providerData = settings[def.settingsPath] as { apiKeys?: string[]; apiKey?: string } | undefined;
-            if (!providerData) {
-                continue;
-            }
-
-            const keys: string[] = [];
-            if (Array.isArray(providerData.apiKeys)) {
-                keys.push(...providerData.apiKeys);
-            }
-            if (typeof providerData.apiKey === 'string' && providerData.apiKey) {
-                keys.push(providerData.apiKey);
-            }
-
-            if (keys.length === 0) {
-                continue;
-            }
-
-            appLogger.info('Proxy', `Migrating legacy keys for ${def.id} from settings.json to database...`);
-            for (const key of keys) {
-                const normalizedKey = key?.trim();
-                if (!normalizedKey || normalizedKey.length <= 5 || normalizedKey === 'connected') {
-                    continue;
-                }
-
-                try {
-                    await this.authService.linkAccount(def.id, { 
-                        accessToken: normalizedKey,
-                        metadata: { type: 'api_key', auth_type: 'api_key' }
-                    });
-                } catch (error) {
-                    appLogger.error(
-                        'Proxy',
-                        `Failed to migrate ${def.id} credential: ${getErrorMessage(error)}`
-                    );
-                }
-            }
-
-            // Clear keys from settings once migration is attempted
-            providerData.apiKeys = [];
-            providerData.apiKey = '';
-            settingsChanged = true;
-        }
-
-        if (settingsChanged) {
-            await this.settingsService.saveSettings(settings);
-            appLogger.info('Proxy', 'Database synchronization complete. API keys are now managed securely in the database.');
-        }
-    }
 
     private async ensureProxyApiKey(): Promise<string> {
         const activeToken = await this.authService.getActiveToken('proxy_key');

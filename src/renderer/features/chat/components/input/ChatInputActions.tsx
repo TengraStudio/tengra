@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Mic, MicOff, Paperclip, Send, Sparkles, Square } from 'lucide-react';
+import { IconMicrophone, IconMicrophoneOff, IconPaperclip, IconSend, IconSparkles, IconSquare } from '@tabler/icons-react';
 import { memo } from 'react';
 
 import { ModelSelector } from '@/components/shared/ModelSelector';
@@ -94,7 +94,7 @@ export const EnhanceButton = memo(({ ctrl }: { ctrl: ControllerType }) => {
             title={ctrl.t('input.enhancePrompt')}
             aria-label={ctrl.t('input.enhancePrompt')}
         >
-            <Sparkles size={16} className={cn(isEnhancing && 'animate-spin')} aria-hidden="true" />
+            <IconSparkles size={16} className={cn(isEnhancing && 'animate-spin')} aria-hidden="true" />
         </Button>
     );
 });
@@ -138,7 +138,7 @@ export const SendButton = memo(({ ctrl }: { ctrl: ControllerType }) => {
 SendButton.displayName = 'SendButton';
 
 const SendIcon = memo(({ isLoading, hasContent }: { isLoading: boolean; hasContent: boolean }) => {
-    const Icon = isLoading ? Square : Send;
+    const Icon = isLoading ? IconSquare : IconSend;
     const colorFill = isLoading ? 'currentColor' : 'none';
     const iClass = cn(isLoading && 'animate-pulse', !isLoading && hasContent && 'ml-0.5');
     return <Icon size={16} fill={colorFill} className={iClass} aria-hidden="true" />;
@@ -173,9 +173,9 @@ export const VoiceButton = memo(({ ctrl }: { ctrl: ControllerType }) => (
         aria-pressed={ctrl.isListening}
     >
         {ctrl.isListening ? (
-            <MicOff size={16} aria-hidden="true" />
+            <IconMicrophoneOff size={16} aria-hidden="true" />
         ) : (
-            <Mic size={16} aria-hidden="true" />
+            <IconMicrophone size={16} aria-hidden="true" />
         )}
     </Button>
 ));
@@ -194,7 +194,7 @@ export const AttachButton = memo(({ onClick, ctrl }: { onClick: () => void; ctrl
         title={ctrl.t('input.attachFile')}
         aria-label={ctrl.t('input.attachFile')}
     >
-        <Paperclip size={16} aria-hidden="true" />
+        <IconPaperclip size={16} aria-hidden="true" />
     </Button>
 ));
 AttachButton.displayName = 'AttachButton';
@@ -209,7 +209,7 @@ export const ComposerStateBadges = memo(({ ctrl }: { ctrl: ControllerType }) => 
                 variant="destructive"
                 className="h-6 rounded-md border-transparent px-1.5 typo-body"
             >
-                <Mic size={10} aria-hidden="true" />
+                <IconMicrophone size={10} aria-hidden="true" />
             </Badge>
         )}
         {ctrl.attachments.length > 0 && (
@@ -217,7 +217,7 @@ export const ComposerStateBadges = memo(({ ctrl }: { ctrl: ControllerType }) => 
                 variant="secondary"
                 className="h-6 gap-1 rounded-md px-2 typo-body font-medium"
             >
-                <Paperclip size={10} aria-hidden="true" />
+                <IconPaperclip size={10} aria-hidden="true" />
                 <span>{ctrl.attachments.length}</span>
             </Badge>
         )}

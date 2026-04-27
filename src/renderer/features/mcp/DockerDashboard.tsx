@@ -9,7 +9,7 @@
  */
 
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { Box, Play, RefreshCw, Square, Terminal, Trash2 } from 'lucide-react';
+import { IconBox, IconPlayerPlay, IconRefresh, IconSquare, IconTerminal, IconTrash } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
@@ -88,7 +88,7 @@ const ContainerItem: React.FC<{
                         className="p-1.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
                         title={t('docker.stop')}
                     >
-                        <Square size={14} />
+                        <IconSquare size={14} />
                     </button>
                 ) : (
                     <button
@@ -99,7 +99,7 @@ const ContainerItem: React.FC<{
                         className="p-1.5 rounded hover:bg-success/20 text-muted-foreground hover:text-success"
                         title={t('docker.start')}
                     >
-                        <Play size={14} />
+                        <IconPlayerPlay size={14} />
                     </button>
                 )}
                 <button
@@ -110,7 +110,7 @@ const ContainerItem: React.FC<{
                     className="p-1.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
                     title={t('docker.remove')}
                 >
-                    <Trash2 size={14} />
+                    <IconTrash size={14} />
                 </button>
                 {onOpenTerminal && (
                     <button
@@ -124,7 +124,7 @@ const ContainerItem: React.FC<{
                         className="p-1.5 rounded hover:bg-primary/20 text-muted-foreground hover:text-primary"
                         title={t('docker.shell')}
                     >
-                        <Terminal size={14} />
+                        <IconTerminal size={14} />
                     </button>
                 )}
             </div>
@@ -253,7 +253,7 @@ export function DockerDashboard({
             <div className="flex items-center justify-between p-4 border-b border-border/50">
                 <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-gradient-to-br from-info/20 to-primary/20 border border-primary/30">
-                        <Box size={20} className="text-primary" />
+                        <IconBox size={20} className="text-primary" />
                     </div>
                     <div>
                         <h2 className="font-semibold text-foreground">{t('docker.title')}</h2>
@@ -269,7 +269,7 @@ export function DockerDashboard({
                     disabled={isLoading}
                     className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                 >
-                    <RefreshCw size={18} className={cn(isLoading && 'animate-spin')} />
+                    <IconRefresh size={18} className={cn(isLoading && 'animate-spin')} />
                 </button>
             </div>
             {error && (
@@ -298,7 +298,7 @@ export function DockerDashboard({
                 </div>
                 <div className="w-1/2 flex flex-col overflow-hidden">
                     <div className="p-3 border-b border-border/50 flex items-center gap-2">
-                        <Terminal size={14} className="text-muted-foreground" />
+                        <IconTerminal size={14} className="text-muted-foreground" />
                         <span className="text-sm text-muted-foreground">{t('docker.logs')}</span>
                     </div>
                     <pre className="flex-1 p-4 typo-caption font-mono text-muted-foreground overflow-y-auto whitespace-pre-wrap">

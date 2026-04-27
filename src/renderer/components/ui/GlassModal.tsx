@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { X } from 'lucide-react';
+import { IconX } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -89,7 +89,7 @@ function useFocusTrap(isOpen: boolean, modalRef: React.RefObject<HTMLDivElement 
  * @example
  * ```tsx
  * <GlassModal isOpen={isOpen} onClose={() => setIsOpen(false)} title={t('settings.title')}>
- *   <p>Modal content here</p>
+ * <p>Modal content here</p>
  * </GlassModal>
  * ```
  */
@@ -172,7 +172,7 @@ const ModalHeader: React.FC<ModalHeaderProps> = ({ title, showClose, onClose }) 
             {title && <h2 id="modal-title" className="text-lg font-semibold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">{title}</h2>}
             {showClose && (
                 <button onClick={onClose} className="p-2 text-muted-foreground bg-transparent border-none rounded-lg cursor-pointer transition-colors hover:bg-muted/60 hover:text-foreground" aria-label={t('modal.close')}>
-                    <X className="w-5 h-5" />
+                    <IconX className="w-5 h-5" />
                 </button>
             )}
         </div>

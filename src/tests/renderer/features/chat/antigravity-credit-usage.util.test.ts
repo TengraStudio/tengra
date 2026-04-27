@@ -8,9 +8,9 @@
  * (at your option) any later version.
  */
 
-import type { LinkedAccountInfo } from '@renderer/electron.d';
 import { describe, expect, it } from 'vitest';
 
+import type { LinkedAccountInfo } from '@/electron.d';
 import {
     findMatchingQuotaAccount,
     shouldConfirmAntigravityCreditUsage,

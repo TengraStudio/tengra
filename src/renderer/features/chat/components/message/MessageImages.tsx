@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Expand, Sparkles, X } from 'lucide-react';
+import { IconArrowsMaximize, IconSparkles, IconX } from '@tabler/icons-react';
 import { memo, useState } from 'react';
 
 /* Batch-02: Extracted Long Classes */
@@ -24,10 +24,10 @@ export const ImageSkeleton = ({ t }: { t: TranslationFn }) => (
     <div className={C_MESSAGEIMAGES_1}>
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-accent/30 to-transparent -translate-x-full animate-slide-shimmer" />
         <div className="w-12 h-12 rounded-full bg-accent/30 flex items-center justify-center animate-pulse">
-            <Sparkles className="w-6 h-6 text-primary/40" />
+            <IconSparkles className="w-6 h-6 text-primary/40" />
         </div>
         <div className="space-y-2 text-center">
-            <div className="text-xxs font-bold text-muted-foreground/40 animate-pulse">
+            <div className="text-sm font-bold text-muted-foreground/40 animate-pulse">
                 {t('messageBubble.TengraDrawing')}
             </div>
             <div className="flex gap-1 justify-center">
@@ -61,14 +61,14 @@ export const MessageImages = memo(({ images, t }: MessageImagesProps) => {
             <div className="mb-4 overflow-hidden rounded-3xl border border-border/60 bg-card/50">
                 <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
                     <div className="flex flex-col">
-                        <span className="text-xxs font-semibold text-muted-foreground/70">
+                        <span className="text-sm font-semibold text-muted-foreground/70">
                             {t('input.generate')}
                         </span>
                         <span className="text-sm font-medium text-foreground/90">
                             {t('gallery.imageCount', { count: images.length })}
                         </span>
                     </div>
-                    <span className="rounded-full border border-border/60 bg-background/80 px-3 py-1 text-xxs font-semibold text-muted-foreground/80">
+                    <span className="rounded-full border border-border/60 bg-background/80 px-3 py-1 text-sm font-semibold text-muted-foreground/80">
                         {t('common.zoomIn')}
                     </span>
                 </div>
@@ -97,7 +97,7 @@ export const MessageImages = memo(({ images, t }: MessageImagesProps) => {
                                         {t('messageBubble.attachedImage', { index: i + 1 })}
                                     </span>
                                     <span className="flex items-center gap-1 typo-caption font-medium text-muted-foreground">
-                                        <Expand className="h-3.5 w-3.5" />
+                                        <IconArrowsMaximize className="h-3.5 w-3.5" />
                                         {t('common.zoomIn')}
                                     </span>
                                 </div>
@@ -126,7 +126,7 @@ export const MessageImages = memo(({ images, t }: MessageImagesProps) => {
                         }}
                         aria-label={t('aria.closeModal')}
                     >
-                        <X className="h-4 w-4" />
+                        <IconX className="h-4 w-4" />
                     </button>
                     <div
                         className="flex max-h-screen max-w-full items-center justify-center"

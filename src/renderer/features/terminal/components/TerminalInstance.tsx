@@ -8,12 +8,12 @@
  * (at your option) any later version.
  */
 
-import { useTranslation } from '@renderer/i18n';
 import { FitAddon } from '@xterm/addon-fit';
 import { type ITheme,Terminal as XTerm } from '@xterm/xterm';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 
 import { useTerminalSmartSuggestions } from '@/features/terminal/hooks/useTerminalSmartSuggestions';
+import { useTranslation } from '@/i18n';
 import { invokeTypedIpc } from '@/lib/ipc-client';
 import { cn } from '@/lib/utils';
 import type { TerminalTab } from '@/types';

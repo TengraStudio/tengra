@@ -1,6 +1,6 @@
 use crate::tools::ToolDispatchResponse;
 use reqwest::Client;
-/**
+/*
  * Tengra - Your Personal AI Assistant
  * Copyright (c) 2026 TengraStudio
  *
@@ -11,7 +11,7 @@ use reqwest::Client;
  */
 use serde_json::{json, Value};
 
-pub async fn handle_action(action: &str, args: Value) -> ToolDispatchResponse {
+pub async fn handle_action(action: &str, _args: Value) -> ToolDispatchResponse {
     match action {
         "listModels" => list_models().await,
         "ps" => ps().await,

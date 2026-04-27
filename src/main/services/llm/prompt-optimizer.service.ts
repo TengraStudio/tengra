@@ -9,6 +9,7 @@
  */
 
 import { BaseService } from '@main/services/base.service';
+import { t } from '@main/utils/i18n.util';
 
 /** Type of prompt improvement suggestion */
 export type PromptSuggestionType = 'clarity' | 'specificity' | 'structure' | 'context' | 'constraint' | 'format';
@@ -50,7 +51,7 @@ const VAGUE_WORDS = [
 ];
 
 const CONTEXT_INDICATORS = [
-    'you are', 'act as', 'role:', 'persona:', 'context:',
+    'you are', 'act as', 'role:', 'context:',
     'background:', 'as a', 'imagine you',
 ];
 
@@ -201,8 +202,8 @@ export class PromptOptimizerService extends BaseService {
             suggestions.push({
                 type: 'constraint',
                 severity: 'improvement',
-                message: 'Add constraints like length limits, scope, or what to avoid.',
-                suggestedText: 'Constraints: Keep the response under [N] words. Do not include [X].',
+                message: t('auto.addConstraintsLikeLengthLimitsScopeOrWha'),
+                suggestedText: 'Constraints: Keep the response under [N] words. Do not include [IconX].',
             });
         }
     }
@@ -217,7 +218,7 @@ export class PromptOptimizerService extends BaseService {
             suggestions.push({
                 type: 'format',
                 severity: 'info',
-                message: 'Specify the desired output format (e.g., JSON, bullet points, table).',
+                message: t('auto.specifyTheDesiredOutputFormatEgJsonBulle'),
                 suggestedText: 'Output format: Respond as a numbered list.',
             });
         }
@@ -233,7 +234,7 @@ export class PromptOptimizerService extends BaseService {
             suggestions.push({
                 type: 'specificity',
                 severity: 'warning',
-                message: 'Prompt is quite short. Adding more detail typically improves results.',
+                message: t('auto.promptIsQuiteShortAddingMoreDetailTypica'),
             });
         }
     }
@@ -257,7 +258,7 @@ export class PromptOptimizerService extends BaseService {
             suggestions.push({
                 type: 'structure',
                 severity: 'warning',
-                message: 'Long prompt without clear structure. Add headings, numbered steps, or sections.',
+                message: t('auto.longPromptWithoutClearStructureAddHeadin'),
             });
         }
     }
@@ -272,7 +273,7 @@ export class PromptOptimizerService extends BaseService {
             suggestions.push({
                 type: 'specificity',
                 severity: 'info',
-                message: 'Consider adding examples to clarify the expected output.',
+                message: t('auto.considerAddingExamplesToClarifyTheExpect'),
                 suggestedText: 'Example: Input: [sample] → Output: [expected]',
             });
         }

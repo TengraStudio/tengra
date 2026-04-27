@@ -14,12 +14,7 @@ import type {
     WorkspaceAgentSessionModes,
     WorkspaceAgentSessionSummary,
 } from '@shared/types/workspace-agent-session';
-import {
-    Check,
-    Map,
-    Send,
-    Square,
-} from 'lucide-react';
+import { IconCheck, IconMap, IconSend, IconSquare } from '@tabler/icons-react';
 import React from 'react';
 
 import { ModelSelector } from '@/components/shared/ModelSelector';
@@ -193,9 +188,9 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                     className="h-11 w-11 rounded-2xl bg-primary/95 hover:bg-primary shrink-0"
                 >
                     {isLoading ? (
-                        <Square className="h-4 w-4 fill-current" />
+                        <IconSquare className="h-4 w-4 fill-current" />
                     ) : (
-                        <Send className="h-4 w-4" />
+                        <IconSend className="h-4 w-4" />
                     )}
                 </Button>
             </div>
@@ -218,7 +213,7 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                         align="start"
                         className={C_WORKSPACEAGENTCOMPOSER_3}
                     >
-                        <div className="px-3 py-1.5 typo-overline font-bold uppercase tracking-widest text-muted-foreground/30 border-b border-border/30 mb-1.5">
+                        <div className="px-3 py-1.5 typo-overline font-bold uppercase text-muted-foreground/30 border-b border-border/30 mb-1.5">
                             {t('workspaceAgent.permissions.profile')}
                         </div>
                         <div className="space-y-0.5">
@@ -238,7 +233,7 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                                         </span>
                                     </span>
                                     {selectedPreset.value === option.value && (
-                                        <Check className="ml-3 h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                                        <IconCheck className="ml-3 h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
                                     )}
                                 </button>
                             ))}
@@ -258,7 +253,7 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                     )}
                     onClick={onToggleCouncil}
                 >
-                    <Map className="h-4 w-4 text-muted-foreground/60" />
+                    <IconMap className="h-4 w-4 text-muted-foreground/60" />
                 </Button>
 
                 <div className="shrink-0 rounded-xl border border-border/10 bg-background/30 p-0.5 hover:bg-background/40 transition-colors">

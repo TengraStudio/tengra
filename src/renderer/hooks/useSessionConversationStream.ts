@@ -8,10 +8,10 @@
  * (at your option) any later version.
  */
 
-import { buildAssistantPresentationMetadata } from '@renderer/features/chat/hooks/ai-runtime-chat.util';
 import { classifyAiIntent } from '@shared/utils/ai-runtime.util';
 import { useCallback, useRef, useState } from 'react';
 
+import { buildAssistantPresentationMetadata } from '@/features/chat/hooks/ai-runtime-chat.util';
 import { ChatError, Message } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 

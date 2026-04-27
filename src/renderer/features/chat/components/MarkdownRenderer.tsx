@@ -8,15 +8,15 @@
  * (at your option) any later version.
  */
 
-import { MonacoBlock } from '@renderer/features/chat/components/MonacoBlock';
+import { IconCode } from '@tabler/icons-react';
 import DOMPurify from 'dompurify';
-import { Code2 } from 'lucide-react';
 import React, { isValidElement, memo, useEffect, useId, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 
+import { MonacoBlock } from '@/features/chat/components/MonacoBlock';
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -148,7 +148,7 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                                     }}
                                     className={C_MARKDOWNRENDERER_2}
                                 >
-                                    <Code2 className="w-3.5 h-3.5" />
+                                    <IconCode className="w-3.5 h-3.5" />
                                     {t('workspace.convertToCode')}
                                 </button>
                             )}

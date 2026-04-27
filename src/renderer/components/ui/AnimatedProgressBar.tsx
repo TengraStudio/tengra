@@ -80,7 +80,7 @@ export const AnimatedProgressBar: React.FC<AnimatedProgressBarProps> = React.mem
                     />
                 </div>
                 {showLabel && (
-                    <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                    <div className="flex justify-between mt-1 text-sm text-muted-foreground">
                         <span>{value}</span>
                         <span>{percentage.toFixed(0)}%</span>
                     </div>

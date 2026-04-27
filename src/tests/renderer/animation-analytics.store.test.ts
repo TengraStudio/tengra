@@ -8,13 +8,14 @@
  * (at your option) any later version.
  */
 
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
     __resetAnimationAnalyticsForTests,
     getAnimationAnalyticsSnapshot,
     setAnimationDebugEnabled,
     trackAnimationEvent,
-} from '@renderer/store/animation-analytics.store';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+} from '@/store/animation-analytics.store';
 
 describe('animation analytics store', () => {
     let setItemSpy: ReturnType<typeof vi.spyOn>;

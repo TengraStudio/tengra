@@ -25,5 +25,8 @@ export interface LocalePackManifest {
 }
 
 export interface LocalePack extends LocalePackManifest {
-    translations: JsonValue;
+    frontend?: JsonValue;
+    backend?: JsonValue;
+    translations?: JsonValue; // kept for backward-compat with third-party locale packs
 }
+

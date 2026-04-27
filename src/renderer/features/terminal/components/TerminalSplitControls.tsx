@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Columns2, Rows2 } from 'lucide-react';
+import { IconColumns2, IconLayoutRows } from '@tabler/icons-react';
 
 import type { SplitAnalytics, SplitPreset, SplitViewState } from '../utils/split-config';
 
@@ -74,7 +74,7 @@ export function TerminalSplitControls({
                 className="p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded"
                 title={t('terminal.splitPresetsTitle')}
             >
-                <Columns2 className="w-3.5 h-3.5" />
+                <IconColumns2 className="w-3.5 h-3.5" />
             </button>
             <button
                 type="button"
@@ -82,7 +82,7 @@ export function TerminalSplitControls({
                 className="p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded"
                 title={t('terminal.splitPresetsTitle')}
             >
-                <Rows2 className="w-3.5 h-3.5" />
+                <IconLayoutRows className="w-3.5 h-3.5" />
             </button>
         </>
     );

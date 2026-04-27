@@ -1,4 +1,4 @@
-/**
+/*
  * Tengra - Your Personal AI Assistant
  * Copyright (c) 2026 TengraStudio
  *
@@ -116,7 +116,7 @@ fn translate_gemini_response(v: Value) -> Value {
     })
 }
 
-fn unwrap_gemini_response<'a>(value: &'a Value) -> &'a Value {
+fn unwrap_gemini_response(value: &Value) -> &Value {
     value.get("response").unwrap_or(value)
 }
 

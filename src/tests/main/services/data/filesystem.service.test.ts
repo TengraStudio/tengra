@@ -82,31 +82,31 @@ describe('FileSystemService', () => {
             expect(result.error).toContain('Access denied');
         });
 
-        it('should reject files larger than 10MB', async () => {
-            vi.mocked(fs.stat).mockResolvedValue({ size: 11 * 1024 * 1024 } as Awaited<ReturnType<typeof fs.stat>>);
+        it('should reject files larger than 50MB', async () => {
+            vi.mocked(fs.stat).mockResolvedValue({ size: 51 * 1024 * 1024 } as Awaited<ReturnType<typeof fs.stat>>);
             const result = await service.readFile(path.join(allowedRoot, 'big.txt'));
             expect(result.success).toBe(false);
             expect(result.error).toContain('too large');
         });
 
-        it('should detect binary files', async () => {
+        it('should read binary-like files as a text preview', async () => {
             const content = Buffer.from([0x48, 0x65, 0x00, 0x6c]);
             vi.mocked(fs.stat).mockResolvedValue({ size: content.length } as any);
             vi.mocked(fs.readFile).mockResolvedValue(content as any);
-            
-            // Mock fs.open for isBinaryFile
-            const mockRead = vi.fn().mockImplementation((buf: Buffer) => {
-                content.copy(buf);
-                return Promise.resolve({ bytesRead: buf.length, buffer: buf });
-            });
-            vi.mocked(fs.open).mockResolvedValue({
-                read: mockRead,
-                close: vi.fn().mockResolvedValue(undefined)
-            } as any);
 
             const result = await service.readFile(path.join(allowedRoot, 'bin.dat'));
-            expect(result.success).toBe(false);
-            expect(result.error).toContain('binary');
+            expect(result.success).toBe(true);
+            expect(result.data).toBe('Hel');
+        });
+
+        it('should decode utf16le files with a BOM', async () => {
+            const content = Buffer.from([0xff, 0xfe, 0x68, 0x00, 0x69, 0x00]);
+            vi.mocked(fs.stat).mockResolvedValue({ size: content.length } as any);
+            vi.mocked(fs.readFile).mockResolvedValue(content as any);
+
+            const result = await service.readFile(path.join(allowedRoot, 'utf16.txt'));
+            expect(result.success).toBe(true);
+            expect(result.data).toBe('hi');
         });
     });
 

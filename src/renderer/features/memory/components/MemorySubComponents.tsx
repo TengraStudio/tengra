@@ -12,8 +12,8 @@ import {
     AdvancedSemanticFragment,
     PendingMemory
 } from '@shared/types/advanced-memory';
+import { type Icon,IconArchive, IconEdit, IconRefresh, IconSquare, IconSquareCheck, IconTrash } from '@tabler/icons-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Archive, CheckSquare, Edit3, LucideIcon, RefreshCw, Square, Trash2 } from 'lucide-react';
 import { memo } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -38,7 +38,7 @@ export const StatCard = memo(({
 }: {
     label: string;
     value: number | string;
-    icon: LucideIcon;
+    icon: Icon;
     color: string;
     highlight?: boolean;
 }) => (
@@ -46,7 +46,7 @@ export const StatCard = memo(({
         "p-4 bg-muted/30 border-border/40 flex flex-col gap-1 transition-all",
         highlight && "border-primary/30 bg-primary/5"
     )}>
-        <p className="text-xxs font-bold text-muted-foreground/60">{label}</p>
+        <p className="text-sm font-bold text-muted-foreground/60">{label}</p>
         <div className="flex items-end gap-2">
             <span className="text-2xl font-bold">{value}</span>
             <Icon className={cn("w-4 h-4 mb-1", color)} />
@@ -60,7 +60,7 @@ export const EmptyState = memo(({
     title,
     description
 }: {
-    icon: LucideIcon;
+    icon: Icon;
     title: string;
     description: string;
 }) => (
@@ -102,12 +102,12 @@ export const PendingMemoryCard = memo(({
             <div className="flex flex-col gap-3 pl-3">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <Badge className={cn("border-none text-xxs  font-bold", config.color)}>
+                        <Badge className={cn("border-none text-sm font-bold", config.color)}>
                             <config.icon className="w-3 h-3 mr-1" />
                             {t(config.labelKey)}
                         </Badge>
                         {memory.requiresUserValidation && (
-                            <Badge variant="outline" className="border-warning/40 text-warning text-xxs">
+                            <Badge variant="outline" className="border-warning/40 text-warning text-sm">
                                 {t('memory.needsReview')}
                             </Badge>
                         )}
@@ -169,9 +169,9 @@ export const ConfirmedMemoryCard = memo(({
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <button type="button" aria-label={t('memory.select')} onClick={onToggleSelect}>
-                            {isSelected ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4 text-muted-foreground/30" />}
+                            {isSelected ? <IconSquareCheck className="w-4 h-4 text-primary" /> : <IconSquare className="w-4 h-4 text-muted-foreground/30" />}
                         </button>
-                        <Badge className={cn("border-none text-xxs  font-bold", config.color)}>
+                        <Badge className={cn("border-none text-sm font-bold", config.color)}>
                             <config.icon className="w-3 h-3 mr-1" />
                             {t(config.labelKey)}
                         </Badge>
@@ -179,11 +179,11 @@ export const ConfirmedMemoryCard = memo(({
                 </div>
                 <p className="text-sm leading-relaxed">{memory.content}</p>
                 <div className="flex items-center justify-between mt-4">
-                    <div className="text-xxs text-muted-foreground">{t('memory.storedAgo', { time: formatDistanceToNow(new Date(memory.createdAt)) })}</div>
+                    <div className="text-sm text-muted-foreground">{t('memory.storedAgo', { time: formatDistanceToNow(new Date(memory.createdAt)) })}</div>
                     <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" aria-label={t('common.edit')} onClick={onEdit}><Edit3 className="w-4 h-4" /></Button>
-                        {!isArchived ? <Button variant="ghost" size="sm" aria-label={t('memory.archive')} onClick={onArchive}><Archive className="w-4 h-4" /></Button> : <Button variant="ghost" size="sm" aria-label={t('memory.restore')} onClick={onRestore}><RefreshCw className="w-4 h-4" /></Button>}
-                        <Button variant="ghost" size="sm" aria-label={t('common.delete')} onClick={onDelete} className="text-destructive"><Trash2 className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="sm" aria-label={t('common.edit')} onClick={onEdit}><IconEdit className="w-4 h-4" /></Button>
+                        {!isArchived ? <Button variant="ghost" size="sm" aria-label={t('memory.archive')} onClick={onArchive}><IconArchive className="w-4 h-4" /></Button> : <Button variant="ghost" size="sm" aria-label={t('memory.restore')} onClick={onRestore}><IconRefresh className="w-4 h-4" /></Button>}
+                        <Button variant="ghost" size="sm" aria-label={t('common.delete')} onClick={onDelete} className="text-destructive"><IconTrash className="w-4 h-4" /></Button>
                     </div>
                 </div>
             </div>

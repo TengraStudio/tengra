@@ -11,7 +11,7 @@
 import {
     SessionConversationStreamState,
     useSessionConversationStream,
-} from '@renderer/hooks/useSessionConversationStream';
+} from '@/hooks/useSessionConversationStream';
 
 export type WorkspaceChatStreamResult = SessionConversationStreamState;
 export type UseWorkspaceChatStreamResult = SessionConversationStreamState;

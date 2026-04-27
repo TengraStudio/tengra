@@ -8,8 +8,8 @@
  * (at your option) any later version.
  */
 
-import { AlertCircle, AlertTriangle, CalendarClock, CheckCheck, Clock3, History, Info, Trash2 } from 'lucide-react';
-import {  useState } from 'react';
+import { IconAlertCircle, IconAlertTriangle, IconCalendarClock, IconChecks, IconClock, IconHistory, IconInfoCircle, IconTrash } from '@tabler/icons-react';
+import { useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { useBreakpoint } from '@/lib/responsive';
@@ -67,12 +67,12 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                 {visibleToasts.map(toast => {
                     const icon =
                         toast.type === 'success'
-                            ? <CheckCheck className="w-3 h-3" />
+                            ? <IconChecks className="w-3 h-3" />
                             : toast.type === 'error'
-                                ? <AlertCircle className="w-3 h-3" />
+                                ? <IconAlertCircle className="w-3 h-3" />
                                 : toast.type === 'warning'
-                                    ? <AlertTriangle className="w-3 h-3" />
-                                    : <Info className="w-3 h-3" />;
+                                    ? <IconAlertTriangle className="w-3 h-3" />
+                                    : <IconInfoCircle className="w-3 h-3" />;
                     const normalizedToast = activeNotifications.find(item => item.id === toast.id);
                     return (
                         <div
@@ -80,7 +80,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                             className={cn('pointer-events-auto flex flex-col gap-2 px-3 py-2.5 rounded-lg border shadow-lg backdrop-blur-md animate-in slide-in-from-right-full duration-300 transition-all font-sans', breakpoint === 'mobile' ? 'w-full' : 'w-full min-w-300', toast.type === 'success' ? 'bg-success/15 border-success/30 text-success-foreground shadow-success/10' : toast.type === 'error' ? 'bg-destructive/15 border-destructive/30 text-destructive-foreground shadow-destructive/10' : toast.type === 'warning' ? 'bg-warning/15 border-warning/30 text-warning-foreground shadow-warning/10' : 'bg-primary/15 border-primary/30 text-primary-foreground shadow-primary/10')}
                         >
                             <div className="flex items-center gap-3">
-                                <span className="text-xxxs font-bold opacity-80">
+                                <span className="text-sm font-bold opacity-80">
                                     {icon}
                                 </span>
                                 <div className="text-sm font-medium">{toast.message}</div>
@@ -103,7 +103,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                                                 runNotificationAction(normalizedToast.id, action.id);
                                             }}
                                             className={cn(
-                                                'px-2 py-1 rounded border text-xxxs font-semibold',
+                                                'px-2 py-1 rounded border text-sm font-semibold',
                                                 action.tone === 'primary'
                                                     ? 'border-primary/40 text-primary'
                                                     : action.tone === 'destructive'
@@ -128,10 +128,10 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                                             );
                                             dismissNotification(normalizedToast.id);
                                         }}
-                                        className="px-2 py-1 rounded border border-border/50 text-xxxs font-semibold text-foreground/80"
+                                        className="px-2 py-1 rounded border border-border/50 text-sm font-semibold text-foreground/80"
                                         title={t('common.remindInMinutes', { minutes: 5 })}
                                     >
-                                        <Clock3 className="w-3 h-3 inline mr-1" />
+                                        <IconClock className="w-3 h-3 inline mr-1" />
                                         {t('common.snooze')}
                                     </button>
                                 </div>
@@ -152,7 +152,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                 >
                     <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
                         <div className="flex items-center gap-2">
-                            <History className="w-4 h-4 text-muted-foreground" />
+                            <IconHistory className="w-4 h-4 text-muted-foreground" />
                             <span className="text-sm font-semibold">{t('notifications.center.title')}</span>
                         </div>
                         <div className="flex items-center gap-1">
@@ -163,7 +163,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                                 className="p-1.5 rounded hover:bg-accent/50 text-muted-foreground"
                                 title={t('common.markRead')}
                             >
-                                <CheckCheck className="w-4 h-4" />
+                                <IconChecks className="w-4 h-4" />
                             </button>
                             <button
                                 onClick={() => {
@@ -172,7 +172,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                                 className="p-1.5 rounded hover:bg-accent/50 text-muted-foreground"
                                 title={t('notifications.center.clearHistory')}
                             >
-                                <Trash2 className="w-4 h-4" />
+                                <IconTrash className="w-4 h-4" />
                             </button>
                             <button
                                 onClick={() => {
@@ -187,7 +187,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                     </div>
 
                     <div className="px-4 py-3 border-b border-border/60">
-                        <div className="text-xxxs font-semibold text-muted-foreground mb-2">
+                        <div className="text-sm font-semibold text-muted-foreground mb-2">
                             {t('notifications.center.preferences')}
                         </div>
                         <div className="grid grid-cols-2 gap-2">
@@ -209,7 +209,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                         </div>
                     </div>
 
-                    <div className="px-4 py-2 border-b border-border/60 text-xxxs text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
+                    <div className="px-4 py-2 border-b border-border/60 text-sm text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
                         <span>{t('notifications.center.analytics.delivered')}: {snapshot.analytics.deliveredTotal}</span>
                         <span>{t('notifications.center.analytics.dismissed')}: {snapshot.analytics.dismissedTotal}</span>
                         <span>{t('notifications.center.analytics.actions')}: {snapshot.analytics.actionClicksTotal}</span>
@@ -220,7 +220,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
 
                     {snapshot.scheduled.length > 0 && (
                         <div className="px-4 py-2 border-b border-border/60">
-                            <div className="text-xxxs font-semibold text-muted-foreground mb-1">
+                            <div className="text-sm font-semibold text-muted-foreground mb-1">
                                 {t('notifications.center.scheduled')}
                             </div>
                             <div className="space-y-1.5 max-h-24 overflow-auto">
@@ -229,7 +229,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                                         key={item.id}
                                         className="rounded border border-border/50 bg-background/30 px-2 py-1 typo-caption text-muted-foreground"
                                     >
-                                        <CalendarClock className="w-3.5 h-3.5 inline mr-1" />
+                                        <IconCalendarClock className="w-3.5 h-3.5 inline mr-1" />
                                         {item.payload.message}
                                         <span className="ml-2 opacity-70">
                                             {formatTime(item.deliverAt)}
@@ -255,10 +255,10 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                                 )}
                             >
                                 <div className="flex items-center justify-between gap-2 mb-1">
-                                    <div className="text-xxxs text-muted-foreground">
+                                    <div className="text-sm text-muted-foreground">
                                         {item.type}
                                     </div>
-                                    <div className="text-xxxs text-muted-foreground">
+                                    <div className="text-sm text-muted-foreground">
                                         {formatTime(item.createdAt)}
                                     </div>
                                 </div>
@@ -274,7 +274,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                                             onClick={() => {
                                                 markNotificationRead(item.id);
                                             }}
-                                            className="px-2 py-1 rounded border border-border/50 text-xxxs text-muted-foreground"
+                                            className="px-2 py-1 rounded border border-border/50 text-sm text-muted-foreground"
                                         >
                                             {t('common.markRead')}
                                         </button>
@@ -283,7 +283,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                                         onClick={() => {
                                             dismissNotification(item.id);
                                         }}
-                                        className="px-2 py-1 rounded border border-border/50 text-xxxs text-muted-foreground"
+                                        className="px-2 py-1 rounded border border-border/50 text-sm text-muted-foreground"
                                     >
                                         {t('common.dismiss')}
                                     </button>
@@ -294,7 +294,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                                                 runNotificationAction(item.id, action.id);
                                             }}
                                             className={cn(
-                                                'px-2 py-1 rounded border text-xxxs',
+                                                'px-2 py-1 rounded border text-sm',
                                                 action.tone === 'primary'
                                                     ? 'border-primary/40 text-primary'
                                                     : action.tone === 'destructive'

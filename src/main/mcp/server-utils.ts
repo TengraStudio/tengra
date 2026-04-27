@@ -13,7 +13,6 @@ import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { McpAction, McpResult } from '@main/mcp/types';
-import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { FileManagementService } from '@main/services/data/file.service';
 import { FileSystemService } from '@main/services/data/filesystem.service';
@@ -53,7 +52,6 @@ export interface McpDeps {
     ollama: OllamaService;
     advancedMemory: AdvancedMemoryService;
     modelCollaboration: ModelCollaborationService;
-    auditLog: AuditLogService;
     workspace: WorkspaceService;
     proxy: ProxyService;
 }
@@ -68,59 +66,16 @@ interface LocalizedMcpError {
 export function wrap(
     handler: (args: JsonObject) => McpHandlerResult | Promise<McpHandlerResult>,
     serviceName: string,
-    actionName: string,
-    auditLog?: AuditLogService
+    actionName: string
 ): (args: JsonObject) => Promise<McpResult> {
     return async (args: JsonObject) => {
         const startTime = Date.now();
         try {
             const rawResult = await Promise.resolve(handler(args));
-            const result = normalizeResult(rawResult);
-
-            // Audit log successful operation
-            if (auditLog) {
-                await auditLog
-                    .log({
-                        action: `mcp:${serviceName}:${actionName}`,
-                        category: 'system',
-                        success: result.success,
-                        details: {
-                            serviceName,
-                            actionName,
-                            duration: Date.now() - startTime,
-                            argsKeys: Object.keys(args),
-                        },
-                        error: result.success ? undefined : result.error,
-                    })
-                    .catch(() => {
-                        /* Ignore audit log errors */
-                    });
-            }
-
-            return result;
+            return normalizeResult(rawResult);
         } catch (error) {
             const errorMsg = getErrorMessage(error);
             const localizedError = error as LocalizedMcpError;
-
-            // Audit log failed operation
-            if (auditLog) {
-                await auditLog
-                    .log({
-                        action: `mcp:${serviceName}:${actionName}`,
-                        category: 'system',
-                        success: false,
-                        details: {
-                            serviceName,
-                            actionName,
-                            duration: Date.now() - startTime,
-                            argsKeys: Object.keys(args),
-                        },
-                        error: errorMsg,
-                    })
-                    .catch(() => {
-                        /* Ignore audit log errors */
-                    });
-            }
 
             return {
                 success: false,
@@ -162,13 +117,12 @@ export const buildActions = (
             handler: (args: JsonObject) => McpHandlerResult | Promise<McpHandlerResult>;
         }
     >,
-    serviceName?: string,
-    auditLog?: AuditLogService
+    serviceName?: string
 ): McpAction[] =>
     actions.map(a => ({
         ...a,
         description: a.description ?? a.name,
-        handler: wrap(a.handler, serviceName ?? 'unknown', a.name, auditLog),
+        handler: wrap(a.handler, serviceName ?? 'unknown', a.name),
     }));
 
 export const normalizeTarget = (target: string): string => {

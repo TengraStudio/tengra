@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { X } from 'lucide-react';
+import { IconX } from '@tabler/icons-react';
 import React from 'react';
 
 import { CodeEditor } from '@/components/ui/CodeEditor';
@@ -108,7 +108,7 @@ export const ChatFilePreviewPanel = React.memo(({
                             type="button"
                             onClick={() => onSelectTab(tab.id)}
                             className={cn(
-                                'group flex items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors',
+                                'group flex items-center gap-2 rounded-md px-2 py-1 text-sm transition-colors',
                                 tab.id === active.id
                                     ? 'bg-muted/40 text-foreground'
                                     : 'text-muted-foreground hover:bg-muted/20 hover:text-foreground'
@@ -125,7 +125,7 @@ export const ChatFilePreviewPanel = React.memo(({
                                 role="button"
                                 aria-label="Close tab"
                             >
-                                <X className="h-3.5 w-3.5" />
+                                <IconX className="h-3.5 w-3.5" />
                             </span>
                         </button>
                     ))}
@@ -137,7 +137,7 @@ export const ChatFilePreviewPanel = React.memo(({
                     aria-label="Close preview"
                     title="Close"
                 >
-                    <X className="h-4 w-4" />
+                    <IconX className="h-4 w-4" />
                 </button>
             </div>
 

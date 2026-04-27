@@ -8,11 +8,11 @@
  * (at your option) any later version.
  */
 
-import { SidebarItem } from '@renderer/components/layout/sidebar/SidebarItem';
-import { UI_PRIMITIVES } from '@renderer/constants/ui-primitives';
-import { Edit2, MessageSquare, Pin, Trash2 } from 'lucide-react';
+import { IconEdit, IconMessage, IconPin, IconTrash } from '@tabler/icons-react';
 import React from 'react';
 
+import { SidebarItem } from '@/components/layout/sidebar/SidebarItem';
+import { UI_PRIMITIVES } from '@/constants/ui-primitives';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { Chat } from '@/types';
@@ -53,7 +53,7 @@ export const SidebarChatItem = React.memo(
         return (
             <div className="group relative">
                 <SidebarItem
-                    icon={MessageSquare}
+                    icon={IconMessage}
                     label={chat.title || t('sidebar.newChat')}
                     active={isActive}
                     onClick={() => onSelect(chat.id)}
@@ -72,7 +72,7 @@ export const SidebarChatItem = React.memo(
                             className={UI_PRIMITIVES.ACTION_BUTTON_GHOST}
                             title={t('common.edit')}
                         >
-                            <Edit2 className="w-3 h-3" />
+                            <IconEdit className="w-3 h-3" />
                         </button>
                         <button
                             onClick={e => {
@@ -82,7 +82,7 @@ export const SidebarChatItem = React.memo(
                             className={UI_PRIMITIVES.ACTION_BUTTON_GHOST}
                             title={chat.isPinned ? t('common.unpin') : t('common.pin')}
                         >
-                            <Pin className={cn('w-3 h-3', chat.isPinned && 'fill-current')} />
+                            <IconPin className={cn('w-3 h-3', chat.isPinned && 'fill-current')} />
                         </button>
                         <button
                             onClick={e => {
@@ -92,14 +92,14 @@ export const SidebarChatItem = React.memo(
                             className={cn(UI_PRIMITIVES.ACTION_BUTTON_GHOST, "hover:text-destructive hover:bg-destructive/10")}
                             title={t('common.delete')}
                         >
-                            <Trash2 className="w-3 h-3" />
+                            <IconTrash className="w-3 h-3" />
                         </button>
                     </div>
                 )}
 
                 {isEditing && (
                     <div className={cn(UI_PRIMITIVES.ITEM_OVERLAY, "z-20")}>
-                        <MessageSquare className="w-4 h-4 text-primary shrink-0" />
+                        <IconMessage className="w-4 h-4 text-primary shrink-0" />
                         <input
                             ref={editRef}
                             autoFocus

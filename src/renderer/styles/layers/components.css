@@ -25,7 +25,7 @@
 
     /* Section Title */
     .section-title {
-        @apply text-xxs font-semibold text-muted-foreground mb-6;
+        @apply text-sm font-semibold text-muted-foreground mb-6;
     }
 
     /* Button variants */
@@ -81,7 +81,7 @@
     /* Inline Code */
     .markdown-body code:not(pre code) {
         @apply bg-muted/80 text-primary px-1.5 py-0.5 rounded font-mono font-medium border border-border/20 whitespace-nowrap;
-        font-size: var(--text-xs);
+        font-size: var(--text-sm);
         line-height: var(--leading-normal);
         box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.1);
     }
@@ -96,7 +96,7 @@
     }
 
     .markdown-body th {
-        @apply bg-muted/40 p-3 text-left font-semibold text-muted-foreground text-xxxs border-b border-border/30;
+        @apply bg-muted/40 p-3 text-left font-semibold text-muted-foreground text-sm border-b border-border/30;
     }
 
     .markdown-body td {

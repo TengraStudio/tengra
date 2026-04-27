@@ -9,10 +9,10 @@
  */
 
 
-import { FolderInspector } from '@renderer/features/workspace/components/ide/FolderInspector';
-import { FileCode, X } from 'lucide-react';
+import { IconFileCode, IconX } from '@tabler/icons-react';
 
 import { CodeEditor } from '@/components/ui/CodeEditor';
+import { FolderInspector } from '@/features/workspace/components/ide/FolderInspector';
 import { cn } from '@/lib/utils';
 
 interface OpenFile {
@@ -61,10 +61,10 @@ export const WorkspaceFilesTab = ({
                                         activeFile === file.path ? 'bg-card text-primary font-medium border-t-2 border-t-primary' : 'text-muted-foreground hover:bg-muted/30'
                                     )}
                                 >
-                                    <FileCode size={12} className={cn(activeFile === file.path ? 'text-primary' : 'opacity-50')} />
+                                    <IconFileCode size={12} className={cn(activeFile === file.path ? 'text-primary' : 'opacity-50')} />
                                     <span className="truncate flex-1">{file.name}</span>
                                     <button onClick={(e) => closeFile(e, file.path)} className="opacity-0 group-hover:opacity-100 hover:text-destructive p-0.5 rounded">
-                                        <X size={12} />
+                                        <IconX size={12} />
                                     </button>
                                 </div>
                             ))}
@@ -91,7 +91,7 @@ export const WorkspaceFilesTab = ({
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
                         <div className="w-16 h-16 mb-4 opacity-10 flex items-center justify-center border-2 border-current rounded-full">
-                            <FileCode size={32} />
+                            <IconFileCode size={32} />
                         </div>
                         <p>{t('workspaceDashboard.selectFile')}</p>
                     </div>

@@ -40,7 +40,7 @@ describe('fetchModels in-flight dedupe', () => {
             }
         });
 
-        const { fetchModels } = await import('@renderer/features/models/utils/model-fetcher');
+        const { fetchModels } = await import('@/features/models/utils/model-fetcher');
         const [first, second] = await Promise.all([fetchModels(true), fetchModels(true)]);
 
         expect(mockGetAllModels).toHaveBeenCalledTimes(1);

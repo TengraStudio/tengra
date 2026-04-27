@@ -8,9 +8,9 @@
  * (at your option) any later version.
  */
 
-import { buildWorkspaceExplorerDiagnosticsSnapshot } from '@renderer/features/workspace/utils/workspace-explorer-diagnostics';
 import { describe, expect, it } from 'vitest';
 
+import { buildWorkspaceExplorerDiagnosticsSnapshot } from '@/features/workspace/utils/workspace-explorer-diagnostics';
 import type { WorkspaceAnalysis, WorkspaceMount } from '@/types';
 
 describe('buildWorkspaceExplorerDiagnosticsSnapshot', () => {

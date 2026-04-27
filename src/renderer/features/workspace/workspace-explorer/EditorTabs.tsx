@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { ChevronRight, Pin, X } from 'lucide-react';
+import { IconChevronRight, IconPin, IconX } from '@tabler/icons-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -259,12 +259,12 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                                 className={cn(
                                     'truncate flex-1 text-left',
                                     isActive && 'font-medium',
-                                    isDeleted && 'italic line-through opacity-75'
+                                    isDeleted && ' line-through opacity-75'
                                 )}
                             >
                                 {tab.name}
                             </span>
-                            {tab.isPinned && <Pin className="w-3 h-3 text-primary shrink-0" />}
+                            {tab.isPinned && <IconPin className="w-3 h-3 text-primary shrink-0" />}
                             {isDirty && <span className="w-1.5 h-1.5 rounded-full bg-warning" />}
                             <span
                                 onClick={event => {
@@ -276,7 +276,7 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                                 }}
                                 className="opacity-0 group-hover:opacity-100 p-0.5 rounded-sm hover:bg-muted/60 text-muted-foreground hover:text-foreground"
                             >
-                                <X className="w-3 h-3" />
+                                <IconX className="w-3 h-3" />
                             </span>
                         </button>
                     );
@@ -286,7 +286,7 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                 <div className="flex items-center gap-1 px-3 py-1.5 typo-overline text-muted-foreground/85 border-t border-border/20">
                     {buildBreadcrumbSegments(activeTab.path).map((segment, index) => (
                         <React.Fragment key={`${segment.path}:${index}`}>
-                            {index > 0 && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/45" />}
+                            {index > 0 && <IconChevronRight className="h-3.5 w-3.5 text-muted-foreground/45" />}
                             <button
                                 type="button"
                                 onClick={event => {
@@ -317,13 +317,13 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                     onMouseDown={event => event.stopPropagation()}
                 >
                     {breadcrumbDropdown.items.length === 0 ? (
-                        <div className="px-2 py-1.5 text-xs text-muted-foreground">{t('workspaceDashboard.empty')}</div>
+                        <div className="px-2 py-1.5 text-sm text-muted-foreground">{t('workspaceDashboard.empty')}</div>
                     ) : (
                         breadcrumbDropdown.items.map(item => (
                             <button
                                 key={item.path}
                                 type="button"
-                                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-foreground/90 hover:bg-muted/60"
+                                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-foreground/90 hover:bg-muted/60"
                                 onClick={() => {
                                     setBreadcrumbDropdown(null);
                                     if (item.isDirectory) {

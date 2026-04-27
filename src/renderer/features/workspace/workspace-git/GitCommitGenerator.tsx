@@ -8,11 +8,11 @@
  * (at your option) any later version.
  */
 
-import { chatStream } from '@renderer/lib/chat-stream';
-import { Check, Copy, GitCommit, RefreshCw, Sparkles } from 'lucide-react';
+import { IconCheck, IconCopy, IconGitCommit, IconRefresh, IconSparkles } from '@tabler/icons-react';
 import { useState } from 'react';
 
 import { useTranslation } from '@/i18n';
+import { chatStream } from '@/lib/chat-stream';
 import { appLogger } from '@/utils/renderer-logger';
 
 /* Batch-02: Extracted Long Classes */
@@ -36,7 +36,7 @@ interface HeaderProps {
 const GeneratorHeader = ({ t, isLoading, workspacePath, onFetch }: HeaderProps) => (
     <div className="flex items-center gap-3 p-4 border-b border-border/30 bg-gradient-to-r from-success/10 to-success-light/10">
         <div className="p-2 rounded-xl bg-success/20 border border-success/30">
-            <GitCommit size={20} className="text-success" />
+            <IconGitCommit size={20} className="text-success" />
         </div>
         <div className="flex-1">
             <h2 className="font-semibold text-foreground">{t('git.commitGenerator')}</h2>
@@ -47,7 +47,7 @@ const GeneratorHeader = ({ t, isLoading, workspacePath, onFetch }: HeaderProps) 
             disabled={isLoading || !workspacePath}
             className={C_GITCOMMITGENERATOR_1}
         >
-            {isLoading ? <RefreshCw size={16} className="animate-spin" /> : <Sparkles size={16} />}
+            {isLoading ? <IconRefresh size={16} className="animate-spin" /> : <IconSparkles size={16} />}
             {t('git.generate')}
         </button>
     </div>
@@ -82,7 +82,7 @@ const SuggestionArea = ({
                 className="absolute top-2 right-2 p-1.5 rounded hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"
                 title={t('git.copy')}
             >
-                {isCopied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
+                {isCopied ? <IconCheck size={14} className="text-success" /> : <IconCopy size={14} />}
             </button>
         </div>
     </div>

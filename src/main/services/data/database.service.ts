@@ -13,10 +13,10 @@ import * as path from 'path';
 import * as zlib from 'zlib';
 
 import { appLogger } from '@main/logging/logger';
-import { AuditLogEntry } from '@main/services/analysis/audit-log.service';
 import { BaseService } from '@main/services/base.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobState } from '@main/services/system/job-scheduler.service';
+import { t } from '@main/utils/i18n.util';
 import { PromptTemplate } from '@main/utils/prompt-templates.util';
 import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import {
@@ -43,7 +43,7 @@ import { WorkspaceRepository } from './repositories/workspace.repository';
 import { DataService } from './data.service';
 import { DatabaseClientService } from './database-client.service';
 
-export type { AuditLogEntry, FileDiff, JobState, PromptTemplate };
+export type { FileDiff, JobState, PromptTemplate };
 
 /**
  * LinkedAccount represents a single authenticated account for a provider.
@@ -250,6 +250,7 @@ export class DatabaseService extends BaseService {
     private initPromise: Promise<void> | null = null;
     private initError: Error | null = null;
     private isInitializing = false;
+    private isInitialized = false;
     private readonly slowQueryThresholdMs = 250;
     private readonly vectorSearchCacheTtlMs = 60_000;
     private readonly maxSlowQueryLogEntries = 200;
@@ -372,6 +373,7 @@ export class DatabaseService extends BaseService {
 
             appLogger.info('DatabaseService', 'Remote database connection complete!');
             this.eventBus.emit('db:ready', { timestamp: Date.now() });
+            this.isInitialized = true;
         } catch (error) {
             appLogger.error('DatabaseService', 'Failed to initialize database client:', error as Error);
             this.initError = error instanceof Error ? error : new Error(String(error));
@@ -487,14 +489,14 @@ export class DatabaseService extends BaseService {
             if (hasLeadingWildcardParam) {
                 recommendations.push({
                     code: 'leading-wildcard-like',
-                    message: 'Leading wildcard LIKE patterns can bypass indexes; consider prefix search or FTS.'
+                    message: t('auto.leadingWildcardLikePatternsCanBypassInde')
                 });
             }
         }
         if (/^update\b|^delete\b/i.test(lower) && !/\bwhere\b/i.test(lower)) {
             recommendations.push({
                 code: 'missing-where',
-                message: 'UPDATE/DELETE without WHERE may affect all rows; verify intent.'
+                message: t('auto.updatedeleteWithoutWhereMayAffectAllRows')
             });
         }
         return recommendations;
@@ -1132,27 +1134,27 @@ export class DatabaseService extends BaseService {
 
     // Folders
     /** Retrieves all folders. */
-    async getFolders() { return this._system.getFolders(); }
+    async getFolders() { await this.ensureInitialized(); return this._system.getFolders(); }
     /** Retrieves a folder by ID. */
-    async getFolder(id: string) { return this._system.getFolder(id); }
+    async getFolder(id: string) { await this.ensureInitialized(); return this._system.getFolder(id); }
     /** Creates a new folder with the given name and optional color. */
-    async createFolder(name: string, color?: string) { return this._system.createFolder(name, color); }
+    async createFolder(name: string, color?: string) { await this.ensureInitialized(); return this._system.createFolder(name, color); }
     /** Updates a folder by ID with the provided partial updates. */
-    async updateFolder(id: string, updates: Partial<Folder>) { return this._system.updateFolder(id, updates); }
+    async updateFolder(id: string, updates: Partial<Folder>) { await this.ensureInitialized(); return this._system.updateFolder(id, updates); }
     /** Deletes a folder by ID. */
-    async deleteFolder(id: string) { return this._system.deleteFolder(id); }
+    async deleteFolder(id: string) { await this.ensureInitialized(); return this._system.deleteFolder(id); }
 
     // Prompts
     /** Retrieves all prompts. */
-    async getPrompts() { return this._system.getPrompts(); }
+    async getPrompts() { await this.ensureInitialized(); return this._system.getPrompts(); }
     /** Retrieves a prompt by ID. */
-    async getPrompt(id: string) { return this._system.getPrompt(id); }
+    async getPrompt(id: string) { await this.ensureInitialized(); return this._system.getPrompt(id); }
     /** Creates a new prompt with the given title, content, and optional tags. */
-    async createPrompt(title: string, content: string, tags: string[] = []) { return this._system.createPrompt(title, content, tags); }
+    async createPrompt(title: string, content: string, tags: string[] = []) { await this.ensureInitialized(); return this._system.createPrompt(title, content, tags); }
     /** Updates a prompt by ID with the provided partial updates. */
-    async updatePrompt(id: string, updates: Partial<Prompt>) { return this._system.updatePrompt(id, updates); }
+    async updatePrompt(id: string, updates: Partial<Prompt>) { await this.ensureInitialized(); return this._system.updatePrompt(id, updates); }
     /** Deletes a prompt by ID. */
-    async deletePrompt(id: string): Promise<void> { return this._system.deletePrompt(id); }
+    async deletePrompt(id: string): Promise<void> { await this.ensureInitialized(); return this._system.deletePrompt(id); }
 
     // Workspaces
     /** Retrieves all workspaces. */
@@ -1166,7 +1168,7 @@ export class DatabaseService extends BaseService {
         return workspace ? this._workspaces.mapDbWorkspace(workspace) : null;
     }
     /** Checks whether a workspace path has indexed symbols. */
-    async hasIndexedSymbols(workspacePath: string): Promise<boolean> { return this._workspaces.hasIndexedSymbols(workspacePath); }
+    async hasIndexedSymbols(workspacePath: string): Promise<boolean> { await this.ensureInitialized(); return this._workspaces.hasIndexedSymbols(workspacePath); }
     /** Creates a new workspace with the given title, path, description, and optional metadata. */
     async createWorkspace(title: string, path: string, desc: string = '', m?: string, c?: string): Promise<Workspace> {
         const workspace = await this.dbClient.createWorkspace({
@@ -1179,11 +1181,11 @@ export class DatabaseService extends BaseService {
         return this._workspaces.mapDbWorkspace(workspace);
     }
     /** Updates a workspace by ID with the provided partial updates. */
-    async updateWorkspace(id: string, updates: Partial<Workspace>): Promise<Workspace | undefined> { return this._workspaces.updateWorkspace(id, updates); }
+    async updateWorkspace(id: string, updates: Partial<Workspace>): Promise<Workspace | undefined> { await this.ensureInitialized(); return this._workspaces.updateWorkspace(id, updates); }
     /** Deletes a workspace by ID, optionally removing associated files. */
-    async deleteWorkspace(id: string, deleteFiles: boolean = false): Promise<void> { return this._workspaces.deleteWorkspace(id, deleteFiles); }
+    async deleteWorkspace(id: string, deleteFiles: boolean = false): Promise<void> { await this.ensureInitialized(); return this._workspaces.deleteWorkspace(id, deleteFiles); }
     /** Archives or unarchives a workspace by ID. */
-    async archiveWorkspace(id: string, isArchived: boolean): Promise<Workspace | undefined> { return this._workspaces.updateWorkspace(id, { status: isArchived ? 'archived' : 'active' }); }
+    async archiveWorkspace(id: string, isArchived: boolean): Promise<Workspace | undefined> { await this.ensureInitialized(); return this._workspaces.updateWorkspace(id, { status: isArchived ? 'archived' : 'active' }); }
 
     /** Deletes multiple workspaces by ID, optionally removing associated files. */
     async bulkDeleteWorkspaces(ids: string[], deleteFiles: boolean = false) {
@@ -1205,27 +1207,27 @@ export class DatabaseService extends BaseService {
 
     // Chats & Messages
     /** Creates a new chat. */
-    async createChat(chat: Chat) { return this._chats.createChat(chat); }
+    async createChat(chat: Chat) { await this.ensureInitialized(); return this._chats.createChat(chat); }
     /** Retrieves all chats. */
-    async getAllChats() { return this._chats.getAllChats(); }
+    async getAllChats() { await this.ensureInitialized(); return this._chats.getAllChats(); }
     /** Retrieves a chat by ID. */
-    async getChat(id: string) { return this._chats.getChat(id); }
+    async getChat(id: string) { await this.ensureInitialized(); return this._chats.getChat(id); }
     /** Retrieves chats, optionally filtered by workspace ID. */
-    async getChats(workspaceId?: string) { return this._chats.getChats(workspaceId); }
+    async getChats(workspaceId?: string) { await this.ensureInitialized(); return this._chats.getChats(workspaceId); }
     /** Updates a chat by ID with the provided partial updates. */
-    async updateChat(id: string, updates: Partial<Chat>) { return this._chats.updateChat(id, updates); }
+    async updateChat(id: string, updates: Partial<Chat>) { await this.ensureInitialized(); return this._chats.updateChat(id, updates); }
     /** Deletes a chat by ID. */
-    async deleteChat(id: string) { return this._chats.deleteChat(id); }
+    async deleteChat(id: string) { await this.ensureInitialized(); return this._chats.deleteChat(id); }
     /** Archives or unarchives a chat by ID. */
-    async archiveChat(id: string, isArchived: boolean) { return this._chats.updateChat(id, { metadata: { isArchived } }); }
+    async archiveChat(id: string, isArchived: boolean) { await this.ensureInitialized(); return this._chats.updateChat(id, { metadata: { isArchived } }); }
     /** Retrieves all bookmarked messages. */
     async getBookmarkedMessages() { return this._chats.getBookmarkedMessages(); }
     /** Searches chats based on the provided search options. */
-    async searchChats(options: SearchChatsOptions) { return this._chats.searchChats(options); }
+    async searchChats(options: SearchChatsOptions) { await this.ensureInitialized(); return this._chats.searchChats(options); }
     /** Deletes all chats. */
-    async deleteAllChats() { return this._chats.deleteAllChats(); }
+    async deleteAllChats() { await this.ensureInitialized(); return this._chats.deleteAllChats(); }
     /** Deletes all chats matching the given title. */
-    async deleteChatsByTitle(title: string) { return this._chats.deleteChatsByTitle(title); }
+    async deleteChatsByTitle(title: string) { await this.ensureInitialized(); return this._chats.deleteChatsByTitle(title); }
     /** Deletes multiple chats by ID. */
     async bulkDeleteChats(ids: string[]) {
         this.validateArray(ids, 'ids');
@@ -1245,8 +1247,8 @@ export class DatabaseService extends BaseService {
     }
 
     // Knowledge & Memories
-    async findCodeSymbolsByName(workspacePath: string, name: string) { return this._knowledge.findCodeSymbolsByName(workspacePath, name); }
-    async getCodeSymbolsByWorkspacePath(workspacePath: string) { return this._knowledge.getCodeSymbolsByWorkspacePath(workspacePath); }
+    async findCodeSymbolsByName(workspacePath: string, name: string) { await this.ensureInitialized(); return this._knowledge.findCodeSymbolsByName(workspacePath, name); }
+    async getCodeSymbolsByWorkspacePath(workspacePath: string) { await this.ensureInitialized(); return this._knowledge.getCodeSymbolsByWorkspacePath(workspacePath); }
     async searchCodeSymbols(vec: number[], workspacePath?: string, options: VectorSearchOptions = {}): Promise<CodeSymbolSearchResult[]> {
         const limit = 10;
         const useCache = options.useCache !== false;
@@ -1301,9 +1303,9 @@ export class DatabaseService extends BaseService {
             embedding: symbol.embedding ?? symbol.vector
         });
     }
-    async clearCodeSymbols(workspacePath: string) { return this._knowledge.clearCodeSymbols(workspacePath); }
-    async deleteCodeSymbolsForFile(workspacePath: string, filePath: string) { return this._knowledge.deleteCodeSymbolsForFile(workspacePath, filePath); }
-    async searchCodeContentByText(workspacePath: string, query: string) { return this._knowledge.searchCodeContentByText(workspacePath, query); }
+    async clearCodeSymbols(workspacePath: string) { await this.ensureInitialized(); return this._knowledge.clearCodeSymbols(workspacePath); }
+    async deleteCodeSymbolsForFile(workspacePath: string, filePath: string) { await this.ensureInitialized(); return this._knowledge.deleteCodeSymbolsForFile(workspacePath, filePath); }
+    async searchCodeContentByText(workspacePath: string, query: string) { await this.ensureInitialized(); return this._knowledge.searchCodeContentByText(workspacePath, query); }
     async storeSemanticFragment(f: SemanticFragment) {
         // Use HTTP API for storing semantic fragments with embeddings
         await this.dbClient.storeSemanticFragment({
@@ -1442,27 +1444,28 @@ export class DatabaseService extends BaseService {
             semanticFragments: { queries: 0, cacheHits: 0, totalDurationMs: 0 }
         };
     }
-    async getAllSemanticFragments() { return this._knowledge.getAllSemanticFragments(); }
-    async clearSemanticFragments(workspacePath: string) { return this._knowledge.clearSemanticFragments(workspacePath); }
-    async deleteSemanticFragmentsForFile(workspacePath: string, filePath: string) { return this._knowledge.deleteSemanticFragmentsForFile(workspacePath, filePath); }
-    async storeEpisodicMemory(m: EpisodicMemory) { return this._knowledge.storeEpisodicMemory(m); }
+    async getAllSemanticFragments() { await this.ensureInitialized(); return this._knowledge.getAllSemanticFragments(); }
+    async clearSemanticFragments(workspacePath: string) { await this.ensureInitialized(); return this._knowledge.clearSemanticFragments(workspacePath); }
+    async deleteSemanticFragmentsForFile(workspacePath: string, filePath: string) { await this.ensureInitialized(); return this._knowledge.deleteSemanticFragmentsForFile(workspacePath, filePath); }
+    async storeEpisodicMemory(m: EpisodicMemory) { await this.ensureInitialized(); return this._knowledge.storeEpisodicMemory(m); }
     async searchEpisodicMemories(e: number[], l: number = 10) {
         // Delegate to repository which handles both vector search and fallback to recent memories
+        await this.ensureInitialized();
         return this._knowledge.searchEpisodicMemories(e, l);
     }
-    async storeEntityKnowledge(k: EntityKnowledge) { return this._knowledge.storeEntityKnowledge(k); }
-    async getEntityKnowledge(name: string) { return this._knowledge.getEntityKnowledge(name); }
-    async getAllEntityKnowledge() { return this._knowledge.getAllEntityKnowledge(); }
+    async storeEntityKnowledge(k: EntityKnowledge) { await this.ensureInitialized(); return this._knowledge.storeEntityKnowledge(k); }
+    async getEntityKnowledge(name: string) { await this.ensureInitialized(); return this._knowledge.getEntityKnowledge(name); }
+    async getAllEntityKnowledge() { await this.ensureInitialized(); return this._knowledge.getAllEntityKnowledge(); }
 
 
 
     // Stats & Tracking
     /** Returns aggregate database statistics. */
-    async getStats(): Promise<DbStats> { return this._system.getStats(); }
+    async getStats(): Promise<DbStats> { await this.ensureInitialized(); return this._system.getStats(); }
     /** Returns detailed database statistics for the given period. */
-    async getDetailedStats(period: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily'): Promise<DbDetailedStats> { return this._system.getDetailedStats(period); }
+    async getDetailedStats(period: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily'): Promise<DbDetailedStats> { await this.ensureInitialized(); return this._system.getDetailedStats(period); }
     /** Returns current migration version and last migration timestamp. */
-    async getMigrationStatus(): Promise<{ version: number; lastMigration: number }> { return this._system.getMigrationStatus(); }
+    async getMigrationStatus(): Promise<{ version: number; lastMigration: number }> { await this.ensureInitialized(); return this._system.getMigrationStatus(); }
     /** Records token usage, resolving workspace UUID to path if needed. */
     async addTokenUsage(record: TokenUsageRecord) {
         let workspacePath = record.workspaceId;
@@ -1472,10 +1475,11 @@ export class DatabaseService extends BaseService {
             const ws = workspaces.find(p => p.id === workspacePath);
             if (ws) { workspacePath = ws.path; }
         }
+        await this.ensureInitialized();
         return this._system.addTokenUsage({ ...record, workspaceId: workspacePath });
     }
     /** Returns token usage statistics for the given period. */
-    async getTokenUsageStats(period: 'daily' | 'weekly' | 'monthly'): Promise<DbTokenStats> { return this._system.getTokenUsageStats(period); }
+    async getTokenUsageStats(period: 'daily' | 'weekly' | 'monthly'): Promise<DbTokenStats> { await this.ensureInitialized(); return this._system.getTokenUsageStats(period); }
     /**
      * Archives chats that have not been updated since the given timestamp.
      * @param olderThanMs - Cutoff timestamp in milliseconds; chats older than this are archived
@@ -1542,6 +1546,7 @@ export class DatabaseService extends BaseService {
         const chat = await this.getChat(id);
         if (!chat) { return null; }
         const newId = uuidv4();
+        await this.ensureInitialized();
         const res = await this._chats.createChat({ ...chat, id: newId, title: `Copy of ${chat.title}` });
         if (res.success) {
             const msgs = await this._chats.getMessages(id);
@@ -1551,15 +1556,15 @@ export class DatabaseService extends BaseService {
         return null;
     }
     /** Adds a message to a chat. */
-    async addMessage(msg: JsonObject) { return this._chats.addMessage(msg); }
+    async addMessage(msg: JsonObject) { await this.ensureInitialized(); return this._chats.addMessage(msg); }
     /** Retrieves all messages for a given chat ID. */
-    async getMessages(chatId: string) { return this._chats.getMessages(chatId); }
+    async getMessages(chatId: string) { await this.ensureInitialized(); return this._chats.getMessages(chatId); }
     /** Retrieves all messages across all chats. */
-    async getAllMessages() { return this._chats.getAllMessages(); }
+    async getAllMessages() { await this.ensureInitialized(); return this._chats.getAllMessages(); }
     /** Updates a message by ID with the provided partial updates. */
-    async updateMessage(id: string, updates: JsonObject) { return this._chats.updateMessage(id, updates); }
+    async updateMessage(id: string, updates: JsonObject) { await this.ensureInitialized(); return this._chats.updateMessage(id, updates); }
     /** Deletes a message by ID. */
-    async deleteMessage(id: string) { return this._chats.deleteMessage(id); }
+    async deleteMessage(id: string) { await this.ensureInitialized(); return this._chats.deleteMessage(id); }
     async deleteMessages(ids: string[]) {
         this.validateArray(ids, 'ids');
         const db = await this.ensureDb();
@@ -1569,7 +1574,7 @@ export class DatabaseService extends BaseService {
         }
         return { success: true };
     }
-    async deleteMessagesByChatId(chatId: string) { return this._chats.deleteMessagesByChatId(chatId); }
+    async deleteMessagesByChatId(chatId: string) { await this.ensureInitialized(); return this._chats.deleteMessagesByChatId(chatId); }
 
     // --- Usage Tracking Methods ---
 
@@ -1590,16 +1595,17 @@ export class DatabaseService extends BaseService {
     }
 
     private async ensureInitialized(): Promise<void> {
-        // _system is always defined after construction, but may need initialization
-        await this.initialize();
+        if (!this.isInitialized) {
+            await this.initialize();
+        }
     }
 
     // --- Prompt Templates Methods ---
 
-    async getCustomTemplates() { return this._system.getCustomTemplates(); }
-    async addCustomTemplate(template: PromptTemplate) { return this._system.addCustomTemplate(template); }
-    async updateCustomTemplate(id: string, template: Partial<PromptTemplate>) { return this._system.updateCustomTemplate(id, template); }
-    async deleteCustomTemplate(id: string) { return this._system.deleteCustomTemplate(id); }
+    async getCustomTemplates() { await this.ensureInitialized(); return this._system.getCustomTemplates(); }
+    async addCustomTemplate(template: PromptTemplate) { await this.ensureInitialized(); return this._system.addCustomTemplate(template); }
+    async updateCustomTemplate(id: string, template: Partial<PromptTemplate>) { await this.ensureInitialized(); return this._system.updateCustomTemplate(id, template); }
+    async deleteCustomTemplate(id: string) { await this.ensureInitialized(); return this._system.deleteCustomTemplate(id); }
 
     // Linked Accounts (Provider Auth)
     async getLinkedAccounts(provider?: string) { return this._system.getLinkedAccounts(provider); }
@@ -1617,30 +1623,31 @@ export class DatabaseService extends BaseService {
 
     // --- Agent Profile Methods ---
 
-    async getAgentProfiles(): Promise<AgentProfile[]> { return this._system.getAgentProfiles(); }
-    async saveAgentProfile(profile: AgentProfile): Promise<void> { return this._system.saveAgentProfile(profile); }
-    async deleteAgentProfile(id: string): Promise<void> { return this._system.deleteAgentProfile(id); }
+    async getAgentProfiles(): Promise<AgentProfile[]> { await this.ensureInitialized(); return this._system.getAgentProfiles(); }
+    async saveAgentProfile(profile: AgentProfile): Promise<void> { await this.ensureInitialized(); return this._system.saveAgentProfile(profile); }
+    async deleteAgentProfile(id: string): Promise<void> { await this.ensureInitialized(); return this._system.deleteAgentProfile(id); }
 
-    // --- Audit Log Methods ---
 
-    async addAuditLog(entry: AuditLogEntry): Promise<void> { return this._system.addAuditLog(entry); }
-    async getAuditLogs(options: { category?: string; startDate?: number; endDate?: number; limit?: number } = {}): Promise<AuditLogEntry[]> { return this._system.getAuditLogs(options); }
-    async clearAuditLogs() { return this._system.clearAuditLogs(); }
-    async countAuditLogs(): Promise<number> { return this._system.countAuditLogs(); }
-    async pruneAuditLogsOlderThan(timestamp: number): Promise<number> { return this._system.pruneAuditLogsOlderThan(timestamp); }
-    async pruneAuditLogsToMaxEntries(maxEntries: number): Promise<number> { return this._system.pruneAuditLogsToMaxEntries(maxEntries); }
+
+
+
+
+
+
+
 
     // --- Job Scheduler Methods ---
 
-    async getJobState(id: string) { return this._system.getJobState(id); }
-    async getAllJobStates() { return this._system.getAllJobStates(); }
-    async saveJobState(id: string, state: JobState) { return this._system.saveJobState(id, state); }
+    async getJobState(id: string) { await this.ensureInitialized(); return this._system.getJobState(id); }
+    async getAllJobStates() { await this.ensureInitialized(); return this._system.getAllJobStates(); }
+    async saveJobState(id: string, state: JobState) { await this.ensureInitialized(); return this._system.saveJobState(id, state); }
     async updateJobLastRun(id: string, lastRun: number) { return this.saveJobState(id, { lastRun }); }
-    async deleteJobState(id: string) { return this._system.deleteJobState(id); }
+    async deleteJobState(id: string) { await this.ensureInitialized(); return this._system.deleteJobState(id); }
 
     // File Diffs
-    async getFileDiff(id: string) { return this._knowledge.getFileDiff(id); }
+    async getFileDiff(id: string) { await this.ensureInitialized(); return this._knowledge.getFileDiff(id); }
     async storeFileDiff(diff: FileDiff) {
+        await this.ensureInitialized();
         // Resolve workspace by path to get its root path for the workspace_path column
         const workspaces = await this.getWorkspaces();
         // Sort workspaces by path length descending to find the closest match (most specific root)
@@ -1657,12 +1664,12 @@ export class DatabaseService extends BaseService {
             systemId: diff.aiSystem
         });
     }
-    async getFileDiffHistory(filePath: string) { return this._knowledge.getFileDiffHistory(filePath); }
-    async getRecentFileDiffs(limit: number) { return this._knowledge.getRecentFileDiffs(limit); }
-    async getFileDiffsBySession(sessionId: string) { return this._knowledge.getFileDiffsBySession(sessionId); }
-    async getFileDiffsBySystem(systemId: string) { return this._knowledge.getFileDiffsBySystem(systemId); }
-    async cleanupOldFileDiffs(before: number) { return this._knowledge.cleanupOldFileDiffs(before); }
-    async ensureFileDiffTable() { return this._knowledge.ensureFileDiffTable(); }
+    async getFileDiffHistory(filePath: string) { await this.ensureInitialized(); return this._knowledge.getFileDiffHistory(filePath); }
+    async getRecentFileDiffs(limit: number) { await this.ensureInitialized(); return this._knowledge.getRecentFileDiffs(limit); }
+    async getFileDiffsBySession(sessionId: string) { await this.ensureInitialized(); return this._knowledge.getFileDiffsBySession(sessionId); }
+    async getFileDiffsBySystem(systemId: string) { await this.ensureInitialized(); return this._knowledge.getFileDiffsBySystem(systemId); }
+    async cleanupOldFileDiffs(before: number) { await this.ensureInitialized(); return this._knowledge.cleanupOldFileDiffs(before); }
+    async ensureFileDiffTable() { await this.ensureInitialized(); return this._knowledge.ensureFileDiffTable(); }
 
     // Memory
     /** Stores a key-value pair as an episodic memory entry. */
@@ -1686,79 +1693,95 @@ export class DatabaseService extends BaseService {
         const memories = await this.searchEpisodicMemories([], 100);
         return memories.find(m => m.metadata?.key === key);
     }
-    async deleteEntityKnowledge(name: string) { return this._knowledge.deleteEntityKnowledge(name); }
-    async searchSemanticFragmentsByText(workspacePath: string, query: string) { return this._knowledge.searchSemanticFragmentsByText(workspacePath, query); }
-    async getSemanticFragmentsByIds(ids: string[]) { return this._knowledge.getSemanticFragmentsByIds(ids); }
-    async searchEpisodicMemoriesByText(query: string) { return this._knowledge.searchEpisodicMemoriesByText(query); }
-    async getEpisodicMemoriesByIds(ids: string[]) { return this._knowledge.getEpisodicMemoriesByIds(ids); }
-    async getAllEpisodicMemories() { return this._knowledge.getAllEpisodicMemories(); }
-    async deleteSemanticFragment(id: string) { return this._knowledge.deleteSemanticFragment(id); }
+    async deleteEntityKnowledge(name: string) { await this.ensureInitialized(); return this._knowledge.deleteEntityKnowledge(name); }
+    async searchSemanticFragmentsByText(workspacePath: string, query: string) { await this.ensureInitialized(); return this._knowledge.searchSemanticFragmentsByText(workspacePath, query); }
+    async getSemanticFragmentsByIds(ids: string[]) { await this.ensureInitialized(); return this._knowledge.getSemanticFragmentsByIds(ids); }
+    async searchEpisodicMemoriesByText(query: string) { await this.ensureInitialized(); return this._knowledge.searchEpisodicMemoriesByText(query); }
+    async getEpisodicMemoriesByIds(ids: string[]) { await this.ensureInitialized(); return this._knowledge.getEpisodicMemoriesByIds(ids); }
+    async getAllEpisodicMemories() { await this.ensureInitialized(); return this._knowledge.getAllEpisodicMemories(); }
+    async deleteSemanticFragment(id: string) { await this.ensureInitialized(); return this._knowledge.deleteSemanticFragment(id); }
 
     // --- Advanced Memory System ---
 
     async storeAdvancedMemory(memory: AdvancedSemanticFragment): Promise<void> {
+        await this.ensureInitialized();
         return this._knowledge.storeAdvancedMemory(memory);
     }
 
     async updateAdvancedMemory(memory: AdvancedSemanticFragment): Promise<void> {
+        await this.ensureInitialized();
         return this._knowledge.updateAdvancedMemory(memory);
     }
 
     async getAdvancedMemoryById(id: string): Promise<AdvancedSemanticFragment | null> {
+        await this.ensureInitialized();
         return this._knowledge.getAdvancedMemoryById(id);
     }
 
     async getAllAdvancedMemories(): Promise<AdvancedSemanticFragment[]> {
+        await this.ensureInitialized();
         return this._knowledge.getAllAdvancedMemories();
     }
 
     async searchAdvancedMemories(embedding: number[], limit: number): Promise<AdvancedSemanticFragment[]> {
+        await this.ensureInitialized();
         return this._knowledge.searchAdvancedMemories(embedding, limit);
     }
 
     async savePendingMemory(pending: PendingMemory): Promise<void> {
+        await this.ensureInitialized();
         return this._knowledge.savePendingMemory(pending);
     }
 
     async deletePendingMemory(id: string): Promise<void> {
+        await this.ensureInitialized();
         return this._knowledge.deletePendingMemory(id);
     }
 
     async getAllPendingMemories(): Promise<PendingMemory[]> {
+        await this.ensureInitialized();
         return this._knowledge.getAllPendingMemories();
     }
 
     async deleteAdvancedMemory(id: string): Promise<void> {
+        await this.ensureInitialized();
         return this._knowledge.deleteAdvancedMemory(id);
     }
 
     async upsertSharedMemoryNamespace(namespace: SharedMemoryNamespace): Promise<void> {
+        await this.ensureInitialized();
         return this._knowledge.upsertSharedMemoryNamespace(namespace);
     }
 
     async getSharedMemoryNamespaceById(namespaceId: string): Promise<SharedMemoryNamespace | null> {
+        await this.ensureInitialized();
         return this._knowledge.getSharedMemoryNamespaceById(namespaceId);
     }
 
     async appendSharedMemoryConflicts(namespaceId: string, conflicts: SharedMemoryMergeConflict[]): Promise<void> {
+        await this.ensureInitialized();
         return this._knowledge.appendSharedMemoryConflicts(namespaceId, conflicts);
     }
 
     async getSharedMemoryConflictCount(namespaceId: string): Promise<number> {
+        await this.ensureInitialized();
         return this._knowledge.getSharedMemoryConflictCount(namespaceId);
     }
 
     // --- Agent Template Methods ---
 
     async getAgentTemplates(): Promise<import('@shared/types/council').AgentTemplate[]> {
+        await this.ensureInitialized();
         return this._system.getAgentTemplates();
     }
 
     async saveAgentTemplate(template: import('@shared/types/council').AgentTemplate): Promise<void> {
+        await this.ensureInitialized();
         return this._system.saveAgentTemplate(template);
     }
 
     async deleteAgentTemplate(id: string): Promise<void> {
+        await this.ensureInitialized();
         return this._system.deleteAgentTemplate(id);
     }
 }

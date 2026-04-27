@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Lock } from 'lucide-react';
+import { IconLock } from '@tabler/icons-react';
 import { useEffect, useRef } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -61,7 +61,7 @@ export function SessionLockOverlay({
             <div className="flex w-full max-w-md flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-2xl">
                 <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        <Lock className="w-5 h-5" />
+                        <IconLock className="w-5 h-5" />
                     </div>
                     <div>
                         <h2 className="text-base font-semibold">{t('session.lockedTitle')}</h2>

@@ -8,16 +8,7 @@
  * (at your option) any later version.
  */
 
-import {
-    Container,
-    LayoutGrid,
-    MessageSquare,
-    Minus,
-    Settings as SettingsIcon,
-    ShoppingBag,
-    Square,
-    X,
-} from 'lucide-react';
+import { IconContainer, IconLayoutGrid, IconMessage, IconMinus, IconSettings as SettingsIcon, IconShoppingBag, IconSquare, IconX } from '@tabler/icons-react';
 import React from 'react';
 
 import { useAuthLanguage } from '@/context/AuthContext';
@@ -43,17 +34,17 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     const updateCount = useMarketplaceStore(s => s.updateCount);
 
     const viewIcons: Record<AppView, React.ElementType> = {
-        chat: MessageSquare,
-        workspace: LayoutGrid,
+        chat: IconMessage,
+        workspace: IconLayoutGrid,
         settings: SettingsIcon,
-        mcp: Container,
-        docker: Container,
-        terminal: MessageSquare,
-        models: MessageSquare,
-        marketplace: ShoppingBag,
+        mcp: IconContainer,
+        docker: IconContainer,
+        terminal: IconMessage,
+        models: IconMessage,
+        marketplace: IconShoppingBag,
     };
 
-    const Icon = viewIcons[currentView] ?? MessageSquare;
+    const Icon = viewIcons[currentView] ?? IconMessage;
 
 
     const handleMinimize = () => {
@@ -110,21 +101,21 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                             onClick={handleMinimize}
                             className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent/50"
                         >
-                            <Minus className="h-4 w-4" />
+                            <IconMinus className="h-4 w-4" />
                         </button>
                         <button
                             data-testid="window-maximize"
                             onClick={handleMaximize}
                             className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent/50"
                         >
-                            <Square className="h-3.5 w-3.5" />
+                            <IconSquare className="h-3.5 w-3.5" />
                         </button>
                         <button
                             data-testid="window-close"
                             onClick={handleClose}
                             className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/20 hover:text-destructive"
                         >
-                            <X className="h-4 w-4" />
+                            <IconX className="h-4 w-4" />
                         </button>
                     </div>
                 </div>

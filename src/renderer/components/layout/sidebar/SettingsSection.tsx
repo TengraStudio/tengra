@@ -8,21 +8,7 @@
  * (at your option) any later version.
  */
 
-import {
-    Activity,
-    Brain,
-    ChevronDown,
-    Database,
-    Image,
-    Info,
-    LayoutGrid,
-    Mic,
-    Puzzle,
-    Settings,
-    Terminal,
-    TrendingUp,
-    UserCircle,
-} from 'lucide-react';
+import { IconActivity, IconBrain, IconChevronDown, IconDatabase, IconInfoCircle, IconLayoutGrid, IconMicrophone, IconPhoto, IconPuzzle, IconSettings, IconTerminal, IconTrendingUp, IconUserCircle } from '@tabler/icons-react';
 import React, { ComponentType, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -87,8 +73,6 @@ export const SettingsSectionComponent: React.FC<SettingsSectionProps> = ({
                 return t('settings.tabs.models');
             case 'memory':
                 return t('settings.tabs.memory');
-            case 'personas':
-                return t('settings.tabs.personas');
             case 'speech':
                 return t('settings.tabs.speech');
             case 'statistics':
@@ -122,10 +106,10 @@ export const SettingsSectionComponent: React.FC<SettingsSectionProps> = ({
                 )}
             >
                 <div className="flex items-center gap-3">
-                    <Settings className="w-4 h-4 group-hover:rotate-45 transition-transform duration-300" />
+                    <IconSettings className="w-4 h-4 group-hover:rotate-45 transition-transform duration-300" />
                     <span>{t('sidebar.settings')}</span>
                 </div>
-                <ChevronDown
+                <IconChevronDown
                     className={cn(
                         'w-3.5 h-3.5 transition-transform duration-200',
                         isSettingsOpen && 'rotate-180'
@@ -190,38 +174,38 @@ const CollapsedSettings: React.FC<{
         className={cn('nav-item justify-center', currentView === 'settings' && 'nav-item-active')}
         title={t('sidebar.settings')}
     >
-        <Settings className="w-4 h-4 shrink-0" />
+        <IconSettings className="w-4 h-4 shrink-0" />
     </Button>
 );
 
 const getIconForId = (id: SettingsCategory) => {
     switch (id) {
         case 'models':
-            return Database;
+            return IconDatabase;
         case 'memory':
-            return Brain;
+            return IconBrain;
         case 'appearance':
-            return Image;
+            return IconPhoto;
         case 'images':
-            return Image;
+            return IconPhoto;
         case 'speech':
-            return Mic;
+            return IconMicrophone;
         case 'statistics':
-            return Activity;
+            return IconActivity;
         case 'about':
-            return Info;
+            return IconInfoCircle;
         case 'accounts':
-            return UserCircle;
+            return IconUserCircle;
         case 'editor':
-                return Terminal;
+                return IconTerminal;
         case 'system':
-                return Activity;
+                return IconActivity;
         case 'usage-limits':
-                return TrendingUp;
+                return IconTrendingUp;
         case 'extensions':
-                return Puzzle;
+                return IconPuzzle;
         default:
-            return LayoutGrid;
+            return IconLayoutGrid;
     }
 };
 

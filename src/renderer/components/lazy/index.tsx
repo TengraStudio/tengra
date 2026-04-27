@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Loader2 } from 'lucide-react';
+import { IconLoader2 } from '@tabler/icons-react';
 import * as React from 'react';
 import { lazy, Suspense } from 'react';
 
@@ -29,7 +29,7 @@ const LoadingSpinner: React.FC<{ message?: string }> = React.memo(({ message }) 
             role="status"
             aria-live="polite"
         >
-            <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" />
+            <IconLoader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" />
             <span className="text-sm">{loadingMessage}</span>
         </div>
     );

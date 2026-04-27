@@ -1,4 +1,4 @@
-/**
+/*
  * Tengra - Your Personal AI Assistant
  * Copyright (c) 2026 TengraStudio
  *
@@ -207,7 +207,7 @@ pub fn encrypt_token(plain_text: &str, master_key: &[u8]) -> Result<String> {
 
     let (ciphertext, tag) = ciphertext_and_tag.split_at(ciphertext_and_tag.len() - 16);
 
-    let iv_b64 = general_purpose::STANDARD.encode(&iv);
+    let iv_b64 = general_purpose::STANDARD.encode(iv);
     let tag_b64 = general_purpose::STANDARD.encode(tag);
     let ciphertext_b64 = general_purpose::STANDARD.encode(ciphertext);
 

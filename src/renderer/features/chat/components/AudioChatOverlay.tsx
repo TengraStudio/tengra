@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Loader2, Mic, StopCircle, Volume2, X } from 'lucide-react';
+import { IconLoader2, IconMicrophone, IconPlayerStop, IconVolume, IconX } from '@tabler/icons-react';
 import { useEffect } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
@@ -36,7 +36,7 @@ interface StateConfig {
     bgClass: string;
     blurClass: string;
     shadowStyle: string;
-    icon: typeof Mic;
+    icon: typeof IconMicrophone;
     iconClass?: string;
     title: string;
     desc: string;
@@ -58,7 +58,7 @@ function getStateConfig(state: AudioState, t: (key: string) => string): StateCon
             bgClass: 'bg-primary text-primary-foreground',
             blurClass: 'bg-primary/30',
             shadowStyle: '0 0 80px rgba(var(--primary), 0.4)',
-            icon: Mic,
+            icon: IconMicrophone,
             title: t('audioChat.listening'),
             desc: t('audioChat.listeningDesc'),
         },
@@ -66,7 +66,7 @@ function getStateConfig(state: AudioState, t: (key: string) => string): StateCon
             bgClass: 'bg-success text-foreground',
             blurClass: 'bg-success/30',
             shadowStyle: '0 0 80px hsl(var(--success) / 0.4)',
-            icon: Volume2,
+            icon: IconVolume,
             title: t('audioChat.speaking'),
             desc: t('audioChat.speakingDesc'),
         },
@@ -74,7 +74,7 @@ function getStateConfig(state: AudioState, t: (key: string) => string): StateCon
             bgClass: 'bg-muted text-muted-foreground',
             blurClass: '',
             shadowStyle: 'none',
-            icon: Loader2,
+            icon: IconLoader2,
             iconClass: 'animate-spin opacity-50',
             title: t('audioChat.thinking'),
             desc: t('audioChat.thinkingDesc'),
@@ -125,7 +125,7 @@ const CentralIcon: React.FC<CentralIconProps> = ({ isListening, config }) => {
 interface ControlButtonProps {
     onClick: () => void;
     className: string;
-    icon: typeof Mic;
+    icon: typeof IconMicrophone;
     label: string;
 }
 
@@ -164,7 +164,7 @@ const Controls: React.FC<ControlsProps> = ({
             <ControlButton
                 onClick={onStopSpeaking}
                 className="bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20"
-                icon={StopCircle}
+                icon={IconPlayerStop}
                 label={t('audioChat.stopSpeaking')}
             />
         )}
@@ -172,7 +172,7 @@ const Controls: React.FC<ControlsProps> = ({
             <ControlButton
                 onClick={startListening}
                 className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20"
-                icon={Mic}
+                icon={IconMicrophone}
                 label={t('audioChat.resumeListening')}
             />
         )}
@@ -180,7 +180,7 @@ const Controls: React.FC<ControlsProps> = ({
             <ControlButton
                 onClick={stopListening}
                 className="bg-muted/30 text-muted-foreground border border-border/50 hover:bg-muted/40"
-                icon={StopCircle}
+                icon={IconPlayerStop}
                 label={t('audioChat.pauseListening')}
             />
         )}
@@ -225,7 +225,7 @@ export function AudioChatOverlay({
                     onClick={onClose}
                     className={C_AUDIOCHATOVERLAY_1}
                 >
-                    <X className="w-8 h-8 text-foreground/50 hover:text-foreground" />
+                    <IconX className="w-8 h-8 text-foreground/50 hover:text-foreground" />
                 </button>
                 <div className="flex flex-col items-center gap-16 relative w-full max-w-lg mx-auto p-4">
                     <div className="relative flex items-center justify-center">

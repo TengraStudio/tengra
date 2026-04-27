@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { FileNode } from '@renderer/features/workspace/components/WorkspaceTreeItem';
+import { FileNode } from '@/features/workspace/components/WorkspaceTreeItem';
 
 type GitTreeStatusPreviewEntry = {
     statuses: string[]

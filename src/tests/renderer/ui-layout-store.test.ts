@@ -8,6 +8,9 @@
  * (at your option) any later version.
  */
 
+import { WORKSPACE_COMPAT_ALIAS_VALUES } from '@shared/constants';
+import { beforeEach, describe, expect, it } from 'vitest';
+
 import {
     __resetUiLayoutStoreForTests,
     exportUiLayoutState,
@@ -17,9 +20,7 @@ import {
     sanitizeUiLayoutState,
     setAppShellState,
     setWorkspaceShellState,
-} from '@renderer/store/ui-layout.store';
-import { WORKSPACE_COMPAT_ALIAS_VALUES } from '@shared/constants';
-import { beforeEach, describe, expect, it } from 'vitest';
+} from '@/store/ui-layout.store';
 
 describe('ui layout store', () => {
     beforeEach(() => {

@@ -8,9 +8,6 @@
  * (at your option) any later version.
  */
 
-import { WorkspaceAgentComposer } from '@renderer/features/workspace/components/workspace/WorkspaceAgentComposer';
-import { WorkspaceAgentPanelHeader } from '@renderer/features/workspace/components/workspace/WorkspaceAgentPanelHeader';
-import { WorkspaceAgentSessionModal } from '@renderer/features/workspace/components/workspace/WorkspaceAgentSessionModal';
 import type {
     CouncilRunConfig,
     WorkspaceAgentPermissionPolicy,
@@ -20,6 +17,10 @@ import type {
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+
+import { WorkspaceAgentComposer } from '@/features/workspace/components/workspace/WorkspaceAgentComposer';
+import { WorkspaceAgentPanelHeader } from '@/features/workspace/components/workspace/WorkspaceAgentPanelHeader';
+import { WorkspaceAgentSessionModal } from '@/features/workspace/components/workspace/WorkspaceAgentSessionModal';
 
 vi.mock('@/components/shared/ModelSelector', () => ({
     ModelSelector: () => <div data-testid="model-selector" />,

@@ -11,9 +11,9 @@
 import {
     WorkspaceCard as CanonicalWorkspaceCard,
     WorkspaceCardSurfaceProvider as CanonicalWorkspaceCardSurfaceProvider,
-} from '@renderer/features/workspace/workspace-shell/WorkspaceCard';
+} from '@/features/workspace/workspace-layout/WorkspaceCard';
 
-export type { WorkspaceCardSurfaceProviderProps } from '@renderer/features/workspace/workspace-shell/WorkspaceCard';
+export type { WorkspaceCardSurfaceProviderProps } from '@/features/workspace/workspace-layout/WorkspaceCard';
 
 export const WorkspaceCard = CanonicalWorkspaceCard;
 export const WorkspaceCardSurfaceProvider = CanonicalWorkspaceCardSurfaceProvider;

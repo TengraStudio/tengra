@@ -22,6 +22,7 @@ function createMcpQuery(overrides: Partial<MarketplaceQueryState> = {}): Marketp
         filter: 'all',
         sort: 'name_asc',
         mcpView: 'all',
+        viewMode: 'list',
         page: 1,
         modelTab: 'ollama',
         modelFit: 'all',
@@ -36,7 +37,6 @@ function createBaseRegistry(): MarketplaceRegistry {
         lastUpdated: new Date().toISOString(),
         themes: [],
         mcp: [],
-        personas: [],
         models: [],
         prompts: [],
         languages: [],
@@ -171,4 +171,3 @@ describe('useMarketplaceItems MCP filtering', () => {
         expect(ids).not.toContain('tengra.internal-core');
     });
 });
-

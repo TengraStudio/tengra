@@ -8,13 +8,13 @@
  * (at your option) any later version.
  */
 
-import { Button } from '@renderer/components/ui/button';
-import { ConfirmationModal } from '@renderer/components/ui/ConfirmationModal';
-import { cn } from '@renderer/lib/utils';
-import { HardDrive, History, RefreshCw } from 'lucide-react';
+import { IconDatabase, IconHistory, IconRefresh } from '@tabler/icons-react';
 import React, { useMemo, useState } from 'react';
 
+import { Button } from '@/components/ui/button';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { getSelectableProviderId } from '@/features/models/utils/model-fetcher';
+import { cn } from '@/lib/utils';
 import type { ModelInfo } from '@/types';
 import { AppSettings } from '@/types/settings';
 import { appLogger } from '@/utils/renderer-logger';
@@ -239,7 +239,7 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
                                 : "text-muted-foreground/60 hover:text-foreground"
                         )}
                     >
-                        <HardDrive className="h-4 w-4" />
+                        <IconDatabase className="h-4 w-4" />
                         {t('common.installed')}
                     </button>
                     <button
@@ -251,7 +251,7 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
                                 : "text-muted-foreground/60 hover:text-foreground"
                         )}
                     >
-                        <History className="h-4 w-4" />
+                        <IconHistory className="h-4 w-4" />
                         {t('modelsPage.history')}
                     </button>
                 </div>
@@ -268,7 +268,7 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({
                     }}
                     className={C_MODELSTAB_1}
                 >
-                    <RefreshCw className="h-4 w-4 transition-transform duration-500 group-hover:rotate-180" />
+                    <IconRefresh className="h-4 w-4 transition-transform duration-500 group-hover:rotate-180" />
                     {t('modelsPage.refresh')}
                 </Button>
             </div>

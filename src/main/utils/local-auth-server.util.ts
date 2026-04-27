@@ -8,6 +8,24 @@
  * (at your option) any later version.
  */
 
+
+import * as fs from 'fs';
+import * as path from 'path';
+
+// Helper to get locale strings dynamically in Main process
+function getAuthLocaleString(key: string): string {
+    try {
+        const localePath = path.join(__dirname, '../../renderer/i18n/locales/en.locale.json');
+        if (fs.existsSync(localePath)) {
+            const data = JSON.parse(fs.readFileSync(localePath, 'utf8'));
+            return data?.backend?.auth?.[key] || key;
+        }
+    } catch (e) {
+        // Fallback
+    }
+    return key;
+}
+
 import * as crypto from 'crypto';
 import * as http from 'http';
 import { AddressInfo } from 'net';
@@ -134,12 +152,12 @@ export class LocalAuthServer {
             await onSuccess(tokenData);
 
             res.writeHead(200, { 'Content-Type': 'text/html' });
-            res.end('<h1>Login Successful!</h1><p>You can close this window and return to Tengra.</p>');
+            res.end(`<h1>${getAuthLocaleString('loginSuccessful')}</h1><p>${getAuthLocaleString('closeWindow')}</p>`);
         } catch (e) {
             const err = e as Error;
             appLogger.error('LocalAuthServer', `Claude Auth Failed: ${err.message}`, err);
             res.writeHead(500, { 'Content-Type': 'text/html' });
-            res.end(`<h1>Auth Failed</h1><p>Error exchanging token:</p><pre>${err.message}</pre>`);
+            res.end(`<h1>${getAuthLocaleString('authFailed')}</h1><p>${getAuthLocaleString('errorExchanging')}</p><pre>${err.message}</pre>`);
             onError(err);
         }
     }
@@ -171,7 +189,7 @@ export class LocalAuthServer {
                         if (error) {
                             appLogger.error('LocalAuthServer', `Callback error: ${error}`);
                             res.writeHead(400, { 'Content-Type': 'text/html' });
-                            res.end('<h1>Auth Failed</h1><p>Check the app for details.</p><script>window.close()</script>');
+                            res.end(`<h1>${getAuthLocaleString('authFailed')}</h1><p>${getAuthLocaleString('checkAppDetails')}</p><script>window.close()</script>`);
                             onError(new Error(error));
                             server.close();
                             return;
@@ -180,7 +198,7 @@ export class LocalAuthServer {
                         if (!callbackState || callbackState !== oauthState) {
                             appLogger.error('LocalAuthServer', 'OAuth state validation failed for Antigravity callback');
                             res.writeHead(400, { 'Content-Type': 'text/html' });
-                            res.end('<h1>Auth Failed</h1><p>Invalid state parameter.</p><script>window.close()</script>');
+                            res.end(`<h1>${getAuthLocaleString('authFailed')}</h1><p>${getAuthLocaleString('invalidState')}</p><script>window.close()</script>`);
                             onError(new Error('OAuth state validation failed'));
                             server.close();
                             return;
@@ -188,7 +206,7 @@ export class LocalAuthServer {
 
                         if (code) {
                             res.writeHead(200, { 'Content-Type': 'text/html' });
-                            res.end('<h1>Auth Successful</h1><p>You can close this window and return to Tengra.</p><script>setTimeout(() => window.close(), 1000)</script>');
+                            res.end(`<h1>${getAuthLocaleString('authSuccessful')}</h1><p>${getAuthLocaleString('closeWindow')}</p><script>setTimeout(() => window.close(), 1000)</script>`);
 
                             await LocalAuthServer.handleAntigravityCallback(code, verifier, `http://127.0.0.1:${address.port}/callback`, onSuccess, onError);
                             server.close();
@@ -280,7 +298,7 @@ export class LocalAuthServer {
                         if (error) {
                             appLogger.error('LocalAuthServer', `Claude Callback error: ${error}`);
                             res.writeHead(400, { 'Content-Type': 'text/html' });
-                            res.end('<h1>Auth Failed</h1><p>Check the app.</p><script>window.close()</script>');
+                            res.end(`<h1>${getAuthLocaleString('authFailed')}</h1><p>${getAuthLocaleString('checkApp')}</p><script>window.close()</script>`);
                             onError(new Error(error));
                             server.close();
                             return;
@@ -289,7 +307,7 @@ export class LocalAuthServer {
                         if (!callbackState || callbackState !== oauthState) {
                             appLogger.error('LocalAuthServer', 'OAuth state validation failed for Claude callback');
                             res.writeHead(400, { 'Content-Type': 'text/html' });
-                            res.end('<h1>Auth Failed</h1><p>Invalid state parameter.</p><script>window.close()</script>');
+                            res.end(`<h1>${getAuthLocaleString('authFailed')}</h1><p>${getAuthLocaleString('invalidState')}</p><script>window.close()</script>`);
                             onError(new Error('OAuth state validation failed'));
                             server.close();
                             return;
@@ -405,7 +423,7 @@ export class LocalAuthServer {
 
                         if (error) {
                             res.writeHead(400, { 'Content-Type': 'text/html' });
-                            res.end('<h1>Auth Failed</h1><p>Check the app for details.</p><script>window.close()</script>');
+                            res.end(`<h1>${getAuthLocaleString('authFailed')}</h1><p>${getAuthLocaleString('checkAppDetails')}</p><script>window.close()</script>`);
                             onError(new Error(error));
                             server.close();
                             return;
@@ -413,7 +431,7 @@ export class LocalAuthServer {
 
                         if (!callbackState || callbackState !== oauthState) {
                             res.writeHead(400, { 'Content-Type': 'text/html' });
-                            res.end('<h1>Auth Failed</h1><p>Invalid state parameter.</p><script>window.close()</script>');
+                            res.end(`<h1>${getAuthLocaleString('authFailed')}</h1><p>${getAuthLocaleString('invalidState')}</p><script>window.close()</script>`);
                             onError(new Error('OAuth state validation failed'));
                             server.close();
                             return;
@@ -421,7 +439,7 @@ export class LocalAuthServer {
 
                         if (!code) {
                             res.writeHead(400, { 'Content-Type': 'text/html' });
-                            res.end('<h1>Auth Failed</h1><p>Missing authorization code.</p><script>window.close()</script>');
+                            res.end(`<h1>${getAuthLocaleString('authFailed')}</h1><p>${getAuthLocaleString('missingCode')}</p><script>window.close()</script>`);
                             onError(new Error('Authorization code missing'));
                             server.close();
                             return;
@@ -432,13 +450,13 @@ export class LocalAuthServer {
                         await onSuccess(tokenData);
 
                         res.writeHead(200, { 'Content-Type': 'text/html' });
-                        res.end('<h1>Login Successful!</h1><p>You can close this window and return to Tengra.</p>');
+                        res.end(`<h1>${getAuthLocaleString('loginSuccessful')}</h1><p>${getAuthLocaleString('closeWindow')}</p>`);
                         server.close();
                     } catch (error) {
                         const err = error as Error;
                         appLogger.error('LocalAuthServer', `Codex Auth Failed: ${err.message}`, err);
                         res.writeHead(500, { 'Content-Type': 'text/html' });
-                        res.end(`<h1>Auth Failed</h1><p>Error exchanging token:</p><pre>${err.message}</pre>`);
+                        res.end(`<h1>${getAuthLocaleString('authFailed')}</h1><p>${getAuthLocaleString('errorExchanging')}</p><pre>${err.message}</pre>`);
                         onError(err);
                         server.close();
                     }

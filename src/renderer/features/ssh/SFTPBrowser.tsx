@@ -567,7 +567,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
                                             ? t('ssh.fileSizeKilobytes', { size: (file.size / 1024).toFixed(1) })
                                             : t('common.notAvailable')}
                                     </td>
-                                    <td className="p-2 text-xs opacity-60">
+                                    <td className="p-2 text-sm opacity-60">
                                         {file.mtime ? new Date(file.mtime).toLocaleDateString() : t('common.notAvailable')}
                                     </td>
                                     <td className="flex gap-1 p-2">

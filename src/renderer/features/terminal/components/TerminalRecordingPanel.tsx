@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Download, Play, Square, X } from 'lucide-react';
+import { IconDownload, IconPlayerPlay, IconSquare, IconX } from '@tabler/icons-react';
 
 import { cn } from '@/lib/utils';
 
@@ -86,7 +86,7 @@ export function TerminalRecordingPanel({
                     className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
                     aria-label={t('common.close')}
                 >
-                    <X className="w-3.5 h-3.5" />
+                    <IconX className="w-3.5 h-3.5" />
                 </button>
             </div>
             <div className="flex items-center gap-1 mb-2">
@@ -111,7 +111,7 @@ export function TerminalRecordingPanel({
                     disabled={!selectedRecording || isReplayRunning}
                     className={C_TERMINALRECORDINGPANEL_2}
                 >
-                    <Play className="w-3 h-3" />
+                    <IconPlayerPlay className="w-3 h-3" />
                     {t('terminal.replay')}
                 </button>
                 <button
@@ -119,7 +119,7 @@ export function TerminalRecordingPanel({
                     disabled={!isReplayRunning}
                     className={C_TERMINALRECORDINGPANEL_3}
                 >
-                    <Square className="w-3 h-3" />
+                    <IconSquare className="w-3 h-3" />
                     {t('common.stop')}
                 </button>
                 <button
@@ -131,7 +131,7 @@ export function TerminalRecordingPanel({
                     disabled={!selectedRecording}
                     className={C_TERMINALRECORDINGPANEL_4}
                 >
-                    <Download className="w-3 h-3" />
+                    <IconDownload className="w-3 h-3" />
                     {t('terminal.exportRecording')}
                 </button>
             </div>

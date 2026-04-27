@@ -8,16 +8,17 @@
  * (at your option) any later version.
  */
 
-const { execSync } = require('child_process');
+const { execSync, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const { getExecutableName, getManagedRuntimeBinDir } = require('./build-runtime-paths');
+const { getExecutableName, getManagedRuntimeBinDir, getBuildBinDir } = require('./build-runtime-paths');
 
 const SERVICES_DIR = path.join(__dirname, '../src/native');
 const TARGET_DIR = path.join(SERVICES_DIR, 'target/release');
 const STAMP_FILE = path.join(SERVICES_DIR, 'target', 'native-build-stamp.json');
 const BIN_DIR = getManagedRuntimeBinDir();
+const BUILD_BIN_DIR = getBuildBinDir();
 const SERVICE_BASENAMES = ['db-service', 'memory-service', 'proxy'];
 const ALLOW_LOCKED_NATIVE_SKIP = process.env.CI !== 'true' && process.env.TENGRA_ALLOW_LOCKED_NATIVE_SKIP !== 'false';
 
@@ -33,9 +34,11 @@ function nowMs() {
     return Date.now();
 }
 
-function sleepMs(durationMs) {
-    const end = nowMs() + durationMs;
-    while (nowMs() < end);
+/**
+ * Async-friendly delay function.
+ */
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function stopProcessByName(processName) {
@@ -63,7 +66,7 @@ function resolveCargoCommand() {
     return 'cargo';
 }
 
-function copyWithRetry(src, dest, outputName) {
+async function copyWithRetry(src, dest, outputName) {
     const processName = outputName.replace(/\.exe$/i, '');
     let retries = 10;
     while (retries > 0) {
@@ -82,13 +85,12 @@ function copyWithRetry(src, dest, outputName) {
             fs.copyFileSync(src, dest);
             return;
         } catch (e) {
-            writeStdout(`Copy error: ${e.code || e.message}`);
             if (e.code === 'EBUSY' || e.code === 'EPERM') {
                 if (retries <= 1) throw e;
                 stopProcessByName(processName);
                 const waitMs = 250 * Math.pow(2, 10 - retries);
                 writeStdout(`File locked, retrying copy in ${waitMs}ms: ${path.basename(dest)}`);
-                sleepMs(waitMs);
+                await delay(waitMs);
                 retries--;
                 continue;
             }
@@ -100,6 +102,9 @@ function copyWithRetry(src, dest, outputName) {
 function ensureBinDir() {
     if (!fs.existsSync(BIN_DIR)) {
         fs.mkdirSync(BIN_DIR, { recursive: true });
+    }
+    if (!fs.existsSync(BUILD_BIN_DIR)) {
+        fs.mkdirSync(BUILD_BIN_DIR, { recursive: true });
     }
 }
 
@@ -172,23 +177,27 @@ function persistNativeBuildStamp() {
     );
 }
 
-function copyNativeBinariesFromTarget() {
+async function copyNativeBinariesFromTarget() {
     ensureBinDir();
     const mappings = getNativeBinaryMappings();
     const missingBinaries = [];
 
-    for (const mapping of mappings) {
+    const copyTasks = mappings.map(async (mapping) => {
         const src = path.join(TARGET_DIR, mapping.output);
         const dest = path.join(BIN_DIR, mapping.output);
+        const buildDest = path.join(BUILD_BIN_DIR, mapping.output);
 
         if (!fs.existsSync(src)) {
             missingBinaries.push(src);
-            continue;
+            return;
         }
 
         try {
-            copyWithRetry(src, dest, mapping.output);
-            writeStdout(`Copied ${mapping.output} to managed runtime bin`);
+            await Promise.all([
+                copyWithRetry(src, dest, mapping.output),
+                copyWithRetry(src, buildDest, mapping.output)
+            ]);
+            writeStdout(`Copied ${mapping.output} to runtime and build bin`);
         } catch (error) {
             const maybeError = error;
             const code = maybeError && typeof maybeError === 'object' ? maybeError.code : undefined;
@@ -198,13 +207,15 @@ function copyNativeBinariesFromTarget() {
                 && (code === 'EBUSY' || code === 'EPERM')
             ) {
                 writeStderr(
-                    `Warning: ${mapping.output} is locked in managed runtime. Keeping existing binary for this build.`
+                    `Warning: ${mapping.output} is locked. Keeping existing binary.`
                 );
-                continue;
+                return;
             }
             throw error;
         }
-    }
+    });
+
+    await Promise.all(copyTasks);
 
     if (missingBinaries.length > 0) {
         throw new Error(
@@ -213,7 +224,51 @@ function copyNativeBinariesFromTarget() {
     }
 }
 
-function buildNative() {
+/**
+ * Optimized Visual Studio environment discovery with caching.
+ */
+let cachedVcvarsPath = null;
+function findVcvarsPath() {
+    if (cachedVcvarsPath) return cachedVcvarsPath;
+
+    // Try vswhere first (Modern way)
+    try {
+        const vswherePath = path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Microsoft Visual Studio', 'Installer', 'vswhere.exe');
+        if (fs.existsSync(vswherePath)) {
+            const vsInstallPath = execSync(`"${vswherePath}" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+            if (vsInstallPath) {
+                const vcvars = path.join(vsInstallPath, 'VC', 'Auxiliary', 'Build', 'vcvarsall.bat');
+                if (fs.existsSync(vcvars)) {
+                    cachedVcvarsPath = vcvars;
+                    return cachedVcvarsPath;
+                }
+            }
+        }
+    } catch {
+        // Ignore and fall back to common paths
+    }
+
+    const commonPaths = [
+        'C:\\Program Files\\Microsoft Visual Studio\\2025\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+        'C:\\Program Files\\Microsoft Visual Studio\\2025\\Professional\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+        'C:\\Program Files\\Microsoft Visual Studio\\2025\\Enterprise\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+        'C:\\Program Files\\Microsoft Visual Studio\\2025\\BuildTools\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+        'C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+        'C:\\Program Files\\Microsoft Visual Studio\\2022\\Professional\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+        'C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+        'C:\\Program Files\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+        'C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+        'C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Professional\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+        'C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+        'C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+        'C:\\Program Files (x86)\\Microsoft Visual Studio\\18\\BuildTools\\VC\\Auxiliary\\Build\\vcvarsall.bat'
+    ];
+
+    cachedVcvarsPath = commonPaths.find(p => fs.existsSync(p));
+    return cachedVcvarsPath;
+}
+
+async function buildNative() {
     const buildStart = nowMs();
     writeStdout('Building native services...');
     const mappings = getNativeBinaryMappings();
@@ -230,32 +285,32 @@ function buildNative() {
 
     if (shouldSkipNativeBuild(mappings)) {
         writeStdout('Skipping Rust rebuild; native sources unchanged.');
-        copyNativeBinariesFromTarget();
+        await copyNativeBinariesFromTarget();
         writeStdout(`Native step finished in ${((nowMs() - buildStart) / 1000).toFixed(2)}s.`);
         return;
     }
 
     try {
-        // Kill existing services to prevent EBUSY errors
+        // Kill existing services to prevent EBUSY errors in parallel
         writeStdout('Stopping running services...');
-        for (const mapping of mappings) {
-            try {
-                if (process.platform === 'win32') {
-                    execSync(
-                        `powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Process -Name '${mapping.output.replace(/\.exe$/i, '')}' -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.Id -Force }"`,
-                        { stdio: 'ignore' }
-                    );
-                } else {
-                    const processName = mapping.output.replace(/\.exe$/i, '');
-                    execSync(`pkill -9 -f ${processName}`, { stdio: 'ignore' });
-                }
-            } catch {
-                // Process not running, ignore
+        const stopTasks = mappings.map(mapping => {
+            const processName = mapping.output.replace(/\.exe$/i, '');
+            if (process.platform === 'win32') {
+                return new Promise(resolve => {
+                    spawn('powershell', ['-NoProfile', '-Command', `Get-Process -Name '${processName}' -ErrorAction SilentlyContinue | Stop-Process -Force`], { stdio: 'ignore' })
+                        .on('close', resolve);
+                });
+            } else {
+                return new Promise(resolve => {
+                    spawn('pkill', ['-9', '-f', processName], { stdio: 'ignore' })
+                        .on('close', resolve);
+                });
             }
-        }
+        });
+        await Promise.all(stopTasks);
 
         // Wait for processes to release locks
-        sleepMs(500);
+        await delay(500);
 
         // Build workspace
         writeStdout('Compiling Rust binaries...');
@@ -265,59 +320,40 @@ function buildNative() {
         let env = { ...process.env };
 
         if (process.platform === 'win32') {
-        try {
-            execSync('where cl.exe', { stdio: 'ignore' });
-            // cl.exe found, enforce it
-            env.CC = 'cl.exe';
-            env.CXX = 'cl.exe';
-        } catch (e) {
-            writeStdout('cl.exe not found in PATH. Attempting to locate VS Build Tools...');
-
-            // Try to locate vcvarsall.bat in common locations
-            const commonPaths = [
-                'C:\\Program Files\\Microsoft Visual Studio\\2025\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat',
-                'C:\\Program Files\\Microsoft Visual Studio\\2025\\Professional\\VC\\Auxiliary\\Build\\vcvarsall.bat',
-                'C:\\Program Files\\Microsoft Visual Studio\\2025\\Enterprise\\VC\\Auxiliary\\Build\\vcvarsall.bat',
-                'C:\\Program Files\\Microsoft Visual Studio\\2025\\BuildTools\\VC\\Auxiliary\\Build\\vcvarsall.bat',
-                'C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat',
-                'C:\\Program Files\\Microsoft Visual Studio\\18\\Professional\\VC\\Auxiliary\\Build\\vcvarsall.bat',
-                'C:\\Program Files\\Microsoft Visual Studio\\18\\Enterprise\\VC\\Auxiliary\\Build\\vcvarsall.bat',
-                'C:\\Program Files\\Microsoft Visual Studio\\18\\BuildTools\\VC\\Auxiliary\\Build\\vcvarsall.bat',
-                'C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat',
-                'C:\\Program Files\\Microsoft Visual Studio\\2022\\Professional\\VC\\Auxiliary\\Build\\vcvarsall.bat',
-                'C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvarsall.bat',
-                'C:\\Program Files\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Auxiliary\\Build\\vcvarsall.bat',
-                'C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat',
-                'C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Professional\\VC\\Auxiliary\\Build\\vcvarsall.bat',
-                'C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\VC\\Auxiliary\\Build\\vcvarsall.bat',
-                'C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Auxiliary\\Build\\vcvarsall.bat'
-            ];
-
-            let vcvarsPath = commonPaths.find(p => fs.existsSync(p));
-
-            if (vcvarsPath) {
-                writeStdout(`Found vcvarsall.bat at: ${vcvarsPath}`);
-                // Chain the commands: setup env -> build
-                buildCmd = `call "${vcvarsPath}" x64 && ${cargoCommand} build --release`;
-                delete env.CC;
-                delete env.CXX;
-            } else {
-                writeStderr('WARNING: vcvarsall.bat not found in common locations. Build may fail if cl.exe is required.');
-                // Try standard fallback
+            try {
+                execSync('where cl.exe', { stdio: 'ignore' });
                 env.CC = 'cl.exe';
                 env.CXX = 'cl.exe';
+            } catch (e) {
+                const vcvarsPath = findVcvarsPath();
+                if (vcvarsPath) {
+                    writeStdout(`Found vcvarsall.bat at: ${vcvarsPath}`);
+                    buildCmd = `call "${vcvarsPath}" x64 && ${cargoCommand} build --release`;
+                    delete env.CC;
+                    delete env.CXX;
+                } else {
+                    writeStderr('WARNING: vcvarsall.bat not found. Build may fail if cl.exe is required.');
+                    env.CC = 'cl.exe';
+                    env.CXX = 'cl.exe';
+                }
             }
         }
-        }
 
-        execSync(buildCmd, {
+        // Run the build process
+        const buildProc = spawn(buildCmd, {
             cwd: SERVICES_DIR,
             stdio: 'inherit',
+            shell: true,
             env: env
         });
 
+        await new Promise((resolve, reject) => {
+            buildProc.on('close', code => code === 0 ? resolve() : reject(new Error(`Cargo build failed with code ${code}`)));
+            buildProc.on('error', reject);
+        });
+
         persistNativeBuildStamp();
-        copyNativeBinariesFromTarget();
+        await copyNativeBinariesFromTarget();
         writeStdout(`Native step finished in ${((nowMs() - buildStart) / 1000).toFixed(2)}s.`);
 
     } catch (error) {
@@ -329,5 +365,3 @@ function buildNative() {
 if (require.main === module) {
     buildNative();
 }
-
-

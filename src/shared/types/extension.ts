@@ -186,7 +186,7 @@ export interface ExtensionView {
 export interface ExtensionTheme {
     id: string;
     label: string;
-    type: 'light' | 'dark' | 'high-contrast';
+    type: 'light' | 'dark';
     path: string;
 }
 

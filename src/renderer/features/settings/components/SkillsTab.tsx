@@ -8,16 +8,17 @@
  * (at your option) any later version.
  */
 
-import { Badge } from '@renderer/components/ui/badge';
-import { Button } from '@renderer/components/ui/button';
-import { Switch } from '@renderer/components/ui/switch';
-import { cn } from '@renderer/lib/utils';
-import { marketplaceStore, useMarketplaceStore } from '@renderer/store/marketplace.store';
-import { pushNotification } from '@renderer/store/notification-center.store';
 import { MarketplaceSkill } from '@shared/types/marketplace';
 import type { ProxySkill } from '@shared/types/skill';
-import { RefreshCw, Sparkles, Trash2 } from 'lucide-react';
+import { IconRefresh, IconSparkles, IconTrash } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
+import { marketplaceStore, useMarketplaceStore } from '@/store/marketplace.store';
+import { pushNotification } from '@/store/notification-center.store';
 
 import type { SettingsSharedProps } from '../types';
 
@@ -25,7 +26,7 @@ import { SettingsPanel } from './SettingsPrimitives';
 
 /* Batch-02: Extracted Long Classes */
 const C_SKILLSTAB_1 = "flex items-center gap-3 bg-muted/40 px-3 py-1.5 rounded-xl border border-border/10 ring-1 ring-inset ring-border/20 shadow-sm sm:gap-4";
-const C_SKILLSTAB_2 = "h-9 gap-2 px-4 rounded-xl font-black uppercase tracking-widest text-xxxs shadow-lg shadow-destructive/20 active:scale-95";
+const C_SKILLSTAB_2 = "h-9 gap-2 px-4 rounded-xl font-bold uppercase text-sm shadow-lg shadow-destructive/20 active:scale-95";
 const C_SKILLSTAB_3 = "h-9 w-9 rounded-xl border-destructive/20 text-destructive/60 hover:text-destructive hover:bg-destructive/10 hover:border-destructive/40 transition-all active:scale-90 shadow-sm";
 
 
@@ -101,7 +102,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
     return (
         <div className="mx-auto flex max-w-5xl flex-col gap-6 pb-10">
             <header className="space-y-2 px-1">
-                <h2 className="text-2xl font-semibold tracking-tight">
+                <h2 className="text-2xl font-semibold ">
                     {normalizeTranslation(t('settings.tabs.skills'), 'Skills')}
                 </h2>
                 <p className="text-sm text-muted-foreground">
@@ -112,7 +113,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
             <SettingsPanel
                 title={normalizeTranslation(t('settings.skills.libraryTitle'), 'Installed Skills')}
                 description={normalizeTranslation(t('settings.skills.libraryDescription'), 'Enable, disable, or uninstall installed skills.')}
-                icon={Sparkles}
+                icon={IconSparkles}
             >
                 {loading ? (
                     <div className="py-4 typo-caption text-muted-foreground">
@@ -145,20 +146,20 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
                                                 ? "bg-primary/20 text-primary ring-1 ring-inset ring-primary/30 group-hover:scale-110"
                                                 : "bg-muted/40 text-muted-foreground/40 opacity-50"
                                         )}>
-                                            <Sparkles className="h-6 w-6" />
+                                            <IconSparkles className="h-6 w-6" />
                                         </div>
                                         
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-3">
-                                                <h3 className="font-black tracking-tight text-foreground leading-none">{skill.name}</h3>
+                                                <h3 className="font-bold text-foreground leading-none">{skill.name}</h3>
                                                 <Badge variant="outline" className={cn(
-                                                    "text-xxxs h-4 font-black uppercase tracking-widest px-2",
+                                                    "text-sm h-4 font-bold uppercase px-2",
                                                     isActive ? "border-primary/30 text-primary bg-primary/5" : "bg-muted/20 text-muted-foreground/40"
                                                 )}>
                                                     {skill.provider}
                                                 </Badge>
                                             </div>
-                                            <p className="mt-2 text-xs font-medium text-muted-foreground/70 line-clamp-1 leading-relaxed">
+                                            <p className="mt-2 text-sm font-medium text-muted-foreground/70 line-clamp-1 leading-relaxed">
                                                 {skill.description || normalizeTranslation(t('settings.skills.noDescription'), 'No description')}
                                             </p>
                                         </div>
@@ -167,7 +168,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
                                     <div className="flex items-center gap-4">
                                         <div className={C_SKILLSTAB_1}>
                                             <span className={cn(
-                                                "text-xxxs font-black uppercase tracking-widest",
+                                                "text-sm font-bold uppercase ",
                                                 isActive ? "text-primary shadow-glow-primary-rgb" : "text-muted-foreground/30"
                                             )}>
                                                 {isActive ? t('common.active') : t('common.disabled')}
@@ -191,7 +192,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
                                                         void handleUpdate(skill.id);
                                                     }}
                                                 >
-                                                    <RefreshCw className={cn("h-3.5 w-3.5", updatingId === skill.id && "animate-spin")} />
+                                                    <IconRefresh className={cn("h-3.5 w-3.5", updatingId === skill.id && "animate-spin")} />
                                                     {t('common.update')}
                                                 </Button>
                                             )}
@@ -205,7 +206,7 @@ export const SkillsTab: React.FC<SkillsTabProps> = ({ t }) => {
                                                     void handleUninstall(skill.id);
                                                 }}
                                             >
-                                                {isRemoving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                                {isRemoving ? <IconRefresh className="h-4 w-4 animate-spin" /> : <IconTrash className="h-4 w-4" />}
                                             </Button>
                                         </div>
                                     </div>

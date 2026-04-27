@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Search } from 'lucide-react';
+import { IconSearch } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -66,7 +66,7 @@ export const SSHPackages: React.FC<SSHPackagesProps> = ({ connectionId, active }
                     </button>
                 </div>
                 <div className="relative">
-                    <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground/50" />
+                    <IconSearch className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground/50" />
                     <input
                         className={C_SSHPACKAGES_1}
                         placeholder={t('ssh.searchPackages')}
@@ -96,7 +96,7 @@ export const SSHPackages: React.FC<SSHPackagesProps> = ({ connectionId, active }
                                     <td className="p-3 font-medium">{pkg.name}</td>
                                     <td className="p-3 text-muted-foreground font-mono typo-caption">{pkg.version}</td>
                                     <td className="p-3">
-                                        <span className="px-2 py-0.5 rounded-full bg-success/10 text-success text-xxs font-bold border border-success/20">
+                                        <span className="px-2 py-0.5 rounded-full bg-success/10 text-success text-sm font-bold border border-success/20">
                                             {pkg.status}
                                         </span>
                                     </td>

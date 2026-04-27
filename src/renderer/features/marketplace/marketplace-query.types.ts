@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-export type MarketplaceTab = 'mcp' | 'extensions' | 'skills' | 'themes' | 'personas' | 'models' | 'prompts' | 'languages' | 'iconPacks';
+export type MarketplaceTab = 'mcp' | 'extensions' | 'skills' | 'themes' | 'models' | 'prompts' | 'languages' | 'iconPacks';
 export type ModelTab = 'ollama' | 'huggingface' | 'community';
 export type MarketplaceFilterValue = 'all' | 'installed' | 'not_installed';
 export type MarketplaceModelFitValue = 'all' | 'recommended' | 'workable' | 'limited' | 'blocked';
@@ -24,12 +24,14 @@ export type MarketplaceSortValue =
     | 'memory_asc'
     | 'storage_asc';
 export type MarketplaceMcpView = 'all' | 'installed' | 'external';
+export type MarketplaceViewMode = 'grid' | 'list';
 
 export interface MarketplaceQueryState {
     search: string;
     filter: MarketplaceFilterValue;
     sort: MarketplaceSortValue;
     mcpView: MarketplaceMcpView;
+    viewMode: MarketplaceViewMode;
     page: number;
     author?: string;
     category?: string;
@@ -45,6 +47,7 @@ const DEFAULT_QUERY_STATE: MarketplaceQueryState = {
     filter: 'all',
     sort: 'name_asc',
     mcpView: 'all',
+    viewMode: 'list',
     page: 1,
     modelTab: 'ollama',
     modelFit: 'all',
@@ -56,11 +59,10 @@ export function createDefaultMarketplaceQueries(): Record<MarketplaceTab, Market
         mcp: { ...DEFAULT_QUERY_STATE },
         extensions: { ...DEFAULT_QUERY_STATE },
         skills: { ...DEFAULT_QUERY_STATE },
-        themes: { ...DEFAULT_QUERY_STATE },
-        personas: { ...DEFAULT_QUERY_STATE },
+        themes: { ...DEFAULT_QUERY_STATE, viewMode: 'grid' },
         models: { ...DEFAULT_QUERY_STATE, sort: 'performance_desc', modelTab: 'ollama' },
-        prompts: { ...DEFAULT_QUERY_STATE },
+        prompts: { ...DEFAULT_QUERY_STATE, viewMode: 'grid' },
         languages: { ...DEFAULT_QUERY_STATE },
-        iconPacks: { ...DEFAULT_QUERY_STATE },
+        iconPacks: { ...DEFAULT_QUERY_STATE, viewMode: 'grid' },
     };
 }

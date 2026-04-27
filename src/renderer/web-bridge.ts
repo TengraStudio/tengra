@@ -8,7 +8,6 @@
  * (at your option) any later version.
  */
 
-import type { ElectronAPI } from '@renderer/electron.d';
 import type {
     CollaborationResponse,
     CollaborationSyncUpdate,
@@ -26,6 +25,7 @@ import type { ClaudeQuota, CodexUsage } from '@shared/types/quota';
 import type { AppSettings } from '@shared/types/settings';
 import type { IpcRendererEvent } from 'electron';
 
+import type { ElectronAPI } from '@/electron.d';
 import type {
     SSHConfig,
     SSHConnection,
@@ -587,7 +587,6 @@ export const webElectronMock: ElectronAPI = {
             lastUpdated: new Date().toISOString(),
             themes: [],
             mcp: [],
-            personas: [],
             models: [],
             prompts: [],
             languages: [],

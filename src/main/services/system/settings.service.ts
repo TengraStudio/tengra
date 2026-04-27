@@ -76,23 +76,18 @@ const DEFAULT_SETTINGS: AppSettings = {
     },
     github: {
         username: '',
-        token: '',
     },
     openai: {
-        apiKey: '',
         model: 'gpt-4o',
     },
     anthropic: {
-        apiKey: '',
         model: 'claude-3-opus-20240229',
     },
 
     groq: {
-        apiKey: '',
         model: 'llama3-70b-8192',
     },
     nvidia: {
-        apiKey: '',
         model: 'nvidia/llama3-chatqa-1.5-70b',
     },
     antigravity: {
@@ -104,7 +99,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     },
     proxy: {
         enabled: false,
-        url: 'http://localhost:8317/v1',
+        url: 'http://127.0.0.1:8317/v1',
         key: 'proxypal-local',
     },
     mcpDisabledServers: [],
@@ -285,8 +280,8 @@ export class SettingsService extends BaseService {
         failure: 'serviceHealth.settings.failure',
     } as const;
     private readonly SAVE_RETRY_POLICY = {
-        maxAttempts: 2,
-        delayMs: 100,
+        maxAttempts: 3,
+        delayMs: 250,
     } as const;
     private settingsPath: string;
     private settings: AppSettings;
@@ -486,12 +481,12 @@ export class SettingsService extends BaseService {
             autoUpdate: this.mergeAutoUpdate(loaded.autoUpdate),
             general: { ...DEFAULT_SETTINGS.general, ...(loaded.general ?? {}) },
             github: this.mergeProvider(authAccounts, 'github', loaded.github),
-            openai: this.mergeProvider(authAccounts, 'openai', loaded.openai, 'apiKey'),
-            anthropic: this.mergeProvider(authAccounts, 'anthropic', loaded.anthropic, 'apiKey'),
+            openai: this.mergeProvider(authAccounts, 'openai', loaded.openai, 'accessToken'),
+            anthropic: this.mergeProvider(authAccounts, 'anthropic', loaded.anthropic),
             antigravity: this.mergeOAuthProviderState(authAccounts, 'antigravity', loaded.antigravity),
             copilot: this.mergeOAuthProviderState(authAccounts, 'copilot', loaded.copilot),
-            groq: this.mergeProvider(authAccounts, 'groq', loaded.groq, 'apiKey'),
-            nvidia: this.mergeProvider(authAccounts, 'nvidia', loaded.nvidia, 'apiKey'),
+            groq: this.mergeProvider(authAccounts, 'groq', loaded.groq),
+            nvidia: this.mergeProvider(authAccounts, 'nvidia', loaded.nvidia),
             remoteAccounts: this.mergeRemoteAccounts(authAccounts, loaded.remoteAccounts),
             proxy: this.mergeProxy(authAccounts, loaded.proxy),
             editor: {
@@ -541,11 +536,17 @@ export class SettingsService extends BaseService {
         const tokenVal = loadedObj[keyField] as string | undefined;
         const authToken = this.findTokenInAuth(authAccounts, String(provider));
         const token = authToken !== '' ? authToken : (tokenVal ?? '');
-        return {
+        
+        const result = {
             ...def,
             ...loadedObj,
-            [keyField]: token,
-        } as AppSettings[T];
+        };
+
+        if (token && keyField in result) {
+            result[keyField] = token;
+        }
+
+        return result as AppSettings[T];
     }
 
     private mergeOAuthProviderState<T extends 'antigravity' | 'copilot'>(
@@ -580,7 +581,7 @@ export class SettingsService extends BaseService {
     ): AppSettings['proxy'] {
         const def = DEFAULT_SETTINGS.proxy ?? {
             enabled: false,
-            url: 'http://localhost:8317/v1',
+            url: 'http://127.0.0.1:8317/v1',
             key: '',
         };
         const token = this.findTokenInAuth(authAccounts, 'proxy') || (loaded?.key ?? '');
@@ -816,8 +817,6 @@ export class SettingsService extends BaseService {
         const settings = this.getSettings();
 
         const staticTokenMappings: Array<{ provider: string; token: string | undefined }> = [
-            { provider: 'github', token: settings.github?.token },
-            { provider: 'copilot', token: settings.copilot?.token },
             { provider: 'antigravity', token: settings.antigravity?.token },
             { provider: 'proxy_key', token: settings.proxy?.key },
             { provider: 'remote_discord', token: settings.remoteAccounts?.discord?.token },
@@ -887,18 +886,6 @@ export class SettingsService extends BaseService {
         newSettings: Partial<AppSettings>,
         oldSettings: AppSettings
     ): void {
-        this.checkTokenMapping(
-            mappings,
-            'github',
-            newSettings.github?.token,
-            oldSettings.github?.token
-        );
-        this.checkTokenMapping(
-            mappings,
-            'copilot',
-            newSettings.copilot?.token,
-            oldSettings.copilot?.token
-        );
         this.checkTokenMapping(
             mappings,
             'antigravity',
@@ -1017,22 +1004,26 @@ export class SettingsService extends BaseService {
     }
 
     private stripSecrets(settings: AppSettings): void {
-        const { github, openai, anthropic, groq } = settings;
-        if (github) {
-            github.token = '';
+        const { github, openai, anthropic, groq } = settings as Record<string, unknown>;
+        if (github && typeof github === 'object') {
+            (github as Record<string, unknown>)['token'] = '';
         }
-        if (openai) {
-            openai.apiKey = '';
+        if (openai && typeof openai === 'object') {
+            (openai as Record<string, unknown>)['apiKey'] = '';
+            (openai as Record<string, unknown>)['apiKeys'] = [];
         }
-        if (anthropic) {
-            anthropic.apiKey = '';
+        if (anthropic && typeof anthropic === 'object') {
+            (anthropic as Record<string, unknown>)['apiKey'] = '';
+            (anthropic as Record<string, unknown>)['apiKeys'] = [];
         }
-        if (groq) {
-            groq.apiKey = '';
+        if (groq && typeof groq === 'object') {
+            (groq as Record<string, unknown>)['apiKey'] = '';
+            (groq as Record<string, unknown>)['apiKeys'] = [];
         }
 
-        if (settings.nvidia) {
-            settings.nvidia.apiKey = '';
+        if (settings.nvidia && typeof settings.nvidia === 'object') {
+            (settings.nvidia as Record<string, unknown>)['apiKey'] = '';
+            (settings.nvidia as Record<string, unknown>)['apiKeys'] = [];
         }
         this.stripProviderApiKeys(settings);
 
@@ -1052,15 +1043,15 @@ export class SettingsService extends BaseService {
     }
 
     private stripOtherSecrets(settings: AppSettings): void {
-        const antigravity = settings.antigravity as Record<string, RuntimeValue> | undefined;
-        const copilot = settings.copilot as Record<string, RuntimeValue> | undefined;
-        const proxy = settings.proxy as Record<string, RuntimeValue> | undefined;
+        const antigravity = settings.antigravity as Record<string, unknown> | undefined;
+        const copilot = settings.copilot as Record<string, unknown> | undefined;
+        const proxy = settings.proxy as Record<string, unknown> | undefined;
 
         if (antigravity) {
-            antigravity.token = undefined;
+            (antigravity as Record<string, unknown>)['token'] = undefined;
         }
         if (copilot) {
-            copilot.token = undefined;
+            (copilot as Record<string, unknown>)['token'] = undefined;
         }
         if (proxy && proxy.key !== 'connected') {
             proxy.key = '';

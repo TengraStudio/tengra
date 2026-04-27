@@ -8,4 +8,4 @@
  * (at your option) any later version.
  */
 
-export { WorkspaceMountModals as WorkspaceModals } from '@renderer/features/workspace/workspace-shell/WorkspaceMountModals';
+export { WorkspaceMountModals as WorkspaceModals } from '@/features/workspace/workspace-layout/WorkspaceMountModals';

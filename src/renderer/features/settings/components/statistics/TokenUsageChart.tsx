@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Activity, Coins } from 'lucide-react';
+import { IconActivity, IconCoins } from '@tabler/icons-react';
 import React, { useMemo } from 'react';
 
 import { formatNumber } from '@/lib/formatters';
@@ -17,7 +17,7 @@ import { formatNumber } from '@/lib/formatters';
 const C_TOKENUSAGECHART_1 = "group relative flex h-full min-w-4 flex-1 flex-col justify-end rounded-t-sm transition-colors duration-200 hover:bg-muted/40";
 const C_TOKENUSAGECHART_2 = "absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50";
 const C_TOKENUSAGECHART_3 = "absolute -bottom-1.5 left-1/2 h-0 w-0 -translate-x-1/2 border-l-6 border-r-6 border-t-6 border-l-transparent border-r-transparent border-t-popover";
-const C_TOKENUSAGECHART_4 = "absolute top-full mt-2 left-1/2 -translate-x-1/2 text-xxxs font-medium text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity";
+const C_TOKENUSAGECHART_4 = "absolute top-full mt-2 left-1/2 -translate-x-1/2 text-sm font-medium text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity";
 
 
 interface TokenUsageChartProps {
@@ -44,16 +44,16 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
         <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4 border-b border-border/40 pb-4 md:grid-cols-4">
                 <div className="space-y-1">
-                    <span className="text-xxs font-bold text-muted-foreground">{t('statistics.totalPrompt')}</span>
+                    <span className="text-sm font-bold text-muted-foreground">{t('statistics.totalPrompt')}</span>
                     <div className="text-2xl font-bold tabular-nums text-foreground">{formatNumber(totalPrompt)}</div>
                 </div>
                 <div className="space-y-1">
-                    <span className="text-xxs font-bold text-muted-foreground">{t('statistics.totalCompletion')}</span>
+                    <span className="text-sm font-bold text-muted-foreground">{t('statistics.totalCompletion')}</span>
                     <div className="text-2xl font-bold tabular-nums text-foreground">{formatNumber(totalCompletion)}</div>
                 </div>
                 <div className="space-y-1">
-                    <span className="flex items-center gap-1 text-xxs font-bold text-muted-foreground">
-                        <Coins className="w-3 h-3 text-warning" />
+                    <span className="flex items-center gap-1 text-sm font-bold text-muted-foreground">
+                        <IconCoins className="w-3 h-3 text-warning" />
                         {t('statistics.cost')}
                     </span>
                     <div className="text-2xl font-bold tabular-nums text-foreground">
@@ -61,8 +61,8 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                     </div>
                 </div>
                 <div className="space-y-1">
-                    <span className="flex items-center gap-1 text-xxs font-bold text-muted-foreground">
-                        <Activity className="w-3 h-3 text-info" />
+                    <span className="flex items-center gap-1 text-sm font-bold text-muted-foreground">
+                        <IconActivity className="w-3 h-3 text-info" />
                         {t('statistics.activity')}
                     </span>
                     <div className="text-2xl font-bold tabular-nums text-foreground">
@@ -75,11 +75,11 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                 <div className="absolute right-0 top-0 z-10 flex items-center gap-4">
                     <div className="flex items-center gap-2 rounded-full border border-border/30 bg-background px-2 py-1">
                         <div className="h-2.5 w-2.5 rounded-full bg-primary" />
-                        <span className="text-xxs font-bold text-muted-foreground">{t('statistics.input')}</span>
+                        <span className="text-sm font-bold text-muted-foreground">{t('statistics.input')}</span>
                     </div>
                     <div className="flex items-center gap-2 rounded-full border border-border/30 bg-background px-2 py-1">
                         <div className="h-2.5 w-2.5 rounded-full bg-success" />
-                        <span className="text-xxs font-bold text-muted-foreground">{t('statistics.output')}</span>
+                        <span className="text-sm font-bold text-muted-foreground">{t('statistics.output')}</span>
                     </div>
                 </div>
 
@@ -110,25 +110,25 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                                         <div className="min-w-140 rounded-xl border border-border/50 bg-popover p-3 shadow-elevated">
                                             <div className="typo-caption font-bold text-foreground mb-2 pb-2 border-b border-border/30 text-center">
                                                 {new Date(data.timestamp).toLocaleDateString()}
-                                                <span className="block text-xxxs font-normal text-muted-foreground capitalize mt-0.5 opacity-70">
+                                                <span className="block text-sm font-normal text-muted-foreground capitalize mt-0.5 opacity-70">
                                                     {getLabel(data.timestamp, period, true)}
                                                 </span>
                                             </div>
                                             <div className="space-y-1.5">
                                                 <div className="flex justify-between items-center gap-3">
-                                                    <span className="text-xxs font-bold text-primary">{t('statistics.input')}</span>
+                                                    <span className="text-sm font-bold text-primary">{t('statistics.input')}</span>
                                                     <span className="typo-caption font-mono font-bold">{formatNumber(data.promptTokens)}</span>
                                                 </div>
                                                 <div className="flex justify-between items-center gap-3">
-                                                    <span className="text-xxs font-bold text-success">{t('statistics.output')}</span>
+                                                    <span className="text-sm font-bold text-success">{t('statistics.output')}</span>
                                                     <span className="typo-caption font-mono font-bold">{formatNumber(data.completionTokens)}</span>
                                                 </div>
                                                 {data.modelBreakdown && Object.keys(data.modelBreakdown).length > 0 && (
                                                     <div className="mt-2 pt-2 border-t border-border/20 space-y-1">
                                                         {Object.entries(data.modelBreakdown).map(([model, usage]) => (
                                                             <div key={model} className="flex justify-between items-center gap-2">
-                                                                <span className="text-xxxs text-muted-foreground truncate max-w-80" title={model}>{model}</span>
-                                                                <span className="text-xxxs font-mono opacity-80">{formatNumber(usage.prompt + usage.completion)}</span>
+                                                                <span className="text-sm text-muted-foreground truncate max-w-80" title={model}>{model}</span>
+                                                                <span className="text-sm font-mono opacity-80">{formatNumber(usage.prompt + usage.completion)}</span>
                                                             </div>
                                                         ))}
                                                     </div>

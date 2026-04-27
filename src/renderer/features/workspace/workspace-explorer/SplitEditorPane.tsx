@@ -11,7 +11,7 @@
 /**
  * @fileoverview Secondary editor pane for split view
  * @description Provides a read-only Monaco-backed editor with file selector,
- *   used as the right pane in split view mode.
+ * used as the right pane in split view mode.
  */
 
 import React from 'react';

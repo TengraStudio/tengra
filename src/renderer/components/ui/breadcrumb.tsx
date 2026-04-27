@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { ChevronRight, Home } from 'lucide-react';
+import { IconChevronRight, IconHome } from '@tabler/icons-react';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -32,7 +32,7 @@ export function Breadcrumb({
     items, 
     className,
     showHome = false,
-    separator = <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 rtl-flip" />
+    separator = <IconChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 rtl-flip" />
 }: BreadcrumbProps) {
     const { t } = useTranslation();
 
@@ -52,7 +52,7 @@ export function Breadcrumb({
                                 className="flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-foreground bg-transparent border-none cursor-pointer p-0"
                                 aria-label={t('aria.home')}
                             >
-                                <Home className="w-4 h-4" />
+                                <IconHome className="w-4 h-4" />
                             </button>
                         </li>
                         {items.length > 0 && (

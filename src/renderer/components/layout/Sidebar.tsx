@@ -8,14 +8,14 @@
  * (at your option) any later version.
  */
 
-import { SidebarChatItem } from '@renderer/components/layout/sidebar/SidebarChatItem';
-import { SidebarChatList } from '@renderer/components/layout/sidebar/SidebarChatList';
-import { SidebarFooter } from '@renderer/components/layout/sidebar/SidebarFooter';
-import { SidebarHeader } from '@renderer/components/layout/sidebar/SidebarHeader';
-import { SidebarNavigation } from '@renderer/components/layout/sidebar/SidebarNavigation';
-import { Modal } from '@renderer/components/ui/modal';
 import React, { lazy, Suspense, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 
+import { SidebarChatItem } from '@/components/layout/sidebar/SidebarChatItem';
+import { SidebarChatList } from '@/components/layout/sidebar/SidebarChatList';
+import { SidebarFooter } from '@/components/layout/sidebar/SidebarFooter';
+import { SidebarHeader } from '@/components/layout/sidebar/SidebarHeader';
+import { SidebarNavigation } from '@/components/layout/sidebar/SidebarNavigation';
+import { Modal } from '@/components/ui/modal';
 import { useChatLibrary, useChatShell } from '@/context/ChatContext'; 
 import { AppView } from '@/hooks/useAppState';
 import { useTranslation } from '@/i18n';

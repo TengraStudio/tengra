@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Database, History, Maximize2,Network } from 'lucide-react';
+import { IconDatabase, IconHistory, IconMaximize, IconNetwork } from '@tabler/icons-react';
 import React, { useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -38,9 +38,9 @@ export const MemoryVisualization: React.FC = () => {
     const [activeTab, setActiveTab] = useState<VizTab>('graph');
 
     const tabs = [
-        { id: 'graph' as VizTab, label: t('memory.graphView'), icon: Network, color: 'text-primary' },
-        { id: 'entities' as VizTab, label: t('memory.erDiagram'), icon: Database, color: 'text-success' },
-        { id: 'timeline' as VizTab, label: t('memory.timelineView'), icon: History, color: 'text-info' },
+        { id: 'graph' as VizTab, label: t('memory.graphView'), icon: IconNetwork, color: 'text-primary' },
+        { id: 'entities' as VizTab, label: t('memory.erDiagram'), icon: IconDatabase, color: 'text-success' },
+        { id: 'timeline' as VizTab, label: t('memory.timelineView'), icon: IconHistory, color: 'text-info' },
     ];
 
     return (
@@ -49,7 +49,7 @@ export const MemoryVisualization: React.FC = () => {
             <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 bg-muted/30">
                 <div className="flex items-center gap-2">
                     <div className="p-2 bg-primary/20 rounded-xl text-primary">
-                        <Maximize2 className="w-5 h-5" />
+                        <IconMaximize className="w-5 h-5" />
                     </div>
                     <div>
                         <h1 className="text-lg font-bold">{t('memory.visualization.title')}</h1>

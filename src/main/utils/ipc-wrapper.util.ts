@@ -12,6 +12,7 @@ import { appLogger } from '@main/logging/logger';
 import type { EventBusService } from '@main/services/system/event-bus.service';
 import { JsonValue } from '@shared/types/common';
 import { AppErrorCode, getErrorMessage, TengraError } from '@shared/utils/error.util';
+import * as electronNamespace from 'electron';
 import { IpcMainInvokeEvent } from 'electron';
 import { z, ZodError, ZodType } from 'zod';
 
@@ -61,23 +62,10 @@ export function setIpcEventBus(eventBus: EventBusService | null): void {
 
 /**
  * Emits an IPC lifecycle event to the event bus.
- *
- * @param phase - The lifecycle phase (started, succeeded, failed)
- * @param handlerName - The name of the IPC handler
- * @param durationMs - Time elapsed during execution
- * @param errorMessage - Error message if phase is 'failed'
  */
 const lastEmitMap = new Map<string, number>();
 const EMIT_THROTTLE_MS = 100;
 
-/**
- * Emits an IPC lifecycle event to the event bus with throttling.
- *
- * @param phase - The lifecycle phase (started, succeeded, failed)
- * @param handlerName - The name of the IPC handler
- * @param durationMs - Time elapsed during execution
- * @param errorMessage - Error message if phase is 'failed'
- */
 function emitIpcLifecycleEvent(
     phase: 'started' | 'succeeded' | 'failed',
     handlerName: string,
@@ -86,7 +74,6 @@ function emitIpcLifecycleEvent(
 ): void {
     if (!ipcEventBus) { return; }
 
-    // Always emit failures immediately
     if (phase !== 'failed') {
         const now = Date.now();
         const last = lastEmitMap.get(`${handlerName}:${phase}`) || 0;
@@ -107,9 +94,6 @@ function emitIpcLifecycleEvent(
 
 /**
  * Wraps an IPC handler function with unified error handling and logging.
- * @param handlerName The name of the handler for logging purposes.
- * @param handler The actual handler function.
- * @param options Optional configuration for the handler wrapper.
  */
 export const createIpcHandler = <T = JsonValue, Args extends readonly RuntimeValue[] = readonly RuntimeValue[]>(
     handlerName: string,
@@ -123,9 +107,7 @@ export const createIpcHandler = <T = JsonValue, Args extends readonly RuntimeVal
         emitIpcLifecycleEvent('started', handlerName);
 
         try {
-            // appLogger.debug('IpcHandler', `[${handlerName}] Started`); // Optional: verbose logging
             const result = await handler(event, ...args);
-            // appLogger.debug('IpcHandler', `[${handlerName}] Completed`);
             emitIpcLifecycleEvent('succeeded', handlerName, Date.now() - startedAt);
 
             if (wrapResponse) {
@@ -140,7 +122,6 @@ export const createIpcHandler = <T = JsonValue, Args extends readonly RuntimeVal
             });
             emitIpcLifecycleEvent('failed', handlerName, Date.now() - startedAt, getErrorMessage(errorObj));
 
-            // If custom error handler is provided, use it
             if (onError) {
                 const errorResult = await Promise.resolve(onError(errorObj, handlerName));
                 if (wrapResponse) {
@@ -149,7 +130,6 @@ export const createIpcHandler = <T = JsonValue, Args extends readonly RuntimeVal
                 return errorResult as T;
             }
 
-            // Default error handling
             if (wrapResponse) {
                 let code = AppErrorCode.UNKNOWN;
                 const message = getErrorMessage(errorObj);
@@ -162,36 +142,46 @@ export const createIpcHandler = <T = JsonValue, Args extends readonly RuntimeVal
 
                 return {
                     success: false,
-                    error: {
-                        message,
-                        code,
-                        context
-                    }
+                    error: { message, code, context }
                 } as IpcResponse<T>;
             }
 
-            // For non-wrapped responses, re-throw the error to maintain backward compatibility
-            // The renderer should handle these errors appropriately
             throw error;
         }
     };
 };
 
 /**
+ * Safely registers an IPC handle, removing any existing handler first.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function safeHandle(channel: string, handler: (event: electronNamespace.IpcMainInvokeEvent, ...args: any[]) => any, overwrite = true): void {
+    try {
+        if (overwrite) {
+            electronNamespace.ipcMain.removeHandler(channel);
+        }
+        electronNamespace.ipcMain.handle(channel, handler);
+    } catch (e) {
+        if (overwrite) {
+            appLogger.error('IPC', `Failed to register handler for ${channel}: ${e}`);
+        } else {
+            // This is expected for critical channels that are already registered
+            appLogger.warn('IPC', `Channel ${channel} already has a handler, skipping overwrite.`);
+        }
+    }
+}
+
+/**
+ * Safely registers an IPC 'on' listener, removing existing ones first to avoid duplicates.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function safeOn(channel: string, listener: (event: electronNamespace.IpcMainEvent, ...args: any[]) => void): void {
+    electronNamespace.ipcMain.removeAllListeners(channel);
+    electronNamespace.ipcMain.on(channel, listener);
+}
+
+/**
  * Creates a simple error handler that logs errors and returns a default value on failure.
- * Useful for handlers that should never throw but return fallback values.
- * 
- * @param handlerName - The name of the handler for logging purposes
- * @param handler - The actual handler function to wrap
- * @param defaultValue - The value to return if the handler throws an error
- * @returns A wrapped handler that always returns a value (never throws)
- * 
- * @example
- * ```typescript
- * ipcMain.handle('db:getAllChats', createSafeIpcHandler('db:getAllChats', async () => {
- *   return await databaseService.getAllChats()
- * }, []))
- * ```
  */
 export const createSafeIpcHandler = <T = JsonValue, Args extends readonly RuntimeValue[] = readonly RuntimeValue[]>(
     handlerName: string,
@@ -225,9 +215,6 @@ interface ValidatedIpcHandlerOptions<T, Args extends readonly RuntimeValue[]> ex
 
 /**
  * Creates an IPC handler with request/response schema validation.
- *
- * Security note: schema validation runs in the main process boundary and should be
- * used for any handler that accepts renderer-originated payloads.
  */
 export const createValidatedIpcHandler = <T = JsonValue, Args extends readonly RuntimeValue[] = readonly RuntimeValue[]>(
     handlerName: string,

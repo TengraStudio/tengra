@@ -15,6 +15,8 @@
  * It serves as the main entry point for MCP-related operations.
  */
 
+import { t } from '@main/utils/i18n.util';
+
 export { McpDispatcher } from './dispatcher';
 export type { McpAction, McpResult, McpService } from './types';
 
@@ -46,7 +48,7 @@ export class McpModule {
     static getInfo() {
         return {
             version: '1.0.0',
-            description: 'Model Context Protocol integration for Tengra',
+            description: t('auto.modelContextProtocolIntegrationForTengra'),
             availableServers: Object.values(McpServerType),
             status: 'active'
         };

@@ -8,31 +8,20 @@
  * (at your option) any later version.
  */
 
-import { Checkbox } from '@renderer/components/ui/checkbox';
+import { IconActivity, IconAlignLeft, IconBolt,IconCode, IconEye, IconLayersLinked, IconPointer, IconSettings2, IconSparkles, IconTypography } from '@tabler/icons-react';
+import React, { useMemo, useState } from 'react';
+
+import { Checkbox } from '@/components/ui/checkbox';
+import { CodeEditor } from '@/components/ui/CodeEditor';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@renderer/components/ui/select';
-import { Textarea } from '@renderer/components/ui/textarea';
-import { 
-    Activity, 
-    AlignLeft, 
-    Code, 
-    Eye, 
-    Layers, 
-    MousePointer2, 
-    Settings2, 
-    Sparkles, 
-    Type, 
-    Zap 
-} from 'lucide-react';
-import React, { useMemo, useState } from 'react';
-
-import { CodeEditor } from '@/components/ui/CodeEditor';
+} from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import type { JsonValue } from '@/types';
 
@@ -141,7 +130,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
     const [previewLanguage, setPreviewLanguage] = useState<'typescript' | 'python' | 'javascript'>('typescript');
 
     const editorSettings = useMemo(() => {
-        if (!settings) return null;
+        if (!settings) {return null;}
         return {
             fontSize: settings.editor?.fontSize ?? 14,
         fontFamily: settings.editor?.fontFamily ?? '',
@@ -204,10 +193,10 @@ export const EditorTab: React.FC<EditorTabProps> = ({
             <div className="flex flex-col gap-4 px-1">
                 <div className="flex items-center gap-3">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-inner">
-                        <Code className="h-6 w-6" />
+                        <IconCode className="h-6 w-6" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold tracking-tight text-foreground">{t('settings.editorTitle')}</h2>
+                        <h2 className="text-2xl font-bold text-foreground">{t('settings.editorTitle')}</h2>
                         <p className="typo-body text-muted-foreground/60">{t('settings.editorDescription')}</p>
                     </div>
                 </div>
@@ -221,7 +210,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                     <SettingsPanel
                         title={t('settings.editor.typographyTitle') || "Typography"}
                         description="Font settings and character spacing."
-                        icon={Type}
+                        icon={IconTypography}
                         className="border-none bg-transparent p-0 shadow-none space-y-6"
                     >
                         <div className="grid gap-6 md:grid-cols-2">
@@ -303,7 +292,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                     <SettingsPanel
                         title={t('settings.editor.layoutTitle')}
                         description="Visual appearance and geometry."
-                        icon={Layers}
+                        icon={IconLayersLinked}
                         className="border-none bg-transparent p-0 shadow-none space-y-6"
                     >
                         <div className="grid gap-6 md:grid-cols-2">
@@ -413,7 +402,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                     <SettingsPanel
                         title={t('settings.editor.behaviorTitle')}
                         description="Intelligent features and interactions."
-                        icon={Zap}
+                        icon={IconBolt}
                         className="border-none bg-transparent p-0 shadow-none space-y-6"
                     >
                         <div className="grid gap-4 md:grid-cols-2">
@@ -421,70 +410,70 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                                 label={t('settings.editor.option.minimap')}
                                 description="High-level code overview"
                                 checked={editorSettings.minimap}
-                                icon={Eye}
+                                icon={IconEye}
                                 onCheckedChange={checked => updateEditor({ minimap: checked })}
                             />
                             <MonacoToggleRow
                                 label={t('settings.editor.option.wordWrap')}
                                 description="Wrap long lines automatically"
                                 checked={editorSettings.wordWrap !== 'off'}
-                                icon={AlignLeft}
+                                icon={IconAlignLeft}
                                 onCheckedChange={checked => updateEditor({ wordWrap: checked ? 'on' : 'off' })}
                             />
                             <MonacoToggleRow
                                 label={t('settings.editor.option.bracketPairColorization')}
                                 description="Highlight matching brackets"
                                 checked={editorSettings.bracketPairColorization}
-                                icon={Sparkles}
+                                icon={IconSparkles}
                                 onCheckedChange={checked => updateEditor({ bracketPairColorization: checked })}
                             />
                             <MonacoToggleRow
                                 label={t('settings.editor.option.stickyScroll')}
                                 description="Pin scope headers during scroll"
                                 checked={editorSettings.stickyScroll}
-                                icon={Layers}
+                                icon={IconLayersLinked}
                                 onCheckedChange={checked => updateEditor({ stickyScroll: checked })}
                             />
                              <MonacoToggleRow
                                 label={t('settings.editor.option.scrollBeyondLastLine')}
                                 description="Scroll past final line"
                                 checked={editorSettings.scrollBeyondLastLine}
-                                icon={MousePointer2}
+                                icon={IconPointer}
                                 onCheckedChange={checked => updateEditor({ scrollBeyondLastLine: checked })}
                             />
                              <MonacoToggleRow
                                 label={t('settings.editor.option.smoothScrolling')}
                                 description="Fluid editor movement"
                                 checked={editorSettings.smoothScrolling}
-                                icon={Activity}
+                                icon={IconActivity}
                                 onCheckedChange={checked => updateEditor({ smoothScrolling: checked })}
                             />
                              <MonacoToggleRow
                                 label={t('settings.editor.option.fontLigatures')}
                                 description="Combine characters into symbols"
                                 checked={editorSettings.fontLigatures}
-                                icon={Settings2}
+                                icon={IconSettings2}
                                 onCheckedChange={checked => updateEditor({ fontLigatures: checked })}
                             />
                              <MonacoToggleRow
                                 label={t('settings.editor.option.renderControlCharacters')}
                                 description="Show non-printable symbols"
                                 checked={editorSettings.renderControlCharacters}
-                                icon={Code}
+                                icon={IconCode}
                                 onCheckedChange={checked => updateEditor({ renderControlCharacters: checked })}
                             />
                              <MonacoToggleRow
                                 label={t('settings.editor.option.roundedSelection')}
                                 description="Use rounded selection corners"
                                 checked={editorSettings.roundedSelection}
-                                icon={Sparkles}
+                                icon={IconSparkles}
                                 onCheckedChange={checked => updateEditor({ roundedSelection: checked })}
                             />
                              <MonacoToggleRow
                                 label={t('settings.editor.option.occurrenceHighlight')}
                                 description="Highlight occurrences of symbols"
                                 checked={editorSettings.occurrenceHighlight}
-                                icon={Activity}
+                                icon={IconActivity}
                                 onCheckedChange={checked => updateEditor({ occurrenceHighlight: checked })}
                             />
                         </div>
@@ -494,7 +483,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                     <SettingsPanel
                         title="Advanced Customization"
                         description="Deep hooks into the Monaco engine."
-                        icon={Settings2}
+                        icon={IconSettings2}
                         className="border-none bg-transparent p-0 shadow-none space-y-6"
                     >
                         <div className="grid gap-6">
@@ -667,7 +656,7 @@ export const EditorTab: React.FC<EditorTabProps> = ({
                             {/* Floating hint */}
                             <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary px-4 py-2 text-primary-foreground shadow-xl transition-all duration-500 group-hover:-translate-y-2">
                                 <div className="flex items-center gap-2 typo-caption font-bold">
-                                    <Activity className="h-3.5 w-3.5" />
+                                    <IconActivity className="h-3.5 w-3.5" />
                                     UPDATED IN REAL-TIME
                                 </div>
                             </div>

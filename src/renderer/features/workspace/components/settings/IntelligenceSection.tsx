@@ -1,85 +1,87 @@
-/**
- * Tengra - Your Personal AI Assistant
- * Copyright (c) 2026 TengraStudio
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- */
+import { IconSettings2, IconSparkles } from '@tabler/icons-react';
+import React, { useCallback } from 'react';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@renderer/components/ui/card';
-import { Label } from '@renderer/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@renderer/components/ui/select';
-import { Slider } from '@renderer/components/ui/slider';
-import { Textarea } from '@renderer/components/ui/textarea';
-import { Brain, Settings2, Sparkles } from 'lucide-react';
-import React from 'react';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { Textarea } from '@/components/ui/textarea';
+import { ModelSelector } from '@/features/models/components/ModelSelector';
 
 import { SettingsSectionProps } from './types';
 
-export const IntelligenceSection: React.FC<SettingsSectionProps> = ({ formData, setFormData, t, models }) => {
+export const IntelligenceSection: React.FC<SettingsSectionProps> = ({ 
+    formData, 
+    setFormData, 
+    t, 
+    models, 
+    settings, 
+    groupedModels 
+}) => {
+    const handleModelSelect = useCallback((provider: string, modelId: string) => {
+        setFormData(prev => ({ ...prev, intelligenceModelId: modelId }));
+    }, [setFormData]);
+
+    const handleDiscussModelSelect = useCallback((provider: string, modelId: string) => {
+        setFormData(prev => ({ ...prev, intelligenceDiscussModelId: modelId }));
+    }, [setFormData]);
+
+    const getProviderForModel = (modelId: string) => {
+        return models.find(m => m.id === modelId)?.provider || '';
+    };
+
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col gap-1.5">
-                <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                    <Brain className="w-6 h-6 text-primary" />
-                    {t('workspaces.intelligence.title')}
-                </h2>
-                <p className="text-muted-foreground">
-                    {t('workspaces.intelligence.description')}
-                </p>
-            </div>
-
-            <Card className="border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden border-2 shadow-xl shadow-primary/5">
-                <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
-                    <div className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-primary" />
-                        <CardTitle className="text-base font-semibold">{t('workspaces.intelligence.modelConfig')}</CardTitle>
+        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Model Configuration */}
+            <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/5 text-primary border border-primary/10">
+                        <IconSparkles className="w-5 h-5" />
                     </div>
-                    <CardDescription>{t('workspaces.intelligence.modelConfigDesc')}</CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6 space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label>{t('workspaces.intelligence.defaultModel')}</Label>
-                            <Select 
-                                value={formData.intelligenceModelId || 'inherit'} 
-                                onValueChange={(val) => setFormData(prev => ({ ...prev, intelligenceModelId: val === 'inherit' ? '' : val }))}
-                            >
-                                <SelectTrigger className="bg-background/50">
-                                    <SelectValue placeholder={t('workspaces.intelligence.inheritGlobal')} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="inherit">{t('workspaces.intelligence.inheritGlobal')}</SelectItem>
-                                    {models.map(model => (
-                                        <SelectItem key={model.id || 'unknown'} value={model.id || 'unknown'}>{model.name || model.id || t('common.unknown')}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                    <div>
+                        <h2 className="text-lg font-semibold text-foreground tracking-tight">
+                            {t('workspaces.intelligence.modelConfig')}
+                        </h2>
+                        <p className="text-sm text-muted-foreground/60">
+                            {t('workspaces.intelligence.modelConfigDesc')}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="space-y-8 pl-11">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                            <Label className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">
+                                {t('workspaces.intelligence.defaultModel')}
+                            </Label>
+                            <ModelSelector
+                                selectedModel={formData.intelligenceModelId}
+                                selectedProvider={getProviderForModel(formData.intelligenceModelId)}
+                                onSelect={handleModelSelect}
+                                settings={settings}
+                                groupedModels={groupedModels || {}}
+                            />
                         </div>
-                        <div className="space-y-2">
-                            <Label>{t('workspaces.intelligence.discussModel')}</Label>
-                            <Select 
-                                value={formData.intelligenceDiscussModelId || 'inherit'} 
-                                onValueChange={(val) => setFormData(prev => ({ ...prev, intelligenceDiscussModelId: val === 'inherit' ? '' : val }))}
-                            >
-                                <SelectTrigger className="bg-background/50">
-                                    <SelectValue placeholder={t('workspaces.intelligence.inheritGlobal')} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="inherit">{t('workspaces.intelligence.inheritGlobal')}</SelectItem>
-                                    {models.map(model => (
-                                        <SelectItem key={model.id || 'unknown'} value={model.id || 'unknown'}>{model.name || model.id || 'Unknown'}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                        <div className="space-y-3">
+                            <Label className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">
+                                {t('workspaces.intelligence.discussModel')}
+                            </Label>
+                            <ModelSelector
+                                selectedModel={formData.intelligenceDiscussModelId}
+                                selectedProvider={getProviderForModel(formData.intelligenceDiscussModelId)}
+                                onSelect={handleDiscussModelSelect}
+                                settings={settings}
+                                groupedModels={groupedModels || {}}
+                            />
                         </div>
                     </div>
 
-                    <div className="space-y-4 pt-2">
+                    <div className="space-y-5 pt-4">
                         <div className="flex items-center justify-between">
-                            <Label>{t('workspaces.intelligence.temperature')} ({formData.intelligenceTemperature})</Label>
+                            <Label className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">
+                                {t('workspaces.intelligence.temperature')}
+                            </Label>
+                            <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-0.5 rounded">
+                                {formData.intelligenceTemperature}
+                            </span>
                         </div>
                         <Slider
                             value={[formData.intelligenceTemperature]}
@@ -89,31 +91,41 @@ export const IntelligenceSection: React.FC<SettingsSectionProps> = ({ formData, 
                             onValueChange={([val]) => setFormData(prev => ({ ...prev, intelligenceTemperature: val }))}
                             className="py-2"
                         />
-                        <div className="flex justify-between text-xxs text-muted-foreground font-mono">
+                        <div className="flex justify-between text-[10px] text-muted-foreground/40 font-medium uppercase tracking-tight">
                             <span>{t('workspaces.intelligence.precise')}</span>
                             <span>{t('workspaces.intelligence.creative')}</span>
                         </div>
                     </div>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
 
-            <Card className="border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden border-2 shadow-xl shadow-primary/5">
-                <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
-                    <div className="flex items-center gap-2">
-                        <Settings2 className="w-4 h-4 text-primary" />
-                        <CardTitle className="text-base font-semibold">{t('workspaces.intelligence.systemPrompt')}</CardTitle>
+            <div className="h-px bg-border/5 ml-11" />
+
+            {/* System Prompt */}
+            <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-warning/5 text-warning border border-warning/10">
+                        <IconSettings2 className="w-5 h-5" />
                     </div>
-                    <CardDescription>{t('workspaces.intelligence.systemPromptDesc')}</CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6">
+                    <div>
+                        <h2 className="text-lg font-semibold text-foreground tracking-tight">
+                            {t('workspaces.intelligence.systemPrompt')}
+                        </h2>
+                        <p className="text-sm text-muted-foreground/60">
+                            {t('workspaces.intelligence.systemPromptDesc')}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="pl-11">
                     <Textarea
                         placeholder={t('workspaces.intelligence.systemPromptPlaceholder')}
-                        className="min-h-32 bg-background/50 font-mono text-sm leading-relaxed"
+                        className="min-h-40 bg-muted/5 border-border/10 font-mono text-[13px] leading-relaxed resize-none p-4"
                         value={formData.intelligenceSystemPrompt}
                         onChange={(e) => setFormData(prev => ({ ...prev, intelligenceSystemPrompt: e.target.value }))}
                     />
-                </CardContent>
-            </Card>
+                </div>
+            </div>
         </div>
     );
 };

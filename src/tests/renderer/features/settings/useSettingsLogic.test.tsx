@@ -102,17 +102,6 @@ vi.mock('@renderer/features/settings/hooks/useSettingsStats', () => ({
     }),
 }));
 
-vi.mock('@renderer/features/settings/hooks/useSettingsPersonas', () => ({
-    useSettingsPersonas: () => ({
-        editingPersonaId: null,
-        setEditingPersonaId: vi.fn(),
-        personaDraft: { name: '', description: '', prompt: '' },
-        setPersonaDraft: vi.fn(),
-        handleSavePersona: async () => { },
-        handleDeletePersona: async () => { },
-    }),
-}));
-
 describe('useSettingsLogic', () => {
     beforeEach(() => {
         vi.clearAllMocks();

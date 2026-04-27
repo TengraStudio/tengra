@@ -52,9 +52,9 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
     }
 
     private getPortFileCandidates(name: string): string[] {
-        const appData = app.getPath('appData');
-        const roots = ['Tengra', 'tengra'];
-        return roots.map(root => path.join(appData, root, 'services', `${name}.port`));
+        const userDataPortFile = path.join(app.getPath('userData'), 'services', `${name}.port`);
+        const legacyPortFiles = ['Tengra', 'tengra'].map(root => path.join(app.getPath('appData'), root, 'services', `${name}.port`));
+        return [userDataPortFile, ...legacyPortFiles];
     }
 
     private parseListeningPort(text: string): number | null {
@@ -91,6 +91,49 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
             // Ignore and continue with other discovery methods.
         }
         return null;
+    }
+
+    async killProcessByName(name: string): Promise<void> {
+        if (process.platform !== 'win32') {
+            return;
+        }
+
+        try {
+            appLogger.info('ProcessManager', `Ensuring no existing processes for ${name}`);
+            const executable = name.endsWith('.exe') ? name : `${name}.exe`;
+            await execAsync(`taskkill /F /IM ${executable} /T`, { windowsHide: true });
+        } catch {
+            // Process not found, which is fine
+        }
+    }
+
+    async killProcessOnPort(port: number): Promise<void> {
+        if (process.platform !== 'win32') {
+            return;
+        }
+
+        try {
+            const { stdout } = await execAsync(`netstat -ano | findstr :${port}`, { windowsHide: true });
+            if (!stdout) {return;}
+
+            const lines = stdout.split(/\r?\n/).filter(line => line.includes('LISTENING'));
+            
+            for (const line of lines) {
+                const parts = line.trim().split(/\s+/);
+                // PID is usually the last column in netstat -ano
+                const pid = parts[parts.length - 1];
+                if (pid && /^\d+$/.test(pid) && pid !== '0') {
+                    appLogger.info('ProcessManager', `Targeting PID ${pid} listening on port ${port}`);
+                    try {
+                        await execAsync(`taskkill /F /PID ${pid} /T`, { windowsHide: true });
+                    } catch (e) {
+                        appLogger.warn('ProcessManager', `Failed to kill PID ${pid}: ${getErrorMessage(e)}`);
+                    }
+                }
+            }
+        } catch {
+            // No process found on port
+        }
     }
 
     private async isPortOpen(port: number): Promise<boolean> {
@@ -299,54 +342,7 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
                 this.persistentServices.add(options.name);
             }
 
-            // Wait for port file to appear (polling)
-            return new Promise(resolve => {
-                let attempts = 0;
-                const maxAttempts = 50;
-                const checkPort = setInterval(() => {
-                    // Do NOT cleanup stale files during startup polling
-                    const portPromise = this.discoverService(options.name, false);
-                    portPromise
-                        .then(p => {
-                            if (p) {
-                                clearInterval(checkPort);
-                                markServiceReady(p);
-                                resolve();
-                            }
-                        })
-                        .catch(error => {
-                            appLogger.warn(
-                                'ProcessManager',
-                                `Port discovery check failed for ${options.name}: ${getErrorMessage(error)}`
-                            );
-                        });
-
-                    attempts++;
-                    if (attempts >= maxAttempts) {
-                        clearInterval(checkPort);
-                        if (typeof child.pid === 'number' && Number.isFinite(child.pid)) {
-                            void this.discoverPortFromPid(child.pid).then(port => {
-                                if (port) {
-                                    markServiceReady(port);
-                                    resolve();
-                                    return;
-                                }
-                                appLogger.error(
-                                    'ProcessManager',
-                                    `Timed out waiting for ${options.name} to report port`
-                                );
-                                resolve();
-                            });
-                            return;
-                        }
-                        appLogger.error(
-                            'ProcessManager',
-                            `Timed out waiting for ${options.name} to report port`
-                        );
-                        resolve();
-                    }
-                }, 100);
-            });
+            return;
         } catch (error) {
             appLogger.error(
                 'ProcessManager',
@@ -355,7 +351,7 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
         }
     }
 
-    stopService(name: string) {
+    stopService(name: string): void {
         const child = this.processes.get(name);
         if (child) {
             child.kill();
@@ -525,7 +521,7 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
             const payload = JSON.parse(trimmed);
             // Support both standard {message: ...} and tracing-subscriber {fields: {message: ...}}
             const message = payload.message || (payload.fields?.message);
-            
+
             if (message) {
                 // Clean up context name (Rust often includes module paths)
                 let context = payload.context || payload.target || serviceName;

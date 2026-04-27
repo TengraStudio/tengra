@@ -94,8 +94,10 @@ export class Container {
         }
     }
 
+    private initPromises: Map<string, Promise<void>> = new Map();
+
     /**
-     * Initialize all critical singleton services in parallel.
+     * Initialize all critical singleton services, respecting dependency order.
      */
     async init(): Promise<void> {
         if (this.initialized) { return; }
@@ -104,29 +106,64 @@ export class Container {
             .filter(def => def.scope === Scope.SINGLETON);
         const criticalSingletons = singletons.filter(def => !this.deferredServices.has(def.name));
 
-        // Instantiate critical singletons
+        // Instantiate critical singletons first (to ensure instances exist)
         for (const def of criticalSingletons) {
             this.resolve(def.name);
         }
 
-        // Initialize critical services in parallel
-        await Promise.all(criticalSingletons.map(async (def) => {
-            const instance = def.instance as LifecycleAware;
-            if (typeof instance.initialize === 'function') {
-                try {
-                    const start = Date.now();
-                    await instance.initialize();
-                    const duration = Date.now() - start;
-                    if (duration > 150) {
-                        appLogger.debug('Container', `Slow critical init: ${def.name} (${duration}ms)`);
-                    }
-                } catch (error) {
-                    appLogger.error('Container', `Critical init failed for ${def.name}`, error as Error);
-                }
-            }
-        }));
+        // Initialize critical services in dependency order
+        await Promise.all(criticalSingletons.map(def => this.initializeService(def.name)));
 
         this.initialized = true;
+    }
+
+    private async initializeService(name: string): Promise<void> {
+        // Return existing promise if already initializing
+        const existing = this.initPromises.get(name);
+        if (existing) { return existing; }
+
+        const promise = (async () => {
+            const def = this.services.get(name);
+            if (!def) { return; }
+
+            // 1. Recursively initialize dependencies first
+            // Ensure singleton dependencies are initialized before this service
+            await Promise.all(def.dependencies.map(depName => {
+                const depDef = this.services.get(depName);
+                if (depDef?.scope === Scope.SINGLETON) {
+                    return this.initializeService(depName);
+                }
+                return Promise.resolve();
+            }));
+
+            // 2. Instantiate and Initialize this service instance
+            const instance = this.resolve<LifecycleAware>(name);
+            if (instance && typeof instance.initialize === 'function') {
+                try {
+                    const start = Date.now();
+                    const initPromise = instance.initialize();
+                    
+                    // Add a warning if it takes too long but don't block the actual init
+                    const timeoutHandle = setTimeout(() => {
+                        appLogger.warn('Container', `Service ${name} initialization is taking a long time (> 5000ms)...`);
+                    }, 5000);
+
+                    await initPromise;
+                    clearTimeout(timeoutHandle);
+
+                    const duration = Date.now() - start;
+                    if (duration > 150) {
+                        appLogger.debug('Container', `Slow critical init: ${name} (${duration}ms)`);
+                    }
+                } catch (error) {
+                    appLogger.error('Container', `Critical init failed for ${name}`, error as Error);
+                    throw error; // Rethrow to fail the Promise.all if critical
+                }
+            }
+        })();
+
+        this.initPromises.set(name, promise);
+        return promise;
     }
 
     /**
@@ -138,18 +175,7 @@ export class Container {
         const deferred = Array.from(this.services.values())
             .filter(def => def.scope === Scope.SINGLETON && this.deferredServices.has(def.name));
 
-        await Promise.all(deferred.map(async (def) => {
-            try {
-                const instance = this.resolve<LifecycleAware>(def.name);
-                if (typeof instance?.initialize === 'function') {
-                    const start = Date.now();
-                    await instance.initialize();
-                    appLogger.debug('Container', `Deferred init ${def.name} in ${Date.now() - start}ms`);
-                }
-            } catch (error) {
-                appLogger.error('Container', `Deferred init failed for ${def.name}`, error as Error);
-            }
-        }));
+        await Promise.all(deferred.map(def => this.initializeService(def.name)));
 
         this.deferredInitialized = true;
     }

@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Code2, Eye } from 'lucide-react';
+import { IconCode, IconEye } from '@tabler/icons-react';
 import { memo } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -37,7 +37,7 @@ export const RawToggle = memo(({ active, onClick, t }: RawToggleProps) => (
                     : 'bg-accent/30 text-muted-foreground hover:text-foreground hover:bg-accent/50'
             )}
         >
-            {active ? <Eye className="w-3 h-3" /> : <Code2 className="w-3 h-3" />}
+            {active ? <IconEye className="w-3 h-3" /> : <IconCode className="w-3 h-3" />}
             {active ? t('chat.render') : t('chat.raw')}
         </button>
     </div>

@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Copy, FolderInput, Pencil, Trash2, X } from 'lucide-react';
+import { IconCopy, IconFolderSymlink, IconPencil, IconTrash, IconX } from '@tabler/icons-react';
 import React from 'react';
 
 import type { WorkspaceBulkAction } from '@/store/workspace-explorer.store';
@@ -80,7 +80,7 @@ export function WorkspaceExplorerBulkActions({
                     onClick={() => onStartAction('rename')}
                     title={t('workspace.rename')}
                 >
-                    <Pencil className="h-3.5 w-3.5" />
+                    <IconPencil className="h-3.5 w-3.5" />
                     <span>{t('workspace.rename')}</span>
                 </ToolbarActionButton>
                 <ToolbarActionButton
@@ -89,7 +89,7 @@ export function WorkspaceExplorerBulkActions({
                     onClick={() => onStartAction('copy')}
                     title={t('common.copy')}
                 >
-                    <Copy className="h-3.5 w-3.5" />
+                    <IconCopy className="h-3.5 w-3.5" />
                     <span>{t('common.copy')}</span>
                 </ToolbarActionButton>
                 <ToolbarActionButton
@@ -98,14 +98,14 @@ export function WorkspaceExplorerBulkActions({
                     onClick={() => onStartAction('move')}
                     title={t('workspace.notifications.entryMoved')}
                 >
-                    <FolderInput className="h-3.5 w-3.5" />
+                    <IconFolderSymlink className="h-3.5 w-3.5" />
                 </ToolbarActionButton>
                 <ToolbarActionButton
                     ariaLabel={t('common.delete')}
                     onClick={onDelete}
                     title={t('common.delete')}
                 >
-                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    <IconTrash className="h-3.5 w-3.5 text-destructive" />
                     <span>{t('common.delete')}</span>
                 </ToolbarActionButton>
             </div>
@@ -146,7 +146,7 @@ export function WorkspaceExplorerBulkActions({
                         aria-label={t('common.cancel')}
                         title={t('common.cancel')}
                     >
-                        <X className="h-3.5 w-3.5" />
+                        <IconX className="h-3.5 w-3.5" />
                     </button>
                 </div>
             )}

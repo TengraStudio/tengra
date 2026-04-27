@@ -8,23 +8,23 @@
  * (at your option) any later version.
  */
 
-import antigravityLogo from '@renderer/assets/antigravity.svg?url';
-import chatgptLogo from '@renderer/assets/chatgpt.svg?url';
-import claudeLogo from '@renderer/assets/claude.svg?url';
-import copilotLogo from '@renderer/assets/copilot.svg?url';
-import geminiLogo from '@renderer/assets/gemini.png';
-import ollamaLogo from '@renderer/assets/ollama.svg?url';
-import { Badge } from '@renderer/components/ui/badge';
-import { Button } from '@renderer/components/ui/button';
-import { Input } from '@renderer/components/ui/input';
-import { Label } from '@renderer/components/ui/label';
-import { LinkedAccountInfo } from '@renderer/electron.d';
-import { DeviceCodeModal, DeviceCodeModalState } from '@renderer/features/settings/components/DeviceCodeModal';
-import { UseLinkedAccountsResult } from '@renderer/features/settings/hooks/useLinkedAccounts';
-import { cn } from '@renderer/lib/utils';
-import { Bot, ChevronDown, Cpu, ExternalLink, Globe, Info, Key, Plus, RefreshCw, Shield, Sparkles, Terminal, Trash2, UserPlus, Zap } from 'lucide-react';
+import { IconBolt,IconChevronDown, IconCpu, IconExternalLink, IconGlobe, IconInfoCircle, IconKey, IconPlus, IconRefresh, IconRobot, IconShield, IconSparkles, IconTerminal, IconTrash, IconUserPlus } from '@tabler/icons-react';
 import React, { useState } from 'react';
 
+import antigravityLogo from '@assets/antigravity.svg?url';
+import chatgptLogo from '@assets/chatgpt.svg?url';
+import claudeLogo from '@assets/claude.svg?url';
+import copilotLogo from '@assets/copilot.svg?url';
+import geminiLogo from '@assets/gemini.png';
+import ollamaLogo from '@assets/ollama.svg?url';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { LinkedAccountInfo } from '@/electron.d';
+import { DeviceCodeModal, DeviceCodeModalState } from '@/features/settings/components/DeviceCodeModal';
+import { UseLinkedAccountsResult } from '@/features/settings/hooks/useLinkedAccounts';
+import { cn } from '@/lib/utils';
 import { AppSettings } from '@/types';
 import type { QuotaResponse } from '@/types/quota';
 import type { AntigravityCreditUsageMode } from '@/types/settings';
@@ -159,15 +159,15 @@ const API_KEY_PROVIDERS: ApiKeyProviderConfig[] = [
     { id: 'openai', name: 'accounts.apiProviders.openai.name', description: 'accounts.apiProviders.openai.description', logo: chatgptLogo, placeholder: 'sk-...', docsUrl: 'https://platform.openai.com/api-keys' },
     { id: 'anthropic', name: 'accounts.apiProviders.anthropic.name', description: 'accounts.apiProviders.anthropic.description', logo: claudeLogo, placeholder: 'sk-ant-...', docsUrl: 'https://console.anthropic.com/settings/keys' },
     { id: 'gemini', name: 'accounts.apiProviders.gemini.name', description: 'accounts.apiProviders.gemini.description', logo: geminiLogo, placeholder: 'AIza...', docsUrl: 'https://aistudio.google.com/apikey' },
-    { id: 'nvidia', name: 'accounts.providers.nvidia.name', description: 'accounts.providers.nvidia.description', icon: Cpu, placeholder: 'nvapi-...', docsUrl: 'https://build.nvidia.com/explore/discover' },
-    { id: 'mistral', name: 'accounts.apiProviders.mistral.name', description: 'accounts.apiProviders.mistral.description', icon: Sparkles, placeholder: 'API key', docsUrl: 'https://console.mistral.ai/api-keys' },
-    { id: 'groq', name: 'accounts.apiProviders.groq.name', description: 'accounts.apiProviders.groq.description', icon: Zap, placeholder: 'gsk_...', docsUrl: 'https://console.groq.com/keys' },
-    { id: 'together', name: 'accounts.apiProviders.together.name', description: 'accounts.apiProviders.together.description', icon: Bot, placeholder: 'API key', docsUrl: 'https://api.together.xyz/settings/api-keys' },
-    { id: 'perplexity', name: 'accounts.apiProviders.perplexity.name', description: 'accounts.apiProviders.perplexity.description', icon: Sparkles, placeholder: 'pplx-...', docsUrl: 'https://www.perplexity.ai/settings/api' },
-    { id: 'cohere', name: 'accounts.apiProviders.cohere.name', description: 'accounts.apiProviders.cohere.description', icon: Bot, placeholder: 'API key', docsUrl: 'https://dashboard.cohere.com/api-keys' },
-    { id: 'xai', name: 'accounts.apiProviders.xai.name', description: 'accounts.apiProviders.xai.description', icon: Sparkles, placeholder: 'xai-...', docsUrl: 'https://console.x.ai/' },
-    { id: 'deepseek', name: 'accounts.apiProviders.deepseek.name', description: 'accounts.apiProviders.deepseek.description', icon: Bot, placeholder: 'sk-...', docsUrl: 'https://platform.deepseek.com/api_keys' },
-    { id: 'openrouter', name: 'accounts.apiProviders.openrouter.name', description: 'accounts.apiProviders.openrouter.description', icon: Key, placeholder: 'sk-or-...', docsUrl: 'https://openrouter.ai/keys' },
+    { id: 'nvidia', name: 'accounts.providers.nvidia.name', description: 'accounts.providers.nvidia.description', icon: IconCpu, placeholder: 'nvapi-...', docsUrl: 'https://build.nvidia.com/explore/discover' },
+    { id: 'mistral', name: 'accounts.apiProviders.mistral.name', description: 'accounts.apiProviders.mistral.description', icon: IconSparkles, placeholder: 'API key', docsUrl: 'https://console.mistral.ai/api-keys' },
+    { id: 'groq', name: 'accounts.apiProviders.groq.name', description: 'accounts.apiProviders.groq.description', icon: IconBolt, placeholder: 'gsk_...', docsUrl: 'https://console.groq.com/keys' },
+    { id: 'together', name: 'accounts.apiProviders.together.name', description: 'accounts.apiProviders.together.description', icon: IconRobot, placeholder: 'API key', docsUrl: 'https://api.together.xyz/settings/api-keys' },
+    { id: 'perplexity', name: 'accounts.apiProviders.perplexity.name', description: 'accounts.apiProviders.perplexity.description', icon: IconSparkles, placeholder: 'pplx-...', docsUrl: 'https://www.perplexity.ai/settings/api' },
+    { id: 'cohere', name: 'accounts.apiProviders.cohere.name', description: 'accounts.apiProviders.cohere.description', icon: IconRobot, placeholder: 'API key', docsUrl: 'https://dashboard.cohere.com/api-keys' },
+    { id: 'xai', name: 'accounts.apiProviders.xai.name', description: 'accounts.apiProviders.xai.description', icon: IconSparkles, placeholder: 'xai-...', docsUrl: 'https://console.x.ai/' },
+    { id: 'deepseek', name: 'accounts.apiProviders.deepseek.name', description: 'accounts.apiProviders.deepseek.description', icon: IconRobot, placeholder: 'sk-...', docsUrl: 'https://platform.deepseek.com/api_keys' },
+    { id: 'openrouter', name: 'accounts.apiProviders.openrouter.name', description: 'accounts.apiProviders.openrouter.description', icon: IconKey, placeholder: 'sk-or-...', docsUrl: 'https://openrouter.ai/keys' },
 ];
 
 const LOGO_INVERT_PROVIDERS = new Set([
@@ -204,7 +204,7 @@ function ProviderIdentity({
             ) : IconComponent ? (
                 <IconComponent className="h-6 w-6 text-foreground/80" />
             ) : (
-                <Key className="h-6 w-6 text-foreground/80" />
+                <IconKey className="h-6 w-6 text-foreground/80" />
             )}
         </div>
     );
@@ -298,7 +298,7 @@ const ProviderCard = React.memo<ProviderCardProps>(({
                                 'flex h-8 w-8 items-center justify-center rounded-full border border-border/30 bg-muted/20 text-muted-foreground transition-transform',
                                 expanded && 'rotate-180 border-primary/20 bg-primary/10 text-primary'
                             )}>
-                                <ChevronDown className="h-4 w-4" />
+                                <IconChevronDown className="h-4 w-4" />
                             </div>
                         </>
                     ) : (
@@ -313,7 +313,7 @@ const ProviderCard = React.memo<ProviderCardProps>(({
                             disabled={isBusy}
                             className={cn(BUTTON_PRIMARY_GHOST, "h-10 px-4")}
                         >
-                            <UserPlus className="h-4 w-4 mr-2" />
+                            <IconUserPlus className="h-4 w-4 mr-2" />
                             {t('accounts.connect')}
                         </Button>
                     )}
@@ -358,7 +358,7 @@ const ProviderCard = React.memo<ProviderCardProps>(({
                             disabled={isBusy}
                             className={BUTTON_SECONDARY_GHOST}
                         >
-                            <Plus className="h-3.5 w-3.5" />
+                            <IconPlus className="h-3.5 w-3.5" />
                             {t('accounts.addAnotherAccount')}
                         </Button>
                     </div>
@@ -398,7 +398,7 @@ const ProviderList = React.memo(({
     return (
         <section className="space-y-4">
             <div className="flex items-center gap-3 mb-2 px-1">
-                <Shield className="w-4 h-4 text-primary" />
+                <IconShield className="w-4 h-4 text-primary" />
                 <h3 className="typo-caption font-medium text-muted-foreground">
                     {title}
                 </h3>
@@ -488,7 +488,7 @@ const ApiKeyProviderCard = React.memo(({
                                 'flex h-8 w-8 items-center justify-center rounded-full border border-border/30 bg-muted/20 text-muted-foreground transition-transform',
                                 expanded && 'rotate-180 border-primary/20 bg-primary/10 text-primary'
                             )}>
-                                <ChevronDown className="h-4 w-4" />
+                                <IconChevronDown className="h-4 w-4" />
                             </div>
                         </>
                     ) : (
@@ -502,7 +502,7 @@ const ApiKeyProviderCard = React.memo(({
                             }}
                             className={cn(BUTTON_PRIMARY_GHOST, "h-10 px-4")}
                         >
-                            <Plus className="h-4 w-4 mr-2" />
+                            <IconPlus className="h-4 w-4 mr-2" />
                             {t('accounts.addApiKey')}
                         </Button>
                     )}
@@ -516,7 +516,7 @@ const ApiKeyProviderCard = React.memo(({
                         {apiKeys.map((key, index) => (
                             <div key={index} className={cn(KEY_ROW_BASE, "flex flex-col gap-3 sm:flex-row sm:items-center")} style={{ animationDelay: `${index * 50}ms` }}>
                                 <div className={C_ACCOUNTSTAB_2}>
-                                    <Shield className="w-3 h-3 opacity-30" />
+                                    <IconShield className="w-3 h-3 opacity-30" />
                                     <span className="opacity-80">{maskKey(key)}</span>
                                 </div>
                                 <Button
@@ -530,7 +530,7 @@ const ApiKeyProviderCard = React.memo(({
                                     className={C_ACCOUNTSTAB_3}
                                     title={t('common.delete')}
                                 >
-                                    <Trash2 className="h-4 w-4" />
+                                    <IconTrash className="h-4 w-4" />
                                 </Button>
                             </div>
                         ))}
@@ -547,7 +547,7 @@ const ApiKeyProviderCard = React.memo(({
                                     onKeyDown={(e) => e.key === 'Enter' && handleAddKey()}
                                     className="h-11 rounded-xl border-border/40 bg-background pl-11 font-mono typo-caption"
                                 />
-                                <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
+                                <IconKey className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
                             </div>
                             <Button
                                 onClick={handleAddKey}
@@ -559,7 +559,7 @@ const ApiKeyProviderCard = React.memo(({
                                         : 'cursor-not-allowed bg-muted text-muted-foreground'
                                 )}
                             >
-                                <Plus className="h-5 w-5" />
+                                <IconPlus className="h-5 w-5" />
                             </Button>
                         </div>
                     </div>
@@ -573,9 +573,9 @@ const ApiKeyProviderCard = React.memo(({
                                 className={C_ACCOUNTSTAB_4}
                             >
                                 <a href={provider.docsUrl} target="_blank" rel="noopener noreferrer">
-                                    <Globe className="h-3 w-3" />
+                                    <IconGlobe className="h-3 w-3" />
                                     {t('accounts.getApiKey')}
-                                    <ExternalLink className="ml-1 h-2.5 w-2.5" />
+                                    <IconExternalLink className="ml-1 h-2.5 w-2.5" />
                                 </a>
                             </Button>
                         </div>
@@ -629,8 +629,6 @@ const ApiKeyProvidersSection = React.memo(({
             ...settings,
             [providerId]: {
                 ...settings[providerId],
-                apiKeys: [],
-                apiKey: '',
                 model: settings[providerId]?.model ?? defaultModels[providerId] ?? ''
             }
         };
@@ -649,12 +647,12 @@ const ApiKeyProvidersSection = React.memo(({
         <section className="space-y-6 pt-4">
             <div className="flex flex-col gap-2 px-1">
                 <div className="flex items-center gap-3">
-                    <Key className="w-4 h-4 text-primary" />
+                    <IconKey className="w-4 h-4 text-primary" />
                     <h3 className="typo-caption font-medium text-muted-foreground">
                         {t('accounts.categories.apiKeyProviders')}
                     </h3>
                 </div>
-                <p className="text-xxs text-muted-foreground font-medium leading-relaxed opacity-70 max-w-2xl">
+                <p className="text-sm text-muted-foreground font-medium leading-relaxed opacity-70 max-w-2xl">
                     {t('accounts.apiKeyProvidersDescription')}
                 </p>
             </div>
@@ -695,7 +693,7 @@ const OllamaSection = React.memo(({
     return (
         <section className="space-y-4 pt-4">
             <div className="flex items-center gap-3 mb-2 px-1">
-                <Terminal className="w-4 h-4 text-primary" />
+                <IconTerminal className="w-4 h-4 text-primary" />
                 <h3 className="typo-caption font-medium text-muted-foreground">
                     {t('accounts.categories.localModels')}
                 </h3>
@@ -787,7 +785,7 @@ const OllamaSection = React.memo(({
                             }}
                             className={C_ACCOUNTSTAB_5}
                         >
-                            <RefreshCw className={cn("h-3 w-3 mr-2", !isRunning && "animate-spin")} />
+                            <IconRefresh className={cn("h-3 w-3 mr-2", !isRunning && "animate-spin")} />
                             {t('accounts.check')}
                         </Button>
                         {!isRunning && (
@@ -801,7 +799,7 @@ const OllamaSection = React.memo(({
                                 }}
                                 className={C_ACCOUNTSTAB_6}
                             >
-                                <Zap className="h-3.5 w-3.5 mr-2" />
+                                <IconBolt className="h-3.5 w-3.5 mr-2" />
                                 {t('accounts.start')}
                             </Button>
                         )}
@@ -859,12 +857,12 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
                 <div className="space-y-1.5">
                     <div className="flex items-center gap-3">
                         <div className="bg-primary/10 p-2 rounded-xl">
-                            <UserPlus className="w-5 h-5 text-primary" />
+                            <IconUserPlus className="w-5 h-5 text-primary" />
                         </div>
                         <h2 className="text-2xl font-semibold text-foreground">{t('accounts.title')}</h2>
                     </div>
                     <p className="flex items-center gap-2 text-sm text-muted-foreground/70">
-                        <Info className="w-3 h-3" />
+                        <IconInfoCircle className="w-3 h-3" />
                         {t('accounts.subtitle')}
                     </p>
                 </div>
@@ -878,7 +876,7 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
                     }}
                     className={C_ACCOUNTSTAB_7}
                 >
-                    <RefreshCw className={cn("h-3.5 w-3.5 transition-transform duration-500", linkedAccounts.loading ? "animate-spin" : "group-hover:rotate-180")} />
+                    <IconRefresh className={cn("h-3.5 w-3.5 transition-transform duration-500", linkedAccounts.loading ? "animate-spin" : "group-hover:rotate-180")} />
                     {t('common.refresh')}
                 </Button>
             </header>

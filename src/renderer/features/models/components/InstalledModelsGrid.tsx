@@ -8,25 +8,7 @@
  * (at your option) any later version.
  */
 
-import {
-    AlertCircle,
-    Brain,
-    Check,
-    ChevronDown,
-    ChevronRight,
-    Cloud,
-    Cpu,
-    Eye,
-    EyeOff,
-    Globe,
-    Heart,
-    Loader2,
-    RefreshCw,
-    Sparkles,
-    Star,
-    User,
-    Zap
-} from 'lucide-react';
+import { IconAlertCircle, IconBolt,IconBrain, IconCheck, IconChevronDown, IconChevronRight, IconCloud, IconCpu, IconEye, IconEyeOff, IconGlobe, IconHeart, IconLoader2, IconRefresh, IconSparkles, IconStar, IconUser } from '@tabler/icons-react';
 import React, { memo, useMemo, useState } from 'react';
 
 import type { LinkedAccountInfo } from '@/electron';
@@ -65,70 +47,70 @@ interface ProviderConfig {
 
 const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
     copilot: {
-        icon: Sparkles,
+        icon: IconSparkles,
         color: 'text-primary',
         bgColor: 'bg-primary/10',
         borderColor: 'border-primary/20',
         labelKey: 'providerLabels.githubCopilot'
     },
     openai: {
-        icon: Brain,
+        icon: IconBrain,
         color: 'text-success',
         bgColor: 'bg-success/10',
         borderColor: 'border-success/20',
         labelKey: 'providerLabels.openai'
     },
     anthropic: {
-        icon: Zap,
+        icon: IconBolt,
         color: 'text-warning',
         bgColor: 'bg-warning/10',
         borderColor: 'border-warning/20',
         labelKey: 'providerLabels.anthropic'
     },
     claude: {
-        icon: Zap,
+        icon: IconBolt,
         color: 'text-warning',
         bgColor: 'bg-warning/10',
         borderColor: 'border-warning/20',
         labelKey: 'providerLabels.claude'
     },
     ollama: {
-        icon: Cpu,
+        icon: IconCpu,
         color: 'text-accent',
         bgColor: 'bg-accent/10',
         borderColor: 'border-accent/20',
         labelKey: 'providerLabels.ollama'
     },
     codex: {
-        icon: Globe,
+        icon: IconGlobe,
         color: 'text-info',
         bgColor: 'bg-info/10',
         borderColor: 'border-info/20',
         labelKey: 'providerLabels.codex'
     },
     antigravity: {
-        icon: Cloud,
+        icon: IconCloud,
         color: 'text-secondary',
         bgColor: 'bg-secondary/10',
         borderColor: 'border-secondary/20',
         labelKey: 'providerLabels.googleAi'
     },
     nvidia: {
-        icon: Cpu,
+        icon: IconCpu,
         color: 'text-success',
         bgColor: 'bg-success/10',
         borderColor: 'border-success/20',
         labelKey: 'providerLabels.nvidia'
     },
     opencode: {
-        icon: Globe,
+        icon: IconGlobe,
         color: 'text-secondary',
         bgColor: 'bg-secondary/10',
         borderColor: 'border-secondary/20',
         labelKey: 'providerLabels.openCode'
     },
     custom: {
-        icon: AlertCircle,
+        icon: IconAlertCircle,
         color: 'text-muted-foreground',
         bgColor: 'bg-muted/30',
         borderColor: 'border-border/50',
@@ -160,7 +142,7 @@ const QuotaDisplay: React.FC<QuotaDisplayProps> = memo(({ provider, quotas, acco
                         style={{ width: `${percent}%` }}
                     />
                 </div>
-                <span className="text-xxs text-muted-foreground">{quota.remaining}/{quota.limit}</span>
+                <span className="text-sm text-muted-foreground">{quota.remaining}/{quota.limit}</span>
             </div>
         );
     }
@@ -177,7 +159,7 @@ const QuotaDisplay: React.FC<QuotaDisplayProps> = memo(({ provider, quotas, acco
                         style={{ width: `${percent}%` }}
                     />
                 </div>
-                <span className="text-xxs text-muted-foreground">{percent}%</span>
+                <span className="text-sm text-muted-foreground">{percent}%</span>
             </div>
         );
     }
@@ -195,7 +177,7 @@ const QuotaDisplay: React.FC<QuotaDisplayProps> = memo(({ provider, quotas, acco
                         style={{ width: `${percent}%` }}
                     />
                 </div>
-                <span className="text-xxs text-muted-foreground">{percent}%</span>
+                <span className="text-sm text-muted-foreground">{percent}%</span>
             </div>
         );
     }
@@ -212,7 +194,7 @@ const QuotaDisplay: React.FC<QuotaDisplayProps> = memo(({ provider, quotas, acco
                         style={{ width: `${avgPercent}%` }}
                     />
                 </div>
-                <span className="text-xxs text-muted-foreground">{Math.round(avgPercent)}%</span>
+                <span className="text-sm text-muted-foreground">{Math.round(avgPercent)}%</span>
             </div>
         );
     }
@@ -257,9 +239,9 @@ const AccountTabs: React.FC<AccountTabsProps> = memo(({
                                 : "bg-muted/30 text-muted-foreground hover:bg-muted/50 border border-transparent"
                         )}
                     >
-                        <User className="w-3 h-3" />
+                        <IconUser className="w-3 h-3" />
                         <span>{account.email ?? account.displayName ?? `Account ${account.id.slice(0, 6)}`}</span>
-                        {isActive && <Check className="w-3 h-3" />}
+                        {isActive && <IconCheck className="w-3 h-3" />}
                         <QuotaDisplay provider={provider} quotas={quotas} accountId={account.id} />
                     </button>
                 );
@@ -325,14 +307,14 @@ const InstalledModelCard = memo(({
             {/* Favorite indicator */}
             {isFavorite && (
                 <div className="absolute -top-1.5 -right-1.5">
-                    <Star className="w-4 h-4 text-warning fill-warning" />
+                    <IconStar className="w-4 h-4 text-warning fill-warning" />
                 </div>
             )}
 
             {/* Header with provider badge and quota */}
             <div className="flex items-center justify-between mb-3">
                 <div className={cn(
-                    "flex items-center gap-1.5 px-2 py-1 rounded-md text-xxs font-bold  ",
+                    "flex items-center gap-1.5 px-2 py-1 rounded-md text-sm font-bold ",
                     providerConfig.bgColor,
                     providerConfig.color
                 )}>
@@ -341,7 +323,7 @@ const InstalledModelCard = memo(({
                 </div>
                 {hasQuota && quotaPercent !== undefined && (
                     <div className={cn(
-                        "px-2 py-0.5 rounded text-xxs font-bold",
+                        "px-2 py-0.5 rounded text-sm font-bold",
                         quotaPercent > 50 ? "bg-success/10 text-success" :
                             quotaPercent > 20 ? "bg-warning/10 text-warning" :
                                 "bg-destructive/10 text-destructive"
@@ -358,7 +340,7 @@ const InstalledModelCard = memo(({
 
             {/* Model ID */}
             {model.name && model.id && model.name !== model.id && (
-                <p className="text-xxs text-muted-foreground/60 font-mono mb-2 line-clamp-1" title={model.id}>
+                <p className="text-sm text-muted-foreground/60 font-mono mb-2 line-clamp-1" title={model.id}>
                     {model.id}
                 </p>
             )}
@@ -374,14 +356,14 @@ const InstalledModelCard = memo(({
             <div className="flex flex-wrap gap-2 mb-3">
                 {model.contextWindow !== undefined && (
                     <div className="bg-muted/30 rounded px-2 py-1">
-                        <span className="text-xxxs text-muted-foreground/60 mr-1">{t('modelsPage.context')}</span>
-                        <span className="text-xxs font-bold">{formatContextWindow(model.contextWindow)}</span>
+                        <span className="text-sm text-muted-foreground/60 mr-1">{t('modelsPage.context')}</span>
+                        <span className="text-sm font-bold">{formatContextWindow(model.contextWindow)}</span>
                     </div>
                 )}
                 {model.pricing && (
                     <div className="bg-muted/30 rounded px-2 py-1">
-                        <span className="text-xxxs text-muted-foreground/60 mr-1">{t('modelsPage.pricing')}</span>
-                        <span className="text-xxs font-bold">{formatPricing(model.pricing.input)}</span>
+                        <span className="text-sm text-muted-foreground/60 mr-1">{t('modelsPage.pricing')}</span>
+                        <span className="text-sm font-bold">{formatPricing(model.pricing.input)}</span>
                     </div>
                 )}
             </div>
@@ -390,7 +372,7 @@ const InstalledModelCard = memo(({
             {Array.isArray(model.thinkingLevels) && model.thinkingLevels.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-3">
                     {model.thinkingLevels.slice(0, 3).map(level => (
-                        <span key={level} className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xxxs font-bold">
+                        <span key={level} className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-sm font-bold">
                             {level}
                         </span>
                     ))}
@@ -404,14 +386,14 @@ const InstalledModelCard = memo(({
                     onClick={() => onSetDefault(modelId)}
                     disabled={isDefault}
                     className={cn(
-                        "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-xxs font-bold transition-all",
+                        "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-sm font-bold transition-all",
                         isDefault
                             ? "bg-primary/20 text-primary cursor-default"
                             : "bg-muted/30 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                     )}
                     title={isDefault ? t('modelsPage.isDefault') : t('modelsPage.setDefault')}
                 >
-                    <Check className="w-3 h-3" />
+                    <IconCheck className="w-3 h-3" />
                     {isDefault ? t('modelsPage.default') : t('modelsPage.setDefault')}
                 </button>
 
@@ -426,7 +408,7 @@ const InstalledModelCard = memo(({
                     )}
                     title={isFavorite ? t('modelsPage.unfavorite') : t('modelsPage.favorite')}
                 >
-                    <Heart className={cn("w-3.5 h-3.5", isFavorite && "fill-current")} />
+                    <IconHeart className={cn("w-3.5 h-3.5", isFavorite && "fill-current")} />
                 </button>
 
                 {/* Hide button */}
@@ -440,7 +422,7 @@ const InstalledModelCard = memo(({
                     )}
                     title={isHidden ? t('modelsPage.show') : t('modelsPage.hide')}
                 >
-                    {isHidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    {isHidden ? <IconEyeOff className="w-3.5 h-3.5" /> : <IconEye className="w-3.5 h-3.5" />}
                 </button>
             </div>
 
@@ -543,7 +525,7 @@ const ProviderSection = memo(({
                     onClick={() => setIsCollapsed(!isCollapsed)}
                     className="p-1 rounded hover:bg-muted/50 transition-colors"
                 >
-                    {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    {isCollapsed ? <IconChevronRight className="w-4 h-4" /> : <IconChevronDown className="w-4 h-4" />}
                 </button>
             </div>
 
@@ -641,7 +623,7 @@ export function InstalledModelsGrid({
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+                <IconLoader2 className="w-8 h-8 animate-spin text-primary mb-4" />
                 <p className="text-sm">{t('modelsPage.loadingModels')}</p>
             </div>
         );
@@ -671,7 +653,7 @@ export function InstalledModelsGrid({
                                 : "bg-muted/30 text-muted-foreground border border-border/50 hover:bg-muted/50"
                         )}
                     >
-                        {showHidden ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                        {showHidden ? <IconEye className="w-3.5 h-3.5" /> : <IconEyeOff className="w-3.5 h-3.5" />}
                         {showHidden ? t('modelsPage.hideHidden') : t('modelsPage.showHidden')}
                     </button>
 
@@ -679,7 +661,7 @@ export function InstalledModelsGrid({
                         onClick={onRefresh}
                         className={C_INSTALLEDMODELSGRID_2}
                     >
-                        <RefreshCw className="w-3.5 h-3.5" />
+                        <IconRefresh className="w-3.5 h-3.5" />
                         {t('modelsPage.refresh')}
                     </button>
                 </div>
@@ -688,7 +670,7 @@ export function InstalledModelsGrid({
             {/* Provider Sections */}
             {sortedProviders.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
-                    <AlertCircle className="w-10 h-10 mb-3 opacity-30" />
+                    <IconAlertCircle className="w-10 h-10 mb-3 opacity-30" />
                     <p className="text-sm">{t('modelsPage.noModelsFound')}</p>
                 </div>
             ) : (

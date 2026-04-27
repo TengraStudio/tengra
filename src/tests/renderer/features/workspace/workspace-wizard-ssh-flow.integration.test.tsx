@@ -11,7 +11,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { WizardStepRenderer } from '@/features/workspace/components/WizardStepRenderer';
+import { SetupStepRenderer } from '@/features/workspace/workspace-setup';
 import { SSHFile } from '@/types';
 
 const baseFormData = {
@@ -32,11 +32,11 @@ const baseSshForm = {
     passphrase: '',
 };
 
-describe('Workspace wizard SSH integration flow', () => {
+describe('Workspace setup SSH integration flow', () => {
     it('renders ssh connection fields and updates host input', () => {
         const setSshForm = vi.fn();
         render(
-            <WizardStepRenderer
+            <SetupStepRenderer
                 step="ssh-connection"
                 formData={baseFormData}
                 setFormData={vi.fn()}
@@ -55,7 +55,7 @@ describe('Workspace wizard SSH integration flow', () => {
             />
         );
 
-        const hostInput = screen.getByPlaceholderText('workspaceWizard.placeholder.example');
+        const hostInput = screen.getByPlaceholderText('workspaceSetup.placeholder.example');
         fireEvent.change(hostInput, { target: { value: '127.0.0.1' } });
         expect(setSshForm).toHaveBeenCalled();
     });
@@ -67,7 +67,7 @@ describe('Workspace wizard SSH integration flow', () => {
             { name: 'README.md', isDirectory: false, size: 10 },
         ];
         render(
-            <WizardStepRenderer
+            <SetupStepRenderer
                 step="ssh-browser"
                 formData={baseFormData}
                 setFormData={vi.fn()}

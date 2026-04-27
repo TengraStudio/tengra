@@ -159,19 +159,26 @@ fn read_db_service_token_file() -> Option<String> {
 }
 
 fn db_service_token_file_candidates() -> Vec<PathBuf> {
-    let Some(app_data) = std::env::var("APPDATA").ok() else {
-        return Vec::new();
-    };
+    let mut candidates = Vec::new();
 
-    ["Tengra", "tengra"]
-        .into_iter()
-        .map(|root| {
-            PathBuf::from(&app_data)
-                .join(root)
-                .join("services")
-                .join("db-service.token")
-        })
-        .collect()
+    if let Ok(root) = std::env::var("TENGRA_USER_DATA_ROOT") {
+        candidates.push(PathBuf::from(root).join("services").join("db-service.token"));
+    }
+
+    if let Ok(app_data) = std::env::var("APPDATA") {
+        candidates.extend(
+            ["Tengra", "tengra"]
+                .into_iter()
+                .map(|root| {
+                    PathBuf::from(&app_data)
+                        .join(root)
+                        .join("services")
+                        .join("db-service.token")
+                }),
+        );
+    }
+
+    candidates
 }
 
 fn constant_time_eq(left: &[u8], right: &[u8]) -> bool {

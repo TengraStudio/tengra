@@ -21,7 +21,7 @@ export function BadgeQ({ quantization }: { quantization: string }) {
     else if (q.includes("CKPT")) { color = "bg-warning/10 text-warning"; }
 
     return (
-        <span className={cn("text-xxs font-bold px-1.5 py-0.5 rounded", color)}>
+        <span className={cn("text-sm font-bold px-1.5 py-0.5 rounded", color)}>
             {q}
         </span>
     );

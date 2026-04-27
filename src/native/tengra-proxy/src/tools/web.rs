@@ -1,6 +1,6 @@
 use crate::tools::ToolDispatchResponse;
-use reqwest::{header, Client};
-/**
+use reqwest::Client;
+/*
  * Tengra - Your Personal AI Assistant
  * Copyright (c) 2026 TengraStudio
  *

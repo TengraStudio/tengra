@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { ChevronRight, HardDrive, Server } from 'lucide-react';
+import { IconChevronRight, IconDatabase, IconServer } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
 
 import { UI_PRIMITIVES } from '@/constants/ui-primitives';
@@ -116,20 +116,20 @@ export const TerminalConnectionSelector: React.FC<TerminalConnectionSelectorProp
                             onClick={() => handleSelect({ id: 'local', name: t('terminal.local'), type: 'local' })}
                         >
                             <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                <HardDrive size={16} />
+                                <IconDatabase size={16} />
                             </div>
                             <div className="flex-1 flex flex-col">
                                 <span className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "p-0 bg-transparent font-bold")}>{t('terminal.local_terminal')}</span>
-                                <span className="text-xxxs text-muted-foreground">{t('terminal.local_terminal_desc')}</span>
+                                <span className="text-sm text-muted-foreground">{t('terminal.local_terminal_desc')}</span>
                             </div>
-                            <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <IconChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
                     </div>
 
                     <div className="space-y-1">
-                        <h4 className="px-3 text-xxs font-bold text-muted-foreground/60 uppercase tracking-wider">{t('terminal.ssh_connections')}</h4>
+                        <h4 className="px-3 text-sm font-bold text-muted-foreground/60 uppercase ">{t('terminal.ssh_connections')}</h4>
                         {sshProfiles.length === 0 && !loading && (
-                            <div className="px-3 py-2 text-xxs text-muted-foreground italic">{t('terminal.no_ssh_profiles')}</div>
+                            <div className="px-3 py-2 text-sm text-muted-foreground ">{t('terminal.no_ssh_profiles')}</div>
                         )}
                         {sshProfiles.map(profile => (
                             <div
@@ -143,21 +143,21 @@ export const TerminalConnectionSelector: React.FC<TerminalConnectionSelectorProp
                                 })}
                             >
                                 <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-muted/50 text-muted-foreground group-hover:text-foreground">
-                                    <Server size={16} />
+                                    <IconServer size={16} />
                                 </div>
                                 <div className="flex-1 flex flex-col">
                                     <span className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "p-0 bg-transparent font-bold")}>{profile.name || profile.host}</span>
-                                    <span className="text-xxxs text-muted-foreground">{profile.username}@{profile.host}:{profile.port}</span>
+                                    <span className="text-sm text-muted-foreground">{profile.username}@{profile.host}:{profile.port}</span>
                                 </div>
-                                <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <IconChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
                         ))}
                     </div>
 
                     <div className="space-y-1">
-                        <h4 className="px-3 text-xxs font-bold text-muted-foreground/60 uppercase tracking-wider">{t('terminal.docker_containers')}</h4>
+                        <h4 className="px-3 text-sm font-bold text-muted-foreground/60 uppercase ">{t('terminal.docker_containers')}</h4>
                         {containers.length === 0 && !loading && (
-                            <div className="px-3 py-2 text-xxs text-muted-foreground italic">{t('terminal.no_containers')}</div>
+                            <div className="px-3 py-2 text-sm text-muted-foreground ">{t('terminal.no_containers')}</div>
                         )}
                         {containers.map(container => (
                             <div
@@ -175,16 +175,16 @@ export const TerminalConnectionSelector: React.FC<TerminalConnectionSelectorProp
                                 </div>
                                 <div className="flex-1 flex flex-col">
                                     <span className={cn(UI_PRIMITIVES.MENU_ITEM_BASE, "p-0 bg-transparent font-bold")}>{container.name}</span>
-                                    <span className="text-xxxs text-muted-foreground">{container.status}</span>
+                                    <span className="text-sm text-muted-foreground">{container.status}</span>
                                 </div>
-                                <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <IconChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
                         ))}
                     </div>
                 </div>
 
                 {loading && (
-                    <div className="p-4 text-center text-xxs text-muted-foreground animate-pulse">
+                    <div className="p-4 text-center text-sm text-muted-foreground animate-pulse">
                         {t('common.loading')}
                     </div>
                 )}

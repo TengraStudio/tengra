@@ -13,10 +13,8 @@ import { Container } from '@main/core/container';
 import { createLazyServiceDependency, createLazyServiceProxy, type LazyServiceDependency, lazyServiceRegistry } from '@main/core/lazy-services';
 import { appLogger } from '@main/logging/logger';
 import { McpDeps } from '@main/mcp/server-utils';
-import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import type { PerformanceService } from '@main/services/analysis/performance.service';
 import type { TelemetryService } from '@main/services/analysis/telemetry.service';
-import type { BackupService } from '@main/services/data/backup.service';
 import { ChatEventService } from '@main/services/data/chat-event.service';
 import { DataService } from '@main/services/data/data.service';
 import { DatabaseService } from '@main/services/data/database.service';
@@ -81,6 +79,7 @@ import { SessionDirectoryService } from '@main/services/session/session-director
 import { SessionModuleRegistryService } from '@main/services/session/session-module-registry.service';
 import { BackgroundServiceService } from '@main/services/system/background-service.service';
 import { CacheService } from '@main/services/system/cache.service';
+import { CodeLanguageService } from '@main/services/system/code-language.service';
 import { CommandService } from '@main/services/system/command.service';
 import { ConfigService } from '@main/services/system/config.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
@@ -201,6 +200,7 @@ export interface Services {
     agentService: AgentService;
     updateService: UpdateService;
     localeService: LocaleService;
+    codeLanguageService: CodeLanguageService;
 
     healthCheckService: HealthCheckService;
     fileManagementService: FileManagementService;
@@ -214,14 +214,14 @@ export interface Services {
     configService: ConfigService;
     keyRotationService: KeyRotationService;
     tokenService: TokenService; 
-    auditLogService: AuditLogService;
+
     promptTemplatesService: PromptTemplatesService;
     performanceService: PerformanceService;
     multiModelComparisonService: MultiModelComparisonService;
     runtimeManifestService: RuntimeManifestService;
     runtimeHealthService: RuntimeHealthService;
     runtimeBootstrapService: RuntimeBootstrapService;
-    backupService: BackupService;
+
     modelRegistryService: ModelRegistryService;
     eventBusService: EventBusService;
     powerManagerService: PowerManagerService;
@@ -252,7 +252,12 @@ export async function startDeferredServices(): Promise<void> {
  * Initialize a minimal set of services needed to create the application window.
  * This should be extremely fast (<100ms).
  */
-export async function createMinimalServices(): Promise<{ settingsService: SettingsService; dataService: DataService; eventBusService: EventBusService }> {
+export async function createMinimalServices(): Promise<{ 
+    settingsService: SettingsService; 
+    dataService: DataService; 
+    eventBusService: EventBusService;
+    runtimeBootstrapService: RuntimeBootstrapService;
+}> {
     let dataService: DataService;
     
     if (container.has('dataService')) {
@@ -265,13 +270,29 @@ export async function createMinimalServices(): Promise<{ settingsService: Settin
     const eventBusService = new EventBusService();
     container.registerInstance('eventBusService', eventBusService);
 
+    // Runtime services are fast and needed for boot boundary
+    const runtimeManifestService = new RuntimeManifestService();
+    const runtimeHealthService = new RuntimeHealthService();
+    const runtimeBootstrapService = new RuntimeBootstrapService(runtimeManifestService, runtimeHealthService);
+    
+    container.registerInstance('runtimeManifestService', runtimeManifestService);
+    container.registerInstance('runtimeHealthService', runtimeHealthService);
+    container.registerInstance('runtimeBootstrapService', runtimeBootstrapService);
+
+    // Start scanning in background IMMEDIATELY so status is ready for renderer
+    void runtimeBootstrapService.initialize().catch(e => {
+        appLogger.error('Main', 'Early runtime bootstrap initialization failed', e);
+    });
+
     // Settings needs dataService for path. We pass undefined for authService initially.
     const settingsService = new SettingsService(dataService, undefined);
     await settingsService.initialize();
     container.registerInstance('settingsService', settingsService);
 
-    return { settingsService, dataService, eventBusService };
+    return { settingsService, dataService, eventBusService, runtimeBootstrapService };
 }
+
+
 
 /**
  * Complete the initialization of all core services after the window has been created.
@@ -331,18 +352,9 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
 
     container.register('networkService', () => new NetworkService());
     container.register('eventBusService', () => new EventBusService());
-    container.register('runtimeManifestService', () => new RuntimeManifestService());
-    container.register('runtimeHealthService', () => new RuntimeHealthService());
+    // Runtime services are now part of the minimal set
     container.register('utilityProcessService', () => new UtilityProcessService());
-    container.register(
-        'runtimeBootstrapService',
-        (rms, rhs) =>
-            new RuntimeBootstrapService(
-                rms as RuntimeManifestService,
-                rhs as RuntimeHealthService
-            ),
-        ['runtimeManifestService', 'runtimeHealthService']
-    );
+
     container.register(
         'chatSessionRegistryService',
         (ebs, modules) =>
@@ -462,6 +474,9 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
     );
 
     container.register('localeService', ds => new LocaleService(ds as DataService), [
+        'dataService',
+    ]);
+    container.register('codeLanguageService', ds => new CodeLanguageService(ds as DataService), [
         'dataService',
     ]);
     container.register('extensionService', ss => new ExtensionService(ss as SettingsService), [
@@ -815,13 +830,7 @@ function registerLazyServices() {
         });
     });
 
-    lazyServiceRegistry.register('backupService', async () => {
-        const dataService = container.resolve<DataService>('dataService');
-        const databaseService = container.resolve<DatabaseService>('databaseService');
-        const scheduler = container.resolve<JobSchedulerService>('jobSchedulerService');
-        const { BackupService } = await import('@main/services/data/backup.service');
-        return new BackupService(dataService, databaseService, scheduler);
-    });
+
 
     lazyServiceRegistry.register('updateService', async () => {
         const settingsService = container.resolve<SettingsService>('settingsService');
@@ -856,21 +865,22 @@ function registerLazyServices() {
 }
 
 function registerLazyProxies() {
-    container.register('workspaceService', () => createLazyServiceProxy('workspaceService'));
-    container.register('advancedMemoryService', () => createLazyServiceProxy('advancedMemoryService'));
-    container.register('memoryService', () => createLazyServiceProxy('memoryService'));
-    container.register('brainService', () => createLazyServiceProxy('brainService'));
+    container.register('workspaceService', () => createLazyServiceProxy('workspaceService'), ['lspService', 'utilityProcessService', 'cacheService', 'proxyService']);
+    container.register('advancedMemoryService', () => createLazyServiceProxy('advancedMemoryService'), ['databaseService', 'embeddingService', 'eventBusService', 'settingsService', 'authService']);
+    container.register('memoryService', () => createLazyServiceProxy('memoryService'), ['databaseService', 'eventBusService', 'advancedMemoryService']);
+    container.register('brainService', () => createLazyServiceProxy('brainService'), ['settingsService', 'llmService', 'eventBusService', 'advancedMemoryService']);
 
     container.register('dockerService', () =>
-        createLazyServiceProxy<DockerService>('dockerService')
+        createLazyServiceProxy<DockerService>('dockerService'),
+        ['commandService', 'sshService']
     );
-    container.register('sshService', () => createLazyServiceProxy<SSHService>('sshService'));
-    container.register('logoService', () => createLazyServiceProxy<LogoService>('logoService'));
-    container.register('performanceService', () => createLazyServiceProxy<PerformanceService>('performanceService'));
-    container.register('telemetryService', () => createLazyServiceProxy<TelemetryService>('telemetryService'));
-    container.register('backupService', () => createLazyServiceProxy<BackupService>('backupService'));
-    container.register('updateService', () => createLazyServiceProxy<UpdateService>('updateService'));
-    container.register('mcpPluginService', () => createLazyServiceProxy<McpPluginService>('mcpPluginService'));
+    container.register('sshService', () => createLazyServiceProxy<SSHService>('sshService'), ['dataService', 'securityService']);
+    container.register('logoService', () => createLazyServiceProxy<LogoService>('logoService'), ['llmService', 'workspaceService', 'localImageService', 'imagePersistenceService', 'authService', 'proxyService', 'advancedMemoryService', 'modelRegistryService']);
+    container.register('performanceService', () => createLazyServiceProxy<PerformanceService>('performanceService'), ['powerManagerService', 'eventBusService', 'jobSchedulerService']);
+    container.register('telemetryService', () => createLazyServiceProxy<TelemetryService>('telemetryService'), ['settingsService', 'powerManagerService', 'eventBusService', 'jobSchedulerService', 'utilityProcessService']);
+
+    container.register('updateService', () => createLazyServiceProxy<UpdateService>('updateService'), ['settingsService']);
+    container.register('mcpPluginService', () => createLazyServiceProxy<McpPluginService>('mcpPluginService'), ['settingsService', 'mcpDeps']);
 }
 
 function registerWorkspaceServices() {
@@ -976,7 +986,7 @@ function registerWorkspaceServices() {
 }
 
 function registerAnalysisServices() {
-    container.register('auditLogService', (dbs, utilityProcessService) => new AuditLogService(dbs as DatabaseService, utilityProcessService as UtilityProcessService), ['databaseService', 'utilityProcessService']);
+
     container.register('ruleService', dbs => new RuleService(dbs as DatabaseService), ['databaseService']);
     container.register('featureFlagService', ds => new FeatureFlagService(ds as DataService), ['dataService']);
     container.register('exportService', () => new ExportService());
@@ -1004,9 +1014,9 @@ function registerMcpServices() {
                 ollama: services[13] as OllamaService,
                 advancedMemory: services[14] as AdvancedMemoryService,
                 modelCollaboration: services[15] as ModelCollaborationService,
-                auditLog: services[16] as AuditLogService,
-                workspace: services[17] as WorkspaceService,
-                proxy: services[18] as ProxyService,
+
+                workspace: services[16] as WorkspaceService,
+                proxy: services[17] as ProxyService,
             };
         },
         [
@@ -1026,7 +1036,7 @@ function registerMcpServices() {
             'ollamaService',
             'advancedMemoryService',
             'modelCollaborationService',
-            'auditLogService',
+
             'workspaceService',
             'proxyService',
         ]
@@ -1063,7 +1073,7 @@ function buildServicesMap(
         securityService: container.resolve<SecurityService>('securityService'),
         utilityProcessService: container.resolve<UtilityProcessService>('utilityProcessService'),
         cacheService: container.resolve<CacheService>('cacheService'),
-
+        codeLanguageService: container.resolve<CodeLanguageService>('codeLanguageService'),
         embeddingService: container.resolve<EmbeddingService>('embeddingService'),
         dockerService: createLazyServiceDependency<DockerService>('dockerService'),
 
@@ -1104,7 +1114,7 @@ function buildServicesMap(
         configService: container.resolve<ConfigService>('configService'),
         keyRotationService: container.resolve<KeyRotationService>('keyRotationService'),
         tokenService: container.resolve<TokenService>('tokenService'),
-        auditLogService: createDeferredContainerProxy<AuditLogService>('auditLogService'),
+
         promptTemplatesService: createDeferredContainerProxy<PromptTemplatesService>('promptTemplatesService'),
         modelCollaborationService: createDeferredContainerProxy<ModelCollaborationService>('modelCollaborationService'),
         performanceService: createDeferredContainerProxy<PerformanceService>('performanceService'),
@@ -1116,7 +1126,7 @@ function buildServicesMap(
         runtimeBootstrapService: container.resolve<RuntimeBootstrapService>(
             'runtimeBootstrapService'
         ),
-        backupService: createDeferredContainerProxy<BackupService>('backupService'),
+
         modelRegistryService: createDeferredContainerProxy<ModelRegistryService>('modelRegistryService'),
         eventBusService: container.resolve<EventBusService>('eventBusService'),
         powerManagerService: container.resolve<PowerManagerService>('powerManagerService'),

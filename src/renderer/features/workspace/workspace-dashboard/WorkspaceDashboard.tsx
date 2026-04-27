@@ -8,18 +8,19 @@
  * (at your option) any later version.
  */
 
-import { WorkspaceOverviewTab } from './WorkspaceOverviewTab';
-import { useWorkspaceDashboardLogic } from '@renderer/features/workspace/hooks/useWorkspaceDashboardLogic';
-import { RefreshCw } from 'lucide-react';
+import { IconRefresh } from '@tabler/icons-react';
 import React from 'react';
 
 import { LoadingSpinner } from '@/components/lazy';
+import { useWorkspaceDashboardLogic } from '@/features/workspace/hooks/useWorkspaceDashboardLogic';
 import { Language } from '@/i18n';
 import type { Workspace, WorkspaceDashboardTab } from '@/types';
 import { performanceMonitor } from '@/utils/performance';
 
+import { WorkspaceOverviewTab } from './WorkspaceOverviewTab';
+
 const TerminalComponent = React.lazy(() =>
-    import('@renderer/features/workspace/components/ide').then(m => ({
+    import('@/features/workspace/components/ide').then(m => ({
         default: m.TerminalComponent,
     }))
 );
@@ -112,7 +113,7 @@ export const WorkspaceDashboard = ({
     if (state.activeTab === 'overview' && state.loading && !analysis) {
         return (
             <div className="flex items-center justify-center p-12 text-muted-foreground">
-                <RefreshCw className="w-6 h-6 animate-spin mr-2" />
+                <IconRefresh className="w-6 h-6 animate-spin mr-2" />
                 {t('workspaceDashboard.analyzing')}
             </div>
         );

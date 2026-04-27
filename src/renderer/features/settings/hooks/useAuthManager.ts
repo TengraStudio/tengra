@@ -8,9 +8,10 @@
  * (at your option) any later version.
  */
 
-import { useSettingsLogic } from '@renderer/features/settings/hooks/useSettingsLogic';
-import { SettingsCategory } from '@renderer/features/settings/types';
 import { useMemo, useState } from 'react';
+
+import { useSettingsLogic } from '@/features/settings/hooks/useSettingsLogic';
+import { SettingsCategory } from '@/features/settings/types';
 
 export function useAuthManager() {
     const logic = useSettingsLogic();

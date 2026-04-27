@@ -29,8 +29,8 @@ interface AnimatedCardProps {
  * @example
  * ```tsx
  * <AnimatedCard hoverEffect="3d">
- *   <h3>Card Title</h3>
- *   <p>Card content</p>
+ * <h3>Card Title</h3>
+ * <p>Card content</p>
  * </AnimatedCard>
  * ```
  */

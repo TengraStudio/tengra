@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Plus, TerminalSquare, X } from 'lucide-react';
+import { IconPlus, IconTerminal, IconX } from '@tabler/icons-react';
 import React from 'react';
 
 import { cn } from '@/lib/utils';
@@ -42,13 +42,13 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
                             : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                     )}
                 >
-                    <TerminalSquare className={cn("w-3.5 h-3.5", activeTabId === tab.id ? "text-primary" : "opacity-70")} />
+                    <IconTerminal className={cn("w-3.5 h-3.5", activeTabId === tab.id ? "text-primary" : "opacity-70")} />
                     {tab.name}
                     <div
                         onClick={(e) => { e.stopPropagation(); closeTab(tab.id); }}
                         className="ml-1 p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                     >
-                        <X className="w-3 h-3" />
+                        <IconX className="w-3 h-3" />
                     </div>
                 </button>
             ))}
@@ -57,7 +57,7 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
                 onClick={onNewTerminalClick}
                 className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors ml-1"
             >
-                <Plus className="w-3.5 h-3.5" />
+                <IconPlus className="w-3.5 h-3.5" />
             </button>
         </div>
     );

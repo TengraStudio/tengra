@@ -1,13 +1,3 @@
-/**
- * Tengra - Your Personal AI Assistant
- * Copyright (c) 2026 TengraStudio
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- */
-
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -27,92 +17,35 @@ const formatBytes = (bytes: number) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 };
 
-export const WorkspaceStatsCards: React.FC<WorkspaceStatsCardsProps> = ({ stats, type, moduleCount }) => {
+export const WorkspaceStatsCards: React.FC<WorkspaceStatsCardsProps> = ({ stats, moduleCount }) => {
     const { t } = useTranslation();
 
     const formattedSize = React.useMemo(() => {
         return stats ? formatBytes(stats.totalSize) : '0 B';
     }, [stats]);
+    
     const formattedLoc = React.useMemo(() => {
         const loc = stats?.loc ?? 0;
         return new Intl.NumberFormat().format(loc);
     }, [stats?.loc]);
 
-    const largestDirectories = stats?.largestDirectories ?? [];
-
     return (
-        <div className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-premium hover:shadow-md">
-                    <div className="text-xxs font-bold text-muted-foreground mb-1">
-                        {t('workspaceDashboard.fileCount')}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+                { label: t('workspaceDashboard.fileCount'), value: stats?.fileCount ?? 0 },
+                { label: t('workspaceDashboard.loc'), value: `~${formattedLoc}` },
+                { label: t('workspaceDashboard.modules'), value: moduleCount },
+                { label: t('workspaceDashboard.totalSize'), value: formattedSize }
+            ].map((stat, i) => (
+                <div key={i} className="group px-5 py-4 rounded-2xl border border-border/5 bg-muted/5 transition-all hover:bg-muted/10">
+                    <div className="text-[11px] font-bold text-muted-foreground/30 tracking-wider mb-1.5 transition-colors group-hover:text-primary/40">
+                        {stat.label.toLowerCase()}
                     </div>
-                    <div className="text-2xl font-bold text-foreground">{stats?.fileCount ?? 0}</div>
-                </div>
-                <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-premium hover:shadow-md">
-                    <div className="text-xxs font-bold text-muted-foreground mb-1">
-                        {t('workspaceDashboard.loc')}
-                    </div>
-                    <div className="text-2xl font-bold text-foreground">~{formattedLoc}</div>
-                    <div className="mt-1 typo-overline text-muted-foreground/70">
-                        {t('workspaceDashboard.locHint')}
+                    <div className="text-2xl font-bold text-foreground/80 tracking-tight">
+                        {stat.value}
                     </div>
                 </div>
-                <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-premium hover:shadow-md">
-                    <div className="text-xxs font-bold text-muted-foreground mb-1">
-                        {t('workspaceDashboard.modules')}
-                    </div>
-                    <div className="text-2xl font-bold text-foreground">{moduleCount}</div>
-                </div>
-                <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-premium hover:shadow-md">
-                    <div className="text-xxs font-bold text-muted-foreground mb-1">
-                        {t('workspaceDashboard.type')}
-                    </div>
-                    <div className="text-2xl font-bold text-primary capitalize">{type}</div>
-                </div>
-            </div>
-
-            <div className="bg-card rounded-xl border border-border p-4 hover:border-primary/20 transition-premium hover:shadow-md">
-                <div className="mb-4 flex items-start justify-between gap-3">
-                    <div>
-                        <div className="text-xxs font-bold text-muted-foreground">
-                            {t('workspaceDashboard.totalSize')}
-                        </div>
-                        <div className="mt-1 text-3xl font-bold text-foreground">{formattedSize}</div>
-                    </div>
-                    <div className="typo-overline text-muted-foreground/70">
-                        {t('workspaceDashboard.scannedStorageOnly')}
-                    </div>
-                </div>
-
-                {largestDirectories.length > 0 && (
-                    <>
-                        <div className="mb-3 text-xxs font-bold text-muted-foreground">
-                            {t('workspaceDashboard.storageBreakdown')}
-                        </div>
-                        <div className="space-y-2">
-                            {largestDirectories.map(entry => (
-                                <div
-                                    key={entry.path}
-                                    className="flex items-center justify-between gap-4 rounded-lg border border-border/40 bg-muted/10 px-3 py-2"
-                                >
-                                    <div className="min-w-0">
-                                        <div className="truncate font-mono typo-caption text-foreground">
-                                            {entry.path}
-                                        </div>
-                                        <div className="typo-overline text-muted-foreground/70">
-                                            {t('workspaceDashboard.storageFiles', { count: entry.fileCount })}
-                                        </div>
-                                    </div>
-                                    <div className="shrink-0 text-sm font-semibold text-primary">
-                                        {formatBytes(entry.size)}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </>
-                )}
-            </div>
+            ))}
         </div>
     );
 };

@@ -18,7 +18,7 @@ export const ANTIGRAVITY_VERSION = '1.107.0';
 export const ANTIGRAVITY_REQUEST_HEADERS = {
   'Content-Type': 'application/json',
   'User-Agent': `antigravity/${ANTIGRAVITY_VERSION}`,
-  'X-Goog-Api-Client': 'google-cloud-sdk vscode_cloudshelleditor/0.1',
+  'IconX-Goog-Api-Client': 'google-cloud-sdk vscode_cloudshelleditor/0.1',
   'Client-Metadata': JSON.stringify({
     ideType: 'ANTIGRAVITY',
     platform: 'PLATFORM_UNSPECIFIED',

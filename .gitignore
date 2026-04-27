@@ -4,14 +4,25 @@
 node_modules/
 jspm_packages/
 bower_components/
-/public/monaco/
 
 # Build Output
 dist/
 dist-electron/
-release/
+release/*
+!release/*.nsh
+!release/.gitignore
+release/win-unpacked/
+release/linux-unpacked/
+release/mac-unpacked/
+release/*.exe
+release/*.blockmap
+release/*.yml
+release/*.zip
+release/*.dmg
+release/*.AppImage
+release/*.deb
+release/*.rpm
 out/
-build/
 .next/
 .nuxt/
 .cache/
@@ -39,6 +50,7 @@ build/
 *.cert
 tengra_key.txt
 .claude/settings.local.json
+vitest-results.json
 
 # IDEs & Editors
 .vscode/*

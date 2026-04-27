@@ -8,7 +8,6 @@
  * (at your option) any later version.
  */
 
-import { WorkspaceAgentCouncilBoard } from '@renderer/features/workspace/components/workspace/WorkspaceAgentCouncilBoard';
 import type {
     CouncilReviewDecision,
     CouncilSubagentRuntime,
@@ -17,6 +16,8 @@ import type {
 } from '@shared/types/workspace-agent-session';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+
+import { WorkspaceAgentCouncilBoard } from '@/features/workspace/components/workspace/WorkspaceAgentCouncilBoard';
 
 function createSession(): WorkspaceAgentSessionSummary {
     return {

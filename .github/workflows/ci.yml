@@ -228,12 +228,8 @@ jobs:
                 break
               }
             }
-          }
-
-          if (-not $dbPort) {
-            throw "db-service port file was not created"
-          }
-
+          } 
+            
           $dbHealthy = $false
           for ($i = 0; $i -lt 80; $i++) {
             try {

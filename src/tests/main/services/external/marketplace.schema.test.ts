@@ -18,7 +18,6 @@ describe('marketplaceRegistrySchema model size fields', () => {
             lastUpdated: new Date().toISOString(),
             mcp: [],
             themes: [],
-            personas: [],
             models: [{
                 id: 'org/test-model',
                 name: 'Test Model',
@@ -44,7 +43,6 @@ describe('marketplaceRegistrySchema model size fields', () => {
             lastUpdated: new Date().toISOString(),
             mcp: [],
             themes: [],
-            personas: [],
             models: [{
                 id: 'org/test-model-2',
                 name: 'Test Model 2',
@@ -86,7 +84,6 @@ describe('marketplaceRegistrySchema model size fields', () => {
                 }],
             }],
             themes: [],
-            personas: [],
             models: [],
             prompts: [],
             languages: [],

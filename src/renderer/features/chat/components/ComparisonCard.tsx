@@ -13,7 +13,7 @@
  * Shows model name, response content, metrics, copy and rating buttons.
  */
 
-import { Check, Copy, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { IconCheck, IconCopy, IconThumbDown, IconThumbUp } from '@tabler/icons-react';
 import React, { useCallback, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -59,7 +59,7 @@ export const ComparisonCard: React.FC<ComparisonCardProps> = React.memo(({ resul
                     </span>
                 </div>
                 <Button variant="ghost" size="sm" onClick={handleCopyClick} title={t('modelComparison.copyResponse')}>
-                    {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+                    {copied ? <IconCheck className="h-3.5 w-3.5 text-success" /> : <IconCopy className="h-3.5 w-3.5" />}
                 </Button>
             </div>
 
@@ -85,14 +85,14 @@ export const ComparisonCard: React.FC<ComparisonCardProps> = React.memo(({ resul
                         onClick={() => { onRate(modelKey, 1); }}
                         className={cn(rating === 1 ? 'text-success' : 'text-muted-foreground')}
                     >
-                        <ThumbsUp className="w-3.5 h-3.5" />
+                        <IconThumbUp className="w-3.5 h-3.5" />
                     </Button>
                     <Button
                         variant="ghost" size="sm"
                         onClick={() => { onRate(modelKey, -1); }}
                         className={cn(rating === -1 ? 'text-destructive' : 'text-muted-foreground')}
                     >
-                        <ThumbsDown className="w-3.5 h-3.5" />
+                        <IconThumbDown className="w-3.5 h-3.5" />
                     </Button>
                 </div>
             </div>

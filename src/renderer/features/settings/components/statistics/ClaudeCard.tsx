@@ -56,7 +56,7 @@ export const ClaudeCard: React.FC<ClaudeCardProps> = ({ claudeQuota, locale = 'e
                                             </div>
                                             <HorizontalProgressBar percentage={100 - acc.fiveHour.utilization} color={getQuotaColor(100 - acc.fiveHour.utilization)} />
                                             <div className="typo-overline font-medium text-muted-foreground/40 mt-1">
-                                                {formatReset(acc.fiveHour.resetsAt, locale)}
+                                                {t('statistics.resetsAt', { time: formatReset(acc.fiveHour.resetsAt, locale) })}
                                             </div>
                                         </div>
                                     )}
@@ -68,7 +68,7 @@ export const ClaudeCard: React.FC<ClaudeCardProps> = ({ claudeQuota, locale = 'e
                                             </div>
                                             <HorizontalProgressBar percentage={100 - acc.sevenDay.utilization} color={getQuotaColor(100 - acc.sevenDay.utilization)} />
                                             <div className="typo-overline font-medium text-muted-foreground/40 mt-1">
-                                                {formatReset(acc.sevenDay.resetsAt, locale)}
+                                                {t('statistics.resetsAt', { time: formatReset(acc.sevenDay.resetsAt, locale) })}
                                             </div>
                                         </div>
                                     )}

@@ -8,4 +8,4 @@
  * (at your option) any later version.
  */
 
-export * from '@renderer/features/workspace/workspace-explorer/WorkspaceTreeItem';
+export * from '@/features/workspace/workspace-explorer/WorkspaceTreeItem';

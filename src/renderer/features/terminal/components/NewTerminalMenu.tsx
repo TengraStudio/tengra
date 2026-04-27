@@ -8,9 +8,9 @@
  * (at your option) any later version.
  */
 
-import { useTranslation } from '@renderer/i18n';
 import React from 'react';
 
+import { useTranslation } from '@/i18n';
 import { motion } from '@/lib/framer-motion-compat';
 
 /* Batch-02: Extracted Long Classes */

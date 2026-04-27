@@ -8,8 +8,9 @@
  * (at your option) any later version.
  */
 
-import { cn } from '@/lib/utils';
 import React from 'react';
+
+import { cn } from '@/lib/utils';
 
 import { GitCommitInfo } from './types';
 
@@ -34,7 +35,7 @@ export const GitCommitCard: React.FC<CommitCardProps> = ({ commit, isSelected, o
         >
             <div className="flex items-center justify-between gap-2">
                 <span className={cn(
-                    "text-xs font-semibold truncate",
+                    "text-sm font-semibold truncate",
                     isSelected ? "text-primary" : "text-foreground/90"
                 )}>
                     {commit.message}

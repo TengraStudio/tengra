@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { ChevronLeft } from 'lucide-react';
+import { IconChevronLeft } from '@tabler/icons-react';
 import React from 'react';
 
 import { cn } from '@/lib/utils';
@@ -88,7 +88,7 @@ export const WizardStepContainer: React.FC<WizardStepContainerProps> = ({
                             disabled={backButton.disabled}
                             className={C_WIZARDSTEPCONTAINER_1}
                         >
-                            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-200" />
+                            <IconChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-200" />
                             <span>{backButton.label}</span>
                         </button>
                     ) : (
@@ -100,7 +100,7 @@ export const WizardStepContainer: React.FC<WizardStepContainerProps> = ({
                             onClick={nextButton.onClick}
                             disabled={nextButton.disabled}
                             className={cn(
-                                'px-8 py-3 rounded-xl font-bold text-sm  transition-all disabled:opacity-40 disabled:grayscale flex items-center gap-3 shadow-lg relative overflow-hidden group/btn hover:brightness-105 active:scale-95',
+                                'px-8 py-3 rounded-xl font-bold text-sm transition-all disabled:opacity-40 disabled:grayscale flex items-center gap-3 shadow-lg relative overflow-hidden group/btn hover:brightness-105 active:scale-95',
                                 nextButton.variant === 'secondary'
                                     ? 'bg-muted text-foreground'
                                     : 'bg-primary text-primary-foreground shadow-primary/30 hover:shadow-primary/50'

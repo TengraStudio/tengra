@@ -88,10 +88,6 @@ class ThemeMetricsStore {
         metrics.operations += 1;
         metrics.successes += 1;
         metrics.totalDurationMs += durationMs;
-
-        if (durationMs > (THEME_OPERATION_BUDGETS[operation as keyof typeof THEME_OPERATION_BUDGETS] || 1000)) {
-            // No need for awkward call, this is handled within the service methods
-        }
     }
 
     recordFailure(operation: string, durationMs: number, error: string): void {
@@ -208,15 +204,15 @@ export class ThemeService extends BaseService {
         existingTheme: ThemeManifest
     ): ThemeManifest {
         return {
-            ...builtInTheme,
             ...existingTheme,
+            ...builtInTheme,
             colors: {
-                ...builtInTheme.colors,
                 ...existingTheme.colors,
+                ...builtInTheme.colors,
             },
             vars: {
-                ...(builtInTheme.vars ?? {}),
                 ...(existingTheme.vars ?? {}),
+                ...(builtInTheme.vars ?? {}),
             },
         };
     }
@@ -281,7 +277,7 @@ export class ThemeService extends BaseService {
         }
 
         // Validate type enum
-        if (m.type !== 'light' && m.type !== 'dark' && m.type !== 'highContrast') {
+        if (m.type !== 'light' && m.type !== 'dark') {
             this.logWarn(`Manifest validation failed: invalid type "${String(m.type)}"`);
             return false;
         }
@@ -428,7 +424,7 @@ export class ThemeService extends BaseService {
      * Get theme operation metrics summary
      * Useful for health dashboards and monitoring
      */
-    getMetrics(): ReturnType<ThemeMetricsStore['getSummary']> {
+    getMetricsSummary(): ReturnType<ThemeMetricsStore['getSummary']> {
         return themeMetrics.getSummary();
     }
 
@@ -436,4 +432,3 @@ export class ThemeService extends BaseService {
         return this.themesDir;
     }
 }
-

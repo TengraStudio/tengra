@@ -8,16 +8,16 @@
  * (at your option) any later version.
  */
 
-import { useWorkspaceExplorerTree } from '@renderer/features/workspace/hooks/useWorkspaceExplorerTree';
-import { applyGitTreeStatus } from '@renderer/features/workspace/utils/gitTreeStatus';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { useWorkspaceExplorerTree } from '@/features/workspace/hooks/useWorkspaceExplorerTree';
+import { applyGitTreeStatus } from '@/features/workspace/utils/gitTreeStatus';
 import type { FileNode } from '@/features/workspace/workspace-explorer/WorkspaceTreeItem';
 import type { WorkspaceMount } from '@/types';
 import { webElectronMock } from '@/web-bridge';
 
-vi.mock('@renderer/features/workspace/utils/gitTreeStatus', () => ({
+vi.mock('@/features/workspace/utils/gitTreeStatus', () => ({
     applyGitTreeStatus: vi.fn(),
 }));
 

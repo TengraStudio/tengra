@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Bot, Box, Brain, Clock, Search, Sparkles, Star, X, Zap } from 'lucide-react';
+import { IconBolt,IconBox, IconBrain, IconClock, IconRobot, IconSearch, IconSparkles, IconStar, IconX } from '@tabler/icons-react';
 import React from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
@@ -22,7 +22,7 @@ import { ModelSelectorItem } from '../ModelSelectorItem';
 /* Batch-02: Extracted Long Classes */
 const C_MODELSELECTORSECTIONS_1 = "flex items-center gap-3 bg-background/50 backdrop-blur-sm rounded-xl px-4 py-2.5 border border-border/50 focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all shadow-sm sm:gap-4";
 const C_MODELSELECTORSECTIONS_2 = "bg-transparent border-none p-0 text-sm focus:ring-0 w-full placeholder:text-muted-foreground/40 outline-none text-foreground font-medium";
-const C_MODELSELECTORSECTIONS_3 = "sticky top-0 z-10 w-full px-4 py-3.5 typo-body font-bold text-muted-foreground/60 flex items-center gap-2 bg-popover/95 backdrop-blur-md hover:text-foreground transition-all group/cat relative overflow-hidden uppercase tracking-wider";
+const C_MODELSELECTORSECTIONS_3 = "sticky top-0 z-10 w-full px-4 py-3.5 typo-body font-bold text-muted-foreground/60 flex items-center gap-2 bg-popover/95 backdrop-blur-md hover:text-foreground transition-all group/cat relative overflow-hidden uppercase ";
 
 
 export type SelectorChatMode = 'instant' | 'thinking' | 'agent';
@@ -31,9 +31,9 @@ const MODE_CONFIG: Record<
     SelectorChatMode,
     { icon: React.ElementType; color: string; bg: string }
 > = {
-    instant: { icon: Zap, color: 'text-warning', bg: 'bg-warning/10' },
-    thinking: { icon: Brain, color: 'text-accent', bg: 'bg-accent/10' },
-    agent: { icon: Bot, color: 'text-info', bg: 'bg-info/10' },
+    instant: { icon: IconBolt, color: 'text-warning', bg: 'bg-warning/10' },
+    thinking: { icon: IconBrain, color: 'text-accent', bg: 'bg-accent/10' },
+    agent: { icon: IconRobot, color: 'text-info', bg: 'bg-info/10' },
 };
 
 interface ModelSelectorHeaderProps {
@@ -49,7 +49,7 @@ export const ModelSelectorHeader: React.FC<ModelSelectorHeaderProps> = ({
 }) => (
     <div className="flex items-center justify-between p-4 border-b border-border/50">
         <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" />
+            <IconSparkles className="w-5 h-5 text-primary" />
             <h2 id="model-selector-title" className="text-lg font-semibold">
                 {title}
             </h2>
@@ -59,7 +59,7 @@ export const ModelSelectorHeader: React.FC<ModelSelectorHeaderProps> = ({
             className="p-2 rounded-lg hover:bg-muted/50 transition-colors"
             aria-label={closeLabel}
         >
-            <X className="w-5 h-5" />
+            <IconX className="w-5 h-5" />
         </button>
     </div>
 );
@@ -87,7 +87,7 @@ export const ModelSelectorModeTabs: React.FC<ModelSelectorModeTabsProps> = ({
 }) => (
     <div className="px-4 py-3.5 border-b border-border/40 flex flex-wrap items-center gap-6 bg-muted/5">
         <div className="flex items-center gap-3">
-            <span className="typo-body text-muted-foreground/80 font-bold uppercase tracking-wider">{modeLabel}</span>
+            <span className="typo-body text-muted-foreground/80 font-bold uppercase ">{modeLabel}</span>
             <div className="flex gap-1 bg-background/50 backdrop-blur-sm rounded-xl p-1 border border-border/40 shadow-sm">
                 {(Object.keys(MODE_CONFIG) as SelectorChatMode[]).map(mode => {
                     const config = MODE_CONFIG[mode];
@@ -171,7 +171,7 @@ export const ModelSelectorSearch: React.FC<ModelSelectorSearchProps> = ({
 }) => (
     <div className="px-4 py-3 bg-muted/5 border-b border-border/40">
         <div className={C_MODELSELECTORSECTIONS_1}>
-            <Search className="w-4 h-4 text-muted-foreground/60" />
+            <IconSearch className="w-4 h-4 text-muted-foreground/60" />
             <input
                 ref={searchInputRef}
                 type="text"
@@ -226,9 +226,9 @@ const CircularQuota: React.FC<{ value: number; label: string }> = ({ value, labe
                         strokeDashoffset={offset}
                     />
                 </svg>
-                <span className="text-xxxs font-bold text-foreground/90">{normalized}</span>
+                <span className="text-sm font-bold text-foreground/90">{normalized}</span>
             </div>
-            <span className="text-xxxs font-bold text-muted-foreground/70">{label}</span>
+            <span className="text-sm font-bold text-muted-foreground/70">{label}</span>
         </div>
     );
 };
@@ -267,11 +267,11 @@ function renderProviderQuota(categoryId: string, options: {
         return {
             badges: (
                 <div className="flex items-center gap-1.5">
-                    <span className="text-xxxs text-primary font-bold bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 leading-none">
+                    <span className="text-sm text-primary font-bold bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 leading-none">
                         {remaining}/{limit || 0} {t('modelSelector.creditsLeft')}
                     </span>
                     {rateLimit && (
-                        <span className="text-xxxs text-warning font-bold bg-warning/10 px-2 py-0.5 rounded-full border border-warning/20 leading-none">
+                        <span className="text-sm text-warning font-bold bg-warning/10 px-2 py-0.5 rounded-full border border-warning/20 leading-none">
                             {t('statistics.rateLimit')} {rateLimit.remaining}/{rateLimit.limit}
                         </span>
                     )}
@@ -280,7 +280,7 @@ function renderProviderQuota(categoryId: string, options: {
             progress: (
                 <div className="px-4 pb-3.5 bg-muted/5">
                     <div className="flex items-center justify-between typo-body font-bold text-muted-foreground/60 mb-1.5">
-                        <span className="uppercase tracking-tight">{t('statistics.usageStatus')}</span>
+                        <span className="uppercase ">{t('statistics.usageStatus')}</span>
                         <span className="text-foreground/70">{creditsPercent}%</span>
                     </div>
                     <div className="h-1.5 w-full rounded-full bg-muted/30 overflow-hidden shadow-inner">
@@ -348,7 +348,7 @@ const ModelSection: React.FC<ModelSectionProps> = ({
     t,
 }) => (
     <div className="border-b border-border/30">
-        <div className="px-4 py-2.5 typo-body font-bold text-muted-foreground/70 uppercase tracking-wider flex items-center gap-2 bg-muted/20">
+        <div className="px-4 py-2.5 typo-body font-bold text-muted-foreground/70 uppercase flex items-center gap-2 bg-muted/20">
             {icon}
             <span>{title}</span>
         </div>
@@ -440,7 +440,7 @@ const CategoryRow: React.FC<{
                 )}
                 <span className="text-muted-foreground/30 font-normal ml-1 normal-case">({category.models.length})</span>
                 <span className="ml-auto opacity-0 group-hover/cat:opacity-100 transition-opacity">
-                    {collapsed ? <Zap className="w-3.5 h-3.5 text-muted-foreground/40" /> : <Box className="w-3.5 h-3.5 text-muted-foreground/40" />}
+                    {collapsed ? <IconBolt className="w-3.5 h-3.5 text-muted-foreground/40" /> : <IconBox className="w-3.5 h-3.5 text-muted-foreground/40" />}
                 </span>
             </button>
             {providerQuota?.progress}
@@ -536,7 +536,7 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
             {showCuratedSections && favoriteModels.length > 0 && (
                 <ModelSection
                     title={t('common.favorites')}
-                    icon={<Star className="w-3.5 h-3.5 text-warning" />}
+                    icon={<IconStar className="w-3.5 h-3.5 text-warning" />}
                     models={favoriteModels}
                     selectedModels={selectedModels}
                     selectedModel={selectedModel}
@@ -550,7 +550,7 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
             {showCuratedSections && recentModelItems.length > 0 && (
                 <ModelSection
                     title={t('modelSelector.recentModels')}
-                    icon={<Clock className="w-3.5 h-3.5 text-muted-foreground" />}
+                    icon={<IconClock className="w-3.5 h-3.5 text-muted-foreground" />}
                     models={recentModelItems}
                     selectedModels={selectedModels}
                     selectedModel={selectedModel}
@@ -564,7 +564,7 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
             {showCuratedSections && deprecatedModels.length > 0 && (
                 <ModelSection
                     title={t('modelSelector.deprecated')}
-                    icon={<Brain className="w-3.5 h-3.5 text-warning" />}
+                    icon={<IconBrain className="w-3.5 h-3.5 text-warning" />}
                     models={deprecatedModels}
                     selectedModels={selectedModels}
                     selectedModel={selectedModel}
@@ -576,14 +576,14 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
             )}
 
             {showCuratedSections && (
-                <div className="px-4 py-2.5 typo-body font-bold text-muted-foreground/60 bg-muted/20 border-b border-border/30 uppercase tracking-wider">
+                <div className="px-4 py-2.5 typo-body font-bold text-muted-foreground/60 bg-muted/20 border-b border-border/30 uppercase ">
                     {t('modelSelector.allModels')}
                 </div>
             )}
 
             {modeFilteredCategories.length === 0 ? (
                 <div className="p-12 text-center text-muted-foreground/50">
-                    <Search className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                    <IconSearch className="w-10 h-10 mx-auto mb-3 opacity-20" />
                     <p className="text-sm font-medium">{t('modelSelector.noModelsFound')}</p>
                 </div>
             ) : shouldVirtualize ? (

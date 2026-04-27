@@ -1,5 +1,5 @@
-import { resolve } from 'path';
 import fs from 'fs';
+import { resolve } from 'path';
 
 import react from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
@@ -57,6 +57,7 @@ export default defineConfig(({ mode }) => {
                         alias: {
                             '@main': resolve(__dirname, 'src/main'),
                             '@shared': resolve(__dirname, 'src/shared'),
+                '@assets': resolve(__dirname, 'assets'),
                             '@renderer': resolve(__dirname, 'src/renderer'),
                         }
                     },
@@ -73,6 +74,9 @@ export default defineConfig(({ mode }) => {
                             external,
                             treeshake: isDev ? false : {
                                 moduleSideEffects: false
+                            },
+                            output: {
+                                codeSplitting: false
                             }
                         }
                     }
@@ -91,6 +95,7 @@ export default defineConfig(({ mode }) => {
                     alias: {
                         '@main': resolve(__dirname, 'src/main'),
                         '@shared': resolve(__dirname, 'src/shared'),
+                '@assets': resolve(__dirname, 'assets'),
                     }
                 },
                 build: {
@@ -102,9 +107,12 @@ export default defineConfig(({ mode }) => {
                     },
                     minify: isDev ? false : 'esbuild',
                     sourcemap: isDev,
-                    rolldownOptions: {
+                    rollupOptions: {
                         external: ['electron'],
-                        treeshake: !isDev
+                        treeshake: !isDev,
+                        output: {
+                            codeSplitting: false
+                        }
                     }
                 }
             }
@@ -124,7 +132,18 @@ export default defineConfig(({ mode }) => {
         );
     }
 
+    const getGitHash = () => {
+        try {
+            return require('child_process').execSync('git rev-parse --short HEAD').toString().trim();
+        } catch {
+            return 'unknown';
+        }
+    };
+
+    const appVersion = isDev ? `${pkg.version}-dev.${getGitHash()}` : pkg.version;
+
     return {
+        base: './',
         plugins,
         resolve: {
             alias: {
@@ -132,6 +151,7 @@ export default defineConfig(({ mode }) => {
                 '@main': resolve(__dirname, 'src/main'),
                 '@renderer': resolve(__dirname, 'src/renderer'),
                 '@shared': resolve(__dirname, 'src/shared'),
+                '@assets': resolve(__dirname, 'assets'),
                 'path': 'path-browserify'
             },
             // Ensure ESM modules are resolved correctly
@@ -139,9 +159,32 @@ export default defineConfig(({ mode }) => {
             // Handle .mjs extensions properly
             extensions: ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json']
         },
+        server: {
+            watch: {
+                usePolling: true,
+                interval: 1000,
+                ignored: (p: string) => {
+                    const normalized = p.replace(/\\/g, '/');
+                    return (
+                        normalized.includes('/data/') ||
+                        normalized.includes('/dist/') ||
+                        normalized.includes('/bin/') ||
+                        normalized.includes('/runtime/') ||
+                        normalized.includes('/release/') ||
+                        normalized.includes('/scratch/') ||
+                        normalized.includes('/.agent/') ||
+                        normalized.includes('/.gemini/') ||
+                        normalized.includes('/.claude/') ||
+                        normalized.endsWith('.log') ||
+                        normalized.endsWith('vitest-results.json')
+                    );
+                }
+            }
+        },
         define: {
             'process.env.NODE_ENV': JSON.stringify(nodeEnv),
-            '__BUILD_TIME__': JSON.stringify(new Date().toISOString())
+            '__BUILD_TIME__': JSON.stringify(new Date().toISOString()),
+            '__APP_VERSION__': JSON.stringify(appVersion)
         },
         build: isMainOnly ? {
             outDir: 'dist/main',
@@ -180,7 +223,7 @@ export default defineConfig(({ mode }) => {
                         if (id.includes('node_modules/mermaid')) {
                             return 'mermaid';
                         }
-                        if (id.includes('node_modules/lucide-react')) {
+                        if (id.includes('node_modules/@tabler/icons-react')) {
                             return 'icons';
                         }
                         if (id.includes('node_modules/@dnd-kit')) {
@@ -216,7 +259,7 @@ export default defineConfig(({ mode }) => {
                 'react-dom',
                 'react/jsx-runtime',
                 '@floating-ui/react',
-                'lucide-react',
+                '@tabler/icons-react',
                 'clsx',
                 'tailwind-merge',
                 'date-fns',

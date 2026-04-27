@@ -48,7 +48,7 @@ export const UI_PRIMITIVES = {
     CHAT_BUBBLE_BASE: "rounded-2xl p-2 text-base leading-relaxed whitespace-pre-wrap break-words border-none relative group/bubble w-full overflow-hidden",
     TOOL_CARD: "rounded-xl border border-border/40 bg-card/40 p-3 shadow-sm backdrop-blur-sm",
     TOOL_STATUS_ICON: "flex items-center justify-center h-8 w-8 rounded-full border transition-all duration-300",
-    REACTION_BADGE: "rounded-full border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-xxs transition-colors hover:bg-primary/20",
+    REACTION_BADGE: "rounded-full border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-sm transition-colors hover:bg-primary/20",
     CODE_BLOCK: "max-h-52 overflow-x-auto overflow-y-auto rounded-md border border-border/40 bg-muted/40 p-2 font-mono typo-caption text-muted-foreground",
     FILE_LIST_ITEM: "flex items-center gap-2 rounded-lg border border-border/30 bg-background/50 px-3 py-2 text-left hover:border-primary/40 hover:bg-primary/5 transition-all group/file",
     ASSISTANT_LOGO_BASE: "flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-muted overflow-hidden transition-all duration-300",

@@ -10,11 +10,11 @@
 
 import { memo } from 'react';
 
-import LogoAntigravity from '@/assets/antigravity.svg?url';
-import LogoOpenAI from '@/assets/chatgpt.svg?url';
-import LogoClaude from '@/assets/claude.svg?url';
-import LogoCopilot from '@/assets/copilot.svg?url';
-import LogoOllama from '@/assets/ollama.svg?url';
+import LogoAntigravity from '@assets/antigravity.svg?url';
+import LogoOpenAI from '@assets/chatgpt.svg?url';
+import LogoClaude from '@assets/claude.svg?url';
+import LogoCopilot from '@assets/copilot.svg?url';
+import LogoOllama from '@assets/ollama.svg?url';
 import { UI_PRIMITIVES } from '@/constants/ui-primitives';
 import { cn } from '@/lib/utils';
 

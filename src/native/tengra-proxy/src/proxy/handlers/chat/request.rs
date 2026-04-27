@@ -1,4 +1,4 @@
-/**
+/*
  * Tengra - Your Personal AI Assistant
  * Copyright (c) 2026 TengraStudio
  *
@@ -687,7 +687,7 @@ fn normalize_gemini_tools(tools: &[Value]) -> Vec<Value> {
 fn parse_json_string_value(value: Value) -> Value {
     match value {
         Value::String(text) => {
-            serde_json::from_str::<Value>(&text).unwrap_or_else(|_| Value::String(text))
+            serde_json::from_str::<Value>(&text).unwrap_or(Value::String(text))
         }
         other => other,
     }

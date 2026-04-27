@@ -57,9 +57,15 @@ export function getRuntimeStartupDecisions(
 ): {
     database: RuntimeStartupDecision;
     embeddedProxy: RuntimeStartupDecision;
+    scanWorkspaces: boolean;
 } {
+    const database = resolveComponentDecision(runtimeStatus, SERVICE_COMPONENT_IDS.database);
+    const embeddedProxy = resolveComponentDecision(runtimeStatus, SERVICE_COMPONENT_IDS.embeddedProxy);
+
     return {
-        database: resolveComponentDecision(runtimeStatus, SERVICE_COMPONENT_IDS.database),
-        embeddedProxy: resolveComponentDecision(runtimeStatus, SERVICE_COMPONENT_IDS.embeddedProxy),
+        database,
+        embeddedProxy,
+        scanWorkspaces: database.shouldStart,
     };
 }
+

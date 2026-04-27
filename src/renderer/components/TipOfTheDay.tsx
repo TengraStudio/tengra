@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Lightbulb,X } from 'lucide-react';
+import { IconBulb, IconX } from '@tabler/icons-react';
 import React, { useEffect,useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
@@ -54,7 +54,7 @@ export const TipOfTheDay: React.FC<TipOfTheDayProps> = ({ language = 'en' }) => 
             >
                 <div className="bg-card border border-border shadow-xl rounded-xl p-4 flex items-start gap-3">
                     <div className="p-2 bg-yellow/10 rounded-lg text-warning shrink-0">
-                        <Lightbulb className="w-5 h-5" />
+                        <IconBulb className="w-5 h-5" />
                     </div>
                     <div className="flex-1">
                         <h4 className="text-sm font-bold text-foreground mb-1">{t('tips.title')}</h4>
@@ -64,7 +64,7 @@ export const TipOfTheDay: React.FC<TipOfTheDayProps> = ({ language = 'en' }) => 
                         onClick={() => setIsOpen(false)}
                         className="text-muted-foreground hover:text-foreground transition-colors"
                     >
-                        <X className="w-4 h-4" />
+                        <IconX className="w-4 h-4" />
                     </button>
                 </div>
             </motion.div>

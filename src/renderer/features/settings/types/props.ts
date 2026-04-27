@@ -17,7 +17,7 @@ import { DeviceCodeModalState } from '../components/DeviceCodeModal';
 import { ManualSessionModalState } from '../components/ManualSessionModal';
 import { UseLinkedAccountsResult } from '../hooks/useLinkedAccounts';
 import { AccountWrapper } from '../types';
-import { AuthBusyState, AuthStatusState, DetailedStats, PersonaDraft } from '../types';
+import { AuthBusyState, AuthStatusState, DetailedStats } from '../types';
 
 export interface SettingsSharedProps {
     settings: AppSettings | null
@@ -57,12 +57,6 @@ export interface SettingsSharedProps {
     benchmarkResult: { tokensPerSec: number; latency: number } | null
     isBenchmarking: boolean
     handleRunBenchmark: (modelId: string) => Promise<void>
-    editingPersonaId: string | null
-    setEditingPersonaId: (id: string | null) => void
-    personaDraft: PersonaDraft
-    setPersonaDraft: Dispatch<SetStateAction<PersonaDraft>>
-    handleSavePersona: () => Promise<void>
-    handleDeletePersona: (id: string) => Promise<void>
     linkedAccounts: UseLinkedAccountsResult
     deviceCodeModal: DeviceCodeModalState
     closeDeviceCodeModal: () => void

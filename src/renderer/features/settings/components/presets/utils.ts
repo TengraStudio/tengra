@@ -8,15 +8,15 @@
  * (at your option) any later version.
  */
 
-import { Code2, Sliders, Sparkles, Target } from 'lucide-react';
+import { IconAdjustments, IconCode, IconSparkles, IconTarget } from '@tabler/icons-react';
 
 import { ParameterPreset } from '../ParameterPresets';
 
 export const presetIconMap = {
-    creative: Sparkles,
-    precise: Target,
-    coding: Code2,
-    custom: Sliders,
+    creative: IconSparkles,
+    precise: IconTarget,
+    coding: IconCode,
+    custom: IconAdjustments,
 };
 
 export const getPresetIcon = (icon: ParameterPreset['icon']) => {

@@ -14,6 +14,7 @@ import * as path from 'path';
 import { promisify } from 'util';
 
 import { BaseService } from '@main/services/base.service';
+import { t } from '@main/utils/i18n.util';
 import { NETWORK_DEFAULTS } from '@shared/constants/app-config';
 import { RuntimeHealthAction } from '@shared/types/runtime-manifest';
 
@@ -72,7 +73,7 @@ export class ExternalRuntimeDependencyService extends BaseService {
                 detected: false,
                 running: false,
                 action: 'install',
-                message: 'Ollama is not installed',
+                message: t('auto.ollamaIsNotInstalled'),
                 messageKey: ExternalRuntimeDependencyService.MESSAGE_KEY.OLLAMA_NOT_INSTALLED,
             };
         }
@@ -82,7 +83,7 @@ export class ExternalRuntimeDependencyService extends BaseService {
                 detected: true,
                 running: false,
                 action: 'start',
-                message: 'Ollama is installed but not running',
+                message: t('auto.ollamaIsInstalledButNotRunning'),
                 messageKey: ExternalRuntimeDependencyService.MESSAGE_KEY.OLLAMA_NOT_RUNNING,
             };
         }
@@ -91,7 +92,7 @@ export class ExternalRuntimeDependencyService extends BaseService {
             detected: true,
             running: true,
             action: 'none',
-            message: 'Ollama is installed and running',
+            message: t('auto.ollamaIsInstalledAndRunning'),
             messageKey: ExternalRuntimeDependencyService.MESSAGE_KEY.OLLAMA_RUNNING,
         };
     }
@@ -117,7 +118,7 @@ export class ExternalRuntimeDependencyService extends BaseService {
                     detected: true,
                     running: false,
                     action: 'none',
-                    message: 'Stable Diffusion CPP runtime is installed',
+                    message: t('auto.stableDiffusionCppRuntimeIsInstalled'),
                 };
             }
         }
@@ -126,7 +127,7 @@ export class ExternalRuntimeDependencyService extends BaseService {
             detected: false,
             running: false,
             action: 'install',
-            message: 'Stable Diffusion CPP runtime is not installed',
+            message: t('auto.stableDiffusionCppRuntimeIsNotInstalled'),
         };
     }
 

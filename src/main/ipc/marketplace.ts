@@ -11,6 +11,7 @@
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { MarketplaceService } from '@main/services/external/marketplace.service';
+import { CodeLanguageService } from '@main/services/system/code-language.service';
 import { LocaleService } from '@main/services/system/locale.service';
 import { ThemeService } from '@main/services/theme/theme.service';
 import { createIpcHandler as baseCreateIpcHandler } from '@main/utils/ipc-wrapper.util';
@@ -25,6 +26,7 @@ export function registerMarketplaceIpc(
     marketplaceService: MarketplaceService,
     themeService: ThemeService,
     localeService: LocaleService,
+    codeLanguageService: CodeLanguageService,
     getMainWindow: () => BrowserWindow | null
 ) {
     appLogger.debug('MarketplaceIPC', 'Registering Marketplace IPC handlers');
@@ -113,6 +115,13 @@ export function registerMarketplaceIpc(
                             mainWindow.webContents.send('locale:runtime:updated');
                         }
                     }
+                    if (validatedRequest.type === 'code-language-pack') {
+                        appLogger.info('MarketplaceIPC', 'Code language pack installed, triggering reload...');
+                        await codeLanguageService.reload();
+                        if (mainWindow) {
+                            mainWindow.webContents.send('code-language:runtime:updated');
+                        }
+                    }
                 }
                 return result;
             } catch (error) {
@@ -134,7 +143,15 @@ export function registerMarketplaceIpc(
 
     ipcMain.handle('marketplace:uninstall', createIpcHandler('marketplace:uninstall',
         async (_event: IpcMainInvokeEvent, itemId: string, itemType: MarketplaceItem['itemType']) => {
-            return await marketplaceService.uninstallItem(itemId, itemType);
+            const result = await marketplaceService.uninstallItem(itemId, itemType);
+            if (result.success && itemType === 'code-language-pack') {
+                await codeLanguageService.reload();
+                const mainWindow = getMainWindow();
+                if (mainWindow) {
+                    mainWindow.webContents.send('code-language:runtime:updated');
+                }
+            }
+            return result;
         }
     ));
 }

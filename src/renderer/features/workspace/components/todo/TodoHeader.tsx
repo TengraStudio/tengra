@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { CheckSquare, Plus, RefreshCw } from 'lucide-react';
+import { IconPlus, IconRefresh,IconSquareCheck } from '@tabler/icons-react';
 
 import { cn } from '@/lib/utils';
 
@@ -27,7 +27,7 @@ export const TodoHeader = ({ totalStats, isAdding, onToggleAdding, onRefresh, lo
     <div className="p-4 border-b border-border/50 flex items-center justify-between shrink-0 bg-background/50 backdrop-blur-sm z-10">
         <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg">
-                <CheckSquare className="w-5 h-5 text-primary" />
+                <IconSquareCheck className="w-5 h-5 text-primary" />
             </div>
             <div>
                 <h2 className="text-sm font-bold text-foreground">{t('workspaceDashboard.workspaceTasks')}</h2>
@@ -47,14 +47,14 @@ export const TodoHeader = ({ totalStats, isAdding, onToggleAdding, onRefresh, lo
                 )}
                 title={t('common.add')}
             >
-                <Plus className="w-4 h-4" />
+                <IconPlus className="w-4 h-4" />
             </button>
             <button
                 onClick={onRefresh}
                 className="p-2 hover:bg-muted/50 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
                 title={t('common.refresh')}
             >
-                <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+                <IconRefresh className={cn("w-4 h-4", loading && "animate-spin")} />
             </button>
         </div>
     </div>

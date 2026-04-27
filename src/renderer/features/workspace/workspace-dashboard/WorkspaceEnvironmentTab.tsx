@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Eye, EyeOff, Plus, Save, Settings, Trash2 } from 'lucide-react';
+import { IconDeviceFloppy, IconEye, IconEyeOff, IconPlus, IconSettings, IconTrash } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
@@ -126,7 +126,7 @@ export const WorkspaceEnvironmentTab: React.FC<WorkspaceEnvironmentTabProps> = (
     if (loading) {
         return (
             <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                <Settings className="w-6 h-6 animate-spin mr-2" />
+                <IconSettings className="w-6 h-6 animate-spin mr-2" />
                 {t('common.loading')}
             </div>
         );
@@ -138,7 +138,7 @@ export const WorkspaceEnvironmentTab: React.FC<WorkspaceEnvironmentTabProps> = (
             <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-2">
                     <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
-                        <Settings className="w-8 h-8 text-primary" />
+                        <IconSettings className="w-8 h-8 text-primary" />
                         {t('workspaceDashboard.environment')}
                     </h2>
                     <p className="text-muted-foreground text-sm max-w-xl">
@@ -150,7 +150,7 @@ export const WorkspaceEnvironmentTab: React.FC<WorkspaceEnvironmentTabProps> = (
                         onClick={addVar}
                         className={C_WORKSPACEENVIRONMENTTAB_1}
                     >
-                        <Plus className="w-4 h-4" />
+                        <IconPlus className="w-4 h-4" />
                         {t('workspaceDashboard.envAddVar')}
                     </button>
                     <button
@@ -161,7 +161,7 @@ export const WorkspaceEnvironmentTab: React.FC<WorkspaceEnvironmentTabProps> = (
                             hasChanges ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-muted/20 text-muted-foreground cursor-not-allowed"
                         )}
                     >
-                        <Save className="w-4 h-4" />
+                        <IconDeviceFloppy className="w-4 h-4" />
                         {saving ? t('common.loading') : t('workspaceDashboard.envSave')}
                     </button>
                 </div>
@@ -170,7 +170,7 @@ export const WorkspaceEnvironmentTab: React.FC<WorkspaceEnvironmentTabProps> = (
             {/* Variables Table */}
             <div className="flex-1 min-h-0 bg-card/40 backdrop-blur-sm rounded-3xl border border-border/50 overflow-hidden flex flex-col">
                 <div className="p-6 border-b border-border/50 bg-muted/20">
-                    <div className="grid grid-cols-12 gap-4 text-xxs font-bold text-muted-foreground/60">
+                    <div className="grid grid-cols-12 gap-4 text-sm font-bold text-muted-foreground/60">
                         <div className="col-span-4">{t('workspaceDashboard.envKey')}</div>
                         <div className="col-span-6">{t('workspaceDashboard.envValue')}</div>
                         <div className="col-span-2 text-right">{t('workspaceDashboard.envActions')}</div>
@@ -205,7 +205,7 @@ export const WorkspaceEnvironmentTab: React.FC<WorkspaceEnvironmentTabProps> = (
                                         className="p-1.5 hover:bg-muted/30 rounded-md text-muted-foreground hover:text-foreground transition-colors"
                                         title={envVar.visible ? t('workspaceDashboard.envHideValue') : t('workspaceDashboard.envShowValue')}
                                     >
-                                        {envVar.visible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        {envVar.visible ? <IconEyeOff className="w-4 h-4" /> : <IconEye className="w-4 h-4" />}
                                     </button>
                                 </div>
                                 <div className="col-span-2 flex items-center justify-end">
@@ -213,7 +213,7 @@ export const WorkspaceEnvironmentTab: React.FC<WorkspaceEnvironmentTabProps> = (
                                         onClick={() => removeVar(idx)}
                                         className="p-1.5 hover:bg-destructive/10 rounded-md text-muted-foreground hover:text-destructive transition-colors"
                                     >
-                                        <Trash2 className="w-4 h-4" />
+                                        <IconTrash className="w-4 h-4" />
                                     </button>
                                 </div>
                             </div>
@@ -221,7 +221,7 @@ export const WorkspaceEnvironmentTab: React.FC<WorkspaceEnvironmentTabProps> = (
                     ) : (
                         <div className="flex flex-col items-center justify-center h-full py-20 text-center gap-4">
                             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
-                                <Settings className="w-8 h-8 text-primary" />
+                                <IconSettings className="w-8 h-8 text-primary" />
                             </div>
                             <div>
                                 <h3 className="text-lg font-bold text-foreground">{t('workspaceDashboard.envNoVars')}</h3>

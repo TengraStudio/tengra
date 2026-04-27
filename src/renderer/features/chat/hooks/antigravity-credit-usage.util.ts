@@ -8,8 +8,7 @@
  * (at your option) any later version.
  */
 
-import { LinkedAccountInfo } from '@renderer/electron.d';
-
+import { LinkedAccountInfo } from '@/electron.d';
 import { AppSettings } from '@/types';
 import type { ModelQuotaItem, QuotaResponse } from '@/types/quota';
 import type { AntigravityCreditUsageMode } from '@/types/settings';

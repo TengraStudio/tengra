@@ -30,7 +30,7 @@ export function buildTemplateServer(deps: McpDeps): McpService {
                     };
                 }
             }
-        ], 'template-server', deps.auditLog)
+        ], 'template-server')
     };
 }
 

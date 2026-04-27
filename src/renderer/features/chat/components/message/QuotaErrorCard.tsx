@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { AlertCircle, Clock } from 'lucide-react';
+import { IconAlertCircle, IconClock } from '@tabler/icons-react';
 import { memo } from 'react';
 
 /* Batch-02: Extracted Long Classes */
@@ -31,7 +31,7 @@ export const QuotaErrorCard = memo(({ details, t }: QuotaErrorCardProps) => (
     <div className={C_QUOTAERRORCARD_1}>
         <div className="flex items-center gap-3 mb-3">
             <div className="p-2 rounded-full bg-destructive/20">
-                <AlertCircle className="w-5 h-5" />
+                <IconAlertCircle className="w-5 h-5" />
             </div>
             <div>
                 <div className="font-bold text-sm">
@@ -45,7 +45,7 @@ export const QuotaErrorCard = memo(({ details, t }: QuotaErrorCardProps) => (
         <p className="text-sm opacity-90 leading-relaxed mb-3">{details.message}</p>
         {details.resets_at && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-destructive/10 border border-destructive/10 typo-caption font-medium">
-                <Clock className="w-3.5 h-3.5" />
+                <IconClock className="w-3.5 h-3.5" />
                 <span>
                     {t('messageBubble.resetsAt')}{' '}
                     {new Date(details.resets_at * 1000).toLocaleString()}

@@ -17,6 +17,7 @@ import { LLMService } from '@main/services/llm/llm.service';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { ToolExecutor } from '@main/tools/tool-executor';
+import { t } from '@main/utils/i18n.util';
 import {
     sessionConversationMessageContentPartSchema,
     sessionConversationMessageSchema,
@@ -237,7 +238,7 @@ export class ApiServerService extends BaseService {
             this.sendJson(res, 400, {
                 success: false,
                 error: 'Bad Request',
-                message: 'Token via query string is not allowed. Use Authorization header instead.'
+                message: t('auto.tokenViaQueryStringIsNotAllowedUseAuthor')
             });
             return;
         }
@@ -258,7 +259,7 @@ export class ApiServerService extends BaseService {
                 this.sendJson(res, 403, {
                     success: false,
                     error: 'Forbidden',
-                    message: 'Invalid or missing CSRF token'
+                    message: t('auto.invalidOrMissingCsrfToken')
                 });
                 return;
             }
@@ -311,7 +312,7 @@ export class ApiServerService extends BaseService {
                 this.sendJson(res, 403, {
                     success: false,
                     error: 'Forbidden',
-                    message: 'Local access required'
+                    message: t('auto.localAccessRequired')
                 });
                 return true;
             }
@@ -329,7 +330,7 @@ export class ApiServerService extends BaseService {
                 this.sendJson(res, 403, {
                     success: false,
                     error: 'Forbidden',
-                    message: 'Local access required'
+                    message: t('auto.localAccessRequired')
                 });
                 return true;
             }
@@ -339,7 +340,7 @@ export class ApiServerService extends BaseService {
                 this.sendJson(res, 401, {
                     success: false,
                     error: 'Unauthorized',
-                    message: 'Missing or invalid token challenge'
+                    message: t('auto.missingOrInvalidTokenChallenge')
                 });
                 return true;
             }
@@ -366,7 +367,7 @@ export class ApiServerService extends BaseService {
             this.sendJson(res, 401, {
                 success: false,
                 error: 'Unauthorized',
-                message: 'Invalid or missing API token'
+                message: t('auto.invalidOrMissingApiToken')
             });
             return false;
         }
@@ -519,7 +520,7 @@ export class ApiServerService extends BaseService {
         }
 
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-CSRF-Token');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, IconX-CSRF-Token');
         res.setHeader('Access-Control-Allow-Credentials', 'true');
     }
 
@@ -530,8 +531,8 @@ export class ApiServerService extends BaseService {
         res.writeHead(status, {
             'Content-Type': 'application/json',
             'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
-            'X-Content-Type-Options': 'nosniff',
-            'X-Frame-Options': 'DENY'
+            'IconX-Content-Type-Options': 'nosniff',
+            'IconX-Frame-Options': 'DENY'
         });
         res.end(JSON.stringify(data));
     }
@@ -890,7 +891,7 @@ export class ApiServerService extends BaseService {
                 JSON.stringify({
                     type: 'connected',
                     clientId,
-                    message: 'Connected to Tengra API server'
+                    message: t('auto.connectedToTengraApiServer')
                 })
             );
         });
@@ -995,7 +996,7 @@ export class ApiServerService extends BaseService {
                 this.sendJson(res, 503, {
                     success: false,
                     error: 'Service Unavailable',
-                    message: 'Model registry service is not available'
+                    message: t('auto.modelRegistryServiceIsNotAvailable')
                 });
                 return;
             }
@@ -1009,7 +1010,7 @@ export class ApiServerService extends BaseService {
                 this.sendJson(res, 200, {
                     success: false,
                     models: [],
-                    message: 'No models available. Make sure Tengra runtime services are running.'
+                    message: t('auto.noModelsAvailableMakeSureTengraRuntimeSe')
                 });
                 return;
             }

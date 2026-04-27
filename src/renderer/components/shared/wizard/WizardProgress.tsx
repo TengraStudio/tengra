@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { Check } from 'lucide-react';
+import { IconCheck } from '@tabler/icons-react';
 import React from 'react';
 
 import { cn } from '@/lib/utils';
@@ -60,13 +60,13 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({
                         >
                             <span
                                 className={cn(
-                                    'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xxxs font-bold transition-all duration-300',
+                                    'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-all duration-300',
                                     isCurrent && 'bg-primary text-primary-foreground shadow-lg',
                                     isCompleted && 'bg-success/20 text-success',
                                     !isCurrent && !isCompleted && 'bg-muted/30 text-muted-foreground'
                                 )}
                             >
-                                {isCompleted ? <Check className="h-3.5 w-3.5" /> : index + 1}
+                                {isCompleted ? <IconCheck className="h-3.5 w-3.5" /> : index + 1}
                             </span>
                             <span className="hidden sm:inline truncate">{step.label}</span>
                         </button>

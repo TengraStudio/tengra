@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { AlertCircle, ChevronDown, ChevronUp, Copy, RotateCcw } from 'lucide-react';
+import { IconAlertCircle, IconChevronDown, IconChevronUp, IconCopy, IconRotate } from '@tabler/icons-react';
 import { useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -40,7 +40,7 @@ export const ErrorFallback = ({
 
                 <div className="flex items-start gap-4 p-6 pb-2">
                     <div className="p-3 rounded-xl bg-destructive/10 text-destructive shrink-0">
-                        <AlertCircle className="w-6 h-6" />
+                        <IconAlertCircle className="w-6 h-6" />
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-foreground mb-1">
@@ -66,10 +66,10 @@ export const ErrorFallback = ({
                         <div className="space-y-2">
                             <button
                                 onClick={() => setShowStack(!showStack)}
-                                className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-muted-foreground bg-muted/20 hover:bg-muted/30 border border-border/30 rounded-xl transition-colors w-full"
+                                className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-muted-foreground bg-muted/20 hover:bg-muted/30 border border-border/30 rounded-xl transition-colors w-full"
                             >
                                 <span className="flex items-center gap-2">
-                                    {showStack ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                    {showStack ? <IconChevronUp className="w-4 h-4" /> : <IconChevronDown className="w-4 h-4" />}
                                     {t('errors.technicalDetails')}
                                 </span>
                             </button>
@@ -94,7 +94,7 @@ export const ErrorFallback = ({
                     >
                         {copied ? <span>{t('common.copied')}</span> : (
                             <>
-                                <Copy className="w-4 h-4 opacity-70" />
+                                <IconCopy className="w-4 h-4 opacity-70" />
                                 <span>{t('errors.copyDetails')}</span>
                             </>
                         )}
@@ -103,7 +103,7 @@ export const ErrorFallback = ({
                         onClick={resetErrorBoundary}
                         className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold bg-primary text-primary-foreground rounded-xl shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all"
                     >
-                        <RotateCcw className="w-4 h-4" />
+                        <IconRotate className="w-4 h-4" />
                         <span>{t('common.retry')}</span>
                     </button>
                 </div>

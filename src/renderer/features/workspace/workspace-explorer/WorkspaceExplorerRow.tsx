@@ -9,22 +9,7 @@
  */
 
 import { useDraggable, useDroppable } from '@dnd-kit/core';
-import {
-    AlertTriangle,
-    Bot,
-    Braces,
-    ChevronDown,
-    ChevronRight,
-    CircleDot,
-    CircleHelp,
-    FlaskConical,
-    Folder,
-    Loader2,
-    Plus,
-    RotateCcw,
-    Server,
-    X,
-} from 'lucide-react';
+import { IconAlertTriangle, IconBraces, IconChevronDown, IconChevronRight, IconCircleDot, IconFlask, IconFolder, IconHelpCircle, IconLoader2, IconPlus, IconRobot, IconRotate, IconServer, IconX } from '@tabler/icons-react';
 import React from 'react';
 
 import { FileIcon, FolderIcon } from '@/lib/file-icons';
@@ -55,42 +40,42 @@ function GitStatusIndicator({ status, rawStatus }: { status: string; rawStatus?:
     if (status === 'M') {
         return (
             <div className="flex items-center text-git-modified" title="Modified">
-                <CircleDot className="w-3 h-3" />
+                <IconCircleDot className="w-3 h-3" />
             </div>
         );
     }
     if (status === 'A') {
         return (
             <div className="flex items-center text-git-added" title="Added">
-                <Plus className="w-3 h-3" />
+                <IconPlus className="w-3 h-3" />
             </div>
         );
     }
     if (status === 'D') {
         return (
             <div className="flex items-center text-git-deleted" title="Deleted">
-                <X className="w-3 h-3" />
+                <IconX className="w-3 h-3" />
             </div>
         );
     }
     if (status === 'U' || status === '?' || status === '?') {
         return (
             <div className="flex items-center text-git-untracked" title="Untracked">
-                <CircleHelp className="w-3 h-3" />
+                <IconHelpCircle className="w-3 h-3" />
             </div>
         );
     }
     if (status === 'I') {
         return (
             <div className="flex items-center text-git-ignored" title="Ignored">
-                <CircleHelp className="w-3 h-3" />
+                <IconHelpCircle className="w-3 h-3" />
             </div>
         );
     }
     if (status === 'R') {
         return (
             <div className="flex items-center text-git-renamed" title="Renamed">
-                <RotateCcw className="w-3 h-3 -scale-x-100" />
+                <IconRotate className="w-3 h-3 -scale-x-100" />
             </div>
         );
     }
@@ -119,25 +104,25 @@ function WorkspaceExplorerDiagnosticsBadges({
         <div className="flex items-center gap-1 typo-overline font-semibold leading-none">
             {diagnostics.typescript > 0 && (
                 <span className="flex items-center gap-0.5 rounded-sm bg-primary/10 px-1 py-0.5 text-primary">
-                    <Braces className="h-2.5 w-2.5" />
+                    <IconBraces className="h-2.5 w-2.5" />
                     <span>{diagnostics.typescript}</span>
                 </span>
             )}
             {diagnostics.test > 0 && (
                 <span className="flex items-center gap-0.5 rounded-sm bg-success/10 px-1 py-0.5 text-success">
-                    <FlaskConical className="h-2.5 w-2.5" />
+                    <IconFlask className="h-2.5 w-2.5" />
                     <span>{diagnostics.test}</span>
                 </span>
             )}
             {diagnostics.agent > 0 && (
                 <span className="flex items-center gap-0.5 rounded-sm bg-warning/10 px-1 py-0.5 text-warning">
-                    <Bot className="h-2.5 w-2.5" />
+                    <IconRobot className="h-2.5 w-2.5" />
                     <span>{diagnostics.agent}</span>
                 </span>
             )}
             {diagnostics.lint > 0 && (
                 <span className="flex items-center gap-0.5 rounded-sm bg-destructive/10 px-1 py-0.5 text-destructive">
-                    <AlertTriangle className="h-2.5 w-2.5" />
+                    <IconAlertTriangle className="h-2.5 w-2.5" />
                     <span>{diagnostics.lint}</span>
                 </span>
             )}
@@ -160,18 +145,18 @@ const MountRowView: React.FC<{
         onContextMenu={e => onMountContextMenu(e, row.mount.id)}
     >
         <span className="opacity-50 group-hover/mount:opacity-100 transition-opacity">
-            {row.expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+            {row.expanded ? <IconChevronDown className="w-3 h-3" /> : <IconChevronRight className="w-3 h-3" />}
         </span>
         {row.mount.type === 'ssh' ? (
-            <Server className="w-3.5 h-3.5 text-primary/70" />
+            <IconServer className="w-3.5 h-3.5 text-primary/70" />
         ) : (
-            <Folder className="w-3.5 h-3.5 text-success/70" />
+            <IconFolder className="w-3.5 h-3.5 text-success/70" />
         )}
         <div className="flex-1 min-w-0 flex items-center gap-2">
-            <div className="typo-overline font-black uppercase tracking-wider truncate text-muted-foreground/50">
+            <div className="typo-overline font-bold uppercase truncate text-muted-foreground/50">
                 {row.mount.name}
             </div>
-            {row.loading && <Loader2 className="w-3 h-3 text-muted-foreground/60 animate-spin" />}
+            {row.loading && <IconLoader2 className="w-3 h-3 text-muted-foreground/60 animate-spin" />}
         </div>
         <WorkspaceExplorerDiagnosticsBadges diagnostics={row.diagnostics} />
         <button
@@ -181,7 +166,7 @@ const MountRowView: React.FC<{
             }}
             className="p-1 rounded opacity-0 group-hover/mount:opacity-100 hover:text-destructive transition-all"
         >
-            <X className="w-3 h-3" />
+            <IconX className="w-3 h-3" />
         </button>
     </div>
 );
@@ -285,11 +270,11 @@ const EntryRowView: React.FC<{
                     {row.entry.isDirectory ? (
                         <span className="opacity-70 group-hover:opacity-100 shrink-0">
                             {row.loading ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
+                                <IconLoader2 className="w-3 h-3 animate-spin" />
                             ) : row.expanded ? (
-                                <ChevronDown className="w-3.5 h-3.5" />
+                                <IconChevronDown className="w-3.5 h-3.5" />
                             ) : (
-                                <ChevronRight className="w-3.5 h-3.5" />
+                                <IconChevronRight className="w-3.5 h-3.5" />
                             )}
                         </span>
                     ) : (

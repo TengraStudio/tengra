@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { cn } from '@renderer/lib/utils';
+import { cn } from '@/lib/utils';
 
 type TerminalContextMenuProps = {
     position: { x: number; y: number } | null;
@@ -165,7 +165,7 @@ export function TerminalContextMenu({
             )}
             {pasteHistory.length > 0 && (
                 <div className="border-t border-border/50 mt-1 pt-1">
-                    <div className="px-3 py-1 text-xxxs text-muted-foreground">
+                    <div className="px-3 py-1 text-sm text-muted-foreground">
                         {labels.pasteHistory}
                     </div>
                     {pasteHistory.slice(0, 3).map((entry, index) => (
@@ -202,7 +202,7 @@ export function TerminalContextMenu({
             >
                 <span>{labels.semanticIssues}</span>
                 {semanticIssueCount > 0 && (
-                    <span className="text-xxxs text-muted-foreground">
+                    <span className="text-sm text-muted-foreground">
                         {semanticErrorCount}/{semanticWarningCount}
                     </span>
                 )}

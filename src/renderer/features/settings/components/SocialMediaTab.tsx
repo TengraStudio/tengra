@@ -8,22 +8,12 @@
  * (at your option) any later version.
  */
 
-import { Input } from '@renderer/components/ui/input';
-import { Switch } from '@renderer/components/ui/switch';
 import type { AppSettings, CronJobEntry } from '@shared/types/settings';
-import {
-    AlertCircle,
-    Bot,
-    Calendar,
-    Clock,
-    MessageSquare,
-    Plus,
-    Send,
-    Shield,
-    Trash2,
-} from 'lucide-react';
+import { IconAlertCircle, IconCalendar, IconClock, IconMessage, IconPlus, IconRobot, IconSend, IconShield, IconTrash } from '@tabler/icons-react';
 import React, { useCallback, useMemo, useState } from 'react';
 
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 
 import type { SettingsSharedProps } from '../types';
@@ -118,7 +108,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
     return (
         <div className="mx-auto flex max-w-5xl flex-col gap-8 pb-10">
             <header className="flex flex-col gap-1 px-1">
-                <h2 className="text-2xl font-semibold tracking-tight">{t('settings.tabs.socialMedia')}</h2>
+                <h2 className="text-2xl font-semibold ">{t('settings.tabs.socialMedia')}</h2>
                 <p className="text-sm text-muted-foreground">
                     {t('settings.socialMedia.headerDescription')}
                 </p>
@@ -128,7 +118,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
             <SettingsPanel
                 title={t('settings.socialMedia.telegram.title')}
                 description={t('settings.socialMedia.telegram.description')}
-                icon={Send}
+                icon={IconSend}
             >
                 <div className="space-y-6">
                     <SettingsToggleRow
@@ -140,7 +130,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                                 onCheckedChange={checked => handleTelegramUpdate({ enabled: checked })}
                             />
                         )}
-                        icon={Bot}
+                        icon={IconRobot}
                     />
 
                     <SettingsToggleRow
@@ -152,7 +142,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                                 onCheckedChange={checked => handleTelegramUpdate({ notifications: checked })}
                             />
                         )}
-                        icon={Clock}
+                        icon={IconClock}
                     />
 
                     <div className="grid gap-6 md:grid-cols-2">
@@ -186,7 +176,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
 
                     {!telegramConfig.token && telegramConfig.enabled && (
                         <div className="flex items-center gap-2 rounded-xl bg-amber-500/10 p-3 typo-caption text-amber-500 border border-amber-500/20">
-                            <AlertCircle className="h-4 w-4 shrink-0" />
+                            <IconAlertCircle className="h-4 w-4 shrink-0" />
                             <span>{t('settings.socialMedia.telegram.missingTokenWarning')}</span>
                         </div>
                     )}
@@ -197,7 +187,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
             <SettingsPanel
                 title={t('settings.socialMedia.discord.title')}
                 description={t('settings.socialMedia.discord.description')}
-                icon={MessageSquare}
+                icon={IconMessage}
             >
                 <div className="space-y-6">
                     <SettingsToggleRow
@@ -209,7 +199,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                                 onCheckedChange={checked => handleDiscordUpdate({ enabled: checked })}
                             />
                         )}
-                        icon={Bot}
+                        icon={IconRobot}
                     />
 
                     <SettingsToggleRow
@@ -221,7 +211,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                                 onCheckedChange={checked => handleDiscordUpdate({ notifications: checked })}
                             />
                         )}
-                        icon={Clock}
+                        icon={IconClock}
                     />
 
                     <div className="grid gap-6 md:grid-cols-2">
@@ -257,7 +247,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
 
             {/* Security Note */}
             <div className="flex items-start gap-3 rounded-2xl bg-primary/5 p-4 border border-primary/10">
-                <Shield className="mt-0.5 h-5 w-5 text-primary" />
+                <IconShield className="mt-0.5 h-5 w-5 text-primary" />
                 <div className="space-y-1">
                     <h4 className="text-sm font-medium text-primary">{t('settings.socialMedia.security.title')}</h4>
                     <p className="typo-caption text-muted-foreground leading-relaxed">
@@ -270,7 +260,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
             <SettingsPanel
                 title={t('settings.socialMedia.cronJobs.title')}
                 description={t('settings.socialMedia.cronJobs.description')}
-                icon={Calendar}
+                icon={IconCalendar}
             >
                 <div className="space-y-4">
                     {/* Existing cron jobs */}
@@ -310,7 +300,7 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                                             className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                                             aria-label={t('common.delete')}
                                         >
-                                            <Trash2 className="h-4 w-4" />
+                                            <IconTrash className="h-4 w-4" />
                                         </button>
                                     </div>
                                 </div>
@@ -425,14 +415,14 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
                             onClick={() => setShowNewCronForm(true)}
                             className={C_SOCIALMEDIATAB_2}
                         >
-                            <Plus className="h-4 w-4" />
+                            <IconPlus className="h-4 w-4" />
                             {t('settings.socialMedia.cronJobs.addNew')}
                         </button>
                     )}
 
                     {/* Cron expression help */}
                     <div className="flex items-start gap-2 rounded-xl bg-muted/40 p-3 typo-body text-muted-foreground">
-                        <Clock className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                        <IconClock className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                         <div>
                             <p className="font-medium mb-1">{t('settings.socialMedia.cronJobs.helpTitle')}</p>
                             <div className="space-y-0.5 font-mono">
@@ -453,13 +443,13 @@ export const SocialMediaTab: React.FC<SocialMediaTabProps> = ({
             <SettingsPanel
                 title={t('settings.socialMedia.whatsapp.title')}
                 description={t('settings.socialMedia.whatsapp.description')}
-                icon={MessageSquare}
+                icon={IconMessage}
                 className="opacity-60"
             >
                 <div className="flex items-center justify-center py-8 border-2 border-dashed border-border/40 rounded-2xl">
                     <div className="flex flex-col items-center gap-2 text-center">
                         <div className="rounded-full bg-muted p-3">
-                            <AlertCircle className="h-6 w-6 text-muted-foreground" />
+                            <IconAlertCircle className="h-6 w-6 text-muted-foreground" />
                         </div>
                         <h5 className="text-sm font-medium">{t('settings.socialMedia.whatsapp.comingSoonTitle')}</h5>
                         <p className="typo-caption text-muted-foreground max-w-xs">

@@ -8,15 +8,16 @@
  * (at your option) any later version.
  */
 
+import { RuntimeBootstrapExecutionResult } from '@shared/types/runtime-manifest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
     __resetRuntimeBootstrapStoreForTests,
     getRuntimeBootstrapSnapshot,
     hasBlockingRuntimeIssue,
     loadRuntimeBootstrapStatus,
     repairManagedRuntime,
-} from '@renderer/store/runtime-bootstrap.store';
-import { RuntimeBootstrapExecutionResult } from '@shared/types/runtime-manifest';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+} from '@/store/runtime-bootstrap.store';
 
 const READY_STATUS: RuntimeBootstrapExecutionResult = {
     manifestVersion: 'runtime-v1',

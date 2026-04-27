@@ -31,9 +31,10 @@ export async function bootstrapCoreData(container: ContainerLike): Promise<DataS
     container.register('dataService', () => new DataService());
     const dataService = container.resolve<DataService>('dataService');
     try {
+        await dataService.initialize();
         await dataService.migrate();
     } catch (error) {
-        appLogger.error('Startup', `Failed to migrate data service: ${error}`);
+        appLogger.error('Startup', `Failed to initialize or migrate data service: ${error}`);
     }
     appLogger.init(dataService.getPath('logs'));
     return dataService;

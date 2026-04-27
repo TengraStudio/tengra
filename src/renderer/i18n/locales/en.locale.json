@@ -992,7 +992,6 @@
         "extensions": "Extensions",
         "skills": "Skills",
         "themes": "Visual Themes",
-        "personas": "Agent Personalities",
         "documentation": "Documentation",
         "models": "AI Models",
         "prompts": "Prompt Library",
@@ -1406,26 +1405,6 @@
       "collapse": "Collapse panel",
       "maximize": "Maximize panel"
     },
-    "personas": {
-      "description": "Custom profiles that shape assistant responses.",
-      "nameLabel": "Name",
-      "namePlaceholder": "Persona name",
-      "descriptionLabel": "Description",
-      "descriptionPlaceholder": "Short description",
-      "promptLabel": "Prompt",
-      "promptPlaceholder": "System prompt",
-      "empty": "No personality profiles deployed in matrix",
-      "summary": {
-        "editing": "Editing",
-        "new": "New",
-        "promptChars": "Prompt chars",
-        "status": "Status",
-        "draft": "Draft",
-        "idle": "Idle",
-        "selected": "Selected",
-        "none": "None"
-      }
-    },
     "placeholder": {
       "sftpLocalPath": "C:\\path\\file.txt",
       "wakeWord": "tengra",
@@ -1547,7 +1526,6 @@
         "plugins": "Plugins",
         "skills": "Skills",
         "accounts": "Connected Accounts",
-        "personas": "Personas",
         "speech": "Speech",
         "statistics": "Statistics",
         "advanced": "Advanced",
@@ -1599,7 +1577,6 @@
       "title": "Settings",
       "subtitle": "Organize how Tengra looks, behaves, and works.",
       "usage-limits": "Usage Limits",
-      "personas": "Personas",
       "generalTitle": "Core defaults",
       "generalDescription": "Choose the defaults Tengra falls back to when a workspace or conversation does not override them.",
       "workspaceTitle": "Workspace defaults",
@@ -2632,6 +2609,7 @@
       "codexAccount": "Codex Account",
       "dailyStatus": "Daily status",
       "weeklyStatus": "Weekly status",
+      "resetsAt": "Resets at {{time}}",
       "totalMessages": "Total messages",
       "activeThreads": "Active threads",
       "activity": "Activity",

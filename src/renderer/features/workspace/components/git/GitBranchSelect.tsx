@@ -8,10 +8,11 @@
  * (at your option) any later version.
  */
 
-import { Badge } from '@renderer/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@renderer/components/ui/select';
-import { GitBranch } from 'lucide-react';
+import { IconGitBranch } from '@tabler/icons-react';
 import React from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface BranchSelectProps {
     branch: string | null;
@@ -24,8 +25,8 @@ export const GitBranchSelect: React.FC<BranchSelectProps> = ({ branch, branches,
     if (branches.length === 0) {
         return (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-muted/20 border border-border/10">
-                <GitBranch className="w-3.5 h-3.5 text-muted-foreground/40" />
-                <span className="text-xs font-semibold text-foreground/60">{branch ?? 'N/A'}</span>
+                <IconGitBranch className="w-3.5 h-3.5 text-muted-foreground/40" />
+                <span className="text-sm font-semibold text-foreground/60">{branch ?? 'N/A'}</span>
             </div>
         );
     }
@@ -36,10 +37,10 @@ export const GitBranchSelect: React.FC<BranchSelectProps> = ({ branch, branches,
             onValueChange={(value) => { void handleCheckout(value); }}
             disabled={isCheckingOut}
         >
-            <SelectTrigger className="h-10 rounded-xl border-border/20 bg-background/40 hover:bg-muted/40 transition-all font-semibold text-xs focus:ring-indigo-500/20">
+            <SelectTrigger className="h-10 rounded-xl border-border/20 bg-background/40 hover:bg-muted/40 transition-all font-semibold text-sm focus:ring-indigo-500/20">
                 <SelectValue>
                     <div className="flex items-center gap-2">
-                        <GitBranch className="w-3.5 h-3.5 text-indigo-400/60" />
+                        <IconGitBranch className="w-3.5 h-3.5 text-indigo-400/60" />
                         <span className="text-foreground/80">{branch ?? 'Select Branch'}</span>
                     </div>
                 </SelectValue>
@@ -51,7 +52,7 @@ export const GitBranchSelect: React.FC<BranchSelectProps> = ({ branch, branches,
                         <SelectItem
                             key={b}
                             value={b}
-                            className="text-xs focus:bg-indigo-500/10 focus:text-indigo-400 py-2.5"
+                            className="text-sm focus:bg-indigo-500/10 focus:text-indigo-400 py-2.5"
                         >
                             <div className="flex items-center justify-between w-full">
                                 <span>{b}</span>

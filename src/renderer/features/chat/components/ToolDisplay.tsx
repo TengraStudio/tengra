@@ -9,7 +9,7 @@
  */
 
 import { JsonObject, JsonValue } from '@shared/types/common';
-import { ChevronDown, Loader2 } from 'lucide-react';
+import { IconChevronDown, IconLoader2 } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
 
 import { UI_PRIMITIVES } from '@/constants/ui-primitives';
@@ -477,7 +477,7 @@ function ToolOutput({ name, args, result, t }: { name: string; args: JsonObject;
                     );
                 })}
                 {hiddenCount > 0 && (
-                    <div className="px-2 py-1 text-xs text-muted-foreground/70">
+                    <div className="px-2 py-1 text-sm text-muted-foreground/70">
                         {t('tools.andMore', { count: hiddenCount })}
                     </div>
                 )}
@@ -510,7 +510,7 @@ function ToolOutput({ name, args, result, t }: { name: string; args: JsonObject;
                         );
                     })}
                     {hiddenCount > 0 && (
-                        <div className="px-2 py-1 text-xs text-muted-foreground/70">
+                        <div className="px-2 py-1 text-sm text-muted-foreground/70">
                             {t('tools.andMore', { count: hiddenCount })}
                         </div>
                     )}
@@ -538,7 +538,7 @@ function ToolOutput({ name, args, result, t }: { name: string; args: JsonObject;
                         </a>
                     ))}
                     {hiddenCount > 0 && (
-                        <div className="px-2 py-1 text-xs text-muted-foreground/70">
+                        <div className="px-2 py-1 text-sm text-muted-foreground/70">
                             {t('tools.andMore', { count: hiddenCount })}
                         </div>
                     )}
@@ -623,7 +623,7 @@ export const ToolDisplay = React.memo(({ toolCall, result, isExecuting, language
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <ChevronDown className={cn(
+                    <IconChevronDown className={cn(
                         'h-4 w-4 text-muted-foreground/60 transition-transform',
                         expanded && 'rotate-180'
                     )} />
@@ -633,8 +633,8 @@ export const ToolDisplay = React.memo(({ toolCall, result, isExecuting, language
             {expanded && (
                 <div className="px-3 pb-2 pt-2">
                     {isExecuting && !result && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Loader2 className="h-3 w-3 animate-spin" />
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <IconLoader2 className="h-3 w-3 animate-spin" />
                             <span>{t('tools.executing')}</span>
                         </div>
                     )}
@@ -643,7 +643,7 @@ export const ToolDisplay = React.memo(({ toolCall, result, isExecuting, language
                         <div className="space-y-2">
                             <ToolOutput name={displayToolCall.name} args={displayToolCall.arguments} result={result?.result ?? {}} t={t} />
                             {typeof toolError === 'string' && toolError.trim().length > 0 && (
-                                <div className="rounded-md border border-destructive/25 bg-destructive/5 px-2 py-1 text-xs text-destructive">
+                                <div className="rounded-md border border-destructive/25 bg-destructive/5 px-2 py-1 text-sm text-destructive">
                                     {toolError}
                                 </div>
                             )}

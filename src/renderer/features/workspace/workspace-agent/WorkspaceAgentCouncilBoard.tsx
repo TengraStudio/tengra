@@ -19,17 +19,7 @@ import type {
     CouncilSubagentWorkspaceDraft,
     WorkspaceAgentSessionSummary,
 } from '@shared/types/workspace-agent-session';
-import {
-    ArrowRight,
-    CheckCircle2,
-    GitBranch,
-    LayoutPanelTop,
-    Map,
-    MessagesSquare,
-    Sparkles,
-    UserRoundCog,
-    Workflow,
-} from 'lucide-react';
+import { IconArrowRight, IconCircleCheck, IconGitBranch, IconHierarchy,IconLayoutRows, IconMap, IconMessages, IconSparkles, IconUserCog } from '@tabler/icons-react';
 import React from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -121,7 +111,7 @@ function AgentCanvas({
         const reviseStrokeColor = resolveCssColorVariable('council-board-revise-stroke', 'hsl(48 96% 64% / 0.7)');
         const messageStrokeColor = resolveCssColorVariable('council-board-message-stroke', 'hsl(197 97% 61% / 0.35)');
         const boardFontFamily = resolveCssVariableStyle('fontFamily', 'font-family', 'sans-serif');
-        const boardFontSize = resolveCssVariableValue('text-xs', '0.75rem');
+        const boardFontSize = resolveCssVariableValue('text-sm', '0.75rem');
 
         context.clearRect(0, 0, width, height);
         context.fillStyle = boardBackground;
@@ -264,13 +254,13 @@ function AgentCard({
                             {agent.provider} · {agent.model}
                         </div>
                     </div>
-                    <Badge variant="outline" className="border-border/60 bg-muted/30 text-xxs">
+                    <Badge variant="outline" className="border-border/60 bg-muted/30 text-sm">
                         {agent.status}
                     </Badge>
                 </div>
                 <div className="mt-3 space-y-2 typo-caption text-muted-foreground">
                     <div className="inline-flex items-center gap-1">
-                        <GitBranch className="h-3.5 w-3.5" />
+                        <IconGitBranch className="h-3.5 w-3.5" />
                         {agent.workspaceId}
                     </div>
                     <div>{agent.stageGoal}</div>
@@ -289,7 +279,7 @@ function AgentCard({
                             className="w-full"
                             onClick={() => void onSubmitDraft(agent.id)}
                         >
-                            <CheckCircle2 className="mr-1.5 h-4 w-4" />
+                            <IconCircleCheck className="mr-1.5 h-4 w-4" />
                             {t('common.update')}
                         </Button>
                     </div>
@@ -315,7 +305,7 @@ function ReviewQueueCard({
         <Card className="border-border/50 bg-card/70">
             <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                    <Sparkles className="h-4 w-4 text-accent-foreground" />
+                    <IconSparkles className="h-4 w-4 text-accent-foreground" />
                     {t('workspaceAgent.reviewQueue')}
                 </div>
                 <div className="mt-3 space-y-2">
@@ -385,7 +375,7 @@ function AssistQueueCard({
         <Card className="border-border/50 bg-card/70">
             <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                    <ArrowRight className="h-4 w-4 text-info" />
+                    <IconArrowRight className="h-4 w-4 text-info" />
                     {t('workspaceAgent.assistQueue')}
                 </div>
                 <div className="mt-3 space-y-3">
@@ -465,13 +455,13 @@ function ActivityFeedCard({
         <Card className="border-border/50 bg-card/70">
             <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                    <MessagesSquare className="h-4 w-4 text-warning" />
+                    <IconMessages className="h-4 w-4 text-warning" />
                     {t('workspaceAgent.activity')}
                 </div>
                 <div className="mt-3 space-y-2">
                     {runtime.messages.slice(-4).map(message => (
                         <div key={message.id} className="rounded-2xl border border-border/50 bg-muted/30 p-3">
-                            <div className="text-xxs text-muted-foreground">
+                            <div className="text-sm text-muted-foreground">
                                 {message.fromAgentId}
                             </div>
                             <div className="mt-1 text-sm text-foreground">{message.content}</div>
@@ -480,7 +470,7 @@ function ActivityFeedCard({
                     {runtime.assistEvents.slice(-3).map(event => (
                         <div key={event.id} className="rounded-2xl border border-border/50 bg-muted/30 p-3 text-sm text-foreground">
                             <div className="inline-flex items-center gap-2">
-                                <ArrowRight className="h-4 w-4 text-info" />
+                                <IconArrowRight className="h-4 w-4 text-info" />
                                 {event.summary}
                             </div>
                         </div>
@@ -488,10 +478,10 @@ function ActivityFeedCard({
                     {runtime.decisions.slice(-4).map(decision => (
                         <div key={`${decision.draftId}-${decision.decidedAt}`} className="rounded-2xl border border-border/50 bg-muted/30 p-3">
                             <div className="flex items-center justify-between gap-3">
-                                <div className="text-xxs text-muted-foreground">
+                                <div className="text-sm text-muted-foreground">
                                     {decision.draftId}
                                 </div>
-                                <Badge variant="outline" className="border-border/60 bg-muted/40 text-xxs">
+                                <Badge variant="outline" className="border-border/60 bg-muted/40 text-sm">
                                     {decision.decision}
                                 </Badge>
                             </div>
@@ -502,7 +492,7 @@ function ActivityFeedCard({
                     ))}
                     {timeline.slice(-3).map(event => (
                         <div key={event.id} className="rounded-2xl border border-border/50 bg-muted/30 p-3">
-                            <div className="text-xxs text-muted-foreground">
+                            <div className="text-sm text-muted-foreground">
                                 {event.type}
                             </div>
                             <div className="mt-1 text-sm text-foreground">
@@ -587,7 +577,7 @@ export const WorkspaceAgentCouncilBoard: React.FC<WorkspaceAgentCouncilBoardProp
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                            <UserRoundCog className="h-4 w-4 text-info" />
+                            <IconUserCog className="h-4 w-4 text-info" />
                             {runtime.chairman?.name ?? t('workspaceAgent.chairmanFallback')}
                         </div>
                         <div className="mt-1 typo-caption text-muted-foreground">
@@ -601,7 +591,7 @@ export const WorkspaceAgentCouncilBoard: React.FC<WorkspaceAgentCouncilBoardProp
                             size="sm"
                             onClick={() => void onSwitchView('board')}
                         >
-                            <LayoutPanelTop className="mr-1.5 h-4 w-4" />
+                            <IconLayoutRows className="mr-1.5 h-4 w-4" />
                             {t('workspaceAgent.boardView')}
                         </Button>
                         <Button
@@ -609,7 +599,7 @@ export const WorkspaceAgentCouncilBoard: React.FC<WorkspaceAgentCouncilBoardProp
                             size="sm"
                             onClick={() => void onSwitchView('map')}
                         >
-                            <Map className="mr-1.5 h-4 w-4" />
+                            <IconMap className="mr-1.5 h-4 w-4" />
                             {t('workspaceAgent.mapView')}
                         </Button>
                     </div>
@@ -645,12 +635,12 @@ export const WorkspaceAgentCouncilBoard: React.FC<WorkspaceAgentCouncilBoardProp
                             <CardContent className="p-4">
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                        <Workflow className="h-4 w-4 text-info" />
+                                        <IconHierarchy className="h-4 w-4 text-info" />
                                         {t('agents.taskRouting')}
                                     </div>
                                     {proposal.length > 0 && (
                                         <Button size="sm" variant="secondary" onClick={onApprovePlan}>
-                                            <CheckCircle2 className="mr-1.5 h-4 w-4" />
+                                            <IconCircleCheck className="mr-1.5 h-4 w-4" />
                                             {t('common.confirm')}
                                         </Button>
                                     )}
@@ -663,7 +653,7 @@ export const WorkspaceAgentCouncilBoard: React.FC<WorkspaceAgentCouncilBoardProp
                                                     <div className="text-sm text-foreground">
                                                         {index + 1}. {step.text}
                                                     </div>
-                                                    <div className="text-xxs text-muted-foreground">
+                                                    <div className="text-sm text-muted-foreground">
                                                         {step.status}
                                                     </div>
                                                 </div>

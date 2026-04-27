@@ -8,10 +8,11 @@
  * (at your option) any later version.
  */
 
-import { useModelCategories } from '@renderer/features/models/hooks/useModelCategories';
 import type { GroupedModels } from '@shared/types/model.types';
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+
+import { useModelCategories } from '@/features/models/hooks/useModelCategories';
 
 describe('useModelCategories', () => {
     it('places huggingface models under dedicated category and keeps provider selectable', () => {

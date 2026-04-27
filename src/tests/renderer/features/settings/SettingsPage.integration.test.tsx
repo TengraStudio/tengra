@@ -8,14 +8,14 @@
  * (at your option) any later version.
  */
 
-import { useSettingsLogic } from '@renderer/features/settings/hooks/useSettingsLogic';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
+import { useSettingsLogic } from '@/features/settings/hooks/useSettingsLogic';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { AppSettings } from '@/types/settings';
 
-vi.mock('@renderer/features/settings/hooks/useSettingsLogic', () => ({
+vi.mock('@/features/settings/hooks/useSettingsLogic', () => ({
     useSettingsLogic: vi.fn(),
 }));
 
@@ -37,7 +37,7 @@ const settingsFixture: AppSettings = {
 };
 
 function createLogicMock(overrides: Partial<ReturnType<typeof useSettingsLogic>> = {}) {
-    const base: ReturnType<typeof useSettingsLogic> = {
+    const base = {
         settings: settingsFixture,
         setSettings: vi.fn().mockResolvedValue(undefined),
         isLoading: false,
@@ -76,12 +76,6 @@ function createLogicMock(overrides: Partial<ReturnType<typeof useSettingsLogic>>
         benchmarkResult: null,
         isBenchmarking: false,
         handleRunBenchmark: vi.fn().mockResolvedValue(undefined),
-        editingPersonaId: null,
-        setEditingPersonaId: vi.fn(),
-        personaDraft: { name: '', description: '', prompt: '' },
-        setPersonaDraft: vi.fn(),
-        handleSavePersona: vi.fn().mockResolvedValue(undefined),
-        handleDeletePersona: vi.fn().mockResolvedValue(undefined),
         linkedAccounts: {
             accounts: [],
             loading: false,
@@ -109,7 +103,7 @@ function createLogicMock(overrides: Partial<ReturnType<typeof useSettingsLogic>>
     return {
         ...base,
         ...overrides,
-    };
+    } as unknown as ReturnType<typeof useSettingsLogic>;
 }
 
 describe('SettingsPage integration', () => {

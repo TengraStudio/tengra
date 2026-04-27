@@ -8,19 +8,7 @@
  * (at your option) any later version.
  */
 
-import {
-    Calendar,
-    ChevronLeft,
-    ChevronRight,
-    FolderOpen,
-    Image as ImageIcon,
-    Info,
-    Maximize2,
-    RefreshCw,
-    Search,
-    Sparkles,
-    Trash2
-} from 'lucide-react';
+import { IconCalendar, IconChevronLeft, IconChevronRight, IconFolderOpen, IconInfoCircle, IconMaximize, IconPhoto as ImageIcon, IconRefresh, IconSearch, IconSparkles, IconTrash } from '@tabler/icons-react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -272,7 +260,7 @@ export function GalleryView({ language }: GalleryViewProps) {
             {/* Header */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-b border-border/50 bg-card/30 backdrop-blur-md">
                 <div className="flex items-center gap-4">
-                    <h2 className="text-xl font-bold tracking-tight">{t('gallery.title')}</h2>
+                    <h2 className="text-xl font-bold ">{t('gallery.title')}</h2>
                     <Badge variant="secondary" className="font-mono typo-overline h-5">
                         {filteredImages.length}
                     </Badge>
@@ -280,7 +268,7 @@ export function GalleryView({ language }: GalleryViewProps) {
 
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                     <div className="relative group flex-1 sm:w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
                         <Input
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
@@ -296,7 +284,7 @@ export function GalleryView({ language }: GalleryViewProps) {
                             onClick={() => void loadImages()}
                             className="h-9 w-9 rounded-xl shrink-0"
                         >
-                            <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+                            <IconRefresh className={cn("w-4 h-4", loading && "animate-spin")} />
                         </Button>
                     </Tooltip>
 
@@ -374,7 +362,7 @@ export function GalleryView({ language }: GalleryViewProps) {
                                     className="rounded-full h-12 w-12 bg-background/60 backdrop-blur"
                                     onClick={(e) => { e.stopPropagation(); handleNavigate('prev'); }}
                                 >
-                                    <ChevronLeft className="w-6 h-6" />
+                                    <IconChevronLeft className="w-6 h-6" />
                                 </Button>
                                 <Button
                                     variant="secondary"
@@ -382,7 +370,7 @@ export function GalleryView({ language }: GalleryViewProps) {
                                     className="rounded-full h-12 w-12 bg-background/60 backdrop-blur"
                                     onClick={(e) => { e.stopPropagation(); handleNavigate('next'); }}
                                 >
-                                    <ChevronRight className="w-6 h-6" />
+                                    <IconChevronRight className="w-6 h-6" />
                                 </Button>
                             </div>
 
@@ -393,7 +381,7 @@ export function GalleryView({ language }: GalleryViewProps) {
                                     className="bg-background/80"
                                     onClick={() => previewImage && void window.electron.gallery.open(previewImage.path)}
                                 >
-                                    <Maximize2 className="w-3.5 h-3.5 mr-2" />
+                                    <IconMaximize className="w-3.5 h-3.5 mr-2" />
                                     {t('gallery.fullScreen')}
                                 </Button>
                             </div>
@@ -407,8 +395,8 @@ export function GalleryView({ language }: GalleryViewProps) {
                                         <DialogTitle className="text-lg font-bold truncate">
                                             {previewImage?.name}
                                         </DialogTitle>
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-                                            <Calendar className="w-3 h-3" />
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+                                            <IconCalendar className="w-3 h-3" />
                                             {previewImage && formatDate(previewImage.mtime, t('common.locale'))}
                                         </div>
                                     </div>
@@ -421,17 +409,17 @@ export function GalleryView({ language }: GalleryViewProps) {
                                     {previewImage?.metadata?.prompt && (
                                         <div className="space-y-3">
                                             <div className="flex items-center gap-2">
-                                                <Sparkles className="w-4 h-4 text-primary" />
-                                                <h4 className="text-xs font-bold uppercase tracking-widest text-primary">{t('gallery.prompt')}</h4>
+                                                <IconSparkles className="w-4 h-4 text-primary" />
+                                                <h4 className="text-sm font-bold uppercase text-primary">{t('gallery.prompt')}</h4>
                                             </div>
-                                            <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 text-sm leading-relaxed text-foreground/90 font-medium italic select-text selection:bg-primary/20">
+                                            <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 text-sm leading-relaxed text-foreground/90 font-medium select-text selection:bg-primary/20">
                                                 {previewImage.metadata.prompt}
                                             </div>
 
                                             {previewImage.metadata.negative_prompt && (
                                                 <div className="space-y-2 mt-4">
-                                                    <h4 className="typo-overline font-bold uppercase tracking-widest text-muted-foreground/60">{t('gallery.negativePrompt')}</h4>
-                                                    <div className="p-3 rounded-xl bg-muted/30 border border-border/10 text-xs text-muted-foreground italic select-text">
+                                                    <h4 className="typo-overline font-bold uppercase text-muted-foreground/60">{t('gallery.negativePrompt')}</h4>
+                                                    <div className="p-3 rounded-xl bg-muted/30 border border-border/10 text-sm text-muted-foreground select-text">
                                                         {previewImage.metadata.negative_prompt}
                                                     </div>
                                                 </div>
@@ -441,22 +429,22 @@ export function GalleryView({ language }: GalleryViewProps) {
 
                                     {/* Parameters Grid */}
                                     <div className="space-y-3 pt-2">
-                                        <h4 className="typo-overline font-bold uppercase tracking-widest text-muted-foreground/50">{t('gallery.technicalParams')}</h4>
+                                        <h4 className="typo-overline font-bold uppercase text-muted-foreground/50">{t('gallery.technicalParams')}</h4>
                                         <div className="flex flex-wrap gap-2">
                                             {previewImage?.metadata?.model && (
-                                                <MetadataBadge icon={Sparkles} label={t('gallery.metadata.model')} value={previewImage.metadata.model} />
+                                                <MetadataBadge icon={IconSparkles} label={t('gallery.metadata.model')} value={previewImage.metadata.model} />
                                             )}
                                             {previewImage?.metadata?.width && previewImage.metadata.height && (
                                                 <MetadataBadge icon={ImageIcon} label={t('gallery.metadata.resolution')} value={`${previewImage.metadata.width}×${previewImage.metadata.height}`} />
                                             )}
                                             {previewImage?.metadata?.steps && (
-                                                <MetadataBadge icon={RefreshCw} label={t('gallery.metadata.steps')} value={previewImage.metadata.steps} />
+                                                <MetadataBadge icon={IconRefresh} label={t('gallery.metadata.steps')} value={previewImage.metadata.steps} />
                                             )}
                                             {previewImage?.metadata?.cfg_scale && (
-                                                <MetadataBadge icon={Info} label={t('gallery.metadata.cfgScale')} value={previewImage.metadata.cfg_scale} />
+                                                <MetadataBadge icon={IconInfoCircle} label={t('gallery.metadata.cfgScale')} value={previewImage.metadata.cfg_scale} />
                                             )}
                                             {previewImage?.metadata?.seed && (
-                                                <MetadataBadge icon={Info} label={t('gallery.metadata.seed')} value={previewImage.metadata.seed} />
+                                                <MetadataBadge icon={IconInfoCircle} label={t('gallery.metadata.seed')} value={previewImage.metadata.seed} />
                                             )}
                                         </div>
                                     </div>
@@ -468,7 +456,7 @@ export function GalleryView({ language }: GalleryViewProps) {
                                             className="h-10 rounded-xl gap-2 font-bold"
                                             onClick={() => previewImage && void window.electron.gallery.reveal(previewImage.path)}
                                         >
-                                            <FolderOpen className="w-4 h-4" />
+                                            <IconFolderOpen className="w-4 h-4" />
                                             {t('gallery.revealInFileExplorer')}
                                         </Button>
                                         <Button
@@ -477,7 +465,7 @@ export function GalleryView({ language }: GalleryViewProps) {
                                             onClick={() => previewImage && void handleDelete(previewImage.path)}
                                             disabled={!!deleting}
                                         >
-                                            {deleting === previewImage?.path ? <RefreshCw className="animate-spin w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
+                                            {deleting === previewImage?.path ? <IconRefresh className="animate-spin w-4 h-4" /> : <IconTrash className="w-4 h-4" />}
                                             {t('common.delete')}
                                         </Button>
                                     </div>

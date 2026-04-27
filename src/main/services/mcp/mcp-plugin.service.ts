@@ -17,6 +17,7 @@ import { McpDeps } from '@main/mcp/server-utils';
 import { McpDispatchResult } from '@main/mcp/types';
 import { BaseService } from '@main/services/base.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { t } from '@main/utils/i18n.util';
 import { JsonObject } from '@shared/types/common';
 import { McpPermission, McpPermissionProfile,MCPServerConfig } from '@shared/types/settings';
 
@@ -120,54 +121,54 @@ export class McpPluginService extends BaseService {
                 name: 'filesystem',
                 description: 'Native high-performance filesystem tools',
                 actions: [
-                    { name: 'read', description: 'Read a file from disk' },
-                    { name: 'write', description: 'Write a file to disk' },
-                    { name: 'list', description: 'List directory contents' },
-                    { name: 'extract_strings', description: 'Extract strings from binary/text files' },
-                    { name: 'unzip', description: 'Extract a zip archive' },
-                    { name: 'download_file', description: 'Download a file from a URL' }
+                    { name: 'read', description: t('auto.readAFileFromDisk') },
+                    { name: 'write', description: t('auto.writeAFileToDisk') },
+                    { name: 'list', description: t('auto.listDirectoryContents') },
+                    { name: 'extract_strings', description: t('auto.extractStringsFromBinarytextFiles') },
+                    { name: 'unzip', description: t('auto.extractAZipArchive') },
+                    { name: 'download_file', description: t('auto.downloadAFileFromAUrl') }
                 ]
             },
             {
                 name: 'terminal',
-                description: 'Native persistent terminal and shell command execution',
+                description: t('auto.nativePersistentTerminalAndShellCommandE'),
                 actions: [
-                    { name: 'run_command', description: 'Execute a command in a persistent terminal session' },
-                    { name: 'list_sessions', description: 'List active terminal sessions' },
-                    { name: 'resize', description: 'Resize a terminal window' },
-                    { name: 'kill_session', description: 'Terminate a terminal session' }
+                    { name: 'run_command', description: t('auto.executeACommandInAPersistentTerminalSess') },
+                    { name: 'list_sessions', description: t('auto.listActiveTerminalSessions') },
+                    { name: 'resize', description: t('auto.resizeATerminalWindow') },
+                    { name: 'kill_session', description: t('auto.terminateATerminalSession') }
                 ]
             },
             {
                 name: 'git',
-                description: 'Native Git integration using libgit2',
+                description: t('auto.nativeGitIntegrationUsingLibgit2'),
                 actions: [
-                    { name: 'status', description: 'Get the status of a Git repository' },
-                    { name: 'diff', description: 'Get the diff of a Git repository' },
-                    { name: 'blame', description: 'Get the blame information for a file' },
-                    { name: 'log', description: 'Show the commit logs' },
-                    { name: 'add', description: 'Add file contents to the index' },
-                    { name: 'commit', description: 'Record changes to the repository' },
+                    { name: 'status', description: t('auto.getTheStatusOfAGitRepository') },
+                    { name: 'diff', description: t('auto.getTheDiffOfAGitRepository') },
+                    { name: 'blame', description: t('auto.getTheBlameInformationForAFile') },
+                    { name: 'log', description: t('auto.showTheCommitLogs') },
+                    { name: 'add', description: t('auto.addFileContentsToTheIndex') },
+                    { name: 'commit', description: t('auto.recordChangesToTheRepository') },
                     { name: 'push', description: 'Update remote refs along with associated objects' },
-                    { name: 'pull', description: 'Fetch from and integrate with another repository or a local branch' },
-                    { name: 'checkout', description: 'Switch branches or restore working tree files' },
-                    { name: 'branches', description: 'List local branches' }
+                    { name: 'pull', description: t('auto.fetchFromAndIntegrateWithAnotherReposito') },
+                    { name: 'checkout', description: t('auto.switchBranchesOrRestoreWorkingTreeFiles') },
+                    { name: 'branches', description: t('auto.listLocalBranches') }
                 ]
             },
             {
                 name: 'web',
-                description: 'Native web scraping and search tools',
+                description: t('auto.nativeWebScrapingAndSearchTools'),
                 actions: [
-                    { name: 'search', description: 'Search the web for information' },
-                    { name: 'read_page', description: 'Read and extract content from a web page' },
-                    { name: 'fetch_json', description: 'Fetch JSON data from a URL' }
+                    { name: 'search', description: t('auto.searchTheWebForInformation') },
+                    { name: 'read_page', description: t('auto.readAndExtractContentFromAWebPage') },
+                    { name: 'fetch_json', description: t('auto.fetchJsonDataFromAUrl') }
                 ]
             },
             {
                 name: 'crawler',
-                description: 'High-performance web crawler and content extractor',
+                description: t('auto.highperformanceWebCrawlerAndContentExtra'),
                 actions: [
-                    { name: 'crawl', description: 'Deep crawl a website and extract structured content' }
+                    { name: 'crawl', description: t('auto.deepCrawlAWebsiteAndExtractStructuredCon') }
                 ]
             },
             {
@@ -176,60 +177,60 @@ export class McpPluginService extends BaseService {
                 actions: [
                     { name: 'get_info', description: 'Get system hardware and OS information' },
                     { name: 'env_vars', description: 'List system environment variables' },
-                    { name: 'process_list', description: 'List running processes with resource usage' },
+                    { name: 'process_list', description: t('auto.listRunningProcessesWithResourceUsage') },
                     { name: 'kill_process', description: 'Terminate a system process' },
-                    { name: 'disk_space', description: 'Get disk space information' }
+                    { name: 'disk_space', description: t('auto.getDiskSpaceInformation') }
                 ]
             },
             {
                 name: 'network',
-                description: 'Native network diagnostic and interface tools',
+                description: t('auto.nativeNetworkDiagnosticAndInterfaceTools'),
                 actions: [
-                    { name: 'list_interfaces', description: 'List network interfaces and IP addresses' },
-                    { name: 'check_port', description: 'Check if a specific port is open' },
-                    { name: 'active_ports', description: 'List active development ports' },
-                    { name: 'ping', description: 'Send ICMP ECHO_REQUEST to network hosts' },
-                    { name: 'traceroute', description: 'Print the route packets trace to network host' },
-                    { name: 'whois', description: 'Lookup domain registration information' }
+                    { name: 'list_interfaces', description: t('auto.listNetworkInterfacesAndIpAddresses') },
+                    { name: 'check_port', description: t('auto.checkIfASpecificPortIsOpen') },
+                    { name: 'active_ports', description: t('auto.listActiveDevelopmentPorts') },
+                    { name: 'ping', description: t('auto.sendIcmpEchoRequestToNetworkHosts') },
+                    { name: 'traceroute', description: t('auto.printTheRoutePacketsTraceToNetworkHost') },
+                    { name: 'whois', description: t('auto.lookupDomainRegistrationInformation') }
                 ]
             },
             {
                 name: 'internet',
-                description: 'Native internet-based utility tools',
+                description: t('auto.nativeInternetbasedUtilityTools'),
                 actions: [
-                    { name: 'weather', description: 'Get current weather and forecast for a location' }
+                    { name: 'weather', description: t('auto.getCurrentWeatherAndForecastForALocation') }
                 ]
             },
             {
                 name: 'workspace',
                 description: 'Native workspace and container management',
                 actions: [
-                    { name: 'listContainers', description: 'List Docker containers' },
-                    { name: 'stats', description: 'Get Docker container resource usage stats' },
-                    { name: 'listImages', description: 'List Docker images' }
+                    { name: 'listContainers', description: t('auto.listDockerContainers') },
+                    { name: 'stats', description: t('auto.getDockerContainerResourceUsageStats') },
+                    { name: 'listImages', description: t('auto.listDockerImages') }
                 ]
             },
             {
                 name: 'llm',
                 description: 'Native LLM sidecar and model management',
                 actions: [
-                    { name: 'listModels', description: 'List available local LLM models (Ollama)' },
-                    { name: 'ps', description: 'Show running LLM models' }
+                    { name: 'listModels', description: t('auto.listAvailableLocalLlmModelsOllama') },
+                    { name: 'ps', description: t('auto.showRunningLlmModels') }
                 ]
             },
             {
                 name: 'search',
-                description: 'Fast local search using ripgrep engine',
+                description: t('auto.fastLocalSearchUsingRipgrepEngine'),
                 actions: [
-                    { name: 'grep', description: 'High-speed text search across files' }
+                    { name: 'grep', description: t('auto.highspeedTextSearchAcrossFiles') }
                 ]
             },
             {
                 name: 'analysis',
                 description: 'Native code analysis and LSP management',
                 actions: [
-                    { name: 'lsp_status', description: 'Check status of language servers' },
-                    { name: 'symbols', description: 'Extract symbols from a file' }
+                    { name: 'lsp_status', description: t('auto.checkStatusOfLanguageServers') },
+                    { name: 'symbols', description: t('auto.extractSymbolsFromAFile') }
                 ]
             }
         ];

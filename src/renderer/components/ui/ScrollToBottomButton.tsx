@@ -8,7 +8,7 @@
  * (at your option) any later version.
  */
 
-import { ChevronDown } from 'lucide-react';
+import { IconChevronDown } from '@tabler/icons-react';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -30,9 +30,9 @@ interface ScrollToBottomButtonProps {
  * @example
  * ```tsx
  * <ScrollToBottomButton
- *   onClick={scrollToBottom}
- *   visible={showButton}
- *   newMessageCount={3}
+ * onClick={scrollToBottom}
+ * visible={showButton}
+ * newMessageCount={3}
  * />
  * ```
  */
@@ -56,9 +56,9 @@ export const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = React.m
             aria-label={label}
         >
             <div className="relative flex items-center justify-center">
-                <ChevronDown className="w-5 h-5" />
+                <IconChevronDown className="w-5 h-5" />
                 {newMessageCount && newMessageCount > 0 && (
-                    <span className="absolute -top-3 -right-3 min-w-5 h-5 px-1.5 bg-destructive text-foreground text-xs font-bold rounded-full flex items-center justify-center animate-scroll-bounce-in">
+                    <span className="absolute -top-3 -right-3 min-w-5 h-5 px-1.5 bg-destructive text-foreground text-sm font-bold rounded-full flex items-center justify-center animate-scroll-bounce-in">
                         {newMessageCount > 99 ? '99+' : newMessageCount}
                     </span>
                 )}

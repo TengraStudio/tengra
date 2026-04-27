@@ -8,10 +8,10 @@
  * (at your option) any later version.
  */
 
-import { SidebarMenuItem, SidebarSection } from '@renderer/components/layout/sidebar-components';
-import { Container, Plug, Terminal } from 'lucide-react';
+import { IconContainer, IconPlug, IconTerminal } from '@tabler/icons-react';
 import React from 'react';
 
+import { SidebarMenuItem, SidebarSection } from '@/components/layout/sidebar-components';
 import { AppView } from '@/hooks/useAppState';
 import { Language, useTranslation } from '@/i18n';
 
@@ -38,13 +38,13 @@ export const ToolsSectionComponent: React.FC<ToolsSectionProps> = ({
         <SidebarSection
             id="tools"
             title={t('sidebar.tools')}
-            icon={<Plug className="w-3.5 h-3.5" />}
+            icon={<IconPlug className="w-3.5 h-3.5" />}
             defaultExpanded={false}
             badge={3}
         >
             <SidebarMenuItem
                 id="mcp"
-                icon={<Plug className="w-4 h-4" />}
+                icon={<IconPlug className="w-4 h-4" />}
                 label={t('sidebar.mcpServices')}
                 description={t('sidebar.mcpDescription')}
                 onClick={() => onChangeView('mcp')}
@@ -54,7 +54,7 @@ export const ToolsSectionComponent: React.FC<ToolsSectionProps> = ({
             />
             <SidebarMenuItem
                 id="docker"
-                icon={<Container className="w-4 h-4" />}
+                icon={<IconContainer className="w-4 h-4" />}
                 label={t('sidebar.docker')}
                 description={t('sidebar.dockerDescription')}
                 onClick={() => onChangeView('docker')}
@@ -62,7 +62,7 @@ export const ToolsSectionComponent: React.FC<ToolsSectionProps> = ({
             />
             <SidebarMenuItem
                 id="terminal"
-                icon={<Terminal className="w-4 h-4" />}
+                icon={<IconTerminal className="w-4 h-4" />}
                 label={t('sidebar.terminal')}
                 description={t('sidebar.terminalDescription')}
                 onClick={() => onChangeView('terminal')}

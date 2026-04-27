@@ -8,11 +8,14 @@
  * (at your option) any later version.
  */
 
+import path from 'path';
+
 import { DataService } from '@main/services/data/data.service';
 import { DatabaseClientService } from '@main/services/data/database-client.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
+import { app } from 'electron';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@main/logging/logger', () => ({
@@ -203,6 +206,20 @@ describe('DatabaseClientService input validation', () => {
 
             expect(apiCall).toHaveBeenCalledTimes(3);
             expect(updatedWorkspaces[0]?.path).toBe('/repo-renamed');
+        });
+    });
+
+    describe('portable path selection', () => {
+        it('uses userData for db-service token files', () => {
+            vi.mocked(app.getPath).mockImplementation((name: string) => {
+                if (name === 'userData') {
+                    return '/mock/portable';
+                }
+                return '/mock/roaming';
+            });
+
+            const tokenPath = Reflect.get(svc, 'getServiceTokenFilePath').call(svc) as string;
+            expect(tokenPath).toBe(path.join('/mock/portable', 'services', 'db-service.token'));
         });
     });
 

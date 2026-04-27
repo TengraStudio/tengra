@@ -18,7 +18,7 @@ export interface MarketplaceItem {
     version: string;
     downloadUrl: string;
     previewUrl?: string;
-    itemType: 'theme' | 'mcp' | 'persona' | 'model' | 'prompt' | 'language' | 'skill' | 'extension' | 'icon-pack';
+    itemType: 'theme' | 'mcp' | 'model' | 'prompt' | 'language' | 'code-language-pack' | 'skill' | 'extension' | 'icon-pack';
     installed?: boolean;
     installedVersion?: string;
     updateAvailable?: boolean;
@@ -52,9 +52,6 @@ export interface MarketplaceExtension extends MarketplaceItem {
     repository?: string;
 }
 
-export interface MarketplacePersona extends MarketplaceItem {
-    context: string;
-}
 
 export interface MarketplaceModelTag {
     id: string;
@@ -168,6 +165,40 @@ export interface MarketplaceLanguage extends MarketplaceItem {
     schemaVersion?: string;
 }
 
+export interface MarketplaceCodeLanguageConfiguration {
+    comments?: {
+        lineComment?: string;
+        blockComment?: [string, string];
+    };
+    brackets?: Array<[string, string]>;
+    autoClosingPairs?: Array<{
+        open: string;
+        close: string;
+        notIn?: string[];
+    }>;
+    surroundingPairs?: Array<{
+        open: string;
+        close: string;
+    }>;
+}
+
+export interface MarketplaceCodeLanguageContribution {
+    id: string;
+    displayName: string;
+    aliases?: string[];
+    extensions?: string[];
+    filenames?: string[];
+    monacoLanguage?: string;
+    textMateScope?: string;
+    configuration?: MarketplaceCodeLanguageConfiguration;
+    monarch?: Record<string, unknown>;
+}
+
+export interface MarketplaceCodeLanguagePack extends MarketplaceItem {
+    category?: string;
+    languages: MarketplaceCodeLanguageContribution[];
+}
+
 export interface MarketplaceSkill extends MarketplaceItem {
     provider?: string;
     content?: string;
@@ -183,17 +214,17 @@ export interface MarketplaceRegistry {
     lastUpdated: string;
     themes: MarketplaceTheme[];
     mcp: MarketplaceMcp[];
-    personas?: MarketplacePersona[];
     models?: MarketplaceModel[];
     prompts?: MarketplacePrompt[];
     languages?: MarketplaceLanguage[];
+    codeLanguagePacks?: MarketplaceCodeLanguagePack[];
     skills?: MarketplaceSkill[];
     extensions?: MarketplaceExtension[];
     iconPacks?: MarketplaceIconPack[];
 }
 
 export interface InstallRequest {
-    type: 'theme' | 'mcp' | 'persona' | 'model' | 'prompt' | 'language' | 'skill' | 'extension' | 'icon-pack';
+    type: 'theme' | 'mcp' | 'model' | 'prompt' | 'language' | 'code-language-pack' | 'skill' | 'extension' | 'icon-pack';
     id: string;
     downloadUrl?: string;
     provider?: MarketplaceModel['provider'];

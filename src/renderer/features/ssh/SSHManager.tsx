@@ -8,14 +8,14 @@
  * (at your option) any later version.
  */
 
-import { NginxWizard } from '@renderer/features/ssh/NginxWizard';
-import { PackageManager } from '@renderer/features/ssh/PackageManager';
-import { SFTPBrowser } from '@renderer/features/ssh/SFTPBrowser';
-import { SSHLogs } from '@renderer/features/ssh/SSHLogs';
-import { StatsDashboard } from '@renderer/features/ssh/StatsDashboard';
 import { SSHProfileTestResult } from '@shared/types/ssh';
 import React, { useCallback, useEffect, useState } from 'react';
 
+import { NginxWizard } from '@/features/ssh/NginxWizard';
+import { PackageManager } from '@/features/ssh/PackageManager';
+import { SFTPBrowser } from '@/features/ssh/SFTPBrowser';
+import { SSHLogs } from '@/features/ssh/SSHLogs';
+import { StatsDashboard } from '@/features/ssh/StatsDashboard';
 import { localizeIpcValidationMessage } from '@/features/ssh/utils/ipc-validation-message';
 import {
     SSHConnectionFormInput,
@@ -23,10 +23,10 @@ import {
     validateSSHConnectionForm
 } from '@/features/ssh/utils/ssh-manager-validation';
 import { Language, useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 import { recordSSHManagerHealthEvent } from '@/store/ssh-manager-health.store';
 import { SSHConnection } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
-import { cn } from '@/lib/utils';
 
 import { AddConnectionModal, SSHProfileTestUIResult } from './components/AddConnectionModal';
 import { SSHConnectionList } from './components/SSHConnectionList';

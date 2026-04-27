@@ -8,9 +8,10 @@
  * (at your option) any later version.
  */
 
-import { cn } from "@renderer/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
+
+import { cn } from "@/lib/utils";
 
 const inputVariants = cva(
   "flex w-full rounded-md border bg-background px-3 py-1 text-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground/70 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",

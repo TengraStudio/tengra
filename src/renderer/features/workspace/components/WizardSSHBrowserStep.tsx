@@ -8,4 +8,4 @@
  * (at your option) any later version.
  */
 
-export * from '@renderer/features/workspace/workspace-wizard/WizardSSHBrowserStep';
+export * from '@/features/workspace/workspace-setup/SetupSSHBrowserStep';

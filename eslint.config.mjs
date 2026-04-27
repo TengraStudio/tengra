@@ -22,7 +22,7 @@ export default tseslint.config(
     },
     {
         extends: [js.configs.recommended, ...tseslint.configs.recommended],
-        files: ['src/**/*.{ts,tsx}'],
+        files: ['src/**/*.{ts,tsx}', '*.ts'],
         languageOptions: {
             parser: tseslint.parser,
             parserOptions: {
@@ -177,6 +177,14 @@ export default tseslint.config(
         ],
         rules: {
             'max-params': 'off'
+        }
+    },
+    {
+        files: ['vite.config.ts', 'vite-plugin-*.ts', 'vitest.config*.ts', 'playwright.config.ts', 'vitest.workspace.ts'],
+        rules: {
+            '@typescript-eslint/no-explicit-any': 'off',
+            '@typescript-eslint/no-require-imports': 'off',
+            '@typescript-eslint/no-unused-vars': 'off'
         }
     }
 );

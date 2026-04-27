@@ -15,6 +15,8 @@
  * Covers loading/empty/failure state transitions, success/failure recording,
  * retry/fallback tracking, and performance budget exceeded counting.
  */
+import { beforeEach,describe, expect, it } from 'vitest';
+
 import {
     __resetDatabaseHealthForTests,
     getDatabaseHealthSnapshot,
@@ -24,8 +26,7 @@ import {
     recordDatabaseSuccess,
     setDatabaseUiState,
     subscribeDatabaseHealth
-} from '@renderer/store/database-health.store';
-import { beforeEach,describe, expect, it } from 'vitest';
+} from '@/store/database-health.store';
 
 describe('Database Health Store', () => {
     beforeEach(() => {

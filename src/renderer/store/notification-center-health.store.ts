@@ -12,7 +12,7 @@ import {
     getNotificationCenterSnapshot,
     subscribeNotificationCenter,
     useNotificationCenterStore,
-} from '@renderer/store/notification-center.store';
+} from '@/store/notification-center.store';
 
 const NOTIFICATION_CENTER_DELIVERY_BUDGET_MS = 200;
 

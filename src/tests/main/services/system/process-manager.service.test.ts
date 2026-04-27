@@ -8,7 +8,10 @@
  * (at your option) any later version.
  */
 
+import path from 'path';
+
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
+import { app } from 'electron';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@main/logging/logger', () => ({
@@ -114,6 +117,22 @@ describe('ProcessManagerService', () => {
     describe('getServicePort', () => {
         it('should return undefined for unknown service', () => {
             expect(service.getServicePort('nonexistent')).toBeUndefined();
+        });
+    });
+
+    describe('portable discovery paths', () => {
+        it('should prefer userData service port files', () => {
+            vi.mocked(app.getPath).mockImplementation((name: string) => {
+                if (name === 'userData') {
+                    return '/mock/portable';
+                }
+                return '/mock/roaming';
+            });
+
+            const candidates = Reflect.get(service, 'getPortFileCandidates').call(service, 'db-service') as string[];
+
+            expect(candidates[0]).toBe(path.join('/mock/portable', 'services', 'db-service.port'));
+            expect(candidates).toContain(path.join('/mock/roaming', 'Tengra', 'services', 'db-service.port'));
         });
     });
 

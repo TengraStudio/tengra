@@ -158,4 +158,5 @@ export interface RuntimeBootstrapExecutionResult {
         blockingFailures: number;
     };
     health: RuntimeHealthReport;
+    mainProcessReady?: boolean;
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Tengra - Your Personal AI Assistant
  * Copyright (c) 2026 TengraStudio
  *
@@ -975,6 +975,7 @@ pub fn resolve_provider(model: &str) -> Option<&'static str> {
         .map(|info| info.provider)
 }
 
+#[allow(dead_code)]
 pub fn get_all_models(providers: Option<&HashSet<String>>) -> Vec<ModelInfo> {
     get_catalog()
         .iter()

@@ -9,15 +9,15 @@
  */
 
 import type {
-    FileEntry,
-    ProcessInfo,
-} from '@renderer/electron.d';
-import type {
     InlineSuggestionRequest,
     InlineSuggestionResponse,
     InlineSuggestionTelemetry,
 } from '@shared/schemas/inline-suggestions.schema';
 
+import type {
+    FileEntry,
+    ProcessInfo,
+} from '@/electron.d';
 import type {
     FileSearchResult,
     IpcValue,

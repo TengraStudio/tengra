@@ -15,8 +15,8 @@
  */
 
 import { PendingMemory } from '@shared/types/advanced-memory';
+import { IconBulb, IconCheck, IconChevronDown, IconClock, IconGauge, IconSparkles, IconTag, IconX } from '@tabler/icons-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Check, ChevronDown, Clock, Gauge, Lightbulb, Sparkles, Tag, X } from 'lucide-react';
 import React, { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -63,7 +63,7 @@ export const PendingMemoriesList: React.FC<PendingMemoriesListProps> = ({
                         disabled={isLoading}
                         className="gap-2"
                     >
-                        <Check className="w-4 h-4" />
+                        <IconCheck className="w-4 h-4" />
                         {t('memory.confirmAll')}
                     </Button>
                     <Button
@@ -73,7 +73,7 @@ export const PendingMemoriesList: React.FC<PendingMemoriesListProps> = ({
                         disabled={isLoading}
                         className="gap-2 text-destructive hover:text-destructive"
                     >
-                        <X className="w-4 h-4" />
+                        <IconX className="w-4 h-4" />
                         {t('memory.rejectAll')}
                     </Button>
                 </div>
@@ -84,7 +84,7 @@ export const PendingMemoriesList: React.FC<PendingMemoriesListProps> = ({
                 <div className="grid grid-cols-1 gap-4 pb-6">
                     {memories.length === 0 ? (
                         <EmptyState
-                            icon={Clock}
+                            icon={IconClock}
                             title={t('memory.noPendingTitle')}
                             description={t('memory.noPendingDesc')}
                         />
@@ -133,7 +133,7 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Badge
-                            className={cn('border-none text-xxs  font-bold', config.color)}
+                            className={cn('border-none text-sm font-bold', config.color)}
                         >
                             <config.icon className="w-3 h-3 mr-1" />
                             {t(config.labelKey)}
@@ -141,7 +141,7 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
                         {memory.requiresUserValidation && (
                             <Badge
                                 variant="outline"
-                                className="border-warning/40 text-warning text-xxs"
+                                className="border-warning/40 text-warning text-sm"
                             >
                                 {t('memory.needsReview')}
                             </Badge>
@@ -154,7 +154,7 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
                             onClick={onReject}
                             className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
                         >
-                            <X className="w-4 h-4" />
+                            <IconX className="w-4 h-4" />
                         </Button>
                         <Button
                             variant="default"
@@ -162,7 +162,7 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
                             onClick={onConfirm}
                             className="h-8 px-3 gap-1"
                         >
-                            <Check className="w-4 h-4" />
+                            <IconCheck className="w-4 h-4" />
                             {t('memory.confirm')}
                         </Button>
                     </div>
@@ -172,21 +172,21 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
                 <p className="text-sm leading-relaxed">{memory.content}</p>
 
                 {/* Scores */}
-                <div className="flex items-center gap-4 text-xxs text-muted-foreground">
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1">
-                        <Gauge className="w-3 h-3" />
+                        <IconGauge className="w-3 h-3" />
                         {t('memory.confidence', {
                             percent: (memory.extractionConfidence * 100).toFixed(0),
                         })}
                     </span>
                     <span className="flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" />
+                        <IconSparkles className="w-3 h-3" />
                         {t('memory.relevance', {
                             percent: (memory.relevanceScore * 100).toFixed(0),
                         })}
                     </span>
                     <span className="flex items-center gap-1">
-                        <Lightbulb className="w-3 h-3" />
+                        <IconBulb className="w-3 h-3" />
                         {t('memory.novelty', { percent: (memory.noveltyScore * 100).toFixed(0) })}
                     </span>
                 </div>
@@ -196,9 +196,9 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
                     memory.similarMemories.length > 0) && (
                     <button
                         onClick={() => setExpanded(!expanded)}
-                        className="flex items-center gap-1 text-xxs text-muted-foreground hover:text-foreground transition-colors"
+                        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
                     >
-                        <ChevronDown
+                        <IconChevronDown
                             className={cn('w-3 h-3 transition-transform', expanded && 'rotate-180')}
                         />
                         {memory.potentialContradictions.length > 0 && (
@@ -229,7 +229,7 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
                 {expanded && (
                     <div className="space-y-2 pt-2 border-t border-border/40">
                         {memory.potentialContradictions.map((c, i) => (
-                            <div key={i} className="p-2 rounded bg-warning/10 text-xxs">
+                            <div key={i} className="p-2 rounded bg-warning/10 text-sm">
                                 <span className="text-warning font-bold">
                                     {t('memory.contradictionLabel')}
                                 </span>
@@ -240,7 +240,7 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
                             </div>
                         ))}
                         {memory.similarMemories.map((s, i) => (
-                            <div key={i} className="p-2 rounded bg-primary/10 text-xxs">
+                            <div key={i} className="p-2 rounded bg-primary/10 text-sm">
                                 <span className="text-primary font-bold">
                                     {t('memory.similarLabel', {
                                         percent: (s.similarityScore * 100).toFixed(0),
@@ -258,14 +258,14 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
                         {memory.suggestedTags.map(tag => (
                             <span
                                 key={tag}
-                                className="flex items-center gap-1 text-xxs bg-muted/30 px-2 py-0.5 rounded-full text-muted-foreground"
+                                className="flex items-center gap-1 text-sm bg-muted/30 px-2 py-0.5 rounded-full text-muted-foreground"
                             >
-                                <Tag className="w-3 h-3" />
+                                <IconTag className="w-3 h-3" />
                                 {tag}
                             </span>
                         ))}
                     </div>
-                    <span className="text-xxs text-muted-foreground/50">
+                    <span className="text-sm text-muted-foreground/50">
                         {t('memory.timeAgo', {
                             time: formatDistanceToNow(new Date(memory.extractedAt)),
                         })}
